@@ -17,7 +17,6 @@ use concept::{
     },
 };
 use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
-
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
 use serde::{Deserialize, Serialize};

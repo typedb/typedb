@@ -5,8 +5,8 @@
  */
 
 use std::collections::HashMap;
-use answer::Thing;
-use answer::variable_value::VariableValue;
+
+use answer::{Thing, variable_value::VariableValue};
 use compiler::VariablePosition;
 use concept::error::ConceptDecodeError;
 use encoding::value::value::Value;
@@ -15,7 +15,10 @@ use executor::batch::Batch;
 use ir::LiteralParseError;
 
 pub trait GivenRows {
-    fn into_batch_mapped(self, declared_variable_positions: &HashMap<&str, VariablePosition>) -> Result<Batch, GivenRowDecodeError>;
+    fn into_batch_mapped(
+        self,
+        declared_variable_positions: &HashMap<&str, VariablePosition>,
+    ) -> Result<Batch, GivenRowDecodeError>;
 }
 
 pub trait GivenRowsDecoder<T> {
@@ -29,16 +32,25 @@ pub enum GivenRowEntry {
     Value(Value<'static>),
 }
 
-pub fn into_batch_mapped<T, Row, Decoder>(declared_variable_positions: &HashMap<&str, VariablePosition>, variables: Vec<String>, row_count: usize, rows: impl Iterator<Item=Row>) -> Result<Batch, GivenRowDecodeError>
+pub fn into_batch_mapped<T, Row, Decoder>(
+    declared_variable_positions: &HashMap<&str, VariablePosition>,
+    variables: Vec<String>,
+    row_count: usize,
+    rows: impl Iterator<Item = Row>,
+) -> Result<Batch, GivenRowDecodeError>
 where
-    Row: IntoIterator<Item=T>,
+    Row: IntoIterator<Item = T>,
     Decoder: GivenRowsDecoder<T>,
 {
-    let mapping = variables.iter().map(|name| {
-        declared_variable_positions.get(&name.as_str()).copied().ok_or_else(|| {
-            GivenRowDecodeError::GivenRowsVariableWasNotDeclared { variable: name.to_owned(), }
+    let mapping = variables
+        .iter()
+        .map(|name| {
+            declared_variable_positions
+                .get(&name.as_str())
+                .copied()
+                .ok_or_else(|| GivenRowDecodeError::GivenRowsVariableWasNotDeclared { variable: name.to_owned() })
         })
-    }).collect::<Result<Vec<VariablePosition>, GivenRowDecodeError>>()?;
+        .collect::<Result<Vec<VariablePosition>, GivenRowDecodeError>>()?;
     // todo!("USE MAPPING");
 
     let width = declared_variable_positions.len() as u32;
@@ -76,17 +88,20 @@ pub struct GivenRowsSimple {
 }
 
 impl GivenRows for GivenRowsSimple {
-    fn into_batch_mapped(self, declared_variable_positions: &HashMap<&str, VariablePosition>) -> Result<Batch, GivenRowDecodeError> {
+    fn into_batch_mapped(
+        self,
+        declared_variable_positions: &HashMap<&str, VariablePosition>,
+    ) -> Result<Batch, GivenRowDecodeError> {
         self::into_batch_mapped::<GivenRowEntry, Vec<GivenRowEntry>, GivenRowsSimpleDecoder>(
             declared_variable_positions,
             self.variables,
             self.rows.len(),
-            self.rows.into_iter()
+            self.rows.into_iter(),
         )
     }
 }
 
-struct GivenRowsSimpleDecoder { }
+struct GivenRowsSimpleDecoder {}
 impl GivenRowsDecoder<GivenRowEntry> for GivenRowsSimpleDecoder {
     fn decode(what: GivenRowEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
         Ok(what)

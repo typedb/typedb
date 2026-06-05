@@ -17,6 +17,7 @@ use std::{
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::{error::QueryError, given_rows::GivenRowsSimple};
+use answer::variable_value::VariableValue;
 use cucumber::{StatsWriter, World, gherkin::Feature};
 use database::Database;
 use futures::{
@@ -24,7 +25,6 @@ use futures::{
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
-use answer::variable_value::VariableValue;
 use server::{Server, service::http::message::analyze::AnalysedQueryResponse};
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;

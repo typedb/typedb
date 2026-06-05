@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::collections::HashMap;
+
 use ::concept::{
     error::ConceptDecodeError,
     thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation},
@@ -17,7 +18,7 @@ use encoding::{
     value::value::Value,
 };
 use executor::batch::Batch;
-use ir::translation::parse_iid;
+use ir::translation::{literal::FromTypeQLLiteral, parse_iid};
 use options::QueryOptions;
 use query::given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows, GivenRowsDecoder};
 use resource::constants::server::{
@@ -25,7 +26,7 @@ use resource::constants::server::{
     DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
-use ir::translation::literal::FromTypeQLLiteral;
+
 use crate::service::{
     AnswerType, QueryType,
     http::{
@@ -186,7 +187,10 @@ macro_rules! concept_decode_error {
 }
 
 impl GivenRows for GivenRowsPayload {
-    fn into_batch_mapped(self, declared_variable_positions: &HashMap<&str, VariablePosition>) -> Result<Batch, GivenRowDecodeError> {
+    fn into_batch_mapped(
+        self,
+        declared_variable_positions: &HashMap<&str, VariablePosition>,
+    ) -> Result<Batch, GivenRowDecodeError> {
         query::given_rows::into_batch_mapped::<_, _, GivenRowsDecoderHttp>(
             &declared_variable_positions,
             self.variables,
@@ -226,9 +230,7 @@ impl GivenRowsDecoder<GivenEntryPayload> for GivenRowsDecoderHttp {
             }
             GivenEntryPayload::Attribute(attribute) => {
                 let iid = parse_iid(attribute.iid.as_str()).map_err(|_: ()| {
-                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry {
-                        iid: attribute.iid.clone().to_owned(),
-                    }
+                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: attribute.iid.clone().to_owned() }
                 })?;
                 let vertex = AttributeVertex::try_decode(&iid)
                     .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, iid))?;
@@ -239,7 +241,6 @@ impl GivenRowsDecoder<GivenEntryPayload> for GivenRowsDecoderHttp {
 }
 
 pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDecodeError> {
-
     fn decode(to_parse: &str) -> Result<Value<'static>, GivenRowDecodeError> {
         let parsed = typeql::parse_value(to_parse).map_err(|typedb_source| {
             GivenRowDecodeError::ParsingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }

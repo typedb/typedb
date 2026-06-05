@@ -17,14 +17,11 @@ use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
-use query::{
-    error::QueryError,
-    given_rows::GivenRows,
-    query_manager::QueryManager,
-};
+use query::{error::QueryError, given_rows::GivenRows, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{Level, event};
 use typeql::query::SchemaQuery;
+
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},
     with_transaction_parts,

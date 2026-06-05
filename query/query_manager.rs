@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
+
 use compiler::{
     VariablePosition,
     annotation::{
@@ -51,16 +51,15 @@ use resource::{
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{Level, event};
 use typeql::query::SchemaQuery;
+
 use crate::{
-    analyse::{
-        self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations,
-    },
+    analyse::{self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations},
     define,
     error::QueryError,
+    given_rows::GivenRows,
     query_cache::QueryCache,
     redefine, undefine,
 };
-use crate::given_rows::GivenRows;
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
@@ -311,7 +310,8 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows_batch = match validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry) {
+        let given_rows_batch = match validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)
+        {
             Ok(given_rows) => given_rows,
             Err(err) => return Err((snapshot, err)),
         };
@@ -555,9 +555,12 @@ fn validate_and_decode_given(
         (Some(_), None) => Err(Box::new(QueryError::NoGivenRowsProvided {})),
         (None, None) => Ok(Batch::new_single_empty_row()),
         (Some(executable), Some(rows)) => {
-            let declared_variable_positions = executable.variables().iter().enumerate().map(|(i, v)| {
-                (variable_registry.get_variable_name_or_unnamed(*v), VariablePosition::new(i as u32))
-            }).collect::<HashMap<_, _>>();
+            let declared_variable_positions = executable
+                .variables()
+                .iter()
+                .enumerate()
+                .map(|(i, v)| (variable_registry.get_variable_name_or_unnamed(*v), VariablePosition::new(i as u32)))
+                .collect::<HashMap<_, _>>();
             rows.into_batch_mapped(&declared_variable_positions).map_err(|decode_error| {
                 Box::new(QueryError::ErrorDecodingGivenRowEntry { typedb_source: Box::new(decode_error) })
             })

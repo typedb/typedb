@@ -34,7 +34,7 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError};
+use query::error::QueryError;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
@@ -58,7 +58,7 @@ use crate::{
                 AnalysedQueryResponse, encode_analyzed_query,
                 structure::{AnalyzedPipelineResponse, encode_analyzed_pipeline_for_studio},
             },
-            query::{document::encode_document, row::encode_row},
+            query::{GivenRowsPayload, document::encode_document, row::encode_row},
         },
         may_encode_pipeline_structure,
         transaction_service::{
@@ -68,7 +68,6 @@ use crate::{
     },
     state::ServerState,
 };
-use crate::service::http::message::query::GivenRowsPayload;
 
 macro_rules! respond_error_and_return_break {
     ($responder:ident, $error:expr) => {{
@@ -157,7 +156,8 @@ pub(crate) struct TransactionService {
     timeout_at: Instant,
 
     transaction: Option<Transaction>,
-    query_queue: VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, Option<GivenRowsPayload>, String)>,
+    query_queue:
+        VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, Option<GivenRowsPayload>, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
     close_sender: Sender<()>,

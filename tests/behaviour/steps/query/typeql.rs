@@ -36,8 +36,11 @@ use futures::StreamExt;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use query::{analyse::AnalysedQuery, error::QueryError, given_rows::GivenRowsSimple};
-use query::given_rows::GivenRowEntry;
+use query::{
+    analyse::AnalysedQuery,
+    error::QueryError,
+    given_rows::{GivenRowEntry, GivenRowsSimple},
+};
 use resource::profile::StorageCounters;
 use server::service::http::message::analyze::{
     annotations::bdd::{
@@ -251,9 +254,7 @@ async fn given_rows(context: &mut Context, step: &Step) {
     let width = table.rows.first().unwrap().len() as u32;
     // First row is the variables
     let variables = table.rows[0].clone();
-    let rows = table.rows[1..].iter().map(|row| {
-        row.iter().map(parse_query_given_row_entry).collect()
-    }).collect();
+    let rows = table.rows[1..].iter().map(|row| row.iter().map(parse_query_given_row_entry).collect()).collect();
 
     context.given_rows = Some(GivenRowsSimple { variables, rows })
 }

@@ -132,13 +132,10 @@ pub mod query_util {
         pipeline::stage::{ExecutionContext, StageIterator},
     };
     use function::function_manager::FunctionManager;
-    use query::{
-        error::QueryError,
-        query_manager::{QueryManager},
-    };
+    use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
-    use query::given_rows::GivenRowsSimple;
+
     use crate::util::answer_util::collect_answer;
 
     pub fn execute_read_pipeline(

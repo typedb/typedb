@@ -6,6 +6,7 @@
 
 use std::{
     collections::{HashMap, VecDeque},
+    fmt::Formatter,
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
@@ -13,8 +14,8 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use std::fmt::Formatter;
-use answer::{Thing};
+
+use answer::Thing;
 use bytes::util::HexBytesFormatter;
 use compiler::{VariablePosition, query_structure::PipelineStructure};
 use concept::{
@@ -50,7 +51,7 @@ use lending_iterator::LendingIterator;
 use options::QueryOptions;
 use query::{
     error::QueryError,
-    given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRowsDecoder},
+    given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows, GivenRowsDecoder},
 };
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -72,7 +73,7 @@ use typedb_protocol::{
 };
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
-use query::given_rows::GivenRows;
+
 use crate::{
     service::{
         TransactionType,
@@ -1857,7 +1858,10 @@ impl QueueOptions {
 
 pub struct GivenRowsGrpc(typedb_protocol::query::req::GivenRows);
 impl GivenRows for GivenRowsGrpc {
-    fn into_batch_mapped(self, declared_variable_positions: &HashMap<&str, VariablePosition>) -> Result<Batch, GivenRowDecodeError> {
+    fn into_batch_mapped(
+        self,
+        declared_variable_positions: &HashMap<&str, VariablePosition>,
+    ) -> Result<Batch, GivenRowDecodeError> {
         query::given_rows::into_batch_mapped::<_, _, GivenRowsDecoderGrpc>(
             declared_variable_positions,
             self.0.variables,
@@ -1884,7 +1888,6 @@ macro_rules! concept_decode_error {
 
 pub struct GivenRowsDecoderGrpc;
 impl GivenRowsDecoder<typedb_protocol::query::req::GivenEntry> for GivenRowsDecoderGrpc {
-
     fn decode(what: typedb_protocol::query::req::GivenEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
         use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
         Ok(match what.entry.expect("Missing proto field") {
@@ -1894,21 +1897,18 @@ impl GivenRowsDecoder<typedb_protocol::query::req::GivenEntry> for GivenRowsDeco
             }
             EntryProto::Thing(thing) => match thing.thing.expect("Missing proto field") {
                 ThingProto::Entity(entity) => {
-                    let vertex = ObjectVertex::try_decode(entity.iid.as_slice()).ok_or_else(|| {
-                        concept_decode_error!(CouldNotDecodeIIDAsEntity, entity.iid)
-                    })?;
+                    let vertex = ObjectVertex::try_decode(entity.iid.as_slice())
+                        .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, entity.iid))?;
                     GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
                 }
                 ThingProto::Relation(relation) => {
-                    let vertex = ObjectVertex::try_decode(relation.iid.as_slice()).ok_or_else(|| {
-                        concept_decode_error!(CouldNotDecodeIIDAsRelation, relation.iid)
-                    })?;
+                    let vertex = ObjectVertex::try_decode(relation.iid.as_slice())
+                        .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, relation.iid))?;
                     GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
                 }
                 ThingProto::Attribute(attribute) => {
-                    let vertex = AttributeVertex::try_decode(attribute.iid.as_slice()).ok_or_else(|| {
-                        concept_decode_error!(CouldNotDecodeIIDAsAttribute, attribute.iid)
-                    })?;
+                    let vertex = AttributeVertex::try_decode(attribute.iid.as_slice())
+                        .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, attribute.iid))?;
                     GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex)))
                 }
             },
