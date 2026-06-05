@@ -15,6 +15,7 @@ use executor::batch::Batch;
 use ir::LiteralParseError;
 
 pub trait GivenRows {
+    fn variables(&self) -> &[String];
     fn into_batch_mapped(
         self,
         declared_variable_positions: &HashMap<&str, VariablePosition>,
@@ -87,6 +88,10 @@ pub struct GivenRowsSimple {
 }
 
 impl GivenRows for GivenRowsSimple {
+    fn variables(&self) -> &[String] {
+        self.variables.as_slice()
+    }
+
     fn into_batch_mapped(
         self,
         declared_variable_positions: &HashMap<&str, VariablePosition>,

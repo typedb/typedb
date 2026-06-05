@@ -185,6 +185,10 @@ macro_rules! concept_decode_error {
 }
 
 impl GivenRows for GivenRowsPayload {
+    fn variables(&self) -> &[String] {
+        self.variables.as_slice()
+    }
+
     fn into_batch_mapped(
         self,
         declared_variable_positions: &HashMap<&str, VariablePosition>,

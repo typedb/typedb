@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use compiler::{
     VariablePosition,
@@ -31,7 +34,7 @@ use executor::{
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
     LiteralParseError, RepresentationError,
-    pattern::Vertex,
+    pattern::{Vertex, variable_category::VariableOptionality},
     pipeline::{
         ParameterRegistry, VariableRegistry,
         fetch::FetchObject,
@@ -56,7 +59,7 @@ use crate::{
     analyse::{self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations},
     define,
     error::QueryError,
-    given_rows::GivenRows,
+    given_rows::{GivenRowDecodeError, GivenRows},
     query_cache::QueryCache,
     redefine, undefine,
 };
@@ -555,12 +558,17 @@ fn validate_and_decode_given(
         (Some(_), None) => Err(Box::new(QueryError::NoGivenRowsProvided {})),
         (None, None) => Ok(Batch::new_single_empty_row()),
         (Some(executable), Some(rows)) => {
-            let declared_variable_positions = executable
-                .variables()
-                .iter()
-                .enumerate()
-                .map(|(i, v)| (variable_registry.get_variable_name_or_unnamed(*v), VariablePosition::new(i as u32)))
-                .collect::<HashMap<_, _>>();
+            let rows_vars: HashSet<&str> = HashSet::from_iter(rows.variables().iter().map(|s| s.as_str()));
+            let mut declared_variable_positions = HashMap::with_capacity(rows_vars.len());
+            for (i, (var_id, opt)) in executable.variables().iter().zip(executable.optionality().iter()).enumerate() {
+                let variable = variable_registry.get_variable_name_or_unnamed(*var_id);
+                if *opt == VariableOptionality::Required && !rows_vars.contains(variable) {
+                    return Err(Box::new(QueryError::GivenRowsMissingRequiredVariable {
+                        variable: variable.to_owned(),
+                    }));
+                }
+                declared_variable_positions.insert(variable, VariablePosition::new(i as u32));
+            }
             rows.into_batch_mapped(&declared_variable_positions).map_err(|decode_error| {
                 Box::new(QueryError::ErrorDecodingGivenRowEntry { typedb_source: Box::new(decode_error) })
             })

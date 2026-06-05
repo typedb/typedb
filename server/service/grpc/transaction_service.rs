@@ -1858,6 +1858,10 @@ impl QueueOptions {
 
 pub struct GivenRowsGrpc(typedb_protocol::query::req::GivenRows);
 impl GivenRows for GivenRowsGrpc {
+    fn variables(&self) -> &[String] {
+        self.0.variables.as_slice()
+    }
+
     fn into_batch_mapped(
         self,
         declared_variable_positions: &HashMap<&str, VariablePosition>,

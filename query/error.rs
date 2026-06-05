@@ -38,8 +38,9 @@ typedb_error! {
         PipelineStagesLimitExceeded(18, "Query pipeline has {actual} stages, which exceeds the maximum allowed {max}.", source_query: String, actual: usize, max: usize),
         NoGivenRowsProvided(21, "The query contains a given stage, but no given rows were provided."),
         UnexpectedGivenRowsProvided(22, "The query contains no given stage, but given rows were provided."),
+        GivenRowsMissingRequiredVariable(23, "The given rows are missing the required variable '{variable}'.", variable: String),
         ErrorDecodingGivenRowEntry(
-            23,
+            24,
             "An error occured while decoding the given rows.",
             typedb_source: Box<GivenRowDecodeError>,
         ),

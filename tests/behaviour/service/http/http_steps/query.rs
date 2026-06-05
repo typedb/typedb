@@ -493,7 +493,7 @@ pub async fn answer_get_row_get_variable_is_empty(
     if matches!(is_by_var_index, IsByVarIndex::Is) {
         return; // http does not have indices
     }
-    is_or_not.compare(get_answer_rows_var(context, index, var), None);
+    is_or_not.compare(get_answer_rows_var(context, index, var), Some(&serde_json::Value::Null));
 }
 
 #[apply(generic_step)]
