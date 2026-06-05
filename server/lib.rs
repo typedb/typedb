@@ -524,8 +524,8 @@ impl Server {
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
         tokio::spawn(async move {
-            Self::wait_for_ctrl_c_signal().await;
-            println!("\nReceived CTRL-C. Initiating shutdown...");
+            let initial_signal = Self::wait_for_shutdown_signal().await;
+            println!("\nReceived {initial_signal}. Initiating shutdown...");
             shutdown_sender.send(()).expect("Expected a successful shutdown signal");
 
             tokio::spawn(Self::forced_shutdown_handler());
@@ -533,13 +533,29 @@ impl Server {
     }
 
     async fn forced_shutdown_handler() {
-        Self::wait_for_ctrl_c_signal().await;
-        println!("\nReceived CTRL-C. Forcing shutdown...");
+        let forced_signal = Self::wait_for_shutdown_signal().await;
+        println!("\nReceived {forced_signal}. Forcing shutdown...");
         std::process::exit(1);
     }
 
-    async fn wait_for_ctrl_c_signal() {
-        tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL-C signal");
+    async fn wait_for_shutdown_signal() -> &'static str {
+        #[cfg(unix)]
+        {
+            use tokio::signal::unix::{SignalKind, signal};
+            let mut sigterm = signal(SignalKind::terminate()).expect("Failed to install SIGTERM handler");
+            tokio::select! {
+                result = tokio::signal::ctrl_c() => {
+                    result.expect("Failed to listen for SIGINT");
+                    "SIGINT"
+                }
+                _ = sigterm.recv() => "SIGTERM",
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            tokio::signal::ctrl_c().await.expect("Failed to listen for Ctrl-C");
+            "CTRL-C"
+        }
     }
 
     fn install_default_encryption_provider() -> Result<(), ServerOpenError> {
