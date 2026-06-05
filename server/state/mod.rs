@@ -29,16 +29,25 @@ use crate::{
     authentication::token_manager::TokenManager,
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
+    service::admin::transport::AdminPath,
     status::{LocalServerStatus, PrivateEndpointAddress, PublicEndpointAddress, ServerStatus},
 };
 
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
+
+struct ResolvedEndpoints {
+    grpc_listen_address: SocketAddr,
+    http_listen_address: Option<SocketAddr>,
+    admin_endpoint: Option<AdminPath>,
+    server_status: LocalServerStatus,
+}
 
 #[derive(Debug)]
 pub struct ServerState {
     distribution_info: DistributionInfo,
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
+    admin_endpoint: Option<AdminPath>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
@@ -88,13 +97,14 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let (grpc_listen_address, http_listen_address, server_status) =
-            Self::resolve_endpoints(&config.server, &config.diagnostics.monitoring).await?;
+        let ResolvedEndpoints { grpc_listen_address, http_listen_address, admin_endpoint, server_status } =
+            Self::resolve_endpoints(&config).await?;
 
         Ok(ServerStateBuilder {
             distribution_info,
             grpc_listen_address,
             http_listen_address,
+            admin_endpoint,
             server_status,
             database_manager,
             token_manager,
@@ -119,6 +129,10 @@ impl ServerState {
 
     pub fn http_listen_address(&self) -> Option<SocketAddr> {
         self.http_listen_address
+    }
+
+    pub fn admin_endpoint(&self) -> Option<&AdminPath> {
+        self.admin_endpoint.as_ref()
     }
 
     pub fn servers(&self) -> &dyn ServerOperator {
@@ -222,38 +236,23 @@ impl ServerState {
             .ok_or_else(|| ServerOpenError::AddressResolutionEmpty { address: address.to_string() })
     }
 
-    async fn resolve_endpoints(
-        config: &crate::parameters::config::ServerConfig,
-        monitoring: &crate::parameters::config::Monitoring,
-    ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
-        let grpc_listen_address = Self::resolve_address(&config.listen_address).await?;
-        let grpc_advertise_address = config.advertise_address.clone();
+    async fn resolve_endpoints(config: &Config) -> Result<ResolvedEndpoints, ServerOpenError> {
+        let server = &config.server;
+        let monitoring = &config.diagnostics.monitoring;
+        let grpc_listen_address = Self::resolve_address(&server.listen_address).await?;
+        let grpc_advertise_address = server.advertise_address.clone();
 
         let http_listen_address =
-            if config.http.enabled { Some(Self::resolve_address(&config.http.listen_address).await?) } else { None };
-        let http_advertise_address = config.http.advertise_address.clone();
+            if server.http.enabled { Some(Self::resolve_address(&server.http.listen_address).await?) } else { None };
+        let http_advertise_address = server.http.advertise_address.clone();
 
-        let admin_address = if config.admin.enabled {
-            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, config.admin.port)))
-        } else {
-            None
-        };
-
-        let monitoring_address = if monitoring.enabled {
-            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)))
-        } else {
-            None
-        };
+        let monitoring_address =
+            monitoring.enabled.then(|| SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)));
 
         let mut reserved = HashSet::from([grpc_listen_address]);
         if let Some(address) = http_listen_address {
             if !reserved.insert(address) {
                 return Err(ServerOpenError::HttpConflictingAddress { address });
-            }
-        }
-        if let Some(address) = admin_address {
-            if !reserved.insert(address) {
-                return Err(ServerOpenError::AdminConflictingAddress { address });
             }
         }
         if let Some(address) = monitoring_address {
@@ -262,14 +261,19 @@ impl ServerState {
             }
         }
 
+        let admin_endpoint =
+            server.admin.enabled.then(|| server.admin.resolve_endpoint(&config.storage.data_directory));
+
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),
             http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address)),
-            admin_address.map(PrivateEndpointAddress::from_socket_addr),
+            admin_endpoint
+                .as_ref()
+                .map(|ep| PrivateEndpointAddress::new(crate::service::admin::transport::endpoint_to_string(ep))),
             monitoring_address.map(PrivateEndpointAddress::from_socket_addr),
         );
 
-        Ok((grpc_listen_address, http_listen_address, server_status))
+        Ok(ResolvedEndpoints { grpc_listen_address, http_listen_address, admin_endpoint, server_status })
     }
 }
 
@@ -277,6 +281,7 @@ pub struct ServerStateBuilder {
     distribution_info: DistributionInfo,
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
+    admin_endpoint: Option<AdminPath>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
@@ -352,6 +357,7 @@ impl ServerStateBuilder {
             distribution_info: self.distribution_info,
             grpc_listen_address: self.grpc_listen_address,
             http_listen_address: self.http_listen_address,
+            admin_endpoint: self.admin_endpoint,
             diagnostics_manager: self.diagnostics_manager,
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,

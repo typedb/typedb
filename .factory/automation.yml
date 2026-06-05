@@ -67,6 +67,7 @@ build:
         bazel test --config=ci //query:test_crate_query --test_output=streamed
         bazel test --config=ci //server:test_crate_server --test_output=streamed
         bazel test --config=ci //server:test_admin_service --test_output=streamed
+        bazel test --config=ci //admin/client:test_crate_client --test_output=streamed
         bazel test --config=ci //storage:test_crate_storage --test_output=streamed
 
     test-integration:
@@ -151,6 +152,13 @@ build:
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/assembly:test_assembly
+
+    test-admin-assembly:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test --config=ci //admin:test_admin_assembly --test_output=errors
 
     test-fail-points-deterministic:
       image: typedb-ubuntu-22.04

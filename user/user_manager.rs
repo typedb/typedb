@@ -45,18 +45,8 @@ impl UserManager {
     }
 
     pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
-        match self.contains(&user.name) {
-            Ok(contains) => {
-                if contains {
-                    return Err(UserCreateError::UserAlreadyExist {});
-                }
-            }
-            Err(user_get_err) => {
-                return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => Err(UserCreateError::IllegalUsername {}),
-                    UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {}),
-                };
-            }
+        if self.contains(&user.name)? {
+            return Err(UserCreateError::UserAlreadyExist {});
         }
         let create_result = self
             .transaction_util
@@ -77,6 +67,10 @@ impl UserManager {
         user: &Option<User>,
         credential: &Option<Credential>,
     ) -> Result<(), UserUpdateError> {
+        if !self.contains(username)? {
+            return Err(UserUpdateError::UserNotFound {});
+        }
+
         let update_result = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
@@ -103,18 +97,8 @@ impl UserManager {
         if username == DEFAULT_USER_NAME {
             return Err(UserDeleteError::DefaultUserCannotBeDeleted {});
         }
-        match self.contains(username) {
-            Ok(contains) => {
-                if !contains {
-                    return Err(UserDeleteError::UserNotFound {});
-                }
-            }
-            Err(user_get_err) => {
-                return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => Err(UserDeleteError::IllegalUsername {}),
-                    UserGetError::Unexpected { .. } => Err(UserDeleteError::Unexpected {}),
-                };
-            }
+        if !self.contains(username)? {
+            return Err(UserDeleteError::UserNotFound {});
         }
 
         let delete_result = self

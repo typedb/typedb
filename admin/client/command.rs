@@ -13,7 +13,6 @@ pub type CommandResult = Result<()>;
 
 pub struct CommandContext<'a> {
     pub client: &'a mut AdminClient,
-    pub address: &'a str,
     pub args: &'a [String],
 }
 

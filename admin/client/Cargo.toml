@@ -13,9 +13,17 @@ features = {}
 	path = "lib.rs"
 	crate-type = ["lib"]
 
+[dev-dependencies]
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.hyper-util]
 		workspace = true
 
 	[dependencies.rustyline]
@@ -34,6 +42,12 @@ features = {}
 		workspace = true
 
 	[dependencies.error]
+		workspace = true
+
+	[dependencies.rpassword]
+		workspace = true
+
+	[dependencies.tower]
 		workspace = true
 
 	[dependencies.home]

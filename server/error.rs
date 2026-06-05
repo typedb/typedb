@@ -59,7 +59,6 @@ typedb_error! {
         MissingTLSCertificate(8, "TLS certificate path must be specified when encryption is enabled."),
         MissingTLSCertificateKey(9, "TLS certificate key path must be specified when encryption is enabled."),
         HttpConflictingAddress(10, "Configuring HTTP and gRPC on the same address {address} is not supported.", address: SocketAddr),
-        AdminConflictingAddress(11, "Configuring admin and public service on the same address {address} is not supported.", address: SocketAddr),
         GrpcServe(12, "Could not serve gRPC on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
         GrpcCouldNotReadTlsCertificate(13, "Could not read TLS certificate from '{path}' for the gRPC server.", path: String, source: Arc<io::Error>),
         GrpcCouldNotReadTlsCertificateKey(14, "Could not read TLS certificate key from '{path}' for the gRPC server.", path: String, source: Arc<io::Error>),
@@ -77,8 +76,19 @@ typedb_error! {
         ServerState(26, "Invalid server state.", typedb_source: ArcServerStateError),
         AddressResolutionFailed(27, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),
         AddressResolutionEmpty(28, "Could not resolve address '{address}' to any IP address.", address: String),
-        AdminServe(29, "Could not serve admin on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
-        MonitoringConflictingAddress(30, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
+        AdminServe(29, "Could not serve admin endpoint at '{path}'.", path: String, source: Arc<tonic::transport::Error>),
+        AdminSocketPathInUse(30, "Admin socket path '{path}' already exists and is not a socket. Refusing to overwrite.", path: String),
+        AdminSocketBind(31, "Could not bind admin Unix socket at '{path}'.", path: String, source: Arc<io::Error>),
+        AdminSocketCleanup(32, "Could not remove stale admin socket file at '{path}'.", path: String, source: Arc<io::Error>),
+        AdminSocketChmod(33, "Could not set permissions on admin socket file at '{path}'.", path: String, source: Arc<io::Error>),
+        AdminPipeBind(34, "Could not create admin Named Pipe '{name}'.", name: String, source: Arc<io::Error>),
+        AdminSocketPathTooLong(
+            35,
+            "Admin socket path '{path}' ({length} bytes) is too long for a Unix domain socket on this OS. Set --server.admin.socket-path to a shorter path (e.g. somewhere under /tmp).",
+            path: String,
+            length: usize
+        ),
+        MonitoringConflictingAddress(36, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
     }
 }
 
@@ -125,6 +135,9 @@ impl ServerStateError for LocalServerStateError {
             Self::OperationNotPermitted { .. } => Forbidden,
 
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
+
+            Self::UserCannotBeUpdated { typedb_source: UserUpdateError::UserNotFound { .. } }
+            | Self::UserCannotBeDeleted { typedb_source: UserDeleteError::UserNotFound { .. } } => NotFound,
 
             Self::ConceptReadError { .. } | Self::FunctionReadError { .. } => Internal,
 

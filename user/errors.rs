@@ -19,6 +19,7 @@ typedb_error! {
         UserAlreadyExist(2, "User already exists."),
         IncompleteUserDetail(3, "Incomplete user detail."),
         Unexpected(4, "An unexpected error has occurred in the process of creating a new user."),
+        GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
     }
 }
 
@@ -27,6 +28,8 @@ typedb_error! {
         UserDetailNotProvided(1, "User detail not provided."),
         IllegalUsername(2, "Invalid credential supplied,"),
         Unexpected(3, "An unexpected error has occurred in the process of updating a user."),
+        UserNotFound(4, "User not found."),
+        GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
     }
 }
 
@@ -36,5 +39,33 @@ typedb_error! {
         IllegalUsername(2, "Invalid credential supplied."),
         UserNotFound(3, "User not found."),
         Unexpected(4, "An unexpected error has occurred in the process of deleting a user."),
+        GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
+    }
+}
+
+impl From<UserGetError> for UserCreateError {
+    fn from(err: UserGetError) -> Self {
+        match err {
+            UserGetError::IllegalUsername { .. } => UserCreateError::IllegalUsername {},
+            UserGetError::Unexpected { .. } => UserCreateError::GetFailed { typedb_source: err },
+        }
+    }
+}
+
+impl From<UserGetError> for UserUpdateError {
+    fn from(err: UserGetError) -> Self {
+        match err {
+            UserGetError::IllegalUsername { .. } => UserUpdateError::IllegalUsername {},
+            UserGetError::Unexpected { .. } => UserUpdateError::GetFailed { typedb_source: err },
+        }
+    }
+}
+
+impl From<UserGetError> for UserDeleteError {
+    fn from(err: UserGetError) -> Self {
+        match err {
+            UserGetError::IllegalUsername { .. } => UserDeleteError::IllegalUsername {},
+            UserGetError::Unexpected { .. } => UserDeleteError::GetFailed { typedb_source: err },
+        }
     }
 }

@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dev-dependencies = {}
 
 [package]
 	name = "typedb_admin_bin"
@@ -22,6 +23,10 @@ features = {}
 
 	[dependencies.typedb-admin]
 		workspace = true
+
+[[test]]
+	path = "tests/admin_assembly.rs"
+	name = "test_admin_assembly"
 
 [[bin]]
 	path = "main.rs"

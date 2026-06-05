@@ -98,7 +98,7 @@ pkg_zip(
     package_dir = "typedb-server-mac-x86_64-{version}",
     out = "typedb-server-mac-x86_64.zip",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_mac_x86_64,
 )
 
@@ -108,7 +108,7 @@ pkg_zip(
     package_dir = "typedb-server-mac-arm64-{version}",
     out = "typedb-server-mac-arm64.zip",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_mac_arm64,
 )
 
@@ -120,7 +120,7 @@ pkg_tar(
     out = "typedb-server-linux-x86_64.tar.gz",
     extension = "tar.gz",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_linux_x86_64,
 )
 
@@ -131,7 +131,7 @@ pkg_tar(
     out = "typedb-server-linux-arm64.tar.gz",
     extension = "tar.gz",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_linux_arm64,
 )
 
@@ -141,7 +141,7 @@ pkg_zip(
     package_dir = "typedb-server-windows-x86_64-{version}",
     out = "typedb-server-windows-x86_64.zip",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_win_x86_64,
 )
 
@@ -173,7 +173,7 @@ pkg_zip(
     package_dir = "typedb-all-mac-x86_64-{version}",
     out = "typedb-all-mac-x86_64.zip",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_mac_x86_64,
 )
 
@@ -183,7 +183,7 @@ pkg_zip(
     package_dir = "typedb-all-mac-arm64-{version}",
     out = "typedb-all-mac-arm64.zip",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_mac_arm64,
 )
 
@@ -194,7 +194,7 @@ pkg_tar(
     out = "typedb-all-linux-x86_64.tar.gz",
     extension = "tar.gz",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_linux_x86_64,
 )
 
@@ -205,7 +205,7 @@ pkg_tar(
     out = "typedb-all-linux-arm64.tar.gz",
     extension = "tar.gz",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_linux_arm64,
 )
 
@@ -215,7 +215,7 @@ pkg_zip(
     package_dir = "typedb-all-windows-x86_64-{version}",
     out = "typedb-all-windows-x86_64.zip",
     package_variables = ":server-version-vars",
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
     target_compatible_with = constraint_win_x86_64,
 )
 
@@ -274,7 +274,7 @@ alias(
         "@typedb_bazel_distribution//platform:is_mac_x86_64" : ":assemble-all-mac-x86_64-zip",
         "@typedb_bazel_distribution//platform:is_windows_x86_64" : ":assemble-all-windows-x86_64-zip"
     }),
-    visibility = ["//tests/assembly:__subpackages__"],
+    visibility = ["//tests/assembly:__subpackages__", "//admin:__pkg__"],
 )
 alias(
     name = "deploy-typedb-all",

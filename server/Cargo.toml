@@ -20,6 +20,9 @@
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.typedb-admin]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.logger]

@@ -11,9 +11,7 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{
-    ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
-};
+use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
 
@@ -93,12 +91,30 @@ impl Default for EncryptionConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct AdminConfig {
     pub enabled: bool,
-    pub port: u16,
+    #[serde(default)]
+    pub socket_path: Option<String>,
 }
 
 impl Default for AdminConfig {
     fn default() -> Self {
-        Self { enabled: true, port: ADMIN_DEFAULT_PORT }
+        Self { enabled: false, socket_path: None }
+    }
+}
+
+impl AdminConfig {
+    #[cfg(unix)]
+    pub fn resolve_endpoint(&self, data_directory: &Path) -> crate::service::admin::transport::AdminPath {
+        self.socket_path
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| data_directory.join(resource::constants::server::ADMIN_DEFAULT_SOCKET_FILENAME))
+    }
+
+    #[cfg(windows)]
+    pub fn resolve_endpoint(&self, _data_directory: &Path) -> crate::service::admin::transport::AdminPath {
+        self.socket_path
+            .clone()
+            .unwrap_or_else(|| format!(r"\\.\pipe\{}", resource::constants::server::ADMIN_DEFAULT_WINDOWS_PIPE_NAME))
     }
 }
 
@@ -256,7 +272,7 @@ impl ConfigBuilder {
             server_http_listen_address,
             server_http_advertise_address,
             server_admin_enabled,
-            server_admin_port,
+            server_admin_socket_path,
             server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
@@ -276,7 +292,7 @@ impl ConfigBuilder {
             config.server.http.enabled => server_http_enabled;
             config.server.http.listen_address => server_http_listen_address;
             config.server.admin.enabled => server_admin_enabled;
-            config.server.admin.port => server_admin_port;
+            config.server.admin.socket_path => server_admin_socket_path.map(Some);
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -360,8 +376,8 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn admin_port(mut self, port: u16) -> Self {
-        self.config.server.admin.port = port;
+    pub fn admin_socket_path(mut self, path: impl Into<String>) -> Self {
+        self.config.server.admin.socket_path = Some(path.into());
         self
     }
 

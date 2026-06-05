@@ -8,32 +8,19 @@ pub mod command;
 pub mod commands;
 pub mod error;
 pub mod repl;
+pub mod transport;
 
-use std::sync::Arc;
+use std::path::Path;
 
 use server_admin_proto::type_db_admin_client::TypeDbAdminClient;
 use tonic::transport::Channel;
 
 use crate::error::AdminError;
+pub use crate::transport::connect_channel;
 
 pub type AdminClient = TypeDbAdminClient<Channel>;
 
-pub async fn connect(address: &str) -> Result<AdminClient, AdminError> {
-    let channel = connect_channel(address).await?;
+pub async fn connect(endpoint: &Path) -> Result<AdminClient, AdminError> {
+    let channel = connect_channel(endpoint).await?;
     Ok(TypeDbAdminClient::new(channel))
-}
-
-pub async fn connect_channel(address: &str) -> Result<Channel, AdminError> {
-    tonic::transport::Endpoint::from_shared(format_insecure_address(address))
-        .map_err(|source| AdminError::ConnectionFailed {
-            address: address.to_string(),
-            source: Arc::new(source.into()),
-        })?
-        .connect()
-        .await
-        .map_err(|source| AdminError::ConnectionFailed { address: address.to_string(), source: Arc::new(source) })
-}
-
-fn format_insecure_address(address: &str) -> String {
-    format!("http://{address}")
 }

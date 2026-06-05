@@ -5,6 +5,6 @@
  */
 
 pub mod admin_service;
-pub mod localhost_guard;
+pub mod transport;
 
 pub use admin_service::AdminService;

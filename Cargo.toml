@@ -160,6 +160,11 @@ features = {}
 
 	[workspace.dependencies]
 
+		[workspace.dependencies.hyper-util]
+			features = ["client", "client-legacy", "default", "http1", "http2", "server", "server-auto", "service", "tokio"]
+			version = "0.1.20"
+			default-features = false
+
 		[workspace.dependencies.logger]
 			path = "common/logger"
 			features = []
@@ -168,6 +173,11 @@ features = {}
 		[workspace.dependencies.fail_point]
 			path = "common/fail_point"
 			features = []
+			default-features = false
+
+		[workspace.dependencies.rpassword]
+			features = []
+			version = "7.5.3"
 			default-features = false
 
 		[workspace.dependencies.rand]

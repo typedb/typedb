@@ -85,16 +85,19 @@ commands:
     steps:
       - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-
-  # TODO: It's still commented out!!! Implement or remove
-  # deploy & test steps
   test-assembly-unix:
     steps:
       - run: |
           echo 'skipped'
-          # bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          # bazel build --config=ci --jobs=8 //:assemble-typedb-all --compilation_mode=opt
-          # bazel test --config=ci //tests/assembly:test_assembly --test_output=errors
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel build --config=ci --jobs=8 //:assemble-typedb-all --compilation_mode=opt
+          bazel test --config=ci //tests/assembly:test_assembly --test_output=errors
+
+  test-admin-unix:
+    steps:
+      - run: |
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel test --config=ci --test_output=errors //admin/client:test_crate_client //server:test_admin_service //admin:test_admin_assembly
 
   deploy-snapshot-unix:
     steps:
@@ -178,6 +181,7 @@ jobs:
       - install-deps-yum:
           bazel-arch: amd64
       - test-assembly-unix
+      - test-admin-unix
       - deploy-snapshot-unix
 
   test-deploy-snapshot-linux-arm64:
@@ -187,6 +191,7 @@ jobs:
       - install-deps-yum:
           bazel-arch: arm64
       - test-assembly-unix
+      - test-admin-unix
       - deploy-snapshot-unix
 
   test-deploy-snapshot-mac-x86_64:
@@ -198,6 +203,7 @@ jobs:
       - install-deps-brew:
           bazel-arch: amd64
       - test-assembly-unix
+      - test-admin-unix
       - deploy-snapshot-unix
 
   test-deploy-snapshot-mac-arm64:
@@ -207,6 +213,7 @@ jobs:
       - install-deps-brew:
           bazel-arch: arm64
       - test-assembly-unix
+      - test-admin-unix
       - deploy-snapshot-unix
 
   test-deploy-snapshot-windows-x86_64:
@@ -215,7 +222,8 @@ jobs:
     steps:
       - checkout
       - run: .circleci\windows\prepare.bat
-      - run: REM "Restore .circleci\windows\test_assembly.bat"
+      - run: .circleci\windows\test_assembly.bat
+      - run: .circleci\windows\test_admin.bat
       - run: .circleci\windows\deploy_snapshot.bat
 
   deploy-docker-snapshot-x86_64:
