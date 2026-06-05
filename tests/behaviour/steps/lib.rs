@@ -16,7 +16,7 @@ use std::{
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
-use ::query::{error::QueryError, query_manager::GivenRows};
+use ::query::{error::QueryError, given_rows::GivenRowsSimple};
 use cucumber::{StatsWriter, World, gherkin::Feature};
 use database::Database;
 use futures::{
@@ -24,6 +24,7 @@ use futures::{
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
+use answer::variable_value::VariableValue;
 use server::{Server, service::http::message::analyze::AnalysedQueryResponse};
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
@@ -113,7 +114,7 @@ pub struct Context {
     attributes: HashMap<String, Option<Attribute>>,
     attribute_lists: HashMap<String, Vec<Attribute>>,
 
-    given_rows: Option<GivenRows>,
+    given_rows: Option<GivenRowsSimple>,
     analyzed: Option<AnalysedQueryResponse>,
 }
 
@@ -212,7 +213,7 @@ impl Context {
         self.active_transaction.take()
     }
 
-    pub fn take_given_rows(&mut self) -> Option<GivenRows> {
+    pub fn take_given_rows(&mut self) -> Option<GivenRowsSimple> {
         self.given_rows.take()
     }
 }

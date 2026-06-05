@@ -97,10 +97,6 @@ impl IntoResponse for HttpServiceError {
             },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::ConceptDecode { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::InvalidIIDFormatForGivenEntry { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::ParsingValueFailedForGivenEntry { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::TranslatingValueFailedForGivenEntry { .. } => StatusCode::BAD_REQUEST,
         };
         (code, JsonBody(encode_error(self))).into_response()
     }

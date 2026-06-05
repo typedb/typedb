@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, sync::Arc};
-
-use answer::{Concept, variable::Variable, variable_value::VariableValue};
+use std::sync::Arc;
+use std::collections::HashMap;
 use compiler::{
     VariablePosition,
     annotation::{
@@ -22,15 +21,12 @@ use concept::{
     thing::{ThingAPI, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
-use encoding::value::{ValueEncodable, value::Value};
-use error::{UnimplementedFeature, todo_must_implement};
 use executor::{
     batch::Batch,
     pipeline::{
         pipeline::Pipeline,
         stage::{ReadPipelineStage, WritePipelineStage},
     },
-    row::MaybeOwnedRow,
 };
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
@@ -50,21 +46,21 @@ use ir::{
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
-    profile::{CompileProfile, QueryProfile, StorageCounters},
+    profile::{CompileProfile, QueryProfile},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{Level, event};
-use typeql::{Literal, query::SchemaQuery};
-
+use typeql::query::SchemaQuery;
 use crate::{
     analyse::{
-        self, AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
+        self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations,
     },
     define,
     error::QueryError,
     query_cache::QueryCache,
     redefine, undefine,
 };
+use crate::given_rows::GivenRows;
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
@@ -141,7 +137,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-        given_rows: Option<GivenRows>,
+        given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", query);
@@ -151,7 +147,7 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
-            translated_given: translated_given,
+            translated_given,
             translated_stages,
             translated_fetch,
             mut variable_registry,
@@ -209,7 +205,7 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows_batch = validate_given(executable_given.clone(), given_rows, &variable_registry)?;
+        let given_rows_batch = validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)?;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
@@ -237,7 +233,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
-        given_rows: Option<GivenRows>,
+        given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", query);
@@ -247,7 +243,7 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
-            translated_given: translated_given,
+            translated_given,
             translated_stages,
             translated_fetch,
             mut variable_registry,
@@ -315,7 +311,7 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows_batch = match validate_given(executable_given.clone(), given_rows, &variable_registry) {
+        let given_rows_batch = match validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry) {
             Ok(given_rows) => given_rows,
             Err(err) => return Err((snapshot, err)),
         };
@@ -352,7 +348,7 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
-            translated_given: translated_given,
+            translated_given,
             translated_stages,
             translated_fetch,
             mut variable_registry,
@@ -549,9 +545,9 @@ fn annotate_and_compile_query(
     Ok(executable_pipeline)
 }
 
-fn validate_given(
+fn validate_and_decode_given(
     given_executable: Option<Arc<GivenExecutable>>,
-    given_rows: Option<GivenRows>,
+    given_rows: Option<impl GivenRows>,
     variable_registry: &VariableRegistry,
 ) -> Result<Batch, Box<QueryError>> {
     match (given_executable, given_rows) {
@@ -559,22 +555,12 @@ fn validate_given(
         (Some(_), None) => Err(Box::new(QueryError::NoGivenRowsProvided {})),
         (None, None) => Ok(Batch::new_single_empty_row()),
         (Some(executable), Some(rows)) => {
-            let declared =
-                executable.variables().iter().map(|v| variable_registry.get_variable_name_or_unnamed(*v).to_owned()).collect();
-            if declared != rows.variables {
-                Err(Box::new(QueryError::GivenRowsVariablesDoesNotMatchDeclared {
-                    declared,
-                    given: rows.variables.clone(),
-                }))
-            } else {
-                Ok(rows.batch)
-            }
+            let declared_variable_positions = executable.variables().iter().enumerate().map(|(i, v)| {
+                (variable_registry.get_variable_name_or_unnamed(*v), VariablePosition::new(i as u32))
+            }).collect::<HashMap<_, _>>();
+            rows.into_batch_mapped(&declared_variable_positions).map_err(|decode_error| {
+                Box::new(QueryError::ErrorDecodingGivenRowEntry { typedb_source: Box::new(decode_error) })
+            })
         }
     }
-}
-
-#[derive(Debug)]
-pub struct GivenRows {
-    pub variables: Vec<String>,
-    pub batch: Batch,
 }

@@ -19,12 +19,12 @@ use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{
     error::QueryError,
-    query_manager::{GivenRows, QueryManager},
+    given_rows::GivenRows,
+    query_manager::QueryManager,
 };
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{Level, event};
 use typeql::query::SchemaQuery;
-
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},
     with_transaction_parts,
@@ -76,7 +76,7 @@ pub fn execute_write_query_in_schema(
     transaction: TransactionSchema<WALClient>,
     query_options: QueryOptions,
     pipeline: typeql::query::Pipeline,
-    given_rows: Option<GivenRows>,
+    given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
 ) -> (TransactionSchema<WALClient>, WriteQueryResult) {
@@ -122,7 +122,7 @@ pub fn execute_write_query_in_write(
     transaction: TransactionWrite<WALClient>,
     query_options: QueryOptions,
     pipeline: typeql::query::Pipeline,
-    given_rows: Option<GivenRows>,
+    given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
 ) -> (TransactionWrite<WALClient>, WriteQueryResult) {
@@ -172,7 +172,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     query_manager: &QueryManager,
     query_options: QueryOptions,
     pipeline: typeql::query::Pipeline,
-    given_rows: Option<GivenRows>,
+    given_rows: Option<impl GivenRows>,
     source_query: &str,
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {

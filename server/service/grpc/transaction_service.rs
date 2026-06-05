@@ -5,7 +5,6 @@
  */
 
 use std::{
-    borrow::Cow,
     collections::{HashMap, VecDeque},
     ops::{
         ControlFlow,
@@ -14,8 +13,8 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-
-use answer::{Thing, variable_value::VariableValue};
+use std::fmt::Formatter;
+use answer::{Thing};
 use bytes::util::HexBytesFormatter;
 use compiler::{VariablePosition, query_structure::PipelineStructure};
 use concept::{
@@ -49,7 +48,10 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::QueryOptions;
-use query::{error::QueryError, query_manager::GivenRows};
+use query::{
+    error::QueryError,
+    given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRowsDecoder},
+};
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
@@ -70,7 +72,7 @@ use typedb_protocol::{
 };
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
-
+use query::given_rows::GivenRows;
 use crate::{
     service::{
         TransactionType,
@@ -150,7 +152,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, Option<GivenRows>, String)>,
+    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, Option<GivenRowsGrpc>, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
@@ -835,16 +837,7 @@ impl TransactionService {
                 Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
             }
             typeql::query::QueryStructure::Pipeline(pipeline) => {
-                let given_rows = match given_rows_from_proto(query_req.given) {
-                    Ok(given_rows) => given_rows,
-                    Err(err) => {
-                        let response =
-                            ImmediateQueryResponse::non_fatal_err(TransactionServiceError::DecodingGivenRowsFailed {
-                                typedb_source: err,
-                            });
-                        return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
-                    }
-                };
+                let given_rows = query_req.given.map(GivenRowsGrpc);
                 #[allow(clippy::collapsible_else_if)]
                 if is_write_pipeline(&pipeline) {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
@@ -957,7 +950,7 @@ impl TransactionService {
         req_id: Uuid,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRows>,
+        given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) {
         debug_assert!(self.running_write_query.is_none());
@@ -1003,7 +996,7 @@ impl TransactionService {
         req_id: Uuid,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRows>,
+        given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) {
         let prefetch_size = query_options.prefetch_size;
@@ -1023,7 +1016,7 @@ impl TransactionService {
         &mut self,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRows>,
+        given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) -> Result<JoinHandle<(Transaction, WriteQueryResult)>, TransactionServiceError> {
         debug_assert!(self.running_write_query.is_none());
@@ -1245,7 +1238,7 @@ impl TransactionService {
         sender: Sender<StreamQueryResponse>,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRows>,
+        given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) -> JoinHandle<()> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
@@ -1862,56 +1855,63 @@ impl QueueOptions {
     }
 }
 
-fn given_rows_from_proto(
-    given_rows: Option<typedb_protocol::query::req::GivenRows>,
-) -> Result<Option<GivenRows>, ConceptDecodeError> {
-    use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
-    let Some(given_rows) = given_rows else { return Ok(None) };
-    let variables = given_rows.variables;
-    let rows = given_rows.rows;
-    let len = rows.len();
-    let width = rows.first().map(|row| row.entries.len() as u32).unwrap_or(0);
-    let mut batch = Batch::new(width, len);
-    rows.into_iter().try_for_each(|row| {
-        batch.append(|mut write_to| {
-            row.entries.into_iter().enumerate().try_for_each(|(column, entry)| {
-                let entry = entry.entry.expect("Missing proto file");
-                let value: VariableValue<'static> = match entry {
-                    EntryProto::Empty(_) => VariableValue::None,
-                    EntryProto::Value(value) => {
-                        VariableValue::Value(decode_value(value.value.expect("Missing proto field")).unwrap())
-                    }
-                    EntryProto::Thing(thing) => match thing.thing.expect("Missing proto field") {
-                        ThingProto::Entity(entity) => {
-                            let vertex = ObjectVertex::try_decode(entity.iid.as_slice()).ok_or_else(|| {
-                                ConceptDecodeError::CouldNotDecodeIIDAsEntity {
-                                    iid: HexBytesFormatter::owned(entity.iid),
-                                }
-                            })?;
-                            VariableValue::Thing(Thing::Entity(Entity::new(vertex)))
-                        }
-                        ThingProto::Relation(relation) => {
-                            let vertex = ObjectVertex::try_decode(relation.iid.as_slice()).ok_or_else(|| {
-                                ConceptDecodeError::CouldNotDecodeIIDAsRelation {
-                                    iid: HexBytesFormatter::owned(relation.iid),
-                                }
-                            })?;
-                            VariableValue::Thing(Thing::Relation(Relation::new(vertex)))
-                        }
-                        ThingProto::Attribute(attribute) => {
-                            let vertex = AttributeVertex::try_decode(attribute.iid.as_slice()).ok_or_else(|| {
-                                ConceptDecodeError::CouldNotDecodeIIDAsAttribute {
-                                    iid: HexBytesFormatter::owned(attribute.iid),
-                                }
-                            })?;
-                            VariableValue::Thing(Thing::Attribute(Attribute::new(vertex)))
-                        }
-                    },
-                };
-                write_to.set(VariablePosition::new(column as u32), value);
-                Ok::<_, ConceptDecodeError>(())
-            })
+pub struct GivenRowsGrpc(typedb_protocol::query::req::GivenRows);
+impl GivenRows for GivenRowsGrpc {
+    fn into_batch_mapped(self, declared_variable_positions: &HashMap<&str, VariablePosition>) -> Result<Batch, GivenRowDecodeError> {
+        query::given_rows::into_batch_mapped::<_, _, GivenRowsDecoderGrpc>(
+            declared_variable_positions,
+            self.0.variables,
+            self.0.rows.len(),
+            self.0.rows.into_iter().map(|row| row.entries),
+        )
+    }
+}
+impl std::fmt::Debug for GivenRowsGrpc {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GivenRowsGrpc[omitted]")
+    }
+}
+
+macro_rules! concept_decode_error {
+    ($variant:ident, $iid:expr) => {
+        GivenRowDecodeError::ConceptDecode {
+            typedb_source: Box::new(ConceptDecodeError::$variant {
+                iid: HexBytesFormatter::borrowed($iid.as_ref()).into_owned(),
+            }),
+        }
+    };
+}
+
+pub struct GivenRowsDecoderGrpc;
+impl GivenRowsDecoder<typedb_protocol::query::req::GivenEntry> for GivenRowsDecoderGrpc {
+
+    fn decode(what: typedb_protocol::query::req::GivenEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
+        use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
+        Ok(match what.entry.expect("Missing proto field") {
+            EntryProto::Empty(_) => GivenRowEntry::None,
+            EntryProto::Value(value) => {
+                GivenRowEntry::Value(decode_value(value.value.expect("Missing proto field")).unwrap())
+            }
+            EntryProto::Thing(thing) => match thing.thing.expect("Missing proto field") {
+                ThingProto::Entity(entity) => {
+                    let vertex = ObjectVertex::try_decode(entity.iid.as_slice()).ok_or_else(|| {
+                        concept_decode_error!(CouldNotDecodeIIDAsEntity, entity.iid)
+                    })?;
+                    GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
+                }
+                ThingProto::Relation(relation) => {
+                    let vertex = ObjectVertex::try_decode(relation.iid.as_slice()).ok_or_else(|| {
+                        concept_decode_error!(CouldNotDecodeIIDAsRelation, relation.iid)
+                    })?;
+                    GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
+                }
+                ThingProto::Attribute(attribute) => {
+                    let vertex = AttributeVertex::try_decode(attribute.iid.as_slice()).ok_or_else(|| {
+                        concept_decode_error!(CouldNotDecodeIIDAsAttribute, attribute.iid)
+                    })?;
+                    GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex)))
+                }
+            },
         })
-    })?;
-    Ok(Some(GivenRows { variables, batch }))
+    }
 }

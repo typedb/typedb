@@ -22,7 +22,6 @@ use encoding::value::{
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
-use typedb_protocol::migration::MigrationValue;
 
 pub(crate) fn encode_thing_concept(
     thing: &Thing,

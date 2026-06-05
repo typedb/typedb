@@ -181,7 +181,7 @@ async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &St
         given_rows.push(given_row);
     }
 
-    context.given_rows = Some(GivenRowsPayload(given_rows))
+    context.given_rows = Some(GivenRowsPayload { variables: var_list.0, rows: given_rows })
 }
 
 #[apply(generic_step)]

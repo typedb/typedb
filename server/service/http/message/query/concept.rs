@@ -17,15 +17,12 @@ use concept::{
     },
 };
 use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
+
 use error::unimplemented_feature;
-use ir::translation::literal::FromTypeQLLiteral;
 use resource::profile::StorageCounters;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
-use typeql::parse_value;
-
-use crate::service::http::error::HttpServiceError;
 // TODO: Should probably be merged with JSON from behaviour/steps/query_answer_context.rs.
 // Now, it's easier to have symmetry between two services, and we don't have the capacity to merge
 // these (BDDs will check if this code is correct)
@@ -334,21 +331,4 @@ pub fn encode_value_type(
         }
     };
     Ok(value_type)
-}
-
-pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, HttpServiceError> {
-    fn decode(to_parse: &str) -> Result<Value<'static>, HttpServiceError> {
-        let parsed = parse_value(to_parse).map_err(|typedb_source| {
-            HttpServiceError::ParsingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
-        })?;
-        Value::from_typeql_literal(&parsed, None).map_err(|typedb_source| {
-            HttpServiceError::TranslatingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
-        })
-    }
-    let as_str = value.value.to_string();
-    match value.value_type.as_str() {
-        "decimal" => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
-        "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
-        _ => decode(&as_str),
-    }
 }

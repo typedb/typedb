@@ -3,34 +3,36 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use std::collections::HashMap;
 use ::concept::{
     error::ConceptDecodeError,
     thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation},
 };
-use answer::{Thing, variable_value::VariableValue};
+use answer::Thing;
 use axum::response::{IntoResponse, Response};
 use bytes::util::HexBytesFormatter;
 use compiler::VariablePosition;
-use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
+use encoding::{
+    graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
+    value::value::Value,
+};
 use executor::batch::Batch;
 use ir::translation::parse_iid;
 use options::QueryOptions;
-use query::query_manager::GivenRows;
+use query::given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows, GivenRowsDecoder};
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_INCLUDE_STRUCTURE_HTTP,
     DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
-
+use ir::translation::literal::FromTypeQLLiteral;
 use crate::service::{
     AnswerType, QueryType,
     http::{
-        error::HttpServiceError,
         message::{
             analyze::structure::AnalyzedPipelineResponse,
             body::JsonBody,
-            query::concept::{AttributeResponse, EntityResponse, RelationResponse, ValueResponse, decode_value},
+            query::concept::{AttributeResponse, EntityResponse, RelationResponse, ValueResponse},
             transaction::TransactionOpenPayload,
         },
         transaction_service::QueryAnswer,
@@ -175,7 +177,7 @@ pub enum GivenEntryPayload {
 
 macro_rules! concept_decode_error {
     ($variant:ident, $iid:ident) => {
-        HttpServiceError::ConceptDecode {
+        GivenRowDecodeError::ConceptDecode {
             typedb_source: Box::new(ConceptDecodeError::$variant {
                 iid: HexBytesFormatter::borrowed($iid.as_ref()).into_owned(),
             }),
@@ -183,58 +185,73 @@ macro_rules! concept_decode_error {
     };
 }
 
-impl TryInto<GivenRows> for GivenRowsPayload {
-    type Error = HttpServiceError;
-    fn try_into(self) -> Result<GivenRows, Self::Error> {
-        let variables = self.variables;
-        let rows = self.rows;
-        let len = rows.len();
-        let width = rows.first().map(|row| row.len() as u32).unwrap_or(0);
-        let mut batch = Batch::new(width, len);
-        rows.into_iter().try_for_each(|row| {
-            batch.append(|mut write_to| {
-                row.into_iter().enumerate().try_for_each(|(column, entry)| {
-                    let value: VariableValue<'static> = match entry {
-                        GivenEntryPayload::Empty => VariableValue::None,
-                        GivenEntryPayload::Value(value) => VariableValue::Value(decode_value(value)?),
-                        GivenEntryPayload::Entity(entity) => {
-                            let iid = parse_iid(entity.iid.as_str()).map_err(|_: ()| {
-                                HttpServiceError::InvalidIIDFormatForGivenEntry { iid: entity.iid.clone().to_owned() }
-                            })?;
-                            let vertex = ObjectVertex::try_decode(&iid)
-                                .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, iid))?;
-                            if !vertex.is_entity() {
-                                return Err(concept_decode_error!(CouldNotDecodeIIDAsEntity, iid));
-                            }
-                            VariableValue::Thing(Thing::Entity(Entity::new(vertex)))
-                        }
-                        GivenEntryPayload::Relation(relation) => {
-                            let iid = parse_iid(relation.iid.as_str()).map_err(|_: ()| {
-                                HttpServiceError::InvalidIIDFormatForGivenEntry { iid: relation.iid.clone().to_owned() }
-                            })?;
-                            let vertex = ObjectVertex::try_decode(&iid)
-                                .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, iid))?;
-                            if !vertex.is_relation() {
-                                return Err(concept_decode_error!(CouldNotDecodeIIDAsRelation, iid));
-                            }
-                            VariableValue::Thing(Thing::Relation(Relation::new(vertex)))
-                        }
-                        GivenEntryPayload::Attribute(attribute) => {
-                            let iid = parse_iid(attribute.iid.as_str()).map_err(|_: ()| {
-                                HttpServiceError::InvalidIIDFormatForGivenEntry {
-                                    iid: attribute.iid.clone().to_owned(),
-                                }
-                            })?;
-                            let vertex = AttributeVertex::try_decode(&iid)
-                                .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, iid))?;
-                            VariableValue::Thing(Thing::Attribute(Attribute::new(vertex)))
-                        }
-                    };
-                    write_to.set(VariablePosition::new(column as u32), value);
-                    Ok::<_, HttpServiceError>(())
-                })
-            })
+impl GivenRows for GivenRowsPayload {
+    fn into_batch_mapped(self, declared_variable_positions: &HashMap<&str, VariablePosition>) -> Result<Batch, GivenRowDecodeError> {
+        query::given_rows::into_batch_mapped::<_, _, GivenRowsDecoderHttp>(
+            &declared_variable_positions,
+            self.variables,
+            self.rows.len(),
+            self.rows.into_iter(),
+        )
+    }
+}
+
+pub struct GivenRowsDecoderHttp;
+impl GivenRowsDecoder<GivenEntryPayload> for GivenRowsDecoderHttp {
+    fn decode(what: GivenEntryPayload) -> Result<GivenRowEntry, GivenRowDecodeError> {
+        Ok(match what {
+            GivenEntryPayload::Empty => GivenRowEntry::None,
+            GivenEntryPayload::Value(value) => GivenRowEntry::Value(decode_value(value)?),
+            GivenEntryPayload::Entity(entity) => {
+                let iid = parse_iid(entity.iid.as_str()).map_err(|_: ()| {
+                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: entity.iid.clone().to_owned() }
+                })?;
+                let vertex = ObjectVertex::try_decode(&iid)
+                    .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, iid))?;
+                if !vertex.is_entity() {
+                    return Err(concept_decode_error!(CouldNotDecodeIIDAsEntity, iid));
+                }
+                GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
+            }
+            GivenEntryPayload::Relation(relation) => {
+                let iid = parse_iid(relation.iid.as_str()).map_err(|_: ()| {
+                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: relation.iid.clone().to_owned() }
+                })?;
+                let vertex = ObjectVertex::try_decode(&iid)
+                    .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, iid))?;
+                if !vertex.is_relation() {
+                    return Err(concept_decode_error!(CouldNotDecodeIIDAsRelation, iid));
+                }
+                GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
+            }
+            GivenEntryPayload::Attribute(attribute) => {
+                let iid = parse_iid(attribute.iid.as_str()).map_err(|_: ()| {
+                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry {
+                        iid: attribute.iid.clone().to_owned(),
+                    }
+                })?;
+                let vertex = AttributeVertex::try_decode(&iid)
+                    .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, iid))?;
+                GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex)))
+            }
+        })
+    }
+}
+
+pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDecodeError> {
+
+    fn decode(to_parse: &str) -> Result<Value<'static>, GivenRowDecodeError> {
+        let parsed = typeql::parse_value(to_parse).map_err(|typedb_source| {
+            GivenRowDecodeError::ParsingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
         })?;
-        Ok(GivenRows { variables, batch })
+        Value::from_typeql_literal(&parsed, None).map_err(|typedb_source| {
+            GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
+        })
+    }
+    let as_str = value.value.to_string();
+    match value.value_type.as_str() {
+        "decimal" => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
+        "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
+        _ => decode(&as_str),
     }
 }

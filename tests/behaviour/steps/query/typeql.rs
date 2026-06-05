@@ -36,7 +36,8 @@ use futures::StreamExt;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use query::{analyse::AnalysedQuery, error::QueryError, query_manager::GivenRows};
+use query::{analyse::AnalysedQuery, error::QueryError, given_rows::GivenRowsSimple};
+use query::given_rows::GivenRowEntry;
 use resource::profile::StorageCounters;
 use server::service::http::message::analyze::{
     annotations::bdd::{
@@ -85,7 +86,7 @@ fn row_answers_to_string(rows: &[HashMap<String, VariableValue<'static>>]) -> St
 fn execute_read_query(
     context: &Context,
     query: typeql::Query,
-    given_rows: Option<GivenRows>,
+    given_rows: Option<GivenRowsSimple>,
     source_query: &str,
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
@@ -137,7 +138,7 @@ fn execute_read_query(
 fn execute_write_query(
     context: &mut Context,
     query: typeql::Query,
-    given_rows: Option<GivenRows>,
+    given_rows: Option<GivenRowsSimple>,
     source_query: &str,
 ) -> Result<QueryAnswer, BehaviourTestExecutionError> {
     if matches!(context.active_transaction.as_ref().unwrap(), Read(_)) {
@@ -238,7 +239,7 @@ fn execute_analyze(
     })
 }
 
-fn may_take_given_rows(context: &mut Context, with_given: params::WithGiven) -> Option<GivenRows> {
+fn may_take_given_rows(context: &mut Context, with_given: params::WithGiven) -> Option<GivenRowsSimple> {
     (with_given == params::WithGiven::True).then(|| context.take_given_rows().expect("Expected given rows available"))
 }
 
@@ -248,17 +249,13 @@ async fn given_rows(context: &mut Context, step: &Step) {
     let table = step.table.as_ref().expect("Expected table for given rows");
     let length = table.rows.len();
     let width = table.rows.first().unwrap().len() as u32;
-    let mut given_rows = GivenRows::new(width, length);
-    // Ignore the first row as a documentational header
-    table.rows[1..].iter().for_each(|row| {
-        given_rows.append(|mut into_row| {
-            row.iter().map(parse_query_given_row_entry).enumerate().for_each(|(i, value)| {
-                into_row.set(VariablePosition::new(i as u32), value);
-            });
-        });
-    });
+    // First row is the variables
+    let variables = table.rows[0].clone();
+    let rows = table.rows[1..].iter().map(|row| {
+        row.iter().map(parse_query_given_row_entry).collect()
+    }).collect();
 
-    context.given_rows = Some(given_rows)
+    context.given_rows = Some(GivenRowsSimple { variables, rows })
 }
 
 #[apply(generic_step)]
@@ -343,7 +340,7 @@ async fn typeql_read_query(
     may_error.check_logic(result); // we don't close read transactions with logical errors
 }
 
-fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str, given_rows: Option<GivenRows>) {
+fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str, given_rows: Option<GivenRowsSimple>) {
     let query = typeql::parse_query(query_str).unwrap();
     context.query_answer = match execute_read_query(context, query, given_rows, query_str) {
         Ok(answers) => Some(answers),
@@ -778,24 +775,20 @@ fn normalize_functor_for_compare(functor: &str) -> String {
     normalized
 }
 
-fn parse_query_given_row(row: &[String]) -> Vec<VariableValue<'static>> {
-    row.iter().map(parse_query_given_row_entry).collect()
-}
-
-fn parse_query_given_row_entry(entry: &String) -> VariableValue<'static> {
+fn parse_query_given_row_entry(entry: &String) -> GivenRowEntry {
     fn hex_to_u64(hex: &str) -> u64 {
         u64::from_str_radix(hex, 16).expect("Bad hex in iid: {hex}")
     }
 
     let mut parts = entry.split(":");
     match parts.next().unwrap() {
-        "none" => VariableValue::None,
+        "none" => GivenRowEntry::None,
         "value" => {
             let value_type_str = parts.next().expect("value:<value-type>:<value>");
             let value_str = parts.next().expect("value:<value-type>:<value>");
             let expected_value_type = parse_value_type(value_type_str);
             let value = params::Value::from_str(value_str).unwrap().into_typedb(expected_value_type);
-            VariableValue::Value(value)
+            GivenRowEntry::Value(value)
         }
         "iid" => {
             let expected = "Expected iid:<kind>:<typeid-hex>:<instanceid-hex>";
@@ -824,7 +817,7 @@ fn parse_query_given_row_entry(entry: &String) -> VariableValue<'static> {
                 }
                 other => panic!("Invalid kind: {other}"),
             };
-            VariableValue::Thing(thing)
+            GivenRowEntry::Thing(thing)
         }
         other => panic!("Invalid entry type: {other}"),
     }

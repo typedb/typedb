@@ -15,7 +15,7 @@ use executor::pipeline::{PipelineExecutionError, pipeline::PipelineError};
 use function::FunctionError;
 use ir::RepresentationError;
 
-use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
+use crate::{define::DefineError, given_rows::GivenRowDecodeError, redefine::RedefineError, undefine::UndefineError};
 
 typedb_error! {
     pub QueryError(component = "Query execution", prefix = "QEX") {
@@ -38,11 +38,10 @@ typedb_error! {
         PipelineStagesLimitExceeded(18, "Query pipeline has {actual} stages, which exceeds the maximum allowed {max}.", source_query: String, actual: usize, max: usize),
         NoGivenRowsProvided(21, "The query contains a given stage, but no given rows were provided."),
         UnexpectedGivenRowsProvided(22, "The query contains no given stage, but given rows were provided."),
-        GivenRowsVariablesDoesNotMatchDeclared(
+        ErrorDecodingGivenRowEntry(
             23,
-            "The variables of the given rows provided does not match that declared in the query.",
-            declared: Vec<String>,
-            given: Vec<String>,
+            "An error occured while decoding the given rows.",
+            typedb_source: Box<GivenRowDecodeError>,
         ),
     }
 }
