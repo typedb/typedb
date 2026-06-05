@@ -9,6 +9,13 @@ REM Linux/macOS still run these tests under bazel.
 
 CALL refreshenv
 
+cargo build --profile=release
+if %errorlevel% neq 0 exit /b %errorlevel%
+cargo build --profile=release -p typedb_admin_bin
+if %errorlevel% neq 0 exit /b %errorlevel%
+copy /Y target\release\typedb_server_bin.exe .\ >nul
+copy /Y target\release\typedb_admin_bin.exe .\ >nul
+
 bazel --output_base=C:\b --windows_enable_symlinks build --config=ci --enable_runfiles //:assemble-all-windows-x86_64-zip
 if %errorlevel% neq 0 exit /b %errorlevel%
 
