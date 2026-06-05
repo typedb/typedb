@@ -177,7 +177,7 @@ async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &St
             .0
             .iter()
             .map(|v| serde_json::from_value(data.get(v).cloned().unwrap()).unwrap())
-            .collect::<Vec<GivenEntryPayload>>();
+            .collect::<Vec<Option<GivenEntryPayload>>>();
         given_rows.push(given_row);
     }
 
@@ -185,24 +185,26 @@ async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &St
 }
 
 #[apply(generic_step)]
-#[step(expr = "{token_mode}typeql schema query{typeql_may_error}")]
-#[step(expr = "{token_mode}typeql write query{typeql_may_error}")]
-#[step(expr = "{token_mode}typeql read query{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql schema query{with_given}{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql write query{with_given}{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql read query{with_given}{typeql_may_error}")]
 pub async fn typeql_query(
     context: &mut Context,
     token_mode: TokenMode,
+    with_given: WithGiven,
     may_error: params::TypeQLMayError,
     step: &Step,
 ) {
     context.randomize_auth_token_if_needed(token_mode);
     context.cleanup_answers().await;
+    let given_rows = if with_given == WithGiven::True { context.given_rows.take() } else { None };
     may_error.check(
         transactions_query(
             context.http_client(),
             context.auth_token_by_mode(token_mode),
             context.transaction(),
             &context.query_options,
-            None,
+            given_rows,
             step.docstring().unwrap(),
         )
         .await,

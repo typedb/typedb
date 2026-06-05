@@ -162,14 +162,12 @@ impl IntoResponse for QueryAnswer {
 #[serde(rename_all = "camelCase")]
 pub struct GivenRowsPayload {
     pub variables: Vec<String>,
-    pub rows: Vec<Vec<GivenEntryPayload>>,
+    pub rows: Vec<Vec<Option<GivenEntryPayload>>>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "kind")]
 pub enum GivenEntryPayload {
-    #[default]
-    Empty,
     Entity(EntityResponse),
     Relation(RelationResponse),
     Attribute(AttributeResponse),
@@ -201,42 +199,45 @@ impl GivenRows for GivenRowsPayload {
 }
 
 pub struct GivenRowsDecoderHttp;
-impl GivenRowsDecoder<GivenEntryPayload> for GivenRowsDecoderHttp {
-    fn decode(what: GivenEntryPayload) -> Result<GivenRowEntry, GivenRowDecodeError> {
-        Ok(match what {
-            GivenEntryPayload::Empty => GivenRowEntry::None,
-            GivenEntryPayload::Value(value) => GivenRowEntry::Value(decode_value(value)?),
-            GivenEntryPayload::Entity(entity) => {
-                let iid = parse_iid(entity.iid.as_str()).map_err(|_: ()| {
-                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: entity.iid.clone().to_owned() }
-                })?;
-                let vertex = ObjectVertex::try_decode(&iid)
-                    .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, iid))?;
-                if !vertex.is_entity() {
-                    return Err(concept_decode_error!(CouldNotDecodeIIDAsEntity, iid));
+impl GivenRowsDecoder<Option<GivenEntryPayload>> for GivenRowsDecoderHttp {
+    fn decode(what: Option<GivenEntryPayload>) -> Result<GivenRowEntry, GivenRowDecodeError> {
+        if let Some(what) = what {
+            match what {
+                GivenEntryPayload::Value(value) => Ok(GivenRowEntry::Value(decode_value(value)?)),
+                GivenEntryPayload::Entity(entity) => {
+                    let iid = parse_iid(entity.iid.as_str()).map_err(|_: ()| {
+                        GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: entity.iid.clone().to_owned() }
+                    })?;
+                    let vertex = ObjectVertex::try_decode(&iid)
+                        .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, iid))?;
+                    if !vertex.is_entity() {
+                        return Err(concept_decode_error!(CouldNotDecodeIIDAsEntity, iid));
+                    }
+                    Ok(GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex))))
                 }
-                GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
-            }
-            GivenEntryPayload::Relation(relation) => {
-                let iid = parse_iid(relation.iid.as_str()).map_err(|_: ()| {
-                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: relation.iid.clone().to_owned() }
-                })?;
-                let vertex = ObjectVertex::try_decode(&iid)
-                    .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, iid))?;
-                if !vertex.is_relation() {
-                    return Err(concept_decode_error!(CouldNotDecodeIIDAsRelation, iid));
+                GivenEntryPayload::Relation(relation) => {
+                    let iid = parse_iid(relation.iid.as_str()).map_err(|_: ()| {
+                        GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: relation.iid.clone().to_owned() }
+                    })?;
+                    let vertex = ObjectVertex::try_decode(&iid)
+                        .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, iid))?;
+                    if !vertex.is_relation() {
+                        return Err(concept_decode_error!(CouldNotDecodeIIDAsRelation, iid));
+                    }
+                    Ok(GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex))))
                 }
-                GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
+                GivenEntryPayload::Attribute(attribute) => {
+                    let iid = parse_iid(attribute.iid.as_str()).map_err(|_: ()| {
+                        GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: attribute.iid.clone().to_owned() }
+                    })?;
+                    let vertex = AttributeVertex::try_decode(&iid)
+                        .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, iid))?;
+                    Ok(GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex))))
+                }
             }
-            GivenEntryPayload::Attribute(attribute) => {
-                let iid = parse_iid(attribute.iid.as_str()).map_err(|_: ()| {
-                    GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: attribute.iid.clone().to_owned() }
-                })?;
-                let vertex = AttributeVertex::try_decode(&iid)
-                    .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, iid))?;
-                GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex)))
-            }
-        })
+        } else {
+            Ok(GivenRowEntry::None)
+        }
     }
 }
 
