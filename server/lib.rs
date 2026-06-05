@@ -524,8 +524,8 @@ impl Server {
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
         tokio::spawn(async move {
-            let first = Self::wait_for_shutdown_signal().await;
-            println!("\nReceived {first}. Initiating shutdown...");
+            let initial_signal = Self::wait_for_shutdown_signal().await;
+            println!("\nReceived {initial_signal}. Initiating shutdown...");
             shutdown_sender.send(()).expect("Expected a successful shutdown signal");
 
             tokio::spawn(Self::forced_shutdown_handler());
@@ -533,8 +533,8 @@ impl Server {
     }
 
     async fn forced_shutdown_handler() {
-        let second = Self::wait_for_shutdown_signal().await;
-        println!("\nReceived {second}. Forcing shutdown...");
+        let forced_signal = Self::wait_for_shutdown_signal().await;
+        println!("\nReceived {forced_signal}. Forcing shutdown...");
         std::process::exit(1);
     }
 
