@@ -10,7 +10,7 @@ use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::Credential;
 use tonic::{Request, Response, Status};
 
-use crate::{admin_proto, authentication::Accessor, state::ServerState};
+use crate::{admin_proto, authentication::Accessor, service::grpc::IntoGrpcStatus, state::ServerState};
 
 #[derive(Debug, Clone)]
 pub struct AdminService {
@@ -44,7 +44,7 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         &self,
         _request: Request<admin_proto::server_status::Req>,
     ) -> Result<Response<admin_proto::server_status::Res>, Status> {
-        let status = self.server_state.servers().status().await.map_err(|err| Status::internal(format!("{err:?}")))?;
+        let status = self.server_state.servers().status().await.map_err(IntoGrpcStatus::into_status)?;
         let grpc = admin_proto::EndpointStatus {
             listen_address: status.grpc_listen_address().unwrap_or_default().to_string(),
             advertise_address: status.grpc_advertise_address().map(str::to_string),
@@ -76,7 +76,7 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
             .users()
             .update(accessor, &username, None, Some(credential))
             .await
-            .map_err(|err| Status::internal(format!("{err:?}")))?;
+            .map_err(IntoGrpcStatus::into_status)?;
 
         Ok(Response::new(admin_proto::user_reset_password::Res {}))
     }

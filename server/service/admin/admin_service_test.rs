@@ -299,10 +299,5 @@ async fn user_reset_password_rejects_unknown_user() {
         })
         .await
         .expect_err("unknown user should be rejected");
-    assert_eq!(err.code(), tonic::Code::Internal);
-    let message = err.message();
-    assert!(
-        message.contains("SRV4") || message.contains("User not found"),
-        "expected user-not-found in error message, got: {message}",
-    );
+    assert_eq!(err.code(), tonic::Code::NotFound);
 }
