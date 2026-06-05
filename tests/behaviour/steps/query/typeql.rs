@@ -253,7 +253,7 @@ async fn given_rows(context: &mut Context, step: &Step) {
     let length = table.rows.len();
     let width = table.rows.first().unwrap().len() as u32;
     // First row is the variables
-    let variables = table.rows[0].clone();
+    let variables = table.rows[0].iter().map(|s| s.split(":").next().unwrap().to_owned()).collect();
     let rows = table.rows[1..].iter().map(|row| row.iter().map(parse_query_given_row_entry).collect()).collect();
 
     context.given_rows = Some(GivenRowsSimple { variables, rows })

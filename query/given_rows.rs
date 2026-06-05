@@ -51,7 +51,6 @@ where
                 .ok_or_else(|| GivenRowDecodeError::GivenRowsVariableWasNotDeclared { variable: name.to_owned() })
         })
         .collect::<Result<Vec<VariablePosition>, GivenRowDecodeError>>()?;
-    // todo!("USE MAPPING");
 
     let width = declared_variable_positions.len() as u32;
     let mut batch = Batch::new(width, row_count);
