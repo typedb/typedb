@@ -17,6 +17,10 @@ build:
       command: |
         sudo apt update
         sudo apt install -y libclang-dev
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel build --config=ci --build_tag_filters=-manual_build //... 
         bazel run --config=ci @typedb_dependencies//tool/checkstyle:test-coverage
@@ -40,6 +44,8 @@ build:
 #    cargo-toml-sync:
 #      image: typedb-ubuntu-22.04
 #      command: |
+#        export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+#        export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
 #        tool/rust/sync.sh
 #        git add .
 #        git diff --exit-code HEAD || {
@@ -51,6 +57,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //common/cache:test_crate_cache --test_output=streamed
         bazel test --config=ci //common/concurrency:test_crate_concurrency --test_output=streamed
@@ -74,6 +84,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci $(bazel query 'kind(rust_test, //compiler/tests/...)') --test_output=streamed
         bazel test --config=ci $(bazel query 'kind(rust_test, //concept/tests/...)') --test_output=streamed
@@ -94,6 +108,8 @@ build:
 #      image: typedb-ubuntu-22.04
 #      dependencies: [ build ]
 #      command: |
+#        export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+#        export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
 #        bazel test --config=ci //storage/tests/... --test_output=streamed
 
@@ -101,6 +117,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/connection:test_connection --test_output=streamed  --test_arg="--test-threads=1"
 
@@ -108,6 +128,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
 
@@ -115,6 +139,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
 
@@ -122,6 +150,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
 
@@ -129,6 +161,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_analyze"
 
@@ -136,6 +172,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
 
@@ -143,6 +183,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
 
@@ -150,6 +194,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/assembly:test_assembly
 
@@ -164,6 +212,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/assembly:test_fail_points --test_arg="--test-threads=1" --test_arg="test_fail_point_always" --test_output=streamed
 
@@ -171,6 +223,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/assembly:test_fail_points --test_arg="--test-threads=1" --test_arg="test_fail_point_chance" --test_output=streamed
 
@@ -178,6 +234,10 @@ build:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
 
