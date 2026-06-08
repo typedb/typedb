@@ -1484,7 +1484,7 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let function_name = &input_row[self.argument_positions[1].as_usize()];
+        let function_name = &input_row[self.argument_positions[0].as_usize()];
         let function = context
             .function_manager()
             .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
