@@ -23,14 +23,16 @@ use concept::{
         annotation::{Annotation, AnnotationCategory, AnnotationMeta},
         attribute_type::AttributeTypeAnnotation,
         entity_type::EntityTypeAnnotation,
-        relates::RelatesAnnotation,
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
+        relates::{Relates, RelatesAnnotation},
         relation_type::RelationTypeAnnotation,
-        sub::Sub,
+        sub::{Sub, SubAnnotation},
     },
 };
 use encoding::value::value::Value;
 use error::{UnimplementedFeature, unimplemented_feature};
-use ir::pattern::expression::BuiltinConceptFunctionID;
+use ir::{pattern::expression::BuiltinConceptFunctionID, translation::function::FunctionAnnotation};
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
 use resource::profile::StepProfile;
@@ -1046,23 +1048,25 @@ impl BuiltinCallExecutor {
 
             BuiltinConceptFunctionID::GetOwnsDoc => self.execute_get_owns_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetOwnsMeta => self.execute_get_owns_meta(context, input_row, output),
-            BuiltinConceptFunctionID::GetOwnsAllMeta => todo!(),
+            BuiltinConceptFunctionID::GetOwnsAllMeta => self.execute_get_owns_all_meta(context, input_row, output),
 
             BuiltinConceptFunctionID::GetPlaysDoc => self.execute_get_plays_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetPlaysMeta => self.execute_get_plays_meta(context, input_row, output),
-            BuiltinConceptFunctionID::GetPlaysAllMeta => todo!(),
+            BuiltinConceptFunctionID::GetPlaysAllMeta => self.execute_get_plays_all_meta(context, input_row, output),
 
             BuiltinConceptFunctionID::GetRelatesDoc => self.execute_get_relates_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetRelatesMeta => self.execute_get_relates_meta(context, input_row, output),
-            BuiltinConceptFunctionID::GetRelatesAllMeta => todo!(),
+            BuiltinConceptFunctionID::GetRelatesAllMeta => {
+                self.execute_get_relates_all_meta(context, input_row, output)
+            }
 
             BuiltinConceptFunctionID::GetSubDoc => self.execute_get_sub_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetSubMeta => self.execute_get_sub_meta(context, input_row, output),
-            BuiltinConceptFunctionID::GetSubAllMeta => todo!(),
+            BuiltinConceptFunctionID::GetSubAllMeta => self.execute_get_sub_all_meta(context, input_row, output),
 
             BuiltinConceptFunctionID::GetFunDoc => self.execute_get_fun_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetFunMeta => self.execute_get_fun_meta(context, input_row, output),
-            BuiltinConceptFunctionID::GetFunAllMeta => todo!(),
+            BuiltinConceptFunctionID::GetFunAllMeta => self.execute_get_fun_all_meta(context, input_row, output),
 
             | BuiltinConceptFunctionID::GetStructDoc
             | BuiltinConceptFunctionID::GetStructMeta
@@ -1241,39 +1245,6 @@ impl BuiltinCallExecutor {
         Ok(())
     }
 
-    fn execute_get_all_meta(
-        &self,
-        context: &ExecutionContext<impl ReadableSnapshot>,
-        input_row: &MaybeOwnedRow<'_>,
-        output: &mut FixedBatch,
-    ) -> Result<(), Box<ConceptReadError>> {
-        let key_return_position = self.assignment_positions[0];
-        let value_return_position = self.assignment_positions[1];
-        let metas = get_type_all_meta(context, &input_row[self.argument_positions[0].as_usize()])?;
-        if metas.is_empty() {
-            return Ok(());
-        } else if key_return_position.is_none() && value_return_position.is_none() {
-            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-            return Ok(());
-        }
-
-        let (mut row, multiplicity, provenance) = row_into_parts_widened(
-            input_row,
-            Ord::max(key_return_position, value_return_position).unwrap_or(VariablePosition::new(0)),
-        );
-        for (key, value) in metas {
-            if let Some(key_return_position) = key_return_position {
-                row[key_return_position.as_usize()] = key;
-            }
-            if let Some(value_return_position) = value_return_position {
-                row[value_return_position.as_usize()] = value;
-            }
-            let output_row = MaybeOwnedRow::new_owned(row.clone(), multiplicity, provenance);
-            output.append(|mut row| row.copy_from_row(output_row));
-        }
-        Ok(())
-    }
-
     fn execute_get_owns_meta(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot>,
@@ -1369,6 +1340,85 @@ impl BuiltinCallExecutor {
         Ok(())
     }
 
+    fn execute_get_all_meta(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let metas = get_type_all_meta(context, &input_row[self.argument_positions[0].as_usize()])?;
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    }
+
+    fn execute_get_owns_all_meta(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let owns = get_owns(
+            context,
+            &input_row[self.argument_positions[0].as_usize()],
+            &input_row[self.argument_positions[1].as_usize()],
+        )?;
+        let metas = get_owns_all_meta(context, owns)?;
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    }
+
+    fn execute_get_plays_all_meta(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let plays = get_plays(
+            context,
+            &input_row[self.argument_positions[0].as_usize()],
+            &input_row[self.argument_positions[1].as_usize()],
+        )?;
+        let metas = get_plays_all_meta(context, plays)?;
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    }
+
+    fn execute_get_relates_all_meta(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let relates = get_relates(
+            context,
+            &input_row[self.argument_positions[0].as_usize()],
+            &input_row[self.argument_positions[1].as_usize()],
+        )?;
+        let metas = get_relates_all_meta(context, relates)?;
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    }
+
+    fn execute_get_sub_all_meta(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let metas = get_subtype_all_meta(
+            context,
+            &input_row[self.argument_positions[0].as_usize()],
+            &input_row[self.argument_positions[1].as_usize()],
+        )?;
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    }
+
     fn execute_get_fun_doc(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot>,
@@ -1425,6 +1475,62 @@ impl BuiltinCallExecutor {
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
     }
+
+    fn execute_get_fun_all_meta(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let function_name = &input_row[self.argument_positions[1].as_usize()];
+        let function = context
+            .function_manager()
+            .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
+            .unwrap()
+            .unwrap();
+        let metas = context
+            .function_manager()
+            .get_function_annotations(&**context.snapshot(), function)?
+            .into_iter()
+            .filter_map(|anno| match anno {
+                FunctionAnnotation::Meta(annotation_meta) => Some(annotation_meta),
+                _ => None,
+            })
+            .collect_vec();
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    }
+}
+
+fn put_all_metas_into_batch(
+    input_row: &MaybeOwnedRow<'_>,
+    output: &mut FixedBatch,
+    key_return_position: Option<VariablePosition>,
+    value_return_position: Option<VariablePosition>,
+    metas: Vec<AnnotationMeta>,
+) -> Result<(), Box<ConceptReadError>> {
+    if metas.is_empty() {
+        return Ok(());
+    } else if key_return_position.is_none() && value_return_position.is_none() {
+        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        return Ok(());
+    }
+
+    let (mut row, multiplicity, provenance) =
+        row_into_parts_widened(input_row, Ord::max(key_return_position, value_return_position).unwrap());
+    for anno in metas {
+        let (key, value) = meta_to_tuple(anno);
+        if let Some(key_return_position) = key_return_position {
+            row[key_return_position.as_usize()] = key;
+        }
+        if let Some(value_return_position) = value_return_position {
+            row[value_return_position.as_usize()] = value;
+        }
+        let output_row = MaybeOwnedRow::new_owned(row.clone(), multiplicity, provenance);
+        output.append(|mut row| row.copy_from_row(output_row));
+    }
+    Ok(())
 }
 
 fn row_into_parts_widened(
@@ -1473,7 +1579,7 @@ fn get_relates(
     context: &ExecutionContext<impl ReadableSnapshot>,
     relation: &VariableValue<'_>,
     role: &VariableValue<'_>,
-) -> Result<concept::type_::relates::Relates, Box<ConceptReadError>> {
+) -> Result<Relates, Box<ConceptReadError>> {
     let Type::Relation(relation) = relation.as_type() else { todo!("Error") };
     let Type::RoleType(role) = role.as_type() else { todo!("Error") };
     let relates = relation.try_get_relates_role(&**context.snapshot(), context.type_manager(), role)?;
@@ -1591,64 +1697,6 @@ fn get_type_meta(
     }
 }
 
-fn get_type_all_meta(
-    context: &ExecutionContext<impl ReadableSnapshot>,
-    ty: &VariableValue<'_>,
-) -> Result<Vec<(VariableValue<'static>, VariableValue<'static>)>, Box<ConceptReadError>> {
-    let snapshot = &**context.snapshot();
-    fn meta_to_tuple(meta: AnnotationMeta) -> (VariableValue<'static>, VariableValue<'static>) {
-        (
-            VariableValue::Value(Value::String(Cow::Owned(meta.key))),
-            VariableValue::Value(Value::String(Cow::Owned(meta.value))),
-        )
-    }
-    match ty.as_type() {
-        Type::Entity(ty) => Ok(context
-            .type_manager()
-            .get_entity_type_annotations_declared(snapshot, ty)?
-            .iter()
-            .filter_map(|anno| match anno {
-                EntityTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                _ => None,
-            })
-            .map(meta_to_tuple)
-            .collect()),
-        Type::Relation(ty) => Ok(context
-            .type_manager()
-            .get_relation_type_annotations_declared(snapshot, ty)?
-            .iter()
-            .filter_map(|anno| match anno {
-                RelationTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                _ => None,
-            })
-            .map(meta_to_tuple)
-            .collect()),
-        Type::Attribute(ty) => Ok(context
-            .type_manager()
-            .get_attribute_type_annotations_declared(snapshot, ty)?
-            .iter()
-            .filter_map(|anno| match anno {
-                AttributeTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                _ => None,
-            })
-            .map(meta_to_tuple)
-            .collect()),
-        Type::RoleType(ty) => {
-            let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
-            Ok(context
-                .type_manager()
-                .get_relates_annotations_declared(snapshot, relates)?
-                .iter()
-                .filter_map(|anno| match anno {
-                    RelatesAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                    _ => None,
-                })
-                .map(meta_to_tuple)
-                .collect())
-        }
-    }
-}
-
 fn get_subtype_meta(
     context: &ExecutionContext<impl ReadableSnapshot>,
     key: &VariableValue<'_>,
@@ -1702,4 +1750,150 @@ fn unwrap_meta_value(meta: Option<impl Into<Annotation>>) -> Result<VariableValu
         None => Ok(VariableValue::Value(Value::String(Cow::default()))),
         Some(_) => todo!("Error"),
     }
+}
+
+fn get_type_all_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    ty: &VariableValue<'_>,
+) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    match ty.as_type() {
+        Type::Entity(ty) => Ok(context
+            .type_manager()
+            .get_entity_type_annotations_declared(snapshot, ty)?
+            .iter()
+            .filter_map(|anno| match anno {
+                EntityTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                _ => None,
+            })
+            .collect()),
+        Type::Relation(ty) => Ok(context
+            .type_manager()
+            .get_relation_type_annotations_declared(snapshot, ty)?
+            .iter()
+            .filter_map(|anno| match anno {
+                RelationTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                _ => None,
+            })
+            .collect()),
+        Type::Attribute(ty) => Ok(context
+            .type_manager()
+            .get_attribute_type_annotations_declared(snapshot, ty)?
+            .iter()
+            .filter_map(|anno| match anno {
+                AttributeTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                _ => None,
+            })
+            .collect()),
+        Type::RoleType(ty) => {
+            let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
+            get_relates_all_meta(context, relates)
+        }
+    }
+}
+
+fn get_plays_all_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    plays: Plays,
+) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
+    Ok(context
+        .type_manager()
+        .get_plays_annotations_declared(&**context.snapshot(), plays)?
+        .iter()
+        .filter_map(|anno| match anno {
+            PlaysAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+            _ => None,
+        })
+        .collect())
+}
+
+fn get_owns_all_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    owns: Owns,
+) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
+    Ok(context
+        .type_manager()
+        .get_owns_annotations_declared(&**context.snapshot(), owns)?
+        .iter()
+        .filter_map(|anno| match anno {
+            OwnsAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+            _ => None,
+        })
+        .collect())
+}
+
+fn get_relates_all_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    relates: Relates,
+) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
+    Ok(context
+        .type_manager()
+        .get_relates_annotations_declared(&**context.snapshot(), relates)?
+        .iter()
+        .filter_map(|anno| match anno {
+            RelatesAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+            _ => None,
+        })
+        .collect())
+}
+
+fn get_subtype_all_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    subtype: &VariableValue<'_>,
+    supertype: &VariableValue<'_>,
+) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let type_manager = context.type_manager();
+    match subtype.as_type() {
+        Type::Entity(subtype) => {
+            let Type::Entity(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                todo!("Error")
+            }
+            Ok(type_manager
+                .get_sub_entity_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .iter()
+                .filter_map(|anno| match anno {
+                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .collect_vec())
+        }
+        Type::Relation(subtype) => {
+            let Type::Relation(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                todo!("Error")
+            }
+            Ok(type_manager
+                .get_sub_relation_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .iter()
+                .filter_map(|anno| match anno {
+                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .collect_vec())
+        }
+        Type::Attribute(subtype) => {
+            let Type::Attribute(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                todo!("Error")
+            }
+            Ok(type_manager
+                .get_sub_attribute_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .iter()
+                .filter_map(|anno| match anno {
+                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .collect_vec())
+        }
+        Type::RoleType(_) => todo!(),
+    }
+}
+
+fn meta_to_tuple(meta: AnnotationMeta) -> (VariableValue<'static>, VariableValue<'static>) {
+    (
+        VariableValue::Value(Value::String(Cow::Owned(meta.key))),
+        VariableValue::Value(Value::String(Cow::Owned(meta.value))),
+    )
 }
