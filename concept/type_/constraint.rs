@@ -50,7 +50,7 @@ macro_rules! unwrap_constraint_description_methods {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum ConstraintCategory {
     Abstract,
     Distinct,
@@ -61,7 +61,7 @@ pub enum ConstraintCategory {
     Range,
     Values,
     Doc,
-    Meta,
+    Meta(String),
 }
 
 impl fmt::Display for ConstraintCategory {
@@ -82,7 +82,7 @@ impl fmt::Debug for ConstraintCategory {
             Self::Range => write!(f, "{}", AnnotationCategory::Range),
             Self::Values => write!(f, "{}", AnnotationCategory::Values),
             Self::Doc => write!(f, "{}", AnnotationCategory::Doc),
-            Self::Meta => write!(f, "{}", AnnotationCategory::Meta(String::from("?"))), // FIXME
+            Self::Meta(key) => write!(f, "{}", AnnotationCategory::Meta(key.clone())),
         }
     }
 }
@@ -137,7 +137,7 @@ impl ConstraintDescription {
             ConstraintDescription::Range(_) => ConstraintCategory::Range,
             ConstraintDescription::Values(_) => ConstraintCategory::Values,
             ConstraintDescription::Doc(_) => ConstraintCategory::Doc,
-            ConstraintDescription::Meta(_) => ConstraintCategory::Meta,
+            ConstraintDescription::Meta(meta) => ConstraintCategory::Meta(meta.key.clone()),
         }
     }
 
