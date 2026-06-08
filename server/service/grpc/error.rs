@@ -129,29 +129,24 @@ fn server_state_error_to_status(
     proto_error: typedb_protocol::Error,
 ) -> Status {
     use crate::error::ErrorResponseCategory;
-    let (code, message, extra_metadata) = match category {
+    let (code, message, metadata) = match category {
         ErrorResponseCategory::Redirect { grpc_address, .. } => match grpc_address {
             Some(address) => {
-                let mut metadata = HashMap::new();
-                metadata.insert("address".to_string(), address);
-                (Code::Unavailable, "Redirected", Some(("REDIRECT", metadata)))
+                (Code::Unavailable, "Redirected", HashMap::from([("redirect_address".to_string(), address)]))
             }
-            None => (Code::Unavailable, "Unavailable", None),
+            None => (Code::Unavailable, "Unavailable", HashMap::new()),
         },
-        ErrorResponseCategory::NotFound => (Code::NotFound, "Not found", None),
-        ErrorResponseCategory::Unauthenticated => (Code::Unauthenticated, "Unauthenticated", None),
-        ErrorResponseCategory::Forbidden => (Code::PermissionDenied, "Forbidden", None),
-        ErrorResponseCategory::NotImplemented => (Code::Unimplemented, "Not implemented", None),
-        ErrorResponseCategory::Unavailable => (Code::Unavailable, "Unavailable", None),
+        ErrorResponseCategory::NotFound => (Code::NotFound, "Not found", HashMap::new()),
+        ErrorResponseCategory::Unauthenticated => (Code::Unauthenticated, "Unauthenticated", HashMap::new()),
+        ErrorResponseCategory::Forbidden => (Code::PermissionDenied, "Forbidden", HashMap::new()),
+        ErrorResponseCategory::NotImplemented => (Code::Unimplemented, "Not implemented", HashMap::new()),
+        ErrorResponseCategory::Unavailable => (Code::Unavailable, "Unavailable", HashMap::new()),
         ErrorResponseCategory::InvalidRequest => return proto_error.into_status(),
-        ErrorResponseCategory::Internal => (Code::Internal, "Internal error", None),
+        ErrorResponseCategory::Internal => (Code::Internal, "Internal error", HashMap::new()),
     };
 
-    let mut details = ErrorDetails::with_error_info(proto_error.error_code, proto_error.domain, HashMap::new());
+    let mut details = ErrorDetails::with_error_info(proto_error.error_code, proto_error.domain, metadata);
     details.set_debug_info(proto_error.stack_trace, "");
-    if let Some((reason, metadata)) = extra_metadata {
-        details.set_error_info(reason, "typedb", metadata);
-    }
     Status::with_error_details(code, message, details)
 }
 
