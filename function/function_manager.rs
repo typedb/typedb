@@ -276,7 +276,7 @@ impl FunctionManager {
         Ok(syntax)
     }
 
-    fn get_function_annotations(
+    pub fn get_function_annotations(
         &self,
         snapshot: &impl ReadableSnapshot,
         function: DefinitionKey,
