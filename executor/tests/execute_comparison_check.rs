@@ -189,7 +189,7 @@ fn attribute_equality() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
