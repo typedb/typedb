@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ::concept::{
     error::ConceptDecodeError,
@@ -160,10 +160,7 @@ impl IntoResponse for QueryAnswer {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GivenRowsPayload {
-    pub variables: Vec<String>,
-    pub rows: Vec<Vec<Option<GivenEntryPayload>>>,
-}
+pub struct GivenRowsPayload(pub Vec<BTreeMap<String, Option<GivenEntryPayload>>>);
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "kind")]
@@ -184,7 +181,27 @@ macro_rules! concept_decode_error {
     };
 }
 
-impl GivenRows for GivenRowsPayload {
+#[derive(Debug)]
+pub struct GivenRowsHttp {
+    pub variables: Vec<String>,
+    pub rows: Vec<Vec<Option<GivenEntryPayload>>>,
+}
+
+impl std::convert::From<GivenRowsPayload> for GivenRowsHttp {
+    fn from(value: GivenRowsPayload) -> Self {
+        let variables_as_set = value.0.iter().flat_map(|v| v.keys().cloned()).collect::<BTreeSet<String>>();
+        let variables = Vec::from_iter(variables_as_set.into_iter());
+        let variables_ref = &variables;
+        let rows = value
+            .0
+            .into_iter()
+            .map(|mut as_map| variables_ref.iter().map(move |var| as_map.remove(var).flatten()).collect())
+            .collect();
+        Self { variables, rows }
+    }
+}
+
+impl GivenRows for GivenRowsHttp {
     fn variables(&self) -> &[String] {
         self.variables.as_slice()
     }

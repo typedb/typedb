@@ -58,7 +58,7 @@ use crate::{
                 AnalysedQueryResponse, encode_analyzed_query,
                 structure::{AnalyzedPipelineResponse, encode_analyzed_pipeline_for_studio},
             },
-            query::{GivenRowsPayload, document::encode_document, row::encode_row},
+            query::{GivenRowsHttp, document::encode_document, row::encode_row},
         },
         may_encode_pipeline_structure,
         transaction_service::{
@@ -112,7 +112,7 @@ macro_rules! unwrap_or_execute_else_respond_error_and_return_break {
 
 #[derive(Debug)]
 pub(crate) enum TransactionRequest {
-    Query(QueryOptions, Option<GivenRowsPayload>, String),
+    Query(QueryOptions, Option<GivenRowsHttp>, String),
     AnalyseQuery(String),
     Commit,
     Rollback,
@@ -156,8 +156,7 @@ pub(crate) struct TransactionService {
     timeout_at: Instant,
 
     transaction: Option<Transaction>,
-    query_queue:
-        VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, Option<GivenRowsPayload>, String)>,
+    query_queue: VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, Option<GivenRowsHttp>, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
     close_sender: Sender<()>,
@@ -634,7 +633,7 @@ impl TransactionService {
     async fn handle_query(
         &mut self,
         query_options: QueryOptions,
-        given_rows: Option<GivenRowsPayload>,
+        given_rows: Option<GivenRowsHttp>,
         query: String,
         responder: TransactionResponder,
     ) -> ControlFlow<(), ()> {
@@ -754,7 +753,7 @@ impl TransactionService {
         responder: TransactionResponder,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRowsPayload>,
+        given_rows: Option<GivenRowsHttp>,
         source_query: String,
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
@@ -831,7 +830,7 @@ impl TransactionService {
         &mut self,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRowsPayload>,
+        given_rows: Option<GivenRowsHttp>,
         source_query: String,
     ) -> Result<JoinHandle<(Transaction, WriteQueryResult)>, TransactionServiceError> {
         debug_assert!(self.running_write_query.is_none());
@@ -993,7 +992,7 @@ impl TransactionService {
         responder: TransactionResponder,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
-        given_rows: Option<GivenRowsPayload>,
+        given_rows: Option<GivenRowsHttp>,
         source_query: String,
         storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {

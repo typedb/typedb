@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::str::FromStr;
+use std::{collections::BTreeMap, str::FromStr};
 
 use cucumber::gherkin::Step;
 use futures::future::join_all;
@@ -158,6 +157,8 @@ fn check_is_value(
 
 #[cucumber::given(expr = "set answers of typeql read query as given rows with order: {variable_list}")]
 #[cucumber::when(expr = "set answers of typeql read query as given rows with order: {variable_list}")]
+#[cucumber::given(expr = "set answers of typeql read query as given rows dictionary with variables: {variable_list}")]
+#[cucumber::when(expr = "set answers of typeql read query as given rows dictionary with variables: {variable_list}")]
 async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &Step) {
     let result = (transactions_query(
         context.http_client(),
@@ -172,16 +173,23 @@ async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &St
     let mut given_rows = Vec::with_capacity(rows.len());
     for row in rows {
         let data = row.get("data").expect("Expected to have 'data' key");
-
         let given_row = var_list
             .0
             .iter()
-            .map(|v| serde_json::from_value(data.get(v).cloned().unwrap()).unwrap())
-            .collect::<Vec<Option<GivenEntryPayload>>>();
+            .filter_map(|var| {
+                data.get(var).and_then(|value| {
+                    if value == &serde_json::Value::Null {
+                        None
+                    } else {
+                        Some((var.clone(), Some(serde_json::from_value(value.clone()).unwrap())))
+                    }
+                })
+            })
+            .collect::<BTreeMap<String, Option<GivenEntryPayload>>>();
         given_rows.push(given_row);
     }
 
-    context.given_rows = Some(GivenRowsPayload { variables: var_list.0, rows: given_rows })
+    context.given_rows = Some(GivenRowsPayload(given_rows))
 }
 
 #[apply(generic_step)]
