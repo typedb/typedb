@@ -190,7 +190,11 @@ fn extract_typedb() {
 }
 
 fn delete_data() {
-    fs::remove_dir_all("typedb-extracted/server/data").unwrap();
+    match fs::remove_dir_all("typedb-extracted/server/data") {
+        Ok(()) => {}
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+        Err(err) => panic!("Failed to delete server data directory: {err}"),
+    }
 }
 
 fn setup(port: u16) {

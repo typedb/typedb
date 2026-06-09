@@ -15,7 +15,7 @@ load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_a
 load("@bazel_skylib//rules:select_file.bzl", "select_file")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 
-load("@rules_pkg//:mappings.bzl", "pkg_attributes" , "pkg_files", "pkg_filegroup", "pkg_mkdirs")
+load("@rules_pkg//:mappings.bzl", "pkg_attributes" , "pkg_files", "pkg_filegroup")
 load("@rules_pkg//:pkg.bzl", "pkg_tar", "pkg_zip")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 
@@ -56,12 +56,6 @@ rust_binary(
 # Assembly
 package_version_vars(name = "server-version-vars")
 
-pkg_mkdirs(
-    name = "package-layout-server-dirs",
-    dirs = ["server/data"],
-    attributes = pkg_attributes(mode = "0755"),
-)
-
 binary_permissions = pkg_attributes(mode = "0744")
 
 alias(
@@ -89,7 +83,7 @@ pkg_files(
 
 pkg_filegroup(
     name = "package-typedb-server",
-    srcs = [":package-layout-server-files", ":package-layout-server-dirs"]
+    srcs = [":package-layout-server-files"]
 )
 
 pkg_zip(
