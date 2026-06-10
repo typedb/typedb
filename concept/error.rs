@@ -89,15 +89,6 @@ typedb_error! {
         Format(26, "Formatting error.", source: fmt::Error),
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
         FunctionNotFound(28, "Function named '{function_name}' not found.", function_name: String),
-        SubtypeKindMismatch(
-            29,
-            "'{subtype}' has kind {subtype_kind} which cannot be a subtype of '{supertype}' which has kind {supertype_kind}.",
-            subtype: Label,
-            subtype_kind: Kind,
-            supertype: Label,
-            supertype_kind: Kind,
-        ),
-        NotASubtype(30, "'{subtype}' is not a subtype of '{supertype}'.", subtype: Label, supertype: Label),
     }
 }
 
