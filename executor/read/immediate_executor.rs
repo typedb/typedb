@@ -1430,12 +1430,11 @@ impl BuiltinCallExecutor {
             return Ok(()); // a missing doc is equivalent to @doc("")
         };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
-        let function_name = &input_row[self.argument_positions[0].as_usize()];
-        let function = context
-            .function_manager()
-            .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
-            .unwrap();
-        let Some(function) = function else { todo!("Error") };
+        let function_name = input_row[self.argument_positions[1].as_usize()].as_value().unwrap_string_ref();
+        let function = context.function_manager().get_function_key(&**context.snapshot(), function_name).unwrap();
+        let Some(function) = function else {
+            return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
+        };
         row[return_position.as_usize()] = unwrap_doc(context.function_manager().get_function_annotation_by_category(
             &**context.snapshot(),
             function,
@@ -1459,12 +1458,11 @@ impl BuiltinCallExecutor {
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let key = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
         let category = &AnnotationCategory::Meta(key);
-        let function_name = &input_row[self.argument_positions[1].as_usize()];
-        let function = context
-            .function_manager()
-            .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
-            .unwrap()
-            .unwrap();
+        let function_name = input_row[self.argument_positions[1].as_usize()].as_value().unwrap_string_ref();
+        let function = context.function_manager().get_function_key(&**context.snapshot(), function_name).unwrap();
+        let Some(function) = function else {
+            return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
+        };
         row[return_position.as_usize()] =
             unwrap_meta_value(context.function_manager().get_function_annotation_by_category(
                 &**context.snapshot(),
@@ -1484,12 +1482,11 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let function_name = &input_row[self.argument_positions[0].as_usize()];
-        let function = context
-            .function_manager()
-            .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
-            .unwrap()
-            .unwrap();
+        let function_name = input_row[self.argument_positions[1].as_usize()].as_value().unwrap_string_ref();
+        let function = context.function_manager().get_function_key(&**context.snapshot(), function_name).unwrap();
+        let Some(function) = function else {
+            return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
+        };
         let metas = context
             .function_manager()
             .get_function_annotations(&**context.snapshot(), function)?
@@ -1666,7 +1663,7 @@ fn unwrap_doc(doc: Option<impl Into<Annotation>>) -> Result<VariableValue<'stati
     match doc.map(Into::into) {
         Some(Annotation::Doc(doc)) => Ok(VariableValue::Value(Value::String(Cow::Owned(doc.doc)))),
         None => Ok(VariableValue::Value(Value::String(Cow::default()))),
-        Some(_) => todo!("Error"),
+        Some(anno) => unreachable!("Internal error: Expected AnnotationDoc, got {anno:?}"),
     }
 }
 
@@ -1748,7 +1745,7 @@ fn unwrap_meta_value(meta: Option<impl Into<Annotation>>) -> Result<VariableValu
     match meta.map(Into::into) {
         Some(Annotation::Meta(meta)) => Ok(VariableValue::Value(Value::String(Cow::Owned(meta.value)))),
         None => Ok(VariableValue::Value(Value::String(Cow::default()))),
-        Some(_) => todo!("Error"),
+        Some(anno) => unreachable!("Internal error: Expected AnnotationMeta, got {anno:?}"),
     }
 }
 
