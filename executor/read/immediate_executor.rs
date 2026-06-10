@@ -1144,12 +1144,11 @@ impl BuiltinCallExecutor {
         let owner = &input_row[self.argument_positions[0].as_usize()];
         let attribute = &input_row[self.argument_positions[1].as_usize()];
         let owns = get_owns(context, owner, attribute)?;
-        row[return_position.as_usize()] =
-            unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
-                &**context.snapshot(),
-                owns,
-                &AnnotationCategory::Doc,
-            )?)?;
+        row[return_position.as_usize()] = unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
+            &**context.snapshot(),
+            owns,
+            &AnnotationCategory::Doc,
+        )?);
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1174,7 +1173,7 @@ impl BuiltinCallExecutor {
                 &**context.snapshot(),
                 plays,
                 &AnnotationCategory::Doc,
-            )?)?;
+            )?);
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1199,7 +1198,7 @@ impl BuiltinCallExecutor {
                 &**context.snapshot(),
                 relates,
                 &AnnotationCategory::Doc,
-            )?)?;
+            )?);
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1263,7 +1262,7 @@ impl BuiltinCallExecutor {
         let owns = get_owns(context, owner, attribute)?;
         row[return_position.as_usize()] = unwrap_meta_value(
             context.type_manager().get_owns_annotation_declared_by_category(&**context.snapshot(), owns, category)?,
-        )?;
+        );
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1287,7 +1286,7 @@ impl BuiltinCallExecutor {
         let plays = get_plays(context, player, role)?;
         row[return_position.as_usize()] = unwrap_meta_value(
             context.type_manager().get_plays_annotation_declared_by_category(&**context.snapshot(), plays, category)?,
-        )?;
+        );
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1314,7 +1313,7 @@ impl BuiltinCallExecutor {
                 &**context.snapshot(),
                 relates,
                 category,
-            )?)?;
+            )?);
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1416,7 +1415,10 @@ impl BuiltinCallExecutor {
             &input_row[self.argument_positions[0].as_usize()],
             &input_row[self.argument_positions[1].as_usize()],
         )?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+        if let Some(metas) = metas {
+            put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?
+        }
+        Ok(())
     }
 
     fn execute_get_fun_doc(
@@ -1439,7 +1441,7 @@ impl BuiltinCallExecutor {
             &**context.snapshot(),
             function,
             &AnnotationCategory::Doc,
-        )?)?;
+        )?);
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1468,7 +1470,7 @@ impl BuiltinCallExecutor {
                 &**context.snapshot(),
                 function,
                 category,
-            )?)?;
+            )?);
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
         output.append(|mut row| row.copy_from_row(output_row));
         Ok(())
@@ -1589,36 +1591,40 @@ fn get_type_doc(
 ) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     match ty.as_type() {
-        Type::Entity(ty) => unwrap_doc(context.type_manager().get_entity_type_annotation_declared_by_category(
+        Type::Entity(ty) => Ok(unwrap_doc(context.type_manager().get_entity_type_annotation_declared_by_category(
             snapshot,
             ty,
             &AnnotationCategory::Doc,
-        )?),
-        Type::Relation(ty) => unwrap_doc(context.type_manager().get_relation_type_annotation_declared_by_category(
-            snapshot,
-            ty,
-            &AnnotationCategory::Doc,
-        )?),
-        Type::Attribute(ty) => unwrap_doc(context.type_manager().get_attribute_type_annotation_declared_by_category(
-            snapshot,
-            ty,
-            &AnnotationCategory::Doc,
-        )?),
+        )?)),
+        Type::Relation(ty) => {
+            Ok(unwrap_doc(context.type_manager().get_relation_type_annotation_declared_by_category(
+                snapshot,
+                ty,
+                &AnnotationCategory::Doc,
+            )?))
+        }
+        Type::Attribute(ty) => {
+            Ok(unwrap_doc(context.type_manager().get_attribute_type_annotation_declared_by_category(
+                snapshot,
+                ty,
+                &AnnotationCategory::Doc,
+            )?))
+        }
         Type::RoleType(ty) => {
             let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
-            unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
+            Ok(unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
                 snapshot,
                 relates,
                 &AnnotationCategory::Doc,
-            )?)
+            )?))
         }
     }
 }
 
-fn unwrap_doc(doc: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+fn unwrap_doc(doc: Option<impl Into<Annotation>>) -> VariableValue<'static> {
     match doc.map(Into::into) {
-        Some(Annotation::Doc(doc)) => Ok(VariableValue::Value(Value::String(Cow::Owned(doc.doc)))),
-        None => Ok(VariableValue::Value(Value::String(Cow::default()))),
+        Some(Annotation::Doc(doc)) => VariableValue::Value(Value::String(Cow::Owned(doc.doc))),
+        None => VariableValue::Value(Value::String(Cow::default())),
         Some(anno) => unreachable!("Internal error: Expected AnnotationDoc, got {anno:?}"),
     }
 }
@@ -1632,28 +1638,28 @@ fn get_type_meta(
     let key = key.as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     match ty.as_type() {
-        Type::Entity(ty) => unwrap_meta_value(
+        Type::Entity(ty) => Ok(unwrap_meta_value(
             context.type_manager().get_entity_type_annotation_declared_by_category(snapshot, ty, category)?,
-        ),
-        Type::Relation(ty) => unwrap_meta_value(
+        )),
+        Type::Relation(ty) => Ok(unwrap_meta_value(
             context.type_manager().get_relation_type_annotation_declared_by_category(snapshot, ty, category)?,
-        ),
-        Type::Attribute(ty) => unwrap_meta_value(
+        )),
+        Type::Attribute(ty) => Ok(unwrap_meta_value(
             context.type_manager().get_attribute_type_annotation_declared_by_category(snapshot, ty, category)?,
-        ),
+        )),
         Type::RoleType(ty) => {
             let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
-            unwrap_meta_value(
+            Ok(unwrap_meta_value(
                 context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, category)?,
-            )
+            ))
         }
     }
 }
 
-fn unwrap_meta_value(meta: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+fn unwrap_meta_value(meta: Option<impl Into<Annotation>>) -> VariableValue<'static> {
     match meta.map(Into::into) {
-        Some(Annotation::Meta(meta)) => Ok(VariableValue::Value(Value::String(Cow::Owned(meta.value)))),
-        None => Ok(VariableValue::Value(Value::String(Cow::default()))),
+        Some(Annotation::Meta(meta)) => VariableValue::Value(Value::String(Cow::Owned(meta.value))),
+        None => VariableValue::Value(Value::String(Cow::default())),
         Some(anno) => unreachable!("Internal error: Expected AnnotationMeta, got {anno:?}"),
     }
 }
@@ -1756,46 +1762,29 @@ macro_rules! subtype {
         match ($subtype.as_type(), $supertype.as_type()) {
             (Type::Entity(subtype), Type::Entity(supertype)) => {
                 if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Err(Box::new(ConceptReadError::NotASubtype {
-                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
-                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
-                    }));
+                    return Ok(None);
                 }
-                inner!(Sub::new(subtype, supertype), Entity)
+                Ok(Some(inner!(Sub::new(subtype, supertype), Entity)))
             }
             (Type::Relation(subtype), Type::Relation(supertype)) => {
                 if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Err(Box::new(ConceptReadError::NotASubtype {
-                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
-                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
-                    }));
+                    return Ok(None);
                 }
-                inner!(Sub::new(subtype, supertype), Relation)
+                Ok(Some(inner!(Sub::new(subtype, supertype), Relation)))
             }
             (Type::Attribute(subtype), Type::Attribute(supertype)) => {
                 if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Err(Box::new(ConceptReadError::NotASubtype {
-                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
-                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
-                    }));
+                    return Ok(None);
                 }
-                inner!(Sub::new(subtype, supertype), Attribute)
+                Ok(Some(inner!(Sub::new(subtype, supertype), Attribute)))
             }
             (Type::RoleType(subtype), Type::RoleType(supertype)) => {
                 if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Err(Box::new(ConceptReadError::NotASubtype {
-                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
-                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
-                    }));
+                    return Ok(None);
                 }
                 todo!()
             }
-            (subtype, supertype) => Err(Box::new(ConceptReadError::SubtypeKindMismatch {
-                subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
-                subtype_kind: subtype.kind(),
-                supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
-                supertype_kind: supertype.kind(),
-            })),
+            (_, _) => Ok(None),
         }
     }};
 }
@@ -1804,11 +1793,11 @@ fn get_subtype_doc(
     context: &ExecutionContext<impl ReadableSnapshot>,
     subtype: &VariableValue<'_>,
     supertype: &VariableValue<'_>,
-) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+) -> Result<Option<VariableValue<'static>>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
     subtype!(
-        snapshot, type_manager, subtype, supertype, 
+        snapshot, type_manager, subtype, supertype,
         (($sub:expr, $kind:ident) => {
             paste::paste!(
                 unwrap_doc(
@@ -1824,13 +1813,13 @@ fn get_subtype_meta(
     key: &VariableValue<'_>,
     subtype: &VariableValue<'_>,
     supertype: &VariableValue<'_>,
-) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+) -> Result<Option<VariableValue<'static>>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
     let key = key.as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     subtype!(
-        snapshot, type_manager, subtype, supertype, 
+        snapshot, type_manager, subtype, supertype,
         (($sub:expr, $kind:ident) => {
             paste::paste!(
                 unwrap_meta_value(
@@ -1845,21 +1834,21 @@ fn get_subtype_all_meta(
     context: &ExecutionContext<impl ReadableSnapshot>,
     subtype: &VariableValue<'_>,
     supertype: &VariableValue<'_>,
-) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
+) -> Result<Option<Vec<AnnotationMeta>>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
     subtype!(
-        snapshot, type_manager, subtype, supertype, 
+        snapshot, type_manager, subtype, supertype,
         (($sub:expr, $kind:ident) => {
             paste::paste!(
-            Ok(type_manager
-                .[<get_sub_ $kind:lower _type_annotations_declared>](snapshot, $sub)?
-                .iter()
-                .filter_map(|anno| match anno {
-                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                    _ => None,
-                })
-                .collect_vec())
+                type_manager
+                    .[<get_sub_ $kind:lower _type_annotations_declared>](snapshot, $sub)?
+                    .iter()
+                    .filter_map(|anno| match anno {
+                        SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                        _ => None,
+                    })
+                    .collect()
             )
         })
     )
