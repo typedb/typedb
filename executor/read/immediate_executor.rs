@@ -1615,50 +1615,6 @@ fn get_type_doc(
     }
 }
 
-fn get_subtype_doc(
-    context: &ExecutionContext<impl ReadableSnapshot>,
-    subtype: &VariableValue<'_>,
-    supertype: &VariableValue<'_>,
-) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
-    let snapshot = &**context.snapshot();
-    match subtype.as_type() {
-        Type::Entity(subtype) => {
-            let Type::Entity(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
-                return Ok(VariableValue::None);
-            }
-            unwrap_doc(context.type_manager().get_sub_entity_type_annotations_declared_by_category(
-                snapshot,
-                Sub::new(subtype, supertype),
-                &AnnotationCategory::Doc,
-            )?)
-        }
-        Type::Relation(subtype) => {
-            let Type::Relation(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
-                return Ok(VariableValue::None);
-            }
-            unwrap_doc(context.type_manager().get_sub_relation_type_annotations_declared_by_category(
-                snapshot,
-                Sub::new(subtype, supertype),
-                &AnnotationCategory::Doc,
-            )?)
-        }
-        Type::Attribute(subtype) => {
-            let Type::Attribute(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
-                return Ok(VariableValue::None);
-            }
-            unwrap_doc(context.type_manager().get_sub_attribute_type_annotations_declared_by_category(
-                snapshot,
-                Sub::new(subtype, supertype),
-                &AnnotationCategory::Doc,
-            )?)
-        }
-        Type::RoleType(_) => todo!(),
-    }
-}
-
 fn unwrap_doc(doc: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
     match doc.map(Into::into) {
         Some(Annotation::Doc(doc)) => Ok(VariableValue::Value(Value::String(Cow::Owned(doc.doc)))),
@@ -1691,53 +1647,6 @@ fn get_type_meta(
                 context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, category)?,
             )
         }
-    }
-}
-
-fn get_subtype_meta(
-    context: &ExecutionContext<impl ReadableSnapshot>,
-    key: &VariableValue<'_>,
-    subtype: &VariableValue<'_>,
-    supertype: &VariableValue<'_>,
-) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
-    let snapshot = &**context.snapshot();
-    let key = key.as_value().unwrap_string_ref().to_owned();
-    let category = &AnnotationCategory::Meta(key);
-    match subtype.as_type() {
-        Type::Entity(subtype) => {
-            let Type::Entity(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
-                return Ok(VariableValue::None);
-            }
-            unwrap_meta_value(context.type_manager().get_sub_entity_type_annotations_declared_by_category(
-                snapshot,
-                Sub::new(subtype, supertype),
-                category,
-            )?)
-        }
-        Type::Relation(subtype) => {
-            let Type::Relation(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
-                return Ok(VariableValue::None);
-            }
-            unwrap_meta_value(context.type_manager().get_sub_relation_type_annotations_declared_by_category(
-                snapshot,
-                Sub::new(subtype, supertype),
-                category,
-            )?)
-        }
-        Type::Attribute(subtype) => {
-            let Type::Attribute(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
-                return Ok(VariableValue::None);
-            }
-            unwrap_meta_value(context.type_manager().get_sub_attribute_type_annotations_declared_by_category(
-                snapshot,
-                Sub::new(subtype, supertype),
-                category,
-            )?)
-        }
-        Type::RoleType(_) => todo!(),
     }
 }
 
@@ -1834,6 +1743,104 @@ fn get_relates_all_meta(
         .collect())
 }
 
+fn meta_to_tuple(meta: AnnotationMeta) -> (VariableValue<'static>, VariableValue<'static>) {
+    (
+        VariableValue::Value(Value::String(Cow::Owned(meta.key))),
+        VariableValue::Value(Value::String(Cow::Owned(meta.value))),
+    )
+}
+
+macro_rules! subtype {
+    ($snapshot:expr, $type_manager:expr, $subtype:expr, $supertype:expr, $body:tt) => {{
+        macro_rules! inner $body;
+        match ($subtype.as_type(), $supertype.as_type()) {
+            (Type::Entity(subtype), Type::Entity(supertype)) => {
+                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
+                    return Err(Box::new(ConceptReadError::NotASubtype {
+                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
+                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
+                    }));
+                }
+                inner!(Sub::new(subtype, supertype), Entity)
+            }
+            (Type::Relation(subtype), Type::Relation(supertype)) => {
+                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
+                    return Err(Box::new(ConceptReadError::NotASubtype {
+                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
+                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
+                    }));
+                }
+                inner!(Sub::new(subtype, supertype), Relation)
+            }
+            (Type::Attribute(subtype), Type::Attribute(supertype)) => {
+                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
+                    return Err(Box::new(ConceptReadError::NotASubtype {
+                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
+                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
+                    }));
+                }
+                inner!(Sub::new(subtype, supertype), Attribute)
+            }
+            (Type::RoleType(subtype), Type::RoleType(supertype)) => {
+                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
+                    return Err(Box::new(ConceptReadError::NotASubtype {
+                        subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
+                        supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
+                    }));
+                }
+                todo!()
+            }
+            (subtype, supertype) => Err(Box::new(ConceptReadError::SubtypeKindMismatch {
+                subtype: subtype.get_label($snapshot, $type_manager)?.to_owned(),
+                subtype_kind: subtype.kind(),
+                supertype: supertype.get_label($snapshot, $type_manager)?.to_owned(),
+                supertype_kind: supertype.kind(),
+            })),
+        }
+    }};
+}
+
+fn get_subtype_doc(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    subtype: &VariableValue<'_>,
+    supertype: &VariableValue<'_>,
+) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let type_manager = context.type_manager();
+    subtype!(
+        snapshot, type_manager, subtype, supertype, 
+        (($sub:expr, $kind:ident) => {
+            paste::paste!(
+                unwrap_doc(
+                    type_manager.[<get_sub_ $kind:lower _type_annotations_declared_by_category>](snapshot, $sub, &AnnotationCategory::Doc)?
+                )
+            )
+        })
+    )
+}
+
+fn get_subtype_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    key: &VariableValue<'_>,
+    subtype: &VariableValue<'_>,
+    supertype: &VariableValue<'_>,
+) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let type_manager = context.type_manager();
+    let key = key.as_value().unwrap_string_ref().to_owned();
+    let category = &AnnotationCategory::Meta(key);
+    subtype!(
+        snapshot, type_manager, subtype, supertype, 
+        (($sub:expr, $kind:ident) => {
+            paste::paste!(
+                unwrap_meta_value(
+                    type_manager.[<get_sub_ $kind:lower _type_annotations_declared_by_category>](snapshot, $sub, category)?
+                )
+            )
+        })
+    )
+}
+
 fn get_subtype_all_meta(
     context: &ExecutionContext<impl ReadableSnapshot>,
     subtype: &VariableValue<'_>,
@@ -1841,56 +1848,19 @@ fn get_subtype_all_meta(
 ) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
-    match subtype.as_type() {
-        Type::Entity(subtype) => {
-            let Type::Entity(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                todo!("Error")
-            }
+    subtype!(
+        snapshot, type_manager, subtype, supertype, 
+        (($sub:expr, $kind:ident) => {
+            paste::paste!(
             Ok(type_manager
-                .get_sub_entity_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .[<get_sub_ $kind:lower _type_annotations_declared>](snapshot, $sub)?
                 .iter()
                 .filter_map(|anno| match anno {
                     SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
                     _ => None,
                 })
                 .collect_vec())
-        }
-        Type::Relation(subtype) => {
-            let Type::Relation(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                todo!("Error")
-            }
-            Ok(type_manager
-                .get_sub_relation_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
-                .iter()
-                .filter_map(|anno| match anno {
-                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                    _ => None,
-                })
-                .collect_vec())
-        }
-        Type::Attribute(subtype) => {
-            let Type::Attribute(supertype) = supertype.as_type() else { todo!("Error") };
-            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                todo!("Error")
-            }
-            Ok(type_manager
-                .get_sub_attribute_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
-                .iter()
-                .filter_map(|anno| match anno {
-                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                    _ => None,
-                })
-                .collect_vec())
-        }
-        Type::RoleType(_) => todo!(),
-    }
-}
-
-fn meta_to_tuple(meta: AnnotationMeta) -> (VariableValue<'static>, VariableValue<'static>) {
-    (
-        VariableValue::Value(Value::String(Cow::Owned(meta.key))),
-        VariableValue::Value(Value::String(Cow::Owned(meta.value))),
+            )
+        })
     )
 }
