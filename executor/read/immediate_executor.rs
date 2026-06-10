@@ -1430,7 +1430,7 @@ impl BuiltinCallExecutor {
             return Ok(()); // a missing doc is equivalent to @doc("")
         };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
-        let function_name = input_row[self.argument_positions[1].as_usize()].as_value().unwrap_string_ref();
+        let function_name = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref();
         let function = context.function_manager().get_function_key(&**context.snapshot(), function_name).unwrap();
         let Some(function) = function else {
             return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
@@ -1482,7 +1482,7 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let function_name = input_row[self.argument_positions[1].as_usize()].as_value().unwrap_string_ref();
+        let function_name = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref();
         let function = context.function_manager().get_function_key(&**context.snapshot(), function_name).unwrap();
         let Some(function) = function else {
             return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
