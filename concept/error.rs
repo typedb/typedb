@@ -80,6 +80,7 @@ typedb_error! {
         InternalIncomparableTypes(25, "Internal error: incomparable types."),
         Format(26, "Formatting error.", source: fmt::Error),
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
+        FunctionNotFound(28, "Function named '{function_name}' not found.", function_name: String),
     }
 }
 
