@@ -10,7 +10,7 @@ use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
-    Diagnostics,
+    Diagnostics, Metrics,
     metrics::{ActionKind, ClientEndpoint, DatabaseMetricsSnapshot, LoadKind, QueryType, TransactionOutcome},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
@@ -84,6 +84,10 @@ impl DiagnosticsManager {
 
     pub fn metrics_enabled(&self) -> bool {
         self.diagnostics.metrics_enabled()
+    }
+
+    pub fn register_metrics(&self, source: Arc<dyn Metrics>) {
+        self.diagnostics.register(source);
     }
 
     diagnostics_method! {

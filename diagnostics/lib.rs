@@ -36,6 +36,8 @@ mod monitoring_server;
 mod reporter;
 mod reports;
 
+pub use metrics::Metrics;
+
 #[macro_export]
 macro_rules! error_with_report {
     ($($arg:tt)+) => {{
@@ -93,6 +95,7 @@ pub struct Diagnostics {
     action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
     error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
     histogram_metrics: RwLock<HashMap<DatabaseHash, DatabaseHistograms>>,
+    monitoring_extensions: RwLock<Vec<Arc<dyn Metrics>>>,
 
     is_full_reporting: bool,
     metrics_enabled: bool,
@@ -116,9 +119,18 @@ impl Diagnostics {
             error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
             histogram_metrics: RwLock::new(HashMap::new()),
 
+            monitoring_extensions: RwLock::new(Vec::new()),
+
             is_full_reporting: is_reporting_enabled,
             metrics_enabled,
         }
+    }
+
+    pub fn register(&self, source: Arc<dyn Metrics>) {
+        let mut exts = self.monitoring_extensions.write().expect("Expected write lock acquisition on extensions");
+        let name = source.name().to_string();
+        exts.retain(|s| s.name() != name);
+        exts.push(source);
     }
 
     pub(crate) fn metrics_enabled(&self) -> bool {
@@ -269,12 +281,44 @@ impl Diagnostics {
         }
     }
 
+    /// Render all monitoring metrics as a single JSON value.
+    ///
+    /// The built-in typedb metrics are emitted at the top level (unchanged
+    /// shape for backwards compatibility). Any registered extensions are
+    /// emitted under `extensions.<name>` keyed by `Metrics::name`. PostHog is
+    /// not involved.
     pub fn to_monitoring_json(&self) -> JSONValue {
-        to_monitoring_json(self)
+        let mut value = <Self as Metrics>::write_json(self);
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        if !exts.is_empty() {
+            let mut ext_map = serde_json::Map::with_capacity(exts.len());
+            for ext in exts.iter() {
+                ext_map.insert(ext.name().to_string(), ext.write_json());
+            }
+            if let JSONValue::Object(ref mut obj) = value {
+                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
+            } else {
+                // Built-in JSON was not an object — wrap in one so we can
+                // still expose extensions. Should not happen with the current
+                // built-in implementation, but guard defensively rather than
+                // panic in a monitoring path.
+                let mut obj = serde_json::Map::new();
+                obj.insert("typedb".to_string(), value);
+                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
+                value = JSONValue::Object(obj);
+            }
+        }
+        value
     }
 
     pub fn to_monitoring_prometheus(&self) -> String {
-        to_monitoring_prometheus(self)
+        let mut out = String::new();
+        <Self as Metrics>::write_prometheus(self, &mut out);
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        for ext in exts.iter() {
+            ext.write_prometheus(&mut out);
+        }
+        out
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
@@ -486,4 +530,18 @@ pub fn hash_string_consistently(value: impl AsRef<str> + Hash) -> u64 {
     let mut hasher = Xxh3::new();
     hasher.update(value.as_ref().as_bytes());
     hasher.digest()
+}
+
+impl Metrics for Diagnostics {
+    fn name(&self) -> &str {
+        "typedb"
+    }
+
+    fn write_prometheus(&self, out: &mut String) {
+        out.push_str(&to_monitoring_prometheus(self));
+    }
+
+    fn write_json(&self) -> JSONValue {
+        to_monitoring_json(self)
+    }
 }
