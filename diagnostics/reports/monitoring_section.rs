@@ -136,17 +136,23 @@ mod tests {
     }
 
     #[test]
-    fn register_is_idempotent_on_name() {
+    fn register_is_idempotent_on_name_and_has_monitoring_extension_reflects_it() {
         let diag = fresh_diagnostics();
         let ext1 = Arc::new(CrossCheckedExt::new());
         let ext2 = Arc::new(CrossCheckedExt::new());
         ext1.observe(Duration::from_millis(1));
         ext2.observe(Duration::from_millis(2));
         ext2.observe(Duration::from_millis(3));
+
+        assert!(!diag.has_monitoring_extension("cross_checked_ext"));
+
         diag.register_monitoring_extension(ext1.clone());
-        diag.register_monitoring_extension(ext2.clone()); // same name "cross_checked_ext" — should replace ext1
+        assert!(diag.has_monitoring_extension("cross_checked_ext"));
+
+        diag.register_monitoring_extension(ext2.clone());
+        assert!(diag.has_monitoring_extension("cross_checked_ext"));
+
         let j = diag.to_monitoring_json();
-        // Only ext2 should be in the output; ext1 is gone.
         assert_eq!(j["extensions"]["cross_checked_ext"]["invocations"], json!(2));
     }
 

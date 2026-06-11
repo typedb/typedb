@@ -86,8 +86,12 @@ impl DiagnosticsManager {
         self.diagnostics.metrics_enabled()
     }
 
-    pub fn register_metrics(&self, source: Arc<dyn MonitoringSection>) {
+    pub fn register_monitoring_extension(&self, source: Arc<dyn MonitoringSection>) {
         self.diagnostics.register_monitoring_extension(source);
+    }
+
+    pub fn has_monitoring_extension(&self, name: &str) -> bool {
+        self.diagnostics.has_monitoring_extension(name)
     }
 
     diagnostics_method! {

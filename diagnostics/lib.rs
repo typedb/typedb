@@ -123,6 +123,11 @@ impl Diagnostics {
         exts.push(source);
     }
 
+    pub fn has_monitoring_extension(&self, name: &str) -> bool {
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        exts.iter().any(|s| s.name() == name)
+    }
+
     pub(crate) fn metrics_enabled(&self) -> bool {
         self.metrics_enabled
     }
