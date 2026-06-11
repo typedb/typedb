@@ -41,7 +41,7 @@ use crate::type_::{
     constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategoryDerive!)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
@@ -763,7 +763,7 @@ pub trait HasAnnotationCategory {
     fn category(&self) -> AnnotationCategory;
 }
 
-macro_rules! has_annotation_category {
+macro_rules! HasAnnotationCategoryDerive {
     (
        $(#[$meta:meta])*
        $vis:vis enum $Enum:ident {
@@ -775,7 +775,7 @@ macro_rules! has_annotation_category {
                 use $crate::type_::annotation::AnnotationCategory;
                 #[allow(unreachable_patterns)]
                 match category {
-                    $(has_annotation_category!(@match-cat $Variant inner) => has_annotation_category!(@has-cat self $Variant inner),)*
+                    $(HasAnnotationCategoryDerive!(@match-cat $Variant inner) => HasAnnotationCategoryDerive!(@has-cat self $Variant inner),)*
                     _ => false,
                 }
             }
@@ -783,7 +783,7 @@ macro_rules! has_annotation_category {
             fn category(&self) -> $crate::type_::annotation::AnnotationCategory {
                 use $crate::type_::annotation::AnnotationCategory;
                 match self {
-                    $(has_annotation_category!(@match-self self $Variant _inner) => has_annotation_category!(@make-cat $Variant _inner),)*
+                    $(HasAnnotationCategoryDerive!(@match-self self $Variant _inner) => HasAnnotationCategoryDerive!(@make-cat $Variant _inner),)*
                 }
             }
         }
@@ -800,7 +800,7 @@ macro_rules! has_annotation_category {
     (@make-cat Meta $meta:ident) => { AnnotationCategory::Meta($meta.key().to_owned()) };
     (@make-cat $Variant:ident $_:ident) => { AnnotationCategory::$Variant };
 }
-pub(crate) use has_annotation_category;
+pub(crate) use HasAnnotationCategoryDerive;
 
 macro_rules! empty_type_vertex_property_encoding {
     ($property:ident, $infix:ident) => {

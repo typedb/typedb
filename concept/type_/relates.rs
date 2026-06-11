@@ -24,7 +24,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
             AnnotationDoc, AnnotationError, AnnotationMeta, FromAnnotation, HasAnnotationCategory,
-            has_annotation_category,
+            HasAnnotationCategoryDerive,
         },
         constraint::CapabilityConstraint,
         relation_type::RelationType,
@@ -246,7 +246,7 @@ impl Capability for Relates {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum RelatesAnnotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),

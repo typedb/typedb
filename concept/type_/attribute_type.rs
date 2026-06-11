@@ -39,7 +39,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
             AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation, HasAnnotationCategory,
-            has_annotation_category,
+            HasAnnotationCategoryDerive,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -488,7 +488,7 @@ impl AttributeType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),

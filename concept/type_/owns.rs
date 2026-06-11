@@ -23,7 +23,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc, AnnotationError,
             AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
-            FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         attribute_type::AttributeType,
         constraint::CapabilityConstraint,
@@ -285,7 +285,7 @@ impl Capability for Owns {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, FromAnnotation!, has_annotation_category!)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum OwnsAnnotation {
     Distinct(AnnotationDistinct),
     Unique(AnnotationUnique),

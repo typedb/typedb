@@ -36,7 +36,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
@@ -504,7 +504,7 @@ impl fmt::Display for EntityType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum EntityTypeAnnotation {
     Abstract(AnnotationAbstract),
     Doc(AnnotationDoc),
