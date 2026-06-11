@@ -21,8 +21,11 @@ use crate::{
 };
 
 pub(crate) mod json_monitoring;
+pub(crate) mod monitoring_section;
 pub(crate) mod posthog;
 pub(crate) mod prometheus_monitoring;
+
+pub use monitoring_section::MonitoringSection;
 
 pub trait ToJsonMap {
     fn to_json_map(&self) -> Map<String, Value>;
