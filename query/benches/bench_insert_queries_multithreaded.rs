@@ -19,12 +19,8 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
-use encoding::{
-    graph::definition::definition_key_generator::DefinitionKeyGenerator,
-    value::{label::Label, value_type::ValueType},
-};
+use encoding::value::{label::Label, value_type::ValueType};
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
-use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
