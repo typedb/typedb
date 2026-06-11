@@ -1143,14 +1143,16 @@ impl BuiltinCallExecutor {
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let owner = &input_row[self.argument_positions[0].as_usize()];
         let attribute = &input_row[self.argument_positions[1].as_usize()];
-        let owns = get_owns(context, owner, attribute)?;
-        row[return_position.as_usize()] = unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
-            &**context.snapshot(),
-            owns,
-            &AnnotationCategory::Doc,
-        )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(owns) = get_owns(context, owner, attribute)? {
+            row[return_position.as_usize()] =
+                unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    owns,
+                    &AnnotationCategory::Doc,
+                )?);
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1167,15 +1169,16 @@ impl BuiltinCallExecutor {
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let player = &input_row[self.argument_positions[0].as_usize()];
         let role = &input_row[self.argument_positions[1].as_usize()];
-        let plays = get_plays(context, player, role)?;
-        row[return_position.as_usize()] =
-            unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
-                &**context.snapshot(),
-                plays,
-                &AnnotationCategory::Doc,
-            )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(plays) = get_plays(context, player, role)? {
+            row[return_position.as_usize()] =
+                unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    plays,
+                    &AnnotationCategory::Doc,
+                )?);
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1192,15 +1195,16 @@ impl BuiltinCallExecutor {
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let relation = &input_row[self.argument_positions[0].as_usize()];
         let role = &input_row[self.argument_positions[1].as_usize()];
-        let relates = get_relates(context, relation, role)?;
-        row[return_position.as_usize()] =
-            unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
-                &**context.snapshot(),
-                relates,
-                &AnnotationCategory::Doc,
-            )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(relates) = get_relates(context, relation, role)? {
+            row[return_position.as_usize()] =
+                unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    relates,
+                    &AnnotationCategory::Doc,
+                )?);
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1217,9 +1221,11 @@ impl BuiltinCallExecutor {
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let subtype = &input_row[self.argument_positions[0].as_usize()];
         let supertype = &input_row[self.argument_positions[1].as_usize()];
-        row[return_position.as_usize()] = get_subtype_doc(context, subtype, supertype)?;
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(a) = get_subtype_doc(context, subtype, supertype)? {
+            row[return_position.as_usize()] = a;
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1259,12 +1265,16 @@ impl BuiltinCallExecutor {
         let category = &AnnotationCategory::Meta(key);
         let owner = &input_row[self.argument_positions[1].as_usize()];
         let attribute = &input_row[self.argument_positions[2].as_usize()];
-        let owns = get_owns(context, owner, attribute)?;
-        row[return_position.as_usize()] = unwrap_meta_value(
-            context.type_manager().get_owns_annotation_declared_by_category(&**context.snapshot(), owns, category)?,
-        );
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(owns) = get_owns(context, owner, attribute)? {
+            row[return_position.as_usize()] =
+                unwrap_meta_value(context.type_manager().get_owns_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    owns,
+                    category,
+                )?);
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1283,12 +1293,16 @@ impl BuiltinCallExecutor {
         let category = &AnnotationCategory::Meta(key);
         let player = &input_row[self.argument_positions[1].as_usize()];
         let role = &input_row[self.argument_positions[2].as_usize()];
-        let plays = get_plays(context, player, role)?;
-        row[return_position.as_usize()] = unwrap_meta_value(
-            context.type_manager().get_plays_annotation_declared_by_category(&**context.snapshot(), plays, category)?,
-        );
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(plays) = get_plays(context, player, role)? {
+            row[return_position.as_usize()] =
+                unwrap_meta_value(context.type_manager().get_plays_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    plays,
+                    category,
+                )?);
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1307,15 +1321,16 @@ impl BuiltinCallExecutor {
         let category = &AnnotationCategory::Meta(key);
         let relation = &input_row[self.argument_positions[1].as_usize()];
         let role = &input_row[self.argument_positions[2].as_usize()];
-        let relates = get_relates(context, relation, role)?;
-        row[return_position.as_usize()] =
-            unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
-                &**context.snapshot(),
-                relates,
-                category,
-            )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(relates) = get_relates(context, relation, role)? {
+            row[return_position.as_usize()] =
+                unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    relates,
+                    category,
+                )?);
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1333,9 +1348,11 @@ impl BuiltinCallExecutor {
         let key = &input_row[self.argument_positions[0].as_usize()];
         let subtype = &input_row[self.argument_positions[1].as_usize()];
         let supertype = &input_row[self.argument_positions[2].as_usize()];
-        row[return_position.as_usize()] = get_subtype_meta(context, key, subtype, supertype)?;
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        if let Some(variable_value) = get_subtype_meta(context, key, subtype, supertype)? {
+            row[return_position.as_usize()] = variable_value;
+            let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
         Ok(())
     }
 
@@ -1359,13 +1376,13 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let owns = get_owns(
-            context,
-            &input_row[self.argument_positions[0].as_usize()],
-            &input_row[self.argument_positions[1].as_usize()],
-        )?;
-        let metas = get_owns_all_meta(context, owns)?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+        let owner = &input_row[self.argument_positions[0].as_usize()];
+        let attribute = &input_row[self.argument_positions[1].as_usize()];
+        if let Some(owns) = get_owns(context, owner, attribute)? {
+            let metas = get_owns_all_meta(context, owns)?;
+            put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?;
+        }
+        Ok(())
     }
 
     fn execute_get_plays_all_meta(
@@ -1376,13 +1393,13 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let plays = get_plays(
-            context,
-            &input_row[self.argument_positions[0].as_usize()],
-            &input_row[self.argument_positions[1].as_usize()],
-        )?;
-        let metas = get_plays_all_meta(context, plays)?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+        let player = &input_row[self.argument_positions[0].as_usize()];
+        let role = &input_row[self.argument_positions[1].as_usize()];
+        if let Some(plays) = get_plays(context, player, role)? {
+            let metas = get_plays_all_meta(context, plays)?;
+            put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?;
+        }
+        Ok(())
     }
 
     fn execute_get_relates_all_meta(
@@ -1393,13 +1410,13 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let relates = get_relates(
-            context,
-            &input_row[self.argument_positions[0].as_usize()],
-            &input_row[self.argument_positions[1].as_usize()],
-        )?;
-        let metas = get_relates_all_meta(context, relates)?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+        let relation = &input_row[self.argument_positions[0].as_usize()];
+        let role = &input_row[self.argument_positions[1].as_usize()];
+        if let Some(relates) = get_relates(context, relation, role)? {
+            let metas = get_relates_all_meta(context, relates)?;
+            put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?;
+        }
+        Ok(())
     }
 
     fn execute_get_sub_all_meta(
@@ -1410,11 +1427,9 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         let key_return_position = self.assignment_positions[0];
         let value_return_position = self.assignment_positions[1];
-        let metas = get_subtype_all_meta(
-            context,
-            &input_row[self.argument_positions[0].as_usize()],
-            &input_row[self.argument_positions[1].as_usize()],
-        )?;
+        let subtype = &input_row[self.argument_positions[0].as_usize()];
+        let supertype = &input_row[self.argument_positions[1].as_usize()];
+        let metas = get_subtype_all_meta(context, subtype, supertype)?;
         if let Some(metas) = metas {
             put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?
         }
@@ -1547,14 +1562,14 @@ fn get_owns(
     context: &ExecutionContext<impl ReadableSnapshot>,
     owner: &VariableValue<'_>,
     attribute: &VariableValue<'_>,
-) -> Result<concept::type_::owns::Owns, Box<ConceptReadError>> {
+) -> Result<Option<Owns>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let owner = owner.as_type();
-    let Type::Attribute(owned) = attribute.as_type() else { todo!("Error") };
+    let Type::Attribute(owned) = attribute.as_type() else { return Ok(None) };
     match owner {
-        Type::Entity(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned),
-        Type::Relation(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned),
-        Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+        Type::Entity(ty) => ty.get_owns_attribute(snapshot, context.type_manager(), owned),
+        Type::Relation(ty) => ty.get_owns_attribute(snapshot, context.type_manager(), owned),
+        Type::Attribute(_) | Type::RoleType(_) => Ok(None),
     }
 }
 
@@ -1562,27 +1577,25 @@ fn get_plays(
     context: &ExecutionContext<impl ReadableSnapshot>,
     player: &VariableValue<'_>,
     role: &VariableValue<'_>,
-) -> Result<concept::type_::plays::Plays, Box<ConceptReadError>> {
+) -> Result<Option<Plays>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let player = player.as_type();
-    let Type::RoleType(role) = role.as_type() else { todo!("Error") };
-    let plays = match player {
-        Type::Entity(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
-        Type::Relation(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
-        Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
-    };
-    Ok(plays)
+    let Type::RoleType(role) = role.as_type() else { return Ok(None) };
+    match player {
+        Type::Entity(ty) => ty.get_plays_role(snapshot, context.type_manager(), role),
+        Type::Relation(ty) => ty.get_plays_role(snapshot, context.type_manager(), role),
+        Type::Attribute(_) | Type::RoleType(_) => Ok(None),
+    }
 }
 
 fn get_relates(
     context: &ExecutionContext<impl ReadableSnapshot>,
     relation: &VariableValue<'_>,
     role: &VariableValue<'_>,
-) -> Result<Relates, Box<ConceptReadError>> {
-    let Type::Relation(relation) = relation.as_type() else { todo!("Error") };
-    let Type::RoleType(role) = role.as_type() else { todo!("Error") };
-    let relates = relation.try_get_relates_role(&**context.snapshot(), context.type_manager(), role)?;
-    Ok(relates)
+) -> Result<Option<Relates>, Box<ConceptReadError>> {
+    let Type::Relation(relation) = relation.as_type() else { return Ok(None) };
+    let Type::RoleType(role) = role.as_type() else { return Ok(None) };
+    relation.get_relates_role(&**context.snapshot(), context.type_manager(), role)
 }
 
 fn get_type_doc(
