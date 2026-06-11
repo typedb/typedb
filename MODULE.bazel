@@ -172,5 +172,5 @@ bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "312a24a0bc636ea51ef8fbba0618153d752a00cf",
+    commit = "f5d315008824e49029d9931ae4b5b14c8c373868",
 )
