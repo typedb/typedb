@@ -1756,39 +1756,6 @@ fn meta_to_tuple(meta: AnnotationMeta) -> (VariableValue<'static>, VariableValue
     )
 }
 
-macro_rules! subtype {
-    ($snapshot:expr, $type_manager:expr, $subtype:expr, $supertype:expr, $body:tt) => {{
-        macro_rules! inner $body;
-        match ($subtype.as_type(), $supertype.as_type()) {
-            (Type::Entity(subtype), Type::Entity(supertype)) => {
-                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Ok(None);
-                }
-                Ok(Some(inner!(Sub::new(subtype, supertype), Entity)))
-            }
-            (Type::Relation(subtype), Type::Relation(supertype)) => {
-                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Ok(None);
-                }
-                Ok(Some(inner!(Sub::new(subtype, supertype), Relation)))
-            }
-            (Type::Attribute(subtype), Type::Attribute(supertype)) => {
-                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Ok(None);
-                }
-                Ok(Some(inner!(Sub::new(subtype, supertype), Attribute)))
-            }
-            (Type::RoleType(subtype), Type::RoleType(supertype)) => {
-                if subtype.get_supertype($snapshot, $type_manager)? != Some(supertype) {
-                    return Ok(None);
-                }
-                todo!()
-            }
-            (_, _) => Ok(None),
-        }
-    }};
-}
-
 fn get_subtype_doc(
     context: &ExecutionContext<impl ReadableSnapshot>,
     subtype: &VariableValue<'_>,
@@ -1796,16 +1763,45 @@ fn get_subtype_doc(
 ) -> Result<Option<VariableValue<'static>>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
-    subtype!(
-        snapshot, type_manager, subtype, supertype,
-        (($sub:expr, $kind:ident) => {
-            paste::paste!(
-                unwrap_doc(
-                    type_manager.[<get_sub_ $kind:lower _type_annotations_declared_by_category>](snapshot, $sub, &AnnotationCategory::Doc)?
-                )
-            )
-        })
-    )
+    match (subtype.as_type(), supertype.as_type()) {
+        (Type::Entity(subtype), Type::Entity(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(unwrap_doc(type_manager.get_sub_entity_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                &AnnotationCategory::Doc,
+            )?)))
+        }
+        (Type::Relation(subtype), Type::Relation(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(unwrap_doc(type_manager.get_sub_relation_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                &AnnotationCategory::Doc,
+            )?)))
+        }
+        (Type::Attribute(subtype), Type::Attribute(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(unwrap_doc(type_manager.get_sub_attribute_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                &AnnotationCategory::Doc,
+            )?)))
+        }
+        (Type::RoleType(subtype), Type::RoleType(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            todo!()
+        }
+        (_, _) => Ok(None),
+    }
 }
 
 fn get_subtype_meta(
@@ -1818,16 +1814,45 @@ fn get_subtype_meta(
     let type_manager = context.type_manager();
     let key = key.as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
-    subtype!(
-        snapshot, type_manager, subtype, supertype,
-        (($sub:expr, $kind:ident) => {
-            paste::paste!(
-                unwrap_meta_value(
-                    type_manager.[<get_sub_ $kind:lower _type_annotations_declared_by_category>](snapshot, $sub, category)?
-                )
-            )
-        })
-    )
+    match (subtype.as_type(), supertype.as_type()) {
+        (Type::Entity(subtype), Type::Entity(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(unwrap_meta_value(type_manager.get_sub_entity_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                category,
+            )?)))
+        }
+        (Type::Relation(subtype), Type::Relation(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(unwrap_meta_value(type_manager.get_sub_relation_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                category,
+            )?)))
+        }
+        (Type::Attribute(subtype), Type::Attribute(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(unwrap_meta_value(type_manager.get_sub_attribute_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                category,
+            )?)))
+        }
+        (Type::RoleType(subtype), Type::RoleType(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            todo!()
+        }
+        (_, _) => Ok(None),
+    }
 }
 
 fn get_subtype_all_meta(
@@ -1837,19 +1862,58 @@ fn get_subtype_all_meta(
 ) -> Result<Option<Vec<AnnotationMeta>>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
-    subtype!(
-        snapshot, type_manager, subtype, supertype,
-        (($sub:expr, $kind:ident) => {
-            paste::paste!(
+    match (subtype.as_type(), supertype.as_type()) {
+        (Type::Entity(subtype), Type::Entity(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(
                 type_manager
-                    .[<get_sub_ $kind:lower _type_annotations_declared>](snapshot, $sub)?
+                    .get_sub_entity_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
                     .iter()
                     .filter_map(|anno| match anno {
                         SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
                         _ => None,
                     })
-                    .collect()
-            )
-        })
-    )
+                    .collect(),
+            ))
+        }
+        (Type::Relation(subtype), Type::Relation(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(
+                type_manager
+                    .get_sub_relation_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                    .iter()
+                    .filter_map(|anno| match anno {
+                        SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                        _ => None,
+                    })
+                    .collect(),
+            ))
+        }
+        (Type::Attribute(subtype), Type::Attribute(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            Ok(Some(
+                type_manager
+                    .get_sub_attribute_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                    .iter()
+                    .filter_map(|anno| match anno {
+                        SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                        _ => None,
+                    })
+                    .collect(),
+            ))
+        }
+        (Type::RoleType(subtype), Type::RoleType(supertype)) => {
+            if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
+                return Ok(None);
+            }
+            todo!()
+        }
+        (_, _) => Ok(None),
+    }
 }
