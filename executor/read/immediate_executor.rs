@@ -1811,7 +1811,7 @@ fn get_subtype_doc(
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
                 return Ok(None);
             }
-            todo!()
+            Ok(Some(VariableValue::Value(Value::String(Cow::Borrowed(""))))) // no annotations can exist on relates r2 as r1;
         }
         (_, _) => Ok(None),
     }
@@ -1862,7 +1862,7 @@ fn get_subtype_meta(
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
                 return Ok(None);
             }
-            todo!()
+            Ok(Some(VariableValue::Value(Value::String(Cow::Borrowed(""))))) // no annotations can exist on relates r2 as r1;
         }
         (_, _) => Ok(None),
     }
@@ -1925,7 +1925,7 @@ fn get_subtype_all_meta(
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
                 return Ok(None);
             }
-            todo!()
+            Ok(None) // no annotations can exist on relates r2 as r1;
         }
         (_, _) => Ok(None),
     }
