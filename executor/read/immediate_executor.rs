@@ -1430,10 +1430,7 @@ impl BuiltinCallExecutor {
         let subtype = &input_row[self.argument_positions[0].as_usize()];
         let supertype = &input_row[self.argument_positions[1].as_usize()];
         let metas = get_subtype_all_meta(context, subtype, supertype)?;
-        if let Some(metas) = metas {
-            put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?
-        }
-        Ok(())
+        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
     }
 
     fn execute_get_fun_doc(
@@ -1872,61 +1869,55 @@ fn get_subtype_all_meta(
     context: &ExecutionContext<impl ReadableSnapshot>,
     subtype: &VariableValue<'_>,
     supertype: &VariableValue<'_>,
-) -> Result<Option<Vec<AnnotationMeta>>, Box<ConceptReadError>> {
+) -> Result<Vec<AnnotationMeta>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
     let type_manager = context.type_manager();
     match (subtype.as_type(), supertype.as_type()) {
         (Type::Entity(subtype), Type::Entity(supertype)) => {
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                return Ok(None);
+                return Ok(Vec::new());
             }
-            Ok(Some(
-                type_manager
-                    .get_sub_entity_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
-                    .iter()
-                    .filter_map(|anno| match anno {
-                        SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                        _ => None,
-                    })
-                    .collect(),
-            ))
+            Ok(type_manager
+                .get_sub_entity_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .iter()
+                .filter_map(|anno| match anno {
+                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .collect())
         }
         (Type::Relation(subtype), Type::Relation(supertype)) => {
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                return Ok(None);
+                return Ok(Vec::new());
             }
-            Ok(Some(
-                type_manager
-                    .get_sub_relation_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
-                    .iter()
-                    .filter_map(|anno| match anno {
-                        SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                        _ => None,
-                    })
-                    .collect(),
-            ))
+            Ok(type_manager
+                .get_sub_relation_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .iter()
+                .filter_map(|anno| match anno {
+                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .collect())
         }
         (Type::Attribute(subtype), Type::Attribute(supertype)) => {
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                return Ok(None);
+                return Ok(Vec::new());
             }
-            Ok(Some(
-                type_manager
-                    .get_sub_attribute_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
-                    .iter()
-                    .filter_map(|anno| match anno {
-                        SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
-                        _ => None,
-                    })
-                    .collect(),
-            ))
+            Ok(type_manager
+                .get_sub_attribute_type_annotations_declared(snapshot, Sub::new(subtype, supertype))?
+                .iter()
+                .filter_map(|anno| match anno {
+                    SubAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .collect())
         }
         (Type::RoleType(subtype), Type::RoleType(supertype)) => {
             if subtype.get_supertype(snapshot, type_manager)? != Some(supertype) {
-                return Ok(None);
+                return Ok(Vec::new());
             }
-            Ok(None) // no annotations can exist on relates r2 as r1;
+            Ok(Vec::new()) // no annotations can exist on relates r2 as r1;
         }
-        (_, _) => Ok(None),
+        (_, _) => Ok(Vec::new()),
     }
 }
