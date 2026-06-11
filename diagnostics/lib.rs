@@ -283,10 +283,8 @@ impl Diagnostics {
 
     /// Render all monitoring metrics as a single JSON value.
     ///
-    /// The built-in typedb metrics are emitted at the top level (unchanged
-    /// shape for backwards compatibility). Any registered extensions are
-    /// emitted under `extensions.<name>` keyed by `Metrics::name`. PostHog is
-    /// not involved.
+    /// The built-in typedb metrics are emitted at the top level. Any registered extensions are
+    /// emitted under `extensions.<name>` keyed by `Metrics::name`.
     pub fn to_monitoring_json(&self) -> JSONValue {
         let mut value = <Self as Metrics>::write_json(self);
         let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");

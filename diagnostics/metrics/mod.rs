@@ -989,11 +989,6 @@ mod metrics_trait_tests {
 
     #[test]
     fn extensions_do_not_leak_into_posthog_payload() {
-        // PostHog uses to_posthog_reporting_json_against_snapshot, which goes
-        // through `to_full_posthog_reporting_json` or `to_minimal_posthog_reporting_json`.
-        // Neither of those touches our extensions Vec — extensions are strictly
-        // for the monitoring endpoint. Assert by checking the PostHog JSON
-        // doesn't mention our extension name.
         let diag = fresh_diagnostics();
         let ext = Arc::new(CrossCheckedExt::new());
         ext.observe(Duration::from_millis(7));
@@ -1009,15 +1004,6 @@ mod metrics_trait_tests {
 
     #[test]
     fn concurrent_observers_do_not_lose_samples_and_durations_match_external_total() {
-        // 8 threads x 2000 observations each = 16_000 total.
-        // Each observation feeds both the histogram AND an external AtomicU64
-        // accumulator. After join, assert:
-        //   (a) histogram count == thread_count × per_thread_count
-        //   (b) histogram sum == external accumulator (exact — we observe a
-        //       fixed `Duration` per thread so there's no measurement noise)
-        //   (c) the trait surface (write_prometheus/write_json) sees the same
-        //       numbers — extensions are concurrency-safe through Arc.
-
         let diag = Arc::new(fresh_diagnostics());
         let ext = Arc::new(CrossCheckedExt::new());
         diag.register(ext.clone());
@@ -1058,8 +1044,6 @@ mod metrics_trait_tests {
 
     #[test]
     fn measured_durations_match_observation_within_tolerance() {
-        // Cross-check: drive a known sleep, observe its elapsed time, and
-        // compare the histogram sum against the externally measured wall time.
         let diag = fresh_diagnostics();
         let ext = Arc::new(CrossCheckedExt::new());
         diag.register(ext.clone());
