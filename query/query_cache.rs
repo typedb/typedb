@@ -47,11 +47,11 @@ impl QueryCache {
     pub(crate) fn get(
         &self,
         preamble: Arc<Vec<Function>>,
-        given_rows: Arc<Option<TranslatedGiven>>,
+        given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
-        let key = IRQuery::new(preamble.clone(), given_rows, stages, fetch);
+        let key = IRQuery::new(preamble.clone(), given, stages, fetch);
         self.cache.get(&key).map(|mut found| {
             let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
             found.executable_functions.replace_preamble_parameters(replacement);
@@ -63,12 +63,12 @@ impl QueryCache {
         &self,
         statistics_sequence_number: SequenceNumber,
         preamble: Arc<Vec<Function>>,
-        given_rows: Arc<Option<TranslatedGiven>>,
+        given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
         pipeline: ExecutablePipeline,
     ) {
-        let key = IRQuery::new(preamble, given_rows, stages, fetch);
+        let key = IRQuery::new(preamble, given, stages, fetch);
         let read_lock = self.validity_requirements.read().unwrap();
         let ValidityRequirements { latest_schema_commit, latest_statistics } = &*read_lock;
         let may_insert = latest_schema_commit

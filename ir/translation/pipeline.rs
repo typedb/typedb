@@ -64,7 +64,7 @@ impl TranslatedPipeline {
     ) -> Self {
         TranslatedPipeline {
             translated_preamble,
-            translated_given: translated_given,
+            translated_given,
             translated_stages,
             translated_fetch,
             variable_registry: translation_context.variable_registry,

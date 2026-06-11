@@ -207,7 +207,7 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows_batch = validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)?;
+        let given_batch = validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)?;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
@@ -220,7 +220,7 @@ impl QueryManager {
             &executable_stages,
             executable_fetch,
             arced_parameters,
-            given_rows_batch,
+            given_batch,
             Arc::new(query_profile),
         )
         .map_err(|typedb_source| {
@@ -313,8 +313,7 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows_batch = match validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)
-        {
+        let given_batch = match validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry) {
             Ok(given_rows) => given_rows,
             Err(err) => return Err((snapshot, err)),
         };
@@ -330,7 +329,7 @@ impl QueryManager {
             executable_stages,
             executable_fetch,
             arced_parameters.clone(),
-            given_rows_batch,
+            given_batch,
             Arc::new(query_profile),
         ))
     }

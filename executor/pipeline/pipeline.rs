@@ -106,13 +106,13 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
-        given_rows: Batch,
+        given_batch: Batch,
         query_profile: Arc<QueryProfile>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new_with_profile(snapshot, thing_manager, parameters.clone(), query_profile);
 
-        let initial_iterator = InitialStage::new(given_rows);
+        let initial_iterator = InitialStage::new(given_batch);
         let initial_iterator = ReadStageIterator::Initial(Box::new(initial_iterator.into_iterator()));
         let mut stages = if let Some(given) = executable_given {
             let mut stages = Vec::with_capacity(executable_stages.len() + 1);
@@ -248,14 +248,14 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
-        given_rows: Batch,
+        given_batch: Batch,
         query_profile: Arc<QueryProfile>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context =
             ExecutionContext::new_with_profile(Arc::new(snapshot), thing_manager, parameters.clone(), query_profile);
 
-        let initial_iterator = WriteStageIterator::Initial(Box::new(InitialIterator::new(given_rows)));
+        let initial_iterator = WriteStageIterator::Initial(Box::new(InitialIterator::new(given_batch)));
         let mut stages = if let Some(given) = executable_given {
             let mut stages = Vec::with_capacity(executable_stages.len() + 1);
             stages.push(WritePipelineStage::Given(Box::new(GivenStageExecutor::new(given))));
