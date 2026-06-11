@@ -34,7 +34,7 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::query_manager::QueryManager;
+use query::{given_rows::GivenRowsSimple, query_manager::QueryManager};
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     MVCCStorage,
@@ -79,7 +79,7 @@ fn setup(
             thing_manager.clone(),
             &FunctionManager::default(),
             &query,
-            None,
+            None::<GivenRowsSimple>,
             data,
         )
         .unwrap();

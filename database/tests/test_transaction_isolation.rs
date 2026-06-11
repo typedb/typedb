@@ -16,6 +16,7 @@ use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::graph::thing::vertex_attribute::StringAttributeID;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions};
+use query::given_rows::GivenRowsSimple;
 use storage::{
     StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, snapshot::SnapshotError,
 };
@@ -58,7 +59,7 @@ fn run_write(tx: TransactionWrite<WALClient>, query: &str) -> TransactionWrite<W
         tx,
         QueryOptions::default_grpc(),
         pipeline,
-        None,
+        None::<GivenRowsSimple>,
         query.to_string(),
         ExecutionInterrupt::new_uninterruptible(),
     );

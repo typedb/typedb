@@ -26,6 +26,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions};
+use query::given_rows::GivenRowsSimple;
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
@@ -169,7 +170,7 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
                 tx,
                 QueryOptions::default_grpc(),
                 pipeline,
-                None,
+                None::<GivenRowsSimple>,
                 query_str,
                 ExecutionInterrupt::new_uninterruptible(),
             );
@@ -204,7 +205,7 @@ fn execute_insert_batch(
             tx,
             QueryOptions::default_grpc(),
             pipeline,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -241,7 +242,7 @@ fn execute_update_batch(
             tx,
             QueryOptions::default_grpc(),
             pipeline,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -280,7 +281,7 @@ fn execute_relation_batch(
             tx,
             QueryOptions::default_grpc(),
             pipeline,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -309,7 +310,7 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
             thing_manager.clone(),
             function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();

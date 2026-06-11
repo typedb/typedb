@@ -28,7 +28,7 @@ use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
-use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
+use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     MVCCStorage,
@@ -131,7 +131,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             thing_manager,
             &function_manager,
             &typeql_insert,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .map_err(|(snapshot, err)| (err, snapshot))?;

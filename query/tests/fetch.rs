@@ -10,7 +10,7 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
-use query::{query_cache::QueryCache, query_manager::QueryManager};
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -50,7 +50,15 @@ fn insert_data(
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let query = typeql::parse_query(query_string).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query, None, query_string)
+        .prepare_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            &query,
+            None::<GivenRowsSimple>,
+            query_string,
+        )
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
@@ -127,7 +135,7 @@ fetch {
             thing_manager.clone(),
             &function_manager,
             &pipeline,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();

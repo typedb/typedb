@@ -17,7 +17,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use query::{query_cache::QueryCache, query_manager::QueryManager};
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::{TempDir, assert_matches};
@@ -78,7 +78,7 @@ fn test_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();
@@ -120,7 +120,7 @@ fn test_insert_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();
@@ -158,7 +158,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();
@@ -180,7 +180,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-            None,
+            None::<GivenRowsSimple>,
             query,
         )
         .unwrap();
@@ -199,7 +199,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-            None,
+            None::<GivenRowsSimple>,
             query,
         )
         .unwrap();
@@ -228,7 +228,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();
@@ -253,7 +253,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-            None,
+            None::<GivenRowsSimple>,
             query,
         )
         .unwrap();
@@ -272,7 +272,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-            None,
+            None::<GivenRowsSimple>,
             query,
         )
         .unwrap();
@@ -296,7 +296,7 @@ fn test_match_delete_has() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
-            None,
+            None::<GivenRowsSimple>,
             insert_query_str,
         )
         .unwrap();
@@ -334,7 +334,7 @@ fn test_match_delete_has() {
             context.thing_manager.clone(),
             &context.function_manager,
             &delete_query,
-            None,
+            None::<GivenRowsSimple>,
             delete_query_str,
         )
         .unwrap();
@@ -377,7 +377,7 @@ fn test_insert_match_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();
@@ -407,7 +407,7 @@ fn test_insert_match_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
-            None,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();
@@ -440,7 +440,7 @@ fn test_match_sort() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
-            None,
+            None::<GivenRowsSimple>,
             insert_query_str,
         )
         .unwrap();
@@ -463,7 +463,7 @@ fn test_match_sort() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-            None,
+            None::<GivenRowsSimple>,
             query,
         )
         .unwrap();
@@ -505,7 +505,7 @@ fn test_select() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
-            None,
+            None::<GivenRowsSimple>,
             insert_query_str,
         )
         .unwrap();
@@ -529,7 +529,7 @@ fn test_select() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
-                None,
+                None::<GivenRowsSimple>,
                 query,
             )
             .unwrap();
@@ -549,7 +549,7 @@ fn test_select() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
-                None,
+                None::<GivenRowsSimple>,
                 query,
             )
             .unwrap();
@@ -575,7 +575,7 @@ fn test_require() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
-            None,
+            None::<GivenRowsSimple>,
             insert_query_str,
         )
         .unwrap();
@@ -599,7 +599,7 @@ fn test_require() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
-                None,
+                None::<GivenRowsSimple>,
                 query,
             )
             .unwrap();
