@@ -10,7 +10,6 @@ use concept::{
         Capability, KindAPI, Ordering, TypeAPI,
         annotation::{AnnotationCategory, HasAnnotationCategory},
         attribute_type::AttributeType,
-        entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -60,44 +59,12 @@ macro_rules! return_exists_same_none_if_some {
     };
 }
 
-macro_rules! return_exists_same_some_if_some {
-    ($opt:ident) => {
-        if let Some(some) = $opt {
-            return Ok(DefinableStatus::ExistsSame(Some(some)));
-        }
-    };
-}
-
 macro_rules! return_exists_different_if_some {
     ($opt:ident) => {
         if let Some(some) = $opt {
             return Ok(DefinableStatus::ExistsDifferent(some));
         }
     };
-}
-
-macro_rules! get_type_status {
-    ($(
-        fn $method_name:ident() -> $type_:ident = $get_method:ident;
-    )*) => {
-        $(
-            pub(crate) fn $method_name(
-                snapshot: &impl ReadableSnapshot,
-                type_manager: &TypeManager,
-                label: &Label,
-            ) -> Result<DefinableStatus<$type_>, Box<ConceptReadError>> {
-                let type_opt = type_manager.$get_method(snapshot, label)?;
-                get_some_or_return_does_not_exist!(_ = type_opt);
-                Ok(DefinableStatus::ExistsSame(None))
-            }
-        )*
-    }
-}
-
-get_type_status! {
-    fn get_entity_type_status() -> EntityType = get_entity_type;
-    fn get_relation_type_status() -> RelationType = get_relation_type;
-    fn get_attribute_type_status() -> AttributeType = get_attribute_type;
 }
 
 pub(crate) fn get_struct_status(
@@ -179,7 +146,7 @@ pub(crate) fn get_capability_annotation_status<CAP: Capability>(
 
     let different_annotation_opt = existing_annotations
         .into_iter()
-        .find(|existing_annotation| (*existing_annotation).has_category(&annotation_category))
+        .find(|existing_annotation| existing_annotation.has_category(&annotation_category))
         .cloned();
     return_exists_different_if_some!(different_annotation_opt);
 
