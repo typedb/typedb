@@ -13,10 +13,11 @@ pub trait MonitoringSection: Send + Sync + std::fmt::Debug {
     /// starts with a blank line and one or more `# HELP` / `# TYPE` blocks.
     fn write_prometheus(&self, out: &mut String);
 
-    /// Return this source's metrics as a JSON value for the monitoring endpoint.
+    /// Return this source's metrics as a JSON object for the monitoring
+    /// endpoint. The return type is `Map<String, Value>` (a JSON object).
     /// Default returns an empty object — implementers may opt in by overriding.
-    fn write_json(&self) -> serde_json::Value {
-        serde_json::Value::Object(Default::default())
+    fn write_json(&self) -> serde_json::Map<String, serde_json::Value> {
+        serde_json::Map::new()
     }
 }
 
@@ -93,12 +94,12 @@ mod tests {
             out.push_str(&format!("test_duration_seconds_count {}\n", snap.count));
             out.push_str(&format!("test_duration_seconds_sum {}\n", snap.sum as f64 / 1e9));
         }
-        fn write_json(&self) -> JsonValue {
+        fn write_json(&self) -> serde_json::Map<String, JsonValue> {
             let snap = self.snapshot();
-            json!({
-                "invocations": self.invocations.load(Ordering::Relaxed),
-                "duration": { "count": snap.count, "sum_nanos": snap.sum }
-            })
+            let mut obj = serde_json::Map::new();
+            obj.insert("invocations".to_string(), json!(self.invocations.load(Ordering::Relaxed)));
+            obj.insert("duration".to_string(), json!({ "count": snap.count, "sum_nanos": snap.sum }));
+            obj
         }
     }
 
@@ -118,7 +119,7 @@ mod tests {
     fn register_then_scrape_emits_extension_in_prometheus_and_json() {
         let diag = fresh_diagnostics();
         let ext = Arc::new(CrossCheckedExt::new());
-        diag.register(ext.clone());
+        diag.register_monitoring_extension(ext.clone());
         ext.observe(Duration::from_micros(50));
         ext.observe(Duration::from_millis(5));
 
@@ -142,8 +143,8 @@ mod tests {
         ext1.observe(Duration::from_millis(1));
         ext2.observe(Duration::from_millis(2));
         ext2.observe(Duration::from_millis(3));
-        diag.register(ext1.clone());
-        diag.register(ext2.clone()); // same name "cross_checked_ext" — should replace ext1
+        diag.register_monitoring_extension(ext1.clone());
+        diag.register_monitoring_extension(ext2.clone()); // same name "cross_checked_ext" — should replace ext1
         let j = diag.to_monitoring_json();
         // Only ext2 should be in the output; ext1 is gone.
         assert_eq!(j["extensions"]["cross_checked_ext"]["invocations"], json!(2));
@@ -154,7 +155,7 @@ mod tests {
         let diag = fresh_diagnostics();
         let ext = Arc::new(CrossCheckedExt::new());
         ext.observe(Duration::from_millis(7));
-        diag.register(ext);
+        diag.register_monitoring_extension(ext);
         let posthog = diag.to_posthog_reporting_json_against_snapshot("test_api_key");
         let posthog_str = posthog.to_string();
         assert!(!posthog_str.contains("cross_checked_ext"), "extension leaked into PostHog payload: {posthog_str}");
@@ -168,7 +169,7 @@ mod tests {
     fn concurrent_observers_do_not_lose_samples_and_durations_match_external_total() {
         let diag = Arc::new(fresh_diagnostics());
         let ext = Arc::new(CrossCheckedExt::new());
-        diag.register(ext.clone());
+        diag.register_monitoring_extension(ext.clone());
 
         const THREADS: usize = 8;
         const PER_THREAD: usize = 2_000;
@@ -208,7 +209,7 @@ mod tests {
     fn measured_durations_match_observation_within_tolerance() {
         let diag = fresh_diagnostics();
         let ext = Arc::new(CrossCheckedExt::new());
-        diag.register(ext.clone());
+        diag.register_monitoring_extension(ext.clone());
 
         let mut external_sum = Duration::ZERO;
         for _ in 0..10 {

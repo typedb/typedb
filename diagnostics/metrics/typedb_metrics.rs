@@ -258,7 +258,7 @@ impl MonitoringSection for TypeDBMetrics {
         out.push_str(&to_monitoring_prometheus(self));
     }
 
-    fn write_json(&self) -> JSONValue {
+    fn write_json(&self) -> serde_json::Map<String, JSONValue> {
         to_monitoring_json(self)
     }
 }

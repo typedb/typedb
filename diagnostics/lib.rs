@@ -116,7 +116,7 @@ impl Diagnostics {
         }
     }
 
-    pub fn register(&self, source: Arc<dyn MonitoringSection>) {
+    pub fn register_monitoring_extension(&self, source: Arc<dyn MonitoringSection>) {
         let mut exts = self.monitoring_extensions.write().expect("Expected write lock acquisition on extensions");
         let name = source.name().to_string();
         exts.retain(|s| s.name() != name);
@@ -276,27 +276,16 @@ impl Diagnostics {
     /// The built-in typedb metrics are emitted at the top level. Any registered extensions are
     /// emitted under `extensions.<name>` keyed by `MonitoringSection::name`.
     pub fn to_monitoring_json(&self) -> JSONValue {
-        let mut value = self.typedb.write_json();
+        let mut obj = self.typedb.write_json();
         let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
         if !exts.is_empty() {
             let mut ext_map = serde_json::Map::with_capacity(exts.len());
             for ext in exts.iter() {
-                ext_map.insert(ext.name().to_string(), ext.write_json());
+                ext_map.insert(ext.name().to_string(), JSONValue::Object(ext.write_json()));
             }
-            if let JSONValue::Object(ref mut obj) = value {
-                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
-            } else {
-                // Built-in JSON was not an object — wrap in one so we can
-                // still expose extensions. Should not happen with the current
-                // built-in implementation, but guard defensively rather than
-                // panic in a monitoring path.
-                let mut obj = serde_json::Map::new();
-                obj.insert("typedb".to_string(), value);
-                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
-                value = JSONValue::Object(obj);
-            }
+            obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
         }
-        value
+        JSONValue::Object(obj)
     }
 
     pub fn to_monitoring_prometheus(&self) -> String {

@@ -87,7 +87,7 @@ impl DiagnosticsManager {
     }
 
     pub fn register_metrics(&self, source: Arc<dyn MonitoringSection>) {
-        self.diagnostics.register(source);
+        self.diagnostics.register_monitoring_extension(source);
     }
 
     diagnostics_method! {

@@ -493,8 +493,8 @@ pub(crate) struct JsonMonitoringTransactionLifecycleEntry {
 // QueryType + LoadKind need Serialize for the JSON output. We add a
 // lowercased-name implementation via serde derive on the source types.
 
-pub(crate) fn to_monitoring_json(typedb: &TypeDBMetrics) -> Value {
-    json!(to_monitoring_report(typedb))
+pub(crate) fn to_monitoring_json(typedb: &TypeDBMetrics) -> serde_json::Map<String, Value> {
+    crate::reports::ToJsonMap::to_json_map(&to_monitoring_report(typedb))
 }
 
 pub(crate) fn to_monitoring_report(typedb: &TypeDBMetrics) -> JsonMonitoringReport {
