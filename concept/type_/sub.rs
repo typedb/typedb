@@ -21,7 +21,7 @@ use crate::{
         Capability, TypeAPI,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         attribute_type::AttributeType,
         constraint::CapabilityConstraint,
@@ -147,7 +147,7 @@ impl_capability_for_sub!(EntityType);
 impl_capability_for_sub!(RelationType);
 impl_capability_for_sub!(AttributeType);
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum SubAnnotation {
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),

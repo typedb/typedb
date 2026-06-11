@@ -22,7 +22,7 @@ use crate::{
         Capability,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         constraint::CapabilityConstraint,
         object_type::ObjectType,
@@ -181,7 +181,7 @@ impl Capability for Plays {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum PlaysAnnotation {
     Cardinality(AnnotationCardinality),
     Doc(AnnotationDoc),
