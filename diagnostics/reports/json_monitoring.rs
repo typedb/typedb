@@ -10,7 +10,7 @@ use serde::{Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Value, json};
 
 use crate::{
-    DatabaseId, Diagnostics,
+    DatabaseId, TypeDBMetrics,
     metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, LoadKind, QueryType},
     reports::{
         ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, ProcessReport,
@@ -493,15 +493,15 @@ pub(crate) struct JsonMonitoringTransactionLifecycleEntry {
 // QueryType + LoadKind need Serialize for the JSON output. We add a
 // lowercased-name implementation via serde derive on the source types.
 
-pub(crate) fn to_monitoring_json(diagnostics: &Diagnostics) -> Value {
-    json!(to_monitoring_report(diagnostics))
+pub(crate) fn to_monitoring_json(typedb: &TypeDBMetrics) -> Value {
+    json!(to_monitoring_report(typedb))
 }
 
-pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringReport {
-    let server_properties = diagnostics.server_properties.to_state_report().into();
-    let server = diagnostics.server_metrics.to_full_state_report().into();
+pub(crate) fn to_monitoring_report(typedb: &TypeDBMetrics) -> JsonMonitoringReport {
+    let server_properties = typedb.server_properties.to_state_report().into();
+    let server = typedb.server_metrics.to_full_state_report().into();
 
-    let load = diagnostics
+    let load = typedb
         .lock_load_metrics_read()
         .values()
         .filter_map(|metrics| metrics.to_state_report().map(|load_report| load_report.into()))
@@ -511,13 +511,13 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
     let mut errors_builder = JsonMonitoringErrorReportsBuilder::new();
 
     for client in ALL_CLIENT_ENDPOINTS {
-        for metrics in diagnostics.lock_action_metrics_read(client).values() {
+        for metrics in typedb.lock_action_metrics_read(client).values() {
             for action_report in metrics.to_state_reports() {
                 actions_builder.insert(action_report.into());
             }
         }
 
-        for metrics in diagnostics.lock_error_metrics_read(client).values() {
+        for metrics in typedb.lock_error_metrics_read(client).values() {
             for error_report in metrics.to_state_reports() {
                 errors_builder.insert(error_report.into());
             }
@@ -525,7 +525,7 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
     }
 
     // Sort by hash so exposition order is stable across scrapes.
-    let mut histogram_snapshots = diagnostics.histogram_snapshots();
+    let mut histogram_snapshots = typedb.histogram_snapshots();
     histogram_snapshots.sort_by_key(|(id, _)| id.hash_value());
 
     let mut query_duration = Vec::new();

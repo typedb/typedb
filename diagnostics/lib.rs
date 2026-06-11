@@ -36,7 +36,7 @@ mod monitoring_server;
 mod reporter;
 mod reports;
 
-pub use metrics::Metrics;
+pub use metrics::MonitoringSection;
 
 #[macro_export]
 macro_rules! error_with_report {
@@ -88,29 +88,24 @@ impl fmt::Display for DatabaseId {
 }
 
 #[derive(Debug)]
-pub struct Diagnostics {
-    server_properties: ServerProperties,
-    server_metrics: ServerMetrics,
+pub struct TypeDBMetrics {
+    pub(crate) server_properties: ServerProperties,
+    pub(crate) server_metrics: ServerMetrics,
     load_metrics: RwLock<HashMap<DatabaseHash, LoadMetrics>>,
     action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
     error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
     histogram_metrics: RwLock<HashMap<DatabaseHash, DatabaseHistograms>>,
-    monitoring_extensions: RwLock<Vec<Arc<dyn Metrics>>>,
-
-    is_full_reporting: bool,
-    metrics_enabled: bool,
 }
 
-impl Diagnostics {
-    pub fn new(
+impl TypeDBMetrics {
+    pub(crate) fn new(
         deployment_id: String,
         server_id: String,
         distribution: String,
         version: String,
         data_directory: PathBuf,
         is_reporting_enabled: bool,
-        metrics_enabled: bool,
-    ) -> Diagnostics {
+    ) -> Self {
         Self {
             server_properties: ServerProperties::new(deployment_id, server_id, distribution, is_reporting_enabled),
             server_metrics: ServerMetrics::new(version, data_directory),
@@ -118,217 +113,10 @@ impl Diagnostics {
             action_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
             error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
             histogram_metrics: RwLock::new(HashMap::new()),
-
-            monitoring_extensions: RwLock::new(Vec::new()),
-
-            is_full_reporting: is_reporting_enabled,
-            metrics_enabled,
         }
     }
 
-    pub fn register(&self, source: Arc<dyn Metrics>) {
-        let mut exts = self.monitoring_extensions.write().expect("Expected write lock acquisition on extensions");
-        let name = source.name().to_string();
-        exts.retain(|s| s.name() != name);
-        exts.push(source);
-    }
-
-    pub(crate) fn metrics_enabled(&self) -> bool {
-        self.metrics_enabled
-    }
-
-    pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let mut loads = self.lock_load_metrics_write();
-        let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
-
-        for (database_name, snapshot) in snapshots {
-            let id = DatabaseId::new(database_name.as_ref());
-            let database_hash = id.hash_value();
-            deleted_databases.remove(&database_hash);
-
-            let database_load = loads.entry(database_hash).or_insert_with(|| LoadMetrics::new(id));
-            database_load.set_snapshot(snapshot);
-        }
-
-        for database_hash in deleted_databases {
-            loads.get_mut(&database_hash).expect("Expected database in load metrics").mark_deleted();
-        }
-    }
-
-    pub fn increment_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let loads = self.lock_load_metrics_read_for_database(database_name);
-        let database_hash = hash_string_consistently(database_name);
-        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
-    }
-
-    pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind) {
-        if !self.metrics_enabled {
-            return;
-        }
-        // Decrement must have been preceded by increment, so the database is already present.
-        let database_hash = hash_string_consistently(database_name);
-        let loads = self.lock_load_metrics_read();
-        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
-    }
-
-    pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = database_name.map(hash_string_consistently);
-        let actions = self.lock_action_metrics_read_for_database(client, database_name, database_hash);
-        actions.get(&database_hash).expect("Expected database in actions").submit_success(action_kind);
-    }
-
-    pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = database_name.map(hash_string_consistently);
-        let actions = self.lock_action_metrics_read_for_database(client, database_name, database_hash);
-        actions.get(&database_hash).expect("Expected database in actions").submit_fail(action_kind);
-    }
-
-    pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<&str>, error_code: String) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = database_name.map(hash_string_consistently);
-        let errors = self.lock_error_metrics_read_for_database(client, database_name, database_hash);
-        errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
-    }
-
-    pub fn observe_query_duration(&self, database_name: &str, kind: QueryType, duration: std::time::Duration) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
-        histograms.get(&database_hash).expect("Expected database in histograms").observe_query_duration(kind, duration);
-    }
-
-    pub fn observe_transaction_duration(&self, database_name: &str, kind: LoadKind, duration: std::time::Duration) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
-        histograms
-            .get(&database_hash)
-            .expect("Expected database in histograms")
-            .observe_transaction_duration(kind, duration);
-    }
-
-    pub fn observe_queries_per_transaction(&self, database_name: &str, queries: u64) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
-        histograms
-            .get(&database_hash)
-            .expect("Expected database in histograms")
-            .observe_queries_per_transaction(queries);
-    }
-
-    pub fn record_transaction_outcome(
-        &self,
-        database_name: &str,
-        kind: LoadKind,
-        outcome: crate::metrics::TransactionOutcome,
-    ) {
-        if !self.metrics_enabled {
-            return;
-        }
-        let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
-        histograms
-            .get(&database_hash)
-            .expect("Expected database in histograms")
-            .record_transaction_outcome(kind, outcome);
-    }
-
-    pub fn wal_metrics(&self, database_name: &str) -> crate::metrics::FsyncMetrics {
-        let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
-        let entry = histograms.get(&database_hash).expect("Expected database in histograms");
-        entry.wal_metrics()
-    }
-
-    pub(crate) fn histogram_snapshots(&self) -> Vec<(Arc<DatabaseId>, crate::metrics::DatabaseHistogramsSnapshot)> {
-        self.lock_histogram_metrics_read().values().map(|db| (db.database_id().clone(), db.snapshot())).collect()
-    }
-
-    pub fn take_snapshot(&self) {
-        self.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
-        for client in ALL_CLIENT_ENDPOINTS {
-            self.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
-            self.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
-        }
-    }
-
-    pub fn restore_posthog_snapshot(&self) {
-        self.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
-        for client in ALL_CLIENT_ENDPOINTS {
-            self.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
-            self.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
-        }
-    }
-
-    /// Render all monitoring metrics as a single JSON value.
-    ///
-    /// The built-in typedb metrics are emitted at the top level. Any registered extensions are
-    /// emitted under `extensions.<name>` keyed by `Metrics::name`.
-    pub fn to_monitoring_json(&self) -> JSONValue {
-        let mut value = <Self as Metrics>::write_json(self);
-        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
-        if !exts.is_empty() {
-            let mut ext_map = serde_json::Map::with_capacity(exts.len());
-            for ext in exts.iter() {
-                ext_map.insert(ext.name().to_string(), ext.write_json());
-            }
-            if let JSONValue::Object(ref mut obj) = value {
-                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
-            } else {
-                // Built-in JSON was not an object — wrap in one so we can
-                // still expose extensions. Should not happen with the current
-                // built-in implementation, but guard defensively rather than
-                // panic in a monitoring path.
-                let mut obj = serde_json::Map::new();
-                obj.insert("typedb".to_string(), value);
-                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
-                value = JSONValue::Object(obj);
-            }
-        }
-        value
-    }
-
-    pub fn to_monitoring_prometheus(&self) -> String {
-        let mut out = String::new();
-        <Self as Metrics>::write_prometheus(self, &mut out);
-        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
-        for ext in exts.iter() {
-            ext.write_prometheus(&mut out);
-        }
-        out
-    }
-
-    pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
-        match self.is_full_reporting {
-            true => to_full_posthog_reporting_json(self, api_key),
-            false => to_minimal_posthog_reporting_json(self, api_key),
-        }
-    }
-}
-
-impl Diagnostics {
-    fn lock_load_metrics_read_for_database(
+    pub(crate) fn lock_load_metrics_read_for_database(
         &self,
         database_name: &str,
     ) -> RwLockReadGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
@@ -360,15 +148,15 @@ impl Diagnostics {
         }
     }
 
-    fn lock_load_metrics_read(&self) -> RwLockReadGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
+    pub(crate) fn lock_load_metrics_read(&self) -> RwLockReadGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
         self.load_metrics.read().expect("Expected read lock acquisition")
     }
 
-    fn lock_load_metrics_write(&self) -> RwLockWriteGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
+    pub(crate) fn lock_load_metrics_write(&self) -> RwLockWriteGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
         self.load_metrics.write().expect("Expected write lock acquisition")
     }
 
-    fn lock_histogram_metrics_read_for_database(
+    pub(crate) fn lock_histogram_metrics_read_for_database(
         &self,
         database_name: &str,
     ) -> RwLockReadGuard<'_, HashMap<DatabaseHash, DatabaseHistograms>> {
@@ -408,7 +196,7 @@ impl Diagnostics {
         self.histogram_metrics.write().expect("Expected write lock acquisition")
     }
 
-    fn lock_action_metrics_read_for_database(
+    pub(crate) fn lock_action_metrics_read_for_database(
         &self,
         client: ClientEndpoint,
         database_name: Option<&str>,
@@ -454,7 +242,7 @@ impl Diagnostics {
             .expect("Expected read lock acquisition")
     }
 
-    fn lock_action_metrics_write(
+    pub(crate) fn lock_action_metrics_write(
         &self,
         client: ClientEndpoint,
     ) -> RwLockWriteGuard<'_, HashMap<DatabaseHashOpt, ActionMetrics>> {
@@ -465,7 +253,7 @@ impl Diagnostics {
             .expect("Expected write lock acquisition")
     }
 
-    fn lock_error_metrics_read_for_database(
+    pub(crate) fn lock_error_metrics_read_for_database(
         &self,
         client: ClientEndpoint,
         database_name: Option<&str>,
@@ -511,7 +299,7 @@ impl Diagnostics {
             .expect("Expected read lock acquisition")
     }
 
-    fn lock_error_metrics_write(
+    pub(crate) fn lock_error_metrics_write(
         &self,
         client: ClientEndpoint,
     ) -> RwLockWriteGuard<'_, HashMap<DatabaseHashOpt, ErrorMetrics>> {
@@ -521,16 +309,13 @@ impl Diagnostics {
             .write()
             .expect("Expected write lock acquisition")
     }
+
+    pub(crate) fn histogram_snapshots(&self) -> Vec<(Arc<DatabaseId>, crate::metrics::DatabaseHistogramsSnapshot)> {
+        self.lock_histogram_metrics_read().values().map(|db| (db.database_id().clone(), db.snapshot())).collect()
+    }
 }
 
-// Used when the hash has to be consistent over time and restarts (default hasher does not suit)
-pub fn hash_string_consistently(value: impl AsRef<str> + Hash) -> u64 {
-    let mut hasher = Xxh3::new();
-    hasher.update(value.as_ref().as_bytes());
-    hasher.digest()
-}
-
-impl Metrics for Diagnostics {
+impl MonitoringSection for TypeDBMetrics {
     fn name(&self) -> &str {
         "typedb"
     }
@@ -542,4 +327,246 @@ impl Metrics for Diagnostics {
     fn write_json(&self) -> JSONValue {
         to_monitoring_json(self)
     }
+}
+
+#[derive(Debug)]
+pub struct Diagnostics {
+    typedb: TypeDBMetrics,
+    monitoring_extensions: RwLock<Vec<Arc<dyn MonitoringSection>>>,
+
+    is_full_reporting: bool,
+    metrics_enabled: bool,
+}
+
+impl Diagnostics {
+    pub fn new(
+        deployment_id: String,
+        server_id: String,
+        distribution: String,
+        version: String,
+        data_directory: PathBuf,
+        is_reporting_enabled: bool,
+        metrics_enabled: bool,
+    ) -> Diagnostics {
+        Self {
+            typedb: TypeDBMetrics::new(
+                deployment_id,
+                server_id,
+                distribution,
+                version,
+                data_directory,
+                is_reporting_enabled,
+            ),
+            monitoring_extensions: RwLock::new(Vec::new()),
+            is_full_reporting: is_reporting_enabled,
+            metrics_enabled,
+        }
+    }
+
+    pub fn register(&self, source: Arc<dyn MonitoringSection>) {
+        let mut exts = self.monitoring_extensions.write().expect("Expected write lock acquisition on extensions");
+        let name = source.name().to_string();
+        exts.retain(|s| s.name() != name);
+        exts.push(source);
+    }
+
+    pub(crate) fn metrics_enabled(&self) -> bool {
+        self.metrics_enabled
+    }
+
+    pub(crate) fn typedb(&self) -> &TypeDBMetrics {
+        &self.typedb
+    }
+
+    pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let mut loads = self.typedb.lock_load_metrics_write();
+        let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
+
+        for (database_name, snapshot) in snapshots {
+            let id = DatabaseId::new(database_name.as_ref());
+            let database_hash = id.hash_value();
+            deleted_databases.remove(&database_hash);
+
+            let database_load = loads.entry(database_hash).or_insert_with(|| LoadMetrics::new(id));
+            database_load.set_snapshot(snapshot);
+        }
+
+        for database_hash in deleted_databases {
+            loads.get_mut(&database_hash).expect("Expected database in load metrics").mark_deleted();
+        }
+    }
+
+    pub fn increment_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let loads = self.typedb.lock_load_metrics_read_for_database(database_name);
+        let database_hash = hash_string_consistently(database_name);
+        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
+    }
+
+    pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind) {
+        if !self.metrics_enabled {
+            return;
+        }
+        // Decrement must have been preceded by increment, so the database is already present.
+        let database_hash = hash_string_consistently(database_name);
+        let loads = self.typedb.lock_load_metrics_read();
+        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
+    }
+
+    pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = database_name.map(hash_string_consistently);
+        let actions = self.typedb.lock_action_metrics_read_for_database(client, database_name, database_hash);
+        actions.get(&database_hash).expect("Expected database in actions").submit_success(action_kind);
+    }
+
+    pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = database_name.map(hash_string_consistently);
+        let actions = self.typedb.lock_action_metrics_read_for_database(client, database_name, database_hash);
+        actions.get(&database_hash).expect("Expected database in actions").submit_fail(action_kind);
+    }
+
+    pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<&str>, error_code: String) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = database_name.map(hash_string_consistently);
+        let errors = self.typedb.lock_error_metrics_read_for_database(client, database_name, database_hash);
+        errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
+    }
+
+    pub fn observe_query_duration(&self, database_name: &str, kind: QueryType, duration: std::time::Duration) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = hash_string_consistently(database_name);
+        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        histograms.get(&database_hash).expect("Expected database in histograms").observe_query_duration(kind, duration);
+    }
+
+    pub fn observe_transaction_duration(&self, database_name: &str, kind: LoadKind, duration: std::time::Duration) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = hash_string_consistently(database_name);
+        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .observe_transaction_duration(kind, duration);
+    }
+
+    pub fn observe_queries_per_transaction(&self, database_name: &str, queries: u64) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = hash_string_consistently(database_name);
+        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .observe_queries_per_transaction(queries);
+    }
+
+    pub fn record_transaction_outcome(
+        &self,
+        database_name: &str,
+        kind: LoadKind,
+        outcome: crate::metrics::TransactionOutcome,
+    ) {
+        if !self.metrics_enabled {
+            return;
+        }
+        let database_hash = hash_string_consistently(database_name);
+        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .record_transaction_outcome(kind, outcome);
+    }
+
+    pub fn wal_metrics(&self, database_name: &str) -> crate::metrics::FsyncMetrics {
+        let database_hash = hash_string_consistently(database_name);
+        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        let entry = histograms.get(&database_hash).expect("Expected database in histograms");
+        entry.wal_metrics()
+    }
+
+    pub fn take_snapshot(&self) {
+        self.typedb.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
+        for client in ALL_CLIENT_ENDPOINTS {
+            self.typedb.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
+            self.typedb.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
+        }
+    }
+
+    pub fn restore_posthog_snapshot(&self) {
+        self.typedb.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
+        for client in ALL_CLIENT_ENDPOINTS {
+            self.typedb.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
+            self.typedb.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
+        }
+    }
+
+    /// Render all monitoring metrics as a single JSON value.
+    ///
+    /// The built-in typedb metrics are emitted at the top level. Any registered extensions are
+    /// emitted under `extensions.<name>` keyed by `MonitoringSection::name`.
+    pub fn to_monitoring_json(&self) -> JSONValue {
+        let mut value = self.typedb.write_json();
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        if !exts.is_empty() {
+            let mut ext_map = serde_json::Map::with_capacity(exts.len());
+            for ext in exts.iter() {
+                ext_map.insert(ext.name().to_string(), ext.write_json());
+            }
+            if let JSONValue::Object(ref mut obj) = value {
+                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
+            } else {
+                // Built-in JSON was not an object — wrap in one so we can
+                // still expose extensions. Should not happen with the current
+                // built-in implementation, but guard defensively rather than
+                // panic in a monitoring path.
+                let mut obj = serde_json::Map::new();
+                obj.insert("typedb".to_string(), value);
+                obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
+                value = JSONValue::Object(obj);
+            }
+        }
+        value
+    }
+
+    pub fn to_monitoring_prometheus(&self) -> String {
+        let mut out = String::new();
+        self.typedb.write_prometheus(&mut out);
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        for ext in exts.iter() {
+            ext.write_prometheus(&mut out);
+        }
+        out
+    }
+
+    pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
+        match self.is_full_reporting {
+            true => to_full_posthog_reporting_json(self, api_key),
+            false => to_minimal_posthog_reporting_json(self, api_key),
+        }
+    }
+}
+
+// Used when the hash has to be consistent over time and restarts (default hasher does not suit)
+pub fn hash_string_consistently(value: impl AsRef<str> + Hash) -> u64 {
+    let mut hasher = Xxh3::new();
+    hasher.update(value.as_ref().as_bytes());
+    hasher.digest()
 }

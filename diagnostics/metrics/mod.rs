@@ -845,7 +845,7 @@ pub struct DatabaseHistogramsSnapshot {
     pub wal_bytes_written: u64,
 }
 
-pub trait Metrics: Send + Sync + fmt::Debug {
+pub trait MonitoringSection: Send + Sync + fmt::Debug {
     /// Stable identifier for this metrics source. Used as the JSON section key
     /// and for de-duplication on registration.
     fn name(&self) -> &str;
@@ -875,7 +875,7 @@ mod metrics_trait_tests {
 
     use serde_json::{Value as JsonValue, json};
 
-    use super::{HistogramMetrics, HistogramSnapshot, HistogramUnit, Metrics};
+    use super::{HistogramMetrics, HistogramSnapshot, HistogramUnit, MonitoringSection};
     use crate::Diagnostics;
 
     #[derive(Debug)]
@@ -909,7 +909,7 @@ mod metrics_trait_tests {
         }
     }
 
-    impl Metrics for CrossCheckedExt {
+    impl MonitoringSection for CrossCheckedExt {
         fn name(&self) -> &str {
             "cross_checked_ext"
         }
