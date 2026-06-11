@@ -737,7 +737,7 @@ impl AnnotationCategory {
             AnnotationCategory::Range => typeql::token::Annotation::Range.as_str(),
             AnnotationCategory::Values => typeql::token::Annotation::Values.as_str(),
             AnnotationCategory::Doc => typeql::token::Annotation::Doc.as_str(),
-            AnnotationCategory::Meta(_) => typeql::token::Annotation::Meta.as_str(), // do we need key?
+            AnnotationCategory::Meta(_) => typeql::token::Annotation::Meta.as_str(),
         }
     }
 }
