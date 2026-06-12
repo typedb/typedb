@@ -33,6 +33,7 @@ pub mod file_metrics;
 pub mod histogram_metrics;
 mod system_sampler;
 pub mod transaction_metrics;
+pub mod typedb_metrics;
 pub(crate) use error_metrics::ErrorMetrics;
 pub use file_metrics::FsyncMetrics;
 pub use histogram_metrics::{HistogramMetrics, HistogramSnapshot, HistogramUnit};
@@ -42,6 +43,7 @@ pub use transaction_metrics::{
     LoadKind, QueryType, ReadQueryMetrics, SchemaQueryMetrics, TransactionLifecycleSnapshot, TransactionMetrics,
     TransactionOutcome, WriteQueryMetrics,
 };
+pub use typedb_metrics::TypeDBMetrics;
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
