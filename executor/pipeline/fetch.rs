@@ -158,6 +158,7 @@ fn execute_fetch_some(
             variable_positions,
             function,
         ),
+        FetchSomeInstruction::Label(ty) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Type(*ty)))),
         FetchSomeInstruction::Object(object) => execute_object(
             object,
             snapshot,

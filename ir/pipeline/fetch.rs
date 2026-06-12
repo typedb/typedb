@@ -27,6 +27,8 @@ pub enum FetchSome {
     SingleAttribute(FetchSingleAttribute),
     SingleFunction(Function),
 
+    Label(Label),
+
     // note: all source_spans are contained in FetchObject
     Object(Box<FetchObject>),
 
@@ -48,6 +50,7 @@ impl FetchSome {
             Self::SingleFunction(function) | Self::ListFunction(function) => {
                 vars.extend(function.arguments.iter().cloned());
             }
+            Self::Label(_) => (),
             Self::Object(object) => {
                 object.record_variables_recursive(vars);
             }
@@ -73,6 +76,7 @@ impl StructuralEquality for FetchSome {
                 FetchSome::SingleVar(var) => var.hash(),
                 FetchSome::SingleAttribute(fetch) => fetch.hash(),
                 FetchSome::SingleFunction(function) => function.hash(),
+                FetchSome::Label(label) => label.hash(),
                 FetchSome::Object(object) => object.hash(),
                 FetchSome::ListFunction(function) => function.hash(),
                 FetchSome::ListSubFetch(fetch) => fetch.hash(),
@@ -87,6 +91,7 @@ impl StructuralEquality for FetchSome {
             (Self::SingleVar(inner), Self::SingleVar(other_inner)) => inner.equals(other_inner),
             (Self::SingleAttribute(inner), Self::SingleAttribute(other_inner)) => inner.equals(other_inner),
             (Self::SingleFunction(inner), Self::SingleFunction(other_inner)) => inner.equals(other_inner),
+            (Self::Label(inner), Self::Label(other_inner)) => inner.equals(other_inner),
             (Self::Object(inner), Self::Object(other_inner)) => inner.equals(other_inner),
             (Self::ListFunction(inner), Self::ListFunction(other_inner)) => inner.equals(other_inner),
             (Self::ListSubFetch(inner), Self::ListSubFetch(other_inner)) => inner.equals(other_inner),
@@ -99,6 +104,7 @@ impl StructuralEquality for FetchSome {
             | (Self::SingleAttribute(_), _)
             | (Self::SingleFunction(_), _)
             | (Self::Object(_), _)
+            | (Self::Label(_), _)
             | (Self::ListFunction(_), _)
             | (Self::ListSubFetch(_), _)
             | (Self::ListAttributesAsList(_), _)

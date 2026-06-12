@@ -343,6 +343,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                     let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
                     FetchStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
                 }
+                AnnotatedFetchSome::Label(_ty) => FetchStructureAnnotations::Leaf(BTreeSet::default()),
                 AnnotatedFetchSome::Object(inner) => FetchStructureAnnotations::Object(build_fetch_annotations(
                     snapshot,
                     type_manager,
