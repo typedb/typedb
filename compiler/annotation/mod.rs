@@ -134,6 +134,12 @@ typedb_error!(
     }
 );
 
+impl From<Box<ConceptReadError>> for AnnotationError {
+    fn from(value: Box<ConceptReadError>) -> Self {
+        Self::ConceptRead { typedb_source: value }
+    }
+}
+
 typedb_error!(
     pub FunctionAnnotationError(component = "Function type inference", prefix = "FIN") {
         TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, typedb_source: Box<AnnotationError>),

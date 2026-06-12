@@ -41,6 +41,7 @@ use crate::{
     },
     translation::{
         PipelineTranslationContext,
+        constraints::register_type_label,
         expression::{add_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
@@ -239,8 +240,8 @@ fn translate_fetch_single(
             Expression::ListIndexRange(_) => {
                 Err(Box::new(FetchRepresentationError::Unimplemented { description: "list index range".to_string() }))
             }
-            Expression::ScopedLabel(scoped_label) => todo!("fetch scoped label"),
-            Expression::Label(label) => todo!("fetch label"),
+            Expression::Label(label) => Ok(FetchSome::Label(parse_label(label)?)),
+            Expression::ScopedLabel(scoped_label) => Ok(FetchSome::Label(parse_scoped_label(scoped_label)?)),
         },
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
@@ -274,26 +275,30 @@ fn translate_fetch_single(
 fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, Label), Box<FetchRepresentationError>> {
     match &fetch_attribute.attribute {
         TypeRefAny::Type(type_ref) => match &type_ref {
-            TypeRef::Label(label) => {
-                let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
-                    Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
-                })?;
-                Ok((false, Label::parse_from(checked_label, label.span())))
-            }
+            TypeRef::Label(label) => Ok((false, parse_label(label)?)),
             TypeRef::Scoped(_) => Err(Box::new(InvalidAttributeLabelEncountered { declaration: type_ref.clone() })),
             TypeRef::Variable(_) => Err(Box::new(NamedVariableEncountered { declaration: type_ref.clone() })),
         },
         TypeRefAny::List(list) => match &list.inner {
-            TypeRef::Label(label) => {
-                let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
-                    Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
-                })?;
-                Ok((true, Label::parse_from(checked_label, label.span())))
-            }
+            TypeRef::Label(label) => Ok((true, parse_label(label)?)),
             TypeRef::Scoped(_) => Err(Box::new(InvalidAttributeLabelEncountered { declaration: list.inner.clone() })),
             TypeRef::Variable(_) => Err(Box::new(NamedVariableEncountered { declaration: list.inner.clone() })),
         },
     }
+}
+
+fn parse_label(label: &typeql::Label) -> Result<Label, Box<FetchRepresentationError>> {
+    let checked_label = checked_identifier(&label.ident)
+        .map_err(|typedb_source| Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source }))?;
+    Ok(Label::parse_from(checked_label, label.span()))
+}
+
+fn parse_scoped_label(scoped_label: &typeql::ScopedLabel) -> Result<Label, Box<FetchRepresentationError>> {
+    let name = checked_identifier(&scoped_label.name.ident)
+        .map_err(|typedb_source| Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source }))?;
+    let scope = checked_identifier(&scoped_label.scope.ident)
+        .map_err(|typedb_source| Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source }))?;
+    Ok(Label::build_scoped(name, scope, scoped_label.span()))
 }
 
 // translate an expression that produces a single output (not a stream)
