@@ -17,7 +17,7 @@ async fn test_read_reduce() {
     let path = "../typedb_behaviour+/query/language/reduce.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/reduce.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/reduce.feature";
 
     assert!(Context::test(path, true).await);
 }

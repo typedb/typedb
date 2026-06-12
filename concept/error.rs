@@ -8,6 +8,7 @@ use std::{fmt, sync::Arc};
 
 use encoding::{
     error::EncodingError,
+    graph::type_::Kind,
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
@@ -74,18 +75,25 @@ typedb_error! {
         CannotGetRelatesDoesntExist(19, "Cannot get 'relates': relationship does not exist.", type_: Label, relates: Label),
         Annotation(20, "Annotation error.", typedb_source: AnnotationError),
         Constraint(21, "Constraint error.", typedb_source: Box<ConstraintError>),
-        ValueTypeMismatchWithAttributeType(22, "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.", attribute_type: AttributeType, expected: Option<ValueType>, provided: ValueType),
+        ValueTypeMismatchWithAttributeType(
+            22,
+            "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.",
+            attribute_type: AttributeType,
+            expected: Option<ValueType>,
+            provided: ValueType,
+        ),
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
         InternalIncomparableTypes(25, "Internal error: incomparable types."),
         Format(26, "Formatting error.", source: fmt::Error),
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
+        FunctionNotFound(28, "Function named '{function_name}' not found.", function_name: String),
     }
 }
 
-impl Into<ConceptReadError> for fmt::Error {
-    fn into(self) -> ConceptReadError {
-        ConceptReadError::Format { source: self }
+impl From<fmt::Error> for ConceptReadError {
+    fn from(source: fmt::Error) -> Self {
+        ConceptReadError::Format { source }
     }
 }
 

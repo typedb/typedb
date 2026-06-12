@@ -143,17 +143,65 @@ impl<T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSign
 }
 
 fn get_builtin_function_annotated_signature(builtin_id: BuiltinConceptFunctionID) -> AnnotatedFunctionSignature {
+    #[rustfmt::skip]
+    macro_rules! param {
+        (Thing) => { FunctionParameterAnnotation::AnyConcept };
+        (Type) => { FunctionParameterAnnotation::AnyConcept };
+        (String) => { FunctionParameterAnnotation::Value(ValueType::String) };
+    }
+
+    macro_rules! function_signature {
+        (($($param:ident),*) -> $($return:ident),*) => {
+            AnnotatedFunctionSignature {
+                is_stream: false,
+                arguments: vec![$(param!($param)),*],
+                returns: vec![$(param!($return)),*],
+            }
+        };
+        (($($param:ident),*) -> { $($return:ident),* }) => {
+            AnnotatedFunctionSignature {
+                is_stream: true,
+                arguments: vec![$(param!($param)),*],
+                returns: vec![$(param!($return)),*],
+            }
+        };
+    }
+
     match builtin_id {
-        BuiltinConceptFunctionID::Iid => AnnotatedFunctionSignature {
-            is_stream: false,
-            arguments: vec![FunctionParameterAnnotation::AnyConcept],
-            returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
-        },
-        BuiltinConceptFunctionID::Label => AnnotatedFunctionSignature {
-            is_stream: false,
-            arguments: vec![FunctionParameterAnnotation::AnyConcept],
-            returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
-        },
+        BuiltinConceptFunctionID::Iid => function_signature!((Thing) -> String),
+        BuiltinConceptFunctionID::Label => function_signature!((Type) -> String),
+
+        BuiltinConceptFunctionID::GetDoc => function_signature!((Type) -> String),
+        BuiltinConceptFunctionID::GetMeta => function_signature!((String, Type) -> String),
+        BuiltinConceptFunctionID::GetAllMeta => function_signature!((Type) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetOwnsDoc => function_signature!((Type, Type) -> String),
+        BuiltinConceptFunctionID::GetOwnsMeta => function_signature!((String, Type, Type) -> String),
+        BuiltinConceptFunctionID::GetOwnsAllMeta => function_signature!((Type, Type) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetPlaysDoc => function_signature!((Type, Type) -> String),
+        BuiltinConceptFunctionID::GetPlaysMeta => function_signature!((String, Type, Type) -> String),
+        BuiltinConceptFunctionID::GetPlaysAllMeta => function_signature!((Type, Type) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetRelatesDoc => function_signature!((Type, Type) -> String),
+        BuiltinConceptFunctionID::GetRelatesMeta => function_signature!((String, Type, Type) -> String),
+        BuiltinConceptFunctionID::GetRelatesAllMeta => function_signature!((Type, Type) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetSubDoc => function_signature!((Type, Type) -> String),
+        BuiltinConceptFunctionID::GetSubMeta => function_signature!((String, Type, Type) -> String),
+        BuiltinConceptFunctionID::GetSubAllMeta => function_signature!((Type, Type) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetFunDoc => function_signature!((String) -> String),
+        BuiltinConceptFunctionID::GetFunMeta => function_signature!((String, String) -> String),
+        BuiltinConceptFunctionID::GetFunAllMeta => function_signature!((String) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetStructDoc => function_signature!((String) -> String),
+        BuiltinConceptFunctionID::GetStructMeta => function_signature!((String, String) -> String),
+        BuiltinConceptFunctionID::GetStructAllMeta => function_signature!((String) -> { String, String }),
+
+        BuiltinConceptFunctionID::GetStructFieldDoc => function_signature!((String, String) -> String),
+        BuiltinConceptFunctionID::GetStructFieldMeta => function_signature!((String, String, String) -> String),
+        BuiltinConceptFunctionID::GetStructFieldAllMeta => function_signature!((String, String) -> { String, String }),
     }
 }
 
@@ -240,7 +288,7 @@ pub(crate) fn annotate_anonymous_function(
         (*var, arg_type)
     });
     let argument_annotations = RunningVariableAnnotations::from_iterator(argument_types_iter);
-    annotate_function_impl(&ctx, function, argument_annotations)
+    annotate_function_impl(ctx, function, argument_annotations)
 }
 
 pub(super) fn annotate_named_function(

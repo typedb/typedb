@@ -18,14 +18,14 @@ use concept::thing::statistics::Statistics;
 use error::{typedb_error, unimplemented_feature};
 use ir::{
     pattern::{
-        BranchID, Pattern, Scope, Vertex,
+        BranchID, Pattern, Vertex,
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
             Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable, Value,
         },
         nested_pattern::NestedPattern,
-        variable_category::{VariableCategory, VariableOptionality},
+        variable_category::VariableCategory,
     },
     pipeline::{VariableRegistry, block::BlockContext},
 };

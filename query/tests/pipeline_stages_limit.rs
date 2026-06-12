@@ -11,7 +11,6 @@ use function::function_manager::FunctionManager;
 use query::{error::QueryError, query_manager::QueryManager};
 use resource::{constants::query::MAX_PIPELINE_STAGES, profile::CommitProfile};
 use storage::snapshot::CommittableSnapshot;
-use test_utils::assert_matches;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -28,13 +27,13 @@ fn setup() -> (
     Arc<storage::MVCCStorage<storage::durability_client::WALClient>>,
     Arc<concept::type_::type_manager::TypeManager>,
     Arc<concept::thing::thing_manager::ThingManager>,
-    FunctionManager,
+    Arc<FunctionManager>,
     QueryManager,
 ) {
     let (tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
     let query_manager = QueryManager::new(None);
 
     let schema = "define entity person;";
@@ -62,7 +61,7 @@ fn pipeline_at_limit_is_accepted() {
         snapshot,
         &type_manager,
         thing_manager.clone(),
-        &function_manager,
+        function_manager,
         &pipeline,
         &query_str,
     );
@@ -84,7 +83,7 @@ fn pipeline_over_limit_is_rejected() {
         snapshot,
         &type_manager,
         thing_manager.clone(),
-        &function_manager,
+        function_manager,
         &pipeline,
         &query_str,
     );

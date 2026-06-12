@@ -6,8 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt,
-    fmt::Write,
+    fmt::{self, Write},
     sync::Arc,
 };
 
@@ -25,6 +24,7 @@ use encoding::{
     value::label::Label,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -32,14 +32,13 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use super::{Capability, Ordering};
 use crate::{
     ConceptAPI, concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
-        KindAPI, TypeAPI,
-        annotation::{Annotation, AnnotationError},
+        Capability, KindAPI, Ordering, TypeAPI,
+        annotation::{Annotation, AnnotationCategory, AnnotationError, FromAnnotation, HasAnnotationCategory},
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         plays::Plays,
@@ -312,32 +311,16 @@ impl fmt::Display for RoleType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!)]
 pub enum RoleTypeAnnotation {}
 
-impl TryFrom<Annotation> for RoleTypeAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<RoleTypeAnnotation, AnnotationError> {
-        match annotation {
-            | Annotation::Abstract(_)
-            | Annotation::Independent(_)
-            | Annotation::Distinct(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Regex(_)
-            | Annotation::Cascade(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRoleType { category: annotation.category() })
-            }
-        }
+impl HasAnnotationCategory for RoleTypeAnnotation {
+    fn has_category(&self, _category: &AnnotationCategory) -> bool {
+        match *self {}
     }
-}
 
-impl From<RoleTypeAnnotation> for Annotation {
-    fn from(_anno: RoleTypeAnnotation) -> Self {
-        unreachable!("RoleTypes do not have annotations!")
+    fn category(&self) -> AnnotationCategory {
+        match *self {}
     }
 }
 

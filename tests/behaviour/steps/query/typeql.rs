@@ -77,7 +77,7 @@ fn execute_read_query(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
-            &tx.function_manager,
+            tx.function_manager.clone(),
             &query.into_structure().into_pipeline(),
             source_query,
         )?;
@@ -122,7 +122,7 @@ fn execute_write_query(
     query: typeql::Query,
     source_query: &str,
 ) -> Result<QueryAnswer, BehaviourTestExecutionError> {
-    if matches!(context.active_transaction.as_ref().unwrap(), Read(_)) {
+    if matches!(context.transaction().expect("Expected an active transaction"), Read(_)) {
         return Err(BehaviourTestExecutionError::UseInvalidTransactionAsWrite);
     }
 
@@ -137,7 +137,7 @@ fn execute_write_query(
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
             &type_manager,
             thing_manager.clone(),
-            &function_manager,
+            function_manager.clone(),
             &query.into_structure().into_pipeline(),
             source_query,
         );
@@ -229,7 +229,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
     let typeql_schema = parse_result.unwrap().into_structure().into_schema();
 
-    if !matches!(context.active_transaction.as_ref().expect("Expected an active tx"), Schema(_)) {
+    if !matches!(context.transaction().expect("Expected an active transaction"), Schema(_)) {
         may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
             BehaviourTestExecutionError::UseInvalidTransactionAsSchema,
         ));

@@ -11,6 +11,7 @@ use encoding::{
     layout::prefix::Prefix,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -19,7 +20,10 @@ use crate::{
     thing::thing_manager::ThingManager,
     type_::{
         Capability,
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationError, DefaultFrom},
+        annotation::{
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
+            FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
+        },
         constraint::CapabilityConstraint,
         object_type::ObjectType,
         role_type::RoleType,
@@ -59,6 +63,8 @@ impl Plays {
             PlaysAnnotation::Cardinality(cardinality) => {
                 type_manager.set_plays_annotation_cardinality(snapshot, thing_manager, *self, cardinality)?
             }
+            PlaysAnnotation::Doc(doc) => type_manager.set_plays_annotation_doc(snapshot, *self, doc)?,
+            PlaysAnnotation::Meta(meta) => type_manager.set_plays_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -70,12 +76,14 @@ impl Plays {
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
+        let plays_annotation = PlaysAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match plays_annotation {
-            PlaysAnnotation::Cardinality(_) => {
+            PlaysAnnotationCategory::Cardinality => {
                 type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, *self)?
             }
+            PlaysAnnotationCategory::Doc => type_manager.unset_plays_annotation_doc(snapshot, *self)?,
+            PlaysAnnotationCategory::Meta(meta) => type_manager.unset_plays_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -173,48 +181,33 @@ impl Capability for Plays {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum PlaysAnnotation {
     Cardinality(AnnotationCardinality),
-}
-
-impl TryFrom<Annotation> for PlaysAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<PlaysAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
-
-            | Annotation::Abstract(_)
-            | Annotation::Independent(_)
-            | Annotation::Distinct(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Regex(_)
-            | Annotation::Cascade(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForPlays { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<PlaysAnnotation> for Annotation {
-    fn from(val: PlaysAnnotation) -> Self {
-        match val {
-            PlaysAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
-        }
-    }
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl PartialEq<Annotation> for PlaysAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
-            Annotation::Cardinality(other_cardinality) =>
-            {
-                #[allow(irrefutable_let_patterns, reason = "for consistency & extensibility")]
+            Annotation::Cardinality(other_cardinality) => {
                 if let Self::Cardinality(cardinality) = self {
                     cardinality == other_cardinality
+                } else {
+                    false
+                }
+            }
+            Annotation::Doc(other_doc) => {
+                if let Self::Doc(doc) = self {
+                    doc == other_doc
+                } else {
+                    false
+                }
+            }
+            Annotation::Meta(other_meta) => {
+                if let Self::Meta(meta) = self {
+                    meta == other_meta
                 } else {
                     false
                 }

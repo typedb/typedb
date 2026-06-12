@@ -322,7 +322,8 @@ impl Serialize for ValueType {
 impl TypeVertexPropertyEncoding for ValueType {
     const INFIX: Infix = Infix::PropertyValueType;
 
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         let mut bytes: [u8; ValueTypeBytes::LENGTH] = [0; ValueTypeBytes::LENGTH];
         bytes.copy_from_slice(&value[0..ValueTypeBytes::LENGTH]);
         ValueTypeBytes::new(bytes).to_value_type()
@@ -351,8 +352,8 @@ impl<'de> Deserialize<'de> for ValueType {
             where
                 E: de::Error,
             {
-                if v.len() == ValueTypeBytes::LENGTH {
-                    Ok(ValueType::from_value_bytes(v))
+                if let Ok(value_bytes) = v.try_into() {
+                    Ok(ValueTypeBytes::new(value_bytes).to_value_type())
                 } else {
                     Err(E::invalid_value(Unexpected::Bytes(v), &self))
                 }

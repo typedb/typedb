@@ -575,6 +575,7 @@ fn find_referenced_functions_in_fetch(
                 }
                 AnnotatedFetchSome::SingleVar(_)
                 | AnnotatedFetchSome::SingleAttribute(_, _)
+                | AnnotatedFetchSome::Label(_)
                 | AnnotatedFetchSome::ListAttributesAsList(_, _)
                 | AnnotatedFetchSome::ListAttributesFromList(_, _) => {
                     // Nothing

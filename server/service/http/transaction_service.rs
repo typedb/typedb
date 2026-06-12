@@ -974,7 +974,7 @@ impl TransactionService {
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
-                    &function_manager,
+                    function_manager.clone(),
                     &pipeline,
                     &source_query,
                 );

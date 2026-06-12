@@ -21,6 +21,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
@@ -35,7 +36,8 @@ use crate::{
     type_::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
+            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationDoc, AnnotationError,
+            AnnotationMeta, FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, TypeConstraint},
@@ -167,11 +169,11 @@ impl TypeAPI for RelationType {
     }
 
     fn next_possible(&self) -> Option<Self> {
-        self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
+        self.vertex.type_id_().increment().map(Self::build_from_type_id)
     }
 
     fn previous_possible(&self) -> Option<Self> {
-        self.vertex.type_id_().decrement().map(|next_id| Self::build_from_type_id(next_id))
+        self.vertex.type_id_().decrement().map(Self::build_from_type_id)
     }
 }
 
@@ -262,6 +264,10 @@ impl RelationType {
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.set_annotation_cascade(snapshot, thing_manager, *self)?
             }
+            RelationTypeAnnotation::Doc(doc) => type_manager.set_relation_type_annotation_doc(snapshot, *self, doc)?,
+            RelationTypeAnnotation::Meta(meta) => {
+                type_manager.set_relation_type_annotation_meta(snapshot, *self, meta)?
+            }
         };
         Ok(())
     }
@@ -272,13 +278,17 @@ impl RelationType {
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let relation_type_annotation = RelationTypeAnnotation::try_getting_default(annotation_category)
+        let relation_type_annotation = RelationTypeAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match relation_type_annotation {
-            RelationTypeAnnotation::Abstract(_) => {
+            RelationTypeAnnotationCategory::Abstract => {
                 type_manager.unset_relation_type_annotation_abstract(snapshot, *self)?
             }
-            RelationTypeAnnotation::Cascade(_) => type_manager.unset_annotation_cascade(snapshot, *self)?,
+            RelationTypeAnnotationCategory::Cascade => type_manager.unset_annotation_cascade(snapshot, *self)?,
+            RelationTypeAnnotationCategory::Doc => type_manager.unset_relation_type_annotation_doc(snapshot, *self)?,
+            RelationTypeAnnotationCategory::Meta(key) => {
+                type_manager.unset_relation_type_annotation_meta(snapshot, *self, key)?
+            }
         }
         Ok(())
     }
@@ -332,7 +342,7 @@ impl RelationType {
             .filter_map(|relates| match relates.is_implicit(snapshot, type_manager) {
                 Ok(false) => Some(Ok(*relates)),
                 Ok(true) => None,
-                Err(err) => return Some(Err(err)),
+                Err(err) => Some(Err(err)),
             })
             .try_collect()
     }
@@ -355,7 +365,7 @@ impl RelationType {
             .filter_map(|relates| match relates.is_implicit(snapshot, type_manager) {
                 Ok(false) => Some(Ok(*relates)),
                 Ok(true) => None,
-                Err(err) => return Some(Err(err)),
+                Err(err) => Some(Err(err)),
             })
             .try_collect()
     }
@@ -525,7 +535,7 @@ impl RelationType {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
-        if let Some(relates) = self.get_relates_role_declared(snapshot, type_manager, role_type.clone())? {
+        if let Some(relates) = self.get_relates_role_declared(snapshot, type_manager, role_type)? {
             if !relates.is_implicit(snapshot, type_manager)? {
                 return Ok(Some(relates));
             }
@@ -590,7 +600,7 @@ impl RelationType {
         let mut declared_relates = HashSet::new();
         let mut super_roles = HashSet::new();
         for relates in self.get_relates_declared(snapshot, type_manager)?.iter() {
-            declared_relates.insert(relates.clone());
+            declared_relates.insert(*relates);
             if let Some(role_supertype) = relates.role().get_supertype(snapshot, type_manager)? {
                 super_roles.insert(role_supertype);
             }
@@ -871,40 +881,12 @@ impl PlayerAPI for RelationType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum RelationTypeAnnotation {
     Abstract(AnnotationAbstract),
     Cascade(AnnotationCascade),
-}
-
-impl TryFrom<Annotation> for RelationTypeAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<RelationTypeAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Abstract(annotation) => Ok(RelationTypeAnnotation::Abstract(annotation)),
-            Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
-
-            | Annotation::Distinct(_)
-            | Annotation::Independent(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Regex(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<RelationTypeAnnotation> for Annotation {
-    fn from(anno: RelationTypeAnnotation) -> Self {
-        match anno {
-            RelationTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            RelationTypeAnnotation::Cascade(annotation) => Annotation::Cascade(annotation),
-        }
-    }
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 // TODO: can we inline this into the macro invocation?

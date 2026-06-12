@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -31,7 +33,7 @@ struct Context {
     storage: Arc<MVCCStorage<WALClient>>,
     type_manager: Arc<TypeManager>,
     thing_manager: Arc<ThingManager>,
-    function_manager: FunctionManager,
+    function_manager: Arc<FunctionManager>,
     query_manager: QueryManager,
     _tmp_dir: TempDir,
 }
@@ -41,7 +43,7 @@ fn setup_common() -> Context {
     setup_concept_storage(&mut storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
     let query_manager = QueryManager::new(None);
     let schema = r#"
     define
@@ -76,7 +78,7 @@ fn test_insert() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager,
             &query,
             query_str,
         )
@@ -117,7 +119,7 @@ fn test_insert_insert() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager,
             &query,
             query_str,
         )
@@ -154,7 +156,7 @@ fn test_match() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query,
             query_str,
         )
@@ -175,7 +177,7 @@ fn test_match() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             query,
         )
@@ -193,7 +195,7 @@ fn test_match() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             query,
         )
@@ -221,7 +223,7 @@ fn test_match_match() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query,
             query_str,
         )
@@ -245,7 +247,7 @@ fn test_match_match() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             query,
         )
@@ -263,7 +265,7 @@ fn test_match_match() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             query,
         )
@@ -286,7 +288,7 @@ fn test_match_delete_has() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &insert_query,
             insert_query_str,
         )
@@ -323,7 +325,7 @@ fn test_match_delete_has() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &delete_query,
             delete_query_str,
         )
@@ -365,7 +367,7 @@ fn test_insert_match_insert() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query,
             query_str,
         )
@@ -394,7 +396,7 @@ fn test_insert_match_insert() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query,
             query_str,
         )
@@ -426,7 +428,7 @@ fn test_match_sort() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &insert_query,
             insert_query_str,
         )
@@ -448,7 +450,7 @@ fn test_match_sort() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             query,
         )
@@ -489,7 +491,7 @@ fn test_select() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &insert_query,
             insert_query_str,
         )
@@ -512,7 +514,7 @@ fn test_select() {
                 snapshot,
                 &context.type_manager,
                 context.thing_manager.clone(),
-                &context.function_manager,
+                context.function_manager.clone(),
                 &match_,
                 query,
             )
@@ -531,7 +533,7 @@ fn test_select() {
                 snapshot,
                 &context.type_manager,
                 context.thing_manager.clone(),
-                &context.function_manager,
+                context.function_manager.clone(),
                 &match_,
                 query,
             )
@@ -556,7 +558,7 @@ fn test_require() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &insert_query,
             insert_query_str,
         )
@@ -579,7 +581,7 @@ fn test_require() {
                 snapshot,
                 &context.type_manager,
                 context.thing_manager.clone(),
-                &context.function_manager,
+                context.function_manager.clone(),
                 &match_,
                 query,
             )

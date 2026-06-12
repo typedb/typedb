@@ -59,6 +59,7 @@ pub enum CapabilityKind {
     Relates,
     Plays,
     Owns,
+    Sub,
 }
 
 impl CapabilityKind {
@@ -67,6 +68,7 @@ impl CapabilityKind {
             CapabilityKind::Relates => "relates",
             CapabilityKind::Plays => "plays",
             CapabilityKind::Owns => "owns",
+            CapabilityKind::Sub => "sub",
         }
     }
 }

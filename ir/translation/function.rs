@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
+
 use answer::variable::Variable;
+use concept::type_::annotation::{
+    Annotation, AnnotationCategory, AnnotationDoc, AnnotationMeta, HasAnnotationCategory,
+};
 use error::needs_update_when_feature_is_implemented;
 use itertools::Itertools;
 use typeql::{
@@ -29,6 +34,7 @@ use crate::{
         PipelineTranslationContext,
         pipeline::{TranslatedStage, translate_pipeline_stages},
         reduce::{build_reducer, resolve_category_optionality},
+        tokens::translate_annotation,
     },
 };
 
@@ -39,27 +45,28 @@ macro_rules! verify_variable_available {
                 .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: $var.span() })?,
         ) {
             Some(translated) => Ok(translated),
-            None => Err(FunctionRepresentationError::$error {
+            None => Err(Box::new(FunctionRepresentationError::$error {
                 variable: $var.name().unwrap().to_owned(),
                 source_span: $var.span(),
-            }),
+            })),
         }
     };
 }
+
 pub fn translate_typeql_function(
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, Box<FunctionRepresentationError>> {
-    translate_function_from(function_index, &function.signature, &function.block, Some(function))
+    translate_function_from(function_index, &function.signature, &function.block, &function.annotations)
 }
 
-pub fn translate_function_from(
+fn translate_function_from(
     function_index: &impl FunctionSignatureIndex,
     signature: &typeql::schema::definable::function::Signature,
     block: &FunctionBlock,
-    declaration: Option<&typeql::Function>,
+    annotations: &[typeql::Annotation],
 ) -> Result<Function, Box<FunctionRepresentationError>> {
-    let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
+    let checked_name = signature.ident.as_str_unreserved().map_err(|_source| {
         FunctionRepresentationError::IllegalKeywordAsIdentifier {
             identifier: signature.ident.as_str_unchecked().to_owned(),
             source_span: signature.ident.span(),
@@ -80,13 +87,9 @@ pub fn translate_function_from(
                 .name()
                 .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: arg.var.span() })?
                 .to_owned();
-            Ok::<_, FunctionRepresentationError>((
-                name,
-                arg.var.span(),
-                named_type_any_to_category_and_optionality(&arg.type_),
-            ))
+            Ok((name, arg.var.span(), named_type_any_to_category_and_optionality(&arg.type_)))
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Result<Vec<_>, Box<FunctionRepresentationError>>>()?;
 
     let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
@@ -112,40 +115,42 @@ pub fn translate_function_from(
         }
     }
     // Check return declaration aligns with definition
-    let returns_consistent = match (&signature.output, &body.return_operation) {
+    match (&signature.output, &body.return_operation) {
         (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars, _)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &defined_vars, |v| {
+            check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
                 context.variable_registry.is_variable_optional(*v)
-            })
+            })?
         }
         (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars, _)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &defined_vars, |v| {
+            check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
                 context.variable_registry.is_variable_optional(*v)
-            })
+            })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers, _)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &reducers, |reducer| {
+            check_consistent_return(signature, block, &declared_vars.types, reducers, |reducer| {
                 resolve_category_optionality(reducer).1
-            })
+            })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceCheck(_)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &[false], |x| *x)
+            check_consistent_return(signature, block, &declared_vars.types, &[false], |x| *x)?
         }
         (Output::Single(declared_vars), ReturnOperation::Stream(..)) => {
             Err(Box::new(FunctionRepresentationError::DeclaresSingleReturnsStream {
                 signature: signature.clone(),
                 return_: block.return_stmt.clone(),
-            }))
+            }))?
         }
         (Output::Stream(_), ReturnOperation::Single(..))
         | (Output::Stream(_), ReturnOperation::ReduceCheck(..))
         | (Output::Stream(_), ReturnOperation::ReduceReducer(..)) => {
-            Err(Box::new(FunctionRepresentationError::DeclaresStreamReturnsSingle {
+            return Err(Box::new(FunctionRepresentationError::DeclaresStreamReturnsSingle {
                 signature: signature.clone(),
                 return_: block.return_stmt.clone(),
-            }))
+            }));
         }
-    }?;
+    }
+
+    let annotations = translate_function_annotations(annotations, checked_name)?;
 
     Ok(Function::new(
         checked_name,
@@ -155,6 +160,7 @@ pub fn translate_function_from(
         Some(argument_labels),
         Some(signature.output.clone()),
         body,
+        annotations,
     ))
 }
 
@@ -246,24 +252,24 @@ fn named_type_any_to_category_and_optionality(
 fn build_return_stream(
     context: &PipelineTranslationContext,
     stream: &ReturnStream,
-) -> Result<ReturnOperation, FunctionRepresentationError> {
+) -> Result<ReturnOperation, Box<FunctionRepresentationError>> {
     let variables = stream
         .vars
         .iter()
         .map(|typeql_var| verify_variable_available!(context, typeql_var => StreamReturnVariableUnavailable))
-        .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
+        .collect::<Result<Vec<Variable>, Box<FunctionRepresentationError>>>()?;
     Ok(ReturnOperation::Stream(variables, stream.span()))
 }
 
 fn build_return_single(
     context: &PipelineTranslationContext,
     single: &ReturnSingle,
-) -> Result<ReturnOperation, FunctionRepresentationError> {
+) -> Result<ReturnOperation, Box<FunctionRepresentationError>> {
     let variables = single
         .vars
         .iter()
         .map(|typeql_var| verify_variable_available!(context, typeql_var => SingleReturnVariableUnavailable))
-        .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
+        .collect::<Result<Vec<Variable>, Box<FunctionRepresentationError>>>()?;
     let selector = single.selector.clone();
     Ok(ReturnOperation::Single(selector, variables, single.span()))
 }
@@ -271,7 +277,7 @@ fn build_return_single(
 fn build_return_reduce(
     context: &PipelineTranslationContext,
     reduction: &ReturnReduction,
-) -> Result<ReturnOperation, FunctionRepresentationError> {
+) -> Result<ReturnOperation, Box<FunctionRepresentationError>> {
     match reduction {
         ReturnReduction::Check(_) => Ok(ReturnOperation::ReduceCheck(reduction.span())),
         ReturnReduction::Value(typeql_reducers, _) => {
@@ -322,4 +328,74 @@ fn check_consistent_return<T>(
     }
 
     Ok(())
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum FunctionAnnotation {
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
+}
+
+fn translate_function_annotations(
+    typeql_annotations: &[typeql::Annotation],
+    function_name: &str,
+) -> Result<Vec<FunctionAnnotation>, Box<FunctionRepresentationError>> {
+    let mut seen_categories = HashSet::new();
+    typeql_annotations
+        .iter()
+        .map(|typeql_annotation| {
+            let annotation = translate_annotation(typeql_annotation).map_err(|typedb_source| {
+                FunctionRepresentationError::LiteralParseError {
+                    annotation: typeql_annotation.clone(),
+                    function: function_name.to_owned(),
+                    typedb_source,
+                    source_span: typeql_annotation.span(),
+                }
+            })?;
+
+            if !seen_categories.insert(annotation.category()) {
+                return Err(Box::new(FunctionRepresentationError::DuplicateAnnotationCategory {
+                    category: annotation.category(),
+                    function: function_name.to_owned(),
+                    source_span: typeql_annotation.span(),
+                }));
+            }
+
+            match annotation {
+                Annotation::Doc(annotation) => Ok(FunctionAnnotation::Doc(annotation)),
+                Annotation::Meta(annotation) => Ok(FunctionAnnotation::Meta(annotation)),
+                _ => Err(Box::new(FunctionRepresentationError::AnnotationNotSupported {
+                    annotation,
+                    source_span: typeql_annotation.span(),
+                })),
+            }
+        })
+        .try_collect()
+}
+
+impl HasAnnotationCategory for FunctionAnnotation {
+    fn has_category(&self, category: &AnnotationCategory) -> bool {
+        match self {
+            FunctionAnnotation::Doc(annotation_doc) => matches!(category, AnnotationCategory::Doc),
+            FunctionAnnotation::Meta(annotation_meta) => {
+                matches!(category, AnnotationCategory::Meta(key) if key == annotation_meta.key())
+            }
+        }
+    }
+
+    fn category(&self) -> AnnotationCategory {
+        match self {
+            FunctionAnnotation::Doc(annotation_doc) => AnnotationCategory::Doc,
+            FunctionAnnotation::Meta(annotation_meta) => AnnotationCategory::Meta(annotation_meta.key().to_owned()),
+        }
+    }
+}
+
+impl From<FunctionAnnotation> for Annotation {
+    fn from(annotation: FunctionAnnotation) -> Self {
+        match annotation {
+            FunctionAnnotation::Doc(annotation_doc) => Annotation::Doc(annotation_doc),
+            FunctionAnnotation::Meta(annotation_meta) => Annotation::Meta(annotation_meta),
+        }
+    }
 }

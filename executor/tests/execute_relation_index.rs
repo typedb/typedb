@@ -436,7 +436,7 @@ fn traverse_index_from_unbound() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager.clone(), value_parameters.clone());
+    let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), value_parameters.clone());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -525,7 +525,7 @@ fn traverse_index_from_unbound() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, value_parameters);
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), value_parameters);
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -698,7 +698,7 @@ fn traverse_index_from_bound() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -867,7 +867,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator

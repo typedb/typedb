@@ -12,9 +12,12 @@ use storage::key_value::StorageKey;
 
 use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
-    graph::type_::{
-        edge::{TypeEdge, TypeEdgeEncoding},
-        vertex::{TypeVertex, TypeVertexEncoding},
+    graph::{
+        definition::definition_key::DefinitionKey,
+        type_::{
+            edge::{TypeEdge, TypeEdgeEncoding},
+            vertex::{TypeVertex, TypeVertexEncoding},
+        },
     },
     layout::{
         infix::{Infix, InfixID},
@@ -26,7 +29,7 @@ use crate::{
 pub struct TypeVertexProperty {
     type_: TypeVertex,
     infix: Infix,
-    suffix: Option<ByteArray<0>>,
+    suffix: ByteArray<0>,
 }
 
 impl TypeVertexProperty {
@@ -38,7 +41,7 @@ impl TypeVertexProperty {
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
     pub fn new(type_: TypeVertex, infix: Infix) -> Self {
-        Self { type_, infix, suffix: None }
+        Self { type_, infix, suffix: ByteArray::empty() }
     }
 
     fn new_suffixed<const INLINE_BYTES: usize>(
@@ -46,7 +49,7 @@ impl TypeVertexProperty {
         infix: Infix,
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
-        Self { type_: vertex, infix, suffix: Some(ByteArray::copy(&suffix)) }
+        Self { type_: vertex, infix, suffix: ByteArray::copy(&suffix) }
     }
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
@@ -55,8 +58,7 @@ impl TypeVertexProperty {
 
         let type_ = TypeVertex::decode(bytes.clone().into_range(Self::range_type_vertex()));
         let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
-        let suffix =
-            (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
+        let suffix = ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]);
         Self { type_, infix, suffix }
     }
 
@@ -76,11 +78,11 @@ impl TypeVertexProperty {
     }
 
     fn suffix_length(&self) -> usize {
-        self.suffix.as_ref().map(|s| s.len()).unwrap_or(0)
+        self.suffix.len()
     }
 
-    pub fn suffix(&self) -> Option<&[u8]> {
-        self.suffix.as_deref()
+    pub fn suffix(&self) -> &[u8] {
+        &self.suffix
     }
 
     const fn range_type_vertex() -> Range<usize> {
@@ -102,9 +104,7 @@ impl AsBytes<BUFFER_KEY_INLINE> for TypeVertexProperty {
         array[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         array[Self::range_type_vertex()].copy_from_slice(&self.type_.to_bytes());
         array[Self::range_infix()].copy_from_slice(&self.infix.infix_id().bytes());
-        if let Some(suffix) = self.suffix() {
-            array[Self::range_suffix(suffix.len())].copy_from_slice(suffix);
-        }
+        array[Self::range_suffix(self.suffix_length())].copy_from_slice(self.suffix());
         Bytes::Array(array)
     }
 }
@@ -120,11 +120,15 @@ impl Prefixed<BUFFER_KEY_INLINE> for TypeVertexProperty {}
 pub trait TypeVertexPropertyEncoding {
     const INFIX: Infix;
 
-    fn from_value_bytes(value: &[u8]) -> Self;
-
-    fn build_key(vertex: impl TypeVertexEncoding) -> TypeVertexProperty {
-        TypeVertexProperty::new(vertex.into_vertex(), Self::INFIX)
+    fn build_key(vertex: impl TypeVertexEncoding, suffix: &[u8]) -> TypeVertexProperty {
+        TypeVertexProperty::new_suffixed(vertex.into_vertex(), Self::INFIX, Bytes::<0>::reference(suffix))
     }
+
+    fn to_key(&self, vertex: impl TypeVertexEncoding) -> TypeVertexProperty {
+        Self::build_key(vertex, &[])
+    }
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self;
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
 
@@ -138,7 +142,7 @@ pub trait TypeVertexPropertyEncoding {
 pub struct TypeEdgeProperty {
     edge: TypeEdge,
     infix: Infix,
-    suffix: Option<ByteArray<0>>,
+    suffix: ByteArray<0>,
 }
 
 impl TypeEdgeProperty {
@@ -146,11 +150,15 @@ impl TypeEdgeProperty {
     const PREFIX: Prefix = Prefix::PropertyTypeEdge;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
-    const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
+    pub const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
     pub fn new(edge: TypeEdge, infix: Infix) -> Self {
-        Self { edge, infix, suffix: None }
+        Self { edge, infix, suffix: ByteArray::empty() }
+    }
+
+    fn new_suffixed<const INLINE_BYTES: usize>(edge: TypeEdge, infix: Infix, suffix: Bytes<'_, INLINE_BYTES>) -> Self {
+        Self { edge, infix, suffix: ByteArray::copy(&suffix) }
     }
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
@@ -158,17 +166,8 @@ impl TypeEdgeProperty {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let edge = TypeEdge::decode(bytes.clone().into_range(Self::range_type_edge()));
         let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
-        let suffix =
-            (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
+        let suffix = ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]);
         Self { edge, infix, suffix }
-    }
-
-    fn build_suffixed<const INLINE_BYTES: usize>(
-        edge: TypeEdge,
-        infix: Infix,
-        suffix: Bytes<'_, INLINE_BYTES>,
-    ) -> Self {
-        Self { edge, infix, suffix: Some(ByteArray::copy(&suffix)) }
     }
 
     pub fn build_prefix() -> StorageKey<'static, { TypeEdgeProperty::LENGTH_PREFIX }> {
@@ -187,11 +186,11 @@ impl TypeEdgeProperty {
     }
 
     fn suffix_length(&self) -> usize {
-        self.suffix.as_ref().map(|s| s.len()).unwrap_or(0)
+        self.suffix.len()
     }
 
-    pub fn suffix(&self) -> Option<&[u8]> {
-        self.suffix.as_deref()
+    pub fn suffix(&self) -> &[u8] {
+        &self.suffix
     }
 
     const fn range_type_edge() -> Range<usize> {
@@ -213,9 +212,7 @@ impl AsBytes<BUFFER_KEY_INLINE> for TypeEdgeProperty {
         array[Self::INDEX_PREFIX] = Prefix::PropertyTypeEdge.prefix_id().byte;
         array[Self::range_type_edge()].copy_from_slice(&self.edge.to_bytes());
         array[Self::range_infix()].copy_from_slice(&self.infix.infix_id().bytes());
-        if let Some(suffix) = self.suffix() {
-            array[Self::range_suffix(suffix.len())].copy_from_slice(suffix);
-        }
+        array[Self::range_suffix(self.suffix_length())].copy_from_slice(self.suffix());
         Bytes::Array(array)
     }
 }
@@ -231,16 +228,132 @@ impl Prefixed<BUFFER_KEY_INLINE> for TypeEdgeProperty {}
 pub trait TypeEdgePropertyEncoding: Sized {
     const INFIX: Infix;
 
-    fn from_value_bytes(value: &[u8]) -> Self;
-
-    fn build_key(edge: impl TypeEdgeEncoding) -> TypeEdgeProperty {
-        TypeEdgeProperty::new(edge.to_canonical_type_edge(), Self::INFIX)
+    fn build_key(edge: impl TypeEdgeEncoding, suffix: &[u8]) -> TypeEdgeProperty {
+        TypeEdgeProperty::new_suffixed(edge.to_canonical_type_edge(), Self::INFIX, Bytes::<0>::reference(suffix))
     }
+
+    fn to_key(&self, edge: impl TypeEdgeEncoding) -> TypeEdgeProperty {
+        Self::build_key(edge, &[])
+    }
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self;
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
 
     fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
             && TypeEdgeProperty::decode(key_bytes).infix() == Self::INFIX
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionProperty {
+    function_id: DefinitionKey,
+    infix: Infix,
+    suffix: ByteArray<0>,
+}
+
+impl FunctionProperty {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
+    const PREFIX: Prefix = Prefix::PropertyFunction;
+    pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
+
+    pub const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + DefinitionKey::LENGTH + InfixID::LENGTH;
+    const LENGTH_PREFIX: usize = PrefixID::LENGTH;
+
+    pub fn new(function_id: DefinitionKey, infix: Infix) -> Self {
+        Self { function_id, infix, suffix: ByteArray::empty() }
+    }
+
+    fn new_suffixed<const INLINE_BYTES: usize>(
+        function_id: DefinitionKey,
+        infix: Infix,
+        suffix: Bytes<'_, INLINE_BYTES>,
+    ) -> Self {
+        Self { function_id, infix, suffix: ByteArray::copy(&suffix) }
+    }
+
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
+        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
+        let function_id = DefinitionKey::new(bytes.clone().into_range(Self::range_function_id()));
+        let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
+        let suffix = ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]);
+        Self { function_id, infix, suffix }
+    }
+
+    pub fn build_prefix() -> StorageKey<'static, { FunctionProperty::LENGTH_PREFIX }> {
+        // TODO: is it better to have a const fn that is a reference to owned memory, or
+        //       to always induce a tiny copy have a non-const function?
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = FunctionProperty::PREFIX.prefix_id().to_bytes();
+        StorageKey::new_ref(Self::KEYSPACE, &PREFIX_BYTES)
+    }
+
+    pub fn function_id(&self) -> &DefinitionKey {
+        &self.function_id
+    }
+
+    pub fn infix(&self) -> Infix {
+        self.infix
+    }
+
+    fn suffix_length(&self) -> usize {
+        self.suffix.len()
+    }
+
+    pub fn suffix(&self) -> &[u8] {
+        &self.suffix
+    }
+
+    const fn range_function_id() -> Range<usize> {
+        Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + DefinitionKey::LENGTH
+    }
+
+    const fn range_infix() -> Range<usize> {
+        Self::range_function_id().end..Self::range_function_id().end + InfixID::LENGTH
+    }
+
+    fn range_suffix(suffix_length: usize) -> Range<usize> {
+        Self::range_infix().end..Self::range_infix().end + suffix_length
+    }
+}
+
+impl AsBytes<BUFFER_KEY_INLINE> for FunctionProperty {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
+        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + self.suffix_length());
+        array[Self::INDEX_PREFIX] = Prefix::PropertyFunction.prefix_id().byte;
+        array[Self::range_function_id()].copy_from_slice(&self.function_id.clone().to_bytes());
+        array[Self::range_infix()].copy_from_slice(&self.infix.infix_id().bytes());
+        array[Self::range_suffix(self.suffix_length())].copy_from_slice(self.suffix());
+        Bytes::Array(array)
+    }
+}
+
+impl Keyable<BUFFER_KEY_INLINE> for FunctionProperty {
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
+}
+
+impl Prefixed<BUFFER_KEY_INLINE> for FunctionProperty {}
+
+pub trait FunctionPropertyEncoding: Sized {
+    const INFIX: Infix;
+
+    fn build_key(function_id: DefinitionKey, suffix: &[u8]) -> FunctionProperty {
+        FunctionProperty::new_suffixed(function_id, Self::INFIX, Bytes::<0>::reference(suffix))
+    }
+
+    fn to_key(&self, function_id: DefinitionKey) -> FunctionProperty {
+        Self::build_key(function_id, &[])
+    }
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self;
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
+
+    fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() == FunctionProperty::LENGTH_NO_SUFFIX
+            && FunctionProperty::decode(key_bytes).infix() == Self::INFIX
     }
 }

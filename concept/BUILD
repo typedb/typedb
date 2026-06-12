@@ -53,6 +53,7 @@ rust_library(
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:itertools",
+        "@crates//:macro_rules_attribute",
         "@crates//:regex",
         "@crates//:sentry",
         "@crates//:serde",

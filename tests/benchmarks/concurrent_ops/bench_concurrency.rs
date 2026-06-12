@@ -303,7 +303,7 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
-            function_manager,
+            function_manager.clone(),
             &query,
             query_str,
         )

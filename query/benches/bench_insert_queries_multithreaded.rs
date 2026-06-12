@@ -10,8 +10,7 @@ use std::{
     array,
     collections::HashMap,
     sync::{Arc, OnceLock, RwLock},
-    thread,
-    thread::{JoinHandle, sleep},
+    thread::{self, JoinHandle, sleep},
     time::{Duration, Instant},
 };
 
@@ -20,12 +19,8 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
-use encoding::{
-    graph::definition::definition_key_generator::DefinitionKeyGenerator,
-    value::{label::Label, value_type::ValueType},
-};
+use encoding::value::{label::Label, value_type::ValueType};
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
-use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
@@ -120,10 +115,9 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert, query_str)
+        .prepare_write_pipeline(snapshot, type_manager, thing_manager, Arc::default(), &typeql_insert, query_str)
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =

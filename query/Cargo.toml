@@ -62,6 +62,9 @@ features = {}
 	[dependencies.ir]
 		workspace = true
 
+	[dependencies.paste]
+		workspace = true
+
 	[dependencies.moka]
 		workspace = true
 

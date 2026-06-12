@@ -24,9 +24,6 @@ features = {}
 	[dev-dependencies.query]
 		workspace = true
 
-	[dev-dependencies.function]
-		workspace = true
-
 	[dev-dependencies.durability]
 		workspace = true
 
@@ -87,6 +84,9 @@ features = {}
 		workspace = true
 
 	[dependencies.bytes]
+		workspace = true
+
+	[dependencies.function]
 		workspace = true
 
 	[dependencies.typeql]

@@ -25,6 +25,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -36,8 +37,9 @@ use crate::{
     type_::{
         KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, AnnotationIndependent,
-            AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom,
+            Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
+            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation, HasAnnotationCategory,
+            HasAnnotationCategoryDerive,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -177,11 +179,11 @@ impl TypeAPI for AttributeType {
     }
 
     fn next_possible(&self) -> Option<Self> {
-        self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
+        self.vertex.type_id_().increment().map(Self::build_from_type_id)
     }
 
     fn previous_possible(&self) -> Option<Self> {
-        self.vertex.type_id_().decrement().map(|next_id| Self::build_from_type_id(next_id))
+        self.vertex.type_id_().decrement().map(Self::build_from_type_id)
     }
 }
 
@@ -406,6 +408,12 @@ impl AttributeType {
             AttributeTypeAnnotation::Values(values) => {
                 type_manager.set_annotation_values(snapshot, thing_manager, *self, values, storage_counters)?
             }
+            AttributeTypeAnnotation::Doc(doc) => {
+                type_manager.set_attribute_type_annotation_doc(snapshot, *self, doc)?
+            }
+            AttributeTypeAnnotation::Meta(meta) => {
+                type_manager.set_attribute_type_annotation_meta(snapshot, *self, meta)?
+            }
         };
         Ok(())
     }
@@ -416,16 +424,24 @@ impl AttributeType {
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let attribute_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
+        let attribute_type_annotation = AttributeTypeAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match attribute_type_annotation {
-            AttributeTypeAnnotation::Abstract(_) => {
+            AttributeTypeAnnotationCategory::Abstract => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, *self)?
             }
-            AttributeTypeAnnotation::Independent(_) => type_manager.unset_annotation_independent(snapshot, *self)?,
-            AttributeTypeAnnotation::Regex(_) => type_manager.unset_annotation_regex(snapshot, *self)?,
-            AttributeTypeAnnotation::Range(_) => type_manager.unset_annotation_range(snapshot, *self)?,
-            AttributeTypeAnnotation::Values(_) => type_manager.unset_annotation_values(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Independent => {
+                type_manager.unset_annotation_independent(snapshot, *self)?
+            }
+            AttributeTypeAnnotationCategory::Regex => type_manager.unset_annotation_regex(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Range => type_manager.unset_annotation_range(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Values => type_manager.unset_annotation_values(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Doc => {
+                type_manager.unset_attribute_type_annotation_doc(snapshot, *self)?
+            }
+            AttributeTypeAnnotationCategory::Meta(meta) => {
+                type_manager.unset_attribute_type_annotation_meta(snapshot, *self, meta)?
+            }
         }
         Ok(())
     }
@@ -472,13 +488,15 @@ impl AttributeType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),
     Regex(AnnotationRegex),
     Range(AnnotationRange),
     Values(AnnotationValues),
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl AttributeTypeAnnotation {
@@ -486,10 +504,10 @@ impl AttributeTypeAnnotation {
     // because we don't want to store annotations directly on value types.
     pub fn is_value_type_annotation(&self) -> bool {
         let annotation: Annotation = self.clone().into();
-        Self::is_value_type_annotation_category(annotation.category())
+        Self::is_value_type_annotation_category(&annotation.category())
     }
 
-    pub fn is_value_type_annotation_category(annotation_category: AnnotationCategory) -> bool {
+    pub fn is_value_type_annotation_category(annotation_category: &AnnotationCategory) -> bool {
         match annotation_category {
             AnnotationCategory::Regex | AnnotationCategory::Range | AnnotationCategory::Values => true,
 
@@ -499,41 +517,9 @@ impl AttributeTypeAnnotation {
             | AnnotationCategory::Unique
             | AnnotationCategory::Key
             | AnnotationCategory::Cardinality
-            | AnnotationCategory::Cascade => false,
-        }
-    }
-}
-
-impl TryFrom<Annotation> for AttributeTypeAnnotation {
-    type Error = AnnotationError;
-
-    fn try_from(annotation: Annotation) -> Result<AttributeTypeAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
-            Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
-            Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
-            Annotation::Range(annotation) => Ok(AttributeTypeAnnotation::Range(annotation)),
-            Annotation::Values(annotation) => Ok(AttributeTypeAnnotation::Values(annotation)),
-
-            | Annotation::Distinct(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<AttributeTypeAnnotation> for Annotation {
-    fn from(val: AttributeTypeAnnotation) -> Self {
-        match val {
-            AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
-            AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
-            AttributeTypeAnnotation::Range(annotation) => Annotation::Range(annotation),
-            AttributeTypeAnnotation::Values(annotation) => Annotation::Values(annotation),
+            | AnnotationCategory::Cascade
+            | AnnotationCategory::Doc
+            | AnnotationCategory::Meta(_) => false,
         }
     }
 }

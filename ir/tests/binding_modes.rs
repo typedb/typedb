@@ -9,7 +9,7 @@ use ir::{
     RepresentationError,
     pattern::Pattern,
     pipeline::{
-        FunctionRepresentationError, ParameterRegistry, VariableRegistry,
+        ParameterRegistry, VariableRegistry,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     },
     translation::{

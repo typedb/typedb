@@ -17,7 +17,7 @@ async fn test() {
     let path = "../typedb_behaviour+/driver/concept.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/driver/concept.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/driver/concept.feature";
 
     assert!(Context::test(path).await);
 }

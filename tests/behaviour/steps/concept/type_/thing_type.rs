@@ -7,14 +7,12 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    KindAPI, TypeAPI, annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint,
-    entity_type::EntityTypeAnnotation, object_type::ObjectType, relation_type::RelationTypeAnnotation,
+    KindAPI, TypeAPI, annotation::HasAnnotationCategory, constraint::Constraint, object_type::ObjectType,
 };
 use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use params;
 use resource::profile::StorageCounters;
 
 use crate::{
@@ -360,6 +358,7 @@ pub async fn type_declared_annotation_categories_contain(
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation_category: params::AnnotationCategory,
 ) {
+    let annotation_category = annotation_category.into_typedb();
     with_read_tx!(context, |tx| {
         match kind.into_typedb() {
             Kind::Attribute => {
@@ -372,10 +371,7 @@ pub async fn type_declared_annotation_categories_contain(
                     .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
-                    .map(|annotation| {
-                        <AttributeTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
-                    })
-                    .contains(&annotation_category.into_typedb());
+                    .any(|annotation| annotation.has_category(&annotation_category));
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
             }
             Kind::Entity => {
@@ -385,10 +381,7 @@ pub async fn type_declared_annotation_categories_contain(
                     .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
-                    .map(|annotation| {
-                        <EntityTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
-                    })
-                    .contains(&annotation_category.into_typedb());
+                    .any(|annotation| annotation.has_category(&annotation_category));
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
             }
             Kind::Relation => {
@@ -401,10 +394,7 @@ pub async fn type_declared_annotation_categories_contain(
                     .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
-                    .map(|annotation| {
-                        <RelationTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
-                    })
-                    .contains(&annotation_category.into_typedb());
+                    .any(|annotation| annotation.has_category(&annotation_category));
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),

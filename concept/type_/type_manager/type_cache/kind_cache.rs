@@ -36,6 +36,7 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
+    sub::{Sub, SubAnnotation},
     type_manager::type_reader::TypeReader,
 };
 
@@ -99,6 +100,7 @@ pub(crate) struct CommonTypeCache<T: KindAPI> {
     pub(super) type_: T,
     pub(super) label: Arc<Label>,
     pub(super) annotations_declared: HashSet<T::AnnotationType>,
+    pub(super) sub_annotations_declared: HashSet<SubAnnotation>,
     pub(super) constraints: HashSet<TypeConstraint<T>>,
     // TODO: Should these all be sets instead of vec?
     pub(super) supertype: Option<T>, // TODO: use smallvec if we want to have some inline - benchmark.
@@ -140,7 +142,7 @@ impl EntityTypeCache {
 
         for entity_type in entities.into_iter() {
             let cache = EntityTypeCache {
-                common_type_cache: CommonTypeCache::create(snapshot, entity_type),
+                common_type_cache: CommonTypeCache::<EntityType>::create(snapshot, entity_type),
                 object_cache: ObjectCache::create(snapshot, entity_type),
             };
             caches[entity_type.vertex().type_id_().as_u16() as usize] = Some(cache);
@@ -161,7 +163,7 @@ impl RelationTypeCache {
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
         for relation_type in relations.into_iter() {
-            let common_type_cache = CommonTypeCache::create(snapshot, relation_type);
+            let common_type_cache = CommonTypeCache::<RelationType>::create(snapshot, relation_type);
             let object_cache = ObjectCache::create(snapshot, relation_type);
             let relates_root = TypeReader::get_relation_type_relates_root(snapshot, relation_type).unwrap();
             let relates_declared = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type).unwrap();
@@ -200,7 +202,7 @@ impl AttributeTypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
         for attribute_type in attributes {
             let cache = AttributeTypeCache {
-                common_type_cache: CommonTypeCache::create(snapshot, attribute_type),
+                common_type_cache: CommonTypeCache::<AttributeType>::create(snapshot, attribute_type),
                 value_type_declared: TypeReader::get_value_type_declared(snapshot, attribute_type).unwrap(),
                 value_type: TypeReader::get_value_type(snapshot, attribute_type).unwrap(),
                 owns: TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type).unwrap(),
@@ -230,7 +232,7 @@ impl RoleTypeCache {
         for role_type in roles.into_iter() {
             let ordering = TypeReader::get_type_ordering(snapshot, role_type).unwrap();
             let cache = RoleTypeCache {
-                common_type_cache: CommonTypeCache::create(snapshot, role_type),
+                common_type_cache: CommonTypeCache::<RoleType>::create(snapshot, role_type),
                 ordering,
                 relates_explicit: TypeReader::get_role_type_relates_explicit(snapshot, role_type).unwrap(),
                 relates: TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type).unwrap(),
@@ -314,8 +316,8 @@ impl RelatesCache {
     }
 }
 
-impl<T: KindAPI> CommonTypeCache<T> {
-    fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
+impl CommonTypeCache<EntityType> {
+    fn create<Snapshot>(snapshot: &Snapshot, type_: EntityType) -> Self
     where
         Snapshot: ReadableSnapshot,
     {
@@ -323,13 +325,110 @@ impl<T: KindAPI> CommonTypeCache<T> {
         let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
         let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
         let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
+        let sub_annotations_declared = if let Some(supertype) = supertype {
+            TypeReader::get_capability_annotations_declared(snapshot, Sub::<EntityType>::new(type_, supertype)).unwrap()
+        } else {
+            HashSet::new()
+        };
         let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
         let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
         let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
-        CommonTypeCache {
+        Self {
             type_,
             label,
             annotations_declared,
+            sub_annotations_declared,
+            constraints,
+            supertype,
+            supertypes_transitive,
+            subtypes,
+            subtypes_transitive,
+        }
+    }
+}
+
+impl CommonTypeCache<RelationType> {
+    fn create<Snapshot>(snapshot: &Snapshot, type_: RelationType) -> Self
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
+        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
+        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
+        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
+        let sub_annotations_declared = if let Some(supertype) = supertype {
+            TypeReader::get_capability_annotations_declared(snapshot, Sub::<RelationType>::new(type_, supertype))
+                .unwrap()
+        } else {
+            HashSet::new()
+        };
+        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
+        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
+        Self {
+            type_,
+            label,
+            annotations_declared,
+            sub_annotations_declared,
+            constraints,
+            supertype,
+            supertypes_transitive,
+            subtypes,
+            subtypes_transitive,
+        }
+    }
+}
+
+impl CommonTypeCache<AttributeType> {
+    fn create<Snapshot>(snapshot: &Snapshot, type_: AttributeType) -> Self
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
+        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
+        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
+        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
+        let sub_annotations_declared = if let Some(supertype) = supertype {
+            TypeReader::get_capability_annotations_declared(snapshot, Sub::<AttributeType>::new(type_, supertype))
+                .unwrap()
+        } else {
+            HashSet::new()
+        };
+        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
+        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
+        Self {
+            type_,
+            label,
+            annotations_declared,
+            sub_annotations_declared,
+            constraints,
+            supertype,
+            supertypes_transitive,
+            subtypes,
+            subtypes_transitive,
+        }
+    }
+}
+
+impl CommonTypeCache<RoleType> {
+    fn create<Snapshot>(snapshot: &Snapshot, type_: RoleType) -> Self
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
+        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
+        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
+        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
+        let sub_annotations_declared = HashSet::new();
+        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
+        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
+        Self {
+            type_,
+            label,
+            annotations_declared,
+            sub_annotations_declared,
             constraints,
             supertype,
             supertypes_transitive,

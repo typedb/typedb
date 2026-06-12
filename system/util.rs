@@ -5,7 +5,6 @@
  */
 
 pub mod transaction_util {
-    #[allow(E0412)]
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -147,7 +146,7 @@ pub mod query_util {
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
-            &tx.function_manager,
+            tx.function_manager.clone(),
             pipeline,
             source_query,
         ) {
@@ -186,7 +185,7 @@ pub mod query_util {
         snapshot: WriteSnapshot<WALClient>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
-        function_manager: &FunctionManager,
+        function_manager: Arc<FunctionManager>,
         query_manager: &QueryManager,
         pipeline: &Pipeline,
         source_query: &str,

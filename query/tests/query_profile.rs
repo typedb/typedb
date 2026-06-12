@@ -50,7 +50,7 @@ fn insert_data(
     storage: Arc<MVCCStorage<WALClient>>,
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
-    function_manager: &FunctionManager,
+    function_manager: Arc<FunctionManager>,
     query_string: &str,
 ) {
     let snapshot = storage.clone().open_snapshot_write();
@@ -130,13 +130,13 @@ fn query_profile_tree_structure() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
     define_schema(storage.clone(), type_manager.as_ref(), thing_manager.as_ref(), &function_manager);
     insert_data(
         storage.clone(),
         type_manager.as_ref(),
         thing_manager.clone(),
-        &function_manager,
+        function_manager.clone(),
         r#"
         insert
           $x isa person, has age 10, has name "Alice", has nickname "Ally";
@@ -172,7 +172,14 @@ fn query_profile_tree_structure() {
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new())))
-        .prepare_read_pipeline(snapshot, &type_manager, thing_manager.clone(), &function_manager, &query, query_str)
+        .prepare_read_pipeline(
+            snapshot,
+            &type_manager,
+            thing_manager.clone(),
+            function_manager.clone(),
+            &query,
+            query_str,
+        )
         .unwrap();
 
     let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

@@ -9,15 +9,15 @@
 use steps::Context;
 
 #[tokio::test]
-async fn test_read_variables() {
+async fn test_metadata_annotations() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../typedb_behaviour+/query/language/variables.feature";
+    let path = "../typedb_behaviour+/query/language/metadata.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour++/query/language/variables.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/metadata.feature";
 
     assert!(Context::test(path, true).await);
 }

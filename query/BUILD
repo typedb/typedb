@@ -34,6 +34,9 @@ rust_library(
         "@crates//:tokio",
         "@crates//:moka",
     ],
+    proc_macro_deps = [
+        "@crates//:paste",
+    ],
 )
 
 rust_test(

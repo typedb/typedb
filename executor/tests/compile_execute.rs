@@ -73,14 +73,7 @@ fn setup(
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
-        .prepare_write_pipeline(
-            snapshot,
-            &type_manager,
-            thing_manager.clone(),
-            &FunctionManager::default(),
-            &query,
-            data,
-        )
+        .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), Arc::default(), &query, data)
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -159,7 +152,7 @@ fn test_has_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -258,7 +251,7 @@ fn test_expression_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -345,7 +338,7 @@ fn test_links_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -439,7 +432,7 @@ fn test_links_intersection() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -524,7 +517,7 @@ fn test_negation_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -631,7 +624,7 @@ fn test_forall_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -723,7 +716,7 @@ fn test_named_var_select() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -815,7 +808,7 @@ fn test_disjunction_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -911,7 +904,7 @@ fn test_disjunction_planning_nested_negations() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -969,7 +962,7 @@ fn test_mismatched_input_types() {
             &QueryProfile::new(false),
         )
         .unwrap();
-        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
+        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());
         let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
         let rows = iterator
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -1004,7 +997,7 @@ fn test_mismatched_input_types() {
             &QueryProfile::new(false),
         )
         .unwrap();
-        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
+        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());
         let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
         let rows = iterator
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))

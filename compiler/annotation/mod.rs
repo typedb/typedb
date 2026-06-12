@@ -9,14 +9,17 @@ use concept::{
     error::ConceptReadError,
     type_::{TypeAPI, type_manager::TypeManager},
 };
-use encoding::value::{label::Label, value_type::ValueTypeCategory};
+use encoding::value::{
+    label::Label,
+    value_type::{ValueType, ValueTypeCategory},
+};
 use error::typedb_error;
 use expression::ExpressionCompileError;
-use ir::pipeline::{ParameterRegistry, VariableRegistry};
+use ir::pipeline::{ParameterRegistry, VariableRegistry, function_signature::FunctionID};
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::function::AnnotatedFunctionSignatures;
+use crate::annotation::{expression::compiled_expression::ExpressionValueType, function::AnnotatedFunctionSignatures};
 
 pub mod expression;
 pub mod fetch;
@@ -119,8 +122,23 @@ typedb_error!(
             variable: String,
             source_span: Option<Span>,
         ),
+        ValueTypeMismatch(
+            18,
+            "The argument to the function {function_id} is expected to have value type '{expected}', found '{actual}'.",
+            function_id: FunctionID,
+            expected: ValueType,
+            actual: ExpressionValueType,
+            source_span: Option<Span>,
+        ),
+        Internal(100, "Internal error: {message}", message: String),
     }
 );
+
+impl From<Box<ConceptReadError>> for AnnotationError {
+    fn from(value: Box<ConceptReadError>) -> Self {
+        Self::ConceptRead { typedb_source: value }
+    }
+}
 
 typedb_error!(
     pub FunctionAnnotationError(component = "Function type inference", prefix = "FIN") {
@@ -302,6 +320,8 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
 
 #[cfg(test)]
 pub mod tests {
+    #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+
     use std::sync::Arc;
 
     use concept::{
