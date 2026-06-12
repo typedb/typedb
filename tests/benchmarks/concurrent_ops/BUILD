@@ -13,6 +13,7 @@ rust_test(
         "//database",
         "//diagnostics",
         "//executor",
+        "//query",
         "//storage",
 
         "//util/test:test_utils",

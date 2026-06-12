@@ -15,7 +15,7 @@ use executor::pipeline::{PipelineExecutionError, pipeline::PipelineError};
 use function::FunctionError;
 use ir::RepresentationError;
 
-use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
+use crate::{define::DefineError, given_rows::GivenRowDecodeError, redefine::RedefineError, undefine::UndefineError};
 
 typedb_error! {
     pub QueryError(component = "Query execution", prefix = "QEX") {
@@ -36,5 +36,13 @@ typedb_error! {
         QueryExecutionClosedEarly(16, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
         QueryAnalysisFailed(17, "Error while analysing the query.", source_query: String, typedb_source: Box<ConceptReadError>),
         PipelineStagesLimitExceeded(18, "Query pipeline has {actual} stages, which exceeds the maximum allowed {max}.", source_query: String, actual: usize, max: usize),
+        NoGivenRowsProvided(21, "The query contains a given stage, but no given rows were provided."),
+        UnexpectedGivenRowsProvided(22, "The query contains no given stage, but given rows were provided."),
+        GivenRowsMissingRequiredVariable(23, "The given rows are missing the required variable '{variable}'.", variable: String),
+        ErrorDecodingGivenRowEntry(
+            24,
+            "An error occured while decoding the given rows.",
+            typedb_source: Box<GivenRowDecodeError>,
+        ),
     }
 }

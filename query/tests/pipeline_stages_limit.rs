@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::{error::QueryError, query_manager::QueryManager};
+use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
 use resource::{constants::query::MAX_PIPELINE_STAGES, profile::CommitProfile};
 use storage::snapshot::CommittableSnapshot;
 use test_utils::assert_matches;
@@ -64,6 +64,7 @@ fn pipeline_at_limit_is_accepted() {
         thing_manager.clone(),
         &function_manager,
         &pipeline,
+        None::<GivenRowsSimple>,
         &query_str,
     );
 
@@ -86,6 +87,7 @@ fn pipeline_over_limit_is_rejected() {
         thing_manager.clone(),
         &function_manager,
         &pipeline,
+        None::<GivenRowsSimple>,
         &query_str,
     );
     let err = match result {

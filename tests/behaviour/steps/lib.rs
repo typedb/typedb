@@ -16,7 +16,8 @@ use std::{
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
-use ::query::error::QueryError;
+use ::query::{error::QueryError, given_rows::GivenRowsSimple};
+use answer::variable_value::VariableValue;
 use cucumber::{StatsWriter, World, gherkin::Feature};
 use database::Database;
 use futures::{
@@ -113,6 +114,7 @@ pub struct Context {
     attributes: HashMap<String, Option<Attribute>>,
     attribute_lists: HashMap<String, Vec<Attribute>>,
 
+    given_rows: Option<GivenRowsSimple>,
     analyzed: Option<AnalysedQueryResponse>,
 }
 
@@ -209,6 +211,10 @@ impl Context {
 
     pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {
         self.active_transaction.take()
+    }
+
+    pub fn take_given_rows(&mut self) -> Option<GivenRowsSimple> {
+        self.given_rows.take()
     }
 }
 

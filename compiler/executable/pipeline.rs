@@ -13,16 +13,20 @@ use std::{
 use answer::{Type, variable::Variable};
 use concept::thing::statistics::Statistics;
 use ir::{
-    pattern::{Pattern, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern},
+    pattern::{
+        Pattern, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
+        variable_category::VariableOptionality,
+    },
     pipeline::{VariableRegistry, function_signature::FunctionID, reduce::AssignedReduction},
 };
+use itertools::Itertools;
 
 use crate::{
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
-        function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
-        pipeline::AnnotatedStage,
+        function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation},
+        pipeline::{AnnotatedGiven, AnnotatedStage},
     },
     executable::{
         ExecutableCompilationError,
@@ -30,10 +34,11 @@ use crate::{
         fetch::executable::{ExecutableFetch, compile_fetch},
         function::{ExecutableFunctionRegistry, FunctionCallCostProvider, executable::compile_functions},
         insert::{self, executable::InsertExecutable},
-        match_::planner::conjunction_executable::ConjunctionExecutable,
+        match_::{instructions::CheckInstruction, planner::conjunction_executable::ConjunctionExecutable},
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
+        next_executable_id,
         put::PutExecutable,
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         update::executable::UpdateExecutable,
@@ -76,6 +81,7 @@ impl<'a> IntoIterator for &'a TypePopulations {
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
+    pub executable_given: Option<Arc<GivenExecutable>>,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
     pub pipeline_structure: Arc<ParametrisedPipelineStructure>,
@@ -144,9 +150,9 @@ pub fn compile_pipeline_and_functions(
     variable_registry: &VariableRegistry,
     annotated_schema_functions: &AnnotatedSchemaFunctions,
     annotated_preamble: AnnotatedPreambleFunctions,
+    annotated_given: Option<AnnotatedGiven>,
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
-    input_variables: &HashSet<Variable>,
     pipeline_structure: Arc<ParametrisedPipelineStructure>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
@@ -176,18 +182,30 @@ pub fn compile_pipeline_and_functions(
 
     let schema_and_preamble_functions: ExecutableFunctionRegistry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions, executable_preamble_functions);
+    let executable_given = annotated_given.map(|given| {
+        Arc::new(GivenExecutable::new(next_executable_id(), given.variables, given.expected_types, given.optionality))
+    });
     let (_input_positions, executable_stages, executable_fetch, type_populations) = compile_stages_and_fetch(
         statistics,
         variable_registry,
         &schema_and_preamble_functions,
         &annotated_stages,
         annotated_fetch,
-        input_variables,
+        executable_given.as_ref().map_or(&[], |given| given.variables()),
     )?;
+    debug_assert!(
+        executable_given
+            .as_ref()
+            .map_or(&Vec::new(), |given| &given.variables)
+            .iter()
+            .enumerate()
+            .all(|(i, v)| { _input_positions.get(v) == Some(&VariablePosition::new(i as u32)) })
+    );
     debug_assert!(!executable_stages.is_empty());
     Ok(ExecutablePipeline {
         pipeline_structure,
         executable_functions: schema_and_preamble_functions,
+        executable_given,
         executable_stages,
         executable_fetch,
         type_populations,
@@ -200,7 +218,7 @@ pub fn compile_stages_and_fetch(
     available_functions: &ExecutableFunctionRegistry,
     annotated_stages: &[AnnotatedStage],
     annotated_fetch: Option<AnnotatedFetch>,
-    input_variables: &HashSet<Variable>,
+    input_variables: &[Variable],
 ) -> Result<
     (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>, TypePopulations),
     ExecutableCompilationError,
@@ -581,5 +599,41 @@ fn find_referenced_functions_in_fetch(
                 }
             }
         })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GivenExecutable {
+    pub executable_id: u64,
+    variables: Vec<Variable>,
+    expected_types: Vec<FunctionParameterAnnotation>,
+    optionality: Vec<VariableOptionality>,
+}
+
+impl GivenExecutable {
+    pub(crate) fn new(
+        executable_id: u64,
+        variables: Vec<Variable>,
+        expected_types: Vec<FunctionParameterAnnotation>,
+        optionality: Vec<VariableOptionality>,
+    ) -> Self {
+        debug_assert!(variables.len() == expected_types.len() && variables.len() == optionality.len());
+        Self { executable_id, variables, expected_types, optionality }
+    }
+
+    pub fn row_mapping(&self) -> HashMap<Variable, VariablePosition> {
+        self.variables.iter().cloned().enumerate().map(|(i, v)| (v, VariablePosition::new(i as u32))).collect()
+    }
+
+    pub fn variables(&self) -> &[Variable] {
+        &self.variables
+    }
+
+    pub fn expected_types(&self) -> &[FunctionParameterAnnotation] {
+        &self.expected_types
+    }
+
+    pub fn optionality(&self) -> &[VariableOptionality] {
+        &self.optionality
     }
 }

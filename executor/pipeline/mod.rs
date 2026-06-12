@@ -19,6 +19,7 @@ use crate::{
 
 pub mod delete;
 pub mod fetch;
+mod given;
 pub mod initial;
 pub mod insert;
 pub mod match_;
@@ -77,5 +78,23 @@ typedb_error! {
         WriteError(6, "Error executing write operation.", typedb_source: Box<WriteError>),
         ReadPatternExecution(7, "Error executing a read pattern.", typedb_source: ReadExecutionError),
         FetchError(8, "Error executing fetch operation.", typedb_source: FetchExecutionError),
+        GivenValueDidNotSatisfyDeclaredType(
+            9,
+            "The given value at row '{row_index}' and column '{column_index}' does not not satisfy the declared type",
+            row_index: usize,
+            column_index: usize,
+        ),
+        GivenValueDidNotSatisfyDeclaredOptionality(
+            10,
+            "The given value at row '{row_index}' and column '{column_index}' was None, but the variable was not declared optional.",
+            row_index: usize,
+            column_index: usize,
+        ),
+        GivenConceptDoesNotExist(
+            11,
+            "The given instance at row '{row_index}' and column '{column_index}' does not exist in the database",
+            row_index: usize,
+            column_index: usize,
+        ),
     }
 }

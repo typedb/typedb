@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Read};
 
 use answer::variable::Variable;
+use bytes::byte_array::ByteArray;
+use encoding::graph::thing::THING_VERTEX_MAX_LENGTH;
+use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{
@@ -49,16 +52,24 @@ impl PipelineTranslationContext {
     pub fn new_function_pipeline(
         input_variables: Vec<(String, Option<Span>, (VariableCategory, VariableOptionality))>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
-        let mut last_stage_visible_variables = HashMap::new();
-        let mut variable_registry = VariableRegistry::new();
+        debug_assert!(input_variables.iter().all(|(_, _, (_, opt))| VariableOptionality::Required == *opt));
         let mut variables = Vec::with_capacity(input_variables.len());
-        for (name, source_span, (category, _optionality)) in input_variables {
-            let variable = variable_registry.register_function_argument(name.as_str(), category, source_span)?;
-            last_stage_visible_variables.insert(name.clone(), variable);
-            variables.push(variable);
+        let mut this = Self::new();
+        for input_variable in input_variables {
+            variables.push(this.register_input_variable(input_variable)?);
         }
-        let this = Self { variable_registry, last_stage_visible_variables };
         Ok((this, variables))
+    }
+
+    pub(crate) fn register_input_variable(
+        &mut self,
+        input_variable: (String, Option<Span>, (VariableCategory, VariableOptionality)),
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let (name, source_span, (category, optionality)) = input_variable;
+        let variable =
+            self.variable_registry.register_input_variable(name.as_str(), category, optionality, source_span)?;
+        self.last_stage_visible_variables.insert(name.clone(), variable);
+        Ok(variable)
     }
 
     pub fn new_block_builder_context<'a>(
@@ -115,3 +126,24 @@ macro_rules! verify_variable_available {
     };
 }
 pub(super) use verify_variable_available;
+
+pub fn parse_iid(iid: &str) -> Result<ByteArray<THING_VERTEX_MAX_LENGTH>, ()> {
+    fn from_hex(c: u8) -> Result<u8, ()> {
+        // relying on the fact that typeql ensures only hex digits
+        match c {
+            b'0'..=b'9' => Ok(c - b'0'),
+            b'a'..=b'f' => Ok(c - b'a' + 10),
+            b'A'..=b'F' => Ok(c - b'A' + 10),
+            _ => Err(()),
+        }
+    }
+
+    let iid = &iid["0x".len()..];
+
+    let mut bytes = [0u8; THING_VERTEX_MAX_LENGTH];
+    for (i, (hi, lo)) in iid.bytes().tuples().enumerate() {
+        bytes[i] = (from_hex(hi)? << 4) + from_hex(lo)?;
+    }
+    let len = iid.as_bytes().len() / 2;
+    Ok(ByteArray::inline(bytes, len))
+}

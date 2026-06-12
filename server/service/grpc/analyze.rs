@@ -10,10 +10,10 @@ use answer::{Type, variable::Variable};
 use compiler::{
     annotation::{function::FunctionParameterAnnotation, type_inference::get_type_annotation_from_label},
     query_structure::{
-        ConjunctionAnnotations, FunctionReturnStructure, FunctionStructure, PipelineStructure,
-        PipelineStructureAnnotations, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier,
-        QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureSortVariable,
-        StructureVariableId,
+        ConjunctionAnnotations, FunctionReturnStructure, FunctionStructure, GivenStructureAnnotations,
+        PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation,
+        PipelineVariableAnnotationAndModifier, QueryStructureConjunction, QueryStructureGiven,
+        QueryStructureNestedPattern, QueryStructureStage, StructureSortVariable, StructureVariableId,
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -75,6 +75,12 @@ pub fn encode_analyzed_query(
     analyzed_query: AnalysedQuery,
 ) -> Result<typedb_protocol::analyze::res::AnalyzedQuery, Box<ConceptReadError>> {
     let AnalysedQuery { structure, annotations, source } = analyzed_query;
+    let given = match (&structure.query.parametrised_structure.given, &annotations.given) {
+        (Some(given_structure), Some(given_annotations)) => {
+            Some(encode_analyzed_given(snapshot, type_manager, given_structure, given_annotations)?)
+        }
+        _ => None,
+    };
     let query = encode_analyzed_pipeline(snapshot, type_manager, &structure.query, &annotations.query)?;
     let preamble = std::iter::zip(structure.preamble.iter(), annotations.preamble.iter())
         .map(|(structure, annotations)| encode_function(snapshot, type_manager, structure, annotations))
@@ -87,7 +93,7 @@ pub fn encode_analyzed_query(
                 .map(|object| analyze_proto::Fetch { node: Some(analyze_proto::fetch::Node::Object(object)) })
         })
         .transpose()?;
-    Ok(typedb_protocol::analyze::res::AnalyzedQuery { source, query: Some(query), preamble, fetch })
+    Ok(typedb_protocol::analyze::res::AnalyzedQuery { source, query: Some(query), preamble, fetch, given })
 }
 
 fn encode_function(
@@ -149,6 +155,17 @@ fn encode_function(
         arguments_annotations,
         return_annotations,
     })
+}
+
+fn encode_analyzed_given(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    given_structure: &QueryStructureGiven,
+    given_annotations: &GivenStructureAnnotations,
+) -> Result<analyze_proto::AnalyzedGiven, Box<ConceptReadError>> {
+    let variables = given_structure.variables.iter().map(|v| encode_structure_variable(*v)).collect();
+    let variable_annotations = encode_conjunction_annotations(snapshot, type_manager, given_annotations)?;
+    Ok(analyze_proto::AnalyzedGiven { variables, variable_annotations })
 }
 
 pub(crate) fn encode_analyzed_pipeline_for_query(

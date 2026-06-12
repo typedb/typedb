@@ -9,7 +9,11 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use compiler::{
     VariablePosition,
-    executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
+    executable::{
+        fetch::executable::ExecutableFetch,
+        function::ExecutableFunctionRegistry,
+        pipeline::{ExecutableStage, GivenExecutable},
+    },
     query_structure::{ParametrisedPipelineStructure, PipelineStructure},
 };
 use concept::thing::thing_manager::ThingManager;
@@ -20,11 +24,13 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     ExecutionInterrupt,
+    batch::Batch,
     document::ConceptDocument,
     pipeline::{
         PipelineExecutionError,
         delete::DeleteStageExecutor,
         fetch::FetchStageExecutor,
+        given::GivenStageExecutor,
         initial::{InitialIterator, InitialStage},
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
@@ -96,21 +102,25 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         variable_names: &HashMap<Variable, String>,
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
+        executable_given: Option<Arc<GivenExecutable>>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
-        input: Option<MaybeOwnedRow<'_>>,
+        given_batch: Batch,
         query_profile: Arc<QueryProfile>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new_with_profile(snapshot, thing_manager, parameters.clone(), query_profile);
 
-        let initial_iterator =
-            input.map(|row| InitialStage::new_with(row)).unwrap_or_else(|| InitialStage::new_empty());
+        let initial_iterator = InitialStage::new(given_batch);
         let initial_iterator = ReadStageIterator::Initial(Box::new(initial_iterator.into_iterator()));
-
-        let mut stages: Vec<ReadPipelineStage<Snapshot>> = Vec::with_capacity(executable_stages.len());
-
+        let mut stages = if let Some(given) = executable_given {
+            let mut stages = Vec::with_capacity(executable_stages.len() + 1);
+            stages.push(ReadPipelineStage::Given(Box::new(GivenStageExecutor::new(given))));
+            stages
+        } else {
+            Vec::with_capacity(executable_stages.len())
+        };
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(conjunction_executable) => {
@@ -234,19 +244,26 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         thing_manager: Arc<ThingManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
+        executable_given: Option<Arc<GivenExecutable>>,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
+        given_batch: Batch,
         query_profile: Arc<QueryProfile>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context =
             ExecutionContext::new_with_profile(Arc::new(snapshot), thing_manager, parameters.clone(), query_profile);
 
-        let initial_iterator =
-            WriteStageIterator::Initial(Box::new(InitialIterator::new(crate::batch::FixedBatch::SINGLE_EMPTY_ROW)));
+        let initial_iterator = WriteStageIterator::Initial(Box::new(InitialIterator::new(given_batch)));
+        let mut stages = if let Some(given) = executable_given {
+            let mut stages = Vec::with_capacity(executable_stages.len() + 1);
+            stages.push(WritePipelineStage::Given(Box::new(GivenStageExecutor::new(given))));
+            stages
+        } else {
+            Vec::with_capacity(executable_stages.len())
+        };
 
-        let mut stages = Vec::with_capacity(executable_stages.len());
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(conjunction_executable) => {

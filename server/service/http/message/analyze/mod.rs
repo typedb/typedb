@@ -11,7 +11,10 @@ use http::StatusCode;
 use query::analyse::AnalysedQuery;
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
-use structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse, encode_analyzed_pipeline};
+use structure::{
+    AnalyzedFunctionResponse, AnalyzedGivenResponse, AnalyzedPipelineResponse, encode_analyzed_given,
+    encode_analyzed_pipeline,
+};
 
 use crate::service::http::message::body::JsonBody;
 
@@ -35,6 +38,7 @@ pub struct TransactionAnalyzePayload {
 #[serde(rename_all = "camelCase")]
 pub struct AnalysedQueryResponse {
     pub source: String,
+    pub given: Option<AnalyzedGivenResponse>,
     pub query: AnalyzedPipelineResponse,
     pub preamble: Vec<AnalyzedFunctionResponse>,
     pub fetch: Option<FetchStructureAnnotationsResponse>,
@@ -54,6 +58,12 @@ pub fn encode_analyzed_query(
     analysed_query: AnalysedQuery,
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
     let AnalysedQuery { source, structure, annotations } = analysed_query;
+    let given = match (&structure.query.parametrised_structure.given, &annotations.given) {
+        (Some(given), Some(given_annotations)) => {
+            Some(encode_analyzed_given(snapshot, type_manager, given, given_annotations)?)
+        }
+        _ => None,
+    };
     let preamble = structure
         .preamble
         .into_iter()
@@ -68,7 +78,7 @@ pub fn encode_analyzed_query(
                 .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
         })
         .transpose()?;
-    Ok(AnalysedQueryResponse { source, query, preamble, fetch })
+    Ok(AnalysedQueryResponse { source, given, query, preamble, fetch })
 }
 
 #[cfg(debug_assertions)]
