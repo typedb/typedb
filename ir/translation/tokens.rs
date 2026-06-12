@@ -84,9 +84,8 @@ pub fn translate_annotation_category(
         typeql::schema::undefinable::AnnotationCategory::Unique => Ok(AnnotationCategory::Unique),
         typeql::schema::undefinable::AnnotationCategory::Values => Ok(AnnotationCategory::Values),
         typeql::schema::undefinable::AnnotationCategory::Doc => Ok(AnnotationCategory::Doc),
-        typeql::schema::undefinable::AnnotationCategory::Meta(meta) => {
-            // TODO: AnnotationCategory span
-            Ok(AnnotationCategory::Meta(String::from_typeql_literal(meta, None)?))
+        typeql::schema::undefinable::AnnotationCategory::Meta(meta, span) => {
+            Ok(AnnotationCategory::Meta(String::from_typeql_literal(meta, *span)?))
         }
     }
 }
