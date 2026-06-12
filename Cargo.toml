@@ -220,6 +220,12 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.typeql]
+			features = []
+			rev = "eb70ec3091ea12ecc7e955bd6ee3a18b4ea3dd67"
+			git = "https://github.com/typedb/typeql"
+			default-features = false
+
 		[workspace.dependencies.cache]
 			path = "common/cache"
 			features = []
@@ -465,12 +471,6 @@ features = {}
 			version = "1.0.6"
 			default-features = false
 
-		[workspace.dependencies.typeql]
-			features = []
-			rev = "fc420c4f1f035211e46291bb0ae2e32626a5f12c"
-			git = "https://github.com/typedb/typeql"
-			default-features = false
-
 		[workspace.dependencies.serde_with]
 			features = ["alloc", "default", "macros", "std"]
 			version = "3.20.0"
@@ -493,7 +493,7 @@ features = {}
 
 		[workspace.dependencies.typedb-protocol]
 			features = []
-			rev = "9a45ab625534a01afe5ecf89acaa06cecc92cafb"
+			rev = "da3e316cb0022cb284083996f0659ad22db13aca"
 			git = "https://github.com/typedb/typedb-protocol"
 			default-features = false
 

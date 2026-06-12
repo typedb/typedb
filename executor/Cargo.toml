@@ -32,9 +32,6 @@ features = {}
 
 [dependencies]
 
-	[dependencies.function]
-		workspace = true
-
 	[dependencies.tokio]
 		workspace = true
 
@@ -87,6 +84,9 @@ features = {}
 		workspace = true
 
 	[dependencies.bytes]
+		workspace = true
+
+	[dependencies.function]
 		workspace = true
 
 	[dependencies.typeql]
