@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt,
     hash::{Hash, Hasher},
     ops::Range,
@@ -31,7 +31,7 @@ use crate::{
         Typed,
         common::value_hasher::HashedID,
         definition::{
-            definition_key::DefinitionKey,
+            definition_key::{DefinitionID, DefinitionKey},
             r#struct::{StructDefinition, StructDefinitionField},
         },
         thing::{
@@ -52,22 +52,22 @@ use crate::{
 // write some accessor logic so we efficiently deserialize only the fields we need.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StructValue<'a> {
-    definition_key: DefinitionKey,
+    definition_id: DefinitionID,
     // a map allows empty fields to not be recorded at all
-    fields: HashMap<StructFieldIDUInt, Value<'a>>,
+    fields: BTreeMap<StructFieldIDUInt, Value<'a>>,
 }
 
 impl<'a> StructValue<'a> {
-    pub fn new(definition_key: DefinitionKey, fields: HashMap<StructFieldIDUInt, Value<'a>>) -> StructValue<'a> {
-        StructValue { definition_key, fields }
+    pub fn new(definition_id: DefinitionID, fields: BTreeMap<StructFieldIDUInt, Value<'a>>) -> StructValue<'a> {
+        StructValue { definition_id, fields }
     }
 
     pub fn build(
-        definition_key: DefinitionKey,
+        definition_id: DefinitionID,
         struct_definition: StructDefinition,
         value: HashMap<String, Value<'a>>,
     ) -> Result<StructValue<'a>, Vec<EncodingError>> {
-        let mut fields: HashMap<StructFieldIDUInt, Value<'a>> = HashMap::new();
+        let mut fields: BTreeMap<StructFieldIDUInt, Value<'a>> = BTreeMap::new();
         let mut errors: Vec<EncodingError> = Vec::new();
         for (field_name, field_id) in struct_definition.field_names {
             let field_definition: &StructDefinitionField = struct_definition.fields.get(&field_id).unwrap();
@@ -89,14 +89,18 @@ impl<'a> StructValue<'a> {
             }
         }
 
-        if errors.is_empty() { Ok(StructValue { definition_key, fields }) } else { Err(errors) }
+        if errors.is_empty() { Ok(StructValue { definition_id, fields }) } else { Err(errors) }
     }
 
-    pub fn definition_key(&self) -> &DefinitionKey {
-        &self.definition_key
+    pub fn definition_id(&self) -> DefinitionID {
+        self.definition_id
     }
 
-    pub fn fields(&self) -> &HashMap<StructFieldIDUInt, Value<'a>> {
+    pub fn definition_key(&self) -> DefinitionKey {
+        DefinitionKey::build(StructDefinition::PREFIX, self.definition_id)
+    }
+
+    pub fn fields(&self) -> &BTreeMap<StructFieldIDUInt, Value<'a>> {
         &self.fields
     }
 
@@ -124,7 +128,7 @@ impl<'a> StructValue<'a> {
         snapshot: &impl WritableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         attribute: &AttributeVertex,
-        fields: &HashMap<StructFieldIDUInt, Value<'a>>,
+        fields: &BTreeMap<StructFieldIDUInt, Value<'a>>,
         path: &mut Vec<StructFieldIDUInt>,
         acc: &mut Vec<StructIndexEntry<'static>>,
     ) -> Result<(), Arc<SnapshotIteratorError>> {
@@ -144,7 +148,7 @@ impl<'a> StructValue<'a> {
 
 impl Hash for StructValue<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Hash::hash(&self.definition_key, state);
+        Hash::hash(&self.definition_id, state);
         for (id, value) in self.fields.iter() {
             Hash::hash(id, state);
             Hash::hash(value, state);
@@ -278,7 +282,7 @@ impl StructIndexEntry<'static> {
             Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
             Value::Date(value) => buf.extend_from_slice(&DateBytes::build(*value).bytes()),
             Value::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(**value).bytes()),
             Value::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
             Value::String(value) => {
                 let string_bytes = StringBytes::<0>::build_ref(value);

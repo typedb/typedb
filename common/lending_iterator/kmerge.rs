@@ -9,8 +9,9 @@ use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, mem};
 use crate::{LendingIterator, Peekable, Seekable, higher_order::FnHktHelper};
 
 pub struct KMergeBy<I: LendingIterator, F> {
-    pub iterators: BinaryHeap<PeekWrapper<I, F>>,
-    pub next_iterator: Option<PeekWrapper<I, F>>,
+    // Box possibly large iterators to make moving them around the heap cheap
+    pub iterators: BinaryHeap<Box<PeekWrapper<I, F>>>,
+    pub next_iterator: Option<Box<PeekWrapper<I, F>>>,
 }
 
 impl<I: LendingIterator, F> KMergeBy<I, F>
@@ -27,7 +28,7 @@ where
                 peekable
             })
             .filter(|peekable| peekable.get_peeked().is_some())
-            .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: cmp });
+            .map(|peekable| Box::new(PeekWrapper { iter: peekable, cmp_fn: cmp }));
         // Peek wrapper reverses the comparator to create a min heap
         let queue = BinaryHeap::from_iter(iters);
         Self { iterators: queue, next_iterator: None }

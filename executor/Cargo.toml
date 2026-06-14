@@ -33,6 +33,9 @@ features = {}
 	[dev-dependencies.test_utils_concept]
 		workspace = true
 
+	[dev-dependencies.criterion]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.tokio]
@@ -144,4 +147,9 @@ features = {}
 [[test]]
 	path = "tests/execute_links.rs"
 	name = "test_execute_links"
+
+[[bench]]
+	name = "bench_instructions"
+	path = "benches/bench_instructions.rs"
+	harness = false
 

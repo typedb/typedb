@@ -58,11 +58,11 @@ pub(crate) fn unsafe_compare_result_tuple<'a, 'b>(
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum Tuple<'a> {
+pub enum Tuple<'a> {
     Single([VariableValue<'a>; 1]),
     Pair([VariableValue<'a>; 2]),
-    Triple([VariableValue<'a>; 3]),
-    Quintuple([VariableValue<'a>; 5]),
+    Triple(Box<[VariableValue<'a>; 3]>),
+    Quintuple(Box<[VariableValue<'a>; 5]>),
     Arbitrary(Vec<VariableValue<'a>>), // TODO: unknown sized tuples, for functions
 }
 
@@ -89,8 +89,8 @@ impl<'a> Tuple<'a> {
         match self {
             Tuple::Single(values) => values,
             Tuple::Pair(values) => values,
-            Tuple::Triple(values) => values,
-            Tuple::Quintuple(values) => values,
+            Tuple::Triple(values) => values.as_slice(),
+            Tuple::Quintuple(values) => values.as_slice(),
             Tuple::Arbitrary(values) => values,
         }
     }
@@ -99,8 +99,8 @@ impl<'a> Tuple<'a> {
         match self {
             Tuple::Single(values) => values,
             Tuple::Pair(values) => values,
-            Tuple::Triple(values) => values,
-            Tuple::Quintuple(values) => values,
+            Tuple::Triple(values) => values.as_mut_slice(),
+            Tuple::Quintuple(values) => values.as_mut_slice(),
             Tuple::Arbitrary(values) => values,
         }
     }
@@ -109,8 +109,8 @@ impl<'a> Tuple<'a> {
         match self {
             Tuple::Single(values) => Tuple::Single(values.map(VariableValue::into_owned)),
             Tuple::Pair(values) => Tuple::Pair(values.map(VariableValue::into_owned)),
-            Tuple::Triple(values) => Tuple::Triple(values.map(VariableValue::into_owned)),
-            Tuple::Quintuple(values) => Tuple::Quintuple(values.map(VariableValue::into_owned)),
+            Tuple::Triple(values) => Tuple::Triple(Box::new((*values).map(VariableValue::into_owned))),
+            Tuple::Quintuple(values) => Tuple::Quintuple(Box::new((*values).map(VariableValue::into_owned))),
             Tuple::Arbitrary(values) => Tuple::Arbitrary(values.into_iter().map(VariableValue::into_owned).collect()),
         }
     }
@@ -399,11 +399,11 @@ pub(crate) fn links_to_tuple_relation_player_role(
     result: Result<(Links, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
     let (links, _count) = result?;
-    Ok(Tuple::Triple([
+    Ok(Tuple::Triple(Box::new([
         VariableValue::Thing(links.relation().into()),
         VariableValue::Thing(links.player().into()),
         VariableValue::Type(links.role_type().into()),
-    ]))
+    ])))
 }
 
 pub(crate) fn tuple_relation_player_role_to_links_canonical(
@@ -460,11 +460,11 @@ pub(crate) fn links_to_tuple_player_relation_role(
     result: Result<(Links, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
     let (links, _count) = result?;
-    Ok(Tuple::Triple([
+    Ok(Tuple::Triple(Box::new([
         VariableValue::Thing(links.player().into()),
         VariableValue::Thing(links.relation().into()),
         VariableValue::Type(links.role_type().into()),
-    ]))
+    ])))
 }
 
 pub(crate) fn tuple_player_relation_role_to_links_canonical(
@@ -521,11 +521,11 @@ pub(crate) fn links_to_tuple_role_relation_player(
     result: Result<(Links, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
     let (links, _count) = result?;
-    Ok(Tuple::Triple([
+    Ok(Tuple::Triple(Box::new([
         VariableValue::Type(links.role_type().into()),
         VariableValue::Thing(links.relation().into()),
         VariableValue::Thing(links.player().into()),
-    ]))
+    ])))
 }
 
 pub(crate) fn tuple_role_relation_player_to_links_canonical(
@@ -587,13 +587,13 @@ pub(crate) fn indexed_relation_to_tuple_start_end_relation_startrole_endrole(
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
     let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
-    Ok(Tuple::Quintuple([
+    Ok(Tuple::Quintuple(Box::new([
         VariableValue::Thing(player_start.into()),
         VariableValue::Thing(player_end.into()),
         VariableValue::Thing(relation.into()),
         VariableValue::Type(role_start.into()),
         VariableValue::Type(role_end.into()),
-    ]))
+    ])))
 }
 
 // corresponds to Unbound Inverted or BoundStart modes
@@ -602,13 +602,13 @@ pub(crate) fn indexed_relation_to_tuple_end_start_relation_startrole_endrole(
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
     let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
-    Ok(Tuple::Quintuple([
+    Ok(Tuple::Quintuple(Box::new([
         VariableValue::Thing(player_end.into()),
         VariableValue::Thing(player_start.into()),
         VariableValue::Thing(relation.into()),
         VariableValue::Type(role_start.into()),
         VariableValue::Type(role_end.into()),
-    ]))
+    ])))
 }
 
 // corresponds to BoundStartBoundEnd mode
@@ -617,13 +617,13 @@ pub(crate) fn indexed_relation_to_tuple_relation_start_end_startrole_endrole(
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
     let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
-    Ok(Tuple::Quintuple([
+    Ok(Tuple::Quintuple(Box::new([
         VariableValue::Thing(relation.into()),
         VariableValue::Thing(player_start.into()),
         VariableValue::Thing(player_end.into()),
         VariableValue::Type(role_start.into()),
         VariableValue::Type(role_end.into()),
-    ]))
+    ])))
 }
 
 // corresponds to BoundStartBoundEndBoundRelation mode
@@ -632,13 +632,13 @@ pub(crate) fn indexed_relation_to_tuple_startrole_start_end_relation_endrole(
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
     let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
-    Ok(Tuple::Quintuple([
+    Ok(Tuple::Quintuple(Box::new([
         VariableValue::Type(role_start.into()),
         VariableValue::Thing(player_start.into()),
         VariableValue::Thing(player_end.into()),
         VariableValue::Thing(relation.into()),
         VariableValue::Type(role_end.into()),
-    ]))
+    ])))
 }
 
 pub(crate) fn indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole(
@@ -646,11 +646,11 @@ pub(crate) fn indexed_relation_to_tuple_endrole_start_end_relation_relation_star
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
     let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
-    Ok(Tuple::Quintuple([
+    Ok(Tuple::Quintuple(Box::new([
         VariableValue::Type(role_end.into()),
         VariableValue::Thing(player_start.into()),
         VariableValue::Thing(player_end.into()),
         VariableValue::Thing(relation.into()),
         VariableValue::Type(role_start.into()),
-    ]))
+    ])))
 }
