@@ -1945,4 +1945,165 @@ pub mod tests {
             assert_eq!(expected_graph.edges, graph.edges);
         }
     }
+
+    /// Regression test for https://github.com/typedb/typedb/issues/7014
+    ///
+    /// When two relations share a role name (e.g., "owner"), matching by
+    /// unscoped role type should not incorrectly alias the type variables
+    /// and reject the query as unsatisfiable.
+    ///
+    /// Schema:
+    ///   person sub entity;
+    ///   pet sub entity;
+    ///   toy sub entity;
+    ///   pet-ownership sub relation, relates owner, relates pet;
+    ///   toy-ownership sub relation, relates owner, relates toy;
+    ///   person plays pet-ownership:owner;
+    ///   pet plays pet-ownership:pet, plays toy-ownership:owner;
+    ///   toy plays toy-ownership:toy;
+    ///
+    /// Query:
+    ///   match (owner: $x, pet: $y); (owner: $y, toy: $z); get;
+    #[test]
+    fn test_issue_7014_unscoped_role_name_not_aliased() {
+        use concept::type_::{Ordering, PlayerAPI};
+        use resource::profile::{CommitProfile, StorageCounters};
+        use storage::snapshot::CommittableSnapshot;
+
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        // Create schema matching the issue
+        let (type_person, type_pet, type_toy, _type_pet_ownership, _type_toy_ownership,
+             _role_pet_own_owner, _role_pet_own_pet, _role_toy_own_owner, _role_toy_own_toy) = {
+            let mut snapshot = storage.clone().open_snapshot_write();
+
+            // Entity types
+            let person = type_manager.create_entity_type(&mut snapshot, &Label::build("person", None)).unwrap();
+            let pet = type_manager.create_entity_type(&mut snapshot, &Label::build("pet", None)).unwrap();
+            let toy = type_manager.create_entity_type(&mut snapshot, &Label::build("toy", None)).unwrap();
+
+            // Relation: pet-ownership relates owner, relates pet
+            let pet_ownership = type_manager
+                .create_relation_type(&mut snapshot, &Label::build("pet-ownership", None))
+                .unwrap();
+            let pet_own_owner = pet_ownership
+                .create_relates(&mut snapshot, &type_manager, &thing_manager, "owner", Ordering::Unordered, StorageCounters::DISABLED)
+                .unwrap()
+                .role();
+            let pet_own_pet = pet_ownership
+                .create_relates(&mut snapshot, &type_manager, &thing_manager, "pet", Ordering::Unordered, StorageCounters::DISABLED)
+                .unwrap()
+                .role();
+
+            // Relation: toy-ownership relates owner, relates toy
+            let toy_ownership = type_manager
+                .create_relation_type(&mut snapshot, &Label::build("toy-ownership", None))
+                .unwrap();
+            let toy_own_owner = toy_ownership
+                .create_relates(&mut snapshot, &type_manager, &thing_manager, "owner", Ordering::Unordered, StorageCounters::DISABLED)
+                .unwrap()
+                .role();
+            let toy_own_toy = toy_ownership
+                .create_relates(&mut snapshot, &type_manager, &thing_manager, "toy", Ordering::Unordered, StorageCounters::DISABLED)
+                .unwrap()
+                .role();
+
+            // Plays: person plays pet-ownership:owner
+            person.set_plays(&mut snapshot, &type_manager, &thing_manager, pet_own_owner, StorageCounters::DISABLED).unwrap();
+            // Plays: pet plays pet-ownership:pet, plays toy-ownership:owner
+            pet.set_plays(&mut snapshot, &type_manager, &thing_manager, pet_own_pet, StorageCounters::DISABLED).unwrap();
+            pet.set_plays(&mut snapshot, &type_manager, &thing_manager, toy_own_owner, StorageCounters::DISABLED).unwrap();
+            // Plays: toy plays toy-ownership:toy
+            toy.set_plays(&mut snapshot, &type_manager, &thing_manager, toy_own_toy, StorageCounters::DISABLED).unwrap();
+
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+            (
+                TypeAnnotation::Entity(person),
+                TypeAnnotation::Entity(pet),
+                TypeAnnotation::Entity(toy),
+                TypeAnnotation::Relation(pet_ownership),
+                TypeAnnotation::Relation(toy_ownership),
+                TypeAnnotation::RoleType(pet_own_owner),
+                TypeAnnotation::RoleType(pet_own_pet),
+                TypeAnnotation::RoleType(toy_own_owner),
+                TypeAnnotation::RoleType(toy_own_toy),
+            )
+        };
+
+        // Build IR for: match (owner: $x, pet: $y); (owner: $y, toy: $z); get;
+        let mut translation_context = PipelineTranslationContext::new();
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+        let mut conjunction = builder.conjunction_mut();
+
+        // Named variables
+        let var_x = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
+        let var_y = conjunction.constraints_mut().get_or_declare_variable("y", None).unwrap();
+        let var_z = conjunction.constraints_mut().get_or_declare_variable("z", None).unwrap();
+
+        // (owner: $x, pet: $y) — first relation
+        let var_rel1 = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+        let var_role_owner1 = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+        let var_role_pet = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+        conjunction.constraints_mut().add_role_name(var_role_owner1, "owner", None).unwrap();
+        conjunction.constraints_mut().add_role_name(var_role_pet, "pet", None).unwrap();
+        conjunction.constraints_mut().add_links(var_rel1, var_x, var_role_owner1, None).unwrap();
+        conjunction.constraints_mut().add_links(var_rel1, var_y, var_role_pet, None).unwrap();
+
+        // (owner: $y, toy: $z) — second relation
+        let var_rel2 = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+        let var_role_owner2 = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+        let var_role_toy = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+        conjunction.constraints_mut().add_role_name(var_role_owner2, "owner", None).unwrap();
+        conjunction.constraints_mut().add_role_name(var_role_toy, "toy", None).unwrap();
+        conjunction.constraints_mut().add_links(var_rel2, var_y, var_role_owner2, None).unwrap();
+        conjunction.constraints_mut().add_links(var_rel2, var_z, var_role_toy, None).unwrap();
+
+        let block = builder.finish().unwrap();
+        let conjunction = block.conjunction();
+
+        let snapshot = storage.clone().open_snapshot_write();
+        let empty_function_cache = EmptyAnnotatedFunctionSignatures;
+        let context = TypeGraphSeedingContext::new(
+            &snapshot,
+            &type_manager,
+            &empty_function_cache,
+            &translation_context.variable_registry,
+            false,
+        );
+
+        // This is the critical assertion: create_graph should NOT return an error.
+        // Issue #7014 would cause this to fail with "Invalid Query Pattern" or
+        // "DetectedUnsatisfiablePattern" because the role type variables for "owner"
+        // would be incorrectly aliased.
+        let graph_result = context.create_graph(&BTreeMap::new(), conjunction);
+        assert!(graph_result.is_ok(), "Type inference should not reject this valid query! Error: {:?}", graph_result.err());
+
+        let graph = graph_result.unwrap();
+
+        // Verify that all named variables have non-empty type annotations
+        let x_types = graph.vertices.get(&Vertex::Variable(var_x));
+        let y_types = graph.vertices.get(&Vertex::Variable(var_y));
+        let z_types = graph.vertices.get(&Vertex::Variable(var_z));
+
+        assert!(x_types.is_some() && !x_types.unwrap().is_empty(),
+            "$x should have type annotations, got: {:?}", x_types);
+        assert!(y_types.is_some() && !y_types.unwrap().is_empty(),
+            "$y should have type annotations, got: {:?}", y_types);
+        assert!(z_types.is_some() && !z_types.unwrap().is_empty(),
+            "$z should have type annotations, got: {:?}", z_types);
+
+        // Verify expected types:
+        // $x should be person (plays pet-ownership:owner)
+        assert!(x_types.unwrap().contains(&type_person),
+            "$x should include 'person', got: {:?}", x_types);
+        // $y should be pet (plays pet-ownership:pet AND toy-ownership:owner)
+        assert!(y_types.unwrap().contains(&type_pet),
+            "$y should include 'pet', got: {:?}", y_types);
+        // $z should be toy (plays toy-ownership:toy)
+        assert!(z_types.unwrap().contains(&type_toy),
+            "$z should include 'toy', got: {:?}", z_types);
+    }
 }
