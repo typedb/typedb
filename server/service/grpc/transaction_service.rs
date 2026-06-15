@@ -51,7 +51,7 @@ use lending_iterator::LendingIterator;
 use options::QueryOptions;
 use query::{
     error::QueryError,
-    given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows, GivenRowsDecoder},
+    given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows},
 };
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -1856,30 +1856,6 @@ impl QueueOptions {
     }
 }
 
-pub struct GivenRowsGrpc(typedb_protocol::query::req::GivenRows);
-impl GivenRows for GivenRowsGrpc {
-    fn variables(&self) -> &[String] {
-        self.0.variables.as_slice()
-    }
-
-    fn into_batch_mapped(
-        self,
-        declared_variable_positions: &HashMap<&str, VariablePosition>,
-    ) -> Result<Batch, GivenRowDecodeError> {
-        query::given_rows::into_batch_mapped::<_, _, GivenRowsDecoderGrpc>(
-            declared_variable_positions,
-            self.0.variables,
-            self.0.rows.len(),
-            self.0.rows.into_iter().map(|row| row.entries),
-        )
-    }
-}
-impl std::fmt::Debug for GivenRowsGrpc {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "GivenRowsGrpc[omitted]")
-    }
-}
-
 macro_rules! concept_decode_error {
     ($variant:ident, $iid:expr) => {
         GivenRowDecodeError::ConceptDecode {
@@ -1890,9 +1866,28 @@ macro_rules! concept_decode_error {
     };
 }
 
-pub struct GivenRowsDecoderGrpc;
-impl GivenRowsDecoder<typedb_protocol::query::req::GivenEntry> for GivenRowsDecoderGrpc {
-    fn decode(item: typedb_protocol::query::req::GivenEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
+pub struct GivenRowsGrpc(typedb_protocol::query::req::GivenRows);
+impl GivenRows for GivenRowsGrpc {
+    type Item = typedb_protocol::query::req::GivenEntry;
+    type Row = typedb_protocol::query::req::GivenRow;
+
+    fn variables(&self) -> &[String] {
+        self.0.variables.as_slice()
+    }
+
+    fn row_count(&self) -> usize {
+        self.0.rows.len()
+    }
+
+    fn rows(self) -> impl Iterator<Item = Self::Row> {
+        self.0.rows.into_iter()
+    }
+
+    fn iter_row(row: Self::Row) -> impl Iterator<Item = Self::Item> {
+        row.entries.into_iter()
+    }
+
+    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError> {
         use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
         Ok(match item.entry.expect("Missing proto field") {
             EntryProto::Empty(_) => GivenRowEntry::None,
@@ -1917,5 +1912,11 @@ impl GivenRowsDecoder<typedb_protocol::query::req::GivenEntry> for GivenRowsDeco
                 }
             },
         })
+    }
+}
+
+impl std::fmt::Debug for GivenRowsGrpc {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GivenRowsGrpc[omitted]")
     }
 }

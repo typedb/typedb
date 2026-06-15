@@ -20,7 +20,7 @@ use encoding::{
 use executor::batch::Batch;
 use ir::translation::{literal::FromTypeQLLiteral, parse_iid};
 use options::QueryOptions;
-use query::given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows, GivenRowsDecoder};
+use query::given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows};
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_INCLUDE_STRUCTURE_HTTP,
     DEFAULT_PREFETCH_SIZE,
@@ -202,26 +202,14 @@ impl std::convert::From<GivenRowsPayload> for GivenRowsHttp {
 }
 
 impl GivenRows for GivenRowsHttp {
+    type Item = Option<GivenEntryPayload>;
+    type Row = Vec<Option<GivenEntryPayload>>;
+
     fn variables(&self) -> &[String] {
         self.variables.as_slice()
     }
 
-    fn into_batch_mapped(
-        self,
-        declared_variable_positions: &HashMap<&str, VariablePosition>,
-    ) -> Result<Batch, GivenRowDecodeError> {
-        query::given_rows::into_batch_mapped::<_, _, GivenRowsDecoderHttp>(
-            &declared_variable_positions,
-            self.variables,
-            self.rows.len(),
-            self.rows.into_iter(),
-        )
-    }
-}
-
-pub struct GivenRowsDecoderHttp;
-impl GivenRowsDecoder<Option<GivenEntryPayload>> for GivenRowsDecoderHttp {
-    fn decode(item: Option<GivenEntryPayload>) -> Result<GivenRowEntry, GivenRowDecodeError> {
+    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError> {
         if let Some(what) = item {
             match what {
                 GivenEntryPayload::Value(value) => Ok(GivenRowEntry::Value(decode_value(value)?)),
@@ -259,6 +247,18 @@ impl GivenRowsDecoder<Option<GivenEntryPayload>> for GivenRowsDecoderHttp {
         } else {
             Ok(GivenRowEntry::None)
         }
+    }
+
+    fn row_count(&self) -> usize {
+        self.rows.len()
+    }
+
+    fn rows(self) -> impl Iterator<Item = Self::Row> {
+        self.rows.into_iter()
+    }
+
+    fn iter_row(row: Self::Row) -> impl Iterator<Item = Self::Item> {
+        row.into_iter()
     }
 }
 

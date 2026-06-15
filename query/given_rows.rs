@@ -14,16 +14,47 @@ use error::typedb_error;
 use executor::batch::Batch;
 use ir::LiteralParseError;
 
-pub trait GivenRows {
+pub trait GivenRows: Sized {
+    type Item;
+    type Row;
     fn variables(&self) -> &[String];
+    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError>;
+
+    fn row_count(&self) -> usize;
+    fn rows(self) -> impl Iterator<Item = Self::Row>;
+    fn iter_row(row: Self::Row) -> impl Iterator<Item = Self::Item>;
+
     fn into_batch_mapped(
         self,
         declared_variable_positions: &HashMap<&str, VariablePosition>,
-    ) -> Result<Batch, GivenRowDecodeError>;
-}
+    ) -> Result<Batch, GivenRowDecodeError> {
+        let mapping =
+            self.variables()
+                .iter()
+                .map(|name| {
+                    declared_variable_positions.get(&name.as_str()).copied().ok_or_else(|| {
+                        GivenRowDecodeError::GivenRowsVariableWasNotDeclared { variable: name.to_owned() }
+                    })
+                })
+                .collect::<Result<Vec<VariablePosition>, GivenRowDecodeError>>()?;
 
-pub trait GivenRowsDecoder<T> {
-    fn decode(item: T) -> Result<GivenRowEntry, GivenRowDecodeError>;
+        let width = declared_variable_positions.len() as u32;
+        let mut batch = Batch::new(width, self.row_count());
+        self.rows().into_iter().try_for_each(|row| {
+            batch.append(|mut write_to| {
+                Self::iter_row(row).enumerate().try_for_each(|(column, entry)| {
+                    let value = match Self::decode(entry)? {
+                        GivenRowEntry::None => VariableValue::None,
+                        GivenRowEntry::Thing(thing) => VariableValue::Thing(thing),
+                        GivenRowEntry::Value(value) => VariableValue::Value(value),
+                    };
+                    write_to.set(mapping[column], value);
+                    Ok(())
+                })
+            })
+        })?;
+        Ok(batch)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -31,44 +62,6 @@ pub enum GivenRowEntry {
     None,
     Thing(Thing),
     Value(Value<'static>),
-}
-
-pub fn into_batch_mapped<T, Row, Decoder>(
-    declared_variable_positions: &HashMap<&str, VariablePosition>,
-    variables: Vec<String>,
-    row_count: usize,
-    rows: impl Iterator<Item = Row>,
-) -> Result<Batch, GivenRowDecodeError>
-where
-    Row: IntoIterator<Item = T>,
-    Decoder: GivenRowsDecoder<T>,
-{
-    let mapping = variables
-        .iter()
-        .map(|name| {
-            declared_variable_positions
-                .get(&name.as_str())
-                .copied()
-                .ok_or_else(|| GivenRowDecodeError::GivenRowsVariableWasNotDeclared { variable: name.to_owned() })
-        })
-        .collect::<Result<Vec<VariablePosition>, GivenRowDecodeError>>()?;
-
-    let width = declared_variable_positions.len() as u32;
-    let mut batch = Batch::new(width, row_count);
-    rows.into_iter().try_for_each(|row| {
-        batch.append(|mut write_to| {
-            row.into_iter().enumerate().try_for_each(|(column, entry)| {
-                let value = match Decoder::decode(entry)? {
-                    GivenRowEntry::None => VariableValue::None,
-                    GivenRowEntry::Thing(thing) => VariableValue::Thing(thing),
-                    GivenRowEntry::Value(value) => VariableValue::Value(value),
-                };
-                write_to.set(mapping[column], value);
-                Ok(())
-            })
-        })
-    })?;
-    Ok(batch)
 }
 
 typedb_error! {
@@ -88,26 +81,25 @@ pub struct GivenRowsSimple {
 }
 
 impl GivenRows for GivenRowsSimple {
+    type Item = GivenRowEntry;
+    type Row = Vec<GivenRowEntry>;
     fn variables(&self) -> &[String] {
         self.variables.as_slice()
     }
 
-    fn into_batch_mapped(
-        self,
-        declared_variable_positions: &HashMap<&str, VariablePosition>,
-    ) -> Result<Batch, GivenRowDecodeError> {
-        self::into_batch_mapped::<GivenRowEntry, Vec<GivenRowEntry>, GivenRowsSimpleDecoder>(
-            declared_variable_positions,
-            self.variables,
-            self.rows.len(),
-            self.rows.into_iter(),
-        )
-    }
-}
-
-struct GivenRowsSimpleDecoder {}
-impl GivenRowsDecoder<GivenRowEntry> for GivenRowsSimpleDecoder {
-    fn decode(item: GivenRowEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
+    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError> {
         Ok(item)
+    }
+
+    fn row_count(&self) -> usize {
+        self.rows.len()
+    }
+
+    fn rows(self) -> impl Iterator<Item = Self::Row> {
+        self.rows.into_iter()
+    }
+
+    fn iter_row(row: Self::Row) -> impl Iterator<Item = Self::Item> {
+        row.into_iter()
     }
 }
