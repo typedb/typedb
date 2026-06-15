@@ -221,8 +221,8 @@ impl GivenRows for GivenRowsHttp {
 
 pub struct GivenRowsDecoderHttp;
 impl GivenRowsDecoder<Option<GivenEntryPayload>> for GivenRowsDecoderHttp {
-    fn decode(what: Option<GivenEntryPayload>) -> Result<GivenRowEntry, GivenRowDecodeError> {
-        if let Some(what) = what {
+    fn decode(item: Option<GivenEntryPayload>) -> Result<GivenRowEntry, GivenRowDecodeError> {
+        if let Some(what) = item {
             match what {
                 GivenEntryPayload::Value(value) => Ok(GivenRowEntry::Value(decode_value(value)?)),
                 GivenEntryPayload::Entity(entity) => {

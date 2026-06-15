@@ -1892,9 +1892,9 @@ macro_rules! concept_decode_error {
 
 pub struct GivenRowsDecoderGrpc;
 impl GivenRowsDecoder<typedb_protocol::query::req::GivenEntry> for GivenRowsDecoderGrpc {
-    fn decode(what: typedb_protocol::query::req::GivenEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
+    fn decode(item: typedb_protocol::query::req::GivenEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
         use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
-        Ok(match what.entry.expect("Missing proto field") {
+        Ok(match item.entry.expect("Missing proto field") {
             EntryProto::Empty(_) => GivenRowEntry::None,
             EntryProto::Value(value) => {
                 GivenRowEntry::Value(decode_value(value.value.expect("Missing proto field")).unwrap())

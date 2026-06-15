@@ -23,7 +23,7 @@ pub trait GivenRows {
 }
 
 pub trait GivenRowsDecoder<T> {
-    fn decode(what: T) -> Result<GivenRowEntry, GivenRowDecodeError>;
+    fn decode(item: T) -> Result<GivenRowEntry, GivenRowDecodeError>;
 }
 
 #[derive(Debug, Clone)]
@@ -107,7 +107,7 @@ impl GivenRows for GivenRowsSimple {
 
 struct GivenRowsSimpleDecoder {}
 impl GivenRowsDecoder<GivenRowEntry> for GivenRowsSimpleDecoder {
-    fn decode(what: GivenRowEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
-        Ok(what)
+    fn decode(item: GivenRowEntry) -> Result<GivenRowEntry, GivenRowDecodeError> {
+        Ok(item)
     }
 }
