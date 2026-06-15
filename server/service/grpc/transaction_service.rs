@@ -17,7 +17,7 @@ use std::{
 
 use answer::Thing;
 use bytes::util::HexBytesFormatter;
-use compiler::{VariablePosition, query_structure::PipelineStructure};
+use compiler::{annotation::function::FunctionParameterAnnotation, query_structure::PipelineStructure};
 use concept::{
     error::ConceptDecodeError,
     thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager},
@@ -1887,7 +1887,10 @@ impl GivenRows for GivenRowsGrpc {
         row.entries.into_iter()
     }
 
-    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError> {
+    fn decode(
+        item: Self::Item,
+        _expected_type: &FunctionParameterAnnotation,
+    ) -> Result<GivenRowEntry, GivenRowDecodeError> {
         use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
         Ok(match item.entry.expect("Missing proto field") {
             EntryProto::Empty(_) => GivenRowEntry::None,

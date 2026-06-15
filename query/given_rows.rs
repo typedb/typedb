@@ -7,9 +7,9 @@
 use std::collections::HashMap;
 
 use answer::{Thing, variable_value::VariableValue};
-use compiler::VariablePosition;
+use compiler::{VariablePosition, annotation::function::FunctionParameterAnnotation};
 use concept::error::ConceptDecodeError;
-use encoding::value::value::Value;
+use encoding::value::{value::Value, value_type::ValueType};
 use error::typedb_error;
 use executor::batch::Batch;
 use ir::LiteralParseError;
@@ -18,7 +18,10 @@ pub trait GivenRows: Sized {
     type Item;
     type Row;
     fn variables(&self) -> &[String];
-    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError>;
+    fn decode(
+        item: Self::Item,
+        expected_type: &FunctionParameterAnnotation,
+    ) -> Result<GivenRowEntry, GivenRowDecodeError>;
 
     fn row_count(&self) -> usize;
     fn rows(self) -> impl Iterator<Item = Self::Row>;
@@ -27,6 +30,7 @@ pub trait GivenRows: Sized {
     fn into_batch_mapped(
         self,
         declared_variable_positions: &HashMap<&str, VariablePosition>,
+        expected_types: &[FunctionParameterAnnotation],
     ) -> Result<Batch, GivenRowDecodeError> {
         let mapping =
             self.variables()
@@ -43,12 +47,14 @@ pub trait GivenRows: Sized {
         self.rows().into_iter().try_for_each(|row| {
             batch.append(|mut write_to| {
                 Self::iter_row(row).enumerate().try_for_each(|(column, entry)| {
-                    let value = match Self::decode(entry)? {
+                    let target_index = mapping[column];
+                    let expected_type = &expected_types[target_index.as_usize()];
+                    let value = match Self::decode(entry, expected_type)? {
                         GivenRowEntry::None => VariableValue::None,
                         GivenRowEntry::Thing(thing) => VariableValue::Thing(thing),
                         GivenRowEntry::Value(value) => VariableValue::Value(value),
                     };
-                    write_to.set(mapping[column], value);
+                    write_to.set(target_index, value);
                     Ok(())
                 })
             })
@@ -71,6 +77,8 @@ typedb_error! {
         ParsingValueFailedForGivenEntry(3, "An error occured while parsing the provided value '{value}'.", value: String, typedb_source: typeql::Error),
         TranslatingValueFailedForGivenEntry(4, "An error occured while translating the provided value '{value}'.", value: String, typedb_source: LiteralParseError),
         GivenRowsVariableWasNotDeclared(5, "The variable '{variable}' was not declared in the query.", variable: String),
+        ExpectedValueTypeWasNotProvided(6, "A value was provided where it was not expected."),
+        ValueTypeMismatch(7, "The provided value '{value}' has the JSON type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
     }
 }
 
@@ -87,7 +95,10 @@ impl GivenRows for GivenRowsSimple {
         self.variables.as_slice()
     }
 
-    fn decode(item: Self::Item) -> Result<GivenRowEntry, GivenRowDecodeError> {
+    fn decode(
+        item: Self::Item,
+        expected_type: &FunctionParameterAnnotation,
+    ) -> Result<GivenRowEntry, GivenRowDecodeError> {
         Ok(item)
     }
 

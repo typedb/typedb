@@ -568,7 +568,7 @@ fn validate_and_decode_given(
                 }
                 declared_variable_positions.insert(variable, VariablePosition::new(i as u32));
             }
-            rows.into_batch_mapped(&declared_variable_positions).map_err(|decode_error| {
+            rows.into_batch_mapped(&declared_variable_positions, executable.expected_types()).map_err(|decode_error| {
                 Box::new(QueryError::ErrorDecodingGivenRowEntry { typedb_source: Box::new(decode_error) })
             })
         }
