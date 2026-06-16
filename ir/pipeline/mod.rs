@@ -131,15 +131,8 @@ typedb_error! {
             return_: ReturnStatement,
             mismatch_index: usize,
         ),
-        IllegalAnnotation(
-            14,
-            "TODO",
-            signature: Signature,
-            return_: ReturnStatement,
-            mismatch_index: usize,
-        ),
         LiteralParseError(
-            15,
+            14,
             "Error parsing annotation '{annotation}' of function '{function}'.",
             annotation: typeql::Annotation,
             function: String,
@@ -147,13 +140,13 @@ typedb_error! {
             typedb_source: LiteralParseError,
         ),
         AnnotationNotSupported(
-            16,
+            15,
             "Annotation '{annotation}' is not supported on functions.",
             annotation: Annotation,
             source_span: Option<Span>,
         ),
         DuplicateAnnotationCategory(
-            17,
+            16,
             "Annotation category '{category}' is specified multiple times in function '{function}'.",
             category: AnnotationCategory,
             function: String,
