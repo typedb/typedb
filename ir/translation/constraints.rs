@@ -24,7 +24,7 @@ use crate::{
     pattern::{
         AssignedVariable, ValueType, Vertex,
         conjunction::ConjunctionBuilderWithContext,
-        constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
+        constraint::{Comparator, ConstraintsBuilder, InterfaceOrdering, IsaKind, SubKind},
         variable_category::VariableOptionality,
     },
     pipeline::function_signature::FunctionSignatureIndex,
@@ -216,6 +216,16 @@ fn register_typeql_type_any(
             source_span: list.span(),
             feature: UnimplementedFeature::Lists,
         })),
+    }
+}
+
+fn register_typeql_type_any_as_interface(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    type_: &TypeRefAny,
+) -> Result<(Vertex<Variable>, InterfaceOrdering), Box<RepresentationError>> {
+    match type_ {
+        TypeRefAny::Type(type_) => Ok((register_typeql_type(constraints, type_)?, InterfaceOrdering::Unordered)),
+        TypeRefAny::List(list) => Ok((register_typeql_type(constraints, &list.inner)?, InterfaceOrdering::Ordered)),
     }
 }
 
@@ -449,6 +459,43 @@ fn add_typeql_has(
     owner: Variable,
     has: &typeql::statement::thing::Has,
 ) -> Result<(), Box<RepresentationError>> {
+    let type_and_ordering =
+        has.type_.as_ref().map(|type_| register_typeql_type_any_as_interface(constraints, type_)).transpose()?;
+
+    if let (
+        Some((attribute_type, InterfaceOrdering::Ordered)),
+        typeql::statement::thing::HasValue::Expression(typeql::Expression::List(list)),
+    ) = (&type_and_ordering, &has.value)
+    {
+        for item in &list.items {
+            let expression = add_typeql_expression(function_index, constraints, item)?;
+            let attribute = constraints.create_anonymous_variable(item.span())?;
+            constraints.add_comparison(Vertex::Variable(attribute), expression, Comparator::Equal, item.span())?;
+            constraints.add_has_with_ordering(owner, attribute, InterfaceOrdering::Ordered, has.span())?;
+            constraints.add_isa(
+                IsaKind::Subtype,
+                attribute,
+                attribute_type.clone(),
+                has.type_.as_ref().unwrap().span(),
+            )?;
+        }
+        return Ok(());
+    }
+
+    if let (Some((attribute_type, InterfaceOrdering::Ordered)), typeql::statement::thing::HasValue::Variable(var)) =
+        (&type_and_ordering, &has.value)
+    {
+        let attributes = register_typeql_var(constraints, var)?;
+        constraints.add_has_list(owner, attributes, has.span())?;
+        constraints.add_isa_attribute_list(
+            IsaKind::Subtype,
+            attributes,
+            attribute_type.clone(),
+            has.type_.as_ref().unwrap().span(),
+        )?;
+        return Ok(());
+    }
+
     let attribute = match &has.value {
         typeql::statement::thing::HasValue::Variable(var) => register_typeql_var(constraints, var)?,
         typeql::statement::thing::HasValue::Expression(typeql_expression) => {
@@ -477,10 +524,11 @@ fn add_typeql_has(
         }
     };
 
-    constraints.add_has(owner, attribute, has.span())?;
-    if let Some(type_) = &has.type_ {
-        let attribute_type = register_typeql_type_any(constraints, type_)?;
-        constraints.add_isa(IsaKind::Subtype, attribute, attribute_type, type_.span())?;
+    if let Some((attribute_type, ordering)) = type_and_ordering {
+        constraints.add_has_with_ordering(owner, attribute, ordering, has.span())?;
+        constraints.add_isa(IsaKind::Subtype, attribute, attribute_type, has.type_.as_ref().unwrap().span())?;
+    } else {
+        constraints.add_has(owner, attribute, has.span())?;
     }
     Ok(())
 }
@@ -494,26 +542,36 @@ pub(super) fn add_typeql_relation(
     for role_player in &roleplayers.role_players {
         match role_player {
             typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
-                let type_ = match type_ref {
-                    TypeRefAny::Type(TypeRef::Label(name)) => register_type_role_name_var(constraints, name)?,
-                    TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
+                let (type_, ordering) = match type_ref {
+                    TypeRefAny::Type(TypeRef::Label(name)) => {
+                        (register_type_role_name_var(constraints, name)?, InterfaceOrdering::Unordered)
+                    }
+                    TypeRefAny::Type(TypeRef::Variable(var)) => {
+                        (register_typeql_var(constraints, var)?, InterfaceOrdering::Unordered)
+                    }
                     TypeRefAny::Type(TypeRef::Scoped(name)) => {
                         return Err(Box::new(RepresentationError::ScopedRoleNameInRelation {
                             source_span: name.span(),
                         }));
                     }
-                    TypeRefAny::List(_) => {
-                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                            feature: error::UnimplementedFeature::Lists,
-                        }));
-                    }
+                    TypeRefAny::List(list) => match &list.inner {
+                        TypeRef::Label(name) => {
+                            (register_type_role_name_var(constraints, name)?, InterfaceOrdering::Ordered)
+                        }
+                        TypeRef::Variable(var) => (register_typeql_var(constraints, var)?, InterfaceOrdering::Ordered),
+                        TypeRef::Scoped(name) => {
+                            return Err(Box::new(RepresentationError::ScopedRoleNameInRelation {
+                                source_span: name.span(),
+                            }));
+                        }
+                    },
                 };
                 let player = register_typeql_var(constraints, player_var)?;
                 let span = match (type_ref.span(), player_var.span()) {
                     (Some(s1), Some(s2)) => Some(Span { begin_offset: s1.begin_offset, end_offset: s2.end_offset }),
                     _ => None,
                 };
-                let links = constraints.add_links(relation, player, type_, span)?;
+                let links = constraints.add_links_with_ordering(relation, player, type_, ordering, span)?;
                 links_constraints.push(links.clone());
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {

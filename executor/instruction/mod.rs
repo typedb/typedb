@@ -20,10 +20,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
-        indexed_relation_executor::IndexedRelationExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
-        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
-        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        has_executor::HasExecutor, has_ordered_executor::HasOrderedExecutor, has_reverse_executor::HasReverseExecutor,
+        iid_executor::IidExecutor, indexed_relation_executor::IndexedRelationExecutor, is_executor::IsExecutor,
+        isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
+        links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
         owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
@@ -35,6 +35,7 @@ use crate::{
 
 pub(crate) mod checker;
 mod has_executor;
+mod has_ordered_executor;
 mod has_reverse_executor;
 mod iid_executor;
 mod indexed_relation_executor;
@@ -79,6 +80,7 @@ pub(crate) enum InstructionExecutor {
     IsaReverse(IsaReverseExecutor),
 
     Has(HasExecutor),
+    HasOrdered(HasOrderedExecutor),
     HasReverse(HasReverseExecutor),
 
     Links(LinksExecutor),
@@ -126,6 +128,9 @@ impl InstructionExecutor {
             ConstraintInstruction::Has(has) => {
                 Ok(Self::Has(HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?))
             }
+            ConstraintInstruction::HasOrdered(has) => {
+                Ok(Self::HasOrdered(HasOrderedExecutor::new(has, variable_modes)?))
+            }
             ConstraintInstruction::HasReverse(has_reverse) => Ok(Self::HasReverse(HasReverseExecutor::new(
                 has_reverse,
                 variable_modes,
@@ -170,6 +175,7 @@ impl InstructionExecutor {
             Self::Isa(executor) => executor.get_iterator(context, row, storage_counters),
             Self::IsaReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Has(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::HasOrdered(executor) => executor.get_iterator(context, row, storage_counters),
             Self::HasReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Links(executor) => executor.get_iterator(context, row, storage_counters),
             Self::LinksReverse(executor) => executor.get_iterator(context, row, storage_counters),
@@ -184,6 +190,7 @@ impl InstructionExecutor {
             Self::Isa(_) => "isa",
             Self::IsaReverse(_) => "isa_reverse",
             Self::Has(_) => "has",
+            Self::HasOrdered(_) => "has_ordered",
             Self::HasReverse(_) => "has_reverse",
             Self::Links(_) => "links",
             Self::LinksReverse(_) => "links_reverse",
@@ -218,6 +225,7 @@ impl fmt::Display for InstructionExecutor {
             InstructionExecutor::Isa(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::IsaReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Has(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::HasOrdered(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::HasReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::LinksReverse(inner) => fmt::Display::fmt(inner, f),

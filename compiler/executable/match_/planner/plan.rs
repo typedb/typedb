@@ -18,14 +18,15 @@ use concept::thing::statistics::Statistics;
 use error::{typedb_error, unimplemented_feature};
 use ir::{
     pattern::{
-        BranchID, Pattern, Scope, Vertex,
+        BranchID, Pattern, Vertex,
         conjunction::Conjunction,
         constraint::{
-            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable, Value,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation,
+            InterfaceOrdering, Is, Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub,
+            Unsatisfiable, Value,
         },
         nested_pattern::NestedPattern,
-        variable_category::{VariableCategory, VariableOptionality},
+        variable_category::VariableCategory,
     },
     pipeline::{VariableRegistry, block::BlockContext},
 };
@@ -44,8 +45,9 @@ use crate::{
             instructions::{
                 CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
                 thing::{
-                    HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
-                    IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+                    HasInstruction, HasOrderedInstruction, HasReverseInstruction, IidInstruction,
+                    IndexedRelationInstruction, IsaInstruction, IsaReverseInstruction, LinksInstruction,
+                    LinksReverseInstruction,
                 },
                 type_::{
                     OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction,
@@ -257,6 +259,7 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
     local_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
     planner_statistics: PlannerStatistics,
+    list_variables: HashSet<Variable>,
 }
 
 impl fmt::Debug for ConjunctionPlanBuilder<'_> {
@@ -273,6 +276,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             statistics,
             planner_statistics: PlannerStatistics::new(),
             required_inputs,
+            list_variables: HashSet::new(),
         }
     }
 
@@ -329,13 +333,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
                     self.register_thing_var(variable)
                 }
+                VariableCategory::AttributeList => {
+                    self.list_variables.insert(variable);
+                    self.register_thing_var(variable);
+                }
 
                 VariableCategory::Value => self.register_value_var(variable),
 
-                VariableCategory::ObjectList
-                | VariableCategory::ThingList
-                | VariableCategory::AttributeList
-                | VariableCategory::ValueList => unimplemented_feature!(Lists),
+                VariableCategory::ObjectList | VariableCategory::ThingList | VariableCategory::ValueList => {
+                    unimplemented_feature!(Lists)
+                }
                 VariableCategory::AttributeOrValue => {
                     unreachable!("Insufficiently bound variable would have been flagged earlier")
                 }
@@ -450,6 +457,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_isa(&mut self, isa: &'a Isa<Variable>) {
+        if isa.thing().as_variable().is_some_and(|var| self.list_variables.contains(&var)) {
+            return;
+        }
         let planner =
             IsaPlanner::from_constraint(isa, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Isa(planner));
@@ -1727,7 +1737,27 @@ impl ConjunctionPlan<'_> {
             }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();
-                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+                if has.ordering() == InterfaceOrdering::Ordered {
+                    let owner = has.owner().as_variable().unwrap();
+                    let attribute = has.attribute().as_variable().unwrap();
+                    let owner_input = inputs.contains(&owner);
+                    let attribute_input = inputs.contains(&attribute);
+                    let input_vars =
+                        [owner_input.then_some(owner), attribute_input.then_some(attribute)].into_iter().flatten();
+                    let inputs = Inputs::build_from(&input_vars.collect_vec());
+                    let instruction = ConstraintInstruction::HasOrdered(HasOrderedInstruction::new(
+                        has.clone(),
+                        inputs,
+                        self.local_annotations,
+                    ));
+                    let sort_variable = sort_variable
+                        .or_else(|| (!owner_input).then_some(owner))
+                        .or_else(|| (!attribute_input).then_some(attribute))
+                        .unwrap();
+                    conjunction_builder.push_instruction(sort_variable, instruction);
+                } else {
+                    binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+                }
             }
             ConstraintVertex::Links(planner) => {
                 let links = planner.links();
@@ -1884,7 +1914,11 @@ impl ConjunctionPlan<'_> {
             }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();
-                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+                if has.ordering() == InterfaceOrdering::Ordered {
+                    unimplemented_feature!(Lists)
+                } else {
+                    binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+                }
             }
             ConstraintVertex::Links(planner) => {
                 let links = planner.links();

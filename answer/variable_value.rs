@@ -130,6 +130,12 @@ impl PartialOrd for VariableValue<'_> {
             (Self::Type(self_type), Self::Type(other_type)) => self_type.partial_cmp(other_type),
             (Self::Thing(self_thing), Self::Thing(other_thing)) => self_thing.partial_cmp(other_thing),
             (Self::Value(self_value), Self::Value(other_value)) => self_value.partial_cmp(other_value),
+            (Self::ThingList(self_list), Self::ThingList(other_list)) => {
+                self_list.as_ref().partial_cmp(other_list.as_ref())
+            }
+            (Self::ValueList(self_list), Self::ValueList(other_list)) => {
+                self_list.as_ref().partial_cmp(other_list.as_ref())
+            }
             _ => None,
         }
     }

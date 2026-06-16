@@ -60,6 +60,14 @@ typedb_error!(
             attribute: String,
             source_span: Option<Span>,
         ),
+        FetchListAttributeNotOrdered(
+            19,
+            "Type checking '${var}.{attribute}[]' failed, since attribute '{attribute}' is not owned as an ordered list when '${var}' has type '{owner}'.",
+            var: String,
+            owner: String,
+            attribute: String,
+            source_span: Option<Span>,
+        ),
         FetchSingleAttributeCannotBeOwnedByKind(
             10,
             "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.",
