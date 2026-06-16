@@ -984,12 +984,12 @@ fn check_can_and_need_undefine_capability_annotation<CAP: Capability>(
     capability: CAP,
     annotation_category: &AnnotationCategory,
     declaration: &AnnotationCapability,
-) -> Result<bool, UndefineError> {
+) -> Result<(), UndefineError> {
     let definition_status =
         get_capability_annotation_category_status(snapshot, type_manager, &capability, annotation_category)
             .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
-        DefinableStatus::ExistsSame(_) => Ok(true),
+        DefinableStatus::ExistsSame(_) => Ok(()),
         DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
         DefinableStatus::DoesNotExist => Err(UndefineError::CapabilityAnnotationNotDefined {
             annotation: annotation_category.clone(),
