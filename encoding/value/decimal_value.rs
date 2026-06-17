@@ -319,10 +319,10 @@ impl FromStr for Decimal {
         let (integer_part, fractional_part) = str.split_once(".").unwrap_or((str, "0"));
         let integer = integer_part
             .parse()
-            .map_err(|source| DecimalParseError::ParsingIntegerPart { source, value: str.to_owned() })?;
+            .map_err(|source| DecimalParseError::ParseIntegerPart { source, value: str.to_owned() })?;
         let parsed_fractional = fractional_part
             .parse::<u64>()
-            .map_err(|source| DecimalParseError::ParsingFractionalPart { source, value: str.to_owned() })?;
+            .map_err(|source| DecimalParseError::ParseFractionalPart { source, value: str.to_owned() })?;
         let num_fractional_digits = fractional_part.len() as u32;
         if num_fractional_digits > FRACTIONAL_PART_DENOMINATOR_LOG10 {
             return Err(DecimalParseError::PrecisionExceeded { value: str.to_owned() });
@@ -363,16 +363,16 @@ impl fmt::Display for Decimal {
 
 #[derive(Clone)]
 pub enum DecimalParseError {
-    ParsingIntegerPart { value: String, source: std::num::ParseIntError },
-    ParsingFractionalPart { value: String, source: std::num::ParseIntError },
+    ParseIntegerPart { value: String, source: std::num::ParseIntError },
+    ParseFractionalPart { value: String, source: std::num::ParseIntError },
     PrecisionExceeded { value: String },
 }
 
 impl Error for DecimalParseError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::ParsingIntegerPart { source, .. } => Some(source),
-            Self::ParsingFractionalPart { source, .. } => Some(source),
+            Self::ParseIntegerPart { source, .. } => Some(source),
+            Self::ParseFractionalPart { source, .. } => Some(source),
             Self::PrecisionExceeded { .. } => None,
         }
     }
@@ -387,10 +387,10 @@ impl fmt::Display for DecimalParseError {
 impl fmt::Debug for DecimalParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ParsingIntegerPart { value, .. } => {
+            Self::ParseIntegerPart { value, .. } => {
                 write!(f, "An error occured while parsing the integer part of the decimal '{value}'")
             }
-            Self::ParsingFractionalPart { value, .. } => {
+            Self::ParseFractionalPart { value, .. } => {
                 write!(f, "An error occured while parsing the fractional part of the decimal '{value}'")
             }
             Self::PrecisionExceeded { value, .. } => {
@@ -424,12 +424,12 @@ mod tests {
     fn parsing_from_string_errors_if_values_either_part_is_out_of_bounds() {
         assert!(matches!(
             Decimal::from_str("123456789012345678901.01").unwrap_err(),
-            DecimalParseError::ParsingIntegerPart { .. }
+            DecimalParseError::ParseIntegerPart { .. }
         ));
 
         assert!(matches!(
             Decimal::from_str("1.-123456789012345678").unwrap_err(),
-            DecimalParseError::ParsingFractionalPart { .. }
+            DecimalParseError::ParseFractionalPart { .. }
         ));
 
         assert!(matches!(
