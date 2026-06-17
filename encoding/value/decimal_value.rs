@@ -7,7 +7,6 @@
 use std::{
     cmp::Ordering,
     fmt,
-    num::ParseIntError,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
@@ -19,6 +18,13 @@ const FRACTIONAL_PART_DENOMINATOR: u64 = 10u64.pow(FRACTIONAL_PART_DENOMINATOR_L
 const _ASSERT: () = {
     assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 10);
 };
+
+#[derive(Debug)]
+enum DecimalParseError {
+    ErrorParsingIntegerPart { source: std::num::ParseIntError },
+    ErrorParsingFractionalPart { source: std::num::ParseIntError },
+    FractionalPartExceedsDenominator { value: String },
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal {
@@ -301,7 +307,7 @@ where
 }
 
 impl FromStr for Decimal {
-    type Err = ParseIntError;
+    type Err = DecimalParseError;
 
     fn from_str(mut str: &str) -> Result<Self, Self::Err> {
         if str.ends_with("dec") {
@@ -315,10 +321,14 @@ impl FromStr for Decimal {
         };
 
         let (integer_part, fractional_part) = str.split_once(".").unwrap_or((str, "0"));
-        let integer = integer_part.parse()?;
+        let integer = integer_part.parse().map_err(|source| DecimalParseError::ErrorParsingIntegerPart { source })?;
         let num_fractional_digits = fractional_part.len() as u32;
-        let fractional =
-            fractional_part.parse::<u64>()? * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - num_fractional_digits);
+        if fractional_part.len() > FRACTIONAL_PART_DENOMINATOR_LOG10 {
+            return Err(DecimalParseError::FractionalPartExceedsDenominator { value: fractional_part });
+        }
+        let parsed_fractional =
+            fractional_part.parse::<u64>()?.map_err(|source| DecimalParseError::ErrorParsingIntegerPart { source })?;
+        let fractional = parsed_fractional * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - num_fractional_digits);
 
         if is_negative { Ok(-Self::new(integer, fractional)) } else { Ok(Self::new(integer, fractional)) }
     }
