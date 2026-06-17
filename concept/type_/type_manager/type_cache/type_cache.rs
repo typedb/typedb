@@ -484,6 +484,10 @@ impl TypeCache {
         &AttributeType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
     }
 
+    pub(crate) fn get_sub_role_type_annotations_declared(&self, sub: Sub<RoleType>) -> &HashSet<SubAnnotation> {
+        &RoleType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
+    }
+
     pub(crate) fn get_owns_annotations_declared(&self, owns: Owns) -> &HashSet<OwnsAnnotation> {
         &self.owns.get(&owns).unwrap().common_capability_cache.annotations_declared
     }

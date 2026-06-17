@@ -27,6 +27,7 @@ use crate::{
         constraint::CapabilityConstraint,
         entity_type::EntityType,
         relation_type::RelationType,
+        role_type::RoleType,
         type_manager::TypeManager,
     },
 };
@@ -146,6 +147,10 @@ macro_rules! impl_capability_for_sub {
 impl_capability_for_sub!(EntityType);
 impl_capability_for_sub!(RelationType);
 impl_capability_for_sub!(AttributeType);
+
+// NOTE: there's currently no way to add an annotation to a Sub<RoleType>.
+// `relates r1 as r2 @doc(...)` is treated as a doc annotation on the `relates` as a whole.
+impl_capability_for_sub!(RoleType);
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum SubAnnotation {

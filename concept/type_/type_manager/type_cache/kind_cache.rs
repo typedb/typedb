@@ -316,8 +316,11 @@ impl RelatesCache {
     }
 }
 
-impl CommonTypeCache<EntityType> {
-    fn create<Snapshot>(snapshot: &Snapshot, type_: EntityType) -> Self
+impl<T: KindAPI> CommonTypeCache<T>
+where
+    Sub<T>: Capability<ObjectType = T, InterfaceType = T, AnnotationType = SubAnnotation>,
+{
+    fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> Self
     where
         Snapshot: ReadableSnapshot,
     {
@@ -326,101 +329,10 @@ impl CommonTypeCache<EntityType> {
         let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
         let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
         let sub_annotations_declared = if let Some(supertype) = supertype {
-            TypeReader::get_capability_annotations_declared(snapshot, Sub::<EntityType>::new(type_, supertype)).unwrap()
+            TypeReader::get_capability_annotations_declared(snapshot, Sub::<T>::new(type_, supertype)).unwrap()
         } else {
             HashSet::new()
         };
-        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
-        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
-        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
-        Self {
-            type_,
-            label,
-            annotations_declared,
-            sub_annotations_declared,
-            constraints,
-            supertype,
-            supertypes_transitive,
-            subtypes,
-            subtypes_transitive,
-        }
-    }
-}
-
-impl CommonTypeCache<RelationType> {
-    fn create<Snapshot>(snapshot: &Snapshot, type_: RelationType) -> Self
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
-        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
-        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
-        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
-        let sub_annotations_declared = if let Some(supertype) = supertype {
-            TypeReader::get_capability_annotations_declared(snapshot, Sub::<RelationType>::new(type_, supertype))
-                .unwrap()
-        } else {
-            HashSet::new()
-        };
-        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
-        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
-        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
-        Self {
-            type_,
-            label,
-            annotations_declared,
-            sub_annotations_declared,
-            constraints,
-            supertype,
-            supertypes_transitive,
-            subtypes,
-            subtypes_transitive,
-        }
-    }
-}
-
-impl CommonTypeCache<AttributeType> {
-    fn create<Snapshot>(snapshot: &Snapshot, type_: AttributeType) -> Self
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
-        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
-        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
-        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
-        let sub_annotations_declared = if let Some(supertype) = supertype {
-            TypeReader::get_capability_annotations_declared(snapshot, Sub::<AttributeType>::new(type_, supertype))
-                .unwrap()
-        } else {
-            HashSet::new()
-        };
-        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
-        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
-        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
-        Self {
-            type_,
-            label,
-            annotations_declared,
-            sub_annotations_declared,
-            constraints,
-            supertype,
-            supertypes_transitive,
-            subtypes,
-            subtypes_transitive,
-        }
-    }
-}
-
-impl CommonTypeCache<RoleType> {
-    fn create<Snapshot>(snapshot: &Snapshot, type_: RoleType) -> Self
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
-        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
-        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
-        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
-        let sub_annotations_declared = HashSet::new();
         let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
         let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
         let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();

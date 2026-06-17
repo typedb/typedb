@@ -937,6 +937,8 @@ impl TypeManager {
             get_capability_annotations_declared | get_sub_relation_type_annotations_declared;
         fn get_sub_attribute_type_annotations_declared(Sub<AttributeType>) -> SubAnnotation =
             get_capability_annotations_declared | get_sub_attribute_type_annotations_declared;
+        fn get_sub_role_type_annotations_declared(Sub<RoleType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_role_type_annotations_declared;
         fn get_owns_annotations_declared(Owns) -> OwnsAnnotation = get_capability_annotations_declared | get_owns_annotations_declared;
         fn get_plays_annotations_declared(Plays) -> PlaysAnnotation = get_capability_annotations_declared | get_plays_annotations_declared;
         fn get_relates_annotations_declared(Relates) -> RelatesAnnotation = get_capability_annotations_declared | get_relates_annotations_declared;
@@ -3581,6 +3583,15 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
     }
 
+    pub(crate) fn set_sub_role_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
     pub(crate) fn unset_owns_annotation_doc(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -3625,6 +3636,14 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         sub: Sub<AttributeType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_role_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
     }
@@ -3746,6 +3765,15 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
     }
 
+    pub(crate) fn set_sub_role_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
     pub(crate) fn unset_owns_annotation_meta(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -3800,6 +3828,16 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         sub: Sub<AttributeType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_role_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
         key: String,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Meta(key);
