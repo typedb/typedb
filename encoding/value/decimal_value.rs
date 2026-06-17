@@ -6,7 +6,9 @@
 
 use std::{
     cmp::Ordering,
+    error::Error,
     fmt,
+    fmt::Formatter,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
@@ -18,13 +20,6 @@ const FRACTIONAL_PART_DENOMINATOR: u64 = 10u64.pow(FRACTIONAL_PART_DENOMINATOR_L
 const _ASSERT: () = {
     assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 10);
 };
-
-#[derive(Debug)]
-enum DecimalParseError {
-    ErrorParsingIntegerPart { source: std::num::ParseIntError },
-    ErrorParsingFractionalPart { source: std::num::ParseIntError },
-    FractionalPartExceedsDenominator { value: String },
-}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal {
@@ -313,21 +308,25 @@ impl FromStr for Decimal {
         if str.ends_with("dec") {
             str = str.trim_end_matches("dec");
         }
-        let is_negative = if str.starts_with("-") {
-            str = str.trim_start_matches('-');
-            true
+        let (str, is_negative) = if str.starts_with("-") {
+            (&str[1..], true)
+        } else if str.starts_with("+") {
+            (&str[1..], false)
         } else {
-            false
+            (str, false)
         };
 
         let (integer_part, fractional_part) = str.split_once(".").unwrap_or((str, "0"));
-        let integer = integer_part.parse().map_err(|source| DecimalParseError::ErrorParsingIntegerPart { source })?;
+        let integer = integer_part
+            .parse()
+            .map_err(|source| DecimalParseError::ParsingIntegerPart { source, value: str.to_owned() })?;
+        let parsed_fractional = fractional_part
+            .parse::<u64>()
+            .map_err(|source| DecimalParseError::ParsingFractionalPart { source, value: str.to_owned() })?;
         let num_fractional_digits = fractional_part.len() as u32;
-        if fractional_part.len() > FRACTIONAL_PART_DENOMINATOR_LOG10 {
-            return Err(DecimalParseError::FractionalPartExceedsDenominator { value: fractional_part });
+        if num_fractional_digits > FRACTIONAL_PART_DENOMINATOR_LOG10 {
+            return Err(DecimalParseError::PrecisionExceeded { value: str.to_owned() });
         }
-        let parsed_fractional =
-            fractional_part.parse::<u64>()?.map_err(|source| DecimalParseError::ErrorParsingIntegerPart { source })?;
         let fractional = parsed_fractional * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - num_fractional_digits);
 
         if is_negative { Ok(-Self::new(integer, fractional)) } else { Ok(Self::new(integer, fractional)) }
@@ -362,11 +361,52 @@ impl fmt::Display for Decimal {
     }
 }
 
+#[derive(Clone)]
+pub enum DecimalParseError {
+    ParsingIntegerPart { value: String, source: std::num::ParseIntError },
+    ParsingFractionalPart { value: String, source: std::num::ParseIntError },
+    PrecisionExceeded { value: String },
+}
+
+impl Error for DecimalParseError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::ParsingIntegerPart { source, .. } => Some(source),
+            Self::ParsingFractionalPart { source, .. } => Some(source),
+            Self::PrecisionExceeded { .. } => None,
+        }
+    }
+}
+
+impl fmt::Display for DecimalParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl fmt::Debug for DecimalParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ParsingIntegerPart { value, .. } => {
+                write!(f, "An error occured while parsing the integer part of the decimal '{value}'")
+            }
+            Self::ParsingFractionalPart { value, .. } => {
+                write!(f, "An error occured while parsing the fractional part of the decimal '{value}'")
+            }
+            Self::PrecisionExceeded { value, .. } => {
+                write!(f, "The provided decimal '{value}' cannot be parsed without a loss of precision ")
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
 
-    use super::{Decimal, FRACTIONAL_PART_DENOMINATOR};
+    use super::{Decimal, DecimalParseError, FRACTIONAL_PART_DENOMINATOR};
 
     fn random_decimal(rng: &mut impl Rng) -> Decimal {
         Decimal { integer: rng.r#gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
@@ -378,6 +418,24 @@ mod tests {
             integer: rng.gen_range(-INTEGER_MAX_ABS..=INTEGER_MAX_ABS),
             fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR),
         }
+    }
+
+    #[test]
+    fn parsing_from_string_errors_if_values_either_part_is_out_of_bounds() {
+        assert!(matches!(
+            Decimal::from_str("123456789012345678901.01").unwrap_err(),
+            DecimalParseError::ParsingIntegerPart { .. }
+        ));
+
+        assert!(matches!(
+            Decimal::from_str("1.-123456789012345678").unwrap_err(),
+            DecimalParseError::ParsingFractionalPart { .. }
+        ));
+
+        assert!(matches!(
+            Decimal::from_str("1.00045678901234567890").unwrap_err(),
+            DecimalParseError::PrecisionExceeded { .. }
+        ));
     }
 
     #[test]
