@@ -8,7 +8,6 @@ use std::{
     cmp::Ordering,
     error::Error,
     fmt,
-    fmt::Formatter,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
@@ -379,13 +378,13 @@ impl Error for DecimalParseError {
 }
 
 impl fmt::Display for DecimalParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
 impl fmt::Debug for DecimalParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ParseIntegerPart { value, .. } => {
                 write!(f, "An error occured while parsing the integer part of the decimal '{value}'")
