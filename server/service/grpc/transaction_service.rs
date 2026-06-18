@@ -1889,32 +1889,34 @@ impl GivenRows for GivenRowsGrpc {
 
     fn decode(
         item: Self::Item,
-        _expected_type: &FunctionParameterAnnotation,
+        expected_type: &FunctionParameterAnnotation,
     ) -> Result<GivenRowEntry, GivenRowDecodeError> {
         use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
-        Ok(match item.entry.expect("Missing proto field") {
-            EntryProto::Empty(_) => GivenRowEntry::None,
+        match item.entry.expect("Missing proto field") {
+            EntryProto::Empty(_) => Ok(GivenRowEntry::None),
             EntryProto::Value(value) => {
-                GivenRowEntry::Value(decode_value(value.value.expect("Missing proto field")).unwrap())
+                let decoded_value = decode_value(value.value.expect("Missing proto field"))
+                    .map_err(|typedb_source| GivenRowDecodeError::ConceptDecode { typedb_source })?;
+                GivenRowEntry::try_cast_value_to(decoded_value, expected_type)
             }
             EntryProto::Thing(thing) => match thing.thing.expect("Missing proto field") {
                 ThingProto::Entity(entity) => {
                     let vertex = ObjectVertex::try_decode(entity.iid.as_slice())
                         .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, entity.iid))?;
-                    GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
+                    Ok(GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex))))
                 }
                 ThingProto::Relation(relation) => {
                     let vertex = ObjectVertex::try_decode(relation.iid.as_slice())
                         .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, relation.iid))?;
-                    GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
+                    Ok(GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex))))
                 }
                 ThingProto::Attribute(attribute) => {
                     let vertex = AttributeVertex::try_decode(attribute.iid.as_slice())
                         .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, attribute.iid))?;
-                    GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex)))
+                    Ok(GivenRowEntry::Thing(Thing::Attribute(Attribute::new(vertex))))
                 }
             },
-        })
+        }
     }
 }
 

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use answer::{Thing, variable_value::VariableValue};
 use compiler::{VariablePosition, annotation::function::FunctionParameterAnnotation};
 use concept::error::ConceptDecodeError;
-use encoding::value::{value::Value, value_type::ValueType};
+use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
 use error::typedb_error;
 use executor::batch::Batch;
 use ir::LiteralParseError;
@@ -70,6 +70,31 @@ pub enum GivenRowEntry {
     Value(Value<'static>),
 }
 
+impl GivenRowEntry {
+    pub fn try_cast_value_to(
+        value: Value<'static>,
+        expected_type: &FunctionParameterAnnotation,
+    ) -> Result<Self, GivenRowDecodeError> {
+        let FunctionParameterAnnotation::Value(expected_type) = expected_type else {
+            return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {});
+        };
+        let make_err = {
+            let actual_type = value.value_type().to_string();
+            let expected_type = expected_type.clone();
+            |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
+        };
+
+        if value.value_type().is_trivially_castable_to(expected_type.category()) {
+            let cast_result = value.cast(expected_type.category());
+            debug_assert!(cast_result.is_some());
+            let cast_value = cast_result.ok_or_else(|| make_err("<unreachable>".to_owned()))?;
+            Ok(GivenRowEntry::Value(cast_value))
+        } else {
+            Err(make_err(value.to_string()))
+        }
+    }
+}
+
 typedb_error! {
     pub GivenRowDecodeError(component = "Decoding given rows", prefix = "GVN") {
         ConceptDecode(1, "An error occurred while decoding the provided concept.", typedb_source: Box<ConceptDecodeError>),
@@ -77,7 +102,7 @@ typedb_error! {
         ParsingValueFailedForGivenEntry(3, "An error occured while parsing the provided value '{value}'.", value: String, typedb_source: typeql::Error),
         TranslatingValueFailedForGivenEntry(4, "An error occured while translating the provided value '{value}'.", value: String, typedb_source: LiteralParseError),
         GivenRowsVariableWasNotDeclared(5, "The variable '{variable}' was not declared in the query.", variable: String),
-        ExpectedValueTypeWasNotProvided(6, "A value was provided where it was not expected."),
+        ExpectedInstanceReceivedValue(6, "A value was provided where a concept instance was expected."),
         ValueTypeMismatch(7, "The provided value '{value}' has the JSON type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
     }
 }
@@ -99,7 +124,10 @@ impl GivenRows for GivenRowsSimple {
         item: Self::Item,
         expected_type: &FunctionParameterAnnotation,
     ) -> Result<GivenRowEntry, GivenRowDecodeError> {
-        Ok(item)
+        match item {
+            GivenRowEntry::Value(value) => GivenRowEntry::try_cast_value_to(value, expected_type),
+            other => Ok(other),
+        }
     }
 
     fn row_count(&self) -> usize {

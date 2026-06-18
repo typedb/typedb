@@ -227,7 +227,7 @@ impl GivenRows for GivenRowsHttp {
             match item {
                 GivenEntryPayload::PlainNumber(value) => {
                     let FunctionParameterAnnotation::Value(expected_type) = expected_type else {
-                        return Err(GivenRowDecodeError::ExpectedValueTypeWasNotProvided {});
+                        return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {});
                     };
                     let decoded_value = match expected_type {
                         ValueType::Integer => value.as_i64().map(Value::Integer),
@@ -243,7 +243,7 @@ impl GivenRows for GivenRowsHttp {
                 }
                 GivenEntryPayload::PlainBool(value) => {
                     let FunctionParameterAnnotation::Value(expected_type) = expected_type else {
-                        return Err(GivenRowDecodeError::ExpectedValueTypeWasNotProvided {});
+                        return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {});
                     };
                     match expected_type {
                         ValueType::Boolean => Ok(GivenRowEntry::Value(Value::Boolean(value))),
@@ -260,7 +260,9 @@ impl GivenRows for GivenRowsHttp {
                     FunctionParameterAnnotation::Value(expected_type) => decode_string_as_value(value, expected_type),
                 },
                 GivenEntryPayload::Concept(tagged) => match tagged {
-                    TaggedEntryPayload::Value(value) => Ok(GivenRowEntry::Value(decode_value(value)?)),
+                    TaggedEntryPayload::Value(value) => {
+                        GivenRowEntry::try_cast_value_to(decode_value(value)?, expected_type)
+                    }
                     TaggedEntryPayload::Entity(entity) => {
                         let iid = parse_iid(entity.iid.as_str()).map_err(|_: ()| {
                             GivenRowDecodeError::InvalidIIDFormatForGivenEntry { iid: entity.iid.clone().to_owned() }
