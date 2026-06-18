@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
 };
@@ -336,12 +336,35 @@ fn complete_block_annotations_with_value_types(
         .constraints()
         .iter()
         .flat_map(|c| c.ids())
-        .filter(|v| ctx.variable_registry.get_variable_category(*v).map_or(false, |cat| cat == VariableCategory::Value))
+        .filter(|v| ctx.variable_registry.get_variable_category(*v) == Some(VariableCategory::Value))
         .map(|v| {
             (Vertex::Variable(v), source_running_annotations.values.get(&v).expect("Expected value annotation").clone())
         })
-        .collect();
-    let _existing = block_annotations.set_value_types_of(conjunction, value_types_in_conjunction);
+        .collect::<BTreeMap<_, _>>();
+
+    for function_call_binding in conjunction.constraints().iter().filter_map(|c| c.as_function_call_binding()) {
+        let function_id = function_call_binding.function_call().function_id();
+        let Some(signature) = ctx.annotated_function_signatures.get_annotated_signature(&function_id) else {
+            return Err(AnnotationError::Internal { message: format!("No signature found for {function_id}") });
+        };
+        for (argument_type, argument_id) in zip(&signature.arguments, function_call_binding.function_call_arg_ids()) {
+            if let FunctionParameterAnnotation::Value(value_type) = argument_type {
+                // this function only annotates value types
+                let actual = value_types_in_conjunction.get(&Vertex::Variable(argument_id)).unwrap();
+                if actual != &ExpressionValueType::Single(value_type.clone()) {
+                    return Err(AnnotationError::ValueTypeMismatch {
+                        function_name: function_id,
+                        expected: value_type.clone(),
+                        actual: actual.clone(),
+                        source_span: function_call_binding.source_span(),
+                    });
+                }
+            }
+        }
+    }
+
+    block_annotations.set_value_types_of(conjunction, value_types_in_conjunction);
+
     conjunction.nested_patterns().iter().try_for_each(|pattern| match pattern {
         NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().try_for_each(|c| {
             complete_block_annotations_with_value_types(ctx, source_running_annotations, c, block_annotations)
