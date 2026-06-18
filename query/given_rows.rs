@@ -103,7 +103,7 @@ typedb_error! {
         TranslatingValueFailedForGivenEntry(4, "An error occured while translating the provided value '{value}'.", value: String, typedb_source: LiteralParseError),
         GivenRowsVariableWasNotDeclared(5, "The variable '{variable}' was not declared in the query.", variable: String),
         ExpectedInstanceReceivedValue(6, "A value was provided where a concept instance was expected."),
-        ValueTypeMismatch(7, "The provided value '{value}' has the JSON type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
+        ValueTypeMismatch(7, "The provided value '{value}' has type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
     }
 }
 
