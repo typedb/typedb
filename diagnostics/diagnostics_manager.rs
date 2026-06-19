@@ -43,9 +43,9 @@ impl DiagnosticsManager {
         is_development_mode: bool,
         background_tasks: TokioTaskSpawner,
     ) -> Self {
-        let deployment_id = diagnostics.typedb().server_properties.deployment_id().to_owned();
-        let data_directory = diagnostics.typedb().server_metrics.data_directory().clone();
-        let is_reporting_enabled = diagnostics.typedb().server_properties.is_reporting_enabled();
+        let deployment_id = diagnostics.core_metrics().server_properties.deployment_id().to_owned();
+        let data_directory = diagnostics.core_metrics().server_metrics.data_directory().clone();
+        let is_reporting_enabled = diagnostics.core_metrics().server_properties.is_reporting_enabled();
         let diagnostics = Arc::new(diagnostics);
 
         let reporter = if is_development_mode {

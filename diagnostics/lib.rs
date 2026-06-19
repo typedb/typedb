@@ -132,7 +132,7 @@ impl Diagnostics {
         self.metrics_enabled
     }
 
-    pub(crate) fn typedb(&self) -> &CoreMetrics {
+    pub(crate) fn core_metrics(&self) -> &CoreMetrics {
         &self.core_metrics
     }
 
