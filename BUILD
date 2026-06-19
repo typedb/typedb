@@ -70,13 +70,13 @@ alias(
 )
 
 alias(
-    name = "typedb_loader_artifact",
+    name = "typedb_loader_artifact_extracted",
     actual = select({
-        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_loader_artifact_linux-arm64//file",
-        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_loader_artifact_linux-x86_64//file",
-        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_loader_artifact_mac-arm64//file",
-        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_loader_artifact_mac-x86_64//file",
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_loader_artifact_windows-x86_64//file",
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_loader_artifact_linux-arm64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_loader_artifact_linux-x86_64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_loader_artifact_mac-arm64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_loader_artifact_mac-x86_64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_loader_artifact_windows-x86_64-extracted//:all_files",
     })
 )
 
@@ -164,10 +164,18 @@ pkg_files(
     attributes = binary_permissions,
 )
 
-artifact_repackage(
+# package with console included.
+select_file(
+    name = "loader-binary-only",
+    srcs = ":typedb_loader_artifact_extracted",
+    subpath = "loader/typedb_loader_bin",
+)
+
+pkg_files(
     name = "loader-repackaged",
-    srcs = [":typedb_loader_artifact"],
-    files_to_keep = ["loader"],
+    srcs = [":loader-binary-only"],
+    prefix = "loader",
+    attributes = binary_permissions,
 )
 
 pkg_filegroup(
