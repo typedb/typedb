@@ -347,9 +347,10 @@ struct PosthogPayloadBuilder {
 
 impl PosthogPayloadBuilder {
     fn new(diagnostics: &Diagnostics, api_key: String) -> Self {
-        let server_properties: PosthogServerPropertiesReport = diagnostics.server_properties.to_state_report().into();
-        let server_metrics_full: PosthogServerReport = diagnostics.server_metrics.to_full_state_report().into();
-        let server_metrics_minimal: PosthogServerReport = diagnostics.server_metrics.to_minimal_state_report().into();
+        let core_metrics = diagnostics.core_metrics();
+        let server_properties: PosthogServerPropertiesReport = core_metrics.server_properties.to_state_report().into();
+        let server_metrics_full: PosthogServerReport = core_metrics.server_metrics.to_full_state_report().into();
+        let server_metrics_minimal: PosthogServerReport = core_metrics.server_metrics.to_minimal_state_report().into();
         Self {
             api_key,
             usage_reports: HashMap::new(),
@@ -401,7 +402,7 @@ pub(crate) fn to_full_posthog_reporting_json(diagnostics: &Diagnostics, api_key:
     let mut builder = PosthogPayloadBuilder::new(diagnostics, api_key.to_string());
     builder.init_report_if_needed(None);
 
-    for metrics in diagnostics.lock_load_metrics_read().values() {
+    for metrics in diagnostics.core_metrics().lock_load_metrics_read().values() {
         match metrics.to_peak_report() {
             Some(load_report) => {
                 let report_builder = builder.get_or_init_report(Some(metrics.database_id().clone()));
@@ -412,7 +413,7 @@ pub(crate) fn to_full_posthog_reporting_json(diagnostics: &Diagnostics, api_key:
     }
 
     for client in ALL_CLIENT_ENDPOINTS {
-        for metrics in diagnostics.lock_action_metrics_read(client).values() {
+        for metrics in diagnostics.core_metrics().lock_action_metrics_read(client).values() {
             let action_reports = metrics.to_diff_reports();
             if action_reports.is_empty() {
                 continue;
@@ -424,7 +425,7 @@ pub(crate) fn to_full_posthog_reporting_json(diagnostics: &Diagnostics, api_key:
             }
         }
 
-        for metrics in diagnostics.lock_error_metrics_read(client).values() {
+        for metrics in diagnostics.core_metrics().lock_error_metrics_read(client).values() {
             let error_reports = metrics.to_diff_reports();
             if error_reports.is_empty() {
                 continue;

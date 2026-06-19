@@ -12,7 +12,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     path::PathBuf,
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{Arc, RwLock},
 };
 
 use serde_json::Value as JSONValue;
@@ -20,14 +20,9 @@ use xxhash_rust::xxh3::Xxh3;
 
 use crate::{
     metrics::{
-        ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseHistograms, DatabaseMetricsSnapshot,
-        ErrorMetrics, LoadKind, LoadMetrics, QueryType, ServerMetrics, ServerProperties, client_endpoints_map,
+        ALL_CLIENT_ENDPOINTS, ActionKind, ClientEndpoint, DatabaseMetricsSnapshot, LoadKind, LoadMetrics, QueryType,
     },
-    reports::{
-        json_monitoring::to_monitoring_json,
-        posthog::{to_full_posthog_reporting_json, to_minimal_posthog_reporting_json},
-        prometheus_monitoring::to_monitoring_prometheus,
-    },
+    reports::posthog::{to_full_posthog_reporting_json, to_minimal_posthog_reporting_json},
 };
 
 pub mod diagnostics_manager;
@@ -35,6 +30,9 @@ pub mod metrics;
 mod monitoring_server;
 mod reporter;
 mod reports;
+
+pub use metrics::CoreMetrics;
+pub use reports::MonitoringSection;
 
 #[macro_export]
 macro_rules! error_with_report {
@@ -44,8 +42,8 @@ macro_rules! error_with_report {
     }};
 }
 
-type DatabaseHash = u64;
-type DatabaseHashOpt = Option<u64>;
+pub(crate) type DatabaseHash = u64;
+pub(crate) type DatabaseHashOpt = Option<u64>;
 
 #[derive(Debug, Clone, Eq)]
 pub(crate) struct DatabaseId {
@@ -84,15 +82,10 @@ impl fmt::Display for DatabaseId {
         write!(f, "{}", self.name)
     }
 }
-
 #[derive(Debug)]
 pub struct Diagnostics {
-    server_properties: ServerProperties,
-    server_metrics: ServerMetrics,
-    load_metrics: RwLock<HashMap<DatabaseHash, LoadMetrics>>,
-    action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
-    error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
-    histogram_metrics: RwLock<HashMap<DatabaseHash, DatabaseHistograms>>,
+    core_metrics: CoreMetrics,
+    monitoring_extensions: RwLock<Vec<Arc<dyn MonitoringSection>>>,
 
     is_full_reporting: bool,
     metrics_enabled: bool,
@@ -109,27 +102,45 @@ impl Diagnostics {
         metrics_enabled: bool,
     ) -> Diagnostics {
         Self {
-            server_properties: ServerProperties::new(deployment_id, server_id, distribution, is_reporting_enabled),
-            server_metrics: ServerMetrics::new(version, data_directory),
-            load_metrics: RwLock::new(HashMap::new()),
-            action_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
-            error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
-            histogram_metrics: RwLock::new(HashMap::new()),
-
+            core_metrics: CoreMetrics::new(
+                deployment_id,
+                server_id,
+                distribution,
+                version,
+                data_directory,
+                is_reporting_enabled,
+            ),
+            monitoring_extensions: RwLock::new(Vec::new()),
             is_full_reporting: is_reporting_enabled,
             metrics_enabled,
         }
+    }
+
+    pub fn register_monitoring_extension(&self, source: Arc<dyn MonitoringSection>) {
+        let mut exts = self.monitoring_extensions.write().expect("Expected write lock acquisition on extensions");
+        let name = source.name().to_string();
+        exts.retain(|s| s.name() != name);
+        exts.push(source);
+    }
+
+    pub fn has_monitoring_extension(&self, name: &str) -> bool {
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        exts.iter().any(|s| s.name() == name)
     }
 
     pub(crate) fn metrics_enabled(&self) -> bool {
         self.metrics_enabled
     }
 
+    pub(crate) fn core_metrics(&self) -> &CoreMetrics {
+        &self.core_metrics
+    }
+
     pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>) {
         if !self.metrics_enabled {
             return;
         }
-        let mut loads = self.lock_load_metrics_write();
+        let mut loads = self.core_metrics.lock_load_metrics_write();
         let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
 
         for (database_name, snapshot) in snapshots {
@@ -150,7 +161,7 @@ impl Diagnostics {
         if !self.metrics_enabled {
             return;
         }
-        let loads = self.lock_load_metrics_read_for_database(database_name);
+        let loads = self.core_metrics.lock_load_metrics_read_for_database(database_name);
         let database_hash = hash_string_consistently(database_name);
         loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
     }
@@ -161,7 +172,7 @@ impl Diagnostics {
         }
         // Decrement must have been preceded by increment, so the database is already present.
         let database_hash = hash_string_consistently(database_name);
-        let loads = self.lock_load_metrics_read();
+        let loads = self.core_metrics.lock_load_metrics_read();
         loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
     }
 
@@ -170,7 +181,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = database_name.map(hash_string_consistently);
-        let actions = self.lock_action_metrics_read_for_database(client, database_name, database_hash);
+        let actions = self.core_metrics.lock_action_metrics_read_for_database(client, database_name, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_success(action_kind);
     }
 
@@ -179,7 +190,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = database_name.map(hash_string_consistently);
-        let actions = self.lock_action_metrics_read_for_database(client, database_name, database_hash);
+        let actions = self.core_metrics.lock_action_metrics_read_for_database(client, database_name, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_fail(action_kind);
     }
 
@@ -188,7 +199,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = database_name.map(hash_string_consistently);
-        let errors = self.lock_error_metrics_read_for_database(client, database_name, database_hash);
+        let errors = self.core_metrics.lock_error_metrics_read_for_database(client, database_name, database_hash);
         errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
     }
 
@@ -197,7 +208,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms.get(&database_hash).expect("Expected database in histograms").observe_query_duration(kind, duration);
     }
 
@@ -206,7 +217,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms
             .get(&database_hash)
             .expect("Expected database in histograms")
@@ -218,7 +229,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms
             .get(&database_hash)
             .expect("Expected database in histograms")
@@ -235,7 +246,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms
             .get(&database_hash)
             .expect("Expected database in histograms")
@@ -244,37 +255,61 @@ impl Diagnostics {
 
     pub fn wal_metrics(&self, database_name: &str) -> crate::metrics::FsyncMetrics {
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         let entry = histograms.get(&database_hash).expect("Expected database in histograms");
         entry.wal_metrics()
     }
 
-    pub(crate) fn histogram_snapshots(&self) -> Vec<(Arc<DatabaseId>, crate::metrics::DatabaseHistogramsSnapshot)> {
-        self.lock_histogram_metrics_read().values().map(|db| (db.database_id().clone(), db.snapshot())).collect()
-    }
-
     pub fn take_snapshot(&self) {
-        self.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
+        self.core_metrics.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
         for client in ALL_CLIENT_ENDPOINTS {
-            self.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
-            self.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
+            self.core_metrics
+                .lock_action_metrics_write(client)
+                .values_mut()
+                .for_each(|metrics| metrics.take_snapshot());
+            self.core_metrics.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
         }
     }
 
     pub fn restore_posthog_snapshot(&self) {
-        self.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
+        self.core_metrics.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
         for client in ALL_CLIENT_ENDPOINTS {
-            self.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
-            self.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
+            self.core_metrics
+                .lock_action_metrics_write(client)
+                .values_mut()
+                .for_each(|metrics| metrics.restore_snapshot());
+            self.core_metrics
+                .lock_error_metrics_write(client)
+                .values_mut()
+                .for_each(|metrics| metrics.restore_snapshot());
         }
     }
 
+    /// Render all monitoring metrics as a single JSON value.
+    ///
+    /// The built-in core metrics are emitted at the top level. Any registered extensions are
+    /// emitted under `extensions.<name>` keyed by `MonitoringSection::name`.
     pub fn to_monitoring_json(&self) -> JSONValue {
-        to_monitoring_json(self)
+        let mut obj = self.core_metrics.write_json();
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        if !exts.is_empty() {
+            let mut ext_map = serde_json::Map::with_capacity(exts.len());
+            for ext in exts.iter() {
+                ext_map.insert(ext.name().to_string(), JSONValue::Object(ext.write_json()));
+            }
+            obj.insert("extensions".to_string(), JSONValue::Object(ext_map));
+        }
+        JSONValue::Object(obj)
     }
 
     pub fn to_monitoring_prometheus(&self) -> String {
-        to_monitoring_prometheus(self)
+        let mut out = String::new();
+        self.core_metrics.write_prometheus(&mut out);
+        let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
+        for ext in exts.iter() {
+            ext.write_prometheus(&mut out);
+        }
+        out
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
@@ -282,202 +317,6 @@ impl Diagnostics {
             true => to_full_posthog_reporting_json(self, api_key),
             false => to_minimal_posthog_reporting_json(self, api_key),
         }
-    }
-}
-
-impl Diagnostics {
-    fn lock_load_metrics_read_for_database(
-        &self,
-        database_name: &str,
-    ) -> RwLockReadGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
-        let database_hash = hash_string_consistently(database_name);
-        if let Some(lock) = self.try_lock_load_metrics_read_for_database(database_hash) {
-            return lock;
-        }
-        self.add_database_to_load_metrics(DatabaseId::new(database_name));
-        self.try_lock_load_metrics_read_for_database(database_hash)
-            .expect("Expected metrics lock acquisition for database after adding")
-    }
-
-    fn try_lock_load_metrics_read_for_database(
-        &self,
-        database_hash: DatabaseHash,
-    ) -> Option<RwLockReadGuard<'_, HashMap<DatabaseHash, LoadMetrics>>> {
-        let read_lock = self.lock_load_metrics_read();
-        match read_lock.contains_key(&database_hash) {
-            true => Some(read_lock),
-            false => None,
-        }
-    }
-
-    fn add_database_to_load_metrics(&self, id: Arc<DatabaseId>) {
-        let mut write_lock = self.lock_load_metrics_write();
-        let database_hash = id.hash_value();
-        if !write_lock.contains_key(&database_hash) {
-            write_lock.insert(database_hash, LoadMetrics::new(id));
-        }
-    }
-
-    fn lock_load_metrics_read(&self) -> RwLockReadGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
-        self.load_metrics.read().expect("Expected read lock acquisition")
-    }
-
-    fn lock_load_metrics_write(&self) -> RwLockWriteGuard<'_, HashMap<DatabaseHash, LoadMetrics>> {
-        self.load_metrics.write().expect("Expected write lock acquisition")
-    }
-
-    fn lock_histogram_metrics_read_for_database(
-        &self,
-        database_name: &str,
-    ) -> RwLockReadGuard<'_, HashMap<DatabaseHash, DatabaseHistograms>> {
-        let database_hash = hash_string_consistently(database_name);
-        if let Some(lock) = self.try_lock_histogram_metrics_read_for_database(database_hash) {
-            return lock;
-        }
-        self.add_database_to_histogram_metrics(DatabaseId::new(database_name));
-        self.try_lock_histogram_metrics_read_for_database(database_hash)
-            .expect("Expected metrics lock acquisition for database after adding")
-    }
-
-    fn try_lock_histogram_metrics_read_for_database(
-        &self,
-        database_hash: DatabaseHash,
-    ) -> Option<RwLockReadGuard<'_, HashMap<DatabaseHash, DatabaseHistograms>>> {
-        let read_lock = self.lock_histogram_metrics_read();
-        match read_lock.contains_key(&database_hash) {
-            true => Some(read_lock),
-            false => None,
-        }
-    }
-
-    fn add_database_to_histogram_metrics(&self, id: Arc<DatabaseId>) {
-        let mut write_lock = self.lock_histogram_metrics_write();
-        let database_hash = id.hash_value();
-        if !write_lock.contains_key(&database_hash) {
-            write_lock.insert(database_hash, DatabaseHistograms::new(id));
-        }
-    }
-
-    pub(crate) fn lock_histogram_metrics_read(&self) -> RwLockReadGuard<'_, HashMap<DatabaseHash, DatabaseHistograms>> {
-        self.histogram_metrics.read().expect("Expected read lock acquisition")
-    }
-
-    fn lock_histogram_metrics_write(&self) -> RwLockWriteGuard<'_, HashMap<DatabaseHash, DatabaseHistograms>> {
-        self.histogram_metrics.write().expect("Expected write lock acquisition")
-    }
-
-    fn lock_action_metrics_read_for_database(
-        &self,
-        client: ClientEndpoint,
-        database_name: Option<&str>,
-        database_hash: DatabaseHashOpt,
-    ) -> RwLockReadGuard<'_, HashMap<DatabaseHashOpt, ActionMetrics>> {
-        if let Some(lock) = self.try_lock_action_metrics_read_for_database(client, database_hash) {
-            return lock;
-        }
-        self.add_database_to_action_metrics(client, database_name);
-        self.try_lock_action_metrics_read_for_database(client, database_hash)
-            .expect("Expected metrics lock acquisition for database after adding")
-    }
-
-    fn try_lock_action_metrics_read_for_database(
-        &self,
-        client: ClientEndpoint,
-        database_hash: DatabaseHashOpt,
-    ) -> Option<RwLockReadGuard<'_, HashMap<DatabaseHashOpt, ActionMetrics>>> {
-        let read_lock = self.lock_action_metrics_read(client);
-        match read_lock.contains_key(&database_hash) {
-            true => Some(read_lock),
-            false => None,
-        }
-    }
-
-    fn add_database_to_action_metrics(&self, client: ClientEndpoint, database_name: Option<&str>) {
-        let id = database_name.map(DatabaseId::new);
-        let database_hash = id.as_ref().map(|id| id.hash_value());
-        let mut write_lock = self.lock_action_metrics_write(client);
-        if !write_lock.contains_key(&database_hash) {
-            write_lock.insert(database_hash, ActionMetrics::new(id));
-        }
-    }
-
-    pub(crate) fn lock_action_metrics_read(
-        &self,
-        client: ClientEndpoint,
-    ) -> RwLockReadGuard<'_, HashMap<DatabaseHashOpt, ActionMetrics>> {
-        self.action_metrics
-            .get(&client)
-            .expect("Expected client {client}")
-            .read()
-            .expect("Expected read lock acquisition")
-    }
-
-    fn lock_action_metrics_write(
-        &self,
-        client: ClientEndpoint,
-    ) -> RwLockWriteGuard<'_, HashMap<DatabaseHashOpt, ActionMetrics>> {
-        self.action_metrics
-            .get(&client)
-            .expect("Expected client {client}")
-            .write()
-            .expect("Expected write lock acquisition")
-    }
-
-    fn lock_error_metrics_read_for_database(
-        &self,
-        client: ClientEndpoint,
-        database_name: Option<&str>,
-        database_hash: DatabaseHashOpt,
-    ) -> RwLockReadGuard<'_, HashMap<DatabaseHashOpt, ErrorMetrics>> {
-        if let Some(lock) = self.try_lock_error_metrics_read_for_database(client, database_hash) {
-            return lock;
-        }
-        self.add_database_to_error_metrics(client, database_name);
-        self.try_lock_error_metrics_read_for_database(client, database_hash)
-            .expect("Expected metrics lock acquisition for database after adding")
-    }
-
-    fn try_lock_error_metrics_read_for_database(
-        &self,
-        client: ClientEndpoint,
-        database_hash: DatabaseHashOpt,
-    ) -> Option<RwLockReadGuard<'_, HashMap<DatabaseHashOpt, ErrorMetrics>>> {
-        let read_lock = self.lock_error_metrics_read(client);
-        match read_lock.contains_key(&database_hash) {
-            true => Some(read_lock),
-            false => None,
-        }
-    }
-
-    fn add_database_to_error_metrics(&self, client: ClientEndpoint, database_name: Option<&str>) {
-        let id = database_name.map(DatabaseId::new);
-        let database_hash = id.as_ref().map(|id| id.hash_value());
-        let mut write_lock = self.lock_error_metrics_write(client);
-        if !write_lock.contains_key(&database_hash) {
-            write_lock.insert(database_hash, ErrorMetrics::new(id));
-        }
-    }
-
-    pub(crate) fn lock_error_metrics_read(
-        &self,
-        client: ClientEndpoint,
-    ) -> RwLockReadGuard<'_, HashMap<DatabaseHashOpt, ErrorMetrics>> {
-        self.error_metrics
-            .get(&client)
-            .expect("Expected client {client}")
-            .read()
-            .expect("Expected read lock acquisition")
-    }
-
-    fn lock_error_metrics_write(
-        &self,
-        client: ClientEndpoint,
-    ) -> RwLockWriteGuard<'_, HashMap<DatabaseHashOpt, ErrorMetrics>> {
-        self.error_metrics
-            .get(&client)
-            .expect("Expected client {client}")
-            .write()
-            .expect("Expected write lock acquisition")
     }
 }
 
