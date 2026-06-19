@@ -164,7 +164,7 @@ pkg_files(
     attributes = binary_permissions,
 )
 
-# package with console included.
+# package with loader included.
 select_file(
     name = "loader-binary-only",
     srcs = ":typedb_loader_artifact_extracted",

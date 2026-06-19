@@ -115,7 +115,7 @@ workspace_refs(
     },
 )
 
-# TypeDB Console artifact
+# TypeDB Console and Loader artifacts
 native_artifact_files = use_extension("@typedb_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
 native_artifact_files.artifact(
     name = "typedb_console_artifact",
