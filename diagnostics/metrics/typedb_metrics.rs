@@ -22,7 +22,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct TypeDBMetrics {
+pub struct CoreMetrics {
     pub(crate) server_properties: ServerProperties,
     pub(crate) server_metrics: ServerMetrics,
     load_metrics: RwLock<HashMap<DatabaseHash, LoadMetrics>>,
@@ -31,7 +31,7 @@ pub struct TypeDBMetrics {
     histogram_metrics: RwLock<HashMap<DatabaseHash, DatabaseHistograms>>,
 }
 
-impl TypeDBMetrics {
+impl CoreMetrics {
     pub(crate) fn new(
         deployment_id: String,
         server_id: String,
@@ -249,7 +249,7 @@ impl TypeDBMetrics {
     }
 }
 
-impl MonitoringSection for TypeDBMetrics {
+impl MonitoringSection for CoreMetrics {
     fn name(&self) -> &str {
         "typedb"
     }

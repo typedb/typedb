@@ -6,14 +6,14 @@
 use std::fmt::Write;
 
 use crate::{
-    TypeDBMetrics,
+    CoreMetrics,
     reports::json_monitoring::{
         JsonMonitoringHistogramReport, JsonMonitoringReport, MonitoringDatabaseId, to_monitoring_report,
     },
 };
 
-pub fn to_monitoring_prometheus(typedb: &TypeDBMetrics) -> String {
-    to_prometheus(to_monitoring_report(typedb))
+pub fn to_monitoring_prometheus(core_metrics: &CoreMetrics) -> String {
+    to_prometheus(to_monitoring_report(core_metrics))
 }
 
 /// Emits `database="<name>", database_id="<hash>"` from the carried

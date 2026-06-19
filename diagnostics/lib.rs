@@ -31,7 +31,7 @@ mod monitoring_server;
 mod reporter;
 mod reports;
 
-pub use metrics::TypeDBMetrics;
+pub use metrics::CoreMetrics;
 pub use reports::MonitoringSection;
 
 #[macro_export]
@@ -84,7 +84,7 @@ impl fmt::Display for DatabaseId {
 }
 #[derive(Debug)]
 pub struct Diagnostics {
-    typedb: TypeDBMetrics,
+    core_metrics: CoreMetrics,
     monitoring_extensions: RwLock<Vec<Arc<dyn MonitoringSection>>>,
 
     is_full_reporting: bool,
@@ -102,7 +102,7 @@ impl Diagnostics {
         metrics_enabled: bool,
     ) -> Diagnostics {
         Self {
-            typedb: TypeDBMetrics::new(
+            core_metrics: CoreMetrics::new(
                 deployment_id,
                 server_id,
                 distribution,
@@ -132,15 +132,15 @@ impl Diagnostics {
         self.metrics_enabled
     }
 
-    pub(crate) fn typedb(&self) -> &TypeDBMetrics {
-        &self.typedb
+    pub(crate) fn typedb(&self) -> &CoreMetrics {
+        &self.core_metrics
     }
 
     pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>) {
         if !self.metrics_enabled {
             return;
         }
-        let mut loads = self.typedb.lock_load_metrics_write();
+        let mut loads = self.core_metrics.lock_load_metrics_write();
         let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
 
         for (database_name, snapshot) in snapshots {
@@ -161,7 +161,7 @@ impl Diagnostics {
         if !self.metrics_enabled {
             return;
         }
-        let loads = self.typedb.lock_load_metrics_read_for_database(database_name);
+        let loads = self.core_metrics.lock_load_metrics_read_for_database(database_name);
         let database_hash = hash_string_consistently(database_name);
         loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
     }
@@ -172,7 +172,7 @@ impl Diagnostics {
         }
         // Decrement must have been preceded by increment, so the database is already present.
         let database_hash = hash_string_consistently(database_name);
-        let loads = self.typedb.lock_load_metrics_read();
+        let loads = self.core_metrics.lock_load_metrics_read();
         loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
     }
 
@@ -181,7 +181,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = database_name.map(hash_string_consistently);
-        let actions = self.typedb.lock_action_metrics_read_for_database(client, database_name, database_hash);
+        let actions = self.core_metrics.lock_action_metrics_read_for_database(client, database_name, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_success(action_kind);
     }
 
@@ -190,7 +190,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = database_name.map(hash_string_consistently);
-        let actions = self.typedb.lock_action_metrics_read_for_database(client, database_name, database_hash);
+        let actions = self.core_metrics.lock_action_metrics_read_for_database(client, database_name, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_fail(action_kind);
     }
 
@@ -199,7 +199,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = database_name.map(hash_string_consistently);
-        let errors = self.typedb.lock_error_metrics_read_for_database(client, database_name, database_hash);
+        let errors = self.core_metrics.lock_error_metrics_read_for_database(client, database_name, database_hash);
         errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
     }
 
@@ -208,7 +208,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms.get(&database_hash).expect("Expected database in histograms").observe_query_duration(kind, duration);
     }
 
@@ -217,7 +217,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms
             .get(&database_hash)
             .expect("Expected database in histograms")
@@ -229,7 +229,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms
             .get(&database_hash)
             .expect("Expected database in histograms")
@@ -246,7 +246,7 @@ impl Diagnostics {
             return;
         }
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         histograms
             .get(&database_hash)
             .expect("Expected database in histograms")
@@ -255,24 +255,33 @@ impl Diagnostics {
 
     pub fn wal_metrics(&self, database_name: &str) -> crate::metrics::FsyncMetrics {
         let database_hash = hash_string_consistently(database_name);
-        let histograms = self.typedb.lock_histogram_metrics_read_for_database(database_name);
+        let histograms = self.core_metrics.lock_histogram_metrics_read_for_database(database_name);
         let entry = histograms.get(&database_hash).expect("Expected database in histograms");
         entry.wal_metrics()
     }
 
     pub fn take_snapshot(&self) {
-        self.typedb.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
+        self.core_metrics.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
         for client in ALL_CLIENT_ENDPOINTS {
-            self.typedb.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
-            self.typedb.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
+            self.core_metrics
+                .lock_action_metrics_write(client)
+                .values_mut()
+                .for_each(|metrics| metrics.take_snapshot());
+            self.core_metrics.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
         }
     }
 
     pub fn restore_posthog_snapshot(&self) {
-        self.typedb.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
+        self.core_metrics.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
         for client in ALL_CLIENT_ENDPOINTS {
-            self.typedb.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
-            self.typedb.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
+            self.core_metrics
+                .lock_action_metrics_write(client)
+                .values_mut()
+                .for_each(|metrics| metrics.restore_snapshot());
+            self.core_metrics
+                .lock_error_metrics_write(client)
+                .values_mut()
+                .for_each(|metrics| metrics.restore_snapshot());
         }
     }
 
@@ -281,7 +290,7 @@ impl Diagnostics {
     /// The built-in typedb metrics are emitted at the top level. Any registered extensions are
     /// emitted under `extensions.<name>` keyed by `MonitoringSection::name`.
     pub fn to_monitoring_json(&self) -> JSONValue {
-        let mut obj = self.typedb.write_json();
+        let mut obj = self.core_metrics.write_json();
         let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
         if !exts.is_empty() {
             let mut ext_map = serde_json::Map::with_capacity(exts.len());
@@ -295,7 +304,7 @@ impl Diagnostics {
 
     pub fn to_monitoring_prometheus(&self) -> String {
         let mut out = String::new();
-        self.typedb.write_prometheus(&mut out);
+        self.core_metrics.write_prometheus(&mut out);
         let exts = self.monitoring_extensions.read().expect("Expected read lock acquisition on extensions");
         for ext in exts.iter() {
             ext.write_prometheus(&mut out);

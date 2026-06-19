@@ -43,7 +43,7 @@ pub use transaction_metrics::{
     LoadKind, QueryType, ReadQueryMetrics, SchemaQueryMetrics, TransactionLifecycleSnapshot, TransactionMetrics,
     TransactionOutcome, WriteQueryMetrics,
 };
-pub use typedb_metrics::TypeDBMetrics;
+pub use typedb_metrics::CoreMetrics;
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
