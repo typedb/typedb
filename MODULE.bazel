@@ -115,7 +115,7 @@ workspace_refs(
     },
 )
 
-# TypeDB Console artifact
+# TypeDB Console and Loader artifacts
 native_artifact_files = use_extension("@typedb_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
 native_artifact_files.artifact(
     name = "typedb_console_artifact",
@@ -123,6 +123,12 @@ native_artifact_files.artifact(
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
     archive_strip_prefix = "typedb-console-{platform}-{version}",
     tag = "3.11.5",
+)
+native_artifact_files.artifact(
+    name = "typedb_loader_artifact",
+    group_name = "typedb-loader-{platform}",
+    artifact_name = "typedb-loader-{platform}-{version}.{ext}",
+    commit = "4795857183a89ecbc13ab66d349472aea893d8b4",
 )
 use_repo(
     native_artifact_files,
@@ -136,6 +142,16 @@ use_repo(
     "typedb_console_artifact_mac-x86_64-extracted",
     "typedb_console_artifact_mac-arm64-extracted",
     "typedb_console_artifact_windows-x86_64-extracted",
+    "typedb_loader_artifact_linux-x86_64",
+    "typedb_loader_artifact_linux-arm64",
+    "typedb_loader_artifact_mac-x86_64",
+    "typedb_loader_artifact_mac-arm64",
+    "typedb_loader_artifact_windows-x86_64",
+    "typedb_loader_artifact_linux-x86_64-extracted",
+    "typedb_loader_artifact_linux-arm64-extracted",
+    "typedb_loader_artifact_mac-x86_64-extracted",
+    "typedb_loader_artifact_mac-arm64-extracted",
+    "typedb_loader_artifact_windows-x86_64-extracted",
 )
 
 # ===========================================================
