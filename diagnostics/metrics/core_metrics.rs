@@ -251,7 +251,7 @@ impl CoreMetrics {
 
 impl MonitoringSection for CoreMetrics {
     fn name(&self) -> &str {
-        "typedb"
+        "core"
     }
 
     fn write_prometheus(&self, out: &mut String) {

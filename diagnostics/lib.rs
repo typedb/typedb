@@ -287,7 +287,7 @@ impl Diagnostics {
 
     /// Render all monitoring metrics as a single JSON value.
     ///
-    /// The built-in typedb metrics are emitted at the top level. Any registered extensions are
+    /// The built-in core metrics are emitted at the top level. Any registered extensions are
     /// emitted under `extensions.<name>` keyed by `MonitoringSection::name`.
     pub fn to_monitoring_json(&self) -> JSONValue {
         let mut obj = self.core_metrics.write_json();
