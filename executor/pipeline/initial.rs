@@ -3,26 +3,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 use lending_iterator::LendingIterator;
 
 use crate::{
-    batch::{FixedBatch, FixedBatchRowIterator},
-    pipeline::{PipelineExecutionError, StageIterator},
+    ExecutionInterrupt, Provenance,
+    batch::{Batch, BatchRowIterator, FixedBatch, FixedBatchRowIterator},
+    pipeline::{
+        PipelineExecutionError, StageIterator,
+        stage::{ExecutionContext, StageAPI},
+    },
     row::MaybeOwnedRow,
 };
 
 pub struct InitialStage {
-    initial_batch: FixedBatch,
+    initial_batch: Batch,
 }
 
 impl InitialStage {
-    pub fn new_empty() -> Self {
-        Self { initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
-    }
-
-    pub fn new_with(initial_row: MaybeOwnedRow<'_>) -> Self {
-        let batch = FixedBatch::from(initial_row);
-        Self { initial_batch: batch }
+    pub fn new(initial_batch: Batch) -> Self {
+        Self { initial_batch }
     }
 
     pub(crate) fn into_iterator(self) -> InitialIterator {
@@ -31,12 +31,12 @@ impl InitialStage {
 }
 
 pub struct InitialIterator {
-    iterator: Box<FixedBatchRowIterator>,
+    iterator: Box<BatchRowIterator>,
 }
 
 impl InitialIterator {
-    pub(crate) fn new(batch: FixedBatch) -> Self {
-        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))) }
+    pub(crate) fn new(batch: Batch) -> Self {
+        Self { iterator: Box::new(batch.into_iterator()) }
     }
 }
 
@@ -44,9 +44,7 @@ impl LendingIterator for InitialIterator {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iterator.next().map(|result| {
-            result.map_err(|err| Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() }))
-        })
+        self.iterator.next().map(|row| Ok(row))
     }
 }
 

@@ -16,7 +16,7 @@ use server::service::http::message::{
     authentication::TokenResponse,
     database::{DatabaseResponse, DatabasesResponse},
     query::{
-        QueryAnswerResponse, QueryOptionsPayload,
+        GivenRowsPayload, QueryAnswerResponse, QueryOptionsPayload,
         concept::{
             AttributeResponse, AttributeTypeResponse, EntityResponse, EntityTypeResponse, RelationResponse,
             RelationTypeResponse, RoleTypeResponse, ValueResponse,
@@ -328,6 +328,7 @@ pub async fn transactions_query(
     auth_token: Option<impl AsRef<str>>,
     transaction_id: &str,
     query_options: &Option<QueryOptionsPayload>,
+    given_rows_payload: Option<GivenRowsPayload>,
     query: &str,
 ) -> Result<QueryAnswerResponse, HttpBehaviourTestError> {
     let url = format!("{}/transactions/{}/query", Context::default_versioned_endpoint(), transaction_id);
@@ -335,6 +336,9 @@ pub async fn transactions_query(
     json_map.insert("query".to_string(), json!(query));
     if let Some(query_options) = query_options {
         json_map.insert("queryOptions".to_string(), json!(query_options));
+    }
+    if let Some(given_rows_payload) = given_rows_payload {
+        json_map.insert("givenRows".to_string(), json!(given_rows_payload));
     }
     let response =
         send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;

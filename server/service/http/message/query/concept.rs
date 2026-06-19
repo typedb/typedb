@@ -22,7 +22,6 @@ use resource::profile::StorageCounters;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
-
 // TODO: Should probably be merged with JSON from behaviour/steps/query_answer_context.rs.
 // Now, it's easier to have symmetry between two services, and we don't have the capacity to merge
 // these (BDDs will check if this code is correct)
@@ -44,6 +43,7 @@ pub struct RelationResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "kind", rename = "attribute")]
 pub struct AttributeResponse {
+    pub iid: String,
     pub value: serde_json::Value,
     pub value_type: String,
     pub r#type: Option<AttributeTypeResponse>,
@@ -208,6 +208,7 @@ pub fn encode_attribute(
 ) -> Result<AttributeResponse, Box<ConceptReadError>> {
     let value = attribute.get_value(snapshot, thing_manager, storage_counters)?;
     Ok(AttributeResponse {
+        iid: encode_iid(attribute.iid()),
         value_type: encode_value_value_type(&value),
         value: encode_value_value(value),
         r#type: if include_instance_types {

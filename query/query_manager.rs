@@ -4,28 +4,47 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use compiler::{
-    annotation::pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
-    executable::pipeline::{ExecutablePipeline, compile_pipeline_and_functions},
+    VariablePosition,
+    annotation::{
+        expression::compiled_expression::ExpressionValueType,
+        function::FunctionParameterAnnotation,
+        pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
+    },
+    executable::pipeline::{ExecutablePipeline, ExecutableStage, GivenExecutable, compile_pipeline_and_functions},
     query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
     transformation::transform::apply_transformations,
 };
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::pipeline::{
-    pipeline::Pipeline,
-    stage::{ReadPipelineStage, WritePipelineStage},
+use concept::{
+    thing::{ThingAPI, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
+};
+use executor::{
+    batch::Batch,
+    pipeline::{
+        pipeline::Pipeline,
+        stage::{ReadPipelineStage, WritePipelineStage},
+    },
 };
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
+    LiteralParseError, RepresentationError,
+    pattern::{Vertex, variable_category::VariableOptionality},
     pipeline::{
         ParameterRegistry, VariableRegistry,
         fetch::FetchObject,
         function::Function,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     },
-    translation::pipeline::{TranslatedPipeline, TranslatedStage},
+    translation::{
+        literal::{FromTypeQLLiteral, translate_literal},
+        pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
+    },
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
@@ -37,11 +56,10 @@ use tracing::{Level, event};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    analyse::{
-        self, AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
-    },
+    analyse::{self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations},
     define,
     error::QueryError,
+    given_rows::{GivenRowDecodeError, GivenRows},
     query_cache::QueryCache,
     redefine, undefine,
 };
@@ -121,6 +139,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
+        given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", query);
@@ -130,6 +149,7 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
+            translated_given,
             translated_stages,
             translated_fetch,
             mut variable_registry,
@@ -137,14 +157,13 @@ impl QueryManager {
         } = translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
         compile_profile.translation_finished();
         let arced_preamble = Arc::new(translated_preamble);
+        let arced_given = Arc::new(translated_given);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
         let arced_parameters = Arc::new(parameters);
-        let executable_pipeline = match self
-            .cache
-            .as_ref()
-            .and_then(|cache| cache.get(arced_preamble.clone(), arced_stages.clone(), arced_fetch.clone()))
-        {
+        let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
+            cache.get(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
+        }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -160,12 +179,20 @@ impl QueryManager {
                     &mut variable_registry,
                     arced_parameters.clone(),
                     arced_preamble.clone(),
+                    arced_given.clone(),
                     arced_stages.clone(),
                     arced_fetch.clone(),
                 )?;
                 if let Some(cache) = self.cache.as_ref() {
                     let seq = thing_manager.statistics().sequence_number;
-                    cache.may_insert(seq, arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
+                    cache.may_insert(
+                        seq,
+                        arced_preamble,
+                        arced_given,
+                        arced_stages,
+                        arced_fetch,
+                        executable_pipeline.clone(),
+                    )
                 }
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
@@ -173,8 +200,14 @@ impl QueryManager {
         };
 
         let ExecutablePipeline {
-            executable_functions, executable_stages, executable_fetch, pipeline_structure, ..
+            executable_functions,
+            executable_given,
+            executable_stages,
+            executable_fetch,
+            pipeline_structure,
+            ..
         } = executable_pipeline;
+        let given_batch = validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)?;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
@@ -183,10 +216,11 @@ impl QueryManager {
             variable_registry.variable_names(),
             (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
             Arc::new(executable_functions),
+            executable_given,
             &executable_stages,
             executable_fetch,
             arced_parameters,
-            None,
+            given_batch,
             Arc::new(query_profile),
         )
         .map_err(|typedb_source| {
@@ -201,6 +235,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
+        given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", query);
@@ -210,6 +245,7 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
+            translated_given,
             translated_stages,
             translated_fetch,
             mut variable_registry,
@@ -220,15 +256,14 @@ impl QueryManager {
         };
         compile_profile.translation_finished();
         let arced_preamble = Arc::new(translated_preamble);
+        let arced_given = Arc::new(translated_given);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
         let arced_parameters = Arc::new(value_parameters);
 
-        let executable_pipeline = match self
-            .cache
-            .as_ref()
-            .and_then(|cache| cache.get(arced_preamble.clone(), arced_stages.clone(), arced_fetch.clone()))
-        {
+        let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
+            cache.get(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
+        }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -244,6 +279,7 @@ impl QueryManager {
                     &mut variable_registry,
                     arced_parameters.clone(),
                     arced_preamble.clone(),
+                    arced_given.clone(),
                     arced_stages.clone(),
                     arced_fetch.clone(),
                 );
@@ -253,6 +289,7 @@ impl QueryManager {
                             cache.may_insert(
                                 thing_manager.statistics().sequence_number,
                                 arced_preamble,
+                                arced_given,
                                 arced_stages,
                                 arced_fetch,
                                 executable_pipeline.clone(),
@@ -269,8 +306,17 @@ impl QueryManager {
         };
 
         let ExecutablePipeline {
-            executable_functions, executable_stages, executable_fetch, pipeline_structure, ..
+            executable_functions,
+            executable_given,
+            executable_stages,
+            executable_fetch,
+            pipeline_structure,
+            ..
         } = executable_pipeline;
+        let given_batch = match validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry) {
+            Ok(given_rows) => given_rows,
+            Err(err) => return Err((snapshot, err)),
+        };
 
         // 4: Executor
         Ok(Pipeline::build_write_pipeline(
@@ -279,9 +325,11 @@ impl QueryManager {
             (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
             thing_manager,
             Arc::new(executable_functions),
+            executable_given,
             executable_stages,
             executable_fetch,
             arced_parameters.clone(),
+            given_batch,
             Arc::new(query_profile),
         ))
     }
@@ -302,6 +350,7 @@ impl QueryManager {
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
+            translated_given,
             translated_stages,
             translated_fetch,
             mut variable_registry,
@@ -309,6 +358,7 @@ impl QueryManager {
         } = translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
         compile_profile.translation_finished();
         let arced_preamble = Arc::new(translated_preamble);
+        let arced_given = translated_given.map(Arc::new);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
 
@@ -336,6 +386,7 @@ impl QueryManager {
             &mut variable_registry,
             &parameters,
             (*arced_preamble).clone(),
+            arced_given.map(|given| (*given).clone()),
             (*arced_stages).clone(),
             (*arced_fetch).clone(),
         )
@@ -404,6 +455,7 @@ fn annotate_and_compile_query(
     variable_registry: &mut VariableRegistry,
     arced_parameters: Arc<ParameterRegistry>,
     arced_preamble: Arc<Vec<Function>>,
+    arced_given: Arc<Option<TranslatedGiven>>,
     arced_stages: Arc<Vec<TranslatedStage>>,
     arced_fetch: Arc<Option<FetchObject>>,
 ) -> Result<ExecutablePipeline, Box<QueryError>> {
@@ -436,6 +488,7 @@ fn annotate_and_compile_query(
         variable_registry,
         &arced_parameters,
         (*arced_preamble).clone(),
+        (*arced_given).clone(),
         (*arced_stages).clone(),
         (*arced_fetch).clone(),
     );
@@ -453,6 +506,7 @@ fn annotate_and_compile_query(
     // TODO: We can avoid this for the regular query path when we break studio backwards compatibility
     let pipeline_structure = Arc::new(extract_pipeline_structure_from(
         &variable_registry,
+        annotated_pipeline.annotated_given.as_ref(),
         &annotated_pipeline.annotated_stages,
         source_query,
     ));
@@ -467,7 +521,8 @@ fn annotate_and_compile_query(
         }
     };
 
-    let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
+    let AnnotatedPipeline { annotated_preamble, annotated_given, annotated_stages, annotated_fetch } =
+        annotated_pipeline;
 
     // 3: Compile
     let executable_pipeline = match compile_pipeline_and_functions(
@@ -475,9 +530,9 @@ fn annotate_and_compile_query(
         &variable_registry,
         &annotated_schema_functions,
         annotated_preamble,
+        annotated_given,
         annotated_stages,
         annotated_fetch,
-        &HashSet::with_capacity(0),
         pipeline_structure,
     ) {
         Ok(executable) => executable,
@@ -490,4 +545,32 @@ fn annotate_and_compile_query(
     };
     compile_profile.compilation_finished();
     Ok(executable_pipeline)
+}
+
+fn validate_and_decode_given(
+    given_executable: Option<Arc<GivenExecutable>>,
+    given_rows: Option<impl GivenRows>,
+    variable_registry: &VariableRegistry,
+) -> Result<Batch, Box<QueryError>> {
+    match (given_executable, given_rows) {
+        (None, Some(_)) => Err(Box::new(QueryError::UnexpectedGivenRowsProvided {})),
+        (Some(_), None) => Err(Box::new(QueryError::NoGivenRowsProvided {})),
+        (None, None) => Ok(Batch::new_single_empty_row()),
+        (Some(executable), Some(rows)) => {
+            let rows_vars: HashSet<&str> = HashSet::from_iter(rows.variables().iter().map(|s| s.as_str()));
+            let mut declared_variable_positions = HashMap::with_capacity(rows_vars.len());
+            for (i, (var_id, opt)) in executable.variables().iter().zip(executable.optionality().iter()).enumerate() {
+                let variable = variable_registry.get_variable_name_or_unnamed(*var_id);
+                if *opt == VariableOptionality::Required && !rows_vars.contains(variable) {
+                    return Err(Box::new(QueryError::GivenRowsMissingRequiredVariable {
+                        variable: variable.to_owned(),
+                    }));
+                }
+                declared_variable_positions.insert(variable, VariablePosition::new(i as u32));
+            }
+            rows.into_batch_mapped(&declared_variable_positions, executable.expected_types()).map_err(|decode_error| {
+                Box::new(QueryError::ErrorDecodingGivenRowEntry { typedb_source: Box::new(decode_error) })
+            })
+        }
+    }
 }

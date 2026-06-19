@@ -41,7 +41,7 @@ use crate::{
                 authentication::{SigninPayload, encode_token},
                 body::{JsonBody, PlainTextBody},
                 database::{DatabasePath, encode_database, encode_databases},
-                query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{GivenRowsHttp, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 server::encode_servers,
                 transaction::{TransactionOpenPayload, TransactionPath, encode_transaction},
                 user::{CreateUserPayload, UpdateUserPayload, UserPath, encode_user, encode_users},
@@ -146,10 +146,14 @@ impl HTTPTypeDBService {
         }
     }
 
-    fn build_query_request(query_options_payload: Option<QueryOptionsPayload>, query: String) -> TransactionRequest {
+    fn build_query_request(
+        query_options_payload: Option<QueryOptionsPayload>,
+        given_rows: Option<GivenRowsHttp>,
+        query: String,
+    ) -> TransactionRequest {
         let query_options =
             query_options_payload.map(|options| options.into()).unwrap_or_else(|| QueryOptions::default_http());
-        TransactionRequest::Query(query_options, query)
+        TransactionRequest::Query(query_options, given_rows, query)
     }
 
     fn try_get_query_response(
@@ -674,7 +678,7 @@ impl HTTPTypeDBService {
                 }
                 Self::transaction_request(
                     &transaction,
-                    Self::build_query_request(payload.query_options, payload.query),
+                    Self::build_query_request(payload.query_options, payload.given_rows.map(Into::into), payload.query),
                     true,
                 )
                 .await
@@ -699,7 +703,7 @@ impl HTTPTypeDBService {
 
                 let transaction_response = Self::transaction_request(
                     &transaction_info,
-                    Self::build_query_request(payload.query_options, payload.query),
+                    Self::build_query_request(payload.query_options, payload.given_rows.map(Into::into), payload.query),
                     true,
                 )
                 .await?;

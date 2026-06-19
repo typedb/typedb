@@ -17,6 +17,7 @@ use crate::{
     pipeline::{
         PipelineExecutionError, WrittenRowsIterator,
         delete::DeleteStageExecutor,
+        given::{GivenStageExecutor, GivenStageIterator},
         initial::InitialIterator,
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
@@ -137,6 +138,7 @@ pub trait StageIterator:
 }
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
+    Given(Box<GivenStageExecutor<ReadStageIterator<Snapshot>>>),
     Match(Box<MatchStageExecutor<ReadStageIterator<Snapshot>>>),
     Select(Box<SelectStageExecutor<ReadStageIterator<Snapshot>>>),
     Sort(Box<SortStageExecutor<ReadStageIterator<Snapshot>>>),
@@ -149,6 +151,7 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
 
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Initial(Box<InitialIterator>),
+    Given(Box<GivenStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Sort(SortStageIterator),
     Distinct(Box<DistinctStageIterator<ReadStageIterator<Snapshot>>>),
@@ -173,6 +176,10 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self {
+            ReadPipelineStage::Given(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
+                Ok((ReadStageIterator::Given(Box::new(iterator)), snapshot))
+            }
             ReadPipelineStage::Match(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Match(Box::new(iterator)), snapshot))
@@ -215,6 +222,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.next(),
+            ReadStageIterator::Given(iterator) => iterator.next(),
             ReadStageIterator::Match(iterator) => iterator.next(),
             ReadStageIterator::Sort(iterator) => iterator.next(),
             ReadStageIterator::Distinct(iterator) => iterator.next(),
@@ -231,6 +239,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<S
     fn collect_owned(self) -> Result<Batch, Box<PipelineExecutionError>> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
+            ReadStageIterator::Given(iterator) => iterator.collect_owned(),
             ReadStageIterator::Match(iterator) => iterator.collect_owned(),
             ReadStageIterator::Sort(iterator) => iterator.collect_owned(),
             ReadStageIterator::Distinct(iterator) => iterator.collect_owned(),
@@ -244,6 +253,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<S
 }
 
 pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
+    Given(Box<GivenStageExecutor<WriteStageIterator<Snapshot>>>),
     Match(Box<MatchStageExecutor<WriteStageIterator<Snapshot>>>),
     Insert(Box<InsertStageExecutor<WriteStageIterator<Snapshot>>>),
     Update(Box<UpdateStageExecutor<WriteStageIterator<Snapshot>>>),
@@ -272,6 +282,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self {
+            WritePipelineStage::Given(stage) => {
+                let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
+                Ok((WriteStageIterator::Given(Box::new(iterator)), context))
+            }
             WritePipelineStage::Match(stage) => {
                 let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Match(Box::new(iterator)), context))
@@ -326,6 +340,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
 
 pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Initial(Box<InitialIterator>),
+    Given(Box<GivenStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Match(Box<MatchStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Write(WrittenRowsIterator),
     Sort(SortStageIterator),
@@ -343,6 +358,7 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
             WriteStageIterator::Initial(iterator) => iterator.next(),
+            WriteStageIterator::Given(iterator) => iterator.next(),
             WriteStageIterator::Match(iterator) => iterator.next(),
             WriteStageIterator::Write(iterator) => iterator.next(),
             WriteStageIterator::Sort(iterator) => iterator.next(),
@@ -360,6 +376,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<
     fn collect_owned(self) -> Result<Batch, Box<PipelineExecutionError>> {
         match self {
             WriteStageIterator::Initial(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Given(iterator) => iterator.collect_owned(),
             WriteStageIterator::Match(iterator) => iterator.collect_owned(),
             WriteStageIterator::Write(iterator) => iterator.collect_owned(),
             WriteStageIterator::Sort(iterator) => iterator.collect_owned(),

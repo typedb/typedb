@@ -315,16 +315,17 @@ impl VariableRegistry {
         self.variable_source_spans.get(&variable).cloned()
     }
 
-    pub(crate) fn register_function_argument(
+    pub(crate) fn register_input_variable(
         &mut self,
         name: &str,
         category: VariableCategory,
+        optionality: VariableOptionality,
         source_span: Option<Span>,
     ) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.register_variable_named(name.to_owned(), source_span)?;
-        self.set_variable_category(variable, category, VariableCategorySource::Argument)
+        self.set_variable_category(variable, category, VariableCategorySource::ArgumentOrGiven)
             .expect("Expected a newly created variable");
-        self.set_variable_is_optional(variable, false);
+        self.set_variable_is_optional(variable, optionality == VariableOptionality::Optional);
         Ok(variable)
     }
 
@@ -366,7 +367,7 @@ impl fmt::Display for VariableRegistry {
 pub enum VariableCategorySource {
     Constraint(Constraint<Variable>),
     Reduce(Reducer),
-    Argument,
+    ArgumentOrGiven,
     Delete,
     Variable(Variable),
 }

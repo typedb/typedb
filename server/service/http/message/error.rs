@@ -93,6 +93,7 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
                 TransactionServiceError::InvalidPrefetchSize { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::CannotOpen { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::DecodingGivenRowsFailed { .. } => StatusCode::BAD_REQUEST,
             },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,

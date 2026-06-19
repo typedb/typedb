@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::str::FromStr;
+use std::{borrow::Cow, str::FromStr};
 
 use answer::{Thing, Type};
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, NaiveDateTime, TimeZone as ChronoTimeZone, Timelike};
@@ -217,6 +217,25 @@ pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
         Value::Struct(_struct) => unimplemented_feature!(Structs),
     };
     typedb_protocol::Value { value: Some(value_message) }
+}
+
+pub(crate) fn decode_value(
+    value_proto: typedb_protocol::value::Value,
+) -> Result<Value<'static>, Box<ConceptDecodeError>> {
+    use typedb_protocol::value::Value as ValueProto;
+    let value = match value_proto {
+        ValueProto::Boolean(boolean) => Value::Boolean(boolean),
+        ValueProto::Integer(integer) => Value::Integer(integer),
+        ValueProto::Double(double) => Value::Double(double),
+        ValueProto::Decimal(decimal) => Value::Decimal(decode_decimal(decimal)?),
+        ValueProto::Date(date) => Value::Date(decode_date(date)?),
+        ValueProto::Datetime(date_time) => Value::DateTime(decode_datetime(date_time)?),
+        ValueProto::DatetimeTz(datetime_tz) => Value::DateTimeTZ(decode_datetime_tz(datetime_tz)?),
+        ValueProto::Duration(duration) => Value::Duration(decode_duration(duration)?),
+        ValueProto::String(string) => Value::String(Cow::Owned(string)),
+        ValueProto::Struct(_struct) => unimplemented_feature!(Structs),
+    };
+    Ok(value)
 }
 
 pub(crate) fn encode_decimal(decimal: Decimal) -> typedb_protocol::value::Decimal {

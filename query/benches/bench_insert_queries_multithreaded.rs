@@ -27,7 +27,7 @@ use encoding::{
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
+use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     MVCCStorage,
@@ -123,7 +123,15 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert, query_str)
+        .prepare_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &function_manager,
+            &typeql_insert,
+            None::<GivenRowsSimple>,
+            query_str,
+        )
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =

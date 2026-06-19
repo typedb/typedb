@@ -21,6 +21,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions};
+use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 
@@ -96,6 +97,7 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
             tx,
             QueryOptions::default_grpc(),
             pipeline,
+            None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );

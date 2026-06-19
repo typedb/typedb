@@ -5,10 +5,8 @@
  */
 
 use answer::variable::Variable;
-use bytes::byte_array::ByteArray;
-use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
+use encoding::value::label::Label;
 use error::UnimplementedFeature;
-use itertools::Itertools;
 use typeql::{
     ScopedLabel, TypeRef, TypeRefAny,
     common::{Span, Spanned},
@@ -33,6 +31,7 @@ use crate::{
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
+        parse_iid,
         tokens::{checked_identifier, translate_value_type},
     },
 };
@@ -431,35 +430,15 @@ fn add_typeql_isa(
     Ok(())
 }
 
-fn parse_iid(mut iid: &str) -> ByteArray<THING_VERTEX_MAX_LENGTH> {
-    fn from_hex(c: u8) -> u8 {
-        // relying on the fact that typeql ensures only hex digits
-        match c {
-            b'0'..=b'9' => c - b'0',
-            b'a'..=b'f' => c - b'a' + 10,
-            b'A'..=b'F' => c - b'A' + 10,
-            _ => unreachable!(),
-        }
-    }
-
-    iid = &iid["0x".len()..];
-
-    let mut bytes = [0u8; THING_VERTEX_MAX_LENGTH];
-    for (i, (hi, lo)) in iid.bytes().tuples().enumerate() {
-        bytes[i] = (from_hex(hi) << 4) + from_hex(lo);
-    }
-    let len = iid.as_bytes().len() / 2;
-    ByteArray::inline(bytes, len)
-}
-
 fn add_typeql_iid(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     thing: Variable,
     iid: &typeql::statement::thing::Iid,
 ) -> Result<(), Box<RepresentationError>> {
-    let iid_parameter = constraints
-        .parameters()
-        .register_iid(parse_iid(&iid.iid), iid.span().expect("Parser did not provide IID text range"));
+    let iid_parameter = constraints.parameters().register_iid(
+        parse_iid(iid.iid.as_str()).expect("Valid IID"),
+        iid.span().expect("Parser did not provide IID text range"),
+    );
     constraints.add_iid(thing, iid_parameter, iid.span())?;
     Ok(())
 }

@@ -119,6 +119,13 @@ typedb_error!(
             variable: String,
             source_span: Option<Span>,
         ),
+        CouldNotResolveGivenRowDeclaredType(
+            18,
+            "An error occurred when trying to resolve the type of the given rows at index: {index}.",
+            index: usize,
+            source_span: Option<Span>,
+            typedb_source: TypeInferenceError
+        ),
     }
 );
 

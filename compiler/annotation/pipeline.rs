@@ -20,7 +20,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{
         ParameterRegistry, VariableRegistry,
@@ -30,7 +30,7 @@ use ir::{
         modifier::{Distinct, Limit, Offset, Require, Select, Sort},
         reduce::{AssignedReduction, Reduce, Reducer},
     },
-    translation::pipeline::TranslatedStage,
+    translation::pipeline::{TranslatedGiven, TranslatedStage},
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
@@ -45,8 +45,9 @@ use crate::{
         },
         fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
-            FunctionParameterAnnotation, annotate_preamble_functions,
+            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
+            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
+            get_annotations_from_labels_vec,
         },
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
@@ -56,8 +57,15 @@ use crate::{
     executable::{reduce::ReduceInstruction, update},
 };
 
+pub struct AnnotatedGiven {
+    pub variables: Vec<Variable>,
+    pub expected_types: Vec<FunctionParameterAnnotation>,
+    pub optionality: Vec<VariableOptionality>,
+}
+
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
+    pub annotated_given: Option<AnnotatedGiven>,
     pub annotated_stages: Vec<AnnotatedStage>,
     pub annotated_fetch: Option<AnnotatedFetch>,
 }
@@ -110,6 +118,7 @@ pub fn annotate_preamble_and_pipeline(
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
+    translated_given: Option<TranslatedGiven>,
     translated_stages: Vec<TranslatedStage>,
     translated_fetch: Option<FetchObject>,
 ) -> Result<AnnotatedPipeline, AnnotationError> {
@@ -125,12 +134,46 @@ pub fn annotate_preamble_and_pipeline(
         variable_registry,
         parameters,
     );
-    let input_annotations = RunningVariableAnnotations::empty();
+    let annotated_given = annotate_given_stage(&mut ctx, translated_given)?;
+    let input_annotations = if let Some(given) = &annotated_given {
+        RunningVariableAnnotations::from_iterator(
+            given.variables.iter().copied().zip(given.expected_types.iter().cloned()),
+        )
+    } else {
+        RunningVariableAnnotations::empty()
+    };
     let (annotated_stages, output_annotations) =
         annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations, None)?;
     let annotated_fetch =
         translated_fetch.map(|fetch| annotate_fetch(&mut ctx, fetch, &output_annotations)).transpose()?;
-    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+    Ok(AnnotatedPipeline { annotated_given, annotated_stages, annotated_fetch, annotated_preamble })
+}
+
+fn annotate_given_stage(
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    translated_given: Option<TranslatedGiven>,
+) -> Result<Option<AnnotatedGiven>, AnnotationError> {
+    let Some(TranslatedGiven { variables, labels, .. }) = translated_given else {
+        return Ok(None);
+    };
+    let expected_types = get_annotations_from_labels_vec(&ctx.to_parts_mut().0, &labels).map_err(
+        |(index, source_span, typedb_source)| AnnotationError::CouldNotResolveGivenRowDeclaredType {
+            index,
+            source_span,
+            typedb_source,
+        },
+    )?;
+    let optionality = variables
+        .iter()
+        .map(|&variable| {
+            if ctx.variable_registry.is_variable_optional(variable) {
+                VariableOptionality::Optional
+            } else {
+                VariableOptionality::Required
+            }
+        })
+        .collect();
+    Ok(Some(AnnotatedGiven { variables, expected_types, optionality }))
 }
 
 pub(crate) fn annotate_pipeline_stages(

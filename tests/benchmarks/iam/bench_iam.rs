@@ -14,6 +14,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
 use options::TransactionOptions;
+use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
 
@@ -90,6 +91,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             thing_manager.clone(),
             &function_manager,
             &data_query,
+            None::<GivenRowsSimple>,
             &data_str,
         )
         .unwrap();
@@ -139,6 +141,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             thing_manager.clone(),
             function_manager,
             &query,
+            None::<GivenRowsSimple>,
             query_str,
         )
         .unwrap();

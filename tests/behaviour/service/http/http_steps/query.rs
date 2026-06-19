@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::str::FromStr;
+use std::{collections::BTreeMap, str::FromStr};
 
 use cucumber::gherkin::Step;
 use futures::future::join_all;
@@ -17,18 +16,23 @@ use server::service::{
         analyze::{
             annotations::bdd::{
                 encode_fetch_annotations_as_functor, encode_function_annotations_as_functor,
-                encode_pipeline_annotations_as_functor,
+                encode_pipeline_annotations_as_functor, encode_pipeline_given_annotations_as_functor,
             },
-            structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
+            structure::bdd::{
+                encode_function_structure_as_functor, encode_pipeline_given_as_functor,
+                encode_pipeline_structure_as_functor,
+            },
         },
-        query::QueryAnswerResponse,
+        query::{GivenEntryPayload, GivenRowsPayload, QueryAnswerResponse},
     },
 };
 
 use crate::{
     Context, HttpBehaviourTestError, generic_step,
     message::{ConceptResponse, query, transactions_analyze, transactions_query},
-    params::{ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, WithCommit},
+    params::{
+        ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, VariableList, WithCommit, WithGiven,
+    },
     util::{iter_table, list_contains_json, parse_json},
 };
 
@@ -151,24 +155,64 @@ fn check_is_value(
     is_or_not.compare(expected_value.into_typedb(actual_value_type_converted), actual_value_converted);
 }
 
+#[cucumber::given(expr = "set answers of typeql read query as given rows with order: {variable_list}")]
+#[cucumber::when(expr = "set answers of typeql read query as given rows with order: {variable_list}")]
+#[cucumber::given(expr = "set answers of typeql read query as given rows dictionary with variables: {variable_list}")]
+#[cucumber::when(expr = "set answers of typeql read query as given rows dictionary with variables: {variable_list}")]
+async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &Step) {
+    let result = (transactions_query(
+        context.http_client(),
+        context.auth_token(),
+        context.transaction(),
+        &context.query_options,
+        None,
+        step.docstring().unwrap(),
+    )
+    .await);
+    let rows = result.unwrap().answers.unwrap();
+    let mut given_rows = Vec::with_capacity(rows.len());
+    for row in rows {
+        let data = row.get("data").expect("Expected to have 'data' key");
+        let given_row = var_list
+            .0
+            .iter()
+            .filter_map(|var| {
+                data.get(var).and_then(|value| {
+                    if value == &serde_json::Value::Null {
+                        None
+                    } else {
+                        Some((var.clone(), Some(serde_json::from_value(value.clone()).unwrap())))
+                    }
+                })
+            })
+            .collect::<BTreeMap<String, Option<GivenEntryPayload>>>();
+        given_rows.push(given_row);
+    }
+
+    context.given_rows = Some(GivenRowsPayload(given_rows))
+}
+
 #[apply(generic_step)]
-#[step(expr = "{token_mode}typeql schema query{typeql_may_error}")]
-#[step(expr = "{token_mode}typeql write query{typeql_may_error}")]
-#[step(expr = "{token_mode}typeql read query{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql schema query{with_given}{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql write query{with_given}{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql read query{with_given}{typeql_may_error}")]
 pub async fn typeql_query(
     context: &mut Context,
     token_mode: TokenMode,
+    with_given: WithGiven,
     may_error: params::TypeQLMayError,
     step: &Step,
 ) {
     context.randomize_auth_token_if_needed(token_mode);
     context.cleanup_answers().await;
+    let given_rows = if with_given == WithGiven::True { context.given_rows.take() } else { None };
     may_error.check(
         transactions_query(
             context.http_client(),
             context.auth_token_by_mode(token_mode),
             context.transaction(),
             &context.query_options,
+            given_rows,
             step.docstring().unwrap(),
         )
         .await,
@@ -212,11 +256,12 @@ pub async fn one_shot_query_typeql_query(
 }
 
 #[apply(generic_step)]
-#[step("get answers of typeql schema query")]
-#[step(expr = "get answers of typeql write query")]
-#[step(expr = "get answers of typeql read query")]
-pub async fn get_answers_of_typeql_query(context: &mut Context, step: &Step) {
+#[step(expr = "get answers of typeql schema query{with_given}")]
+#[step(expr = "get answers of typeql write query{with_given}")]
+#[step(expr = "get answers of typeql read query{with_given}")]
+pub async fn get_answers_of_typeql_query(context: &mut Context, with_given: WithGiven, step: &Step) {
     context.cleanup_answers().await;
+    let given_rows = if with_given == WithGiven::True { context.given_rows.take() } else { None };
     context
         .set_answer(
             transactions_query(
@@ -224,6 +269,7 @@ pub async fn get_answers_of_typeql_query(context: &mut Context, step: &Step) {
                 context.auth_token(),
                 context.transaction(),
                 &context.query_options,
+                given_rows,
                 step.docstring().unwrap(),
             )
             .await,
@@ -280,6 +326,7 @@ pub async fn concurrently_get_answers_of_typeql_query_times(context: &mut Contex
             context.auth_token(),
             context.transaction(),
             &context.query_options,
+            None,
             query,
         )
     }))
@@ -454,7 +501,7 @@ pub async fn answer_get_row_get_variable_is_empty(
     if matches!(is_by_var_index, IsByVarIndex::Is) {
         return; // http does not have indices
     }
-    is_or_not.compare(get_answer_rows_var(context, index, var), None);
+    is_or_not.compare(get_answer_rows_var(context, index, var), Some(&serde_json::Value::Null));
 }
 
 #[apply(generic_step)]
@@ -1086,6 +1133,15 @@ async fn typeql_analyze_may_error(context: &mut Context, may_error: params::Type
     may_error.check_logic(result);
 }
 
+#[cucumber::then("analyzed query given structure is:")]
+async fn analyzed_query_given_is(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let actual_functor = encode_pipeline_given_as_functor(&analyzed.query, &analyzed.given.as_ref().unwrap());
+
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(&expected_functor));
+}
+
 #[cucumber::then("analyzed query pipeline structure is:")]
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
@@ -1112,6 +1168,16 @@ async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
         expected_functor,
         preamble_functors.iter().join("\n\t")
     );
+}
+
+#[cucumber::then("analyzed query given annotations are:")]
+async fn analyzed_query_given_annotations_is(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let actual_functor =
+        encode_pipeline_given_annotations_as_functor(&analyzed.query, analyzed.given.as_ref().unwrap());
+
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
 #[cucumber::then("analyzed query pipeline annotations are:")]

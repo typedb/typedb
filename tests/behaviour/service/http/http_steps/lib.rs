@@ -52,7 +52,9 @@ macro_rules! in_background {
 }
 pub(crate) use in_background;
 use server::service::http::message::{
-    analyze::AnalysedQueryResponse, query::QueryOptionsPayload, transaction::TransactionOptionsPayload,
+    analyze::AnalysedQueryResponse,
+    query::{GivenRowsPayload, QueryOptionsPayload},
+    transaction::TransactionOptionsPayload,
 };
 
 use crate::{params::TokenMode, util::random_uuid};
@@ -136,6 +138,7 @@ pub struct Context {
     pub http_context: HttpContext,
     pub transaction_ids: VecDeque<String>,
     pub background_transaction_ids: VecDeque<String>,
+    pub given_rows: Option<GivenRowsPayload>,
     pub answer: Option<QueryAnswerResponse>,
     pub analyzed: Option<AnalysedQueryResponse>,
     pub concurrent_answers: Vec<QueryAnswerResponse>,
@@ -439,6 +442,7 @@ impl Default for Context {
             transaction_ids: VecDeque::new(),
             background_transaction_ids: VecDeque::new(),
             analyzed: None,
+            given_rows: None,
             answer: None,
             concurrent_answers: Vec::new(),
             concurrent_answers_last_consumed_index: 0,

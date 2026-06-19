@@ -5,7 +5,12 @@
  */
 use std::{sync::Arc, time::Duration};
 
-use database::transaction::{CommitIntent, TransactionError, TransactionSchema, TransactionWrite};
+use concept::error::ConceptDecodeError;
+use database::transaction::{
+    CommitIntent, DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema,
+    TransactionWrite,
+};
+use diagnostics::metrics::LoadKind;
 use error::typedb_error;
 use executor::{InterruptType, pipeline::PipelineExecutionError};
 use query::error::QueryError;
@@ -28,7 +33,7 @@ pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {
         match stage {
             Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => return true,
-            Stage::Fetch(_) | Stage::Operator(_) | Stage::Match(_) => {}
+            Stage::Given(_) | Stage::Fetch(_) | Stage::Operator(_) | Stage::Match(_) => {}
         }
     }
     false
@@ -122,6 +127,7 @@ typedb_error! {
         AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
         AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
         CannotOpen(21, "Could not open transaction.", typedb_source: ArcServerStateError),
+        DecodingGivenRowsFailed(22, "Decoding the input failed", typedb_source: ConceptDecodeError),
     }
 }
 
@@ -145,7 +151,8 @@ impl TransactionServiceError {
             | TransactionServiceError::TransactionTimeout { .. }
             | TransactionServiceError::InvalidPrefetchSize { .. }
             | TransactionServiceError::AnalyseQueryExpectsPipeline { .. }
-            | TransactionServiceError::AnalyseQueryFailed { .. } => None,
+            | TransactionServiceError::AnalyseQueryFailed { .. }
+            | TransactionServiceError::DecodingGivenRowsFailed { .. } => None,
 
             TransactionServiceError::DataCommitFailed { typedb_source }
             | TransactionServiceError::SchemaCommitFailed { typedb_source }

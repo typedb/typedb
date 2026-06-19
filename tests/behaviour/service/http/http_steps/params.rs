@@ -318,3 +318,32 @@ impl fmt::Display for TokenMode {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Parameter)]
+#[param(name = "variable_list", regex = r"(\$[a-zA-Z0-9\-_]+(, \$[a-zA-Z0-9\-_]+)*)")]
+pub struct VariableList(pub Vec<String>);
+
+impl FromStr for VariableList {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.split(",").map(|s| s.replace("$", "").replace(" ", "")).collect()))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Parameter)]
+#[param(name = "with_given", regex = "(| with given rows)")]
+pub enum WithGiven {
+    False,
+    True,
+}
+
+impl FromStr for WithGiven {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            " with given rows" => Self::True,
+            "" => Self::False,
+            invalid => return Err(format!("Invalid `WithGiven`: {invalid}")),
+        })
+    }
+}

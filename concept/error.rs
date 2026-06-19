@@ -6,6 +6,7 @@
 
 use std::{fmt, sync::Arc};
 
+use bytes::util::HexBytesFormatter;
 use encoding::{
     error::EncodingError,
     value::{label::Label, value_type::ValueType},
@@ -99,5 +100,8 @@ typedb_error! {
         MissingDatetimeTzTimezone(6, "Invalid format of 'datetime_tz': missing the 'timezone' part."),
         InvalidDatetimeTzName(7, "Invalid format of 'datetime_tz': timezone provided has name '{name}', which is not an officially recognized timezone.", name: String),
         InvalidDatetimeTzOffset(8, "Invalid format of 'datetime_tz': timezone provided has numerical offset '{offset_seconds}', which is not recognised as a valid value for offset in seconds.", offset_seconds: i32),
+        CouldNotDecodeIIDAsEntity(9, "The iid '{iid}' could not be decoded to an entity", iid: HexBytesFormatter<'static>),
+        CouldNotDecodeIIDAsRelation(10, "The iid '{iid}' could not be decoded to a relation", iid: HexBytesFormatter<'static>),
+        CouldNotDecodeIIDAsAttribute(11, "The iid '{iid}' could not be decoded to an attribute", iid: HexBytesFormatter<'static>),
     }
 }

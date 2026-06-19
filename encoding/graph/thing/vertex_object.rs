@@ -74,6 +74,14 @@ impl ObjectVertex {
         Self::LENGTH
     }
 
+    pub fn is_entity(&self) -> bool {
+        self.prefix == Prefix::VertexEntity
+    }
+
+    pub fn is_relation(&self) -> bool {
+        self.prefix == Prefix::VertexRelation
+    }
+
     const fn range_object_id() -> Range<usize> {
         Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ObjectID::LENGTH
     }
