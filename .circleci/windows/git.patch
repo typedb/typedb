@@ -2,10 +2,10 @@ diff --git a/BUILD b/BUILD
 index bb3d50325e..814c752450 100644
 --- a/BUILD
 +++ b/BUILD
-@@ -72,13 +72,23 @@ alias(
+@@ -80,13 +80,23 @@ alias(
      })
  )
- 
+
 -# The directory structure for distribution (Unix)
 +filegroup(
 +    name = "typedb_server_bin_release",
@@ -30,12 +30,21 @@ index bb3d50325e..814c752450 100644
          "//server:config.yml" : "server/config.yml",
      },
      attributes = binary_permissions,
-@@ -141,7 +151,7 @@ pkg_zip(
+@@ -154,7 +164,7 @@ pkg_zip(
  select_file(
      name = "console-binary-only",
      srcs = ":typedb_console_artifact_extracted",
 -    subpath = "console/typedb_console_bin",
 +    subpath = "console/typedb_console_bin.exe",
  )
- 
+
+ pkg_files(
+@@ -168,7 +178,7 @@ pkg_files(
+ select_file(
+     name = "loader-binary-only",
+     srcs = ":typedb_loader_artifact_extracted",
+-    subpath = "loader/typedb_loader_bin",
++    subpath = "loader/typedb_loader_bin.exe",
+ )
+
  pkg_files(
