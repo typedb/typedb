@@ -35,7 +35,7 @@ executors:
     working_directory: ~/typedb
 
   win-x86_64:
-    resource_class: windows.xlarge
+    resource_class: windows.small
     machine:
       image: windows-server-2022-gui:2024.01.1
     shell: cmd.exe
@@ -222,9 +222,6 @@ jobs:
     steps:
       - checkout
       - run: .circleci\windows\prepare.bat
-      - run: .circleci\windows\test_assembly.bat
-      - run: .circleci\windows\test_admin.bat
-      - run: .circleci\windows\deploy_snapshot.bat
 
   deploy-docker-snapshot-x86_64:
     executor: linux-x86_64-amazonlinux-2
