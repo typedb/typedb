@@ -35,7 +35,7 @@ executors:
     working_directory: ~/typedb
 
   win-x86_64:
-    resource_class: windows.small
+    resource_class: windows.medium
     machine:
       image: windows-server-2022-gui:2024.01.1
     shell: cmd.exe
