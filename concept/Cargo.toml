@@ -53,6 +53,9 @@ features = {}
 	[dependencies.durability]
 		workspace = true
 
+	[dependencies.macro_rules_attribute]
+		workspace = true
+
 	[dependencies.paste]
 		workspace = true
 

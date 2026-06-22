@@ -26,6 +26,7 @@ rust_library(
         "//compiler",
         "//concept",
         "//encoding",
+        "//function",
         "//ir",
         "//resource",
         "//storage",

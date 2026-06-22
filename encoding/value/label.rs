@@ -115,7 +115,8 @@ impl Label {
 impl TypeVertexPropertyEncoding for Label {
     const INFIX: Infix = Infix::PropertyLabel;
 
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         let string_bytes = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(value));
         Label::parse_from_bytes(string_bytes)
     }

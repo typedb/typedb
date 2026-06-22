@@ -73,7 +73,7 @@ macro_rules! with_write_tx_deconstructed {
         $database:ident,
         $transaction_options:ident $(,)?
      | $expr:expr) => {
-        match $context.take_transaction().unwrap() {
+        match $context.take_transaction() {
             $crate::transaction_context::ActiveTransaction::Read(_) => {
                 panic!("Using Read transaction as Write. You probably wanted to expect an error before")
             }

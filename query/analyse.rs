@@ -310,83 +310,104 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
     last_stage_annotations: &LastStageAnnotations<'_>,
     entries: &HashMap<ParameterID, AnnotatedFetchSome>,
 ) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
-    entries.iter().map(|(parameter_id, fetch_object)| {
-        let key = parameters.fetch_key(parameter_id).expect("Expected fetch key to be present").to_owned();
-        let fetch_object_annotations_maybe_list = match fetch_object {
-            AnnotatedFetchSome::SingleVar(var) => {
-                let as_vertex = Vertex::Variable(*var);
-                let latest_annotations = last_stage_annotations.get(&as_vertex)
-                    .expect("Expected either type annotations or value annotations to be present");
-                match latest_annotations {
-                    Either::Left(annotations) => {
-                        let attribute_types = annotations.iter().filter(|&attribute_type| attribute_type.is_attribute_type()).map(|attribute_type| attribute_type.as_attribute_type());
-                        let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
-                        FetchStructureAnnotations::Leaf(leaf_annotations)
-                    }
-                    Either::Right(value_type) => {
-                        FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
-                    }
-                }
-            }
-            AnnotatedFetchSome::ListAttributesAsList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::ListAttributesFromList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::SingleAttribute(_var, attribute_type) => {
-                // TODO: Refine based on owner?
-                let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
-                let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
-                FetchStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
-            }
-            AnnotatedFetchSome::Object(inner) => {
-                FetchStructureAnnotations::Object(build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, inner)?)
-            }
-            AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
-                let last_stage_annotations = LastStageAnnotations(sub_fetch.stages.as_slice());
-                let fetch = build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, &last_stage_annotations, &sub_fetch.fetch.object)?;
-                FetchStructureAnnotations::Object(fetch)
-            }
-            AnnotatedFetchSome::ListFunction(function)
-            | AnnotatedFetchSome::SingleFunction(function) => {
-                debug_assert!(function.annotated_signature.returns.len() == 1);
-                match &function.annotated_signature.returns[0] {
-                    FunctionParameterAnnotation::AnyConcept => {
-                        FetchStructureAnnotations::Leaf(
-                            build_leaf_annotations(
-                                snapshot,
-                                type_manager,
-                                type_manager.get_attribute_types(snapshot)?.into_iter()
-                            )?
-                        )
-                    }
-                    FunctionParameterAnnotation::Concept(types) => {
-                        debug_assert!(types.iter().all(|type_| type_.is_attribute_type()));
-                        FetchStructureAnnotations::Leaf(
-                            build_leaf_annotations(
-                                snapshot,
-                                type_manager,
-                                types.iter().copied().filter(|type_| type_.is_attribute_type()).map(|type_| type_.as_attribute_type())
-                            )?
-                        )
-                    }
-                    FunctionParameterAnnotation::Value(value_type) => {
-                        FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.clone()]))
+    entries
+        .iter()
+        .map(|(parameter_id, fetch_object)| {
+            let key = parameters.fetch_key(parameter_id).expect("Expected fetch key to be present").to_owned();
+            let fetch_object_annotations_maybe_list = match fetch_object {
+                AnnotatedFetchSome::SingleVar(var) => {
+                    let as_vertex = Vertex::Variable(*var);
+                    let latest_annotations = last_stage_annotations
+                        .get(&as_vertex)
+                        .expect("Expected either type annotations or value annotations to be present");
+                    match latest_annotations {
+                        Either::Left(annotations) => {
+                            let attribute_types = annotations
+                                .iter()
+                                .filter(|&attribute_type| attribute_type.is_attribute_type())
+                                .map(|attribute_type| attribute_type.as_attribute_type());
+                            let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
+                            FetchStructureAnnotations::Leaf(leaf_annotations)
+                        }
+                        Either::Right(value_type) => {
+                            FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
+                        }
                     }
                 }
-            }
-        };
-        let fetch_object_annotations = match fetch_object {
-            AnnotatedFetchSome::SingleVar(_)
-            | AnnotatedFetchSome::SingleAttribute(_, _)
-            | AnnotatedFetchSome::SingleFunction(_)
-            | AnnotatedFetchSome::Object(_) => fetch_object_annotations_maybe_list,
-            AnnotatedFetchSome::ListFunction(_)
-            | AnnotatedFetchSome::ListSubFetch(_)
-            | AnnotatedFetchSome::ListAttributesAsList(_, _)
-            | AnnotatedFetchSome::ListAttributesFromList(_, _) => {
-                FetchStructureAnnotations::List(Box::new(fetch_object_annotations_maybe_list))
-            }
-        };
-        Ok((key, fetch_object_annotations))
-    }).collect::<Result<HashMap<_, _>, _>>()
+                AnnotatedFetchSome::ListAttributesAsList(_var, attribute_type)
+                | AnnotatedFetchSome::ListAttributesFromList(_var, attribute_type)
+                | AnnotatedFetchSome::SingleAttribute(_var, attribute_type) => {
+                    // TODO: Verify lists can use the same code as SingleAttribute
+                    // TODO: Refine based on owner?
+                    let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
+                    let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
+                    FetchStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
+                }
+                AnnotatedFetchSome::Label(_ty) => FetchStructureAnnotations::Leaf(BTreeSet::default()),
+                AnnotatedFetchSome::Object(inner) => FetchStructureAnnotations::Object(build_fetch_annotations(
+                    snapshot,
+                    type_manager,
+                    parameters.clone(),
+                    source_query,
+                    last_stage_annotations,
+                    inner,
+                )?),
+                AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
+                    let last_stage_annotations = LastStageAnnotations(sub_fetch.stages.as_slice());
+                    let fetch = build_fetch_annotations(
+                        snapshot,
+                        type_manager,
+                        parameters.clone(),
+                        source_query,
+                        &last_stage_annotations,
+                        &sub_fetch.fetch.object,
+                    )?;
+                    FetchStructureAnnotations::Object(fetch)
+                }
+                AnnotatedFetchSome::ListFunction(function) | AnnotatedFetchSome::SingleFunction(function) => {
+                    debug_assert!(function.annotated_signature.returns.len() == 1);
+                    match &function.annotated_signature.returns[0] {
+                        FunctionParameterAnnotation::AnyConcept => {
+                            FetchStructureAnnotations::Leaf(build_leaf_annotations(
+                                snapshot,
+                                type_manager,
+                                type_manager.get_attribute_types(snapshot)?.into_iter(),
+                            )?)
+                        }
+                        FunctionParameterAnnotation::Concept(types) => {
+                            debug_assert!(types.iter().all(|type_| type_.is_attribute_type()));
+                            FetchStructureAnnotations::Leaf(build_leaf_annotations(
+                                snapshot,
+                                type_manager,
+                                types
+                                    .iter()
+                                    .copied()
+                                    .filter(|type_| type_.is_attribute_type())
+                                    .map(|type_| type_.as_attribute_type()),
+                            )?)
+                        }
+                        FunctionParameterAnnotation::Value(value_type) => {
+                            FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.clone()]))
+                        }
+                    }
+                }
+            };
+            let fetch_object_annotations = match fetch_object {
+                AnnotatedFetchSome::SingleVar(_)
+                | AnnotatedFetchSome::SingleAttribute(_, _)
+                | AnnotatedFetchSome::SingleFunction(_)
+                | AnnotatedFetchSome::Label(_)
+                | AnnotatedFetchSome::Object(_) => fetch_object_annotations_maybe_list,
+                AnnotatedFetchSome::ListFunction(_)
+                | AnnotatedFetchSome::ListSubFetch(_)
+                | AnnotatedFetchSome::ListAttributesAsList(_, _)
+                | AnnotatedFetchSome::ListAttributesFromList(_, _) => {
+                    FetchStructureAnnotations::List(Box::new(fetch_object_annotations_maybe_list))
+                }
+            };
+            Ok((key, fetch_object_annotations))
+        })
+        .collect::<Result<HashMap<_, _>, _>>()
 }
 
 fn build_leaf_annotations(

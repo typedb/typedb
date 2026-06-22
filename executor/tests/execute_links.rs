@@ -341,7 +341,7 @@ fn traverse_links_unbounded_sorted_from() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -435,7 +435,7 @@ fn traverse_links_unbounded_sorted_to() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -546,7 +546,7 @@ fn traverse_links_bounded_relation() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -674,7 +674,7 @@ fn traverse_links_bounded_relation_player() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -768,7 +768,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -863,7 +863,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -974,7 +974,7 @@ fn traverse_links_reverse_bounded_player() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -1102,7 +1102,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator

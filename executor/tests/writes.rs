@@ -267,6 +267,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         ExecutionContext {
             snapshot,
             thing_manager,
+            function_manager: Arc::default(),
             parameters: Arc::new(value_parameters),
             profile: Arc::new(QueryProfile::new(false)),
         },
@@ -356,6 +357,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         ExecutionContext {
             snapshot,
             thing_manager,
+            function_manager: Arc::default(),
             parameters: Arc::new(value_parameters),
             profile: Arc::new(QueryProfile::new(false)),
         },

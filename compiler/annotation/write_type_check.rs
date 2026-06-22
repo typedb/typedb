@@ -254,9 +254,9 @@ fn may_intersect_all<T: ContainsAndIterOnType>(
     if let Some(first) = constraint_annotations.next() {
         let mut combinations = first
             .iter()
-            .flat_map(|(left, right_set)| right_set._iter().map(|right| (left.clone(), right.clone())))
+            .flat_map(|(&left, right_set)| right_set._iter().map(move |&right| (left, right)))
             .collect::<BTreeSet<_>>();
-        while let Some(annotations) = constraint_annotations.next() {
+        for annotations in constraint_annotations {
             combinations.retain(|(left, right)| {
                 annotations.get(left).map(|right_set| right_set._contains(right)).unwrap_or(false)
             });

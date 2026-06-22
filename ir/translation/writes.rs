@@ -308,6 +308,8 @@ fn validate_update_expression_variables_availability(
             validate_update_expression_variables_availability(context, &list_index_range.from)?;
             validate_update_expression_variables_availability(context, &list_index_range.to)
         }
+        Expression::ScopedLabel(_) => Ok(()),
+        Expression::Label(_) => Ok(()),
     }
 }
 

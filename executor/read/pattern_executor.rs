@@ -354,6 +354,7 @@ impl PatternExecutor {
                 let context_with_function_parameters = ExecutionContext::new_with_profile(
                     context.snapshot.clone(),
                     context.thing_manager.clone(),
+                    context.function_manager.clone(),
                     parameters.clone(),
                     context.profile.clone(),
                 );

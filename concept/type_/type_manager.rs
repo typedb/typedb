@@ -38,8 +38,8 @@ use crate::{
         Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
-            AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex,
-            AnnotationUnique, AnnotationValues,
+            AnnotationDistinct, AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange,
+            AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
@@ -55,6 +55,7 @@ use crate::{
         relates::{Relates, RelatesAnnotation},
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
+        sub::{Sub, SubAnnotation},
         type_manager::type_reader::TypeReader,
     },
 };
@@ -220,10 +221,10 @@ macro_rules! get_type_label_arc_methods {
 
 macro_rules! get_annotations_declared_methods {
     ($(
-        fn $method_name:ident($type_:ident) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
+        fn $method_name:ident($type_:ty) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
+            pub fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
@@ -239,16 +240,15 @@ macro_rules! get_annotations_declared_methods {
 
 macro_rules! get_annotation_declared_by_category_methods {
     ($(
-        $(#[$meta:meta])* fn $method_name:ident($type_:ident) -> $annotation_type:ty;
+        $(#[$meta:meta])* fn $method_name:ident($type_:ty) -> $annotation_type:ty;
     )*) => {
         $(
             $(#[$meta])*
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_, annotation_category: AnnotationCategory,
+            pub fn $method_name(
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_, annotation_category: &AnnotationCategory,
             ) -> Result<Option<$annotation_type>, Box<ConceptReadError>> {
-                Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation|
-                {
-                    Annotation::from(type_annotation.clone()).category() == annotation_category
+                Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation| {
+                    type_annotation.has_category(annotation_category)
                 }).cloned())
             }
         )*
@@ -303,16 +303,18 @@ macro_rules! get_type_capability_constraints_methods {
 macro_rules! storage_save_annotation {
     ($snapshot:ident, $type_:ident, $annotation:ident, $save_func:path) => {
         match $annotation {
-            Annotation::Abstract(_) => $save_func($snapshot, $type_, None::<AnnotationAbstract>),
-            Annotation::Distinct(_) => $save_func($snapshot, $type_, None::<AnnotationDistinct>),
-            Annotation::Independent(_) => $save_func($snapshot, $type_, None::<AnnotationIndependent>),
-            Annotation::Unique(_) => $save_func($snapshot, $type_, None::<AnnotationUnique>),
-            Annotation::Key(_) => $save_func($snapshot, $type_, None::<AnnotationKey>),
-            Annotation::Cascade(_) => $save_func($snapshot, $type_, None::<AnnotationCascade>),
-            Annotation::Cardinality(card) => $save_func($snapshot, $type_, Some(card)),
-            Annotation::Regex(regex) => $save_func($snapshot, $type_, Some(regex)),
-            Annotation::Range(range) => $save_func($snapshot, $type_, Some(range)),
-            Annotation::Values(values) => $save_func($snapshot, $type_, Some(values)),
+            Annotation::Abstract(_) => $save_func($snapshot, $type_, AnnotationAbstract),
+            Annotation::Distinct(_) => $save_func($snapshot, $type_, AnnotationDistinct),
+            Annotation::Independent(_) => $save_func($snapshot, $type_, AnnotationIndependent),
+            Annotation::Unique(_) => $save_func($snapshot, $type_, AnnotationUnique),
+            Annotation::Key(_) => $save_func($snapshot, $type_, AnnotationKey),
+            Annotation::Cascade(_) => $save_func($snapshot, $type_, AnnotationCascade),
+            Annotation::Cardinality(card) => $save_func($snapshot, $type_, card),
+            Annotation::Regex(regex) => $save_func($snapshot, $type_, regex),
+            Annotation::Range(range) => $save_func($snapshot, $type_, range),
+            Annotation::Values(values) => $save_func($snapshot, $type_, values),
+            Annotation::Doc(doc) => $save_func($snapshot, $type_, doc),
+            Annotation::Meta(meta) => $save_func($snapshot, $type_, meta),
         }
     };
 }
@@ -320,23 +322,28 @@ macro_rules! storage_save_annotation {
 macro_rules! storage_delete_annotation {
     ($snapshot:ident, $type_:ident, $annotation_category:ident, $get_func:path, $delete_func:ident) => {
         let annotations = $get_func($snapshot, $type_.clone())?;
-        let annotation_exists = annotations
-            .into_iter()
-            .find(|annotation| annotation.clone().into().category() == $annotation_category)
-            .is_some();
+        let annotation_exists = annotations.iter().any(|annotation| annotation.has_category(&$annotation_category));
 
         if annotation_exists {
             match $annotation_category {
-                AnnotationCategory::Abstract => TypeWriter::$delete_func::<AnnotationAbstract>($snapshot, $type_),
-                AnnotationCategory::Distinct => TypeWriter::$delete_func::<AnnotationDistinct>($snapshot, $type_),
-                AnnotationCategory::Independent => TypeWriter::$delete_func::<AnnotationIndependent>($snapshot, $type_),
-                AnnotationCategory::Unique => TypeWriter::$delete_func::<AnnotationUnique>($snapshot, $type_),
-                AnnotationCategory::Key => TypeWriter::$delete_func::<AnnotationKey>($snapshot, $type_),
-                AnnotationCategory::Cardinality => TypeWriter::$delete_func::<AnnotationCardinality>($snapshot, $type_),
-                AnnotationCategory::Regex => TypeWriter::$delete_func::<AnnotationRegex>($snapshot, $type_),
-                AnnotationCategory::Cascade => TypeWriter::$delete_func::<AnnotationCascade>($snapshot, $type_),
-                AnnotationCategory::Range => TypeWriter::$delete_func::<AnnotationRange>($snapshot, $type_),
-                AnnotationCategory::Values => TypeWriter::$delete_func::<AnnotationValues>($snapshot, $type_),
+                AnnotationCategory::Abstract => TypeWriter::$delete_func::<AnnotationAbstract>($snapshot, $type_, &[]),
+                AnnotationCategory::Distinct => TypeWriter::$delete_func::<AnnotationDistinct>($snapshot, $type_, &[]),
+                AnnotationCategory::Independent => {
+                    TypeWriter::$delete_func::<AnnotationIndependent>($snapshot, $type_, &[])
+                }
+                AnnotationCategory::Unique => TypeWriter::$delete_func::<AnnotationUnique>($snapshot, $type_, &[]),
+                AnnotationCategory::Key => TypeWriter::$delete_func::<AnnotationKey>($snapshot, $type_, &[]),
+                AnnotationCategory::Cardinality => {
+                    TypeWriter::$delete_func::<AnnotationCardinality>($snapshot, $type_, &[])
+                }
+                AnnotationCategory::Regex => TypeWriter::$delete_func::<AnnotationRegex>($snapshot, $type_, &[]),
+                AnnotationCategory::Cascade => TypeWriter::$delete_func::<AnnotationCascade>($snapshot, $type_, &[]),
+                AnnotationCategory::Range => TypeWriter::$delete_func::<AnnotationRange>($snapshot, $type_, &[]),
+                AnnotationCategory::Values => TypeWriter::$delete_func::<AnnotationValues>($snapshot, $type_, &[]),
+                AnnotationCategory::Doc => TypeWriter::$delete_func::<AnnotationDoc>($snapshot, $type_, &[]),
+                AnnotationCategory::Meta(key) => {
+                    TypeWriter::$delete_func::<AnnotationMeta>($snapshot, $type_, key.as_bytes())
+                }
             }
         }
     };
@@ -924,6 +931,14 @@ impl TypeManager {
         fn get_relation_type_annotations_declared(RelationType) -> RelationTypeAnnotation = get_type_annotations_declared | get_annotations_declared;
         fn get_role_type_annotations_declared(RoleType) -> RoleTypeAnnotation = get_type_annotations_declared | get_annotations_declared;
         fn get_attribute_type_annotations_declared(AttributeType) -> AttributeTypeAnnotation = get_type_annotations_declared | get_annotations_declared;
+        fn get_sub_entity_type_annotations_declared(Sub<EntityType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_entity_type_annotations_declared;
+        fn get_sub_relation_type_annotations_declared(Sub<RelationType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_relation_type_annotations_declared;
+        fn get_sub_attribute_type_annotations_declared(Sub<AttributeType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_attribute_type_annotations_declared;
+        fn get_sub_role_type_annotations_declared(Sub<RoleType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_role_type_annotations_declared;
         fn get_owns_annotations_declared(Owns) -> OwnsAnnotation = get_capability_annotations_declared | get_owns_annotations_declared;
         fn get_plays_annotations_declared(Plays) -> PlaysAnnotation = get_capability_annotations_declared | get_plays_annotations_declared;
         fn get_relates_annotations_declared(Relates) -> RelatesAnnotation = get_capability_annotations_declared | get_relates_annotations_declared;
@@ -933,8 +948,10 @@ impl TypeManager {
         fn get_entity_type_annotation_declared_by_category(EntityType) -> EntityTypeAnnotation;
         fn get_relation_type_annotation_declared_by_category(RelationType) -> RelationTypeAnnotation;
         fn get_attribute_type_annotation_declared_by_category(AttributeType) -> AttributeTypeAnnotation;
-        #[expect(unreachable_code, reason = "RoleTypeAnnotation is uninhabited")]
         fn get_role_type_annotation_declared_by_category(RoleType) -> RoleTypeAnnotation;
+        fn get_sub_entity_type_annotations_declared_by_category(Sub<EntityType>) -> SubAnnotation;
+        fn get_sub_relation_type_annotations_declared_by_category(Sub<RelationType>) -> SubAnnotation;
+        fn get_sub_attribute_type_annotations_declared_by_category(Sub<AttributeType>) -> SubAnnotation;
         fn get_owns_annotation_declared_by_category(Owns) -> OwnsAnnotation;
         fn get_plays_annotation_declared_by_category(Plays) -> PlaysAnnotation;
         fn get_relates_annotation_declared_by_category(Relates) -> RelatesAnnotation;
@@ -951,11 +968,16 @@ impl TypeManager {
     }
 
     get_type_capability_constraints_methods! {
-        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
-        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
-        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
-        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
-        fn get_relation_type_related_role_type_constraints(RelationType => |type_| { type_ }) -> Relates = get_type_capability_constraints | get_relation_type_related_role_type_constraints;
+        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Owns =
+            get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Owns =
+            get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Plays =
+            get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Plays =
+            get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_related_role_type_constraints(RelationType => |type_| { type_ }) -> Relates =
+            get_type_capability_constraints | get_relation_type_related_role_type_constraints;
     }
 
     get_filtered_constraints_methods! {
@@ -1306,12 +1328,12 @@ impl TypeManager {
         let role_type = RoleType::new(type_vertex);
 
         TypeWriter::storage_put_label(snapshot, role_type, label);
-        TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
+        TypeWriter::storage_put_type_vertex_property(snapshot, role_type, ordering);
 
         if let Err(relates_err) =
             self.set_relates(snapshot, thing_manager, relation_type, role_type, false, storage_counters)
         {
-            TypeWriter::storage_unput_type_vertex_property(snapshot, role_type, Some(ordering));
+            TypeWriter::storage_unput_type_vertex_property(snapshot, role_type, ordering);
             TypeWriter::storage_unput_label(snapshot, role_type, label);
             TypeWriter::storage_unput_vertex(snapshot, role_type);
             Err(relates_err)
@@ -1477,7 +1499,7 @@ impl TypeManager {
         }
 
         self.unset_relates_unchecked(snapshot, relates)?;
-        TypeWriter::storage_delete_type_vertex_property::<Ordering>(snapshot, relates.role());
+        TypeWriter::storage_delete_type_vertex_property::<Ordering>(snapshot, relates.role(), &[]);
         self.delete_type(snapshot, relates.role())?;
 
         if let Some(old_supertype) = old_supertype {
@@ -1510,7 +1532,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
-        TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns);
+        TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns, &[]);
         self.unset_capability(snapshot, owns)
     }
 
@@ -1536,7 +1558,7 @@ impl TypeManager {
         capability: impl Capability,
     ) -> Result<(), Box<ConceptWriteError>> {
         for annotation in TypeReader::get_capability_annotations_declared(snapshot, capability)? {
-            self.unset_capability_annotation(snapshot, capability, annotation.clone().into().category())?;
+            self.unset_capability_annotation(snapshot, capability, annotation.category())?;
         }
         TypeWriter::storage_delete_edge(snapshot, capability);
         Ok(())
@@ -2089,7 +2111,7 @@ impl TypeManager {
         }
 
         TypeWriter::storage_put_edge(snapshot, owns);
-        TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
+        TypeWriter::storage_put_type_edge_property(snapshot, owns, ordering);
         Ok(())
     }
 
@@ -2253,7 +2275,7 @@ impl TypeManager {
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
+        TypeWriter::storage_put_type_vertex_property(snapshot, role_type, ordering);
         Ok(())
     }
 
@@ -2663,7 +2685,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        TypeWriter::storage_put_type_vertex_property(snapshot, relation_type, Some(Independent));
+        TypeWriter::storage_put_type_vertex_property(snapshot, relation_type, Independent);
         Ok(())
     }
 
@@ -2672,7 +2694,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        TypeWriter::storage_delete_type_vertex_property::<Independent>(snapshot, relation_type);
+        TypeWriter::storage_delete_type_vertex_property::<Independent>(snapshot, relation_type, &[]);
         Ok(())
     }
 
@@ -2850,7 +2872,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Key;
 
-        if self.get_owns_annotation_declared_by_category(snapshot, owns, annotation_category)?.is_some() {
+        if self.get_owns_annotation_declared_by_category(snapshot, owns, &annotation_category)?.is_some() {
             let updated_cardinality = Owns::get_default_cardinality(owns.get_ordering(snapshot, self)?);
 
             if updated_cardinality != owns.get_cardinality(snapshot, self)? {
@@ -2907,7 +2929,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        if self.get_owns_annotation_declared_by_category(snapshot, owns, annotation_category)?.is_some() {
+        if self.get_owns_annotation_declared_by_category(snapshot, owns, &annotation_category)?.is_some() {
             let updated_cardinality = Owns::get_default_cardinality(owns.get_ordering(snapshot, self)?);
 
             if updated_cardinality != owns.get_cardinality(snapshot, self)? {
@@ -2964,7 +2986,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        if self.get_plays_annotation_declared_by_category(snapshot, plays, annotation_category)?.is_some() {
+        if self.get_plays_annotation_declared_by_category(snapshot, plays, &annotation_category)?.is_some() {
             let updated_cardinality = Plays::get_default_cardinality();
 
             if updated_cardinality != plays.get_cardinality(snapshot, self)? {
@@ -3026,7 +3048,7 @@ impl TypeManager {
         OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(snapshot, self, relates)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        if self.get_relates_annotation_declared_by_category(snapshot, relates, annotation_category)?.is_some() {
+        if self.get_relates_annotation_declared_by_category(snapshot, relates, &annotation_category)?.is_some() {
             let updated_cardinality =
                 Relates::get_default_cardinality_for_explicit(relates.role().get_ordering(snapshot, self)?);
 
@@ -3445,6 +3467,381 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Values;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
+    }
+
+    pub(crate) fn set_entity_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        entity_type: EntityType,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Doc(doc.clone());
+        self.validate_set_type_annotation_general(snapshot, entity_type, annotation.clone())?;
+        self.set_type_annotation(snapshot, entity_type, annotation)
+    }
+
+    pub(crate) fn set_relation_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Doc(doc.clone());
+        self.validate_set_type_annotation_general(snapshot, relation_type, annotation.clone())?;
+        self.set_type_annotation(snapshot, relation_type, annotation)
+    }
+
+    pub(crate) fn set_attribute_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        attribute_type: AttributeType,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Doc(doc.clone());
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
+        self.set_type_annotation(snapshot, attribute_type, annotation)
+    }
+
+    pub(crate) fn unset_entity_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        entity_type: EntityType,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Doc;
+        self.unset_type_annotation(snapshot, entity_type, annotation_category)
+    }
+
+    pub(crate) fn unset_relation_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Doc;
+        self.unset_type_annotation(snapshot, relation_type, annotation_category)
+    }
+
+    pub(crate) fn unset_attribute_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        attribute_type: AttributeType,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Doc;
+        self.unset_type_annotation(snapshot, attribute_type, annotation_category)
+    }
+
+    pub(crate) fn set_owns_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, owns, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_plays_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        plays: Plays,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, plays, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_relates_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, relates, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_sub_entity_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_sub_relation_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_sub_attribute_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_sub_role_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn unset_owns_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, owns, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_plays_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        plays: Plays,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, plays, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_relates_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, relates, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_entity_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_relation_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_attribute_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_role_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn set_entity_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        entity_type: EntityType,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Meta(meta.clone());
+        self.validate_set_type_annotation_general(snapshot, entity_type, annotation.clone())?;
+        self.set_type_annotation(snapshot, entity_type, annotation)
+    }
+
+    pub(crate) fn set_relation_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Meta(meta.clone());
+        self.validate_set_type_annotation_general(snapshot, relation_type, annotation.clone())?;
+        self.set_type_annotation(snapshot, relation_type, annotation)
+    }
+
+    pub(crate) fn set_attribute_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        attribute_type: AttributeType,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Meta(meta.clone());
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
+        self.set_type_annotation(snapshot, attribute_type, annotation)
+    }
+
+    pub(crate) fn unset_entity_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        entity_type: EntityType,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_type_annotation(snapshot, entity_type, annotation_category)
+    }
+
+    pub(crate) fn unset_relation_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_type_annotation(snapshot, relation_type, annotation_category)
+    }
+
+    pub(crate) fn unset_attribute_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        attribute_type: AttributeType,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_type_annotation(snapshot, attribute_type, annotation_category)
+    }
+
+    pub(crate) fn set_owns_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns,
+        annotation: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, owns, Annotation::Meta(annotation))
+    }
+
+    pub(crate) fn set_plays_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        plays: Plays,
+        annotation: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, plays, Annotation::Meta(annotation))
+    }
+
+    pub(crate) fn set_relates_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates,
+        annotation: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, relates, Annotation::Meta(annotation))
+    }
+
+    pub(crate) fn set_sub_entity_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
+    pub(crate) fn set_sub_relation_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
+    pub(crate) fn set_sub_attribute_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
+    pub(crate) fn set_sub_role_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
+    pub(crate) fn unset_owns_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
+    }
+
+    pub(crate) fn unset_plays_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        plays: Plays,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, plays, annotation_category)
+    }
+
+    pub(crate) fn unset_relates_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, relates, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_entity_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_relation_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_attribute_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_role_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RoleType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
     }
 
     fn set_type_annotation(

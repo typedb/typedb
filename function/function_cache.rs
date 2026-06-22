@@ -30,7 +30,7 @@ impl FunctionCache {
         storage: Arc<MVCCStorage<D>>,
         type_manager: &TypeManager,
         open_sequence_number: SequenceNumber,
-    ) -> Result<Self, FunctionError> {
+    ) -> Result<Self, Box<FunctionError>> {
         let snapshot = storage.open_snapshot_read_at(open_sequence_number);
         let cache = Self::build_cache(&snapshot, type_manager);
         cache
@@ -39,7 +39,7 @@ impl FunctionCache {
     pub(crate) fn build_cache(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<FunctionCache, FunctionError> {
+    ) -> Result<FunctionCache, Box<FunctionError>> {
         let schema_functions = FunctionReader::get_functions_all(snapshot)
             .map_err(|typedb_source| FunctionError::FunctionRetrieval { typedb_source })?;
         // Prepare ir

@@ -12,7 +12,7 @@ use concept::{
     type_::{
         ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, attribute_type::AttributeType, entity_type::EntityType,
         object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager,
+        role_type::RoleType, sub::Sub, type_manager::TypeManager,
     },
 };
 use encoding::{
@@ -171,6 +171,35 @@ pub(crate) fn try_resolve_struct_definition_key(
     name: &str,
 ) -> Result<Option<DefinitionKey>, Box<ConceptReadError>> {
     type_manager.get_struct_definition_key(snapshot, name)
+}
+
+pub(crate) fn resolve_type(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label,
+) -> Result<Type, Box<SymbolResolutionError>> {
+    match try_resolve_type(snapshot, type_manager, label) {
+        Ok(Some(ty)) => Ok(ty),
+        Ok(None) => Err(Box::new(SymbolResolutionError::TypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
+    }
+}
+
+pub(crate) fn try_resolve_type(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label,
+) -> Result<Option<Type>, Box<ConceptReadError>> {
+    match try_resolve_object_type(snapshot, type_manager, label)? {
+        Some(ty) => Ok(Some(ty.into())),
+        None => Ok(try_resolve_attribute_type(snapshot, type_manager, label)?.map(Into::into)),
+    }
 }
 
 pub(crate) fn resolve_object_type(
@@ -532,5 +561,6 @@ typedb_error! {
         ExpectedNonVariableAndNonScopedTypeSymbol(14, "Expected a type label or a type[] label, but not a variable or scoped label.\nSource:\n{declaration}", declaration: TypeRefAny, source_span: Option<Span>),
         UnexpectedConceptRead(15, "Unexpected concept read error.", typedb_source: Box<ConceptReadError>, source_span: Option<Span>),
         IllegalKeywordAsIdentifier(16, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier, source_span: Option<Span>),
+        SubNotFound(17, "The type '{subtype_label}' does not subtype '{supertype_label}'.", subtype_label: Label, supertype_label: Label, source_span: Option<Span>),
     }
 }

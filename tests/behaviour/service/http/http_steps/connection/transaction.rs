@@ -11,7 +11,7 @@ use futures::future::join_all;
 use macro_rules_attribute::apply;
 
 use crate::{
-    Context, generic_step,
+    Context, generic_step, in_background,
     message::{transactions_close, transactions_commit, transactions_open, transactions_rollback},
     params::TokenMode,
     util::iter_table,

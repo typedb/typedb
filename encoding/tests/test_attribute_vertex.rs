@@ -210,6 +210,7 @@ fn attribute_id_deterministic_bytes() {
             Value::Boolean(false),
             Value::Integer(42),
             Value::Integer(-1),
+            #[allow(clippy::approx_constant, reason = "false positive")]
             Value::Double(3.14),
             Value::String(std::borrow::Cow::Borrowed("hi")),
         ];

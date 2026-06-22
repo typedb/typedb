@@ -17,7 +17,7 @@ async fn test_write_update() {
     let path = "../typedb_behaviour+/query/language/update.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/update.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/update.feature";
 
     assert!(Context::test(path, true).await);
 }

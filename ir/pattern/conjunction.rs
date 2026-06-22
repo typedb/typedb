@@ -210,7 +210,7 @@ impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
     }
 
     pub fn constraints_mut(&mut self) -> ConstraintsBuilder<'_, 'reg> {
-        ConstraintsBuilder::new(&mut self.context, &mut self.conjunction.constraints)
+        ConstraintsBuilder::new(self.context, &mut self.conjunction.constraints)
     }
 
     pub fn add_disjunction(&mut self) -> DisjunctionBuilderWithContext<'_, 'reg> {
@@ -221,7 +221,7 @@ impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
         let NestedPatternBuilder::Disjunction(builder) = self.conjunction.nested_patterns.last_mut().unwrap() else {
             unreachable!();
         };
-        DisjunctionBuilderWithContext::new(&mut self.context, builder)
+        DisjunctionBuilderWithContext::new(self.context, builder)
     }
 
     pub fn add_negation(&mut self) -> ConjunctionBuilderWithContext<'_, 'reg> {
@@ -231,7 +231,7 @@ impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
         let Some(NestedPatternBuilder::Negation(builder)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
         };
-        ConjunctionBuilderWithContext::new(&mut self.context, builder.conjunction_mut())
+        ConjunctionBuilderWithContext::new(self.context, builder.conjunction_mut())
     }
 
     pub fn add_optional(
@@ -245,6 +245,6 @@ impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
         let Some(NestedPatternBuilder::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
         };
-        Ok(ConjunctionBuilderWithContext::new(&mut self.context, optional.conjunction_mut()))
+        Ok(ConjunctionBuilderWithContext::new(self.context, optional.conjunction_mut()))
     }
 }

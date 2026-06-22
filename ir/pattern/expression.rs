@@ -305,13 +305,13 @@ impl StructuralEquality for BuiltinValueFunctionID {
 impl fmt::Display for BuiltinValueFunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BuiltinValueFunctionID::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
-            BuiltinValueFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
-            BuiltinValueFunctionID::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
-            BuiltinValueFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
-            BuiltinValueFunctionID::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
-            BuiltinValueFunctionID::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
-            BuiltinValueFunctionID::Len => fmt::Display::fmt(&typeql::token::Function::Len, f),
+            Self::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
+            Self::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
+            Self::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
+            Self::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
+            Self::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
+            Self::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
+            Self::Len => fmt::Display::fmt(&typeql::token::Function::Len, f),
         }
     }
 }
@@ -320,6 +320,38 @@ impl fmt::Display for BuiltinValueFunctionID {
 pub enum BuiltinConceptFunctionID {
     Iid,
     Label,
+
+    GetDoc,
+    GetMeta,
+    GetAllMeta,
+
+    GetOwnsDoc,
+    GetOwnsMeta,
+    GetOwnsAllMeta,
+
+    GetPlaysDoc,
+    GetPlaysMeta,
+    GetPlaysAllMeta,
+
+    GetRelatesDoc,
+    GetRelatesMeta,
+    GetRelatesAllMeta,
+
+    GetSubDoc,
+    GetSubMeta,
+    GetSubAllMeta,
+
+    GetFunDoc,
+    GetFunMeta,
+    GetFunAllMeta,
+
+    GetStructDoc,
+    GetStructMeta,
+    GetStructAllMeta,
+
+    GetStructFieldDoc,
+    GetStructFieldMeta,
+    GetStructFieldAllMeta,
 }
 
 impl BuiltinConceptFunctionID {
@@ -327,23 +359,137 @@ impl BuiltinConceptFunctionID {
         match self {
             Self::Iid => typeql::token::Function::Iid.as_str(),
             Self::Label => typeql::token::Function::Label.as_str(),
+
+            Self::GetDoc => "get_doc",
+            Self::GetMeta => "get_meta",
+            Self::GetAllMeta => "get_all_meta",
+
+            Self::GetOwnsDoc => "get_owns_doc",
+            Self::GetOwnsMeta => "get_owns_meta",
+            Self::GetOwnsAllMeta => "get_owns_all_meta",
+
+            Self::GetPlaysDoc => "get_plays_doc",
+            Self::GetPlaysMeta => "get_plays_meta",
+            Self::GetPlaysAllMeta => "get_plays_all_meta",
+
+            Self::GetRelatesDoc => "get_relates_doc",
+            Self::GetRelatesMeta => "get_relates_meta",
+            Self::GetRelatesAllMeta => "get_relates_all_meta",
+
+            Self::GetSubDoc => "get_sub_doc",
+            Self::GetSubMeta => "get_sub_meta",
+            Self::GetSubAllMeta => "get_sub_all_meta",
+
+            Self::GetFunDoc => "get_fun_doc",
+            Self::GetFunMeta => "get_fun_meta",
+            Self::GetFunAllMeta => "get_fun_all_meta",
+
+            Self::GetStructDoc => "get_struct_doc",
+            Self::GetStructMeta => "get_struct_meta",
+            Self::GetStructAllMeta => "get_struct_all_meta",
+
+            Self::GetStructFieldDoc => "get_struct_field_doc",
+            Self::GetStructFieldMeta => "get_struct_field_meta",
+            Self::GetStructFieldAllMeta => "get_struct_field_all_meta",
+        }
+    }
+
+    pub(crate) fn from_str(str: &str) -> Option<Self> {
+        match str {
+            "iid" => Some(Self::Iid),
+            "label" => Some(Self::Label),
+
+            "get_doc" => Some(Self::GetDoc),
+            "get_meta" => Some(Self::GetMeta),
+            "get_all_meta" => Some(Self::GetAllMeta),
+
+            "get_owns_doc" => Some(Self::GetOwnsDoc),
+            "get_owns_meta" => Some(Self::GetOwnsMeta),
+            "get_owns_all_meta" => Some(Self::GetOwnsAllMeta),
+
+            "get_plays_doc" => Some(Self::GetPlaysDoc),
+            "get_plays_meta" => Some(Self::GetPlaysMeta),
+            "get_plays_all_meta" => Some(Self::GetPlaysAllMeta),
+
+            "get_relates_doc" => Some(Self::GetRelatesDoc),
+            "get_relates_meta" => Some(Self::GetRelatesMeta),
+            "get_relates_all_meta" => Some(Self::GetRelatesAllMeta),
+
+            "get_sub_doc" => Some(Self::GetSubDoc),
+            "get_sub_meta" => Some(Self::GetSubMeta),
+            "get_sub_all_meta" => Some(Self::GetSubAllMeta),
+
+            "get_fun_doc" => Some(Self::GetFunDoc),
+            "get_fun_meta" => Some(Self::GetFunMeta),
+            "get_fun_all_meta" => Some(Self::GetFunAllMeta),
+
+            "get_struct_doc" => Some(Self::GetStructDoc),
+            "get_struct_meta" => Some(Self::GetStructMeta),
+            "get_struct_all_meta" => Some(Self::GetStructAllMeta),
+
+            "get_struct_field_doc" => Some(Self::GetStructFieldDoc),
+            "get_struct_field_meta" => Some(Self::GetStructFieldMeta),
+            "get_struct_field_all_meta" => Some(Self::GetStructFieldAllMeta),
+
+            _ => None,
         }
     }
 
     pub(crate) fn signature(self) -> FunctionSignature {
+        macro_rules! function_signature {
+            (($($arg_category:ident),*) -> $($return_category:ident),*) => {
+                FunctionSignature::new(
+                    FunctionID::Builtin(self),
+                    vec![$(VariableCategory::$arg_category),*],
+                    vec![$((VariableCategory::$return_category, VariableOptionality::Required)),*],
+                    false,
+                )
+            };
+            (($($arg_category:ident),*) -> { $($return_category:ident),* }) => {
+                FunctionSignature::new(
+                    FunctionID::Builtin(self),
+                    vec![$(VariableCategory::$arg_category),*],
+                    vec![$((VariableCategory::$return_category, VariableOptionality::Required)),*],
+                    true,
+                )
+            };
+        }
+
         match self {
-            Self::Iid => FunctionSignature::new(
-                FunctionID::Builtin(self),
-                vec![VariableCategory::Thing],
-                vec![(VariableCategory::Value, VariableOptionality::Required)],
-                false,
-            ),
-            Self::Label => FunctionSignature::new(
-                FunctionID::Builtin(self),
-                vec![VariableCategory::Type],
-                vec![(VariableCategory::Value, VariableOptionality::Required)],
-                false,
-            ),
+            Self::Iid => function_signature!((Thing) -> Value),
+            Self::Label => function_signature!((Type) -> Value),
+
+            Self::GetDoc => function_signature!((Type) -> Value),
+            Self::GetMeta => function_signature!((Value, Type) -> Value),
+            Self::GetAllMeta => function_signature!((Type) -> { Value, Value }),
+
+            Self::GetOwnsDoc => function_signature!((Type, Type) -> Value),
+            Self::GetOwnsMeta => function_signature!((Value, Type, Type) -> Value),
+            Self::GetOwnsAllMeta => function_signature!((Type, Type) -> { Value, Value }),
+
+            Self::GetPlaysDoc => function_signature!((Type, Type) -> Value),
+            Self::GetPlaysMeta => function_signature!((Value, Type, Type) -> Value),
+            Self::GetPlaysAllMeta => function_signature!((Type, Type) -> { Value, Value }),
+
+            Self::GetRelatesDoc => function_signature!((Type, Type) -> Value),
+            Self::GetRelatesMeta => function_signature!((Value, Type, Type) -> Value),
+            Self::GetRelatesAllMeta => function_signature!((Type, Type) -> { Value, Value }),
+
+            Self::GetSubDoc => function_signature!((Type, Type) -> Value),
+            Self::GetSubMeta => function_signature!((Value, Type, Type) -> Value),
+            Self::GetSubAllMeta => function_signature!((Type, Type) -> { Value, Value }),
+
+            Self::GetFunDoc => function_signature!((Value) -> Value),
+            Self::GetFunMeta => function_signature!((Value, Value) -> Value),
+            Self::GetFunAllMeta => function_signature!((Value) -> { Value, Value }),
+
+            Self::GetStructDoc => function_signature!((Value) -> Value),
+            Self::GetStructMeta => function_signature!((Value, Value) -> Value),
+            Self::GetStructAllMeta => function_signature!((Value) -> { Value, Value }),
+
+            Self::GetStructFieldDoc => function_signature!((Value, Value) -> Value),
+            Self::GetStructFieldMeta => function_signature!((Value, Value, Value) -> Value),
+            Self::GetStructFieldAllMeta => function_signature!((Value, Value) -> { Value, Value }),
         }
     }
 }
@@ -360,10 +506,7 @@ impl StructuralEquality for BuiltinConceptFunctionID {
 
 impl fmt::Display for BuiltinConceptFunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            BuiltinConceptFunctionID::Iid => fmt::Display::fmt(&typeql::token::Function::Iid, f),
-            BuiltinConceptFunctionID::Label => fmt::Display::fmt(&typeql::token::Function::Label, f),
-        }
+        fmt::Display::fmt(self.name(), f)
     }
 }
 

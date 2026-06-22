@@ -17,7 +17,6 @@ use chrono::{
 pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 pub const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
 pub const NANOS_PER_HOUR: u64 = 60 * 60 * NANOS_PER_SEC;
-pub const NANOS_PER_NAIVE_DAY: u64 = 24 * NANOS_PER_HOUR;
 
 const MAX_YEAR: i32 = (i32::MAX >> 13) - 1; // NaiveDate.year() is from a trait and not `const`
 const MIN_YEAR: i32 = (i32::MIN >> 13) + 1; // NaiveDate.year() is from a trait and not `const`
@@ -400,7 +399,7 @@ mod tests {
     use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
     use resource::constants::common::SECONDS_IN_HOUR;
 
-    use super::{DateTimeExt, Duration, MAX_YEAR, MIN_YEAR, NANOS_PER_NAIVE_DAY};
+    use super::{DateTimeExt, Duration, MAX_YEAR, MIN_YEAR};
     use crate::value::{
         primitive_encoding::encode_u32,
         timezone::{NUM_TZS, TimeZone},

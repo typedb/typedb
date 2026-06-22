@@ -31,7 +31,11 @@ use server::{
     error::ServerOpenError,
     service::{
         AnswerType, QueryType,
-        http::message::{query::QueryAnswerResponse, transaction::TransactionResponse},
+        http::message::{
+            analyze::AnalysedQueryResponse,
+            query::{GivenRowsPayload, QueryAnswerResponse, QueryOptionsPayload},
+            transaction::{TransactionOptionsPayload, TransactionResponse},
+        },
     },
 };
 use test_utils::TempDir;
@@ -40,7 +44,15 @@ use tokio::{task::JoinHandle, time::Duration};
 use crate::{
     connection::start_typedb,
     message::{check_health, databases, databases_delete, transactions_close, users, users_delete, users_update},
+    params::TokenMode,
+    util::random_uuid,
 };
+
+mod connection;
+mod message;
+mod params;
+mod query;
+mod util;
 
 macro_rules! in_background {
     ($context:ident, |$background:ident| $expr:expr) => {
@@ -51,19 +63,6 @@ macro_rules! in_background {
     };
 }
 pub(crate) use in_background;
-use server::service::http::message::{
-    analyze::AnalysedQueryResponse,
-    query::{GivenRowsPayload, QueryOptionsPayload},
-    transaction::TransactionOptionsPayload,
-};
-
-use crate::{params::TokenMode, util::random_uuid};
-
-mod connection;
-mod message;
-mod params;
-mod query;
-mod util;
 
 const TEST_TOKEN_EXPIRATION: Duration = Duration::from_secs(25); // NOTICE: Long tests can fail!
 
