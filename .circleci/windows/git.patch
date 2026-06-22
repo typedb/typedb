@@ -1,11 +1,11 @@
 diff --git a/BUILD b/BUILD
-index bb3d50325e..814c752450 100644
+index 3f8848f..501dbff 100644
 --- a/BUILD
 +++ b/BUILD
 @@ -80,13 +80,23 @@ alias(
      })
  )
-
+ 
 -# The directory structure for distribution (Unix)
 +filegroup(
 +    name = "typedb_server_bin_release",
@@ -37,7 +37,7 @@ index bb3d50325e..814c752450 100644
 -    subpath = "console/typedb_console_bin",
 +    subpath = "console/typedb_console_bin.exe",
  )
-
+ 
  pkg_files(
 @@ -168,7 +178,7 @@ pkg_files(
  select_file(
@@ -46,5 +46,5 @@ index bb3d50325e..814c752450 100644
 -    subpath = "loader/typedb_loader_bin",
 +    subpath = "loader/typedb_loader_bin.exe",
  )
-
+ 
  pkg_files(
