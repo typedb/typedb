@@ -1674,6 +1674,7 @@ pub mod tests {
         type_inference::tests::expected_edge,
         type_seeder::TypeGraphSeedingContext,
     };
+    use crate::annotation::type_seeder::InferenceStageType;
 
     #[test]
     fn test_has() {
@@ -1738,8 +1739,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
-            false,
-            false,
+            InferenceStageType::Default,
         );
         let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
@@ -1873,8 +1873,7 @@ pub mod tests {
                 &type_manager,
                 &empty_function_cache,
                 &translation_context.variable_registry,
-                false,
-                false,
+                InferenceStageType::Default,
             );
             let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1924,8 +1923,7 @@ pub mod tests {
                 &type_manager,
                 &empty_function_cache,
                 &translation_context.variable_registry,
-                false,
-                false,
+                InferenceStageType::Default,
             );
             let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);

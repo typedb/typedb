@@ -99,6 +99,7 @@ pub mod tests {
         },
         type_seeder::TypeGraphSeedingContext,
     };
+    use crate::annotation::type_seeder::InferenceStageType;
 
     #[test]
     fn test_functions() {
@@ -192,7 +193,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 &RunningVariableAnnotations::empty(),
                 &entry,
-                false,
+                InferenceStageType::Default,
             )
             .unwrap()
             .into_parts()
@@ -211,7 +212,7 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             let (entry, mut entry_context, mut f_ir) = with_local_cache;
 
-            let f_annotations = annotate_named_function(&mut f_ir, &empty_annotation_context).unwrap();
+            let f_annotations = annotate_named_function(&mut f_ir, &empty_annotation_context, false).unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =
@@ -249,7 +250,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 previous_stage_variable_annotations,
                 &entry,
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
             assert_eq!(
@@ -374,7 +375,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -442,7 +443,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -505,7 +506,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap_err();
 
@@ -549,7 +550,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -639,7 +640,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            false,
+            InferenceStageType::Default,
         )
         .unwrap();
 
@@ -746,7 +747,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            false,
+            InferenceStageType::Default,
         )
         .unwrap();
 
@@ -833,7 +834,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            false,
+            InferenceStageType::Default,
         )
         .unwrap();
 
@@ -947,7 +948,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -1017,7 +1018,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -1082,7 +1083,7 @@ pub mod tests {
                 &type_manager,
                 &EmptyAnnotatedFunctionSignatures,
                 &translation_context.variable_registry,
-                false,
+                InferenceStageType::Default,
             )
             .create_graph(&BTreeMap::new(), block.conjunction())
             .unwrap();
@@ -1138,7 +1139,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -1217,7 +1218,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -1284,7 +1285,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -1346,7 +1347,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap_err();
             assert_true!(match err {
@@ -1387,7 +1388,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                InferenceStageType::Default,
             )
             .unwrap();
 
@@ -1473,7 +1474,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
-            false,
+            InferenceStageType::Default,
         );
         let mut graph = seeder.create_graph(&BTreeMap::new(), conjunction).unwrap();
         prune_types(&mut graph);
