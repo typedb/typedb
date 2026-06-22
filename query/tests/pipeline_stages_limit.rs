@@ -8,7 +8,11 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
+use query::{
+    error::QueryError,
+    given_rows::GivenRowsSimple,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::{constants::query::MAX_PIPELINE_STAGES, profile::CommitProfile};
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -62,7 +66,7 @@ fn pipeline_at_limit_is_accepted() {
         &type_manager,
         thing_manager.clone(),
         function_manager,
-        &pipeline,
+        QueryInput::Parsed(pipeline),
         None::<GivenRowsSimple>,
         &query_str,
     );
@@ -85,7 +89,7 @@ fn pipeline_over_limit_is_rejected() {
         &type_manager,
         thing_manager.clone(),
         function_manager,
-        &pipeline,
+        QueryInput::Parsed(pipeline),
         None::<GivenRowsSimple>,
         &query_str,
     );

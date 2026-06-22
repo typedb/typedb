@@ -131,7 +131,11 @@ pub mod query_util {
         pipeline::stage::{ExecutionContext, StageIterator},
     };
     use function::function_manager::FunctionManager;
-    use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
+    use query::{
+        error::QueryError,
+        given_rows::GivenRowsSimple,
+        query_manager::{QueryInput, QueryManager},
+    };
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
 
@@ -147,7 +151,7 @@ pub mod query_util {
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            &pipeline,
+            QueryInput::Parsed(pipeline),
             None::<GivenRowsSimple>,
             source_query,
         ) {
@@ -196,7 +200,7 @@ pub mod query_util {
             type_manager,
             thing_manager,
             function_manager,
-            &pipeline,
+            QueryInput::Parsed(pipeline),
             None::<GivenRowsSimple>,
             source_query,
         ) {

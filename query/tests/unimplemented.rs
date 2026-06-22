@@ -19,7 +19,12 @@ use function::function_manager::FunctionManager;
 use ir::RepresentationError;
 use itertools::Either;
 use lending_iterator::LendingIterator;
-use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    error::QueryError,
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::TempDir;
@@ -72,7 +77,7 @@ fn run_read_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            QueryInput::Parsed(match_),
             None::<GivenRowsSimple>,
             query,
         )
@@ -99,7 +104,7 @@ fn run_write_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query_as_pipeline,
+            QueryInput::Parsed(query_as_pipeline),
             None::<GivenRowsSimple>,
             query,
         )

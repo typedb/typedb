@@ -65,6 +65,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_parse_cache",
+    crate_root = "parse_cache.rs",
+    srcs = ["parse_cache.rs"],
+    deps = deps,
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [

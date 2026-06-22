@@ -34,7 +34,10 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::{given_rows::GivenRowsSimple, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     MVCCStorage,
@@ -78,7 +81,7 @@ fn setup(
             &type_manager,
             thing_manager.clone(),
             Arc::default(),
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             data,
         )

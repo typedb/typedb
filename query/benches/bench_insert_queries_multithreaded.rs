@@ -22,7 +22,12 @@ use concept::{
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use lending_iterator::LendingIterator;
-use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    error::QueryError,
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     MVCCStorage,
@@ -122,7 +127,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             type_manager,
             thing_manager,
             Arc::default(),
-            &typeql_insert,
+            QueryInput::Parsed(typeql_insert),
             None::<GivenRowsSimple>,
             query_str,
         )
