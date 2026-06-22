@@ -10,7 +10,7 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         KindAPI, Ordering, TypeAPI,
-        annotation::{Annotation, AnnotationError},
+        annotation::{Annotation, AnnotationError, HasAnnotationCategory},
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
@@ -302,7 +302,7 @@ fn redefine_type_annotations(
                             type_: label.to_owned(),
                             annotation: annotation.clone(),
                             source_span: type_declaration.span(),
-                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
+                            typedb_source: AnnotationError::UnsupportedAttributeTypeAnnotation {
                                 category: annotation.category(),
                             },
                         });
@@ -404,7 +404,7 @@ fn redefine_sub(
 }
 
 fn redefine_sub_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub, category)
+    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedSubAnnotation, category)
 }
 
 fn redefine_value_type(
@@ -503,9 +503,7 @@ fn redefine_value_type_annotations(
             if !converted.is_value_type_annotation() {
                 return Err(RedefineError::IllegalCapabilityAnnotation {
                     source_span: typeql_capability.span(),
-                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType {
-                        category: annotation.category(),
-                    },
+                    typedb_source: AnnotationError::UnsupportedValueTypeAnnotation { category: annotation.category() },
                     annotation,
                 });
             }
@@ -931,11 +929,11 @@ fn redefine_function(
     anything_redefined: &mut bool,
     function_declaration: &Function,
 ) -> Result<SchemaFunction, RedefineError> {
-    let function = function_manager.redefine_function(snapshot, function_declaration).map_err(|source| {
+    let function = function_manager.redefine_function(snapshot, function_declaration).map_err(|typedb_source| {
         RedefineError::FunctionRedefinition {
             name: function_declaration.signature.ident.as_str_unchecked().to_owned(),
             source_span: function_declaration.span(),
-            typedb_source: Box::new(source),
+            typedb_source,
         }
     })?;
     *anything_redefined = true;
@@ -996,7 +994,7 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
     })?;
 
     let definition_status =
-        get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
+        get_type_annotation_status(snapshot, type_manager, type_, &converted, &annotation.category())
             .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeAnnotationNotDefined {

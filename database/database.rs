@@ -305,7 +305,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 SequenceNumber::MIN,
             )
-            .map_err(|error| FunctionCacheInitialise { typedb_source: error })?,
+            .map_err(|error| FunctionCacheInitialise { typedb_source: *error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
@@ -412,7 +412,7 @@ impl Database<WALClient> {
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
                 wal_last_sequence_number,
             )
-            .map_err(|error| FunctionCacheInitialise { typedb_source: error })?,
+            .map_err(|error| FunctionCacheInitialise { typedb_source: *error })?,
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));

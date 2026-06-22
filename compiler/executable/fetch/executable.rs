@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use answer::variable::Variable;
+use answer::{Type, variable::Variable};
 use concept::{thing::statistics::Statistics, type_::attribute_type::AttributeType};
 use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::VariableRegistry};
@@ -42,6 +42,8 @@ pub enum FetchSomeInstruction {
     SingleVar(VariablePosition),
     SingleAttribute(VariablePosition, AttributeType),
     SingleFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
+
+    Label(Type),
 
     Object(Box<FetchObjectInstruction>),
 
@@ -126,6 +128,7 @@ fn compile_some(
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok((FetchSomeInstruction::SingleFunction(compiled, variable_positions.clone()), TypePopulations::default()))
         }
+        AnnotatedFetchSome::Label(ty) => Ok((FetchSomeInstruction::Label(ty), TypePopulations::default())),
         AnnotatedFetchSome::Object(object) => {
             let (compiled, type_populations) =
                 compile_object(statistics, available_functions, *object, variable_positions)?;

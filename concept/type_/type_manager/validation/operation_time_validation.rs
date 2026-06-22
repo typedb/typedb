@@ -31,7 +31,7 @@ use crate::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues,
+            AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
@@ -2390,8 +2390,8 @@ impl OperationTimeValidation {
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for existing_annotation in existing_annotations.into_iter() {
-            let existing_annotation_category = existing_annotation.clone().into().category();
-            if !existing_annotation_category.declarable_alongside(annotation_category) {
+            let existing_annotation_category = existing_annotation.category();
+            if !existing_annotation_category.declarable_alongside(&annotation_category) {
                 return Err(Box::new(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation {
                     annotation: annotation_category,
                     declared_annotation: existing_annotation_category,
@@ -2414,8 +2414,8 @@ impl OperationTimeValidation {
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for existing_annotation in existing_annotations.into_iter() {
-            let existing_annotation_category = existing_annotation.clone().into().category();
-            if !existing_annotation_category.declarable_alongside(annotation_category) {
+            let existing_annotation_category = existing_annotation.category();
+            if !existing_annotation_category.declarable_alongside(&annotation_category) {
                 let interface = capability.interface();
                 return Err(Box::new(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation {
                     annotation: annotation_category,
@@ -2521,7 +2521,11 @@ impl OperationTimeValidation {
                     )?;
                     Self::validate_values_arguments(values.clone(), value_type.clone())?
                 }
-                | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => {}
+
+                | AttributeTypeAnnotation::Abstract(_)
+                | AttributeTypeAnnotation::Independent(_)
+                | AttributeTypeAnnotation::Doc(_)
+                | AttributeTypeAnnotation::Meta(_) => (),
             }
         }
 
@@ -2616,7 +2620,10 @@ impl OperationTimeValidation {
                     )?;
                     Self::validate_values_arguments(values.clone(), value_type.clone())?
                 }
-                | OwnsAnnotation::Distinct(_) | OwnsAnnotation::Cardinality(_) => {}
+                | OwnsAnnotation::Distinct(_)
+                | OwnsAnnotation::Cardinality(_)
+                | OwnsAnnotation::Doc(_)
+                | OwnsAnnotation::Meta(_) => (),
             }
         }
         Ok(())

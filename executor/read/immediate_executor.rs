@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, fmt, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -16,7 +16,6 @@ use compiler::{
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use encoding::value::value::Value;
 use error::{UnimplementedFeature, unimplemented_feature};
 use ir::pattern::expression::BuiltinConceptFunctionID;
 use itertools::Itertools;
@@ -36,6 +35,8 @@ use crate::{
     },
     row::{MaybeOwnedRow, Row},
 };
+
+mod builtin_function;
 
 #[derive(Debug)]
 pub(crate) enum ImmediateExecutor {
@@ -73,6 +74,7 @@ impl ImmediateExecutor {
         Ok(Self::SortedJoin(executor))
     }
 
+    #[expect(unused, reason = "unsorted joins aren't implemented")]
     pub(crate) fn new_unsorted_join(
         step: &UnsortedJoinStep,
         step_profile: Arc<StepProfile>,
@@ -755,6 +757,7 @@ impl CartesianIterator {
     }
 }
 
+#[expect(unused, reason = "unsorted joins aren't implemented")]
 #[derive(Debug)]
 pub(crate) struct UnsortedJoinExecutor {
     iterate: ConstraintInstruction<ExecutorVariable>,
@@ -989,6 +992,10 @@ impl BuiltinCallExecutor {
         Ok(())
     }
 
+    pub(crate) fn reset(&mut self) {
+        self.input = None;
+    }
+
     pub(crate) fn batch_continue(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot>,
@@ -1002,45 +1009,66 @@ impl BuiltinCallExecutor {
         debug_assert!(input.peek().is_some());
 
         let mut output = FixedBatch::new(self.output_width);
-
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            let output_row = self
-                .call_builtin(context, &input_row)
+            self.call_builtin(context, &input_row, &mut output)
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
-            output.append(|mut row| row.copy_from_row(output_row));
         }
+
         measurement.end(&self.profile, 1, output.len() as u64);
         if output.is_empty() { Ok(None) } else { Ok(Some(output)) }
     }
 
-    fn call_builtin<'a>(
+    fn call_builtin(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot>,
-        input_row: &MaybeOwnedRow<'a>,
-    ) -> Result<MaybeOwnedRow<'a>, Box<ConceptReadError>> {
-        let Some(res) = self.assignment_positions[0] else { return Ok(input_row.clone()) };
-        let (mut row, multiplicity, provenance) = input_row.clone().into_owned_parts();
-        if row.len() <= res.as_usize() {
-            row.resize(res.as_usize() + 1, VariableValue::None);
+        input_row: &MaybeOwnedRow<'_>,
+        output: &mut FixedBatch,
+    ) -> Result<(), Box<ConceptReadError>> {
+        macro_rules! execute {
+            ($id:ident) => {
+                builtin_function::$id(&self.assignment_positions, &self.argument_positions, context, input_row, output)
+            };
         }
 
-        row[res.as_usize()] = match self.builtin_id {
-            BuiltinConceptFunctionID::Iid => {
-                let iid = row[self.argument_positions[0].as_usize()].as_thing().iid();
-                VariableValue::Value(Value::String(Cow::Owned(format!("{iid:x}"))))
-            }
-            BuiltinConceptFunctionID::Label => {
-                let ty = row[self.argument_positions[0].as_usize()].as_type();
-                let label = ty.get_label(&**context.snapshot(), context.type_manager())?;
-                VariableValue::Value(Value::String(Cow::Owned(label.to_string())))
-            }
-        };
+        match self.builtin_id {
+            BuiltinConceptFunctionID::Iid => execute!(iid),
+            BuiltinConceptFunctionID::Label => execute!(label),
 
-        Ok(MaybeOwnedRow::new_owned(row, multiplicity, provenance))
-    }
+            BuiltinConceptFunctionID::GetDoc => execute!(get_doc),
+            BuiltinConceptFunctionID::GetMeta => execute!(get_meta),
+            BuiltinConceptFunctionID::GetAllMeta => execute!(get_all_meta),
 
-    pub(crate) fn reset(&mut self) {
-        self.input = None;
+            BuiltinConceptFunctionID::GetOwnsDoc => execute!(get_owns_doc),
+            BuiltinConceptFunctionID::GetOwnsMeta => execute!(get_owns_meta),
+            BuiltinConceptFunctionID::GetOwnsAllMeta => execute!(get_owns_all_meta),
+
+            BuiltinConceptFunctionID::GetPlaysDoc => execute!(get_plays_doc),
+            BuiltinConceptFunctionID::GetPlaysMeta => execute!(get_plays_meta),
+            BuiltinConceptFunctionID::GetPlaysAllMeta => execute!(get_plays_all_meta),
+
+            BuiltinConceptFunctionID::GetRelatesDoc => execute!(get_relates_doc),
+            BuiltinConceptFunctionID::GetRelatesMeta => execute!(get_relates_meta),
+            BuiltinConceptFunctionID::GetRelatesAllMeta => execute!(get_relates_all_meta),
+
+            BuiltinConceptFunctionID::GetSubDoc => execute!(get_sub_doc),
+            BuiltinConceptFunctionID::GetSubMeta => execute!(get_sub_meta),
+            BuiltinConceptFunctionID::GetSubAllMeta => execute!(get_sub_all_meta),
+
+            BuiltinConceptFunctionID::GetFunDoc => execute!(get_fun_doc),
+            BuiltinConceptFunctionID::GetFunMeta => execute!(get_fun_meta),
+            BuiltinConceptFunctionID::GetFunAllMeta => execute!(get_fun_all_meta),
+
+            | BuiltinConceptFunctionID::GetStructDoc
+            | BuiltinConceptFunctionID::GetStructMeta
+            | BuiltinConceptFunctionID::GetStructAllMeta
+            | BuiltinConceptFunctionID::GetStructFieldDoc
+            | BuiltinConceptFunctionID::GetStructFieldMeta
+            | BuiltinConceptFunctionID::GetStructFieldAllMeta => {
+                Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                    functionality: UnimplementedFeature::Structs,
+                }))
+            }
+        }
     }
 }

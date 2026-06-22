@@ -17,7 +17,7 @@ async fn test_functions_definition() {
     let path = "../typedb_behaviour+/query/functions/definition.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/functions/definition.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/functions/definition.feature";
 
     assert!(Context::test(path, true).await);
 }

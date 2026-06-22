@@ -171,9 +171,7 @@ impl Context {
     }
 
     pub fn close_active_transaction(&mut self) {
-        Self::close_transaction(
-            self.take_transaction().expect("Expected a transaction to close. No active transaction is found"),
-        )
+        Self::close_transaction(self.take_transaction())
     }
 
     pub fn close_transaction(tx: ActiveTransaction) {
@@ -209,8 +207,8 @@ impl Context {
         self.active_transaction.as_mut()
     }
 
-    pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {
-        self.active_transaction.take()
+    pub fn take_transaction(&mut self) -> ActiveTransaction {
+        self.active_transaction.take().expect("Expected an active transaction")
     }
 
     pub fn take_given_rows(&mut self) -> Option<GivenRowsSimple> {

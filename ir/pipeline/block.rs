@@ -266,9 +266,8 @@ fn validate_optional_returns_recursive(
         None => false,
         Some(mode) => *mode != BindingMode::OptionallyBinding,
     });
-    if let Some((var, source_span)) = reused_optional_return_opt {
+    if let Some((var, &source_span)) = reused_optional_return_opt {
         let variable = context.get_variable_name_or_unnamed(*var).to_owned();
-        let source_span = source_span.clone();
         // TODO: This has to wait till we finalize the spec
         // // Err(Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }))
         // use error::TypeDBError;

@@ -37,8 +37,8 @@ use crate::{
     type_::{
         Capability, Independent, KindAPI, Ordering, TypeAPI,
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationDistinct, AnnotationIndependent,
+            AnnotationKey, AnnotationUnique,
         },
         attribute_type::AttributeType,
         constraint::{
@@ -474,10 +474,12 @@ impl TypeReader {
     where
         PROPERTY: TypeVertexPropertyEncoding,
     {
+        let key = [];
+        let key = &key;
         let property = snapshot
             .get_mapped(
-                PROPERTY::build_key(type_).into_storage_key().as_reference(),
-                |value| PROPERTY::from_value_bytes(value),
+                PROPERTY::build_key(type_, &[]).into_storage_key().as_reference(),
+                |value| PROPERTY::from_key_value_bytes(key, value),
                 StorageCounters::DISABLED,
             )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
@@ -511,8 +513,8 @@ impl TypeReader {
     {
         let property = snapshot
             .get_mapped(
-                PROPERTY::build_key(edge).into_storage_key().as_reference(),
-                |value| PROPERTY::from_value_bytes(value),
+                PROPERTY::build_key(edge, &[]).into_storage_key().as_reference(),
+                |value| PROPERTY::from_key_value_bytes(&[], value),
                 StorageCounters::DISABLED,
             )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
@@ -557,22 +559,29 @@ impl TypeReader {
             )
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeVertexProperty::decode(Bytes::Reference(key.bytes()));
+                let suffix = annotation_key.suffix();
                 let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
-                    Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
-                        <AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value),
-                    ),
+                    Infix::PropertyAnnotationCardinality => {
+                        Annotation::Cardinality(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
                     Infix::PropertyAnnotationRegex => {
-                        Annotation::Regex(<AnnotationRegex as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                        Annotation::Regex(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     Infix::PropertyAnnotationCascade => Annotation::Cascade(AnnotationCascade),
                     Infix::PropertyAnnotationRange => {
-                        Annotation::Range(<AnnotationRange as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                        Annotation::Range(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     Infix::PropertyAnnotationValues => {
-                        Annotation::Values(<AnnotationValues as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                        Annotation::Values(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+                    Infix::PropertyAnnotationDoc => {
+                        Annotation::Doc(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+                    Infix::PropertyAnnotationMeta => {
+                        Annotation::Meta(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
@@ -647,25 +656,32 @@ impl TypeReader {
             )
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeEdgeProperty::decode(Bytes::Reference(key.bytes()));
+                let suffix = annotation_key.suffix();
                 let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
                     Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
-                    Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
-                        <AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value),
-                    ),
+                    Infix::PropertyAnnotationCardinality => {
+                        Annotation::Cardinality(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
                     Infix::PropertyAnnotationRegex => {
-                        Annotation::Regex(<AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                        Annotation::Regex(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     Infix::PropertyAnnotationRange => {
-                        Annotation::Range(<AnnotationRange as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                        Annotation::Range(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     Infix::PropertyAnnotationValues => {
-                        Annotation::Values(<AnnotationValues as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                        Annotation::Values(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     Infix::PropertyAnnotationAbstract => {
-                        Annotation::Abstract(<AnnotationAbstract as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                        Annotation::Abstract(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+                    Infix::PropertyAnnotationDoc => {
+                        Annotation::Doc(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+                    Infix::PropertyAnnotationMeta => {
+                        Annotation::Meta(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationCascade
@@ -833,6 +849,7 @@ impl TypeReader {
                     }
                 }
             }
+            CapabilityKind::Sub => (),
         }
         Ok(())
     }

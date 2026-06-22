@@ -11,6 +11,7 @@ use encoding::{
     layout::prefix::Prefix,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -20,8 +21,9 @@ use crate::{
     type_::{
         Capability, Ordering,
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, AnnotationKey,
-            AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc, AnnotationError,
+            AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+            FromAnnotation, HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         attribute_type::AttributeType,
         constraint::CapabilityConstraint,
@@ -139,6 +141,8 @@ impl Owns {
             OwnsAnnotation::Values(values) => {
                 type_manager.set_owns_annotation_values(snapshot, thing_manager, *self, values)?
             }
+            OwnsAnnotation::Doc(doc) => type_manager.set_owns_annotation_doc(snapshot, *self, doc)?,
+            OwnsAnnotation::Meta(meta) => type_manager.set_owns_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -150,18 +154,20 @@ impl Owns {
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
+        let owns_annotation = OwnsAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match owns_annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.unset_owns_annotation_distinct(snapshot, *self)?,
-            OwnsAnnotation::Key(_) => type_manager.unset_owns_annotation_key(snapshot, thing_manager, *self)?,
-            OwnsAnnotation::Cardinality(_) => {
+            OwnsAnnotationCategory::Distinct => type_manager.unset_owns_annotation_distinct(snapshot, *self)?,
+            OwnsAnnotationCategory::Key => type_manager.unset_owns_annotation_key(snapshot, thing_manager, *self)?,
+            OwnsAnnotationCategory::Cardinality => {
                 type_manager.unset_owns_annotation_cardinality(snapshot, thing_manager, *self)?
             }
-            OwnsAnnotation::Unique(_) => type_manager.unset_owns_annotation_unique(snapshot, *self)?,
-            OwnsAnnotation::Regex(_) => type_manager.unset_owns_annotation_regex(snapshot, *self)?,
-            OwnsAnnotation::Range(_) => type_manager.unset_owns_annotation_range(snapshot, *self)?,
-            OwnsAnnotation::Values(_) => type_manager.unset_owns_annotation_values(snapshot, *self)?,
+            OwnsAnnotationCategory::Unique => type_manager.unset_owns_annotation_unique(snapshot, *self)?,
+            OwnsAnnotationCategory::Regex => type_manager.unset_owns_annotation_regex(snapshot, *self)?,
+            OwnsAnnotationCategory::Range => type_manager.unset_owns_annotation_range(snapshot, *self)?,
+            OwnsAnnotationCategory::Values => type_manager.unset_owns_annotation_values(snapshot, *self)?,
+            OwnsAnnotationCategory::Doc => type_manager.unset_owns_annotation_doc(snapshot, *self)?,
+            OwnsAnnotationCategory::Meta(meta) => type_manager.unset_owns_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -279,7 +285,7 @@ impl Capability for Owns {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, FromAnnotation!, HasAnnotationCategoryDerive!)]
 pub enum OwnsAnnotation {
     Distinct(AnnotationDistinct),
     Unique(AnnotationUnique),
@@ -288,40 +294,8 @@ pub enum OwnsAnnotation {
     Regex(AnnotationRegex),
     Range(AnnotationRange),
     Values(AnnotationValues),
-}
-
-impl TryFrom<Annotation> for OwnsAnnotation {
-    type Error = AnnotationError;
-
-    fn try_from(annotation: Annotation) -> Result<OwnsAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Distinct(annotation) => Ok(OwnsAnnotation::Distinct(annotation)),
-            Annotation::Unique(annotation) => Ok(OwnsAnnotation::Unique(annotation)),
-            Annotation::Key(annotation) => Ok(OwnsAnnotation::Key(annotation)),
-            Annotation::Cardinality(annotation) => Ok(OwnsAnnotation::Cardinality(annotation)),
-            Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
-            Annotation::Range(annotation) => Ok(OwnsAnnotation::Range(annotation)),
-            Annotation::Values(annotation) => Ok(OwnsAnnotation::Values(annotation)),
-
-            | Annotation::Abstract(_) | Annotation::Independent(_) | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForOwns { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<OwnsAnnotation> for Annotation {
-    fn from(anno: OwnsAnnotation) -> Self {
-        match anno {
-            OwnsAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
-            OwnsAnnotation::Unique(annotation) => Annotation::Unique(annotation),
-            OwnsAnnotation::Key(annotation) => Annotation::Key(annotation),
-            OwnsAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
-            OwnsAnnotation::Regex(annotation) => Annotation::Regex(annotation),
-            OwnsAnnotation::Range(annotation) => Annotation::Range(annotation),
-            OwnsAnnotation::Values(annotation) => Annotation::Values(annotation),
-        }
-    }
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl PartialEq<Annotation> for OwnsAnnotation {
@@ -347,6 +321,20 @@ impl PartialEq<Annotation> for OwnsAnnotation {
             Annotation::Values(other_values) => {
                 if let Self::Values(values) = self {
                     values == other_values
+                } else {
+                    false
+                }
+            }
+            Annotation::Doc(other_doc) => {
+                if let Self::Doc(doc) = self {
+                    doc == other_doc
+                } else {
+                    false
+                }
+            }
+            Annotation::Meta(other_meta) => {
+                if let Self::Meta(meta) = self {
+                    meta == other_meta
                 } else {
                     false
                 }

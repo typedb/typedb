@@ -61,7 +61,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     // Basic vertex type operations
     pub(crate) fn storage_put_label<T: TypeAPI>(snapshot: &mut Snapshot, type_: T, label: &Label) {
         debug_assert!(TypeReader::get_label(snapshot, type_).unwrap().is_none());
-        Self::storage_put_type_vertex_property(snapshot, type_, Some(label.clone()));
+        Self::storage_put_type_vertex_property(snapshot, type_, label.clone());
 
         let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
         let vertex_value = ByteArray::from(&*type_.into_vertex().to_bytes());
@@ -96,7 +96,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl TypeAPI) {
         let existing_label = TypeReader::get_label(snapshot, type_).unwrap();
         if let Some(label) = existing_label {
-            Self::storage_delete_type_vertex_property::<Label>(snapshot, type_);
+            Self::storage_delete_type_vertex_property::<Label>(snapshot, type_, &[]);
             let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
             snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
@@ -104,7 +104,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
 
     pub(crate) fn storage_unput_label<T: TypeAPI>(snapshot: &mut Snapshot, type_: T, label: &Label) {
         let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
-        Self::storage_unput_type_vertex_property(snapshot, type_, Some(label.clone()));
+        Self::storage_unput_type_vertex_property(snapshot, type_, label.clone());
         let vertex_value = ByteArray::from(&*type_.into_vertex().to_bytes());
         snapshot.unput_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
@@ -135,11 +135,11 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_set_value_type(snapshot: &mut Snapshot, attribute: AttributeType, value_type: ValueType) {
-        TypeWriter::storage_put_type_vertex_property(snapshot, attribute, Some(value_type));
+        TypeWriter::storage_put_type_vertex_property(snapshot, attribute, value_type);
     }
 
     pub(crate) fn storage_unset_value_type(snapshot: &mut Snapshot, attribute: AttributeType) {
-        TypeWriter::storage_delete_type_vertex_property::<ValueType>(snapshot, attribute);
+        TypeWriter::storage_delete_type_vertex_property::<ValueType>(snapshot, attribute, &[]);
     }
 
     // Type edges
@@ -162,52 +162,46 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_insert_type_vertex_property<P>(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding,
-        property_opt: Option<P>,
-    ) where
-        P: TypeVertexPropertyEncoding,
-    {
-        let key = P::build_key(vertex).into_storage_key();
-        if let Some(property) = property_opt {
-            let value = property.to_value_bytes().unwrap();
+        property: impl TypeVertexPropertyEncoding,
+    ) {
+        let key = property.to_key(vertex).into_storage_key();
+        if let Some(value) = property.to_value_bytes() {
             snapshot.insert_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.insert(key.into_owned_array())
         }
     }
 
-    pub(crate) fn storage_put_type_vertex_property<P>(
+    pub(crate) fn storage_put_type_vertex_property(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding,
-        property_opt: Option<P>,
-    ) where
-        P: TypeVertexPropertyEncoding,
-    {
-        let key = P::build_key(vertex).into_storage_key();
-        if let Some(property) = property_opt {
-            let value = property.to_value_bytes().unwrap();
+        property: impl TypeVertexPropertyEncoding,
+    ) {
+        let key = property.to_key(vertex).into_storage_key();
+        if let Some(value) = property.to_value_bytes() {
             snapshot.put_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.put(key.into_owned_array())
         }
     }
 
-    pub(crate) fn storage_delete_type_vertex_property<P>(snapshot: &mut Snapshot, vertex: impl TypeVertexEncoding)
-    where
-        P: TypeVertexPropertyEncoding,
-    {
-        snapshot.delete(P::build_key(vertex).into_storage_key().into_owned_array());
-    }
-
-    pub(crate) fn storage_unput_type_vertex_property<P>(
+    pub(crate) fn storage_delete_type_vertex_property<P>(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding,
-        property_opt: Option<P>,
+        suffix: &[u8],
     ) where
         P: TypeVertexPropertyEncoding,
     {
-        let key = P::build_key(vertex).into_storage_key();
-        if let Some(property) = property_opt {
-            let value = property.to_value_bytes().unwrap();
+        snapshot.delete(P::build_key(vertex, suffix).into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_unput_type_vertex_property(
+        snapshot: &mut Snapshot,
+        vertex: impl TypeVertexEncoding,
+        property: impl TypeVertexPropertyEncoding,
+    ) {
+        let key = property.to_key(vertex).into_storage_key();
+        if let Some(value) = property.to_value_bytes() {
             snapshot.unput_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.unput(key.into_owned_array())
@@ -215,45 +209,42 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_set_owns_ordering(snapshot: &mut Snapshot, owns: Owns, ordering: Ordering) {
-        Self::storage_put_type_edge_property(snapshot, owns, Some(ordering))
+        Self::storage_put_type_edge_property(snapshot, owns, ordering)
     }
 
-    pub(crate) fn storage_insert_type_edge_property<P>(
+    pub(crate) fn storage_insert_type_edge_property(
         snapshot: &mut Snapshot,
         edge: impl TypeEdgeEncoding,
-        property_opt: Option<P>,
-    ) where
-        P: TypeEdgePropertyEncoding,
-    {
-        let key = P::build_key(edge).into_storage_key();
-        if let Some(property) = property_opt {
-            let value = property.to_value_bytes().unwrap();
+        property: impl TypeEdgePropertyEncoding,
+    ) {
+        let key = property.to_key(edge).into_storage_key();
+        if let Some(value) = property.to_value_bytes() {
             snapshot.insert_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.insert(key.into_owned_array())
         }
     }
 
-    pub(crate) fn storage_put_type_edge_property<P>(
+    pub(crate) fn storage_put_type_edge_property(
         snapshot: &mut Snapshot,
         edge: impl TypeEdgeEncoding,
-        property_opt: Option<P>,
-    ) where
-        P: TypeEdgePropertyEncoding,
-    {
-        let key = P::build_key(edge).into_storage_key();
-        if let Some(property) = property_opt {
-            let value = property.to_value_bytes().unwrap();
+        property: impl TypeEdgePropertyEncoding,
+    ) {
+        let key = property.to_key(edge).into_storage_key();
+        if let Some(value) = property.to_value_bytes() {
             snapshot.put_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.put(key.into_owned_array())
         }
     }
 
-    pub(crate) fn storage_delete_type_edge_property<P>(snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding)
-    where
+    pub(crate) fn storage_delete_type_edge_property<P>(
+        snapshot: &mut Snapshot,
+        edge: impl TypeEdgeEncoding,
+        suffix: &[u8],
+    ) where
         P: TypeEdgePropertyEncoding,
     {
-        snapshot.delete(P::build_key(edge).into_storage_key().into_owned_array());
+        snapshot.delete(P::build_key(edge, suffix).into_storage_key().into_owned_array());
     }
 }

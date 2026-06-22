@@ -26,7 +26,9 @@ use concept::{
     },
     type_::{
         Capability, Ordering, OwnerAPI, PlayerAPI,
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
+        annotation::{
+            AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey, HasAnnotationCategory,
+        },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
         object_type::ObjectType,
@@ -94,8 +96,7 @@ macro_rules! is_specializing_with_only_cardinality_specializations_fn {
                     .get_annotations_declared(snapshot, type_manager)
                     .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
                     .into_iter()
-                    .map(|annotation| Into::<Annotation>::into(annotation.clone()).category())
-                    .filter(|category| !matches!(category, &AnnotationCategory::Cardinality))
+                    .filter(|annotation| !annotation.has_category(&AnnotationCategory::Cardinality))
                     .count();
                 Ok(non_cardinality_count == 0)
             } else {
@@ -693,7 +694,7 @@ impl DatabaseImporter {
                         }) {
                         Some(annotation) => match annotation {
                             OwnsAnnotation::Cardinality(cardinality) => {
-                                schema_info.original_cardinalities_owns.insert(*owns, Some(cardinality.clone()));
+                                schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
                             }
                             OwnsAnnotation::Key(_) => {
                                 owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
@@ -744,9 +745,8 @@ impl DatabaseImporter {
                     {
                         Some(annotation) => match annotation {
                             PlaysAnnotation::Cardinality(cardinality) => {
-                                schema_info.original_cardinalities_plays.insert(*plays, Some(cardinality.clone()));
+                                schema_info.original_cardinalities_plays.insert(*plays, Some(*cardinality));
                             }
-                            #[expect(unreachable_patterns)]
                             _ => unreachable!("Expected a cardinality annotation"),
                         },
                         None => {

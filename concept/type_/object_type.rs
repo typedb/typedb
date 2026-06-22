@@ -38,7 +38,6 @@ macro_rules! with_object_type {
         }
     };
 }
-pub(crate) use with_object_type;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType {

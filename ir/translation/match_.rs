@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use error::todo_must_implement;
-
 use crate::{
     RepresentationError,
     pattern::conjunction::ConjunctionBuilderWithContext,

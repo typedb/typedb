@@ -17,7 +17,7 @@ async fn test_relation_type() {
     let path = "../typedb_behaviour+/concept/type/relationtype.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/concept/type/relationtype.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/concept/type/relationtype.feature";
 
     assert!(Context::test(path, true).await);
 }

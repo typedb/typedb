@@ -17,7 +17,7 @@ async fn test_read_expressions() {
     let path = "../typedb_behaviour+/query/language/expression.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/expression.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/expression.feature";
 
     assert!(Context::test(path, true).await);
 }

@@ -30,7 +30,7 @@ struct Context {
     storage: Arc<MVCCStorage<WALClient>>,
     type_manager: Arc<TypeManager>,
     thing_manager: Arc<ThingManager>,
-    function_manager: FunctionManager,
+    function_manager: Arc<FunctionManager>,
     query_manager: QueryManager,
     _tmp_dir: TempDir,
 }
@@ -40,7 +40,7 @@ fn setup_common(schema: &str) -> Context {
     setup_concept_storage(&mut storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
@@ -71,7 +71,7 @@ fn run_read_query(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             None::<GivenRowsSimple>,
             query,
@@ -98,7 +98,7 @@ fn run_write_query(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query_as_pipeline,
             None::<GivenRowsSimple>,
             query,

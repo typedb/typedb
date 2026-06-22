@@ -6,6 +6,7 @@
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::QueryProfile};
@@ -37,28 +38,42 @@ use crate::{
 pub struct ExecutionContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
+    pub function_manager: Arc<FunctionManager>,
     pub parameters: Arc<ParameterRegistry>,
     pub profile: Arc<QueryProfile>,
 }
 
 impl<Snapshot> ExecutionContext<Snapshot> {
-    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, parameters: Arc<ParameterRegistry>) -> Self {
-        Self::new_with_profile(snapshot, thing_manager, parameters, Arc::new(QueryProfile::new(false)))
+    pub fn new(
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager>,
+        function_manager: Arc<FunctionManager>,
+        parameters: Arc<ParameterRegistry>,
+    ) -> Self {
+        Self::new_with_profile(
+            snapshot,
+            thing_manager,
+            function_manager,
+            parameters,
+            Arc::new(QueryProfile::new(false)),
+        )
     }
 
     pub fn new_with_profile(
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
+        function_manager: Arc<FunctionManager>,
         parameters: Arc<ParameterRegistry>,
         query_profile: Arc<QueryProfile>,
     ) -> Self {
-        Self { snapshot, thing_manager, parameters, profile: query_profile }
+        Self { snapshot, thing_manager, function_manager, parameters, profile: query_profile }
     }
 
     pub(crate) fn clone_with_replaced_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
         Self {
             snapshot: self.snapshot.clone(),
             thing_manager: self.thing_manager.clone(),
+            function_manager: self.function_manager.clone(),
             parameters,
             profile: self.profile.clone(),
         }
@@ -76,6 +91,10 @@ impl<Snapshot> ExecutionContext<Snapshot> {
         self.thing_manager.type_manager()
     }
 
+    pub(crate) fn function_manager(&self) -> &FunctionManager {
+        &self.function_manager
+    }
+
     pub(crate) fn parameters(&self) -> &ParameterRegistry {
         &self.parameters
     }
@@ -83,10 +102,11 @@ impl<Snapshot> ExecutionContext<Snapshot> {
 
 impl<Snapshot> Clone for ExecutionContext<Snapshot> {
     fn clone(&self) -> Self {
-        let Self { snapshot, thing_manager, parameters, profile } = self;
+        let Self { snapshot, thing_manager, parameters, function_manager, profile } = self;
         Self {
             snapshot: snapshot.clone(),
             thing_manager: thing_manager.clone(),
+            function_manager: function_manager.clone(),
             parameters: parameters.clone(),
             profile: profile.clone(),
         }

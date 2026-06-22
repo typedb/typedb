@@ -56,7 +56,9 @@ use tracing::{Level, event};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    analyse::{self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations},
+    analyse::{
+        AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
+    },
     define,
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRows},
@@ -137,7 +139,7 @@ impl QueryManager {
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
-        function_manager: &FunctionManager,
+        function_manager: Arc<FunctionManager>,
         query: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
@@ -154,7 +156,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters: parameters,
-        } = translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
+        } = translate_pipeline(snapshot.as_ref(), &function_manager, query, source_query)?;
         compile_profile.translation_finished();
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = Arc::new(translated_given);
@@ -174,7 +176,7 @@ impl QueryManager {
                     source_query,
                     type_manager,
                     thing_manager.clone(),
-                    function_manager,
+                    &function_manager,
                     compile_profile,
                     &mut variable_registry,
                     arced_parameters.clone(),
@@ -213,6 +215,7 @@ impl QueryManager {
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
+            function_manager,
             variable_registry.variable_names(),
             (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
             Arc::new(executable_functions),
@@ -233,7 +236,7 @@ impl QueryManager {
         snapshot: Snapshot,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
-        function_manager: &FunctionManager,
+        function_manager: Arc<FunctionManager>,
         query: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
@@ -250,7 +253,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters,
-        } = match translate_pipeline(&snapshot, function_manager, query, source_query) {
+        } = match translate_pipeline(&snapshot, &function_manager, query, source_query) {
             Ok(translated) => translated,
             Err(err) => return Err((snapshot, err)),
         };
@@ -274,7 +277,7 @@ impl QueryManager {
                     source_query,
                     type_manager,
                     thing_manager.clone(),
-                    function_manager,
+                    &function_manager,
                     compile_profile,
                     &mut variable_registry,
                     arced_parameters.clone(),
@@ -324,6 +327,7 @@ impl QueryManager {
             variable_registry.variable_names(),
             (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
             thing_manager,
+            function_manager,
             Arc::new(executable_functions),
             executable_given,
             executable_stages,
@@ -376,7 +380,7 @@ impl QueryManager {
         // 2: Annotate
         let annotated_schema_functions =
             function_manager.get_annotated_functions(snapshot.as_ref(), type_manager).map_err(|err| {
-                QueryError::FunctionDefinition { source_query: source_query.to_string(), typedb_source: err }
+                QueryError::FunctionDefinition { source_query: source_query.to_string(), typedb_source: *err }
             })?;
 
         let annotated_pipeline = annotate_preamble_and_pipeline(
@@ -459,14 +463,8 @@ fn annotate_and_compile_query(
     arced_stages: Arc<Vec<TranslatedStage>>,
     arced_fetch: Arc<Option<FetchObject>>,
 ) -> Result<ExecutablePipeline, Box<QueryError>> {
-    match validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
-        Ok(_) => {}
-        Err(typedb_source) => {
-            return Err(Box::new(QueryError::FunctionDefinition {
-                source_query: source_query.to_string(),
-                typedb_source,
-            }));
-        }
+    if let Err(typedb_source) = validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
+        return Err(Box::new(QueryError::FunctionDefinition { source_query: source_query.to_string(), typedb_source }));
     }
     compile_profile.validation_finished();
 
@@ -476,7 +474,7 @@ fn annotate_and_compile_query(
         Err(err) => {
             return Err(Box::new(QueryError::FunctionDefinition {
                 source_query: source_query.to_string(),
-                typedb_source: err,
+                typedb_source: *err,
             }));
         }
     };
@@ -505,13 +503,13 @@ fn annotate_and_compile_query(
     compile_profile.annotation_finished();
     // TODO: We can avoid this for the regular query path when we break studio backwards compatibility
     let pipeline_structure = Arc::new(extract_pipeline_structure_from(
-        &variable_registry,
+        variable_registry,
         annotated_pipeline.annotated_given.as_ref(),
         &annotated_pipeline.annotated_stages,
         source_query,
     ));
 
-    match apply_transformations(snapshot, &type_manager, variable_registry, &mut annotated_pipeline) {
+    match apply_transformations(snapshot, type_manager, variable_registry, &mut annotated_pipeline) {
         Ok(_) => {}
         Err(err) => {
             return Err(Box::new(QueryError::Transformation {
@@ -527,7 +525,7 @@ fn annotate_and_compile_query(
     // 3: Compile
     let executable_pipeline = match compile_pipeline_and_functions(
         thing_manager.statistics(),
-        &variable_registry,
+        variable_registry,
         &annotated_schema_functions,
         annotated_preamble,
         annotated_given,

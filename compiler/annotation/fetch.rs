@@ -24,7 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    AnnotationContext, AnnotationError, PipelineAnnotationContext,
+    AnnotationContext, AnnotationError, PipelineAnnotationContext, TypeInferenceError,
     function::{AnnotatedFunction, annotate_anonymous_function},
     pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages},
 };
@@ -39,6 +39,8 @@ pub enum AnnotatedFetchSome {
     SingleVar(Variable),
     SingleAttribute(Variable, AttributeType),
     SingleFunction(AnnotatedFunction),
+
+    Label(Type),
 
     Object(Box<AnnotatedFetchObject>),
 
@@ -135,6 +137,19 @@ fn annotate_some(
                 annotate_anonymous_function(&mut function, &ctx.to_parts_mut().0, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
+        }
+        FetchSome::Label(label) => {
+            if let Some(ty) = ctx.type_manager.get_object_type(ctx.snapshot, &label)? {
+                Ok(AnnotatedFetchSome::Label(ty.into()))
+            } else if let Some(ty) = ctx.type_manager.get_attribute_type(ctx.snapshot, &label)? {
+                Ok(AnnotatedFetchSome::Label(ty.into()))
+            } else if let Some(ty) = ctx.type_manager.get_role_type(ctx.snapshot, &label)? {
+                Ok(AnnotatedFetchSome::Label(ty.into()))
+            } else {
+                Err(AnnotationError::TypeInference {
+                    typedb_source: TypeInferenceError::LabelNotResolved { name: label.name.to_string(), source_span },
+                })
+            }
         }
         FetchSome::Object(object) => {
             let object = annotate_object(ctx, *object, input_annotations)?;
@@ -260,7 +275,7 @@ fn annotate_sub_fetch(
     sub_fetch: FetchListSubFetch,
     input_annotations: RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { mut context, input_variables, stages, fetch } = sub_fetch;
+    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let PipelineTranslationContext { mut variable_registry, .. } = context;
     let mut local_pipeline_context = ctx.for_pipeline(&mut variable_registry, parameters);
     let (annotated_stages, output_annotations) =

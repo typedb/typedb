@@ -466,7 +466,7 @@ fn execute_steps(
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager.clone(), value_parameters.clone());
+    let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), value_parameters.clone());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     iterator

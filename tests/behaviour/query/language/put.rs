@@ -17,7 +17,7 @@ async fn test_write_put() {
     let path = "../typedb_behaviour+/query/language/put.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/put.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/put.feature";
 
     assert!(Context::test(path, true).await);
 }

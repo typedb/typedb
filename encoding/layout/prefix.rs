@@ -112,6 +112,7 @@ make_prefix_enum! {
     PropertyTypeVertex => 160 = 0xA0, true;
     PropertyTypeEdge => 162 = 0xA2, true;
     PropertyObjectVertex => 163 = 0xA3, true;
+    PropertyFunction => 164 = 0xA4, true;
 
     IndexLabelToType => 182 = 0xB6, false;
     IndexNameToDefinitionStruct => 183 = 0xB7, false;

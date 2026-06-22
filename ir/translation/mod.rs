@@ -90,7 +90,7 @@ impl PipelineTranslationContext {
     ) -> Result<Variable, Box<RepresentationError>> {
         if let Some(existing_variable) = self.last_stage_visible_variables.get(name) {
             return Err(Box::new(RepresentationError::ReduceAssignsToExistingVariable {
-                variable: name.clone().to_owned(),
+                variable: name.to_owned(),
                 source_span,
                 existing_span: self.variable_registry.source_span(*existing_variable),
             }));
