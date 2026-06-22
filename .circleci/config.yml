@@ -437,7 +437,7 @@ workflows:
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, fix-git-patch ]
 
       - deploy-docker-snapshot-x86_64:
           filters:
