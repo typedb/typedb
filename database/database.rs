@@ -48,7 +48,7 @@ use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTER
 use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    keyspace::storage_resources::RocksResources,
+    keyspace::rocks_resources::RocksResources,
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,

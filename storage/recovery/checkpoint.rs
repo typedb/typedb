@@ -25,7 +25,7 @@ use tracing::{debug, trace};
 
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces, storage_resources::RocksResources},
+    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces, rocks_resources::RocksResources},
     recovery::commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     sequence_number::SequenceNumber,
 };

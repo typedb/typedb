@@ -47,7 +47,7 @@ use crate::{
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
-        iterator::KeyspaceRangeIterator, storage_resources::RocksResources,
+        iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
@@ -738,17 +738,15 @@ mod tests {
     use bytes::byte_array::ByteArray;
     use diagnostics::metrics::FsyncMetrics;
     use durability::wal::WAL;
-    use resource::{
-        constants::common::MB,
-        profile::{CommitProfile, StorageCounters},
-    };
+    use options::byte_size::ByteSize;
+    use resource::profile::{CommitProfile, StorageCounters};
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
         Arc, MVCCStorage, SnapshotId,
         durability_client::{DurabilityClient, WALClient},
         key_value::StorageKeyArray,
-        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces, storage_resources::RocksResources},
+        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces, rocks_resources::RocksResources},
         record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
         sequence_number::SequenceNumber,
         snapshot::{WriteSnapshot, buffer::OperationsBuffer},
@@ -757,7 +755,7 @@ mod tests {
 
     fn create_rocks_resources() -> RocksResources {
         // Small but non-zero limits sufficient for unit tests.
-        RocksResources::new(64 * MB as usize, 64 * MB as usize)
+        RocksResources::new(ByteSize::mb(64), ByteSize::mb(64))
     }
 
     macro_rules! test_keyspace_set {

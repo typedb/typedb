@@ -13,6 +13,7 @@ rust_library(
     deps = [
         "//common/logger",
         "//common/bytes",
+        "//common/options",
         "//diagnostics",
         "//durability",
         "//storage",

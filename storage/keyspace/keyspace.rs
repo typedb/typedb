@@ -19,7 +19,7 @@ use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, 
 use serde::{Deserialize, Serialize};
 
 use super::{IteratorPool, constants, iterator};
-use crate::{key_range::KeyRange, keyspace::storage_resources::RocksResources, write_batches::WriteBatches};
+use crate::{key_range::KeyRange, keyspace::rocks_resources::RocksResources, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);

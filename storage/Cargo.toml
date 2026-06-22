@@ -86,6 +86,9 @@ features = {}
 	[dependencies.typeql]
 		workspace = true
 
+	[dependencies.options]
+		workspace = true
+
 	[dependencies.chrono]
 		workspace = true
 

@@ -33,3 +33,6 @@ features = {}
 	[dependencies.storage]
 		workspace = true
 
+	[dependencies.options]
+		workspace = true
+

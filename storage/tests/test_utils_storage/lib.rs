@@ -8,11 +8,11 @@ use std::{path::Path, sync::Arc};
 
 use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
-use resource::constants::common::MB;
+use options::byte_size::ByteSize;
 use storage::{
     MVCCStorage, StorageOpenError,
     durability_client::WALClient,
-    keyspace::{KeyspaceSet, storage_resources::RocksResources},
+    keyspace::{KeyspaceSet, rocks_resources::RocksResources},
     recovery::checkpoint::{CheckpointReader, CheckpointWriter},
 };
 
@@ -20,7 +20,7 @@ pub mod mock_snapshot;
 
 pub fn create_rocks_resources() -> RocksResources {
     // Small but non-zero limits sufficient for unit tests.
-    RocksResources::new(64 * MB as usize, 64 * MB as usize)
+    RocksResources::new(ByteSize::mb(64), ByteSize::mb(64))
 }
 
 #[macro_export]

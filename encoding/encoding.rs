@@ -14,7 +14,7 @@ use resource::constants::common::MB;
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
 use storage::{
     key_value::StorageKey,
-    keyspace::{KeyspaceId, KeyspaceSet, storage_resources::RocksResources},
+    keyspace::{KeyspaceId, KeyspaceSet, rocks_resources::RocksResources},
 };
 
 use crate::layout::prefix::{Prefix, PrefixID};
