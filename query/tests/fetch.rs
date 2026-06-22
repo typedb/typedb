@@ -10,7 +10,11 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
-use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -55,7 +59,7 @@ fn insert_data(
             type_manager,
             thing_manager,
             function_manager,
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_string,
         )
@@ -134,7 +138,7 @@ fetch {
             &type_manager,
             thing_manager.clone(),
             function_manager,
-            &pipeline,
+            QueryInput::Parsed(pipeline),
             None::<GivenRowsSimple>,
             query_str,
         )

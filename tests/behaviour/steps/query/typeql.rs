@@ -40,6 +40,7 @@ use query::{
     analyse::AnalysedQuery,
     error::QueryError,
     given_rows::{GivenRowEntry, GivenRowsSimple},
+    query_manager::QueryInput,
 };
 use resource::profile::StorageCounters;
 use server::service::http::message::analyze::{
@@ -98,7 +99,7 @@ fn execute_read_query(
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            &query.into_structure().into_pipeline(),
+            QueryInput::Parsed(query.into_structure().into_pipeline()),
             given_rows,
             source_query,
         )?;
@@ -160,7 +161,7 @@ fn execute_write_query(
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            &query.into_structure().into_pipeline(),
+            QueryInput::Parsed(query.into_structure().into_pipeline()),
             given_rows,
             source_query,
         );
@@ -235,7 +236,7 @@ fn execute_analyze(
                 &tx.type_manager,
                 tx.thing_manager.clone(),
                 &tx.function_manager,
-                &query.into_structure().into_pipeline(),
+                QueryInput::Parsed(query.into_structure().into_pipeline()),
                 source_query,
             )
             .map_err(|source| BehaviourTestExecutionError::Query(*source))

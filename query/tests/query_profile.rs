@@ -12,7 +12,11 @@ use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -62,7 +66,7 @@ fn insert_data(
             type_manager,
             thing_manager,
             function_manager,
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_string,
         )
@@ -185,7 +189,7 @@ fn query_profile_tree_structure() {
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )

@@ -19,7 +19,11 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryInput, QueryManager},
+};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::{TempDir, assert_matches};
@@ -79,7 +83,7 @@ fn test_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager,
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -121,7 +125,7 @@ fn test_insert_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager,
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -159,7 +163,7 @@ fn test_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -181,7 +185,7 @@ fn test_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            QueryInput::Parsed(match_),
             None::<GivenRowsSimple>,
             query,
         )
@@ -200,7 +204,7 @@ fn test_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            QueryInput::Parsed(match_),
             None::<GivenRowsSimple>,
             query,
         )
@@ -229,7 +233,7 @@ fn test_match_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -254,7 +258,7 @@ fn test_match_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            QueryInput::Parsed(match_),
             None::<GivenRowsSimple>,
             query,
         )
@@ -273,7 +277,7 @@ fn test_match_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            QueryInput::Parsed(match_),
             None::<GivenRowsSimple>,
             query,
         )
@@ -297,7 +301,7 @@ fn test_match_delete_has() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &insert_query,
+            QueryInput::Parsed(insert_query),
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -335,7 +339,7 @@ fn test_match_delete_has() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &delete_query,
+            QueryInput::Parsed(delete_query),
             None::<GivenRowsSimple>,
             delete_query_str,
         )
@@ -378,7 +382,7 @@ fn test_insert_match_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -408,7 +412,7 @@ fn test_insert_match_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query,
+            QueryInput::Parsed(query),
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -441,7 +445,7 @@ fn test_match_sort() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &insert_query,
+            QueryInput::Parsed(insert_query),
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -464,7 +468,7 @@ fn test_match_sort() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            QueryInput::Parsed(match_),
             None::<GivenRowsSimple>,
             query,
         )
@@ -506,7 +510,7 @@ fn test_select() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &insert_query,
+            QueryInput::Parsed(insert_query),
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -530,7 +534,7 @@ fn test_select() {
                 &context.type_manager,
                 context.thing_manager.clone(),
                 context.function_manager.clone(),
-                &match_,
+                QueryInput::Parsed(match_),
                 None::<GivenRowsSimple>,
                 query,
             )
@@ -550,7 +554,7 @@ fn test_select() {
                 &context.type_manager,
                 context.thing_manager.clone(),
                 context.function_manager.clone(),
-                &match_,
+                QueryInput::Parsed(match_),
                 None::<GivenRowsSimple>,
                 query,
             )
@@ -576,7 +580,7 @@ fn test_require() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &insert_query,
+            QueryInput::Parsed(insert_query),
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -600,7 +604,7 @@ fn test_require() {
                 &context.type_manager,
                 context.thing_manager.clone(),
                 context.function_manager.clone(),
-                &match_,
+                QueryInput::Parsed(match_),
                 None::<GivenRowsSimple>,
                 query,
             )

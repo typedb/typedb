@@ -11,6 +11,7 @@ use database::{
     transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::metrics::LoadKind;
+use ir::translation::pipeline::TranslatedPipeline;
 use options::TransactionOptions;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
@@ -69,6 +70,12 @@ impl Transaction {
 
     pub fn database_name(&self) -> Arc<str> {
         with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
+    }
+
+    /// Consult the database's parse cache for an already-translated query. A hit lets the caller
+    /// skip typeql parsing entirely; it is always a pipeline query (schema queries are never cached).
+    pub fn get_parsed_query(&self, source_query: &str) -> Option<TranslatedPipeline> {
+        with_readable_transaction!(self, |transaction| { transaction.query_manager.get_parsed(source_query) })
     }
 
     pub fn close(self) {

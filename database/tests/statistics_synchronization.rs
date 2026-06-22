@@ -15,7 +15,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::given_rows::GivenRowsSimple;
+use query::{given_rows::GivenRowsSimple, query_manager::QueryInput};
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 
@@ -102,7 +102,7 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            pipeline,
+            QueryInput::Parsed(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
