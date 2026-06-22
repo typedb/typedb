@@ -4,7 +4,7 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use std::{collections::HashMap, sync::Arc, vec};
+use std::{borrow::Cow, collections::HashMap, sync::Arc, vec};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -16,7 +16,10 @@ use compiler::{
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
-    type_::{Ordering, OwnerAPI, PlayerAPI, object_type::ObjectType, type_manager::TypeManager},
+    type_::{
+        Ordering, OwnerAPI, PlayerAPI, annotation::AnnotationDistinct, object_type::ObjectType, owns::OwnsAnnotation,
+        relates::RelatesAnnotation, type_manager::TypeManager,
+    },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
@@ -52,6 +55,13 @@ const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membe
 const MEMBERSHIP_GROUP_LABEL: Label = Label::new_static_scoped("group", "membership", "membership:group");
 const AGE_LABEL: Label = Label::new_static("age");
 const NAME_LABEL: Label = Label::new_static("name");
+
+macro_rules! commit_disabled {
+    ($snapshot:expr) => {{
+        let mut profile = CommitProfile::DISABLED;
+        $snapshot.commit(&mut profile).unwrap();
+    }};
+}
 
 fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
@@ -116,7 +126,58 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
         .set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type, StorageCounters::DISABLED)
         .unwrap();
 
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
+}
+
+fn setup_ordered_name_schema(storage: Arc<MVCCStorage<WALClient>>, distinct: bool) {
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    let owns = person_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Ordered, StorageCounters::DISABLED)
+        .unwrap();
+    if distinct {
+        owns.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
+            .unwrap();
+    }
+
+    commit_disabled!(snapshot);
+}
+
+fn setup_ordered_member_schema(storage: Arc<MVCCStorage<WALClient>>, distinct: bool) {
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
+    let relates_member = membership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_MEMBER_LABEL.name().as_str(),
+            Ordering::Ordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    if distinct {
+        relates_member
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Distinct(AnnotationDistinct),
+            )
+            .unwrap();
+    }
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, relates_member.role(), StorageCounters::DISABLED)
+        .unwrap();
+
+    commit_disabled!(snapshot);
 }
 
 struct ShimStage<Snapshot> {
@@ -335,7 +396,7 @@ fn has() {
         vec![vec![]],
     )
     .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 
     let snapshot = storage.clone().open_snapshot_read();
     let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
@@ -344,6 +405,135 @@ fn has() {
         .unwrap()
         .unwrap();
     assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager, StorageCounters::DISABLED).count());
+}
+
+#[test]
+fn ordered_has_list_literal_preserves_order() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    setup_ordered_name_schema(storage.clone(), false);
+    let snapshot = storage.clone().open_snapshot_write();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        r#"insert $p isa person, has name[] ["b", "a"];"#,
+        &[],
+        vec![vec![]],
+    )
+    .unwrap();
+    let person = inserted_rows[0][0].as_thing().as_object().clone();
+    commit_disabled!(snapshot);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let name_type = type_manager.get_attribute_type(&snapshot, &NAME_LABEL).unwrap().unwrap();
+    let names = person
+        .get_has_type_ordered(&snapshot, &thing_manager, name_type, StorageCounters::DISABLED)
+        .unwrap()
+        .into_iter()
+        .map(|attr| {
+            (*attr.get_value(&snapshot, &thing_manager, StorageCounters::DISABLED).unwrap().unwrap_string()).to_owned()
+        })
+        .collect_vec();
+    assert_eq!(names, vec![String::from("b"), String::from("a")]);
+
+    let attr_b = thing_manager
+        .get_attribute_with_value(&snapshot, name_type, Value::String(Cow::Borrowed("b")), StorageCounters::DISABLED)
+        .unwrap()
+        .unwrap();
+    assert_eq!(1, attr_b.get_owners(&snapshot, &thing_manager, StorageCounters::DISABLED).count());
+}
+
+#[test]
+fn ordered_has_distinct_rejects_duplicate_attributes() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    setup_ordered_name_schema(storage.clone(), true);
+    let snapshot = storage.clone().open_snapshot_write();
+    let err = execute_insert(
+        snapshot,
+        type_manager,
+        thing_manager,
+        r#"insert $p isa person, has name[] ["a", "a"];"#,
+        &[],
+        vec![vec![]],
+    )
+    .unwrap_err();
+
+    let message = format!("{err:?}");
+    assert!(message.contains("@distinct"), "unexpected duplicate ordered-has error: {message}");
+}
+
+#[test]
+fn ordered_links_repeated_role_marker_preserves_order() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    setup_ordered_member_schema(storage.clone(), false);
+    let snapshot = storage.clone().open_snapshot_write();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        r#"
+        insert
+          $a isa person;
+          $b isa person;
+          $m isa membership, links (member[]: $a, member[]: $b);
+        "#,
+        &[],
+        vec![vec![]],
+    )
+    .unwrap();
+    let player_a = inserted_rows[0][0].as_thing().as_object().clone();
+    let player_b = inserted_rows[0][1].as_thing().as_object().clone();
+    commit_disabled!(snapshot);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+    let member_role = membership_type
+        .get_relates_role_name(&snapshot, &type_manager, MEMBERSHIP_MEMBER_LABEL.name.as_str())
+        .unwrap()
+        .unwrap()
+        .role();
+    let relations: Vec<Relation> =
+        Itertools::try_collect(thing_manager.get_relations_in(&snapshot, membership_type, StorageCounters::DISABLED))
+            .unwrap();
+    assert_eq!(1, relations.len());
+    let players =
+        relations[0].get_players_ordered(&snapshot, &thing_manager, member_role, StorageCounters::DISABLED).unwrap();
+    assert_eq!(players, vec![player_a, player_b]);
+}
+
+#[test]
+fn ordered_links_distinct_rejects_duplicate_players() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    setup_ordered_member_schema(storage.clone(), true);
+    let snapshot = storage.clone().open_snapshot_write();
+    let err = execute_insert(
+        snapshot,
+        type_manager,
+        thing_manager,
+        r#"
+        insert
+          $a isa person;
+          $m isa membership, links (member[]: $a, member[]: $a);
+        "#,
+        &[],
+        vec![vec![]],
+    )
+    .unwrap_err();
+
+    let message = format!("{err:?}");
+    assert!(message.contains("@distinct"), "unexpected duplicate ordered-links error: {message}");
 }
 
 #[test]
@@ -361,7 +551,7 @@ fn test() {
          (member: $p, group: $g) isa membership;
     ";
     let (_, snapshot) = execute_insert(snapshot, type_manager, thing_manager, query_str, &[], vec![vec![]]).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 }
 
 #[test]
@@ -380,7 +570,7 @@ fn relation() {
     ";
     let (_, snapshot) =
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 
     let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
@@ -433,7 +623,7 @@ fn relation_with_inferred_roles() {
     ";
     let (_, snapshot) =
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 
     let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
@@ -498,7 +688,7 @@ fn test_has_with_input_rows() {
     )
     .unwrap();
     let a10 = inserted_rows[0][1].clone();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 
     let snapshot = storage.clone().open_snapshot_read();
     let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
@@ -547,7 +737,7 @@ fn delete_has() {
     )
     .unwrap();
     let a10 = inserted_rows[0][1].clone().into_owned();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 
     let snapshot = storage.clone().open_snapshot_write();
     assert_eq!(
@@ -566,7 +756,7 @@ fn delete_has() {
         vec![vec![p10.clone(), a10.clone()]],
     )
     .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    commit_disabled!(snapshot);
 
     let snapshot = storage.clone().open_snapshot_read();
     assert_eq!(

@@ -22,6 +22,7 @@ use lending_iterator::{LendingIterator, Peekable, adaptors::Inspect, kmerge::KMe
 use crate::{
     instruction::{
         has_executor::{HasTupleIteratorMerged, HasTupleIteratorSingle},
+        has_ordered_executor::HasOrderedTupleIterator,
         has_reverse_executor::{HasReverseTupleIteratorMerged, HasReverseTupleIteratorSingle},
         iid_executor::IidIterator,
         indexed_relation_executor::{IndexedRelationTupleIteratorMerged, IndexedRelationTupleIteratorSingle},
@@ -214,6 +215,7 @@ pub(crate) enum TupleIterator {
 
     HasSingle(SortedTupleIterator<HasTupleIteratorSingle>),
     HasMerged(SortedTupleIterator<HasTupleIteratorMerged>),
+    HasOrdered(SortedTupleIterator<HasOrderedTupleIterator>),
 
     HasReverseSingle(SortedTupleIterator<HasReverseTupleIteratorSingle>),
     HasReverseMerged(SortedTupleIterator<HasReverseTupleIteratorMerged>),
@@ -279,6 +281,7 @@ impl Display for TupleIterator {
             TupleIterator::IsaReverseBounded(_) => write!(f, "IsaReverseBounded iterator"),
             TupleIterator::HasSingle(_) => write!(f, "HasSingle iterator"),
             TupleIterator::HasMerged(_) => write!(f, "HasMerged iterator"),
+            TupleIterator::HasOrdered(_) => write!(f, "HasOrdered iterator"),
             TupleIterator::HasReverseSingle(_) => write!(f, "HasReverseSingle iterator"),
             TupleIterator::HasReverseMerged(_) => write!(f, "HasReverseMerged iterator"),
             TupleIterator::LinksSingle(_) => write!(f, "LinksSingle iterator"),

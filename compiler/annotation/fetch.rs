@@ -7,7 +7,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use answer::{Type, variable::Variable};
-use concept::type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType};
+use concept::type_::{Ordering, OwnerAPI, TypeAPI, attribute_type::AttributeType};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
@@ -170,12 +170,24 @@ fn annotate_some(
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
         }
-        FetchSome::ListAttributesFromList(FetchListAttributeFromList { .. }) => {
-            Err(AnnotationError::Unimplemented {
-                description: "Fetching a list attribute is not yet supported.".to_owned(),
-            })
-            // // TODO: validate attribute type cardinality matches the syntax
-            // Ok(AnnotatedFetchSome::ListAttributesFromList(fetch))
+        FetchSome::ListAttributesFromList(FetchListAttributeFromList { variable, attribute }) => {
+            let (ctx, variable_registry, _params) = ctx.to_parts_mut();
+            let variable_name = variable_registry
+                .get_variable_name(variable)
+                .expect("Expected fetched variable names to be validated during translation");
+            let attribute_type = ctx
+                .type_manager
+                .get_attribute_type(ctx.snapshot, &attribute)
+                .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
+                .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
+                    var: variable_name.clone(),
+                    source_span,
+                    attribute,
+                })?;
+            for owner_type in input_annotations.concepts.get(&variable).unwrap().iter() {
+                validate_attribute_owned_and_ordered(&ctx, variable_name, owner_type, attribute_type, source_span)?;
+            }
+            Ok(AnnotatedFetchSome::ListAttributesFromList(variable, attribute_type))
         }
     }
 }
@@ -254,13 +266,54 @@ fn validate_attribute_owned_and_streamable(
     Ok(())
 }
 
+fn validate_attribute_owned_and_ordered(
+    ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
+    owner: &str,
+    owner_type: &Type,
+    attribute_type: AttributeType,
+    source_span: Option<Span>,
+) -> Result<(), AnnotationError> {
+    if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
+        return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
+            var: owner.to_owned(),
+            kind: kind.to_string(),
+            attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+            source_span,
+        });
+    }
+
+    let owns = owner_type
+        .as_object_type()
+        .get_owns_attribute(ctx.snapshot, ctx.type_manager, attribute_type)
+        .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
+        .ok_or_else(|| AnnotationError::FetchAttributesNotOwned {
+            var: owner.to_owned(),
+            owner: owner_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+            attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+            source_span,
+        })?;
+    if owns
+        .get_ordering(ctx.snapshot, ctx.type_manager)
+        .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
+        != Ordering::Ordered
+    {
+        return Err(AnnotationError::FetchListAttributeNotOrdered {
+            var: owner.to_owned(),
+            owner: owner_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+            attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+            source_span,
+        });
+    }
+    Ok(())
+}
+
 fn annotate_sub_fetch(
     ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
     parameters: &ParameterRegistry,
     sub_fetch: FetchListSubFetch,
     input_annotations: RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { mut context, input_variables, stages, fetch } = sub_fetch;
+    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let PipelineTranslationContext { mut variable_registry, .. } = context;
     let mut local_pipeline_context = ctx.for_pipeline(&mut variable_registry, parameters);
     let (annotated_stages, output_annotations) =

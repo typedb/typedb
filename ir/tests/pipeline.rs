@@ -11,7 +11,7 @@ use encoding::{
 use ir::{
     pattern::{
         AssignedVariable,
-        constraint::IsaKind,
+        constraint::{InterfaceOrdering, IsaKind},
         variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{
@@ -19,7 +19,10 @@ use ir::{
         block::Block,
         function_signature::{FunctionID, FunctionSignature, HashMapFunctionSignatureIndex},
     },
-    translation::{PipelineTranslationContext, pipeline::translate_pipeline},
+    translation::{
+        PipelineTranslationContext,
+        pipeline::{TranslatedStage, translate_pipeline},
+    },
 };
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
 // #[test]
@@ -134,6 +137,71 @@ fn optional_writes() {
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
+}
+
+fn translated_stage_block(stage: &TranslatedStage) -> &Block {
+    match stage {
+        TranslatedStage::Match { block, .. }
+        | TranslatedStage::Insert { block, .. }
+        | TranslatedStage::Update { block, .. }
+        | TranslatedStage::Put { block, .. }
+        | TranslatedStage::Delete { block, .. } => block,
+        _ => panic!("expected block stage, got {stage:?}"),
+    }
+}
+
+#[test]
+fn list_attribute_syntax_translates_as_ordered_has() {
+    for (query, expected_has_count) in
+        [(r#"insert $b isa book, has tag[] ["a", "b"];"#, 2), (r#"match $b isa book, has tag[] $tags;"#, 1)]
+    {
+        let parsed = typeql::parse_query(query).unwrap_or_else(|err| panic!("TypeQL failed to parse {query}: {err}"));
+        let translated =
+            translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline())
+                .unwrap_or_else(|err| panic!("TypeDB failed to translate {query}: {err:?}"));
+        let block = translated_stage_block(&translated.translated_stages[0]);
+        let has_constraints =
+            block.conjunction().constraints().iter().filter_map(|constraint| constraint.as_has()).collect::<Vec<_>>();
+        assert_eq!(has_constraints.len(), expected_has_count, "unexpected `has` constraint count for {query}");
+
+        for has in has_constraints {
+            assert_eq!(
+                has.ordering(),
+                InterfaceOrdering::Ordered,
+                "ordered `has` marker was not preserved for {query}"
+            );
+        }
+    }
+}
+
+#[test]
+fn list_role_player_marker_translates_as_ordered_links() {
+    let query = r#"insert $r isa rating, links (reviewer[]: $a);"#;
+    let parsed = typeql::parse_query(query).unwrap_or_else(|err| panic!("TypeQL failed to parse {query}: {err}"));
+    let translated =
+        translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline())
+            .unwrap_or_else(|err| panic!("TypeDB failed to translate {query}: {err:?}"));
+    let block = translated_stage_block(&translated.translated_stages[0]);
+    let links_constraints =
+        block.conjunction().constraints().iter().filter_map(|constraint| constraint.as_links()).collect::<Vec<_>>();
+    assert_eq!(links_constraints.len(), 1, "expected one `links` constraint for {query}");
+
+    for links in links_constraints {
+        assert_eq!(
+            links.ordering(),
+            InterfaceOrdering::Ordered,
+            "ordered `links` marker was not preserved for {query}"
+        );
+    }
+}
+
+#[test]
+fn list_role_player_list_still_requires_typeql_parser_support() {
+    let query = r#"insert $r isa rating, links (reviewer[]: [$a, $b]);"#;
+    let Err(err) = typeql::parse_query(query) else {
+        panic!("TypeQL unexpectedly parsed list role-player syntax: {query}");
+    };
+    assert!(err.to_string().contains("expected var"), "unexpected parser error for {query}: {err}");
 }
 
 #[test]

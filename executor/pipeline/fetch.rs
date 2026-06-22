@@ -23,7 +23,7 @@ use concept::{
     type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType},
 };
 use encoding::value::label::Label;
-use error::{typedb_error, unimplemented_feature};
+use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use lending_iterator::LendingIterator;
 use resource::profile::{QueryProfile, StepProfile, StorageCounters};
@@ -186,8 +186,8 @@ fn execute_fetch_some(
         FetchSomeInstruction::ListAttributesAsList(position, attribute_type) => {
             execute_list_attributes_as_list(snapshot, thing_manager, row, position, attribute_type)
         }
-        FetchSomeInstruction::ListAttributesFromList(_, _) => {
-            Err(FetchExecutionError::Unimplemented { description: "List attributes are not available yet." })
+        FetchSomeInstruction::ListAttributesFromList(position, attribute_type) => {
+            execute_list_attributes_from_list(snapshot, thing_manager, row, position, attribute_type)
         }
     }
 }
@@ -409,6 +409,29 @@ fn execute_list_attributes_as_list(
     }
 }
 
+fn execute_list_attributes_from_list(
+    snapshot: Arc<impl ReadableSnapshot + 'static>,
+    thing_manager: Arc<ThingManager>,
+    row: MaybeOwnedRow<'_>,
+    position: &VariablePosition,
+    attribute_type: &AttributeType,
+) -> Result<DocumentNode, FetchExecutionError> {
+    let variable_value = row.get(*position).as_reference();
+    match variable_value {
+        VariableValue::None => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::Thing(Thing::Entity(entity)) => {
+            execute_attributes_ordered_list(entity, *attribute_type, snapshot, thing_manager).map(DocumentNode::List)
+        }
+        VariableValue::Thing(Thing::Relation(relation)) => {
+            execute_attributes_ordered_list(relation, *attribute_type, snapshot, thing_manager).map(DocumentNode::List)
+        }
+        VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
+        VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
+        VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
+        VariableValue::ThingList(_) | VariableValue::ValueList(_) => Err(FetchExecutionError::FetchAttributesOfList {}),
+    }
+}
+
 fn execute_object_attributes(
     variable_position: VariablePosition,
     snapshot: Arc<impl ReadableSnapshot>,
@@ -511,6 +534,23 @@ fn execute_attributes_list(
     Ok(list)
 }
 
+fn execute_attributes_ordered_list(
+    object: impl ObjectAPI,
+    attribute_type: AttributeType,
+    snapshot: Arc<impl ReadableSnapshot>,
+    thing_manager: Arc<ThingManager>,
+) -> Result<DocumentList, FetchExecutionError> {
+    let attributes = object
+        .get_has_type_ordered(snapshot.as_ref(), &thing_manager, attribute_type, StorageCounters::DISABLED)
+        .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
+    Ok(DocumentList::new_from(
+        attributes
+            .into_iter()
+            .map(|attribute| DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute)))))
+            .collect(),
+    ))
+}
+
 fn prepare_attribute_type_has_iterator<'a>(
     object: impl ObjectAPI,
     attribute_type: AttributeType,
@@ -597,12 +637,18 @@ fn variable_value_to_document(variable_value: VariableValue<'_>) -> Result<Docum
             Thing::Attribute(_) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(thing)))),
         },
         VariableValue::Value(value) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Value(value)))),
-        VariableValue::ThingList(_) => {
-            unimplemented_feature!(Lists)
-        }
-        VariableValue::ValueList(_) => {
-            unimplemented_feature!(Lists)
-        }
+        VariableValue::ThingList(things) => Ok(DocumentNode::List(DocumentList::new_from(
+            things
+                .iter()
+                .map(|thing| DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(thing.clone()))))
+                .collect(),
+        ))),
+        VariableValue::ValueList(values) => Ok(DocumentNode::List(DocumentList::new_from(
+            values
+                .iter()
+                .map(|value| DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Value(value.clone()))))
+                .collect(),
+        ))),
     }
 }
 

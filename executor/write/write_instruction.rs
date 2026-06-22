@@ -30,9 +30,25 @@ fn get_type(input: &Row<'_>, source: &TypeSource) -> answer::Type {
     }
 }
 
+fn get_attribute_type(input: &Row<'_>, source: &TypeSource) -> concept::type_::attribute_type::AttributeType {
+    try_unwrap_as!(answer::Type::Attribute: get_type(input, source)).unwrap()
+}
+
+fn get_role_type(input: &Row<'_>, source: &TypeSource) -> concept::type_::role_type::RoleType {
+    try_unwrap_as!(answer::Type::RoleType: get_type(input, source)).unwrap()
+}
+
 fn get_thing<'a>(input: &'a Row<'a>, source: &ThingPosition) -> &'a answer::Thing {
     let ThingPosition(position) = source;
     input.get(*position).as_thing()
+}
+
+fn get_attributes(row: &Row<'_>, positions: &[ThingPosition]) -> Vec<concept::thing::attribute::Attribute> {
+    positions.iter().map(|position| get_thing(row, position).as_attribute().clone()).collect()
+}
+
+fn get_objects(row: &Row<'_>, positions: &[ThingPosition]) -> Vec<concept::thing::object::Object> {
+    positions.iter().map(|position| get_thing(row, position).as_object()).collect()
 }
 
 fn get_value<'a>(
@@ -146,6 +162,25 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
     }
 }
 
+impl AsWriteInstruction for compiler::executable::insert::instructions::HasOrdered {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<WriteError>> {
+        let owner = get_thing(row, &self.owner).as_object();
+        let attribute_type = get_attribute_type(row, &self.attribute_type);
+        let attributes = get_attributes(row, &self.attributes);
+        owner
+            .set_has_ordered(snapshot, thing_manager, attribute_type, attributes, storage_counters)
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
+        Ok(())
+    }
+}
+
 impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
     fn execute(
         &self,
@@ -157,9 +192,28 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
     ) -> Result<(), Box<WriteError>> {
         let relation_thing = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
         let player_thing = get_thing(row, &self.player).as_object();
-        let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
+        let role_type = get_role_type(row, &self.role);
         relation_thing
             .add_player(snapshot, thing_manager, role_type, player_thing, storage_counters)
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
+        Ok(())
+    }
+}
+
+impl AsWriteInstruction for compiler::executable::insert::instructions::LinksOrdered {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<WriteError>> {
+        let relation = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
+        let role_type = get_role_type(row, &self.role);
+        let players = get_objects(row, &self.players);
+        relation
+            .set_players_ordered(snapshot, thing_manager, role_type, players, storage_counters)
             .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         Ok(())
     }
@@ -209,6 +263,25 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Has {
     }
 }
 
+impl AsWriteInstruction for compiler::executable::update::instructions::HasOrdered {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<WriteError>> {
+        let owner = get_thing(row, &self.owner).as_object();
+        let attribute_type = get_attribute_type(row, &self.attribute_type);
+        let attributes = get_attributes(row, &self.attributes);
+        owner
+            .set_has_ordered(snapshot, thing_manager, attribute_type, attributes, storage_counters)
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
+        Ok(())
+    }
+}
+
 impl AsWriteInstruction for compiler::executable::update::instructions::Links {
     fn execute(
         &self,
@@ -220,7 +293,7 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Links {
     ) -> Result<(), Box<WriteError>> {
         let relation = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
         let new_player = get_thing(row, &self.player).as_object();
-        let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
+        let role_type = get_role_type(row, &self.role);
 
         let mut old_players =
             relation.get_players_role_type(snapshot, thing_manager, role_type, StorageCounters::DISABLED);
@@ -241,6 +314,25 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Links {
 
         relation
             .add_player(snapshot, thing_manager, role_type, new_player, storage_counters)
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
+        Ok(())
+    }
+}
+
+impl AsWriteInstruction for compiler::executable::update::instructions::LinksOrdered {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<WriteError>> {
+        let relation = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
+        let role_type = get_role_type(row, &self.role);
+        let players = get_objects(row, &self.players);
+        relation
+            .set_players_ordered(snapshot, thing_manager, role_type, players, storage_counters)
             .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         Ok(())
     }
