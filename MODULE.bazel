@@ -106,7 +106,8 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
-        "typedb_protocol+": "da3e316cb0022cb284083996f0659ad22db13aca",
+        "typedb_protocol+": "3a39f0b94fd7ea316ba5a4f74d44d5afc454cedf",
+        "typeql+": "c9814f1646b5376533e46481ae0dcfd6a331265f",
     },
     workspace_tag_dict = {
     },
