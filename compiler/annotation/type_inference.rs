@@ -97,7 +97,7 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_seeder::{InferenceStageType, TypeGraphSeedingContext},
+        type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
     };
 
     #[test]
@@ -192,7 +192,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 &RunningVariableAnnotations::empty(),
                 &entry,
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap()
             .into_parts()
@@ -249,7 +249,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 previous_stage_variable_annotations,
                 &entry,
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
             assert_eq!(
@@ -374,7 +374,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -442,7 +442,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -505,7 +505,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap_err();
 
@@ -549,7 +549,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -639,7 +639,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            InferenceStageType::Default,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
 
@@ -746,7 +746,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            InferenceStageType::Default,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
 
@@ -833,7 +833,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            InferenceStageType::Default,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
 
@@ -947,7 +947,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1017,7 +1017,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1082,7 +1082,7 @@ pub mod tests {
                 &type_manager,
                 &EmptyAnnotatedFunctionSignatures,
                 &translation_context.variable_registry,
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .create_graph(&BTreeMap::new(), block.conjunction())
             .unwrap();
@@ -1138,7 +1138,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1217,7 +1217,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1284,7 +1284,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1346,7 +1346,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap_err();
             assert_true!(match err {
@@ -1387,7 +1387,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1473,7 +1473,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
-            InferenceStageType::Default,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         );
         let mut graph = seeder.create_graph(&BTreeMap::new(), conjunction).unwrap();
         prune_types(&mut graph);

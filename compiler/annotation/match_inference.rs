@@ -31,7 +31,7 @@ use crate::annotation::{
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
-    type_seeder::{InferenceStageType, TypeGraphSeedingContext},
+    type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -107,7 +107,7 @@ pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     previous_stage_annotations: &RunningVariableAnnotations,
     block: &Block,
-    inference_stage_type: InferenceStageType,
+    inference_stage_type: TypeInferenceMode,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
     let mut type_annotations_by_scope = HashMap::new();
     let input_annotations = previous_stage_annotations
@@ -137,7 +137,7 @@ fn infer_types_impl(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &Conjunction,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    inference_stage_type: InferenceStageType,
+    inference_stage_type: TypeInferenceMode,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
     let mut graph = compute_type_inference_graph(ctx, conjunction, input_annotations, inference_stage_type)?;
@@ -151,7 +151,7 @@ fn infer_types_impl(
 fn infer_types_in_negations_and_conjunctions(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     parent_conjunction_graph: &mut TypeInferenceGraph<'_>,
-    inference_stage_type: InferenceStageType,
+    inference_stage_type: TypeInferenceMode,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
     let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, .. } = parent_conjunction_graph;
@@ -228,7 +228,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &'graph Conjunction,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    inference_stage_type: InferenceStageType,
+    inference_stage_type: TypeInferenceMode,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut graph = TypeGraphSeedingContext::new(
         ctx.snapshot,
@@ -533,7 +533,8 @@ pub fn infer_types_for_test_only(
     block: &Block,
     is_write_stage: bool,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
-    let stage_type = if is_write_stage { InferenceStageType::Write } else { InferenceStageType::Default };
+    let stage_type =
+        if is_write_stage { TypeInferenceMode::ExactAndExplicit } else { TypeInferenceMode::ConcreteSubtypesOnly };
     let empty_annotations = RunningVariableAnnotations::empty();
     infer_types_for_block(ctx, &empty_annotations, block, stage_type)
 }

@@ -42,10 +42,10 @@ use crate::annotation::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InferenceStageType {
-    Default,
-    SchemaFunction,
-    Write,
+pub enum TypeInferenceMode {
+    ConcreteSubtypesOnly,    // Queries
+    IncludeAbstractSubtypes, // Schema functions
+    ExactAndExplicit,        // Write stages
 }
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
@@ -53,21 +53,21 @@ pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     type_manager: &'this TypeManager,
     function_annotations: &'this dyn AnnotatedFunctionSignatures,
     variable_registry: &'this VariableRegistry,
-    stage_type: InferenceStageType,
+    stage_type: TypeInferenceMode,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
     fn is_write_stage(&self) -> bool {
-        self.stage_type == InferenceStageType::Write
+        self.stage_type == TypeInferenceMode::ExactAndExplicit
     }
 
     fn prune_abstract(&self) -> bool {
-        self.stage_type != InferenceStageType::SchemaFunction
+        self.stage_type != TypeInferenceMode::IncludeAbstractSubtypes
     }
 
     fn may_assert_no_abstract(&self, variable: &Vertex<Variable>, types: &BTreeSet<Type>) {
         #[cfg(debug_assertions)]
-        if self.stage_type != InferenceStageType::SchemaFunction {
+        if self.stage_type != TypeInferenceMode::IncludeAbstractSubtypes {
             let is_thing = matches!(variable, Vertex::Variable(var) if {
                 self.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
             });
@@ -82,7 +82,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_manager: &'this TypeManager,
         function_annotations: &'this dyn AnnotatedFunctionSignatures,
         variable_registry: &'this VariableRegistry,
-        stage_type: InferenceStageType,
+        stage_type: TypeInferenceMode,
     ) -> Self {
         TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, stage_type }
     }
@@ -511,7 +511,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn seed_edges(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
-        stage_type: InferenceStageType,
+        stage_type: TypeInferenceMode,
     ) -> Result<(), Box<ConceptReadError>> {
         #[cfg(debug_assertions)]
         graph.vertices.iter().for_each(|(variable, types)| self.may_assert_no_abstract(variable, types));
@@ -1674,7 +1674,7 @@ pub mod tests {
             setup_storage,
         },
         type_inference::tests::expected_edge,
-        type_seeder::{InferenceStageType, TypeGraphSeedingContext},
+        type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
     };
 
     #[test]
@@ -1740,7 +1740,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
-            InferenceStageType::Default,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         );
         let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
@@ -1874,7 +1874,7 @@ pub mod tests {
                 &type_manager,
                 &empty_function_cache,
                 &translation_context.variable_registry,
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             );
             let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1924,7 +1924,7 @@ pub mod tests {
                 &type_manager,
                 &empty_function_cache,
                 &translation_context.variable_registry,
-                InferenceStageType::Default,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             );
             let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);

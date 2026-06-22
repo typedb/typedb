@@ -52,7 +52,7 @@ use crate::{
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
-        type_seeder::InferenceStageType,
+        type_seeder::TypeInferenceMode,
         write_type_check::check_type_combinations_for_write,
     },
     executable::{reduce::ReduceInstruction, update},
@@ -222,8 +222,11 @@ fn annotate_stage(
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
         TranslatedStage::Match { block, source_span } => {
-            let inference_stage_type =
-                if allow_abstract { InferenceStageType::SchemaFunction } else { InferenceStageType::Default };
+            let inference_stage_type = if allow_abstract {
+                TypeInferenceMode::IncludeAbstractSubtypes
+            } else {
+                TypeInferenceMode::ConcreteSubtypesOnly
+            };
             let mut block_annotations = infer_types_for_block(ctx, &running_annotations, &block, inference_stage_type)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
@@ -299,7 +302,7 @@ fn annotate_stage(
         TranslatedStage::Put { block, source_span } => {
             debug_assert!(allow_abstract == false);
             let mut match_annotations =
-                infer_types_for_block(ctx, running_annotations, &block, InferenceStageType::Default)
+                infer_types_for_block(ctx, running_annotations, &block, TypeInferenceMode::ConcreteSubtypesOnly)
                     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             complete_block_annotations_with_value_types(
                 ctx,
@@ -479,8 +482,9 @@ fn annotate_write_stage(
     running_annotations: &mut RunningVariableAnnotations,
     block: &Block,
 ) -> Result<BlockAnnotations, AnnotationError> {
-    let mut block_annotations = infer_types_for_block(ctx, running_annotations, block, InferenceStageType::Write)
-        .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    let mut block_annotations =
+        infer_types_for_block(ctx, running_annotations, block, TypeInferenceMode::ExactAndExplicit)
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     complete_block_annotations_with_value_types(
         ctx,
