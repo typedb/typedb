@@ -21,10 +21,10 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
-	[dev-dependencies.diagnostics]
+	[dev-dependencies.tracing]
 		workspace = true
 
-	[dev-dependencies.tracing]
+	[dev-dependencies.diagnostics]
 		workspace = true
 
 	[dev-dependencies.logger]

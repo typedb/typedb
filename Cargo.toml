@@ -433,7 +433,7 @@ features = {}
 
 		[workspace.dependencies.uuid]
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.23.1"
+			version = "1.21.0"
 			default-features = false
 
 		[workspace.dependencies.seahash]

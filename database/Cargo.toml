@@ -18,10 +18,10 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
-	[dev-dependencies.serde_json]
+	[dev-dependencies.test_utils_storage]
 		workspace = true
 
-	[dev-dependencies.test_utils_storage]
+	[dev-dependencies.serde_json]
 		workspace = true
 
 [dependencies]
@@ -100,16 +100,16 @@ features = {}
 	name = "test_database"
 
 [[test]]
-	path = "tests/test_transaction_isolation.rs"
-	name = "test_transaction_isolation"
-
-[[test]]
 	path = "tests/statistics_synchronization.rs"
 	name = "test_statistics_synchronization"
 
 [[test]]
 	path = "tests/diagnostics_posthog_pii.rs"
 	name = "test_diagnostics_posthog_pii"
+
+[[test]]
+	path = "tests/test_transaction_isolation.rs"
+	name = "test_transaction_isolation"
 
 [[test]]
 	path = "tests/transaction.rs"
