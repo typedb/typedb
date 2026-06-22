@@ -97,9 +97,8 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_seeder::TypeGraphSeedingContext,
+        type_seeder::{InferenceStageType, TypeGraphSeedingContext},
     };
-    use crate::annotation::type_seeder::InferenceStageType;
 
     #[test]
     fn test_functions() {

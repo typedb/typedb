@@ -150,7 +150,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Prune abstract types from type annotations of thing variables
         if self.prune_abstract() {
-            self.allow_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
+            self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
         }
 
         // Seed edges in root & disjunctions
@@ -582,7 +582,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
     }
 
-    fn allow_abstract_types_from_thing_vertex_annotations_recursive(
+    fn prune_abstract_types_from_thing_vertex_annotations_recursive(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
@@ -596,7 +596,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
-            self.allow_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
+            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
         }
         Ok(())
     }
@@ -1672,9 +1672,8 @@ pub mod tests {
             setup_storage,
         },
         type_inference::tests::expected_edge,
-        type_seeder::TypeGraphSeedingContext,
+        type_seeder::{InferenceStageType, TypeGraphSeedingContext},
     };
-    use crate::annotation::type_seeder::InferenceStageType;
 
     #[test]
     fn test_has() {
