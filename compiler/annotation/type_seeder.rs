@@ -41,12 +41,39 @@ use crate::annotation::{
     type_inference::get_type_annotation_from_label,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InferenceStageType {
+    Default,
+    SchemaFunction,
+    Write,
+}
+
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
     function_annotations: &'this dyn AnnotatedFunctionSignatures,
     variable_registry: &'this VariableRegistry,
-    is_write_stage: bool,
+    stage_type: InferenceStageType,
+}
+
+impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
+    fn is_write_stage(&self) -> bool {
+        self.stage_type == InferenceStageType::Write
+    }
+
+    fn prune_abstract(&self) -> bool {
+        self.stage_type != InferenceStageType::SchemaFunction
+    }
+
+    fn may_assert_no_abstract(&self, variable: &Vertex<Variable>, types: &BTreeSet<Type>) {
+        #[cfg(debug_assertions)]
+        if self.stage_type != InferenceStageType::SchemaFunction {
+            let is_thing = matches!(variable, Vertex::Variable(var) if {
+                self.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+            });
+            debug_assert!(!is_thing || types.iter().all(|t| self.is_not_abstract(t).unwrap()));
+        }
+    }
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
@@ -55,9 +82,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_manager: &'this TypeManager,
         function_annotations: &'this dyn AnnotatedFunctionSignatures,
         variable_registry: &'this VariableRegistry,
-        is_write_stage: bool,
+        stage_type: InferenceStageType,
     ) -> Self {
-        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, is_write_stage }
+        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, stage_type }
     }
 
     pub(crate) fn create_graph<'graph>(
@@ -122,10 +149,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
 
         // Prune abstract types from type annotations of thing variables
-        self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
+        if self.prune_abstract() {
+            self.allow_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
+        }
 
         // Seed edges in root & disjunctions
-        self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })
+        self.seed_edges(graph, self.stage_type)
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })
     }
 
     fn build_recursive<'conj>(&self, conjunction: &'conj Conjunction) -> TypeInferenceGraph<'conj> {
@@ -478,20 +508,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 
     // Phase 3: seed edges
-    fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), Box<ConceptReadError>> {
-        debug_assert!(
-            graph
-                .vertices
-                .iter()
-                .filter(|(v, _)| v.is_variable()
-                    && self
-                        .variable_registry
-                        .get_variable_category(v.as_variable().unwrap())
-                        .unwrap()
-                        .is_category_thing())
-                .flat_map(|(_, types)| types)
-                .all(|t| self.is_not_abstract(t).unwrap())
-        );
+    fn seed_edges(
+        &self,
+        graph: &mut TypeInferenceGraph<'_>,
+        stage_type: InferenceStageType,
+    ) -> Result<(), Box<ConceptReadError>> {
+        #[cfg(debug_assertions)]
+        graph.vertices.iter().for_each(|(variable, types)| self.may_assert_no_abstract(variable, types));
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
             match constraint {
@@ -532,7 +555,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
         for disj in &mut graph.nested_disjunctions {
             for nested_graph in &mut disj.disjunction {
-                self.seed_edges(nested_graph)?;
+                self.seed_edges(nested_graph, stage_type)?;
             }
         }
         Ok(())
@@ -559,7 +582,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
     }
 
-    fn prune_abstract_types_from_thing_vertex_annotations_recursive(
+    fn allow_abstract_types_from_thing_vertex_annotations_recursive(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
@@ -573,7 +596,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
-            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
+            self.allow_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
         }
         Ok(())
     }
@@ -702,7 +725,7 @@ impl UnaryConstraint for RoleName<Variable> {
             let mut annotations = BTreeSet::new();
             for role_type in &*role_types {
                 annotations.insert(TypeAnnotation::RoleType(*role_type));
-                if !context.is_write_stage {
+                if !context.is_write_stage() {
                     let subtypes = role_type
                         .get_subtypes_transitive(context.snapshot, context.type_manager)
                         .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
@@ -824,16 +847,6 @@ trait BinaryConstraint {
     fn left(&self) -> &Vertex<Variable>;
     fn right(&self) -> &Vertex<Variable>;
 
-    fn check_for_thing_vars(&self, context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>) -> (bool, bool) {
-        let left_is_thing = matches!(self.left(), Vertex::Variable(var) if {
-            context.variable_registry.get_variable_category(*var).is_some_and(|cat| cat.is_category_thing())
-        });
-        let right_is_thing = matches!(self.right(), Vertex::Variable(var) if {
-            context.variable_registry.get_variable_category(*var).is_some_and(|cat| cat.is_category_thing())
-        });
-        (left_is_thing, right_is_thing)
-    }
-
     fn annotate_left_to_right(
         &self,
         context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
@@ -841,20 +854,11 @@ trait BinaryConstraint {
         allowed_right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut left_to_right = BTreeMap::new();
-        #[cfg(debug_assertions)]
-        {
-            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(context);
-            debug_assert!(!left_is_thing || left_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-            debug_assert!(!right_is_thing || allowed_right_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-        }
         for left_type in left_types {
             let mut right_annotations = BTreeSet::new();
             self.annotate_left_to_right_for_type(context, left_type, &mut right_annotations)?;
             right_annotations.retain(|type_| allowed_right_types.contains(type_));
-            debug_assert!(
-                !self.check_for_thing_vars(context).1
-                    || right_annotations.iter().all(|t| context.is_not_abstract(t).unwrap())
-            );
+            context.may_assert_no_abstract(self.right(), &right_annotations);
             if !right_annotations.is_empty() {
                 left_to_right.insert(*left_type, right_annotations);
             }
@@ -869,20 +873,13 @@ trait BinaryConstraint {
         allowed_left_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut right_to_left = BTreeMap::new();
-        #[cfg(debug_assertions)]
-        {
-            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(context);
-            debug_assert!(!right_is_thing || right_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-            debug_assert!(!left_is_thing || allowed_left_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-        }
+        context.may_assert_no_abstract(self.left(), &allowed_left_types);
+        context.may_assert_no_abstract(self.right(), &right_types);
         for right_type in right_types {
             let mut left_annotations = BTreeSet::new();
             self.annotate_right_to_left_for_type(context, right_type, &mut left_annotations)?;
             left_annotations.retain(|type_| allowed_left_types.contains(type_));
-            debug_assert!(
-                !self.check_for_thing_vars(context).0
-                    || left_annotations.iter().all(|t| context.is_not_abstract(t).unwrap())
-            );
+            context.may_assert_no_abstract(self.left(), &left_annotations);
             if !left_annotations.is_empty() {
                 right_to_left.insert(*right_type, left_annotations);
             }
@@ -1023,7 +1020,7 @@ impl BinaryConstraint for Isa<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if !context.is_write_stage && self.isa_kind() == IsaKind::Subtype {
+        if !context.is_write_stage() && self.isa_kind() == IsaKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
@@ -1067,7 +1064,7 @@ impl BinaryConstraint for Isa<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if !context.is_write_stage && self.isa_kind() == IsaKind::Subtype {
+        if !context.is_write_stage() && self.isa_kind() == IsaKind::Subtype {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
@@ -1325,12 +1322,8 @@ impl BinaryConstraint for Comparison<Variable> {
         allowed_right_types: &BTreeSet<Type>,
     ) -> Result<BTreeMap<Type, BTreeSet<Type>>, Box<ConceptReadError>> {
         let mut left_to_right = BTreeMap::new();
-        #[cfg(debug_assertions)]
-        {
-            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(context);
-            debug_assert!(!left_is_thing || left_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-            debug_assert!(!right_is_thing || allowed_right_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-        }
+        context.may_assert_no_abstract(self.left(), &left_types);
+        context.may_assert_no_abstract(self.right(), &allowed_right_types);
         // TODO: Optimise?
         for left_type in left_types {
             let mut right_annotations = BTreeSet::new();
@@ -1353,10 +1346,7 @@ impl BinaryConstraint for Comparison<Variable> {
                     }
                 }
             }
-            debug_assert!(
-                !self.check_for_thing_vars(context).1
-                    || right_annotations.iter().all(|t| context.is_not_abstract(t).unwrap())
-            );
+            context.may_assert_no_abstract(self.right(), &right_annotations);
             if !right_annotations.is_empty() {
                 left_to_right.insert(*left_type, right_annotations);
             }
@@ -1372,11 +1362,8 @@ impl BinaryConstraint for Comparison<Variable> {
     ) -> Result<BTreeMap<Type, BTreeSet<Type>>, Box<ConceptReadError>> {
         let mut right_to_left = BTreeMap::new();
         #[cfg(debug_assertions)]
-        {
-            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(context);
-            debug_assert!(!right_is_thing || right_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-            debug_assert!(!left_is_thing || allowed_left_types.iter().all(|t| context.is_not_abstract(t).unwrap()));
-        }
+        context.may_assert_no_abstract(self.left(), &allowed_left_types);
+        context.may_assert_no_abstract(self.right(), &right_types);
         // TODO: Optimise?
         for right_type in right_types {
             let mut left_annotations = BTreeSet::new();
@@ -1399,10 +1386,7 @@ impl BinaryConstraint for Comparison<Variable> {
                     }
                 }
             }
-            debug_assert!(
-                !self.check_for_thing_vars(context).0
-                    || left_annotations.iter().all(|t| context.is_not_abstract(t).unwrap())
-            );
+            context.may_assert_no_abstract(self.left(), &left_annotations);
             if !left_annotations.is_empty() {
                 right_to_left.insert(*right_type, left_annotations);
             }
@@ -1575,7 +1559,7 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         for relates in relation.get_relates(context.snapshot, context.type_manager)?.iter() {
-            let is_write_stage_and_relates_is_abstract = context.is_write_stage
+            let is_write_stage_and_relates_is_abstract = context.is_write_stage()
                 && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, relates.role())?;
             if !is_write_stage_and_relates_is_abstract {
                 collector.insert(TypeAnnotation::RoleType(relates.role()));
@@ -1597,7 +1581,7 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         for (relation, _) in role.get_relation_types(context.snapshot, context.type_manager)?.iter() {
-            let is_write_stage_and_relates_is_abstract = context.is_write_stage
+            let is_write_stage_and_relates_is_abstract = context.is_write_stage()
                 && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, *role)?;
             if !is_write_stage_and_relates_is_abstract {
                 collector.insert(TypeAnnotation::Relation(*relation));
@@ -1755,6 +1739,7 @@ pub mod tests {
             &empty_function_cache,
             &translation_context.variable_registry,
             false,
+            false,
         );
         let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
@@ -1889,6 +1874,7 @@ pub mod tests {
                 &empty_function_cache,
                 &translation_context.variable_registry,
                 false,
+                false,
             );
             let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1938,6 +1924,7 @@ pub mod tests {
                 &type_manager,
                 &empty_function_cache,
                 &translation_context.variable_registry,
+                false,
                 false,
             );
             let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
