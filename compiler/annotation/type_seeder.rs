@@ -854,6 +854,8 @@ trait BinaryConstraint {
         allowed_right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut left_to_right = BTreeMap::new();
+        context.may_assert_no_abstract(self.left(), &left_types);
+        context.may_assert_no_abstract(self.right(), &allowed_right_types);
         for left_type in left_types {
             let mut right_annotations = BTreeSet::new();
             self.annotate_left_to_right_for_type(context, left_type, &mut right_annotations)?;
