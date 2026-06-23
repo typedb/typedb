@@ -23,10 +23,13 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::{
-    AnnotationContext, AnnotationError, PipelineAnnotationContext, TypeInferenceError,
-    function::{AnnotatedFunction, annotate_anonymous_function},
-    pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages},
+use crate::{
+    PipelineOrigin,
+    annotation::{
+        AnnotationContext, AnnotationError, PipelineAnnotationContext, TypeInferenceError,
+        function::{AnnotatedFunction, annotate_anonymous_function},
+        pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -332,7 +335,7 @@ fn annotate_sub_fetch(
     let PipelineTranslationContext { mut variable_registry, .. } = context;
     let mut local_pipeline_context = ctx.for_pipeline(&mut variable_registry, parameters);
     let (annotated_stages, output_annotations) =
-        annotate_pipeline_stages(&mut local_pipeline_context, stages, input_annotations, None)?;
+        annotate_pipeline_stages(&mut local_pipeline_context, stages, input_annotations, None, PipelineOrigin::Query)?;
     let annotated_fetch = annotate_fetch(&mut local_pipeline_context, fetch, &output_annotations)?;
     Ok(AnnotatedFetchListSubFetch {
         variable_registry,

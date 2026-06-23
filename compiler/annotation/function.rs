@@ -35,6 +35,7 @@ use typeql::{
 };
 
 use crate::{
+    PipelineOrigin,
     annotation::{
         AnnotationContext, FunctionAnnotationError, PipelineAnnotationContext, TypeInferenceError,
         pipeline::{
@@ -221,7 +222,9 @@ pub fn annotate_stored_functions(
     let declared_ctx = AnnotationContext::new(snapshot, type_manager, &declared_annotations);
     let preliminary_signature_annotations = functions
         .iter_mut()
-        .map(|(function_id, function)| Ok((function_id.clone(), annotate_named_function(function, &declared_ctx)?)))
+        .map(|(function_id, function)| {
+            Ok((function_id.clone(), annotate_named_function(function, &declared_ctx, PipelineOrigin::Schema)?))
+        })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let preliminary_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&preliminary_signature_annotations, &empty_preamble_annotations);
@@ -229,7 +232,9 @@ pub fn annotate_stored_functions(
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let annotated_functions = functions
         .iter_mut()
-        .map(|(id, function)| Ok((id.clone(), annotate_named_function(function, &refined_ctx)?)))
+        .map(|(id, function)| {
+            Ok((id.clone(), annotate_named_function(function, &refined_ctx, PipelineOrigin::Schema)?))
+        })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
     // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the graphs, and restart at the source of any SCC.
@@ -255,7 +260,7 @@ pub fn annotate_preamble_functions(
     let declared_ctx = AnnotationContext::new(snapshot, type_manager, &label_based_signature_annotations);
     let preliminary_signature_annotations_as_map = functions
         .iter_mut()
-        .map(|function| annotate_named_function(function, &declared_ctx))
+        .map(|function| annotate_named_function(function, &declared_ctx, PipelineOrigin::Query))
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let preliminary_signature_annotations =
@@ -263,7 +268,7 @@ pub fn annotate_preamble_functions(
     let refined_ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
     let annotated_functions = functions
         .iter_mut()
-        .map(|function| annotate_named_function(function, &refined_ctx))
+        .map(|function| annotate_named_function(function, &refined_ctx, PipelineOrigin::Query))
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
     // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the graphs, and restart at the source of any SCC.
@@ -288,12 +293,13 @@ pub(crate) fn annotate_anonymous_function(
         (*var, arg_type)
     });
     let argument_annotations = RunningVariableAnnotations::from_iterator(argument_types_iter);
-    annotate_function_impl(ctx, function, argument_annotations)
+    annotate_function_impl(ctx, function, argument_annotations, PipelineOrigin::Query)
 }
 
 pub(super) fn annotate_named_function(
     function: &mut Function,
     ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
+    pipeline_origin: PipelineOrigin,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_some());
@@ -303,13 +309,14 @@ pub(super) fn annotate_named_function(
     })?;
     let argument_annotations =
         RunningVariableAnnotations::from_iterator(zip(arguments.iter().copied(), types.into_iter()));
-    annotate_function_impl(&ctx, function, argument_annotations)
+    annotate_function_impl(&ctx, function, argument_annotations, pipeline_origin)
 }
 
 fn annotate_function_impl(
     annotation_ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
     function: &mut Function,
     argument_annotations_from_declaration: RunningVariableAnnotations,
+    pipeline_origin: PipelineOrigin,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function {
         name, context, parameters, function_body: FunctionBody { stages, return_operation }, arguments, ..
@@ -320,6 +327,7 @@ fn annotate_function_impl(
         stages.clone(),
         argument_annotations_from_declaration.clone(),
         Some(return_operation.variables().as_ref()),
+        pipeline_origin,
     )
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
