@@ -78,26 +78,29 @@ pub mod tests {
     };
     use itertools::Itertools;
 
-    use crate::annotation::{
-        AnnotationContext, TypeInferenceError,
-        function::{
-            AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
-            annotate_named_function,
-        },
-        match_inference::{
-            NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-            compute_type_inference_graph, infer_types_for_block, prune_types,
-        },
-        pipeline::{AnnotatedStage, RunningVariableAnnotations},
-        tests::{
-            managers,
-            schema_consts::{
-                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
-                LABEL_IS_FEARED, LABEL_NAME, setup_types,
+    use crate::{
+        PipelineOrigin,
+        annotation::{
+            AnnotationContext, TypeInferenceError,
+            function::{
+                AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
+                annotate_named_function,
             },
-            setup_storage,
+            match_inference::{
+                NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+                compute_type_inference_graph, infer_types_for_block, prune_types,
+            },
+            pipeline::{AnnotatedStage, RunningVariableAnnotations},
+            tests::{
+                managers,
+                schema_consts::{
+                    LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
+                    LABEL_IS_FEARED, LABEL_NAME, setup_types,
+                },
+                setup_storage,
+            },
+            type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
         },
-        type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
     };
 
     #[test]
@@ -211,7 +214,8 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             let (entry, mut entry_context, mut f_ir) = with_local_cache;
 
-            let f_annotations = annotate_named_function(&mut f_ir, &empty_annotation_context, false).unwrap();
+            let f_annotations =
+                annotate_named_function(&mut f_ir, &empty_annotation_context, PipelineOrigin::Query).unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =
