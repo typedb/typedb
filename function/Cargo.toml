@@ -15,22 +15,22 @@ features = {}
 
 [dev-dependencies]
 
-	[dev-dependencies.rand]
-		workspace = true
-
 	[dev-dependencies.test_utils]
 		workspace = true
 
-	[dev-dependencies.tracing]
+	[dev-dependencies.rand]
 		workspace = true
 
 	[dev-dependencies.diagnostics]
 		workspace = true
 
-	[dev-dependencies.logger]
+	[dev-dependencies.tracing]
 		workspace = true
 
 	[dev-dependencies.test_utils_storage]
+		workspace = true
+
+	[dev-dependencies.logger]
 		workspace = true
 
 [dependencies]
