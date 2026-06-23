@@ -16,6 +16,12 @@ pub mod executable;
 pub mod query_structure;
 pub mod transformation;
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum PipelineOrigin {
+    Schema,
+    Query,
+}
+
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
         $iterable.iter().filter_map(|item| if let $variant(inner) = item { Some(inner) } else { None })

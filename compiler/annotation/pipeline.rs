@@ -36,6 +36,7 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::{
+    PipelineOrigin,
     annotation::{
         AnnotationError, PipelineAnnotationContext,
         expression::{
@@ -52,6 +53,7 @@ use crate::{
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
+        type_seeder::TypeInferenceMode,
         write_type_check::check_type_combinations_for_write,
     },
     executable::{reduce::ReduceInstruction, update},
@@ -143,7 +145,7 @@ pub fn annotate_preamble_and_pipeline(
         RunningVariableAnnotations::empty()
     };
     let (annotated_stages, output_annotations) =
-        annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations, None)?;
+        annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations, None, PipelineOrigin::Query)?;
     let annotated_fetch =
         translated_fetch.map(|fetch| annotate_fetch(&mut ctx, fetch, &output_annotations)).transpose()?;
     Ok(AnnotatedPipeline { annotated_given, annotated_stages, annotated_fetch, annotated_preamble })
@@ -181,6 +183,7 @@ pub(crate) fn annotate_pipeline_stages(
     translated_stages: Vec<TranslatedStage>,
     input_annotations: RunningVariableAnnotations,
     return_variables: Option<&[Variable]>,
+    pipeline_origin: PipelineOrigin,
 ) -> Result<(Vec<AnnotatedStage>, RunningVariableAnnotations), AnnotationError> {
     let mut running_annotations = input_annotations;
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
@@ -196,7 +199,8 @@ pub(crate) fn annotate_pipeline_stages(
                 block_annotations.type_annotations_of(block.conjunction()).unwrap().constraint_annotations()
             })
             .unwrap_or(&empty_constraint_annotations);
-        let annotated_stage = annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage)?;
+        let annotated_stage =
+            annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage, pipeline_origin)?;
 
         // running_annotations.retain(|var| var.is_named());
         let retain_running_var_fn =
@@ -215,10 +219,15 @@ fn annotate_stage(
     running_annotations: &mut RunningVariableAnnotations,
     running_constraint_annotations: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     stage: TranslatedStage,
+    pipeline_origin: PipelineOrigin,
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
         TranslatedStage::Match { block, source_span } => {
-            let mut block_annotations = infer_types_for_block(ctx, &running_annotations, &block, false)
+            let type_inference_mode = match pipeline_origin {
+                PipelineOrigin::Schema => TypeInferenceMode::IncludeAbstractSubtypes,
+                PipelineOrigin::Query => TypeInferenceMode::ConcreteSubtypesOnly,
+            };
+            let mut block_annotations = infer_types_for_block(ctx, &running_annotations, &block, type_inference_mode)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
             root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
@@ -291,8 +300,10 @@ fn annotate_stage(
         }
 
         TranslatedStage::Put { block, source_span } => {
-            let mut match_annotations = infer_types_for_block(ctx, running_annotations, &block, false)
-                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            debug_assert!(pipeline_origin == PipelineOrigin::Query);
+            let mut match_annotations =
+                infer_types_for_block(ctx, running_annotations, &block, TypeInferenceMode::ConcreteSubtypesOnly)
+                    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             complete_block_annotations_with_value_types(
                 ctx,
                 running_annotations,
@@ -471,8 +482,9 @@ fn annotate_write_stage(
     running_annotations: &mut RunningVariableAnnotations,
     block: &Block,
 ) -> Result<BlockAnnotations, AnnotationError> {
-    let mut block_annotations = infer_types_for_block(ctx, running_annotations, block, true)
-        .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    let mut block_annotations =
+        infer_types_for_block(ctx, running_annotations, block, TypeInferenceMode::ExactAndExplicit)
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     complete_block_annotations_with_value_types(
         ctx,

@@ -78,26 +78,29 @@ pub mod tests {
     };
     use itertools::Itertools;
 
-    use crate::annotation::{
-        AnnotationContext, TypeInferenceError,
-        function::{
-            AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
-            annotate_named_function,
-        },
-        match_inference::{
-            NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-            compute_type_inference_graph, infer_types_for_block, prune_types,
-        },
-        pipeline::{AnnotatedStage, RunningVariableAnnotations},
-        tests::{
-            managers,
-            schema_consts::{
-                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
-                LABEL_IS_FEARED, LABEL_NAME, setup_types,
+    use crate::{
+        PipelineOrigin,
+        annotation::{
+            AnnotationContext, TypeInferenceError,
+            function::{
+                AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
+                annotate_named_function,
             },
-            setup_storage,
+            match_inference::{
+                NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+                compute_type_inference_graph, infer_types_for_block, prune_types,
+            },
+            pipeline::{AnnotatedStage, RunningVariableAnnotations},
+            tests::{
+                managers,
+                schema_consts::{
+                    LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
+                    LABEL_IS_FEARED, LABEL_NAME, setup_types,
+                },
+                setup_storage,
+            },
+            type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
         },
-        type_seeder::TypeGraphSeedingContext,
     };
 
     #[test]
@@ -192,7 +195,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 &RunningVariableAnnotations::empty(),
                 &entry,
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap()
             .into_parts()
@@ -211,7 +214,8 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             let (entry, mut entry_context, mut f_ir) = with_local_cache;
 
-            let f_annotations = annotate_named_function(&mut f_ir, &empty_annotation_context).unwrap();
+            let f_annotations =
+                annotate_named_function(&mut f_ir, &empty_annotation_context, PipelineOrigin::Query).unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =
@@ -249,7 +253,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 previous_stage_variable_annotations,
                 &entry,
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
             assert_eq!(
@@ -374,7 +378,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -442,7 +446,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -505,7 +509,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap_err();
 
@@ -549,7 +553,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -639,7 +643,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            false,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
 
@@ -746,7 +750,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            false,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
 
@@ -833,7 +837,7 @@ pub mod tests {
             &mut pipeline_annotation_context,
             block.conjunction(),
             &BTreeMap::new(),
-            false,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
 
@@ -947,7 +951,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1017,7 +1021,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1082,7 +1086,7 @@ pub mod tests {
                 &type_manager,
                 &EmptyAnnotatedFunctionSignatures,
                 &translation_context.variable_registry,
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .create_graph(&BTreeMap::new(), block.conjunction())
             .unwrap();
@@ -1138,7 +1142,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1217,7 +1221,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1284,7 +1288,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1346,7 +1350,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap_err();
             assert_true!(match err {
@@ -1387,7 +1391,7 @@ pub mod tests {
                 &mut pipeline_annotation_context,
                 block.conjunction(),
                 &BTreeMap::new(),
-                false,
+                TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
 
@@ -1473,7 +1477,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
-            false,
+            TypeInferenceMode::ConcreteSubtypesOnly,
         );
         let mut graph = seeder.create_graph(&BTreeMap::new(), conjunction).unwrap();
         prune_types(&mut graph);
