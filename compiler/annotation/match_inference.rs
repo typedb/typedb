@@ -107,7 +107,7 @@ pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     previous_stage_annotations: &RunningVariableAnnotations,
     block: &Block,
-    inference_stage_type: TypeInferenceMode,
+    type_inference_mode: TypeInferenceMode,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
     let mut type_annotations_by_scope = HashMap::new();
     let input_annotations = previous_stage_annotations
@@ -119,7 +119,7 @@ pub fn infer_types_for_block(
         ctx,
         block.conjunction(),
         &input_annotations,
-        inference_stage_type,
+        type_inference_mode,
         &mut type_annotations_by_scope,
     )?;
 
@@ -137,12 +137,12 @@ fn infer_types_impl(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &Conjunction,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    inference_stage_type: TypeInferenceMode,
+    type_inference_mode: TypeInferenceMode,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
-    let mut graph = compute_type_inference_graph(ctx, conjunction, input_annotations, inference_stage_type)?;
+    let mut graph = compute_type_inference_graph(ctx, conjunction, input_annotations, type_inference_mode)?;
 
-    infer_types_in_negations_and_conjunctions(ctx, &mut graph, inference_stage_type, type_annotations_by_scope)?;
+    infer_types_in_negations_and_conjunctions(ctx, &mut graph, type_inference_mode, type_annotations_by_scope)?;
 
     graph.collect_type_annotations(type_annotations_by_scope);
     Ok(())
@@ -151,14 +151,12 @@ fn infer_types_impl(
 fn infer_types_in_negations_and_conjunctions(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     parent_conjunction_graph: &mut TypeInferenceGraph<'_>,
-    inference_stage_type: TypeInferenceMode,
+    type_inference_mode: TypeInferenceMode,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
     let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, .. } = parent_conjunction_graph;
     nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()).try_for_each(
-        |nested| {
-            infer_types_in_negations_and_conjunctions(ctx, nested, inference_stage_type, type_annotations_by_scope)
-        },
+        |nested| infer_types_in_negations_and_conjunctions(ctx, nested, type_inference_mode, type_annotations_by_scope),
     )?;
     for nested in conjunction.nested_patterns() {
         match nested {
@@ -168,7 +166,7 @@ fn infer_types_in_negations_and_conjunctions(
                     ctx,
                     negation.conjunction(),
                     &vertices,
-                    inference_stage_type,
+                    type_inference_mode,
                     type_annotations_by_scope,
                 )?;
             }
@@ -177,7 +175,7 @@ fn infer_types_in_negations_and_conjunctions(
                     ctx,
                     optional.conjunction(),
                     &vertices,
-                    inference_stage_type,
+                    type_inference_mode,
                     type_annotations_by_scope,
                 )?;
                 let optional_root_annotations =
@@ -228,14 +226,14 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &'graph Conjunction,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    inference_stage_type: TypeInferenceMode,
+    type_inference_mode: TypeInferenceMode,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut graph = TypeGraphSeedingContext::new(
         ctx.snapshot,
         ctx.type_manager,
         ctx.annotated_function_signatures,
         ctx.variable_registry,
-        inference_stage_type,
+        type_inference_mode,
     )
     .create_graph(input_annotations, conjunction)?;
     pre_check_edges_for_trivial_unsatisfiability(&graph)
