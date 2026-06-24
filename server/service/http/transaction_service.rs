@@ -643,7 +643,7 @@ impl TransactionService {
 
         // Consult the parse cache before parsing: a hit yields the translated IR (always a pipeline,
         // since schema queries are never cached) and lets us skip typeql parsing entirely.
-        let query_input = match self.transaction.as_ref().unwrap().get_parsed_query(&query) {
+        let query_input = match self.transaction.as_ref().and_then(|txn| txn.get_parsed_query(&query)) {
             Some(translated) => QueryInput::Translated(translated),
             None => {
                 let parsed = match parse_query(&query) {
@@ -1210,7 +1210,7 @@ impl TransactionService {
     }
 
     async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        let query_input = match self.transaction.as_ref().unwrap().get_parsed_query(&query) {
+        let query_input = match self.transaction.as_ref().and_then(|txn| txn.get_parsed_query(&query)) {
             Some(translated) => QueryInput::Translated(translated),
             None => {
                 let parsed = match parse_query(&query) {
