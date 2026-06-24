@@ -354,6 +354,7 @@ pub mod tests {
     };
     use storage::{MVCCStorage, durability_client::WALClient};
     use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
+    use test_utils_storage::create_rocks_resources;
 
     use crate::annotation::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
@@ -393,9 +394,15 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &resources,
+            )
+            .unwrap(),
         );
         (storage_path, storage)
     }

@@ -925,6 +925,7 @@ dependencies = [
  "test_utils",
  "test_utils_concept",
  "test_utils_encoding",
+ "test_utils_storage",
  "tracing",
  "typeql",
 ]
@@ -1268,6 +1269,7 @@ dependencies = [
  "serde_json",
  "storage",
  "test_utils",
+ "test_utils_storage",
  "tokio",
  "tracing",
  "typeql",
@@ -1456,6 +1458,7 @@ dependencies = [
  "structural_equality",
  "test_utils",
  "test_utils_encoding",
+ "test_utils_storage",
  "tracing",
  "typeql",
 ]
@@ -1704,6 +1707,7 @@ dependencies = [
  "resource",
  "storage",
  "test_utils",
+ "test_utils_storage",
  "tracing",
  "typeql",
 ]
@@ -3307,6 +3311,8 @@ name = "options"
 version = "0.0.0"
 dependencies = [
  "resource",
+ "serde",
+ "serde_yaml2",
 ]
 
 [[package]]
@@ -5047,6 +5053,7 @@ dependencies = [
  "itertools 0.14.0",
  "lending_iterator",
  "logger",
+ "options",
  "pprof",
  "primitive",
  "rand 0.8.6",
@@ -5306,6 +5313,7 @@ dependencies = [
  "logger",
  "storage",
  "test_utils",
+ "test_utils_storage",
  "tracing",
 ]
 
@@ -5317,6 +5325,7 @@ dependencies = [
  "diagnostics",
  "durability",
  "logger",
+ "options",
  "resource",
  "storage",
 ]

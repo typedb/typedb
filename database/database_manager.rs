@@ -13,8 +13,9 @@ use std::{
 
 use cache::CACHE_DB_NAME_PREFIX;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
+use options::byte_size::ByteSize;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
-use storage::durability_client::WALClient;
+use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
 use tracing::{Level, debug, event, warn};
 
 use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
@@ -29,6 +30,7 @@ pub struct DatabaseManager {
     import_directory: PathBuf,
     databases: Databases,
     diagnostics_manager: Arc<DiagnosticsManager>,
+    rocks_resources: Arc<RocksResources>,
 }
 
 impl DatabaseManager {
@@ -37,21 +39,30 @@ impl DatabaseManager {
     pub fn new(
         data_directory: impl AsRef<Path>,
         diagnostics_manager: Arc<DiagnosticsManager>,
+        rocksdb_cache_size: ByteSize,
+        rocksdb_write_buffers_limit: ByteSize,
     ) -> Result<Arc<Self>, DatabaseOpenError> {
         let data_directory = data_directory.as_ref().to_owned();
         let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
 
-        let databases =
-            RwLock::new(Self::initialise_databases(&data_directory, &import_directory, &diagnostics_manager)?);
+        let rocks_resources = Arc::new(RocksResources::new(rocksdb_cache_size, rocksdb_write_buffers_limit));
+
+        let databases = RwLock::new(Self::initialise_databases(
+            &data_directory,
+            &import_directory,
+            &diagnostics_manager,
+            &rocks_resources,
+        )?);
         Self::cleanup_import_directory(&import_directory)?;
 
-        Ok(Arc::new(Self { data_directory, import_directory, databases, diagnostics_manager }))
+        Ok(Arc::new(Self { data_directory, import_directory, databases, diagnostics_manager, rocks_resources }))
     }
 
     fn initialise_databases(
         data_directory: &PathBuf,
         import_directory: &PathBuf,
         diagnostics_manager: &DiagnosticsManager,
+        rocks_resources: &RocksResources,
     ) -> Result<DatabasesMap, DatabaseOpenError> {
         let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
             name: Self::file_name_lossy(data_directory),
@@ -83,7 +94,7 @@ impl DatabaseManager {
                 continue;
             }
 
-            let database = match Database::<WALClient>::open(&entry_path, diagnostics_manager) {
+            let database = match Database::<WALClient>::open(&entry_path, diagnostics_manager, rocks_resources) {
                 Ok(database) => database,
                 Err(DatabaseOpenError::NotADatabase { .. }) => {
                     warn!("{entry_path:?} is not a database, skipping");
@@ -280,6 +291,10 @@ impl DatabaseManager {
         Ok(())
     }
 
+    pub fn rocks_resources(&self) -> &Arc<RocksResources> {
+        &self.rocks_resources
+    }
+
     pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
         if Self::is_internal_database(name) {
             return None;
@@ -321,12 +336,12 @@ impl DatabaseManager {
     }
 
     fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.data_directory.join(name), &self.diagnostics_manager)
+        Database::<WALClient>::open(&self.data_directory.join(name), &self.diagnostics_manager, &self.rocks_resources)
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.import_directory.join(name), &self.diagnostics_manager)
+        Database::<WALClient>::open(&self.import_directory.join(name), &self.diagnostics_manager, &self.rocks_resources)
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 

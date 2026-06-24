@@ -14,6 +14,7 @@ mod constants;
 pub mod iterator;
 mod keyspace;
 mod raw_iterator;
+pub mod rocks_resources;
 
 impl Poolable for DBRawIterator<'static> {}
 
