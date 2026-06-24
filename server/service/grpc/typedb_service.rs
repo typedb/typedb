@@ -24,7 +24,7 @@ use crate::{
     error::LocalServerStateError,
     service::{
         grpc::{
-            ConnectionID,
+            ConnectionID, GrpcProtocolVersion,
             diagnostics::run_with_diagnostics_async,
             error::{GrpcServiceError, IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
             migration::{
@@ -85,8 +85,11 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     && message.extension_version <= typedb_protocol::ExtensionVersion::Extension as i32;
                 if !versions_compatible {
                     let err = ProtocolError::IncompatibleProtocolVersion {
-                        server_protocol_version: typedb_protocol::Version::Version as i32,
-                        driver_protocol_version: message.version,
+                        server_protocol_version: GrpcProtocolVersion::new(
+                            typedb_protocol::Version::Version as i32,
+                            typedb_protocol::ExtensionVersion::Extension as i32,
+                        ),
+                        driver_protocol_version: GrpcProtocolVersion::new(message.version, message.extension_version),
                         driver_lang: message.driver_lang.clone(),
                         driver_version: message.driver_version.clone(),
                     };

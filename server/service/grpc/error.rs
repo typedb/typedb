@@ -10,6 +10,8 @@ use error::{TypeDBError, typedb_error};
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 
+use crate::service::grpc::GrpcProtocolVersion;
+
 // Errors caused by incorrect implementation or usage of the network protocol.
 // Note: NOT a typedb_error!(), since we want go directly to Status
 #[derive(Debug)]
@@ -24,8 +26,8 @@ pub(crate) enum ProtocolError {
         enum_variant: i32,
     },
     IncompatibleProtocolVersion {
-        server_protocol_version: i32,
-        driver_protocol_version: i32,
+        server_protocol_version: GrpcProtocolVersion,
+        driver_protocol_version: GrpcProtocolVersion,
         driver_lang: String,
         driver_version: String,
     },
