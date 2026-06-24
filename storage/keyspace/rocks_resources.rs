@@ -48,8 +48,8 @@ impl fmt::Debug for RocksResources {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Rocks LRU Cache size (shared by all databases): {}. \
-             Rocks write buffers size limit (shared by all databases): {}",
+            "Rocks LRU Cache size (shared by all databases): {}. \n
+             Rocks write buffers size limit (shared by all databases): {}.",
             self.cache_limit, self.write_buffers_limit
         )
     }
