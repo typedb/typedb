@@ -13,11 +13,13 @@ rust_test(
     ]),
     deps = [
         "//common/logger",
+        "//common/options",
         "//database",
         "//diagnostics",
         "//durability",
         "//encoding",
         "//storage",
+        "//storage/tests:test_utils_storage",
         "//util/test:test_utils",
 
         "@crates//:rocksdb",
