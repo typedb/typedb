@@ -275,7 +275,7 @@ impl TransactionService {
         let transaction = self
             .server_state
             .transactions()
-            .open(&database_name, type_, options, owner, self.close_sender.clone())
+            .open(&database_name, owner, type_, options, self.close_sender.clone())
             .await
             .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 
