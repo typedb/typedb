@@ -336,9 +336,6 @@
 - **Skip building http service test targets on main ci build**
   Tag HTTP API tests as manual so we save time on CI.
   
-  # Implementation details
-  I couldn't get the server to reboot between runs when I merged the targets. I may need an after-test shutdown step.
-  
 - **Add bazel disk cache size and age limits**
 
 - **Extend TypeDB prometheus endpoint with new metrics**
