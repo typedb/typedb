@@ -14,6 +14,7 @@ use std::{
 use async_trait::async_trait;
 use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use database::{database_manager::DatabaseManager, transaction::TransactionId};
+use futures::future::join_all;
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_MINUTE;
 use tokio::sync::{RwLock, mpsc::Sender};
@@ -88,6 +89,22 @@ impl LocalTransactionOperator {
         let mut transactions = self.transactions.write().await;
         transactions.insert(transaction_id, TransactionInfo { transaction_type, database_name, owner, close_sender });
     }
+
+    async fn close_matching(&self, matches: impl Fn(&TransactionInfo) -> bool) {
+        let close_senders = {
+            let mut transactions = self.transactions.write().await;
+            let ids: Vec<_> = transactions.iter().filter(|(_, info)| matches(info)).map(|(id, _)| *id).collect();
+            let mut close_senders = Vec::with_capacity(ids.len());
+            for id in ids {
+                if let Some(info) = transactions.remove(&id) {
+                    let _ = info.close_sender.send(()).await;
+                    close_senders.push(info.close_sender);
+                }
+            }
+            close_senders
+        };
+        join_all(close_senders.iter().map(Sender::closed)).await;
+    }
 }
 
 #[async_trait]
@@ -117,35 +134,14 @@ impl TransactionOperator for LocalTransactionOperator {
     }
 
     async fn close_by_types(&self, types: &HashSet<TransactionType>) {
-        let mut transactions = self.transactions.write().await;
-        let to_close: Vec<_> =
-            transactions.iter().filter(|(_, info)| types.contains(&info.transaction_type)).map(|(id, _)| *id).collect();
-        for id in to_close {
-            if let Some(info) = transactions.remove(&id) {
-                let _ = info.close_sender.send(()).await;
-            }
-        }
+        self.close_matching(|info| types.contains(&info.transaction_type)).await
     }
 
     async fn close_by_owner(&self, username: &str) {
-        let mut transactions = self.transactions.write().await;
-        let to_close: Vec<_> =
-            transactions.iter().filter(|(_, info)| info.owner == username).map(|(id, _)| *id).collect();
-        for id in to_close {
-            if let Some(info) = transactions.remove(&id) {
-                let _ = info.close_sender.send(()).await;
-            }
-        }
+        self.close_matching(|info| info.owner == username).await
     }
 
     async fn close_by_database(&self, database_name: &str) {
-        let mut transactions = self.transactions.write().await;
-        let to_close: Vec<_> =
-            transactions.iter().filter(|(_, info)| info.database_name == database_name).map(|(id, _)| *id).collect();
-        for id in to_close {
-            if let Some(info) = transactions.remove(&id) {
-                let _ = info.close_sender.send(()).await;
-            }
-        }
+        self.close_matching(|info| info.database_name == database_name).await
     }
 }
