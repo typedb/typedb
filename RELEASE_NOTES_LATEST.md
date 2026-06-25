@@ -1,191 +1,374 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.11.5](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.11.5)
+[Distributions for 3.12.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0-rc0)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.11.5```
-
-
-## Breaking changes ⚠️
-
-1) Driver-Server compatibility:
-We have updated the wire protocol version in TypeDB 3.11 in preparation of TypeDB cluster GA.
-- Connections from drivers older than 3.11.0 will be rejected by a server running 3.11.0 or newer. 
-- Connections from drivers running 3.11.0 or newer will be rejected by server versions older than  3.11.0. 
-
-2) TypeDB Driver entry point
-TypeDB drivers version 3.11.x will use the following format to open a driver:
-
-```python
-TypeDB.driver(TypeDB.DEFAULT_ADDRESS, Credentials("admin", "password"), DriverOptions(DriverTlsConfig.disabled()))
-
-# old version: TypeDB.driver(TypeDB.DEFAULT_ADDRESS, Credentials("admin", "password"), DriverOptions())
-```
-
-3) Disk compatibility
-**Once you upgrade to 3.11.x, you cannot downgrade your server with the same database**. We've made some backwards-compatible changes to TypeDB's storage. You can upgrade freely, but once the new data format is written, older versions will not understand your databases anymore. It's a good time to take a backup copy of your databases or use typedb export if you think you may want to downgrade
+```docker pull typedb/typedb:3.12.0-rc0```
 
 
 ## New Features
-- **Print TypeDB Studio link and Console command on server startup**
+- **@doc and @meta annotations**
   
-  Adds clickable/runnable connect hints to the server startup output:
+  We implement `@doc("docstring")` and `@meta("key", "value")` schema annotations. These annotations can be attached to types and capabilities i.e. `owns`, `plays`, `relates`, and `sub`:
+  
+  ```php
+  define
+  entity person @doc("this represents an individual client") @meta("icon", ":silhouette.png"),
+    owns name @doc("full name including title");
   ```
-    To connect with TypeDB Studio, open: https://studio.typedb.com/connect?address=http://localhost:8000&username=admin
-    To connect with TypeDB Console, run: typedb console --address localhost:1729 --tls-disabled --username admin`
+  ```php
+  match
+    $x isa client;
+    let $x_icon = get_meta("icon", $t); # get each client with a UI display icon hint
   ```
   
-  Both substitute `localhost` when the listener binds to an unspecified address (0.0.0.0 / [::]). The Studio scheme and Console invocation follow the encryption setting; the Studio link is omitted if the HTTP endpoint is disabled.
-  
-  
-- **Add default advertise-address retrieved from listen-address**
-  
-  Remove pre-inserted `advertise-address` values from server endpoints configuration. Instead, auto-generate the advertise addresses based on the listen addresses following these rules:
-  * if the listen address is an unspecified address (`0.0.0.0`), substitute the IP with loopback `127.0.0.1`, preserving the original port -- this allows the clients to use `127.0.0.1` instead of `0.0.0.0` for connections, which is usually the intention;
-  * otherwise, use the listen address for advertising as is.
-  
-  This reduces the amount of fields required for modifications in case the user wants to change the default server ports and helps avoid sudden misconfigurations while operating with local servers.
-  
-  Nothing changed for default configuration:
-  
-  ```
-  ./typedb server
-  
-  =====================================================================================
-       ________ __      __ _____    _______  _____    _____       _______  _______
-      |__    __|\  \  /  /|   _  \ |   _   ||   _  \ |   _  \    |   _   ||   _   |
-         |  |    \  \/  / |  | |  ||  | |__||  | |  ||  | |  |   |  | |  ||  | |__|
-         |  |     \    /  |  |/  / |  |___  |  | |  ||  |/  /    |  | |__||  |___
-         |  |      |  |   |   __/  |   ___| |  | |  ||   _  \    |  |  __ |   ___|
-         |  |      |  |   |  |     |  |  __ |  | |  ||  | |  |   |  | |  ||  |  __
-         |  |      |  |   |  |     |  |_|  ||  |/  / |  |/  /    |  |_|  ||  |_|  |
-         |__|      |__|   |__|     |_______||_____/  |_____/     |_______||_______|
-  
-  =====================================================================================
-  
-  Running TypeDB CE 3.10.4 in development mode.
-  Serving:
-    gRPC:  0.0.0.0:1729 (connect via 127.0.0.1:1729)
-    HTTP:  0.0.0.0:8000 (connect via 127.0.0.1:8000)
-    Admin: 127.0.0.1:1728 (localhost only)
-  TLS: disabled
-    WARNING: TLS NOT ENABLED. Credentials are transmitted unencrypted in plaintext.
-    Drivers must be configured to connect *without TLS*.
+  These annotations can also be attached to function definitions. They go at the end of the signature, before the colon introducing the body of the function:
+  ```php
+  define
+  fun get_random_number() -> integer
+      @doc("chosen by a fair dice roll"):
+  match
+    let $rand = 4;
+  return first $rand;
   ```
   
   
-- **Improved query profiler**
+- **Expose metrics extensions to extend monitoring reports**
   
-  We implement a real nested query profiling structure, which correctly captures sub-pattern timings and executions and eliminates redundant printing.
+  Add an additional API to the diagnostics manager to let the extensions of TypeDB insert their own metrics in the monitoring reports (both Prometheus and JSON). This way, libraries on top of `typedb` create can use the monitoring endpoint, combining typedb default metrics and any additional information they need on the page.
   
+  ### Extension examples
   
-- **Extend TypeDB address configuration and reorganize TypeDB services for better extensibility, incl. clusters**
-  
-  Introduce better extensibility to TypeDB CE, enabling TypeDB services to be extended and modified by distributions with additional functionality (e.g., clustered distributions for TypeDB Enterprise/Cloud).
-  
-  ### User-facing
-  
-  - **Change server configuration.** Rename `server.address` and `server.http.address` to `listen-address`es (`address` aliases are still accepted for backwards compatibility). Add `advertise-address` configuration for both gRPC and HTTP endpoints, distinguishing the address the server binds to from the address clients use to connect (address advertised to the clients). Supports NAT, reverse proxy, and load balancer deployments. Specifying both `listen-address` and `address` will be rejected by the system.
-  - Add an admin CLI tool (`typedb admin`) bundled with all distributions. The admin tool communicates with the server through a localhost-only gRPC endpoint (default port 1728). Supports interactive REPL mode, one-shot (`--command`), and script (`--script`) execution modes. Commands: `server version`, `server status`, `help`, `exit`.
-  - Add `server.admin` configuration section (default: enabled on port 1728).
-  - Restructure server startup output to a multi-line format showing each endpoint (gRPC, HTTP, Admin) with TLS status:
-  
+  **Prometheus** (just appending additional lines to the end with no extra markers)
   ```
-  =====================================================================================
-       ________ __      __ _____    _______  _____    _____       _______  _______
-      |__    __|\  \  /  /|   _  \ |   _   ||   _  \ |   _  \    |   _   ||   _   |
-         |  |    \  \/  / |  | |  ||  | |__||  | |  ||  | |  |   |  | |  ||  | |__|
-         |  |     \    /  |  |/  / |  |___  |  | |  ||  |/  /    |  | |__||  |___
-         |  |      |  |   |   __/  |   ___| |  | |  ||   _  \    |  |  __ |   ___|
-         |  |      |  |   |  |     |  |  __ |  | |  ||  | |  |   |  | |  ||  |  __
-         |  |      |  |   |  |     |  |_|  ||  |/  / |  |/  /    |  |_|  ||  |_|  |
-         |__|      |__|   |__|     |_______||_____/  |_____/     |_______||_______|
+  # distribution: TypeDB
+  # version: 3.10.0-alpha-1
+  # os: Darwin arm64 15.7.3
   
-  =====================================================================================
+  # HELP typedb_build_info Build and runtime identity of this TypeDB server.
+  # TYPE typedb_build_info gauge
+  typedb_build_info{version="3.10.0-alpha-1", distribution="TypeDB", os_name="Darwin", os_arch="arm64", os_version="15.7.3"} 1
   
-  Running TypeDB CE 3.8.3 in development mode.
-  Serving:
-    gRPC:  0.0.0.0:1729 (connect via 127.0.0.1:1729)
-    HTTP:  0.0.0.0:8000 (connect via http://127.0.0.1:8000)
-    Admin: 127.0.0.1:1728 (localhost only)
-  TLS: disabled
-    WARNING: TLS NOT ENABLED. Credentials are transmitted unencrypted in plaintext.
-    Drivers must be configured to connect *without TLS*.
+  ....
+  
+  # HELP typedb_wal_fsync_duration_seconds WAL fsync latency.
+  # TYPE typedb_wal_fsync_duration_seconds histogram
+  
+  # HELP raft_apply_total Number of committed entries applied to the state machine.
+  # TYPE raft_apply_total counter
+  raft_apply_total 0
+  
+  # HELP raft_messages_sent_total Outbound raft messages sent.
+  # TYPE raft_messages_sent_total counter
+  raft_messages_sent_total 0
   ```
   
-  ### Development
+  **json** (introduce an extra `extensions` key for every registered extension to avoid conflicts with already existing keys)
+  ```json
+  {
+    "actions": [],
+    "deploymentID": "test",
+    "distribution": "TypeDB",
+    "errors": [],
+    "extensions": {
+      "raft": {
+        "counters": {
+          "apply_total": 0,
+          "messages_sent_total": 0,
+        },
+        }
+      }
+    },
+    ...
+  ```
   
-  - Expose config extensibility for distribution-specific settings. Cluster distributions need to parse additional config sections (e.g., server.clustering) from the same YAML file without modifying the base Config struct.
-  - Add `server_version` and `server_status` RPCs to the admin protocol, returning distribution info and endpoint addresses.
-  - Restructure the `server` package, introducing `Operator`s that serve as a middleware between network services and inner TypeDB components (`DatabaseManager`, `UserManager`, etc.). 
-  - Introduce `ErrorResponseCategory` for mapping server state errors to appropriate gRPC and HTTP status codes and HTTP 307 redirect support (currently cannot be used in TypeDB for most of the endpoints due to local-only authentication -- instead, an additional `AuthenticatedRedirect` is introduced).
-  - Add close signals for `TransactionService`s to extend the ability of the system to interrupt existing transactions without shutting down.
+  
+- **Introduce 'given' stage for running the same query on multiple inputs**
+  Introduces the TypeQL `given` stage which allows `rows" to be passed to a query as input. By running the same pipeline for multiple rows of input data (~~SIMD~~ SQMD?) in a single query, it avoids the network and query-compilation overhead that running multiple queries  (or just the query-compilation overhead in case of one large query). Since given rows are separate from the TypeQL query string, using to get input parameters into queries is safe from TypeQL-injection (c.f. working them into the TypeQL query string).
+  
+  **Examples:** 
+  ```
+  # Insert a new `person`s  with name =`$n` for each row given.
+  given $n: string;
+  insert $p isa person, has name == $n;
+  ```
+  
+  ```
+  # Get the name for each person `$p` in the given rows.
+  given $p: person;
+  match $p has name $n;
+  ```
+  
+  For examples on how to construct the given rows in the GRPC drivers, Please check that driver's README on [github](https://github.com/typedb/typedb-driver)
+  
+  
+- **Expose re-seeding database IID vertex generators**
+  
+  Expose a new method for extensions of TypeDB to re-seed local IID generators for databases. 
+  
+  While the sync up is performed on database loading, in distributed systems, the local generators can easily go out of sync: server 1 creates entities with IIDs 1, 2, and 3, then shares these writes with server 2; instead of sharing these generator updates with server 2 through network, we notify server 2 **when needed** to reload the local counters based on its storage to sync up its memory before performing new write operations. 
+  
+  How this works with different TypeDB setups:
+  1. Single server -- no effect
+  2. Multiple servers, single writer -- explicit and quite efficient in case the writer is selected relatively rare
+  3. Multiple servers, multiple writes -- would require re-seeding for any committable transaction, but, since the whole design of the server does not support this, it is not considered.
+  
+  Additionally, fix the loading of system databases that prevented unrestricted access for recovered servers.
   
   
 
 ## Bugs Fixed
-- **Compress the content of docker images**
+- **Fix git patch file for Windows**
   
-  Reduce the size of the Docker image x2 (93 MB -> 53 MB prod, 361 MB -> 141 MB [snapshot](https://hub.docker.com/r/typedb/typedb-snapshot/tags)) by gzipping its layers explicitly in the Bazel configuration.
-  
-  This change returns the size of the Docker image to the values of the pre-Bazel 8 releases.
+  Fix the `git.patch` file used to enable Windows builds
   
   
-- **Fix connection-level GOAWAY errors under load**
+- **Fix global log level overshadowing**
   
-  Drivers that sustain transaction churn over a single TypeDB driver connection (e.g. several worker threads opening/committing/closing many small write transactions in a row) eventually saw every in-flight request fail at the same moment with `h2 protocol error: too_many_internal_resets` / `broken pipe`. Server logs showed:
+  Now, you can run the server binary with `RUST_LOG=debug`, switching all the packages to the global logging level. Previously, the provided global value was overridden by the constant set to `info`.
   
-      WARN h2/proto/streams/streams.rs:1629:
-          locally-reset streams reached limit (1024)
-  
-  followed by `GOAWAY ENHANCE_YOUR_CALM`. The server itself never panicked however,the gRPC connection was poisoned.
+  This also allows other libs using `typedb` crate to conventionally use this env var, which was blocked before. 
   
   
-- **QueryCache tracks statistics & schema commit to avoid caching outdated plans**
-  Updates the QueryCache to explicitly track validity requirements and validate insert calls. By tracking the sequence_number of the latest schema commit, we avoid #7787. By tracking statistics, we avoid #7790 
+- **Restore studio and console commands on bootup**
+  
+  After #7817 made advertise_address an Option that defaults to None, the "To connect:" Studio and Console block in print_serving_information was gated on advertise being Some and silently disappeared for the default configuration (no --server.address.advertise.* set). 
+  
+  We now fall back to the listen address when advertise is not configured, and substitute the unspecified bind 0.0.0.0 with the loopback 127.0.0.1 so the printed link/command is actually connectable from the same host.
   
   
-- **Rewrite reused producible variables in transform phase**
-  Introduces a transformation step which rewrites constraints so the variables bound by it are unique.
-  E.g.: `$r links (some-role: $r);` is rewritten to `$_i links (some-role: $r); $r is $_i;`
+- **Support redirects in any HTTP error**
+  
+  Expand the set of service errors that can return `421 Misdirected Request`, including transaction errors (e.g., on attempts to run write operations against a non-primary replica). This replicates the behavior of gRPC errors.
+  
+  Before, some `TransactionServiceError`s could contain the redirection errors, but they would be ignored because these categories of errors were not covered with the right conversion logic.
   
   
 
 ## Code Refactors
-- **Eagerly free inputs of steps which are finished executing**
-  Frees fully consumed `FixedBatchIterator`s from the `IntersectionExecutor` to save memory on long pipelines with few answers.
+- **Use Bazel `exclusive` tag for HTTP service tests instead of CLI --jobs=1**
+  
+  Replace the CI Bazel `--jobs=1` flag to ensure jobs aren't running in parallel and clashing for resources with the `exclusive` bazel tag.
+  
+  Note that the `exclusive` flag allows parallel builds but blocks parallel test phase execution. In addition, if we ever add it, it prevents remote execution.
   
   
-- **Refactor annotation phase to group annotation context & running variable annotations**
-  We reduce the number of arguments in functions in the annotation phase, by grouping related arguments together in structures.
+- **Move the admin service from network connections to OS sockets and add password reset**
+  
+  Extend the local-only admin tool for password recovery functionality and additional protection. 
+  
+  If the admin user loses their password, there is currently no way to reset it without restoring from backup. Standard databases all ship an analogous local tool for those purposes, and we similarly reuse our admin tool: `user reset-password <username>`.
+  
+  With this, the admin endpoint is now reachable only by a process running as the typedb service account. Trust is anchored in OS-level access control rather than a credential mechanism layered on top of TCP (UDS file mode on Unix, DACL on Windows). No new network port, no new credential store.
+  
+  **Breaking changes to the admin tool configuration:**
+  - The tool is now off by default. Provide the `--server.admin.enabled=true` parameter (or set it in the config file) to enable it. 
+  - `--server.admin.port=<port>` is replaced by `--server.admin.socket-path=<endpoint>`, since the admin tool is no longer exposed to the network.
+  
+  To run the admin tool, you must provide the socket path of the server you're connecting to (previously, it was the server's admin service address):
+  ```
+  typedb admin --socket-path /var/run/typedb/admin.sock --command "user reset-password admin"
+  ```
+  
+  **Important:** on Unix, install paths longer than ~108 chars will require an explicit `--server.admin.socket-path` outside of the directory because of the OS socket path length limitation (`SUN_LEN`). 
+  
+  The socket path is printed in the server's startup banner:
+  
+  ```
+  Running TypeDB CE 3.11.5.
+  Serving:
+    gRPC:  0.0.0.0:1729
+    HTTP:  0.0.0.0:8000
+    Admin: /var/run/typedb/admin.sock (Unix socket)
+  TLS: disabled
+  ```
+  
+  `user reset-password` accepts the new password in three forms — for interactive use, scripted use, or piped automation:
+  
+  ```
+  # Interactive prompt (TTY)
+  typedb admin --socket-path /var/run/typedb/admin.sock --command "user reset-password admin"
+  
+  # Positional argument (whitespace-free passwords, exposed to the terminal history)
+  typedb admin --socket-path /var/run/typedb/admin.sock --command "user reset-password admin new-password"
+  
+  # Piped via stdin (carries whitespace and special characters intact)
+  echo 'pass with spaces!@#' | typedb admin --socket-path /var/run/typedb/admin.sock --command "user reset-password admin"
+  ```
+  
+  Additionally, fixes a bug when the user endpoint returned `Success` for an attempt to update credentials for a non-existing user. Now, it correctly returns `Not found` instead, similarly to the delete method.
   
   
 
 ## Other Improvements
-- **Update console artifact to use empty adverise address**
-  
-  Update console artifact to use an empty adverise address
-  
-  
-- **Remove default advertised address**
-  
-  Return empty advertised server address (both grpc and http) in case it's not specified instead of using a default value.
-  
-  This change lets the clients to understand when the server does not enforce any address for connections and make independent decisions. It is especially important in cases of connecting to a docker container or a proxy, when the server used to return a not accessible address, which the client eagerly used and failed to connect regardless of the correctness of the connection address provided by the user.
+- **Allow committing schema functions on abstract types**
+  Allows schema functions which satisfy type-checking only through abstract types, even though the pattern can have no answers (as no concrete types satisfy the pattern). This is to allow writing modular tql files where functions are defined on abstract types. Other schema modules can concretise these types.
+  Calling such a schema function in a query or preamble function will result in a type-inference error as preamble functions & queries are still required to be concretely satisfiable.
   
   
-- **Prepare release 3.11.1**
-  Bump version & prepare release notes
+- **Add TypeDB Loader**
+  
+  - Add TypeDB Loader binary, accessible via `typedb loader`
   
   
-- **Make studio link a constant**
+- **Check fractional part within denominator in decimal parse**
+  Checks that the fractional part is within the domain of representable values when parsing a `Decimal` from string.
   
-- **Escalate concurrent key and uniqueq writes to transaction failure#7800 (#7800)**
+  
+- **Fix apt: remove empty server/data dir that collides with the data symlink**
+  
+  Remove the pre-created data directory from the bazel targets to avoid conflicts in apt.
+  
+  The Debian package built from current master installs a regular directory at `/opt/typedb/core/server/data` instead of the symlink to `/var/lib/typedb/core/data/` that the package is supposed to create. As a consequence, an apt-installed TypeDB writes its data files under `/opt/typedb/core/server/data` -- a directory the package owns and dpkg may rewrite on upgrade, instead of under the volume-managed `/var/lib/typedb/core/data/`, which is the path that:                                 
+  - apt_empty_dirs provisions with mode 0777 at install time.                                                              
+  - Operators expect to back up / mount / chown.                  
+  - The deb's own `apt_symlinks` entry explicitly points at.
+  
+  Two entries collide inside the deb's data.tar.gz:
+  - opt/typedb/core/server/data (symlink)
+  - opt/typedb/core/server/data/ (directory)
+  
+  The server starts, the database files end up on disk (just in a different directory than designed), restarts preserve state. However, with the data going to the wrong directory, anyone running `tar czf backup.tgz /var/lib/typedb/`, mounting a separate disk at `/var/lib/typedb/core/data/`, or following typical sysadmin playbooks gets a silent no-op. Leading to losing data. Also, the same issue with `apt upgrade` and `apt purge`. 
+  
+  At [bd671fa29](https://github.com/typedb/typedb/commit/bd671fa29857f020554c8627bccf2d73043103ea) the empty server/data directory was supplied via the `assemble_targz(empty_directories=["server/data"], …)` parameter on each download archive (`assemble-server-*-{zip,targz}` and `assemble-all-*-{zip,targz}`). Those rules are unrelated to the apt build path, so the empty directory never reached the deb. apt only had the symlink. Working.
+                                                                                                                           
+  Commit [e4f16b8b4](https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb) migrated the assembly rules from `assemble_targz` to `pkg_tar` and replaced the macro-local `empty_directories` parameter with a standalone `pkg_mkdirs(name =  "package-layout-server-dirs", dirs = ["server/data"])` rule, then included it inside the shared `package-typedb-server` filegroup. From that point on, every consumer of `package-typedb-server` inherits the empty directory -- including the apt-payload chain `package-typedb-server` -> `package-typedb-all` -> `package-typedb-all-targz`. The conflict with apt_symlinks is the consequence.  
+  
+  **This PR changes the way we distribute TypeDB packages**: they no longer contain the pre-created empty directory. However, they are created on the initial server boot up, and it seems even cleaner.
+  
+  
+- **Add CARGO_BAZEL_GENERATOR_URL re-export to factory**
+  Adds CARGO_BAZEL_GENERATOR_URL re-export to factory, to speed up CI by skipping rebuilding the `cargo-bazel` tool (5 minutes) for jobs where a rust target has to be compiled.
+  
+  
+- **Restrict redirect errors from overriding grpc server error details**
+  
+  When receiving a `Redirect` response, the gRPC encoding of that error was used to destroy the typedb error code, silently overwriting it to `"REDIRECT"` instead of the canonical `"CSV9"` (cluster-side error), only to preserve it in the stack trace.
+  
+  With this fix, we preserve the original error code, combining it with the redirection metadata.
+  
+  
+- **Add graceful SIGTERM handling for Unix systems**
+  
+  SIGTERM is now gracefully processed together with SIGINT, leading to a usual shutdown process with careful cleanup (exit 0, admin socket removed, in-flight requests drained). This includes commands like `kill <pid>`, `docker stop`, `systemctl stop`, and Kubernetes pod termination.
+  
+  SIGKILL is uncatchable by the OS and continues to hard-kill the server immediately. 
+  
+  *Note:* In case of a SIGKILL, the socket file is left in the filesystem, but is correctly overridden on the next server restart. 
+  
+  
+- **Fix tar archive sizes and double http:// in Studio connection url**
+  
+  - Make `tar.gz` archives true archives to reduce their size from 90 MB to 27 MB (as it was before migration to new Bazel rules)
+  - Fix double `http://http://` in the Studio connection link in case of the correct usage of `advertise-address`.
+  
+  
+- **Set cargo bazel generator url for CircleCI**
+  Sets cargo bazel generator url in CircleCI jobs, Using a prebuilt `cargo-bazel` tool and saving on compilation times
+  
+  
+- **Fix docker entrypoint**
+  
+  Fix the recently introduced broken entrypoint for the Docker image: the binary the entrypoint points at did not exist inside the image.
+  
+  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-3.12.0-rc0"`. Inside the docker layer the binary lived at:
+  
+  ```
+  /opt/typedb-server-linux-<arch>-<version>/typedb
+  ```
+  
+  (e.g. `…-0.0.0/typedb` for snapshots, `…-3.11.6/typedb` for the next release), but the OCI `entrypoint` was still hardcoded to the pre-migration, un-suffixed path:
+  
+  ```
+  /opt/typedb-server-linux-<arch>/typedb
+  ```
+  
+  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-3.12.0-rc0` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
+  
+  Current release artifacts breakdown:
+  ```
+    Snapshot tar/zip contents (all 5 OS×arch matrices):
+    typedb-all-<os>-<arch>-<v>/             
+    ├── LICENSE                
+    ├── typedb                       (typedb.bat on Windows)                                                                 
+    ├── admin/typedb_admin_bin       (.exe on Windows)      
+    ├── console/typedb_console_bin   (.exe on Windows)                                                                       
+    └── server/                                                     
+        ├── config.yml                          
+        ├── typedb_server_bin        (.exe on Windows)                                                                       
+        └── data/                    (empty)          
+                                                                                                                           
+    Docker layer contents (linux x86_64 + arm64):                   
+    /opt/typedb-server-linux-<arch>/   ← matches OCI entrypoint thanks to this PR                                            
+    ├── LICENSE                                                                  
+    ├── typedb                                  
+    ├── admin/typedb_admin_bin                                                                                               
+    └── server/{config.yml, typedb_server_bin, data/}
+    OCI metadata: Entrypoint = ["/opt/typedb-server-linux-<arch>/typedb", "server",                                          
+    "--storage.data-directory=/var/lib/typedb/data"], WorkingDir = /opt/typedb-server-linux-<arch>, ExposedPorts = 1729/tcp, 
+    8000/tcp, Volumes = /var/lib/typedb/data/.                                                                               
+                                                                  
+    APT package install layout:                                                                                              
+    /opt/typedb/core/                      ← payload from package-typedb-all (includes console)                              
+    ├── typedb, admin/, server/, console/, LICENSE                                                                           
+    └── typedb.service                     (systemd unit)                                                                    
+    Symlinks:                                                       
+      /usr/local/bin/typedb              → /opt/typedb/core/typedb
+      /opt/typedb/core/server/data       → /var/lib/typedb/core/data/                                                        
+      /opt/typedb/core/server/logs       → /var/log/typedb/          
+      /usr/lib/systemd/system/typedb.service → /opt/typedb/core/typedb.service  
+  ```
+  
+  **Additionally**, rename `deploy-typedb-server` alias to `deploy-typedb-all`, because this target is related to `typedb-all-` artifacts.
+  
+  
+- **Update all MODULE and Cargo references**
+  
+  Update the dependency references to all the latest commits
+  
+  
+  
+- **Fix CI pipelines after rules_python upgrade**
+  Fixes our CircleCI deployment pipelines after the rules_python upgrade 
+  
+  
+- **Skip building http service test targets on main ci build**
+  Tag HTTP API tests as manual so we save time on CI.
+  
+- **Add bazel disk cache size and age limits**
 
-- **Disable all warnings on optional return mismatches**
-  Disable all warnings on optional return mismatches, till the spec is finalised
+- **Extend TypeDB prometheus endpoint with new metrics**
+  
+  Exposes per-database query/transaction latency histograms, lifecycle counters, in-flight load gauges, WAL fsync timing and bytes-written, and host process_*/resource gauges on the monitoring port in JSON and Prometheus formats. All metrics now update every 15 seconds.
+  
+  Built for benchmark and stability/soak testing, enabling scraping a running server and identifying memory, cpu, or disk bottlenecks.
+  
+  #### New metrics
+  
+    - `typedb_query_duration_seconds{database,kind=read|write|schema}` — per-kind p99 panels.
+    - `typedb_transaction_duration_seconds{database,kind} + typedb_transaction_lifecycle_total{outcome=started|committed|rolled_back|closed}` — commit/abort/rollback ratios.
+    - `typedb_queries_per_transaction` 
+    - `typedb_load{database,client=grpc|http,kind}` 
+    - `typedb_wal_fsync_duration_seconds, typedb_wal_bytes_written_total`
+    - `process_* gauges + server_resources_count + typedb_build_info`
+  
+  We also print the metrics endpoint on bootup. If disabled, we print `disabled` - along with the same new pattern of display for our HTTP and Admin APIs.
   
   
+- **Don't copy annotations of variables passing through the block**
+  Avoids copying over the annotations which pass through a block without being referenced in it.
+  
+  
+- **Skip rebuilding behaviour test binaries in main CI build**
+  Skip rebuilding in main CI build to make it shorter
+  
+  
+- **Propagate various CI optimisations**
+  Move to local maven dependencies, Bump protobuf dependency use the precompiled compiler.
+  
+  
+- **Remove stray hyphen in release notes**
+  Remove stray hyphen in release notes
   
     
