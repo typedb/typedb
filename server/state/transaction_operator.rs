@@ -27,6 +27,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct TransactionInfo {
     transaction_type: TransactionType,
+    database_name: String,
     owner: String,
     close_sender: Sender<()>,
 }
@@ -36,15 +37,19 @@ pub trait TransactionOperator: Debug + Send + Sync {
     async fn open(
         &self,
         database_name: &str,
+        owner: String,
         transaction_type: TransactionType,
         options: TransactionOptions,
-        owner: String,
         close_sender: Sender<()>,
     ) -> Result<Transaction, ArcServerStateError>;
+
+    async fn has_by_database(&self, database_name: &str) -> bool;
 
     async fn close_by_types(&self, types: &HashSet<TransactionType>);
 
     async fn close_by_owner(&self, username: &str);
+
+    async fn close_by_database(&self, database_name: &str);
 }
 
 #[derive(Debug)]
@@ -75,12 +80,13 @@ impl LocalTransactionOperator {
     pub async fn record(
         &self,
         transaction_id: TransactionId,
-        transaction_type: TransactionType,
+        database_name: String,
         owner: String,
+        transaction_type: TransactionType,
         close_sender: Sender<()>,
     ) {
         let mut transactions = self.transactions.write().await;
-        transactions.insert(transaction_id, TransactionInfo { transaction_type, owner, close_sender });
+        transactions.insert(transaction_id, TransactionInfo { transaction_type, database_name, owner, close_sender });
     }
 }
 
@@ -89,9 +95,9 @@ impl TransactionOperator for LocalTransactionOperator {
     async fn open(
         &self,
         database_name: &str,
+        owner: String,
         transaction_type: TransactionType,
         options: TransactionOptions,
-        owner: String,
         close_sender: Sender<()>,
     ) -> Result<Transaction, ArcServerStateError> {
         let database = self.database_manager.database(database_name).ok_or_else(|| {
@@ -101,8 +107,13 @@ impl TransactionOperator for LocalTransactionOperator {
             open_transaction_blocking(database, transaction_type, options).await.map_err(|typedb_source| {
                 arc_server_state_err(LocalServerStateError::TransactionOpenFailed { typedb_source })
             })?;
-        self.record(transaction.id(), transaction_type, owner, close_sender).await;
+        self.record(transaction.id(), database_name.to_owned(), owner, transaction_type, close_sender).await;
         Ok(transaction)
+    }
+
+    async fn has_by_database(&self, database_name: &str) -> bool {
+        let transactions = self.transactions.read().await;
+        transactions.values().any(|info| info.database_name == database_name)
     }
 
     async fn close_by_types(&self, types: &HashSet<TransactionType>) {
@@ -119,7 +130,18 @@ impl TransactionOperator for LocalTransactionOperator {
     async fn close_by_owner(&self, username: &str) {
         let mut transactions = self.transactions.write().await;
         let to_close: Vec<_> =
-            transactions.iter().filter(|(_, info)| username == info.owner).map(|(id, _)| *id).collect();
+            transactions.iter().filter(|(_, info)| info.owner == username).map(|(id, _)| *id).collect();
+        for id in to_close {
+            if let Some(info) = transactions.remove(&id) {
+                let _ = info.close_sender.send(()).await;
+            }
+        }
+    }
+
+    async fn close_by_database(&self, database_name: &str) {
+        let mut transactions = self.transactions.write().await;
+        let to_close: Vec<_> =
+            transactions.iter().filter(|(_, info)| info.database_name == database_name).map(|(id, _)| *id).collect();
         for id in to_close {
             if let Some(info) = transactions.remove(&id) {
                 let _ = info.close_sender.send(()).await;

@@ -478,7 +478,7 @@ impl TransactionService {
         let transaction = self
             .server_state
             .transactions()
-            .open(&database_name, transaction_type, transaction_options, self.owner.clone(), self.close_sender.clone())
+            .open(&database_name, self.owner.clone(), transaction_type, transaction_options, self.close_sender.clone())
             .await
             .map_err(|err| err.into_status())?;
 
