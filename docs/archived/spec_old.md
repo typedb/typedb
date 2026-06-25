@@ -643,7 +643,7 @@ The next rule is special to attributes, describing their interactions with value
 * **Direct dependency list rule**: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a :_! A(l_i : I)`$. In other words:
   > If the user intends $a$ to directly depend on the list $`l`$ then they intend $a$ to directly depend on each list's entries $`l_i`$.
 
-* **Empty attribute lists**: For $`A : \mathbf{Att}(I)`$ and $`x : I_{[]}`$ such that no non-empty list $`l : `[A](x : I_{[]})`$ exists then this implies an empty **"default"** list $`[] : [A](x : I_{[]})`$.
+* **Empty attribute lists**: For $`A : \mathbf{Att}(I)`$ and $`x : I_{[]}`$ such that no non-empty list $`l : [A](x : I_{[]})`$ exists then this implies an empty **"default"** list $`[] : [A](x : I_{[]})`$.
 
 _Note_. The last rule is the reason why we don't need the type `[A]?` in our type system — the "None" case is simple the empty list.
 
