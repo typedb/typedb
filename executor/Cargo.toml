@@ -21,16 +21,19 @@ features = {}
 	[dev-dependencies.test_utils_encoding]
 		workspace = true
 
+	[dev-dependencies.criterion]
+		workspace = true
+
 	[dev-dependencies.query]
 		workspace = true
 
 	[dev-dependencies.durability]
 		workspace = true
 
-	[dev-dependencies.test_utils_concept]
+	[dev-dependencies.pprof]
 		workspace = true
 
-	[dev-dependencies.criterion]
+	[dev-dependencies.test_utils_concept]
 		workspace = true
 
 [dependencies]
@@ -104,6 +107,10 @@ features = {}
 	[dependencies.lending_iterator]
 		workspace = true
 
+[[bench]]
+	name = "bench_instructions"
+	harness = false
+
 [[test]]
 	path = "tests/execute_function.rs"
 	name = "test_functions"
@@ -147,9 +154,4 @@ features = {}
 [[test]]
 	path = "tests/execute_links.rs"
 	name = "test_execute_links"
-
-[[bench]]
-	name = "bench_instructions"
-	path = "benches/bench_instructions.rs"
-	harness = false
 

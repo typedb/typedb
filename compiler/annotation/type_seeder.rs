@@ -11,42 +11,36 @@ use std::{
     iter::zip,
 };
 
-use answer::{Type as TypeAnnotation, Type, variable::Variable};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::{
     error::ConceptReadError,
-    type_::{OwnerAPI, PlayerAPI, TypeAPI, object_type::ObjectType, type_manager::TypeManager},
+    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::{
-        Pattern, Vertex,
-        conjunction::Conjunction,
-        constraint::{
+        conjunction::Conjunction, constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
             Relates, RoleName, Sub, SubKind, Value,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
+        Pattern,
+        Vertex,
     },
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
+use crate::annotation::type_inference::TypeInferenceMode;
 use crate::annotation::{
-    TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
     type_inference::get_type_annotation_from_label,
+    TypeInferenceError,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TypeInferenceMode {
-    ConcreteSubtypesOnly,    // Queries
-    IncludeAbstractSubtypes, // Schema functions
-    ExactAndExplicit,        // Write stages
-}
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -1656,10 +1650,10 @@ pub mod tests {
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::{
-            ParameterID, Vertex,
-            constraint::{Comparator, IsaKind},
+            constraint::{Comparator, IsaKind}, ParameterID,
+            Vertex,
         },
-        pipeline::{ParameterRegistry, block::Block},
+        pipeline::{block::Block, ParameterRegistry},
         translation::PipelineTranslationContext,
     };
     use resource::profile::{CommitProfile, StorageCounters};
@@ -1670,7 +1664,7 @@ pub mod tests {
         match_inference::{TypeInferenceGraph, VertexAnnotations},
         tests::{
             managers,
-            schema_consts::{LABEL_CAT, LABEL_NAME, setup_types},
+            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
             setup_storage,
         },
         type_inference::tests::expected_edge,

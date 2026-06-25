@@ -46,6 +46,7 @@ use ir::{
     translation::PipelineTranslationContext,
 };
 use pprof::ProfilerGuard;
+use compiler::annotation::type_inference::TypeInferenceMode;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -260,7 +261,7 @@ fn build_has_unbound_executor(
         &value_parameters,
     );
     let previous_annotations = RunningVariableAnnotations::empty();
-    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, false).unwrap();
+    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let has = entry.conjunction().constraints().iter().find_map(|c| c.as_has()).unwrap().clone();
 
@@ -268,7 +269,7 @@ fn build_has_unbound_executor(
     // sort_by = person → BinaryIterateMode::Unbound
     let executor =
         HasExecutor::new(has_instruction, vars.variable_modes, vars.person, &snapshot, &thing_manager).unwrap();
-    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default(), Arc::default());
     (executor, context)
 }
 
@@ -288,7 +289,7 @@ fn build_has_reverse_unbound_executor(
         &value_parameters,
     );
     let previous_annotations = RunningVariableAnnotations::empty();
-    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, false).unwrap();
+    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let has = entry.conjunction().constraints().iter().find_map(|c| c.as_has()).unwrap().clone();
 
@@ -303,7 +304,7 @@ fn build_has_reverse_unbound_executor(
         &thing_manager,
     )
     .unwrap();
-    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default(), Arc::default());
     (executor, context)
 }
 
@@ -360,14 +361,14 @@ fn build_links_unbound_executor(
         &value_parameters,
     );
     let previous_annotations = RunningVariableAnnotations::empty();
-    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, false).unwrap();
+    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let links = entry.conjunction().constraints().iter().find_map(|c| c.as_links()).unwrap().clone();
 
     let links_instruction = LinksInstruction::new(links, Inputs::None([]), &entry_annotations).map(&vars.mapping);
     let executor =
         LinksExecutor::new(links_instruction, vars.variable_modes, vars.membership, &snapshot, &thing_manager).unwrap();
-    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default(), Arc::default());
     (executor, context)
 }
 

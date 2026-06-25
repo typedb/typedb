@@ -230,7 +230,7 @@ pub(crate) fn decode_value(
         ValueProto::Decimal(decimal) => Value::Decimal(decode_decimal(decimal)?),
         ValueProto::Date(date) => Value::Date(decode_date(date)?),
         ValueProto::Datetime(date_time) => Value::DateTime(decode_datetime(date_time)?),
-        ValueProto::DatetimeTz(datetime_tz) => Value::DateTimeTZ(decode_datetime_tz(datetime_tz)?),
+        ValueProto::DatetimeTz(datetime_tz) => Value::DateTimeTZ(decode_datetime_tz(datetime_tz)?.into()),
         ValueProto::Duration(duration) => Value::Duration(decode_duration(duration)?),
         ValueProto::String(string) => Value::String(Cow::Owned(string)),
         ValueProto::Struct(_struct) => unimplemented_feature!(Structs),

@@ -16,6 +16,13 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::TypeInferenceError;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypeInferenceMode {
+    ConcreteSubtypesOnly,    // Queries
+    IncludeAbstractSubtypes, // Schema functions
+    ExactAndExplicit,        // Write stages
+}
+
 pub fn resolve_value_types(
     types: &BTreeSet<Type>,
     snapshot: &impl ReadableSnapshot,
@@ -99,9 +106,10 @@ pub mod tests {
                 },
                 setup_storage,
             },
-            type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
+            type_seeder::{TypeGraphSeedingContext},
         },
     };
+    use crate::annotation::type_inference::TypeInferenceMode;
 
     #[test]
     fn test_functions() {

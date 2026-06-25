@@ -208,6 +208,7 @@ fn seed_friendships(database: &Arc<Database<WALClient>>, person_count: usize, fr
                 tx,
                 QueryOptions::default_grpc(),
                 pipeline,
+                None::<GivenRowsSimple>,
                 query_str,
                 ExecutionInterrupt::new_uninterruptible(),
             );
@@ -795,7 +796,7 @@ fn run_pure_read_benchmark(thread_counts: &[usize]) {
 // --- Main ---
 
 fn main() {
-    let thread_counts = [1, 4, 8];
+    let thread_counts = [1]; // 4, 8];
     let show_dist = env::var("BENCH_DIST").is_ok();
 
     eprintln!("Concurrent Write Scalability Benchmark Suite");
@@ -807,30 +808,35 @@ fn main() {
     }
     eprintln!();
 
-    // W1: Pure Insert
-    for &batch_size in &[1000, 100, 1] {
-        run_pure_insert_benchmark(&thread_counts, batch_size, show_dist);
-    }
+    // // W1: Pure Insert
+    // for &batch_size in &[1000, 100, 1] {
+    //     run_pure_insert_benchmark(&thread_counts, batch_size, show_dist);
+    // }
 
-    // W2: Pure Update (match-insert generating Puts)
-    for &batch_size in &[1000, 100, 1] {
-        run_pure_update_benchmark(&thread_counts, batch_size, show_dist);
-    }
+    // // W2: Pure Update (match-insert generating Puts)
+    // for &batch_size in &[1000, 100, 1] {
+    //     run_pure_update_benchmark(&thread_counts, batch_size, show_dist);
+    // }
+
+    let batch_sizes = [100];
 
     // W3: Insert Relations
-    for &batch_size in &[1000, 100, 1] {
+    // for &batch_size in &[1000, 100, 1] {
+    for &batch_size in &batch_sizes {
         run_insert_relation_benchmark(&thread_counts, batch_size, show_dist);
     }
 
     // W4: Mixed 50/50
-    for &batch_size in &[1000, 100, 1] {
-        run_mixed_benchmark(&thread_counts, batch_size, 0.5, show_dist);
-    }
+    // for &batch_size in &[1000, 100, 1] {
+    // for &batch_size in &batch_sizes {
+    //     run_mixed_benchmark(&thread_counts, batch_size, 0.5, show_dist);
+    // }
 
     // W5: Mixed 20/80
-    for &batch_size in &[1000, 100, 1] {
-        run_mixed_benchmark(&thread_counts, batch_size, 0.2, show_dist);
-    }
+    // for &batch_size in &[1000, 100, 1] {
+    // for &batch_size in &batch_sizes {
+    //     run_mixed_benchmark(&thread_counts, batch_size, 0.2, show_dist);
+    // }
 
     // W6: Mixed read/write relations (Triple-tuple-heavy)
     for &batch_size in &[1000, 100, 1] {
