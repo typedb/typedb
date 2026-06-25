@@ -91,19 +91,18 @@ impl LocalTransactionOperator {
     }
 
     async fn close_matching(&self, matches: impl Fn(&TransactionInfo) -> bool) {
-        let close_senders = {
-            let mut transactions = self.transactions.write().await;
-            let ids: Vec<_> = transactions.iter().filter(|(_, info)| matches(info)).map(|(id, _)| *id).collect();
-            let mut close_senders = Vec::with_capacity(ids.len());
-            for id in ids {
-                if let Some(info) = transactions.remove(&id) {
-                    let _ = info.close_sender.send(()).await;
-                    close_senders.push(info.close_sender);
-                }
-            }
-            close_senders
-        };
-        join_all(close_senders.iter().map(Sender::closed)).await;
+        let close_senders: Vec<Sender<()>> = self
+            .transactions
+            .write()
+            .await
+            .extract_if(|_, info| matches(info))
+            .map(|(_, info)| info.close_sender)
+            .collect();
+        join_all(close_senders.iter().map(|sender| async move {
+            let _ = sender.send(()).await;
+            sender.closed().await;
+        }))
+        .await;
     }
 }
 
