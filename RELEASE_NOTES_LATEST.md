@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.12.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0-rc1)
+[Distributions for 3.12.0-rc2](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0-rc2)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.12.0-rc1```
+```docker pull typedb/typedb:3.12.0-rc2```
 
 
 ## New Features
@@ -315,7 +315,7 @@
   
   Fix the recently introduced broken entrypoint for the Docker image: the binary the entrypoint points at did not exist inside the image.
   
-  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-3.12.0-rc1"`. Inside the docker layer the binary lived at:
+  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-3.12.0-rc2"`. Inside the docker layer the binary lived at:
   
   ```
   /opt/typedb-server-linux-<arch>-<version>/typedb
@@ -327,7 +327,7 @@
   /opt/typedb-server-linux-<arch>/typedb
   ```
   
-  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-3.12.0-rc1` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
+  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-3.12.0-rc2` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
   
   Current release artifacts breakdown:
   ```
