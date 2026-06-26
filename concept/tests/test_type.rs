@@ -728,18 +728,24 @@ fn annotations_with_range_arguments() {
                 .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001)))))
         );
 
-        assert!(schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
-            &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None))
-        ));
+        assert!(
+            schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)))
+        );
         assert!(
             !schedule_type
                 .get_annotations_declared(&snapshot, &type_manager)
                 .unwrap()
                 .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, None)))
         );
-        assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
-            &AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now))))
-        ));
+        assert!(
+            !schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now)))))
+        );
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
                 Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
@@ -1186,9 +1192,10 @@ fn annotations_with_value_arguments() {
         );
 
         assert!(
-            schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
-                &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)]))
-            )
+            schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])))
         );
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![

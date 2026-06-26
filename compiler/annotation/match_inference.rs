@@ -31,9 +31,9 @@ use crate::annotation::{
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
-    type_seeder::{TypeGraphSeedingContext},
+    type_inference::TypeInferenceMode,
+    type_seeder::TypeGraphSeedingContext,
 };
-use crate::annotation::type_inference::TypeInferenceMode;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {

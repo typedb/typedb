@@ -20,7 +20,7 @@ use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
         PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_block,
-        pipeline::RunningVariableAnnotations,
+        pipeline::RunningVariableAnnotations, type_inference::TypeInferenceMode,
     },
     executable::match_::instructions::{
         Inputs, VariableMode, VariableModes,
@@ -46,7 +46,6 @@ use ir::{
     translation::PipelineTranslationContext,
 };
 use pprof::ProfilerGuard;
-use compiler::annotation::type_inference::TypeInferenceMode;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -261,7 +260,9 @@ fn build_has_unbound_executor(
         &value_parameters,
     );
     let previous_annotations = RunningVariableAnnotations::empty();
-    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly).unwrap();
+    let block_annotations =
+        infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly)
+            .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let has = entry.conjunction().constraints().iter().find_map(|c| c.as_has()).unwrap().clone();
 
@@ -289,7 +290,9 @@ fn build_has_reverse_unbound_executor(
         &value_parameters,
     );
     let previous_annotations = RunningVariableAnnotations::empty();
-    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly).unwrap();
+    let block_annotations =
+        infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly)
+            .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let has = entry.conjunction().constraints().iter().find_map(|c| c.as_has()).unwrap().clone();
 
@@ -361,7 +364,9 @@ fn build_links_unbound_executor(
         &value_parameters,
     );
     let previous_annotations = RunningVariableAnnotations::empty();
-    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly).unwrap();
+    let block_annotations =
+        infer_types_for_block(&mut ctx, &previous_annotations, &entry, TypeInferenceMode::ConcreteSubtypesOnly)
+            .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let links = entry.conjunction().constraints().iter().find_map(|c| c.as_links()).unwrap().clone();
 

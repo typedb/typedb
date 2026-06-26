@@ -52,12 +52,11 @@ use crate::{
         },
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
-        type_inference::resolve_value_types,
+        type_inference::{TypeInferenceMode, resolve_value_types},
         write_type_check::check_type_combinations_for_write,
     },
     executable::{reduce::ReduceInstruction, update},
 };
-use crate::annotation::type_inference::TypeInferenceMode;
 
 pub struct AnnotatedGiven {
     pub variables: Vec<Variable>,

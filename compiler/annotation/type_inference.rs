@@ -106,10 +106,10 @@ pub mod tests {
                 },
                 setup_storage,
             },
-            type_seeder::{TypeGraphSeedingContext},
+            type_inference::TypeInferenceMode,
+            type_seeder::TypeGraphSeedingContext,
         },
     };
-    use crate::annotation::type_inference::TypeInferenceMode;
 
     #[test]
     fn test_functions() {
