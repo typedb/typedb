@@ -1,13 +1,48 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.12.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0-rc0)
+[Distributions for 3.12.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0-rc1)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.12.0-rc0```
+```docker pull typedb/typedb:3.12.0-rc1```
 
 
 ## New Features
+- **Await transactions closing in transaction operator**
+  
+  Ensure the `TransactionOperator` closes all transactions requested to be closed before returning from the function. Before, it used to "fire and forget", which does not have enough guarantees for real use cases of these methods.
+  
+  
+- **Add database-based methods to transaction operator**
+  
+  Extend `TransactionOperator` to allow checking and closing tracked transactions based on the database name. The existence check is mostly natural for the database name as it's impossible to delete the database in use (while the other params like `owner` and `type` do not have a similar responsibility).
+  
+  
+- **Expose rocksdb memory configuration**
+  
+  We expose a pair of new memory tuning parameters: RocksDB cache size (`storage.rocksdb.cache-size`) and RocksDB write buffers limit (`storage.rocksdb.write-buffers-limit`). Tuning these gives a more predictable memory limit, and the limits are **shared across open databases**:
+  
+  ```
+  storage:
+      data-directory: "data"
+      rocksdb:
+          cache-size: 1gb
+          write-buffers-limit: 512mb
+  ```
+  
+  Configurable with integer `kb`, `mb`, or `gb` units.
+  
+  By default, we will set 1gb of cache and 512mb of write buffers. As these limits are approached:
+  1) the cache will evict least recently used data blocks
+  2) the write buffers will more eagerly flush to disk, even if not quite full.
+  
+  If the write buffers limit can't be maintained, then writes will be throttled.
+  
+  We expect that currently, with additional overheads, TypeDB will use around 2-2.5gb of RAM at the steady state.
+  
+  Note that the cache size limit is a _soft_ limit: TypeDB always caches RocksDB indexes and bloom filters, so eg. a 1GB cache limit maybe breached if more than 1GB of indexes and blooms exist.
+  
+  
 - **@doc and @meta annotations**
   
   We implement `@doc("docstring")` and `@meta("key", "value")` schema annotations. These annotations can be attached to types and capabilities i.e. `owns`, `plays`, `relates`, and `sub`:
@@ -119,6 +154,10 @@
   
 
 ## Bugs Fixed
+- **Fix protocol extension mismatch error handling**
+  Fix how errors are handled when the driver protocol extension is ahead of the server - it previously crashed, now returns an error as expected. Sample message:
+  
+  
 - **Fix git patch file for Windows**
   
   Fix the `git.patch` file used to enable Windows builds
@@ -202,6 +241,10 @@
   
 
 ## Other Improvements
+- **Prepare release 3.12.0-rc0**
+  Bump version, prepare release notes
+  
+  
 - **Allow committing schema functions on abstract types**
   Allows schema functions which satisfy type-checking only through abstract types, even though the pattern can have no answers (as no concrete types satisfy the pattern). This is to allow writing modular tql files where functions are defined on abstract types. Other schema modules can concretise these types.
   Calling such a schema function in a query or preamble function will result in a type-inference error as preamble functions & queries are still required to be concretely satisfiable.
@@ -272,7 +315,7 @@
   
   Fix the recently introduced broken entrypoint for the Docker image: the binary the entrypoint points at did not exist inside the image.
   
-  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-3.12.0-rc0"`. Inside the docker layer the binary lived at:
+  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-3.12.0-rc1"`. Inside the docker layer the binary lived at:
   
   ```
   /opt/typedb-server-linux-<arch>-<version>/typedb
@@ -284,7 +327,7 @@
   /opt/typedb-server-linux-<arch>/typedb
   ```
   
-  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-3.12.0-rc0` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
+  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-3.12.0-rc1` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
   
   Current release artifacts breakdown:
   ```
@@ -335,6 +378,9 @@
   
 - **Skip building http service test targets on main ci build**
   Tag HTTP API tests as manual so we save time on CI.
+  
+  # Implementation details
+  I couldn't get the server to reboot between runs when I merged the targets. I may need an after-test shutdown step.
   
 - **Add bazel disk cache size and age limits**
 
