@@ -277,7 +277,7 @@ sum_reducer_executors! {
 }
 
 macro_rules! minmax_reducer_executors {
-    ($($ty:ident::$lower:ident($repr:ty) wrap = $wrap:expr),* $(,)?) => {$(
+    ($($ty:ident::$lower:ident($repr:ty)),* $(,)?) => {$(
         paste! {
             #[derive(Debug, Clone)]
             struct [< Min $ty Executor >] {
@@ -310,7 +310,7 @@ macro_rules! minmax_reducer_executors {
                 }
 
                 fn finalise(self) -> Option<VariableValue<'static>> {
-                    Some(VariableValue::Value(Value::$ty(($wrap)(self.min?))))
+                    Some(VariableValue::Value(Value::$ty(self.min?)))
                 }
             }
 
@@ -345,7 +345,7 @@ macro_rules! minmax_reducer_executors {
                 }
 
                 fn finalise(self) -> Option<VariableValue<'static>> {
-                    Some(VariableValue::Value(Value::$ty(($wrap)(self.max?))))
+                    Some(VariableValue::Value(Value::$ty(self.max?)))
                 }
             }
         }
@@ -353,12 +353,12 @@ macro_rules! minmax_reducer_executors {
 }
 
 minmax_reducer_executors! {
-    Integer::integer(i64) wrap = |x| x,
-    Double::double(f64) wrap = |x| x,
-    Decimal::decimal(Decimal) wrap = |x| x,
-    Date::date(NaiveDate) wrap = |x| x,
-    DateTime::date_time(NaiveDateTime) wrap = |x| x,
-    DateTimeTZ::date_time_tz(DateTime<TimeZone>) wrap = Box::new,
+    Integer::integer(i64),
+    Double::double(f64),
+    Decimal::decimal(Decimal),
+    Date::date(NaiveDate),
+    DateTime::date_time(NaiveDateTime),
+    DateTimeTZ::date_time_tz(DateTime<TimeZone>),
 }
 
 #[derive(Debug, Clone)]

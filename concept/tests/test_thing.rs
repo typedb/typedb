@@ -6,11 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{
-    borrow::Cow,
-    collections::{BTreeMap, HashMap},
-    ops::Bound,
-};
+use std::{borrow::Cow, collections::HashMap, ops::Bound};
 
 use concept::{
     error::ConceptReadError,
@@ -2228,7 +2224,7 @@ fn attribute_struct_write_read() {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
         let struct_value = StructValue::build(
-            struct_key.definition_id(),
+            struct_key.clone(),
             type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap().clone(),
             instance_fields,
         )
@@ -2321,13 +2317,11 @@ fn read_attribute_struct_by_field() {
         let mut snapshot = storage.clone().open_snapshot_write();
         let mut attrs = Vec::new();
         for val in field_values {
-            let nested_struct_value = StructValue::new(
-                nested_struct_key.definition_id(),
-                BTreeMap::from([(0, Value::String(Cow::Borrowed(val)))]),
-            );
+            let nested_struct_value =
+                StructValue::new(nested_struct_key.clone(), HashMap::from([(0, Value::String(Cow::Borrowed(val)))]));
             let outer_struct_value = StructValue::new(
-                struct_key.definition_id(),
-                BTreeMap::from([(0, Value::Struct(Cow::Owned(nested_struct_value)))]),
+                struct_key.clone(),
+                HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct_value)))]),
             );
             let attr = thing_manager
                 .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Borrowed(&outer_struct_value)))
@@ -2410,7 +2404,7 @@ fn attribute_struct_errors() {
         type_manager.get_struct_definition(&snapshot, nested_struct_key.clone()).unwrap();
         {
             let err = StructValue::build(
-                struct_key.definition_id(),
+                struct_key.clone(),
                 struct_def.clone(),
                 HashMap::from([("f_nested".to_owned(), Value::Integer(0))]),
             )
@@ -2420,8 +2414,7 @@ fn attribute_struct_errors() {
             );
         }
         {
-            let err =
-                StructValue::build(struct_key.definition_id(), struct_def.clone(), HashMap::from([])).unwrap_err();
+            let err = StructValue::build(struct_key.clone(), struct_def.clone(), HashMap::from([])).unwrap_err();
             assert!(err.len() == 1 && matches!(err.first().unwrap(), EncodingError::StructMissingRequiredField { .. }));
         }
     }

@@ -395,7 +395,7 @@ impl ThingManager {
             AttributeID::Decimal(id) => Ok(Value::Decimal(id.read().as_decimal())),
             AttributeID::Date(id) => Ok(Value::Date(id.read().as_naive_date())),
             AttributeID::DateTime(id) => Ok(Value::DateTime(id.read().as_naive_date_time())),
-            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(Box::new(id.read().as_date_time()))),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.read().as_date_time())),
             AttributeID::Duration(id) => Ok(Value::Duration(id.read().as_duration())),
             AttributeID::String(id) => {
                 let string = if id.is_inline() {
@@ -2407,7 +2407,7 @@ impl ThingManager {
                 )
             }
             Value::DateTimeTZ(date_time_tz) => {
-                let encoded_date_time_tz = DateTimeTZBytes::build(*date_time_tz);
+                let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
                 self.vertex_generator.create_attribute_date_time_tz(
                     attribute_type.vertex().type_id_(),
                     encoded_date_time_tz,

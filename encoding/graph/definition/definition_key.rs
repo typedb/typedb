@@ -87,7 +87,7 @@ impl fmt::Display for DefinitionKey {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct DefinitionID {
     bytes: [u8; DefinitionID::LENGTH],
 }
