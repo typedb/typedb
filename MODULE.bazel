@@ -122,13 +122,13 @@ native_artifact_files.artifact(
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
     archive_strip_prefix = "typedb-console-{platform}-{version}",
-    tag = "3.12.0-rc1",
+    tag = "3.12.0-rc2",
 )
 native_artifact_files.artifact(
     name = "typedb_loader_artifact",
     group_name = "typedb-loader-{platform}",
     artifact_name = "typedb-loader-{platform}-{version}.{ext}",
-    tag = "3.12.0-rc1",
+    tag = "3.12.0-rc2",
 )
 use_repo(
     native_artifact_files,
