@@ -38,15 +38,8 @@ use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
-    type_inference::get_type_annotation_from_label,
+    type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TypeInferenceMode {
-    ConcreteSubtypesOnly,    // Queries
-    IncludeAbstractSubtypes, // Schema functions
-    ExactAndExplicit,        // Write stages
-}
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,

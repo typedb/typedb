@@ -27,7 +27,7 @@ use concept::{
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -48,7 +48,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(crate) struct HasExecutor {
+pub struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
@@ -80,7 +80,7 @@ pub(super) const EXTRACT_ATTRIBUTE: HasVariableValueExtractor =
     |(has, _)| VariableValue::Thing(Thing::Attribute(has.attribute()));
 
 impl HasExecutor {
-    pub(crate) fn new<Snapshot: ReadableSnapshot>(
+    pub fn new<Snapshot: ReadableSnapshot>(
         has: HasInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
@@ -169,7 +169,7 @@ impl HasExecutor {
         })
     }
 
-    pub(crate) fn get_iterator(
+    pub fn get_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
@@ -341,7 +341,7 @@ pub(crate) enum FixedHasBounds {
 }
 
 pub(super) struct HasTupleIterator<Iter: LendingIterator> {
-    inner: Peekable<Iter>,
+    inner: Iter,
     filter_map: Arc<HasFilterMapFn>,
     to_tuple_fn: HasToTupleFn,
     from_tuple_fn: TupleToHasFn,
@@ -360,7 +360,7 @@ where
         from_tuple_fn: TupleToHasFn,
         fixed_bounds: FixedHasBounds,
     ) -> Self {
-        Self { inner: Peekable::new(inner), filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
+        Self { inner, filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
     }
 }
 
