@@ -42,7 +42,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(crate) struct HasReverseExecutor {
+pub struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
@@ -65,7 +65,7 @@ pub(crate) type HasReverseTupleIteratorSingle = HasTupleIterator<HasReverseItera
 pub(crate) type HasReverseTupleIteratorMerged = KMergeBy<HasTupleIterator<HasReverseIterator>, TupleOrderingFn>;
 
 impl HasReverseExecutor {
-    pub(crate) fn new(
+    pub fn new(
         has_reverse: HasReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
@@ -128,7 +128,7 @@ impl HasReverseExecutor {
         })
     }
 
-    pub(crate) fn get_iterator(
+    pub fn get_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
@@ -184,7 +184,7 @@ impl HasReverseExecutor {
                     self.has.attribute().as_variable().unwrap(),
                     storage_counters.clone(),
                 )?;
-                let tuple_iterator = Self::all_has_reverse(
+                let mut iterators = Self::all_has_reverse_iterators(
                     snapshot,
                     thing_manager,
                     &self.attribute_owner_types_range,
@@ -192,11 +192,22 @@ impl HasReverseExecutor {
                     filter_for_row,
                     storage_counters,
                 )?;
-                Ok(TupleIterator::HasReverseMerged(SortedTupleIterator::new(
-                    tuple_iterator,
-                    self.tuple_positions.clone(),
-                    &self.variable_modes,
-                )))
+                if iterators.len() == 1 {
+                    let single = iterators.pop().unwrap();
+                    Ok(TupleIterator::HasReverseSingle(SortedTupleIterator::new(
+                        single,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                } else {
+                    let merged: KMergeBy<HasTupleIterator<HasReverseIterator>, TupleOrderingFn> =
+                        KMergeBy::new(iterators, unsafe_compare_result_tuple);
+                    Ok(TupleIterator::HasReverseMerged(SortedTupleIterator::new(
+                        merged,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                }
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.attribute_cache.get().is_some());
@@ -277,16 +288,16 @@ impl HasReverseExecutor {
         }
     }
 
-    fn all_has_reverse(
+    fn all_has_reverse_iterators(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type_owner_range: &BTreeMap<AttributeType, (Bound<ObjectType>, Bound<ObjectType>)>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
         filter_fn: Arc<HasFilterMapFn>,
         storage_counters: StorageCounters,
-    ) -> Result<KMergeBy<HasTupleIterator<HasReverseIterator>, TupleOrderingFn>, Box<ConceptReadError>> {
+    ) -> Result<Vec<HasTupleIterator<HasReverseIterator>>, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
-        let iterators: Vec<_> = attribute_type_owner_range
+        attribute_type_owner_range
             .iter()
             // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
             .filter(|(attribute_type, _owner_type_range)| {
@@ -315,11 +326,7 @@ impl HasReverseExecutor {
                         )
                     })
             })
-            .try_collect::<_, _, Box<ConceptReadError>>()?;
-        // We use a KMerge instead of a Chained/Flattened iterator so we can allow seeking without worrying about chain order
-        let merged: KMergeBy<HasTupleIterator<HasReverseIterator>, TupleOrderingFn> =
-            KMergeBy::new(iterators, unsafe_compare_result_tuple);
-        Ok(merged)
+            .try_collect::<_, _, Box<ConceptReadError>>()
     }
 }
 

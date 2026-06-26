@@ -25,7 +25,7 @@ build:
         bazel build --config=ci --build_tag_filters=-manual_build //... 
         bazel run --config=ci @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test --config=ci $(bazel query 'kind(checkstyle_test, //...)') 
-        bazel test --config=ci $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
+        bazel test --config=ci $(bazel query 'kind(rustfmt_test, //...)')
 
     cargo-check:
       image: typedb-ubuntu-22.04

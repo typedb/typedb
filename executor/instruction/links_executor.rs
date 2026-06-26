@@ -24,7 +24,7 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -47,7 +47,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(crate) struct LinksExecutor {
+pub struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
 
     iterate_mode: LinksIterateMode,
@@ -90,7 +90,7 @@ pub(crate) type LinksOrderingFn = for<'a, 'b> fn(
 ) -> Ordering;
 
 impl LinksExecutor {
-    pub(crate) fn new(
+    pub fn new(
         links: LinksInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
@@ -166,7 +166,7 @@ impl LinksExecutor {
         })
     }
 
-    pub(crate) fn get_iterator(
+    pub fn get_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
@@ -337,7 +337,7 @@ pub(super) enum FixedLinksBounds {
 }
 
 pub(super) struct LinksTupleIterator<Iter: LendingIterator> {
-    inner: Peekable<Iter>,
+    inner: Iter,
     filter_map: Arc<LinksFilterMapFn>,
     to_tuple_fn: LinksToTupleFn,
     from_tuple_fn: TupleToLinksFn,
@@ -356,7 +356,7 @@ where
         from_tuple_fn: TupleToLinksFn,
         fixed_bounds: FixedLinksBounds,
     ) -> Self {
-        Self { inner: Peekable::new(inner), filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
+        Self { inner, filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
     }
 }
 

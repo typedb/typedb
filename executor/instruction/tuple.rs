@@ -58,7 +58,7 @@ pub(crate) fn unsafe_compare_result_tuple<'a, 'b>(
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum Tuple<'a> {
+pub enum Tuple<'a> {
     Single([VariableValue<'a>; 1]),
     Pair([VariableValue<'a>; 2]),
     Triple([VariableValue<'a>; 3]),

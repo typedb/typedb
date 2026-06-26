@@ -21,10 +21,16 @@ features = {}
 	[dev-dependencies.test_utils_encoding]
 		workspace = true
 
+	[dev-dependencies.criterion]
+		workspace = true
+
 	[dev-dependencies.query]
 		workspace = true
 
 	[dev-dependencies.durability]
+		workspace = true
+
+	[dev-dependencies.pprof]
 		workspace = true
 
 	[dev-dependencies.test_utils_concept]
@@ -100,6 +106,10 @@ features = {}
 
 	[dependencies.lending_iterator]
 		workspace = true
+
+[[bench]]
+	name = "bench_instructions"
+	harness = false
 
 [[test]]
 	path = "tests/execute_function.rs"

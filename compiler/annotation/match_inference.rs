@@ -31,7 +31,8 @@ use crate::annotation::{
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
-    type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
+    type_inference::TypeInferenceMode,
+    type_seeder::TypeGraphSeedingContext,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
