@@ -9,7 +9,7 @@ use std::{collections::HashMap, iter, sync::Arc};
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::{graph::definition::definition_key_generator::DefinitionKeyGenerator, value::value::Value};
+use encoding::value::value::Value;
 use executor::{
     ExecutionInterrupt,
     pipeline::{PipelineExecutionError, stage::ExecutionContext},

@@ -6,7 +6,6 @@
 
 use std::{
     collections::HashMap,
-    fmt,
     hash::{Hash, Hasher},
     sync::Arc,
 };
@@ -16,7 +15,7 @@ use serde::{Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Map, Value, to_value};
 
 use crate::{
-    DatabaseHash, DatabaseId,
+    DatabaseId,
     metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 

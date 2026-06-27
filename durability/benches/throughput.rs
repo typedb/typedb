@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use diagnostics::metrics::FsyncMetrics;

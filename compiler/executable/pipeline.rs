@@ -22,7 +22,7 @@ use ir::{
 use itertools::Itertools;
 
 use crate::{
-    ExecutorVariable, VariablePosition,
+    VariablePosition,
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation},
@@ -34,7 +34,7 @@ use crate::{
         fetch::executable::{ExecutableFetch, compile_fetch},
         function::{ExecutableFunctionRegistry, FunctionCallCostProvider, executable::compile_functions},
         insert::{self, executable::InsertExecutable},
-        match_::{instructions::CheckInstruction, planner::conjunction_executable::ConjunctionExecutable},
+        match_::planner::conjunction_executable::ConjunctionExecutable,
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },

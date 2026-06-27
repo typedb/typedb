@@ -7,7 +7,7 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
-use std::{ffi::c_int, num::NonZero};
+use std::ffi::c_int;
 
 use bytes::Bytes;
 use resource::constants::common::MB;
@@ -172,6 +172,6 @@ pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Clone {
 
     fn prefix(&self) -> Prefix {
         let byte = self.clone().to_bytes()[Self::INDEX_PREFIX];
-        Prefix::from_prefix_id(PrefixID::new(byte))
+        Prefix::from_prefix_id(PrefixID::new(byte)).expect("Unrecognized prefix byte")
     }
 }
