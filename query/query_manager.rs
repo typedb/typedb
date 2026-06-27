@@ -48,16 +48,16 @@ use ir::{
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
-    perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_PARSE_CACHE_HITS, QUERY_PARSE_CACHE_MISSES},
-    profile::{CompileProfile, QueryProfile},
+    perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_CONVERT_CACHE_HITS, QUERY_CONVERT_CACHE_MISSES},
+    profile::{CompileIRProfile, QueryProfile},
 };
 use storage::{
     sequence_number::SequenceNumber,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tracing::{Level, event};
-use typeql::query::SchemaQuery;
-
+use typeql::query::{QueryStructure, SchemaQuery};
+use storage::snapshot::iterator::SnapshotIteratorError;
 use crate::{
     analyse::{
         AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
@@ -68,6 +68,7 @@ use crate::{
     query_cache::QueryCache,
     redefine, undefine,
 };
+use crate::query_cache::ConvertedQuery;
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
@@ -91,37 +92,39 @@ impl QueryManager {
         Self { cache }
     }
 
-    /// Look up a raw query string in the parse cache. A hit returns the cached translated IR,
-    /// letting the caller skip both typeql parsing and IR translation; it always represents a
-    /// pipeline query (schema queries are never cached).
-    pub fn get_parsed(&self, source_query: &str) -> Option<TranslatedPipeline> {
-        let translated = self.cache.as_ref().and_then(|cache| cache.get_parsed(source_query))?;
-        QUERY_PARSE_CACHE_HITS.increment();
-        Some(translated)
-    }
-
-    /// Resolve a routed query to its translated IR: a cached `Translated` is returned directly,
-    /// while a `Parsed` AST is translated now (a parse-cache miss) and inserted into the parse cache
-    /// for subsequent identical query strings.
-    fn resolve_query_input(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        function_manager: &FunctionManager,
-        statistics_sequence_number: SequenceNumber,
-        input: QueryInput,
-        source_query: &str,
-    ) -> Result<TranslatedPipeline, Box<QueryError>> {
-        match input {
-            QueryInput::Translated(translated) => Ok(translated),
-            QueryInput::Parsed(query) => {
-                let translated = translate_pipeline(snapshot, function_manager, &query, source_query)?;
-                QUERY_PARSE_CACHE_MISSES.increment();
-                if let Some(cache) = self.cache.as_ref() {
-                    cache.may_insert_parsed(statistics_sequence_number, source_query, translated.clone());
+    pub fn convert_query(&self, query: &str, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager, function_manager: &FunctionManager) -> Result<ConvertedQuery, Box<QueryError>> {
+        let converted = match self.cache.as_ref().and_then(|cache| cache.get_converted(query)) {
+            Some(converted_query) => {
+                QUERY_CONVERT_CACHE_HITS.increment();
+                converted_query
+            },
+            None => {
+                QUERY_CONVERT_CACHE_MISSES.increment();
+                let parsed = typeql::parse_query(query)
+                    .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err})?;
+                match parsed.into_structure() {
+                    QueryStructure::Schema(schema_query) => {
+                        let schema_query = Arc::new(schema_query);
+                        if let Some(cache) = self.cache.as_ref() {
+                            cache.insert_converted_schema_query(query, schema_query.clone());
+                        }
+                        ConvertedQuery::Schema(schema_query)
+                    },
+                    QueryStructure::Pipeline(pipeline) => {
+                        let translated = translate_pipeline(snapshot, function_manager, &pipeline, query)?;
+                        if let Some(cache) = self.cache.as_ref() {
+                            cache.may_insert_converted_data_pipeline(
+                                thing_manager.statistics().sequence_number,
+                                query,
+                                translated.clone(),
+                            )
+                        }
+                        ConvertedQuery::Data(translated)
+                    },
                 }
-                Ok(translated)
             }
-        }
+        };
+        Ok(converted)
     }
 
     pub fn execute_schema(
@@ -130,12 +133,12 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-        query: SchemaQuery,
+        query: Arc<SchemaQuery>,
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match query {
+        let result = match query.as_ref() {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));
@@ -188,7 +191,7 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        input: QueryInput,
+        pipeline: TranslatedPipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
@@ -196,7 +199,6 @@ impl QueryManager {
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
-        // 1: Parse - translate the typeql AST into IR, unless the parse cache already holds it
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -204,14 +206,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters: parameters,
-        } = self.resolve_query_input(
-            snapshot.as_ref(),
-            &function_manager,
-            thing_manager.statistics().sequence_number,
-            input,
-            source_query,
-        )?;
-        compile_profile.translation_finished();
+        } = pipeline;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = Arc::new(translated_given);
         let arced_stages = Arc::new(translated_stages);
@@ -291,7 +286,7 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        input: QueryInput,
+        pipeline: TranslatedPipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
@@ -299,8 +294,6 @@ impl QueryManager {
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
-        // 1: Parse - translate the typeql AST into IR, unless the parse cache already holds it
-        let statistics_sequence_number = thing_manager.statistics().sequence_number;
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -308,12 +301,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters,
-        } = match self.resolve_query_input(&snapshot, &function_manager, statistics_sequence_number, input, source_query)
-        {
-            Ok(translated) => translated,
-            Err(err) => return Err((snapshot, err)),
-        };
-        compile_profile.translation_finished();
+        } = pipeline;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = Arc::new(translated_given);
         let arced_stages = Arc::new(translated_stages);
@@ -398,16 +386,14 @@ impl QueryManager {
         &self,
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
-        thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        input: QueryInput,
+        pipeline: TranslatedPipeline,
         source_query: &str,
     ) -> Result<AnalysedQuery, Box<QueryError>> {
         event!(Level::TRACE, "Running analyse query:\n{}", source_query);
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
-        // 1: Parse - translate the typeql AST into IR, unless the parse cache already holds it
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -415,14 +401,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters: parameters,
-        } = self.resolve_query_input(
-            snapshot.as_ref(),
-            function_manager,
-            thing_manager.statistics().sequence_number,
-            input,
-            source_query,
-        )?;
-        compile_profile.translation_finished();
+        } = pipeline;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = translated_given.map(Arc::new);
         let arced_stages = Arc::new(translated_stages);
@@ -517,7 +496,7 @@ fn annotate_and_compile_query(
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
     function_manager: &FunctionManager,
-    compile_profile: &mut CompileProfile,
+    compile_profile: &mut CompileIRProfile,
     variable_registry: &mut VariableRegistry,
     arced_parameters: Arc<ParameterRegistry>,
     arced_preamble: Arc<Vec<Function>>,

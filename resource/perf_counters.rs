@@ -27,10 +27,8 @@ impl Counter {
     }
 }
 
-// `QUERY_CACHE_*` track the compile cache (translated IR -> executable pipeline).
 pub static QUERY_CACHE_HITS: Counter = Counter::new(PERF_COUNTERS_ENABLED);
 pub static QUERY_CACHE_MISSES: Counter = Counter::new(PERF_COUNTERS_ENABLED);
 pub static QUERY_CACHE_FLUSH: Counter = Counter::new(PERF_COUNTERS_ENABLED);
-// `QUERY_PARSE_CACHE_*` track the parse cache (raw query string -> translated IR).
-pub static QUERY_PARSE_CACHE_HITS: Counter = Counter::new(PERF_COUNTERS_ENABLED);
-pub static QUERY_PARSE_CACHE_MISSES: Counter = Counter::new(PERF_COUNTERS_ENABLED);
+pub static QUERY_CONVERT_CACHE_HITS: Counter = Counter::new(PERF_COUNTERS_ENABLED);
+pub static QUERY_CONVERT_CACHE_MISSES: Counter = Counter::new(PERF_COUNTERS_ENABLED);

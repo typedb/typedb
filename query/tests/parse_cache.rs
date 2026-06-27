@@ -86,13 +86,13 @@ fn identical_query_string_hits_parse_cache() {
     let context = setup();
 
     // Cold: the parse cache has no entry for this string.
-    assert!(context.query_manager.get_parsed(QUERY).is_none());
+    assert!(context.query_manager.convert_query(QUERY).is_none());
 
     // Preparing the freshly parsed AST translates it and populates the parse cache.
     prepare(&context, parsed());
 
     // Warm: the identical query string now resolves straight to translated IR.
-    let cached = context.query_manager.get_parsed(QUERY);
+    let cached = context.query_manager.convert_query(QUERY);
     assert!(cached.is_some(), "an identical query string should hit the parse cache");
 
     // The cached IR drives preparation without any re-parsing or re-translation.
@@ -104,10 +104,10 @@ fn schema_reset_invalidates_parse_cache() {
     let context = setup();
 
     prepare(&context, parsed());
-    assert!(context.query_manager.get_parsed(QUERY).is_some());
+    assert!(context.query_manager.convert_query(QUERY).is_some());
 
     // A schema commit flushes the parse cache, because translation can depend on the schema
     // (resolved function calls). Statistics-only changes must NOT flush it.
     context.cache.force_reset(&Statistics::new(SequenceNumber::MIN));
-    assert!(context.query_manager.get_parsed(QUERY).is_none(), "a schema reset should invalidate the parse cache");
+    assert!(context.query_manager.convert_query(QUERY).is_none(), "a schema reset should invalidate the parse cache");
 }
