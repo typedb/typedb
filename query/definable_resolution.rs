@@ -12,7 +12,7 @@ use concept::{
     type_::{
         ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, attribute_type::AttributeType, entity_type::EntityType,
         object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType,
-        role_type::RoleType, sub::Sub, type_manager::TypeManager,
+        role_type::RoleType, type_manager::TypeManager,
     },
 };
 use encoding::{

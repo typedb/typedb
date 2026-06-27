@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs::create_dir_all, io, path::PathBuf, sync::Arc};
+use std::{fs::create_dir_all, io, path::PathBuf};
 
 use clap::{Parser, ValueEnum};
 use concept::thing::statistics::Statistics;

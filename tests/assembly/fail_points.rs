@@ -7,7 +7,6 @@
 use std::{
     fs,
     io::Read,
-    path::Path,
     process::{Child, Command, Output},
     thread,
     time::{Duration, Instant},

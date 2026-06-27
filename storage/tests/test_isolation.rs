@@ -17,7 +17,6 @@ use resource::{
 use storage::{
     MVCCStorage, StorageCommitError,
     durability_client::{DurabilityClient, WALClient},
-    isolation_manager::IsolationConflict,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},

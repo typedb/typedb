@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use concept::thing::statistics::Statistics;

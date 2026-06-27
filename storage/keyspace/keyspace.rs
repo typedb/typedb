@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use super::{IteratorPool, constants, iterator};
 use crate::{key_range::KeyRange, keyspace::rocks_resources::RocksResources, write_batches::WriteBatches};
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct KeyspaceId(pub u8);
 
 impl fmt::Debug for KeyspaceId {

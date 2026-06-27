@@ -17,7 +17,6 @@ use std::{
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::{error::QueryError, given_rows::GivenRowsSimple};
-use answer::variable_value::VariableValue;
 use cucumber::{StatsWriter, World, gherkin::Feature};
 use database::Database;
 use futures::{

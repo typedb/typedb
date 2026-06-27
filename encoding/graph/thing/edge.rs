@@ -483,7 +483,7 @@ impl ThingEdgeLinks {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])) {
+        match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])).expect("Unrecognized prefix byte") {
             Self::PREFIX => {
                 let relation = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
                 let player = ObjectVertex::decode(&bytes[Self::RANGE_TO]);

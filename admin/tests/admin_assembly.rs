@@ -15,9 +15,8 @@
 
 use std::{
     env,
-    io::Write,
     path::PathBuf,
-    process::{Child, Command, Stdio},
+    process::{Child, Command},
     sync::OnceLock,
     thread,
     time::Duration,

@@ -6,7 +6,7 @@
 
 #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
-use std::{fs, sync::Arc};
+use std::fs;
 
 use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;

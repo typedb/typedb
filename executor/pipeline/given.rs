@@ -7,20 +7,18 @@ use std::{marker::PhantomData, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{annotation::function::FunctionParameterAnnotation, executable::pipeline::GivenExecutable};
-use concept::{ConceptStatus, error::ConceptReadError, thing::ThingAPI};
+use concept::thing::ThingAPI;
 use encoding::value::ValueEncodable;
 use error::needs_update_when_feature_is_implemented;
 use ir::pattern::variable_category::VariableOptionality;
 use lending_iterator::LendingIterator;
-use resource::profile::{StageProfile, StepProfile, StorageCounters};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use resource::profile::{StepProfile, StorageCounters};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     ExecutionInterrupt,
-    batch::{Batch, BatchRowIterator},
     pipeline::{
         PipelineExecutionError, StageIterator,
-        initial::InitialIterator,
         stage::{ExecutionContext, StageAPI},
     },
     row::MaybeOwnedRow,

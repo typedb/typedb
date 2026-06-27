@@ -7,7 +7,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::{
     CoreMetrics, DatabaseId,
