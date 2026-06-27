@@ -116,7 +116,7 @@ pub mod database {
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
     // String -> translated IR cache. Larger than the plan cache: many distinct query strings
     // (especially parametrised `given`-stage queries) can share the cheap-to-store translated IR.
-    pub const QUERY_PARSE_CACHE_SIZE: u64 = 200;
+    pub const QUERY_CONVERSION_CACHE_SIZE: u64 = 200;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_COUNT: u64 = 10_000;
     pub const STATISTICS_DURABLE_WRITE_SEQ_NUMBERS: usize = 1_000;
     pub const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(50);

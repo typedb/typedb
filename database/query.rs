@@ -5,16 +5,21 @@
  */
 use std::{sync::Arc, time::Instant};
 
-use compiler::{VariablePosition, query_structure::PipelineStructure};
+use crate::{
+    transaction::{TransactionSchema, TransactionWrite},
+    with_transaction_parts,
+};
+use compiler::{query_structure::PipelineStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
-    ExecutionInterrupt,
     batch::Batch,
     document::ConceptDocument,
     pipeline::stage::{ExecutionContext, StageIterator},
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
+use ir::translation::pipeline::TranslatedPipeline;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{
@@ -23,13 +28,8 @@ use query::{
     query_manager::{QueryInput, QueryManager},
 };
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use tracing::{Level, event};
+use tracing::{event, Level};
 use typeql::query::SchemaQuery;
-
-use crate::{
-    transaction::{TransactionSchema, TransactionWrite},
-    with_transaction_parts,
-};
 
 pub type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
 pub type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, Option<PipelineStructure>);
@@ -54,7 +54,7 @@ impl WriteQueryAnswer {
 
 pub fn execute_schema_query(
     transaction: TransactionSchema<WALClient>,
-    query: SchemaQuery,
+    query: Arc<SchemaQuery>,
     source_query: String,
 ) -> (TransactionSchema<WALClient>, Result<(), Box<QueryError>>) {
     with_transaction_parts!(
@@ -76,7 +76,7 @@ pub fn execute_schema_query(
 pub fn execute_write_query_in_schema(
     transaction: TransactionSchema<WALClient>,
     query_options: QueryOptions,
-    input: QueryInput,
+    pipeline: TranslatedPipeline,
     given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
@@ -99,7 +99,7 @@ pub fn execute_write_query_in_schema(
         function_manager.clone(),
         &query_manager,
         query_options,
-        input,
+        pipeline,
         given_rows,
         &source_query,
         interrupt,
@@ -122,7 +122,7 @@ pub fn execute_write_query_in_schema(
 pub fn execute_write_query_in_write(
     transaction: TransactionWrite<WALClient>,
     query_options: QueryOptions,
-    input: QueryInput,
+    pipeline: TranslatedPipeline,
     given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
@@ -145,7 +145,7 @@ pub fn execute_write_query_in_write(
         function_manager.clone(),
         &query_manager,
         query_options,
-        input,
+        pipeline,
         given_rows,
         &source_query,
         interrupt,
@@ -172,7 +172,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     function_manager: Arc<FunctionManager>,
     query_manager: &QueryManager,
     query_options: QueryOptions,
-    input: QueryInput,
+    pipeline: TranslatedPipeline,
     given_rows: Option<impl GivenRows>,
     source_query: &str,
     interrupt: ExecutionInterrupt,
@@ -183,7 +183,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         type_manager,
         thing_manager,
         function_manager,
-        input,
+        pipeline,
         given_rows,
         source_query,
     );

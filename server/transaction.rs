@@ -16,6 +16,8 @@ use options::TransactionOptions;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
 use tokio::task::spawn_blocking;
+use query::error::QueryError;
+use query::query_cache::ConvertedQuery;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
@@ -72,10 +74,8 @@ impl Transaction {
         with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
     }
 
-    /// Consult the database's parse cache for an already-translated query. A hit lets the caller
-    /// skip typeql parsing entirely; it is always a pipeline query (schema queries are never cached).
-    pub fn get_parsed_query(&self, source_query: &str) -> Option<TranslatedPipeline> {
-        with_readable_transaction!(self, |transaction| { transaction.query_manager.get_parsed(source_query) })
+    pub fn convert_query(&self, query: &str) -> Result<ConvertedQuery, Box<QueryError>> {
+        with_readable_transaction!(self, |transaction| { transaction.query_manager.convert_query(query) })
     }
 
     pub fn close(self) {

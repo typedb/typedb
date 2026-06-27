@@ -17,9 +17,10 @@ use ir::{
     translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
 };
 use moka::sync::{Cache, CacheBuilder};
+use typeql::query::SchemaQuery;
 use resource::{
     constants::database::{
-        QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
+        QUERY_CONVERSION_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
     },
     perf_counters::QUERY_CACHE_FLUSH,
 };
@@ -34,31 +35,31 @@ struct ValidityRequirements {
 
 #[derive(Debug)]
 pub struct QueryCache {
-    /// Raw query string -> fully parsed-and-translated query IR. A hit lets an identical query
-    /// string skip both typeql parsing and IR translation. Translation depends on the schema only
-    /// through resolved function calls, so this cache is invalidated on schema commits (see
-    /// `force_reset`) and is intentionally unaffected by statistics-only changes.
-    parse_cache: Cache<String, TranslatedPipeline>,
-    /// Translated IR -> executable pipeline. A hit lets an already-planned query skip annotation,
-    /// transformation, and compilation.
+    conversion_cache: Cache<String, ConvertedQuery>,
     compile_cache: Cache<IRQuery, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
+#[derive(Debug, Clone)]
+pub enum ConvertedQuery {
+    Schema(Arc<typeql::query::schema::SchemaQuery>), // TODO: make Clone in TypeQL
+    Data(TranslatedPipeline),
+}
+
 impl QueryCache {
     pub fn new() -> Self {
-        let parse_cache = CacheBuilder::new(QUERY_PARSE_CACHE_SIZE).build();
+        let parse_cache = CacheBuilder::new(QUERY_CONVERSION_CACHE_SIZE).build();
         let compile_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
         let validity_requirements =
             RwLock::new(ValidityRequirements { latest_statistics: None, latest_schema_commit: None });
-        QueryCache { parse_cache, compile_cache, validity_requirements }
+        QueryCache { conversion_cache: parse_cache, compile_cache, validity_requirements }
     }
 
-    pub(crate) fn get_parsed(&self, source_query: &str) -> Option<TranslatedPipeline> {
-        self.parse_cache.get(source_query)
+    pub(crate) fn get_converted(&self, query: &str) -> Option<ConvertedQuery> {
+        self.conversion_cache.get(query)
     }
 
-    pub(crate) fn may_insert_parsed(
+    pub(crate) fn may_insert_converted_data_pipeline(
         &self,
         statistics_sequence_number: SequenceNumber,
         source_query: &str,
@@ -69,9 +70,17 @@ impl QueryCache {
             .latest_schema_commit
             .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
         if may_insert {
-            self.parse_cache.insert(source_query.to_owned(), translated);
+            self.conversion_cache.insert(source_query.to_owned(), ConvertedQuery::Data(translated));
         }
         drop(read_lock);
+    }
+
+    pub(crate) fn insert_converted_schema_query(
+        &self,
+        source_query: &str,
+        schema_query: Arc<SchemaQuery>
+    ) {
+        self.conversion_cache.insert(source_query.to_owned(), ConvertedQuery::Schema(schema_query))
     }
 
     pub(crate) fn get_compiled(
@@ -129,7 +138,7 @@ impl QueryCache {
         let mut write_lock = self.validity_requirements.write().unwrap();
         (*write_lock).latest_schema_commit = Some(statistics.sequence_number);
         drop(write_lock);
-        self.parse_cache.invalidate_all();
+        self.conversion_cache.invalidate_all();
         self.compile_cache.invalidate_all();
         QUERY_CACHE_FLUSH.increment();
     }

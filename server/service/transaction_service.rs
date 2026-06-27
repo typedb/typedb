@@ -9,7 +9,7 @@ use concept::error::ConceptDecodeError;
 use database::transaction::{CommitIntent, TransactionError, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use executor::{InterruptType, pipeline::PipelineExecutionError};
-use ir::translation::pipeline::TranslatedStage;
+use ir::translation::pipeline::{TranslatedPipeline, TranslatedStage};
 use query::{error::QueryError, query_manager::QueryInput};
 use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
 use storage::durability_client::WALClient;
@@ -36,21 +36,16 @@ pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     false
 }
 
-/// Classify a routed query as read or write. Mirrors `is_write_pipeline` over the typeql AST, but
-/// also handles the parse-cache-hit case where only the translated IR is available.
-pub(crate) fn is_write_query_input(input: &QueryInput) -> bool {
-    match input {
-        QueryInput::Parsed(pipeline) => is_write_pipeline(pipeline),
-        QueryInput::Translated(translated) => translated.translated_stages.iter().any(|stage| {
-            matches!(
-                stage,
-                TranslatedStage::Insert { .. }
-                    | TranslatedStage::Put { .. }
-                    | TranslatedStage::Delete { .. }
-                    | TranslatedStage::Update { .. }
-            )
-        }),
-    }
+pub(crate) fn is_write_query(pipeline: &TranslatedPipeline) -> bool {
+    pipeline.translated_stages.iter().any(|stage| {
+        matches!(
+            stage,
+            TranslatedStage::Insert { .. }
+                | TranslatedStage::Put { .. }
+                | TranslatedStage::Delete { .. }
+                | TranslatedStage::Update { .. }
+        )
+    })
 }
 
 pub(crate) fn init_transaction_timeout(transaction_timeout_millis: Option<u64>) -> Instant {

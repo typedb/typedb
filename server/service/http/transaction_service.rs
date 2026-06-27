@@ -63,7 +63,7 @@ use crate::{
         may_encode_pipeline_structure,
         transaction_service::{
             Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
-            init_transaction_timeout, is_write_query_input, with_readable_transaction,
+            init_transaction_timeout, is_write_query, with_readable_transaction,
         },
     },
     state::ServerState,
@@ -513,7 +513,7 @@ impl TransactionService {
         for (responder, query_options, pipeline, given_rows, source_query) in
             self.query_queue.drain(0..self.query_queue.len())
         {
-            if query_options.is_query() && is_write_query_input(&pipeline) {
+            if query_options.is_query() && is_write_query(&pipeline) {
                 write_queries.push_back((responder, query_options, pipeline, given_rows, source_query));
             } else {
                 respond_else_return_break!(
@@ -560,7 +560,7 @@ impl TransactionService {
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
         for (responder, options, pipeline, given_rows, source) in self.query_queue.drain(0..self.query_queue.len()) {
-            if options.is_query() && is_write_query_input(&pipeline) {
+            if options.is_query() && is_write_query(&pipeline) {
                 respond_else_return_break!(
                     responder,
                     TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
@@ -577,7 +577,7 @@ impl TransactionService {
         self.finish_running_write_query_no_transmit(interrupt).await?;
         let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
         for (responder, options, pipeline, given_rows, source_query) in requests.into_iter() {
-            if options.is_query() && is_write_query_input(&pipeline) {
+            if options.is_query() && is_write_query(&pipeline) {
                 let QueueOptions::Query(query_options) = options else { unreachable!() };
                 if let Break(()) =
                     self.run_write_query(responder, query_options, pipeline, given_rows, source_query).await
@@ -601,7 +601,7 @@ impl TransactionService {
         while let Some((responder, queue_options, query_pipeline, given_rows, source_query)) =
             self.query_queue.pop_front()
         {
-            match (queue_options, is_write_query_input(&query_pipeline)) {
+            match (queue_options, is_write_query(&query_pipeline)) {
                 (QueueOptions::Analyze, _) => {
                     debug_assert!(given_rows.is_none());
                     if let Break(()) = self.run_analyse_query(responder, query_pipeline, source_query).await {
@@ -643,7 +643,7 @@ impl TransactionService {
 
         // Consult the parse cache before parsing: a hit yields the translated IR (always a pipeline,
         // since schema queries are never cached) and lets us skip typeql parsing entirely.
-        let query_input = match self.transaction.as_ref().and_then(|txn| txn.get_parsed_query(&query)) {
+        let query_input = match self.transaction.as_ref().and_then(|txn| txn.convert_query(&query)) {
             Some(translated) => QueryInput::Translated(translated),
             None => {
                 let parsed = match parse_query(&query) {
@@ -675,7 +675,7 @@ impl TransactionService {
         };
 
         #[allow(clippy::collapsible_else_if)]
-        if is_write_query_input(&query_input) {
+        if is_write_query(&query_input) {
             if !self.query_queue.is_empty() || self.running_write_query.is_some() {
                 self.query_queue.push_back((
                     responder,
@@ -1210,7 +1210,7 @@ impl TransactionService {
     }
 
     async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        let query_input = match self.transaction.as_ref().and_then(|txn| txn.get_parsed_query(&query)) {
+        let query_input = match self.transaction.as_ref().and_then(|txn| txn.convert_query(&query)) {
             Some(translated) => QueryInput::Translated(translated),
             None => {
                 let parsed = match parse_query(&query) {
