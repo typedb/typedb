@@ -36,7 +36,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{QueryInput, QueryManager},
+    query_manager::{QueryManager, translate_pipeline},
 };
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
@@ -69,19 +69,20 @@ fn setup(
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, Arc::new(define), schema)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &function_manager, &query, data).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
             thing_manager.clone(),
             Arc::default(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             data,
         )

@@ -10,7 +10,7 @@ use database::transaction::{CommitIntent, TransactionError, TransactionSchema, T
 use error::typedb_error;
 use executor::{InterruptType, pipeline::PipelineExecutionError};
 use ir::translation::pipeline::{TranslatedPipeline, TranslatedStage};
-use query::{error::QueryError, query_manager::QueryInput};
+use query::error::QueryError;
 use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
 use storage::durability_client::WALClient;
 use tokio::time::Instant;

@@ -13,9 +13,9 @@ use concept::{
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
 use query::{
-    given_rows::GivenRowsSimple,
-    query_cache::QueryCache,
-    query_manager::{QueryInput, QueryManager},
+    error::QueryError,
+    query_cache::{ConvertedQuery, QueryCache},
+    query_manager::QueryManager,
 };
 use resource::profile::CommitProfile;
 use storage::{
@@ -50,7 +50,7 @@ fn setup() -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     QueryManager::new(None)
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, SCHEMA)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, Arc::new(define), SCHEMA)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -61,53 +61,34 @@ fn setup() -> Context {
     Context { _tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager, cache }
 }
 
-fn prepare(context: &Context, input: QueryInput) {
-    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    context
-        .query_manager
-        .prepare_read_pipeline(
-            snapshot,
-            &context.type_manager,
-            context.thing_manager.clone(),
-            context.function_manager.clone(),
-            input,
-            None::<GivenRowsSimple>,
-            QUERY,
-        )
-        .unwrap();
-}
-
-fn parsed() -> QueryInput {
-    QueryInput::Parsed(typeql::parse_query(QUERY).unwrap().into_structure().into_pipeline())
+fn convert(context: &Context) -> Result<ConvertedQuery, Box<QueryError>> {
+    let snapshot = context.storage.clone().open_snapshot_read();
+    context.query_manager.convert_query(QUERY, &snapshot, &context.thing_manager, &context.function_manager)
 }
 
 #[test]
-fn identical_query_string_hits_parse_cache() {
+fn identical_query_string_hits_conversion_cache() {
     let context = setup();
 
-    // Cold: the parse cache has no entry for this string.
-    assert!(context.query_manager.convert_query(QUERY).is_none());
+    // Cold: the conversion cache has no entry for this string.
+    assert!(context.cache.get_converted(QUERY).is_none());
 
-    // Preparing the freshly parsed AST translates it and populates the parse cache.
-    prepare(&context, parsed());
+    // Converting the query parses and translates it, populating the conversion cache.
+    assert!(matches!(convert(&context).unwrap(), ConvertedQuery::Data(_)));
 
-    // Warm: the identical query string now resolves straight to translated IR.
-    let cached = context.query_manager.convert_query(QUERY);
-    assert!(cached.is_some(), "an identical query string should hit the parse cache");
-
-    // The cached IR drives preparation without any re-parsing or re-translation.
-    prepare(&context, QueryInput::Translated(cached.unwrap()));
+    // Warm: the identical query string now resolves straight from the conversion cache.
+    assert!(context.cache.get_converted(QUERY).is_some(), "an identical query string should hit the conversion cache");
 }
 
 #[test]
-fn schema_reset_invalidates_parse_cache() {
+fn schema_reset_invalidates_conversion_cache() {
     let context = setup();
 
-    prepare(&context, parsed());
-    assert!(context.query_manager.convert_query(QUERY).is_some());
+    convert(&context).unwrap();
+    assert!(context.cache.get_converted(QUERY).is_some());
 
-    // A schema commit flushes the parse cache, because translation can depend on the schema
+    // A schema commit flushes the conversion cache, because translation can depend on the schema
     // (resolved function calls). Statistics-only changes must NOT flush it.
     context.cache.force_reset(&Statistics::new(SequenceNumber::MIN));
-    assert!(context.query_manager.convert_query(QUERY).is_none(), "a schema reset should invalidate the parse cache");
+    assert!(context.cache.get_converted(QUERY).is_none(), "a schema reset should invalidate the conversion cache");
 }

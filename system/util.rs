@@ -134,7 +134,7 @@ pub mod query_util {
     use query::{
         error::QueryError,
         given_rows::GivenRowsSimple,
-        query_manager::{QueryInput, QueryManager},
+        query_manager::{QueryManager, translate_pipeline},
     };
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
@@ -146,12 +146,16 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
+        let translated = match translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, source_query) {
+            Ok(translated) => translated,
+            Err(err) => return (tx, Err(err)),
+        };
         let prepared_pipeline = match tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            QueryInput::Parsed(pipeline),
+            translated,
             None::<GivenRowsSimple>,
             source_query,
         ) {
@@ -195,12 +199,16 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
+        let translated = match translate_pipeline(&snapshot, &function_manager, &pipeline, source_query) {
+            Ok(translated) => translated,
+            Err(err) => return (Err(err), Arc::new(snapshot)),
+        };
         let prepared_pipeline = match query_manager.prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            QueryInput::Parsed(pipeline),
+            translated,
             None::<GivenRowsSimple>,
             source_query,
         ) {

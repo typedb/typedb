@@ -22,7 +22,7 @@ use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryInput, QueryManager},
+    query_manager::{QueryManager, translate_pipeline},
 };
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -60,7 +60,7 @@ fn setup_common() -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, Arc::new(define), schema)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -76,6 +76,7 @@ fn test_insert() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query, query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -83,7 +84,7 @@ fn test_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager,
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -118,6 +119,7 @@ fn test_insert_insert() {
         (group: $org, member: $p) isa membership;
     "#;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query, query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -125,7 +127,7 @@ fn test_insert_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager,
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -156,6 +158,7 @@ fn test_match() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query, query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -163,7 +166,7 @@ fn test_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -178,6 +181,7 @@ fn test_match() {
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -185,7 +189,7 @@ fn test_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(match_),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
@@ -197,6 +201,7 @@ fn test_match() {
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -204,7 +209,7 @@ fn test_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(match_),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
@@ -226,6 +231,7 @@ fn test_match_match() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query, query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -233,7 +239,7 @@ fn test_match_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -251,6 +257,7 @@ fn test_match_match() {
         match $p has age $a;
     ";
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -258,7 +265,7 @@ fn test_match_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(match_),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
@@ -270,6 +277,7 @@ fn test_match_match() {
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -277,7 +285,7 @@ fn test_match_match() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(match_),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
@@ -294,6 +302,7 @@ fn test_match_delete_has() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &insert_query, insert_query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -301,7 +310,7 @@ fn test_match_delete_has() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(insert_query),
+            translated,
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -332,6 +341,7 @@ fn test_match_delete_has() {
     "#;
 
     let delete_query = typeql::parse_query(delete_query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &delete_query, delete_query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -339,7 +349,7 @@ fn test_match_delete_has() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(delete_query),
+            translated,
             None::<GivenRowsSimple>,
             delete_query_str,
         )
@@ -375,6 +385,7 @@ fn test_insert_match_insert() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query, query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -382,7 +393,7 @@ fn test_insert_match_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -405,6 +416,7 @@ fn test_insert_match_insert() {
     "#;
 
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query, query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -412,7 +424,7 @@ fn test_insert_match_insert() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
@@ -438,6 +450,7 @@ fn test_match_sort() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 1, has age 2, has age 3, has age 4;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &insert_query, insert_query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -445,7 +458,7 @@ fn test_match_sort() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(insert_query),
+            translated,
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -461,6 +474,7 @@ fn test_match_sort() {
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $age isa age; sort $age desc;";
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -468,7 +482,7 @@ fn test_match_sort() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(match_),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
@@ -503,6 +517,7 @@ fn test_select() {
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &insert_query, insert_query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -510,7 +525,7 @@ fn test_select() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(insert_query),
+            translated,
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -527,6 +542,7 @@ fn test_select() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age;";
         let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+        let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
         let pipeline = context
             .query_manager
             .prepare_read_pipeline(
@@ -534,7 +550,7 @@ fn test_select() {
                 &context.type_manager,
                 context.thing_manager.clone(),
                 context.function_manager.clone(),
-                QueryInput::Parsed(match_),
+                translated,
                 None::<GivenRowsSimple>,
                 query,
             )
@@ -547,6 +563,7 @@ fn test_select() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
         let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+        let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
         let pipeline = context
             .query_manager
             .prepare_read_pipeline(
@@ -554,7 +571,7 @@ fn test_select() {
                 &context.type_manager,
                 context.thing_manager.clone(),
                 context.function_manager.clone(),
-                QueryInput::Parsed(match_),
+                translated,
                 None::<GivenRowsSimple>,
                 query,
             )
@@ -573,6 +590,7 @@ fn test_require() {
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &insert_query, insert_query_str).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -580,7 +598,7 @@ fn test_require() {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(insert_query),
+            translated,
             None::<GivenRowsSimple>,
             insert_query_str,
         )
@@ -597,6 +615,7 @@ fn test_require() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; require $age;";
         let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+        let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
         let pipeline = context
             .query_manager
             .prepare_read_pipeline(
@@ -604,7 +623,7 @@ fn test_require() {
                 &context.type_manager,
                 context.thing_manager.clone(),
                 context.function_manager.clone(),
-                QueryInput::Parsed(match_),
+                translated,
                 None::<GivenRowsSimple>,
                 query,
             )

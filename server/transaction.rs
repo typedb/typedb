@@ -11,13 +11,11 @@ use database::{
     transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::metrics::LoadKind;
-use ir::translation::pipeline::TranslatedPipeline;
 use options::TransactionOptions;
+use query::{error::QueryError, query_cache::ConvertedQuery};
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
 use tokio::task::spawn_blocking;
-use query::error::QueryError;
-use query::query_cache::ConvertedQuery;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
@@ -75,7 +73,14 @@ impl Transaction {
     }
 
     pub fn convert_query(&self, query: &str) -> Result<ConvertedQuery, Box<QueryError>> {
-        with_readable_transaction!(self, |transaction| { transaction.query_manager.convert_query(query) })
+        with_readable_transaction!(self, |transaction| {
+            transaction.query_manager.convert_query(
+                query,
+                transaction.snapshot.as_ref(),
+                &transaction.thing_manager,
+                &transaction.function_manager,
+            )
+        })
     }
 
     pub fn close(self) {

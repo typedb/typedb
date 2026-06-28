@@ -5,31 +5,27 @@
  */
 use std::{sync::Arc, time::Instant};
 
+use compiler::{VariablePosition, query_structure::PipelineStructure};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use executor::{
+    ExecutionInterrupt,
+    batch::Batch,
+    document::ConceptDocument,
+    pipeline::stage::{ExecutionContext, StageIterator},
+};
+use function::function_manager::FunctionManager;
+use ir::{pipeline::ParameterRegistry, translation::pipeline::TranslatedPipeline};
+use itertools::{Either, Itertools};
+use options::QueryOptions;
+use query::{error::QueryError, given_rows::GivenRows, query_manager::QueryManager};
+use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
+use tracing::{Level, event};
+use typeql::query::SchemaQuery;
+
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},
     with_transaction_parts,
 };
-use compiler::{query_structure::PipelineStructure, VariablePosition};
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::{
-    batch::Batch,
-    document::ConceptDocument,
-    pipeline::stage::{ExecutionContext, StageIterator},
-    ExecutionInterrupt,
-};
-use function::function_manager::FunctionManager;
-use ir::pipeline::ParameterRegistry;
-use ir::translation::pipeline::TranslatedPipeline;
-use itertools::{Either, Itertools};
-use options::QueryOptions;
-use query::{
-    error::QueryError,
-    given_rows::GivenRows,
-    query_manager::{QueryInput, QueryManager},
-};
-use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use tracing::{event, Level};
-use typeql::query::SchemaQuery;
 
 pub type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
 pub type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, Option<PipelineStructure>);

@@ -208,10 +208,12 @@ fn execute_schema_transaction(
             &transaction.type_manager,
             &transaction.thing_manager,
             &transaction.function_manager,
-            typeql::parse_query(&schema_define)
-                .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?
-                .into_structure()
-                .into_schema(),
+            Arc::new(
+                typeql::parse_query(&schema_define)
+                    .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?
+                    .into_structure()
+                    .into_schema(),
+            ),
             &schema_define,
         )
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;

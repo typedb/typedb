@@ -51,13 +51,10 @@ use resource::{
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_CONVERT_CACHE_HITS, QUERY_CONVERT_CACHE_MISSES},
     profile::{CompileIRProfile, QueryProfile},
 };
-use storage::{
-    sequence_number::SequenceNumber,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
-};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{Level, event};
 use typeql::query::{QueryStructure, SchemaQuery};
-use storage::snapshot::iterator::SnapshotIteratorError;
+
 use crate::{
     analyse::{
         AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
@@ -65,26 +62,13 @@ use crate::{
     define,
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRows},
-    query_cache::QueryCache,
+    query_cache::{ConvertedQuery, QueryCache},
     redefine, undefine,
 };
-use crate::query_cache::ConvertedQuery;
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
-}
-
-/// A pipeline query routed for execution, in one of two forms depending on the parse cache:
-/// - `Translated`: the raw query string was found in the parse cache, so neither typeql parsing nor
-///   IR translation is needed.
-/// - `Parsed`: a parse-cache miss; the typeql AST is carried so translation can happen lazily when
-///   the pipeline is prepared (keeping translation off the service's main loop and threading the
-///   transaction snapshot for error handling).
-#[derive(Debug)]
-pub enum QueryInput {
-    Parsed(typeql::query::Pipeline),
-    Translated(TranslatedPipeline),
 }
 
 impl QueryManager {
@@ -92,16 +76,22 @@ impl QueryManager {
         Self { cache }
     }
 
-    pub fn convert_query(&self, query: &str, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager, function_manager: &FunctionManager) -> Result<ConvertedQuery, Box<QueryError>> {
+    pub fn convert_query(
+        &self,
+        query: &str,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        function_manager: &FunctionManager,
+    ) -> Result<ConvertedQuery, Box<QueryError>> {
         let converted = match self.cache.as_ref().and_then(|cache| cache.get_converted(query)) {
             Some(converted_query) => {
                 QUERY_CONVERT_CACHE_HITS.increment();
                 converted_query
-            },
+            }
             None => {
                 QUERY_CONVERT_CACHE_MISSES.increment();
                 let parsed = typeql::parse_query(query)
-                    .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err})?;
+                    .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
                 match parsed.into_structure() {
                     QueryStructure::Schema(schema_query) => {
                         let schema_query = Arc::new(schema_query);
@@ -109,7 +99,7 @@ impl QueryManager {
                             cache.insert_converted_schema_query(query, schema_query.clone());
                         }
                         ConvertedQuery::Schema(schema_query)
-                    },
+                    }
                     QueryStructure::Pipeline(pipeline) => {
                         let translated = translate_pipeline(snapshot, function_manager, &pipeline, query)?;
                         if let Some(cache) = self.cache.as_ref() {
@@ -120,7 +110,7 @@ impl QueryManager {
                             )
                         }
                         ConvertedQuery::Data(translated)
-                    },
+                    }
                 }
             }
         };
@@ -467,7 +457,7 @@ impl QueryManager {
     }
 }
 
-fn translate_pipeline<Snapshot: ReadableSnapshot>(
+pub fn translate_pipeline<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     function_manager: &FunctionManager,
     query: &typeql::query::Pipeline,

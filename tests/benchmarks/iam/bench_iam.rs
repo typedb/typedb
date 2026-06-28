@@ -14,7 +14,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
 use options::{TransactionOptions, byte_size::ByteSize};
-use query::{given_rows::GivenRowsSimple, query_manager::QueryInput};
+use query::{given_rows::GivenRowsSimple, query_manager::translate_pipeline};
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
 
@@ -49,7 +49,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &type_manager,
             &thing_manager,
             &function_manager,
-            schema_query,
+            Arc::new(schema_query),
             &schema_str,
         )
         .unwrap();
@@ -84,13 +84,14 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
+    let translated = translate_pipeline(snapshot.as_ref(), &function_manager, &data_query, &data_str).unwrap();
     let write_pipeline = query_manager
         .prepare_write_pipeline(
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            QueryInput::Parsed(data_query),
+            translated,
             None::<GivenRowsSimple>,
             &data_str,
         )
@@ -146,13 +147,14 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), function_manager, &query, query_str).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )

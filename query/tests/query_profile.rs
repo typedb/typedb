@@ -15,7 +15,7 @@ use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryInput, QueryManager},
+    query_manager::{QueryManager, translate_pipeline},
 };
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -45,7 +45,7 @@ fn define_schema(
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, schema_query, query_str)
+        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, Arc::new(schema_query), query_str)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -60,13 +60,14 @@ fn insert_data(
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let query = typeql::parse_query(query_string).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &function_manager, &query, query_string).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_string,
         )
@@ -183,13 +184,14 @@ fn query_profile_tree_structure() {
     "#;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let translated = translate_pipeline(snapshot.as_ref(), &function_manager, &query, query_str).unwrap();
     let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new())))
         .prepare_read_pipeline(
             snapshot,
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )

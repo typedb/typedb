@@ -17,7 +17,6 @@ use ir::{
     translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
 };
 use moka::sync::{Cache, CacheBuilder};
-use typeql::query::SchemaQuery;
 use resource::{
     constants::database::{
         QUERY_CONVERSION_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
@@ -26,6 +25,7 @@ use resource::{
 };
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
+use typeql::query::SchemaQuery;
 
 #[derive(Debug)]
 struct ValidityRequirements {
@@ -55,7 +55,7 @@ impl QueryCache {
         QueryCache { conversion_cache: parse_cache, compile_cache, validity_requirements }
     }
 
-    pub(crate) fn get_converted(&self, query: &str) -> Option<ConvertedQuery> {
+    pub fn get_converted(&self, query: &str) -> Option<ConvertedQuery> {
         self.conversion_cache.get(query)
     }
 
@@ -75,11 +75,7 @@ impl QueryCache {
         drop(read_lock);
     }
 
-    pub(crate) fn insert_converted_schema_query(
-        &self,
-        source_query: &str,
-        schema_query: Arc<SchemaQuery>
-    ) {
+    pub(crate) fn insert_converted_schema_query(&self, source_query: &str, schema_query: Arc<SchemaQuery>) {
         self.conversion_cache.insert(source_query.to_owned(), ConvertedQuery::Schema(schema_query))
     }
 

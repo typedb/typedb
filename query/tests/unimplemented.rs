@@ -23,7 +23,7 @@ use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryInput, QueryManager},
+    query_manager::{QueryManager, translate_pipeline},
 };
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -51,7 +51,7 @@ fn setup_common(schema: &str) -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, Arc::new(define), schema)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -70,6 +70,8 @@ fn run_read_query(
 > {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query)
+        .map_err(|query_error| Either::Left(query_error))?;
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -77,7 +79,7 @@ fn run_read_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(match_),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
@@ -97,6 +99,7 @@ fn run_write_query(
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_as_pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(&snapshot, &context.function_manager, &query_as_pipeline, query).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -104,7 +107,7 @@ fn run_write_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            QueryInput::Parsed(query_as_pipeline),
+            translated,
             None::<GivenRowsSimple>,
             query,
         )
