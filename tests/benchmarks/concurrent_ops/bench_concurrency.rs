@@ -26,7 +26,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::{given_rows::GivenRowsSimple, query_manager::QueryInput};
+use query::{given_rows::GivenRowsSimple, query_manager::translate_pipeline};
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
@@ -153,7 +153,7 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
 
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-    let (tx, result) = execute_schema_query(tx, schema_query, schema.to_string());
+    let (tx, result) = execute_schema_query(tx, Arc::new(schema_query), schema.to_string());
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
     intent.unwrap().commit(profile.commit_profile()).unwrap();
@@ -172,10 +172,12 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             let age: u32 = (id % 100) as u32;
             let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {age};"#);
             let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
+            let translated =
+                translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
             let (returned_tx, result) = execute_write_query_in_write(
                 tx,
                 QueryOptions::default_grpc(),
-                QueryInput::Parsed(pipeline),
+                translated,
                 None::<GivenRowsSimple>,
                 query_str,
                 ExecutionInterrupt::new_uninterruptible(),
@@ -207,10 +209,11 @@ fn execute_insert_batch(
         let name_id = batch_id * ops_per_tx + i;
         let query_str = format!(r#"insert $p isa person, has name "person_{name_id}", has age {age};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
+        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            QueryInput::Parsed(pipeline),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -244,10 +247,11 @@ fn execute_update_batch(
         let score: f64 = rng.next_u64() as u32 as f64 / 100.0;
         let query_str = format!(r#"match $p isa person, has name "person_{person_id}"; insert $p has score {score};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
+        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            QueryInput::Parsed(pipeline),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -283,10 +287,11 @@ fn execute_relation_batch(
             r#"match $a isa person, has name "person_{a_id}"; $b isa person, has name "person_{b_id}"; insert friendship (friend: $a, friend: $b);"#
         );
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
+        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            QueryInput::Parsed(pipeline),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -309,13 +314,14 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(snapshot.as_ref(), function_manager, &query, query_str).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            QueryInput::Parsed(query),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )

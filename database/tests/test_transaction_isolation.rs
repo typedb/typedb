@@ -16,7 +16,7 @@ use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::graph::thing::vertex_attribute::StringAttributeID;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::{given_rows::GivenRowsSimple, query_manager::QueryInput};
+use query::{given_rows::GivenRowsSimple, query_manager::translate_pipeline};
 use storage::{
     StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, snapshot::SnapshotError,
 };
@@ -42,7 +42,7 @@ fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
 fn commit_schema(database: Arc<Database<WALClient>>, schema: &str) {
     let parsed = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database, TransactionOptions::default()).unwrap();
-    let (tx, result) = execute_schema_query(tx, parsed, schema.to_string());
+    let (tx, result) = execute_schema_query(tx, Arc::new(parsed), schema.to_string());
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
     intent.unwrap().commit(profile.commit_profile()).unwrap();
@@ -61,10 +61,11 @@ fn open_write(database: Arc<Database<WALClient>>) -> TransactionWrite<WALClient>
 
 fn run_write(tx: TransactionWrite<WALClient>, query: &str) -> TransactionWrite<WALClient> {
     let pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, query).unwrap();
     let (tx, result) = execute_write_query_in_write(
         tx,
         QueryOptions::default_grpc(),
-        QueryInput::Parsed(pipeline),
+        translated,
         None::<GivenRowsSimple>,
         query.to_string(),
         ExecutionInterrupt::new_uninterruptible(),

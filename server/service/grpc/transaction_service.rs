@@ -37,14 +37,14 @@ use executor::{
     document::ConceptDocument,
     pipeline::{PipelineExecutionError, pipeline::Pipeline, stage::ReadPipelineStage},
 };
-use ir::pipeline::ParameterRegistry;
+use ir::{pipeline::ParameterRegistry, translation::pipeline::TranslatedPipeline};
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::QueryOptions;
 use query::{
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows},
-    query_manager::QueryInput,
+    query_cache::ConvertedQuery,
 };
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -64,10 +64,9 @@ use typedb_protocol::{
     query::Type::{Read, Write},
     transaction::{Server as ProtocolServer, stream_signal::Req},
 };
-use typeql::{parse_query, query::SchemaQuery};
+use typeql::query::SchemaQuery;
 use uuid::Uuid;
-use ir::translation::pipeline::TranslatedPipeline;
-use query::query_cache::ConvertedQuery;
+
 use crate::{
     service::{
         TransactionType,
@@ -776,19 +775,18 @@ impl TransactionService {
         let converted_query = match self.transaction.as_ref().unwrap().convert_query(&query) {
             Ok(converted) => converted,
             Err(err) => {
-                let response = ImmediateAnalyzeResponse::non_fatal_err(
-                    TransactionServiceError::QueryFailed { typedb_source: err },
-                );
+                let response = ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::QueryFailed {
+                    typedb_source: err,
+                });
                 return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
             }
         };
         let pipeline = match converted_query {
             ConvertedQuery::Schema(_) => {
-                let response = ImmediateAnalyzeResponse::non_fatal_err(
-                    TransactionServiceError::AnalyseQueryExpectsPipeline {},
-                );
+                let response =
+                    ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::AnalyseQueryExpectsPipeline {});
                 return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
-            },
+            }
             ConvertedQuery::Data(pipeline) => pipeline,
         };
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
@@ -824,9 +822,8 @@ impl TransactionService {
         let converted_query = match self.transaction.as_ref().unwrap().convert_query(&query) {
             Ok(converted) => converted,
             Err(err) => {
-                let response = ImmediateQueryResponse::non_fatal_err(
-                    TransactionServiceError::QueryFailed { typedb_source: err },
-                );
+                let response =
+                    ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryFailed { typedb_source: err });
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
             }
         };
@@ -835,7 +832,7 @@ impl TransactionService {
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 let response = self.handle_query_schema(schema_query, query).await?;
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
-            },
+            }
             ConvertedQuery::Data(pipeline) => pipeline,
         };
 
@@ -843,13 +840,7 @@ impl TransactionService {
         #[allow(clippy::collapsible_else_if)]
         if is_write_query(&pipeline) {
             if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                self.query_queue.push_back((
-                    req_id,
-                    QueueOptions::Query(query_options),
-                    pipeline,
-                    given_rows,
-                    query,
-                ));
+                self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, given_rows, query));
                 // queued queries are not handled yet so there will be no query response yet
                 Ok(Continue(()))
             } else {
@@ -858,13 +849,7 @@ impl TransactionService {
             }
         } else {
             if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                self.query_queue.push_back((
-                    req_id,
-                    QueueOptions::Query(query_options),
-                    pipeline,
-                    given_rows,
-                    query,
-                ));
+                self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, given_rows, query));
                 // queued queries are not handled yet so there will be no query response yet
                 Ok(Continue(()))
             } else {
@@ -916,18 +901,11 @@ impl TransactionService {
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
-            let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
 
             let result = spawn_blocking(move || {
-                query_manager.analyse(
-                    snapshot,
-                    &type_manager,
-                    &function_manager,
-                    pipeline,
-                    &source_query,
-                )
+                query_manager.analyse(snapshot, &type_manager, &function_manager, pipeline, &source_query)
             })
             .await
             .expect("Expected schema query execution finishing");

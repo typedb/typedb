@@ -32,7 +32,7 @@ use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryInput, QueryManager},
+    query_manager::{QueryManager, translate_pipeline},
 };
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
@@ -129,13 +129,14 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
 
+    let translated = translate_pipeline(&snapshot, &function_manager, &typeql_insert, query_str).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            QueryInput::Parsed(typeql_insert),
+            translated,
             None::<GivenRowsSimple>,
             query_str,
         )
