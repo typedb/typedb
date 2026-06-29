@@ -28,7 +28,7 @@ use typeql::{
 
 use crate::{
     RepresentationError,
-    pattern::{AssignedVariable, ParameterID},
+    pattern::{AssignedVariable, ParameterID, expression::BuiltinConceptFunctionID},
     pipeline::{
         FunctionReadError, FunctionRepresentationError, ParameterRegistry,
         block::{Block, BlockBuilder, BlockBuilderContext},
@@ -337,7 +337,7 @@ fn translate_inline_user_function_call_single(
     function_name: &str,
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     let (local_context, stage, assign_vars, signature) =
-        translate_inline_user_function_call(context, value_parameters, function_index, call, function_name)?;
+        translate_inline_function_call(context, value_parameters, function_index, call, function_name)?;
     if signature.return_is_stream {
         Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionCall { declaration: call.clone() }))
     } else {
@@ -357,7 +357,7 @@ fn translate_inline_user_function_call_stream(
     function_name: &str,
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     let (local_context, stage, assign_vars, _) =
-        translate_inline_user_function_call(context, value_parameters, function_index, call, function_name)?;
+        translate_inline_function_call(context, value_parameters, function_index, call, function_name)?;
     let parameters = value_parameters.clone();
     let return_ = ReturnOperation::Stream(assign_vars, call.span());
     let body = FunctionBody::new(vec![stage], return_);
@@ -365,7 +365,7 @@ fn translate_inline_user_function_call_stream(
     Ok(FetchSome::ListFunction(create_anonymous_function(local_context, parameters, args, body)))
 }
 
-fn translate_inline_user_function_call<'a>(
+fn translate_inline_function_call<'a>(
     context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &'a impl FunctionSignatureIndex,
@@ -375,16 +375,20 @@ fn translate_inline_user_function_call<'a>(
     (PipelineTranslationContext, TranslatedStage, Vec<Variable>, MaybeOwns<'a, FunctionSignature>),
     Box<FetchRepresentationError>,
 > {
-    let signature = function_index
-        .get_function_signature(function_name)
-        .map_err(|err| FetchRepresentationError::FunctionRetrieval {
-            name: function_name.to_owned(),
-            typedb_source: err,
-        })?
-        .ok_or_else(|| FetchRepresentationError::FunctionNotFound {
-            name: function_name.to_owned(),
-            declaration: call.clone(),
-        })?;
+    let signature = if let Some(std_function_id) = BuiltinConceptFunctionID::from_str(function_name) {
+        MaybeOwns::Owned(std_function_id.signature())
+    } else {
+        function_index
+            .get_function_signature(function_name)
+            .map_err(|err| FetchRepresentationError::FunctionRetrieval {
+                name: function_name.to_owned(),
+                typedb_source: err,
+            })?
+            .ok_or_else(|| FetchRepresentationError::FunctionNotFound {
+                name: function_name.to_owned(),
+                declaration: call.clone(),
+            })?
+    };
 
     if signature.returns.len() > 1 {
         return Err(Box::new(FetchRepresentationError::ExpectedScalarInlineFunctionCall { declaration: call.clone() }));

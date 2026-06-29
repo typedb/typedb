@@ -177,7 +177,7 @@ fn add_user_defined_function_call(
     Ok(())
 }
 
-pub fn add_function_call(
+pub(crate) fn add_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     function_name: &str,
