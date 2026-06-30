@@ -85,7 +85,10 @@ fn pipeline_over_limit_is_rejected() {
     let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
     assert_eq!(pipeline.stages.len(), over);
 
+<<<<<<< Updated upstream
     // The stage-count limit is enforced during translation (translate_pipeline / QueryManager::translate).
+=======
+>>>>>>> Stashed changes
     let snapshot = storage.clone().open_snapshot_read();
     let result = translate_pipeline(&snapshot, &function_manager, &pipeline, &query_str);
     let err = match result {
