@@ -58,7 +58,10 @@ pub struct TransactionRead<D> {
 }
 
 impl<D: DurabilityClient> TransactionRead<D> {
-    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+    pub fn open(
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
+    ) -> Result<Self, TransactionError> {
         // TODO: when we implement constructor `open_at`, to open a transaction in the past by
         //      time/sequence number, we need to check whether
         //       the statistics that is available is "too far" ahead of the version we're opening (100-1000?)
@@ -123,7 +126,10 @@ pub struct TransactionWrite<D> {
 }
 
 impl<D: DurabilityClient> TransactionWrite<D> {
-    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+    pub fn open(
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
+    ) -> Result<Self, TransactionError> {
         database.reserve_write_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
 
         let schema = database.schema.read().unwrap();
@@ -224,7 +230,10 @@ pub struct TransactionSchema<D> {
 }
 
 impl<D: DurabilityClient> TransactionSchema<D> {
-    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+    pub fn open(
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
+    ) -> Result<Self, TransactionError> {
         database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();

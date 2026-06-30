@@ -12,6 +12,7 @@ deps = [
     "//common/bytes",
     "//common/error",
     "//common/lending_iterator",
+    "//common/options:options",
     "//compiler",
     "//durability",
     "//encoding",
@@ -32,22 +33,22 @@ deps = [
 
 rust_test(
     name = "test_define",
-    crate_root = "define.rs",
-    srcs = ["define.rs"],
+    crate_root = "test_define.rs",
+    srcs = ["test_define.rs"],
     deps = deps,
 )
 
 rust_test(
     name = "test_fetch",
-    crate_root = "fetch.rs",
-    srcs = ["fetch.rs"],
+    crate_root = "test_fetch.rs",
+    srcs = ["test_fetch.rs"],
     deps = deps,
 )
 
 rust_test(
     name = "test_unimplemented",
-    crate_root = "unimplemented.rs",
-    srcs = ["unimplemented.rs"],
+    crate_root = "test_unimplemented.rs",
+    srcs = ["test_unimplemented.rs"],
     deps = deps,
 )
 
@@ -60,8 +61,15 @@ rust_test(
 
 rust_test(
     name = "test_query_profile",
-    crate_root = "query_profile.rs",
-    srcs = ["query_profile.rs"],
+    crate_root = "test_query_profile.rs",
+    srcs = ["test_query_profile.rs"],
+    deps = deps,
+)
+
+rust_test(
+    name = "test_planner",
+    crate_root = "test_planner.rs",
+    srcs = ["test_planner.rs"],
     deps = deps,
 )
 
@@ -73,6 +81,7 @@ rustfmt_test(
         ":test_unimplemented",
         ":test_pipeline_stages_limit",
         ":test_query_profile",
+        ":test_planner",
     ],
     size = "small",
 )

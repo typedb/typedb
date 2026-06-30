@@ -16,7 +16,8 @@ use error::TypeDBError;
 use futures::future::join_all;
 use itertools::Either;
 use macro_rules_attribute::apply;
-use options::TransactionOptions;
+use options::InternalQueryOptions;
+use options::{QueryOptions, TransactionOptions};
 use params::{self, check_boolean};
 use server::Server;
 use storage::durability_client::WALClient;
@@ -213,6 +214,7 @@ fn execute_schema_transaction(
                 .into_structure()
                 .into_schema(),
             &schema_define,
+            InternalQueryOptions::default(),
         )
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     let (mut profile, result) = transaction.finalise();

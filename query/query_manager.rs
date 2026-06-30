@@ -9,6 +9,8 @@ use std::{
     sync::Arc,
 };
 
+use options::InternalQueryOptions;
+
 use compiler::{
     VariablePosition,
     annotation::{
@@ -46,6 +48,7 @@ use ir::{
         pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
     },
 };
+use options::QueryOptions;
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
@@ -84,9 +87,10 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: SchemaQuery,
         source_query: &str,
+        query_options: InternalQueryOptions,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
-        let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let query_profile = QueryProfile::new(query_options.force_query_profile || tracing::enabled!(Level::TRACE));
         let result = match query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
@@ -143,9 +147,10 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
+        query_options: InternalQueryOptions,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", query);
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let mut query_profile = QueryProfile::new(query_options.force_query_profile || tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         // 1: Translate
@@ -240,9 +245,10 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
+        query_options: InternalQueryOptions,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", query);
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let mut query_profile = QueryProfile::new(query_options.force_query_profile || tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         // 1: Translate

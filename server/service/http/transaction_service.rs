@@ -33,6 +33,7 @@ use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
+use options::InternalQueryOptions;
 use options::{QueryOptions, TransactionOptions};
 use query::error::QueryError;
 use resource::profile::StorageCounters;
@@ -1017,6 +1018,7 @@ impl TransactionService {
                     &pipeline,
                     given_rows,
                     &source_query,
+                    InternalQueryOptions::default(),
                 );
                 let pipeline = match pipeline_result {
                     Ok(pipeline) => pipeline,

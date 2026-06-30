@@ -8,6 +8,8 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
+use options::InternalQueryOptions;
+use options::QueryOptions;
 use query::query_manager::QueryManager;
 use resource::profile::CommitProfile;
 use storage::snapshot::CommittableSnapshot;
@@ -30,7 +32,15 @@ fn basic() {
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, schema_query, query_str)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            schema_query,
+            query_str,
+            InternalQueryOptions::default(),
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }

@@ -33,6 +33,9 @@ features = {}
 	[dev-dependencies.pprof]
 		workspace = true
 
+	[dev-dependencies.options]
+		workspace = true
+
 	[dev-dependencies.test_utils_concept]
 		workspace = true
 

@@ -169,6 +169,15 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Reduce(Box<ReduceStageExecutor<ReadStageIterator<Snapshot>>>),
 }
 
+impl<Snapshot: ReadableSnapshot + 'static> ReadPipelineStage<Snapshot> {
+    pub fn as_match(&self) -> Option<&MatchStageExecutor<ReadStageIterator<Snapshot>>> {
+        match self {
+            Self::Match(stage) => Some(stage),
+            _ => None,
+        }
+    }
+}
+
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Initial(Box<InitialIterator>),
     Given(Box<GivenStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),

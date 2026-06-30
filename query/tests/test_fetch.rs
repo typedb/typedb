@@ -10,6 +10,7 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
+use options::InternalQueryOptions;
 use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -34,7 +35,15 @@ fn define_schema(
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, schema_query, query_str)
+        .execute_schema(
+            &mut snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            schema_query,
+            query_str,
+            InternalQueryOptions::default(),
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -58,6 +67,7 @@ fn insert_data(
             &query,
             None::<GivenRowsSimple>,
             query_string,
+            InternalQueryOptions::default(),
         )
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -137,6 +147,7 @@ fetch {
             &pipeline,
             None::<GivenRowsSimple>,
             query_str,
+            InternalQueryOptions::default(),
         )
         .unwrap();
 
