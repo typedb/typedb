@@ -50,7 +50,7 @@ impl WriteQueryAnswer {
 
 pub fn execute_schema_query(
     transaction: TransactionSchema<WALClient>,
-    query: SchemaQuery,
+    query: Arc<SchemaQuery>,
     source_query: String,
 ) -> (TransactionSchema<WALClient>, Result<(), Box<QueryError>>) {
     with_transaction_parts!(
