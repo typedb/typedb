@@ -50,7 +50,7 @@ pub struct QueryCache {
 
 #[derive(Debug, Clone)]
 pub enum ParsedQuery {
-    Schema(Arc<SchemaQuery>), // TODO: make Clone in TypeQL
+    Schema(SchemaQuery),
     Pipeline(Arc<Pipeline>),
 }
 
