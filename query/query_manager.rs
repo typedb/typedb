@@ -83,21 +83,25 @@ impl QueryManager {
     /// parse cache. Parsing is schema-independent and needs no transaction, so this can run even
     /// while a write holds the transaction.
     pub fn parse(&self, query: &str) -> Result<ParsedQuery, Box<QueryError>> {
-        if let Some(parsed) = self.cache.as_ref().and_then(|cache| cache.get_parsed(query)) {
+        // The parse cache only holds data pipelines (schema queries are one-shot), so a hit is always
+        // a pipeline; a schema query simply falls through and is parsed (cheaply) every time.
+        if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(query)) {
             QUERY_PARSE_CACHE_HITS.increment();
-            return Ok(parsed);
+            return Ok(ParsedQuery::Pipeline(pipeline));
         }
-        QUERY_PARSE_CACHE_MISSES.increment();
         let parsed = typeql::parse_query(query)
             .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
-        let parsed = match parsed.into_structure() {
-            QueryStructure::Schema(schema_query) => ParsedQuery::Schema(Arc::new(schema_query)),
-            QueryStructure::Pipeline(pipeline) => ParsedQuery::Pipeline(Arc::new(pipeline)),
-        };
-        if let Some(cache) = self.cache.as_ref() {
-            cache.insert_parsed(query, parsed.clone());
+        match parsed.into_structure() {
+            QueryStructure::Schema(schema_query) => Ok(ParsedQuery::Schema(schema_query)),
+            QueryStructure::Pipeline(pipeline) => {
+                QUERY_PARSE_CACHE_MISSES.increment();
+                let pipeline = Arc::new(pipeline);
+                if let Some(cache) = self.cache.as_ref() {
+                    cache.insert_parsed(query, pipeline.clone());
+                }
+                Ok(ParsedQuery::Pipeline(pipeline))
+            }
         }
-        Ok(parsed)
     }
 
     /// Step 2 of query conversion: translate a parsed data pipeline into IR, consulting the
@@ -129,12 +133,12 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-        query: Arc<SchemaQuery>,
+        query: SchemaQuery,
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match query.as_ref() {
+        let result = match &query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));
