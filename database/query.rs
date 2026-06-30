@@ -17,7 +17,11 @@ use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
-use query::{error::QueryError, given_rows::GivenRows, query_manager::QueryManager};
+use query::{
+    error::QueryError,
+    given_rows::GivenRows,
+    query_manager::{QueryContext, QueryManager},
+};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{Level, event};
 use typeql::query::{Pipeline, SchemaQuery};
@@ -50,8 +54,8 @@ impl WriteQueryAnswer {
 
 pub fn execute_schema_query(
     transaction: TransactionSchema<WALClient>,
+    context: QueryContext,
     query: SchemaQuery,
-    source_query: String,
 ) -> (TransactionSchema<WALClient>, Result<(), Box<QueryError>>) {
     with_transaction_parts!(
         TransactionSchema,
@@ -62,8 +66,8 @@ pub fn execute_schema_query(
                 &type_manager,
                 &thing_manager,
                 &function_manager,
+                context,
                 &query,
-                &source_query,
             )
         }
     )
@@ -72,9 +76,9 @@ pub fn execute_schema_query(
 pub fn execute_write_query_in_schema(
     transaction: TransactionSchema<WALClient>,
     query_options: QueryOptions,
+    context: QueryContext,
     query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
-    source_query: String,
     interrupt: ExecutionInterrupt,
 ) -> (TransactionSchema<WALClient>, WriteQueryResult) {
     let TransactionSchema {
@@ -95,9 +99,9 @@ pub fn execute_write_query_in_schema(
         function_manager.clone(),
         &query_manager,
         query_options,
+        context,
         query_pipeline,
         given_rows,
-        &source_query,
         interrupt,
     );
 
@@ -118,9 +122,9 @@ pub fn execute_write_query_in_schema(
 pub fn execute_write_query_in_write(
     transaction: TransactionWrite<WALClient>,
     query_options: QueryOptions,
+    context: QueryContext,
     query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
-    source_query: String,
     interrupt: ExecutionInterrupt,
 ) -> (TransactionWrite<WALClient>, WriteQueryResult) {
     let TransactionWrite {
@@ -141,9 +145,9 @@ pub fn execute_write_query_in_write(
         function_manager.clone(),
         &query_manager,
         query_options,
+        context,
         query_pipeline,
         given_rows,
-        &source_query,
         interrupt,
     );
 
@@ -168,15 +172,16 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     function_manager: Arc<FunctionManager>,
     query_manager: &QueryManager,
     query_options: QueryOptions,
+    context: QueryContext,
     query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
-    source_query: &str,
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {
     let start_time = Instant::now();
-    // Translate to IR here (off the service's main loop), consulting the translation cache.
+    // Keep the source query for execution-error messages; the context is consumed by translate.
+    let source_query = context.source_query().to_owned();
     let translated =
-        match query_manager.translate(source_query, &query_pipeline, &snapshot, &function_manager, &thing_manager) {
+        match query_manager.translate(context, &query_pipeline, &snapshot, &function_manager, &thing_manager) {
             Ok(translated) => translated,
             Err(err) => return (snapshot, Err(err)),
         };
@@ -187,7 +192,6 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         function_manager,
         translated,
         given_rows,
-        source_query,
     );
     let pipeline = match result {
         Ok(pipeline) => pipeline,

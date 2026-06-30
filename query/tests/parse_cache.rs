@@ -13,8 +13,8 @@ use concept::{
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
 use query::{
-    query_cache::{ParsedQuery, QueryCache},
-    query_manager::QueryManager,
+    query_cache::QueryCache,
+    query_manager::{ParsedQuery, QueryContext, QueryManager},
 };
 use resource::profile::CommitProfile;
 use storage::{
@@ -49,7 +49,14 @@ fn setup() -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     QueryManager::new(None)
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, SCHEMA)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            QueryContext::uninstrumented(SCHEMA.to_string()),
+            &define,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -62,12 +69,20 @@ fn setup() -> Context {
 
 fn translate(context: &Context) {
     let snapshot = context.storage.clone().open_snapshot_read();
-    let ParsedQuery::Pipeline(pipeline) = context.query_manager.parse(QUERY).unwrap() else {
+    let ParsedQuery::Pipeline(_, pipeline) =
+        context.query_manager.parse(QueryContext::uninstrumented(QUERY.to_string())).unwrap()
+    else {
         panic!("expected a data pipeline");
     };
     context
         .query_manager
-        .translate(QUERY, &pipeline, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(
+            QueryContext::uninstrumented(QUERY.to_string()),
+            &pipeline,
+            &snapshot,
+            &context.function_manager,
+            &context.thing_manager,
+        )
         .unwrap();
 }
 
@@ -78,7 +93,10 @@ fn identical_query_string_hits_parse_cache() {
     // Cold: the parse cache has no entry for this string.
     assert!(context.cache.get_parsed(QUERY).is_none());
 
-    assert!(matches!(context.query_manager.parse(QUERY).unwrap(), ParsedQuery::Pipeline(_)));
+    assert!(matches!(
+        context.query_manager.parse(QueryContext::uninstrumented(QUERY.to_string())).unwrap(),
+        ParsedQuery::Pipeline(..)
+    ));
 
     // Warm: the identical query string now resolves straight from the parse cache.
     assert!(context.cache.get_parsed(QUERY).is_some(), "an identical query string should hit the parse cache");

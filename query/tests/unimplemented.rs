@@ -23,7 +23,7 @@ use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryManager, translate_pipeline},
+    query_manager::{QueryContext, QueryManager, TranslatedQuery, translate_pipeline},
 };
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -51,7 +51,14 @@ fn setup_common(schema: &str) -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, schema)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            QueryContext::uninstrumented(schema.to_string()),
+            &define,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -79,9 +86,8 @@ fn run_read_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(query.to_string(), translated),
             None::<GivenRowsSimple>,
-            query,
         )
         .map_err(|query_error| Either::Left(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -107,9 +113,8 @@ fn run_write_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(query.to_string(), translated),
             None::<GivenRowsSimple>,
-            query,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();

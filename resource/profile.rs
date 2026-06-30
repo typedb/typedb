@@ -434,21 +434,21 @@ impl CommitProfileData {
 
 #[derive(Debug)]
 pub struct QueryProfile {
-    compile_profile: CompileIRProfile,
+    compile_profile: CompileProfile,
     stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
 }
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { compile_profile: CompileIRProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
+        Self { compile_profile: CompileProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn compilation_profile(&mut self) -> &mut CompileIRProfile {
+    pub fn compilation_profile(&mut self) -> &mut CompileProfile {
         &mut self.compile_profile
     }
 
@@ -507,16 +507,18 @@ impl IndentDisplay for QueryProfile {
 }
 
 #[derive(Debug)]
-pub struct CompileIRProfile {
-    data: Option<CompileIRProfileData>,
+pub struct CompileProfile {
+    data: Option<CompileProfileData>,
 }
 
-impl CompileIRProfile {
+impl CompileProfile {
     fn new(enabled: bool) -> Self {
         if enabled {
             Self {
-                data: Some(CompileIRProfileData {
+                data: Some(CompileProfileData {
                     stage_start: Instant::now(), // irrelevant
+                    parsing: Duration::ZERO,
+                    translation: Duration::ZERO,
                     validation: Duration::ZERO,
                     annotation: Duration::ZERO,
                     compilation: Duration::ZERO,
@@ -530,6 +532,20 @@ impl CompileIRProfile {
     pub fn start(&mut self) {
         if let Some(data) = &mut self.data {
             data.stage_start = Instant::now()
+        }
+    }
+
+    pub fn parsing_finished(&mut self) {
+        if let Some(data) = &mut self.data {
+            data.parsing = data.stage_start.elapsed();
+            data.stage_start = Instant::now();
+        }
+    }
+
+    pub fn translation_finished(&mut self) {
+        if let Some(data) = &mut self.data {
+            data.translation = data.stage_start.elapsed();
+            data.stage_start = Instant::now();
         }
     }
 
@@ -557,18 +573,23 @@ impl CompileIRProfile {
     fn total_nanos(&self) -> u64 {
         match &self.data {
             None => 0,
-            Some(data) => (data.validation + data.annotation + data.compilation).as_nanos() as u64,
+            Some(data) => (data.parsing + data.translation + data.validation + data.annotation + data.compilation)
+                .as_nanos() as u64,
         }
     }
 }
 
-impl IndentDisplay for CompileIRProfile {
+impl IndentDisplay for CompileProfile {
     fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         write_indent(f, indent)?;
         match &self.data {
-            None => writeln!(f, "CompileIR[enabled=false]"),
+            None => writeln!(f, "Compile[enabled=false]"),
             Some(data) => {
-                writeln!(f, "CompileIR[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
+                writeln!(f, "Compile[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "parsing micros: {}", data.parsing.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
                 write_indent(f, indent + 1)?;
                 writeln!(f, "validation micros: {}", data.validation.as_nanos() as f64 / 1000.0)?;
                 write_indent(f, indent + 1)?;
@@ -583,8 +604,10 @@ impl IndentDisplay for CompileIRProfile {
 /// Record the time different stages of a query compilation take.
 /// This struct is simplified to expect that we execute exactly these steps in a fixed order with no other (significant) operations.
 #[derive(Debug)]
-struct CompileIRProfileData {
+struct CompileProfileData {
     stage_start: Instant,
+    parsing: Duration,
+    translation: Duration,
     validation: Duration,
     annotation: Duration,
     compilation: Duration,
