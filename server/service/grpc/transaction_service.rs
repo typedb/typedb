@@ -147,14 +147,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-<<<<<<< Updated upstream
-    // Cloned from the transaction at open so queries can be parsed (step 1, no transaction needed)
-    // even while an in-flight write has taken the transaction. Shares the transaction's QueryCache.
-    query_manager: Option<QueryManager>,
-=======
     query_manager: Option<Arc<QueryManager>>,
-
->>>>>>> Stashed changes
     query_queue: VecDeque<(Uuid, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsGrpc>, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
@@ -491,11 +484,7 @@ impl TransactionService {
             transaction.load_kind(),
             ClientEndpoint::Grpc,
         ));
-<<<<<<< Updated upstream
-        self.query_manager = Some(with_readable_transaction!(&transaction, |txn| { (*txn.query_manager).clone() }));
-=======
         self.query_manager = Some(transaction.query_manager());
->>>>>>> Stashed changes
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
@@ -768,11 +757,7 @@ impl TransactionService {
                     return;
                 }
                 (QueueOptions::Query(query_options), false) => {
-<<<<<<< Updated upstream
                     self.run_and_activate_read_transmitter(req_id, query_options, pipeline, given_rows, source_query);
-=======
-                    self.run_and_activate_read_transmitter(req_id, query_options, query_pipeline, given_rows, source_query);
->>>>>>> Stashed changes
                 }
             }
         }
@@ -784,10 +769,6 @@ impl TransactionService {
         analyse_req: typedb_protocol::analyze::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         let query = analyse_req.query;
-<<<<<<< Updated upstream
-        // Step 1 (parse) needs no transaction, so this is safe even while a write holds it.
-=======
->>>>>>> Stashed changes
         let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(_)) => {
@@ -832,10 +813,6 @@ impl TransactionService {
 
         let query = query_req.query;
         let given_rows = query_req.given.map(GivenRowsGrpc);
-<<<<<<< Updated upstream
-        // Step 1 (parse) needs no transaction, so this is safe even while a write holds it.
-=======
->>>>>>> Stashed changes
         let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(schema_query)) => {
@@ -1243,10 +1220,6 @@ impl TransactionService {
             spawn_blocking(move || {
                 let start_time = Instant::now();
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
-<<<<<<< Updated upstream
-                // Translate to IR here (off the main loop), consulting the translation cache.
-=======
->>>>>>> Stashed changes
                 let translated = query_manager.translate(
                     &source_query,
                     &pipeline,
