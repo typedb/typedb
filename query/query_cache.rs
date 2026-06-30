@@ -35,24 +35,26 @@ struct ValidityRequirements {
 }
 
 /// Three-stage query front-end cache, each stage keyed by the raw query string:
-/// - `parse_cache`: string -> parsed typeql AST. Purely syntactic, so it never needs invalidation.
+/// - `parse_cache`: string -> parsed data pipeline. Purely syntactic, so it never needs
+///   invalidation. Only data pipelines are cached; schema queries (define/redefine/undefine) are
+///   one-shot, so parsing them every time is fine and keeps them off this cache.
 /// - `translation_cache`: string -> translated IR. Translation resolves user-defined functions, so
 ///   it is flushed on schema commits (but not on statistics-only changes).
 /// - `compile_cache`: translated IR -> executable pipeline. Flushed on schema commits, and when
 ///   statistics drift far enough to change query plans.
 #[derive(Debug)]
 pub struct QueryCache {
-    parse_cache: Cache<String, ParsedQuery>,
+    parse_cache: Cache<String, Arc<Pipeline>>,
     translation_cache: Cache<String, TranslatedPipeline>,
     compile_cache: Cache<IRQuery, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
-#[derive(Debug, Clone)]
+/// The outcome of parsing a query string. Transient (never cached directly): a schema query is held
+/// by value, while a data pipeline is shared via `Arc` with the parse cache and the execution queue.
+#[derive(Debug)]
 pub enum ParsedQuery {
-    // Both variants are Arc-wrapped so the parse-cache value is cheap to clone on every get,
-    // without requiring the typeql AST itself to be Clone.
-    Schema(Arc<SchemaQuery>),
+    Schema(SchemaQuery),
     Pipeline(Arc<Pipeline>),
 }
 
@@ -66,12 +68,12 @@ impl QueryCache {
         QueryCache { parse_cache, translation_cache, compile_cache, validity_requirements }
     }
 
-    pub fn get_parsed(&self, query: &str) -> Option<ParsedQuery> {
+    pub fn get_parsed(&self, query: &str) -> Option<Arc<Pipeline>> {
         self.parse_cache.get(query)
     }
 
-    pub(crate) fn insert_parsed(&self, source_query: &str, parsed: ParsedQuery) {
-        self.parse_cache.insert(source_query.to_owned(), parsed);
+    pub(crate) fn insert_parsed(&self, source_query: &str, pipeline: Arc<Pipeline>) {
+        self.parse_cache.insert(source_query.to_owned(), pipeline);
     }
 
     pub fn get_translated(&self, query: &str) -> Option<TranslatedPipeline> {

@@ -846,7 +846,7 @@ impl TransactionService {
 
     async fn handle_query_schema(
         &mut self,
-        query: Arc<SchemaQuery>,
+        query: SchemaQuery,
         source_query: String,
     ) -> Result<ImmediateQueryResponse, Status> {
         self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;

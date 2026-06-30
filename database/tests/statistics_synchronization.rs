@@ -54,7 +54,7 @@ fn statistics_synchronization_under_concurrent_load() {
 
         let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-        let (tx, result) = execute_schema_query(tx, Arc::new(schema_query), SCHEMA.to_string());
+        let (tx, result) = execute_schema_query(tx, schema_query, SCHEMA.to_string());
         result.unwrap();
         let (mut profile, intent) = tx.finalise();
         intent.unwrap().commit(profile.commit_profile()).unwrap();
