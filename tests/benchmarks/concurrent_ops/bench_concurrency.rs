@@ -172,12 +172,10 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             let age: u32 = (id % 100) as u32;
             let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {age};"#);
             let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-            let translated =
-                translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
             let (returned_tx, result) = execute_write_query_in_write(
                 tx,
                 QueryOptions::default_grpc(),
-                translated,
+                Arc::new(pipeline),
                 None::<GivenRowsSimple>,
                 query_str,
                 ExecutionInterrupt::new_uninterruptible(),
@@ -209,11 +207,10 @@ fn execute_insert_batch(
         let name_id = batch_id * ops_per_tx + i;
         let query_str = format!(r#"insert $p isa person, has name "person_{name_id}", has age {age};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            translated,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -247,11 +244,10 @@ fn execute_update_batch(
         let score: f64 = rng.next_u64() as u32 as f64 / 100.0;
         let query_str = format!(r#"match $p isa person, has name "person_{person_id}"; insert $p has score {score};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            translated,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -287,11 +283,10 @@ fn execute_relation_batch(
             r#"match $a isa person, has name "person_{a_id}"; $b isa person, has name "person_{b_id}"; insert friendship (friend: $a, friend: $b);"#
         );
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            translated,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),

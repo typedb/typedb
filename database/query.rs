@@ -14,13 +14,13 @@ use executor::{
     pipeline::stage::{ExecutionContext, StageIterator},
 };
 use function::function_manager::FunctionManager;
-use ir::{pipeline::ParameterRegistry, translation::pipeline::TranslatedPipeline};
+use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{error::QueryError, given_rows::GivenRows, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{Level, event};
-use typeql::query::SchemaQuery;
+use typeql::query::{Pipeline, SchemaQuery};
 
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},
@@ -72,7 +72,7 @@ pub fn execute_schema_query(
 pub fn execute_write_query_in_schema(
     transaction: TransactionSchema<WALClient>,
     query_options: QueryOptions,
-    pipeline: TranslatedPipeline,
+    query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
@@ -95,7 +95,7 @@ pub fn execute_write_query_in_schema(
         function_manager.clone(),
         &query_manager,
         query_options,
-        pipeline,
+        query_pipeline,
         given_rows,
         &source_query,
         interrupt,
@@ -118,7 +118,7 @@ pub fn execute_write_query_in_schema(
 pub fn execute_write_query_in_write(
     transaction: TransactionWrite<WALClient>,
     query_options: QueryOptions,
-    pipeline: TranslatedPipeline,
+    query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
@@ -141,7 +141,7 @@ pub fn execute_write_query_in_write(
         function_manager.clone(),
         &query_manager,
         query_options,
-        pipeline,
+        query_pipeline,
         given_rows,
         &source_query,
         interrupt,
@@ -168,18 +168,24 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     function_manager: Arc<FunctionManager>,
     query_manager: &QueryManager,
     query_options: QueryOptions,
-    pipeline: TranslatedPipeline,
+    query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
     source_query: &str,
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {
     let start_time = Instant::now();
+    // Translate to IR here (off the service's main loop), consulting the translation cache.
+    let translated =
+        match query_manager.translate(source_query, &query_pipeline, &snapshot, &function_manager, &thing_manager) {
+            Ok(translated) => translated,
+            Err(err) => return (snapshot, Err(err)),
+        };
     let result = query_manager.prepare_write_pipeline(
         snapshot,
         type_manager,
         thing_manager,
         function_manager,
-        pipeline,
+        translated,
         given_rows,
         source_query,
     );

@@ -12,7 +12,6 @@ use database::{
 };
 use diagnostics::metrics::LoadKind;
 use options::TransactionOptions;
-use query::{error::QueryError, query_cache::ConvertedQuery};
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
 use tokio::task::spawn_blocking;
@@ -70,17 +69,6 @@ impl Transaction {
 
     pub fn database_name(&self) -> Arc<str> {
         with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
-    }
-
-    pub fn convert_query(&self, query: &str) -> Result<ConvertedQuery, Box<QueryError>> {
-        with_readable_transaction!(self, |transaction| {
-            transaction.query_manager.convert_query(
-                query,
-                transaction.snapshot.as_ref(),
-                &transaction.thing_manager,
-                &transaction.function_manager,
-            )
-        })
     }
 
     pub fn close(self) {

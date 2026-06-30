@@ -9,8 +9,7 @@ use concept::error::ConceptDecodeError;
 use database::transaction::{CommitIntent, TransactionError, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use executor::{InterruptType, pipeline::PipelineExecutionError};
-use ir::translation::pipeline::{TranslatedPipeline, TranslatedStage};
-use query::{error::QueryError, query_manager::translate_pipeline};
+use query::error::QueryError;
 use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
 use storage::durability_client::WALClient;
 use tokio::time::Instant;
@@ -34,57 +33,6 @@ pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
         }
     }
     false
-}
-
-pub(crate) fn is_write_query(pipeline: &TranslatedPipeline) -> bool {
-    pipeline.translated_stages.iter().any(|stage| {
-        matches!(
-            stage,
-            TranslatedStage::Insert { .. }
-                | TranslatedStage::Put { .. }
-                | TranslatedStage::Delete { .. }
-                | TranslatedStage::Update { .. }
-        )
-    })
-}
-
-/// A data-pipeline query waiting in a transaction's queue.
-///
-/// Usually the query is already translated to IR (`Translated`). But translation needs the
-/// transaction's snapshot, and while an in-flight write holds the transaction (it is `take()`n out
-/// of the service) no snapshot is available. A query that arrives during that window is therefore
-/// kept as its parsed AST (`Deferred`) and translated only once it is dequeued -- the transaction is
-/// always restored before the queue is drained. This keeps a query that pipelines onto a busy
-/// transaction from having to touch the (absent) transaction at enqueue time.
-#[derive(Debug)]
-pub(crate) enum QueuedQuery {
-    Translated(TranslatedPipeline),
-    Deferred(Box<typeql::query::Pipeline>),
-}
-
-impl QueuedQuery {
-    pub(crate) fn is_write(&self) -> bool {
-        match self {
-            QueuedQuery::Translated(pipeline) => is_write_query(pipeline),
-            QueuedQuery::Deferred(pipeline) => is_write_pipeline(pipeline),
-        }
-    }
-}
-
-/// Materialise a queued query into translated IR. `Translated` entries are returned as-is;
-/// `Deferred` entries are translated now, using the (restored) transaction's snapshot. Must only be
-/// called while the transaction is present, i.e. when draining the queue.
-pub(crate) fn translate_queued_query(
-    transaction: &Transaction,
-    queued: QueuedQuery,
-    source_query: &str,
-) -> Result<TranslatedPipeline, Box<QueryError>> {
-    match queued {
-        QueuedQuery::Translated(pipeline) => Ok(pipeline),
-        QueuedQuery::Deferred(pipeline) => with_readable_transaction!(transaction, |txn| {
-            translate_pipeline(txn.snapshot.as_ref(), &txn.function_manager, &pipeline, source_query)
-        }),
-    }
 }
 
 pub(crate) fn init_transaction_timeout(transaction_timeout_millis: Option<u64>) -> Instant {

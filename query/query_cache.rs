@@ -19,13 +19,14 @@ use ir::{
 use moka::sync::{Cache, CacheBuilder};
 use resource::{
     constants::database::{
-        QUERY_CONVERSION_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
+        QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
+        QUERY_TRANSLATION_CACHE_SIZE,
     },
     perf_counters::QUERY_CACHE_FLUSH,
 };
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
-use typeql::query::SchemaQuery;
+use typeql::query::{Pipeline, SchemaQuery};
 
 #[derive(Debug)]
 struct ValidityRequirements {
@@ -33,33 +34,49 @@ struct ValidityRequirements {
     latest_schema_commit: Option<SequenceNumber>,
 }
 
+/// Three-stage query front-end cache, each stage keyed by the raw query string:
+/// - `parse_cache`: string -> parsed typeql AST. Purely syntactic, so it never needs invalidation.
+/// - `translation_cache`: string -> translated IR. Translation resolves user-defined functions, so
+///   it is flushed on schema commits (but not on statistics-only changes).
+/// - `compile_cache`: translated IR -> executable pipeline. Flushed on schema commits, and when
+///   statistics drift far enough to change query plans.
 #[derive(Debug)]
 pub struct QueryCache {
-    conversion_cache: Cache<String, ConvertedQuery>,
+    parse_cache: Cache<String, ParsedQuery>,
+    translation_cache: Cache<String, TranslatedPipeline>,
     compile_cache: Cache<IRQuery, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
 #[derive(Debug, Clone)]
-pub enum ConvertedQuery {
-    Schema(Arc<typeql::query::schema::SchemaQuery>), // TODO: make Clone in TypeQL
-    Data(TranslatedPipeline),
+pub enum ParsedQuery {
+    Schema(Arc<SchemaQuery>), // TODO: make Clone in TypeQL
+    Pipeline(Arc<Pipeline>),
 }
 
 impl QueryCache {
     pub fn new() -> Self {
-        let parse_cache = CacheBuilder::new(QUERY_CONVERSION_CACHE_SIZE).build();
+        let parse_cache = CacheBuilder::new(QUERY_PARSE_CACHE_SIZE).build();
+        let translation_cache = CacheBuilder::new(QUERY_TRANSLATION_CACHE_SIZE).build();
         let compile_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
         let validity_requirements =
             RwLock::new(ValidityRequirements { latest_statistics: None, latest_schema_commit: None });
-        QueryCache { conversion_cache: parse_cache, compile_cache, validity_requirements }
+        QueryCache { parse_cache, translation_cache, compile_cache, validity_requirements }
     }
 
-    pub fn get_converted(&self, query: &str) -> Option<ConvertedQuery> {
-        self.conversion_cache.get(query)
+    pub fn get_parsed(&self, query: &str) -> Option<ParsedQuery> {
+        self.parse_cache.get(query)
     }
 
-    pub(crate) fn may_insert_converted_data_pipeline(
+    pub(crate) fn insert_parsed(&self, source_query: &str, parsed: ParsedQuery) {
+        self.parse_cache.insert(source_query.to_owned(), parsed);
+    }
+
+    pub fn get_translated(&self, query: &str) -> Option<TranslatedPipeline> {
+        self.translation_cache.get(query)
+    }
+
+    pub(crate) fn may_insert_translated(
         &self,
         statistics_sequence_number: SequenceNumber,
         source_query: &str,
@@ -70,13 +87,9 @@ impl QueryCache {
             .latest_schema_commit
             .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
         if may_insert {
-            self.conversion_cache.insert(source_query.to_owned(), ConvertedQuery::Data(translated));
+            self.translation_cache.insert(source_query.to_owned(), translated);
         }
         drop(read_lock);
-    }
-
-    pub(crate) fn insert_converted_schema_query(&self, source_query: &str, schema_query: Arc<SchemaQuery>) {
-        self.conversion_cache.insert(source_query.to_owned(), ConvertedQuery::Schema(schema_query))
     }
 
     pub(crate) fn get_compiled(
@@ -130,11 +143,12 @@ impl QueryCache {
     }
 
     pub fn force_reset(&self, statistics: &Statistics) {
-        // Schema commits can change function resolution, so both caches must be flushed.
+        // Schema commits can change function resolution, so the translation and compile caches must
+        // be flushed. The parse cache is purely syntactic and remains valid.
         let mut write_lock = self.validity_requirements.write().unwrap();
         (*write_lock).latest_schema_commit = Some(statistics.sequence_number);
         drop(write_lock);
-        self.conversion_cache.invalidate_all();
+        self.translation_cache.invalidate_all();
         self.compile_cache.invalidate_all();
         QUERY_CACHE_FLUSH.increment();
     }

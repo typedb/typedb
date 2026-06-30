@@ -15,7 +15,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::{given_rows::GivenRowsSimple, query_manager::translate_pipeline};
+use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 
@@ -99,11 +99,10 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
         let id = batch_id * OPS_PER_BATCH + i;
         let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {id};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-        let translated = translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, &query_str).unwrap();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            translated,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
