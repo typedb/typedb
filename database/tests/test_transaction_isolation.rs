@@ -42,7 +42,7 @@ fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
 fn commit_schema(database: Arc<Database<WALClient>>, schema: &str) {
     let parsed = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database, TransactionOptions::default()).unwrap();
-    let (tx, result) = execute_schema_query(tx, Arc::new(parsed), schema.to_string());
+    let (tx, result) = execute_schema_query(tx, parsed, schema.to_string());
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
     intent.unwrap().commit(profile.commit_profile()).unwrap();
