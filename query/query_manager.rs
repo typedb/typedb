@@ -48,7 +48,10 @@ use ir::{
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
-    perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_CONVERT_CACHE_HITS, QUERY_CONVERT_CACHE_MISSES},
+    perf_counters::{
+        QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_PARSE_CACHE_HITS, QUERY_PARSE_CACHE_MISSES,
+        QUERY_TRANSLATION_CACHE_HITS, QUERY_TRANSLATION_CACHE_MISSES,
+    },
     profile::{CompileIRProfile, QueryProfile},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -62,7 +65,7 @@ use crate::{
     define,
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRows},
-    query_cache::{ConvertedQuery, QueryCache},
+    query_cache::{ParsedQuery, QueryCache},
     redefine, undefine,
 };
 
@@ -76,45 +79,48 @@ impl QueryManager {
         Self { cache }
     }
 
-    pub fn convert_query(
+    /// Step 1 of query conversion: parse the raw query string into a typeql AST, consulting the
+    /// parse cache. Parsing is schema-independent and needs no transaction, so this can run even
+    /// while a write holds the transaction.
+    pub fn parse(&self, query: &str) -> Result<ParsedQuery, Box<QueryError>> {
+        if let Some(parsed) = self.cache.as_ref().and_then(|cache| cache.get_parsed(query)) {
+            QUERY_PARSE_CACHE_HITS.increment();
+            return Ok(parsed);
+        }
+        QUERY_PARSE_CACHE_MISSES.increment();
+        let parsed = typeql::parse_query(query)
+            .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
+        let parsed = match parsed.into_structure() {
+            QueryStructure::Schema(schema_query) => ParsedQuery::Schema(Arc::new(schema_query)),
+            QueryStructure::Pipeline(pipeline) => ParsedQuery::Pipeline(Arc::new(pipeline)),
+        };
+        if let Some(cache) = self.cache.as_ref() {
+            cache.insert_parsed(query, parsed.clone());
+        }
+        Ok(parsed)
+    }
+
+    /// Step 2 of query conversion: translate a parsed data pipeline into IR, consulting the
+    /// translation cache. Translation resolves user-defined function calls against the schema, so it
+    /// needs a snapshot and is invalidated on schema commits.
+    pub fn translate(
         &self,
         query: &str,
+        pipeline: &typeql::query::Pipeline,
         snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-    ) -> Result<ConvertedQuery, Box<QueryError>> {
-        let converted = match self.cache.as_ref().and_then(|cache| cache.get_converted(query)) {
-            Some(converted_query) => {
-                QUERY_CONVERT_CACHE_HITS.increment();
-                converted_query
-            }
-            None => {
-                QUERY_CONVERT_CACHE_MISSES.increment();
-                let parsed = typeql::parse_query(query)
-                    .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
-                match parsed.into_structure() {
-                    QueryStructure::Schema(schema_query) => {
-                        let schema_query = Arc::new(schema_query);
-                        if let Some(cache) = self.cache.as_ref() {
-                            cache.insert_converted_schema_query(query, schema_query.clone());
-                        }
-                        ConvertedQuery::Schema(schema_query)
-                    }
-                    QueryStructure::Pipeline(pipeline) => {
-                        let translated = translate_pipeline(snapshot, function_manager, &pipeline, query)?;
-                        if let Some(cache) = self.cache.as_ref() {
-                            cache.may_insert_converted_data_pipeline(
-                                thing_manager.statistics().sequence_number,
-                                query,
-                                translated.clone(),
-                            )
-                        }
-                        ConvertedQuery::Data(translated)
-                    }
-                }
-            }
-        };
-        Ok(converted)
+        thing_manager: &ThingManager,
+    ) -> Result<TranslatedPipeline, Box<QueryError>> {
+        if let Some(translated) = self.cache.as_ref().and_then(|cache| cache.get_translated(query)) {
+            QUERY_TRANSLATION_CACHE_HITS.increment();
+            return Ok(translated);
+        }
+        QUERY_TRANSLATION_CACHE_MISSES.increment();
+        let translated = translate_pipeline(snapshot, function_manager, pipeline, query)?;
+        if let Some(cache) = self.cache.as_ref() {
+            cache.may_insert_translated(thing_manager.statistics().sequence_number, query, translated.clone());
+        }
+        Ok(translated)
     }
 
     pub fn execute_schema(

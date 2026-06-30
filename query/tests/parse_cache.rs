@@ -13,8 +13,7 @@ use concept::{
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
 use query::{
-    error::QueryError,
-    query_cache::{ConvertedQuery, QueryCache},
+    query_cache::{ParsedQuery, QueryCache},
     query_manager::QueryManager,
 };
 use resource::profile::CommitProfile;
@@ -61,34 +60,57 @@ fn setup() -> Context {
     Context { _tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager, cache }
 }
 
-fn convert(context: &Context) -> Result<ConvertedQuery, Box<QueryError>> {
+fn translate(context: &Context) {
     let snapshot = context.storage.clone().open_snapshot_read();
-    context.query_manager.convert_query(QUERY, &snapshot, &context.thing_manager, &context.function_manager)
+    let ParsedQuery::Pipeline(pipeline) = context.query_manager.parse(QUERY).unwrap() else {
+        panic!("expected a data pipeline");
+    };
+    context
+        .query_manager
+        .translate(QUERY, &pipeline, &snapshot, &context.function_manager, &context.thing_manager)
+        .unwrap();
 }
 
 #[test]
-fn identical_query_string_hits_conversion_cache() {
+fn identical_query_string_hits_parse_cache() {
     let context = setup();
 
-    // Cold: the conversion cache has no entry for this string.
-    assert!(context.cache.get_converted(QUERY).is_none());
+    // Cold: the parse cache has no entry for this string.
+    assert!(context.cache.get_parsed(QUERY).is_none());
 
-    // Converting the query parses and translates it, populating the conversion cache.
-    assert!(matches!(convert(&context).unwrap(), ConvertedQuery::Data(_)));
+    assert!(matches!(context.query_manager.parse(QUERY).unwrap(), ParsedQuery::Pipeline(_)));
 
-    // Warm: the identical query string now resolves straight from the conversion cache.
-    assert!(context.cache.get_converted(QUERY).is_some(), "an identical query string should hit the conversion cache");
+    // Warm: the identical query string now resolves straight from the parse cache.
+    assert!(context.cache.get_parsed(QUERY).is_some(), "an identical query string should hit the parse cache");
 }
 
 #[test]
-fn schema_reset_invalidates_conversion_cache() {
+fn identical_query_string_hits_translation_cache() {
     let context = setup();
 
-    convert(&context).unwrap();
-    assert!(context.cache.get_converted(QUERY).is_some());
+    // Cold: the translation cache has no entry for this string.
+    assert!(context.cache.get_translated(QUERY).is_none());
 
-    // A schema commit flushes the conversion cache, because translation can depend on the schema
-    // (resolved function calls). Statistics-only changes must NOT flush it.
+    translate(&context);
+
+    // Warm: the identical query string now resolves straight to translated IR.
+    assert!(
+        context.cache.get_translated(QUERY).is_some(),
+        "an identical query string should hit the translation cache"
+    );
+}
+
+#[test]
+fn schema_reset_invalidates_translation_but_keeps_parse_cache() {
+    let context = setup();
+
+    translate(&context);
+    assert!(context.cache.get_parsed(QUERY).is_some());
+    assert!(context.cache.get_translated(QUERY).is_some());
+
+    // A schema commit can change function resolution, so it flushes the translation cache. Parsing
+    // is purely syntactic, so the parse cache must survive.
     context.cache.force_reset(&Statistics::new(SequenceNumber::MIN));
-    assert!(context.cache.get_converted(QUERY).is_none(), "a schema reset should invalidate the conversion cache");
+    assert!(context.cache.get_translated(QUERY).is_none(), "a schema reset should invalidate the translation cache");
+    assert!(context.cache.get_parsed(QUERY).is_some(), "a schema reset must not invalidate the parse cache");
 }
