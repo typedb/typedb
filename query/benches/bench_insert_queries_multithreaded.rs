@@ -27,7 +27,7 @@ use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryManager, translate_pipeline},
+    query_manager::{QueryManager, TranslatedQuery, translate_pipeline},
 };
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
@@ -130,9 +130,8 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             type_manager,
             thing_manager,
             function_manager,
-            translated,
+            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
             None::<GivenRowsSimple>,
-            query_str,
         )
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();

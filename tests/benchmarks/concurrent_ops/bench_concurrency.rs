@@ -26,7 +26,10 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::{given_rows::GivenRowsSimple, query_manager::translate_pipeline};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_manager::{QueryContext, TranslatedQuery, translate_pipeline},
+};
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
@@ -153,7 +156,7 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
 
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-    let (tx, result) = execute_schema_query(tx, schema_query, schema.to_string());
+    let (tx, result) = execute_schema_query(tx, QueryContext::uninstrumented(schema.to_string()), schema_query);
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
     intent.unwrap().commit(profile.commit_profile()).unwrap();
@@ -175,9 +178,9 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             let (returned_tx, result) = execute_write_query_in_write(
                 tx,
                 QueryOptions::default_grpc(),
+                QueryContext::uninstrumented(query_str),
                 Arc::new(pipeline),
                 None::<GivenRowsSimple>,
-                query_str,
                 ExecutionInterrupt::new_uninterruptible(),
             );
             result.unwrap();
@@ -210,9 +213,9 @@ fn execute_insert_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
+            QueryContext::uninstrumented(query_str),
             Arc::new(pipeline),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
@@ -247,9 +250,9 @@ fn execute_update_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
+            QueryContext::uninstrumented(query_str),
             Arc::new(pipeline),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
@@ -286,9 +289,9 @@ fn execute_relation_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
+            QueryContext::uninstrumented(query_str),
             Arc::new(pipeline),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
@@ -316,9 +319,8 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
             None::<GivenRowsSimple>,
-            query_str,
         )
         .unwrap();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

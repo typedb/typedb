@@ -15,7 +15,7 @@ use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryManager, translate_pipeline},
+    query_manager::{QueryContext, QueryManager, TranslatedQuery, translate_pipeline},
 };
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -45,7 +45,14 @@ fn define_schema(
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, &schema_query, query_str)
+        .execute_schema(
+            &mut snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            QueryContext::uninstrumented(query_str.to_string()),
+            &schema_query,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -67,9 +74,8 @@ fn insert_data(
             type_manager,
             thing_manager,
             function_manager,
-            translated,
+            TranslatedQuery::uninstrumented(query_string.to_string(), translated),
             None::<GivenRowsSimple>,
-            query_string,
         )
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -191,9 +197,8 @@ fn query_profile_tree_structure() {
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            translated,
+            TranslatedQuery::instrumented(query_str.to_string(), translated),
             None::<GivenRowsSimple>,
-            query_str,
         )
         .unwrap();
 

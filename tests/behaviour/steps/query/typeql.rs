@@ -40,7 +40,7 @@ use query::{
     analyse::AnalysedQuery,
     error::QueryError,
     given_rows::{GivenRowEntry, GivenRowsSimple},
-    query_manager::translate_pipeline,
+    query_manager::{QueryContext, TranslatedQuery, translate_pipeline},
 };
 use resource::profile::StorageCounters;
 use server::service::http::message::analyze::{
@@ -102,9 +102,8 @@ fn execute_read_query(
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(source_query.to_string(), translated),
             given_rows,
-            source_query,
         )?;
         if pipeline.has_fetch() {
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
@@ -170,9 +169,8 @@ fn execute_write_query(
                     &type_manager,
                     thing_manager.clone(),
                     function_manager.clone(),
-                    translated,
+                    TranslatedQuery::uninstrumented(source_query.to_string(), translated),
                     given_rows,
-                    source_query,
                 );
 
                 match pipeline_result {
@@ -253,7 +251,12 @@ fn execute_analyze(
                 Err(source) => return Err(BehaviourTestExecutionError::Query(*source)),
             };
         tx.query_manager
-            .analyse(tx.snapshot.clone(), &tx.type_manager, &tx.function_manager, translated, source_query)
+            .analyse(
+                tx.snapshot.clone(),
+                &tx.type_manager,
+                &tx.function_manager,
+                TranslatedQuery::uninstrumented(source_query.to_string(), translated),
+            )
             .map_err(|source| BehaviourTestExecutionError::Query(*source))
     })
 }
@@ -298,8 +301,8 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             &tx.type_manager,
             &tx.thing_manager,
             &tx.function_manager,
+            QueryContext::uninstrumented(query.to_string()),
             &typeql_schema,
-            query,
         );
         if let Either::Right(_err) = may_error.check_logic(result) {
             context.close_active_transaction();

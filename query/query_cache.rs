@@ -26,7 +26,7 @@ use resource::{
 };
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
-use typeql::query::{Pipeline, SchemaQuery};
+use typeql::query::Pipeline;
 
 #[derive(Debug)]
 struct ValidityRequirements {
@@ -48,12 +48,6 @@ pub struct QueryCache {
     translation_cache: Cache<String, TranslatedPipeline>,
     compile_cache: Cache<IRQuery, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
-}
-
-#[derive(Debug)]
-pub enum ParsedQuery {
-    Schema(SchemaQuery),
-    Pipeline(Arc<Pipeline>),
 }
 
 impl QueryCache {

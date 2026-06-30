@@ -18,6 +18,7 @@ use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
+use query::query_manager::QueryContext;
 use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
@@ -208,11 +209,11 @@ fn execute_schema_transaction(
             &transaction.type_manager,
             &transaction.thing_manager,
             &transaction.function_manager,
+            QueryContext::uninstrumented(schema_define.clone()),
             &typeql::parse_query(&schema_define)
                 .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?
                 .into_structure()
                 .into_schema(),
-            &schema_define,
         )
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     let (mut profile, result) = transaction.finalise();

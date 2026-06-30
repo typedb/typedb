@@ -134,7 +134,7 @@ pub mod query_util {
     use query::{
         error::QueryError,
         given_rows::GivenRowsSimple,
-        query_manager::{QueryManager, translate_pipeline},
+        query_manager::{QueryManager, TranslatedQuery, translate_pipeline},
     };
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
@@ -155,9 +155,8 @@ pub mod query_util {
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(source_query.to_owned(), translated),
             None::<GivenRowsSimple>,
-            source_query,
         ) {
             Ok(pipeline) => pipeline,
             Err(err) => return (tx, Err(err)),
@@ -208,9 +207,8 @@ pub mod query_util {
             type_manager,
             thing_manager,
             function_manager,
-            translated,
+            TranslatedQuery::uninstrumented(source_query.to_owned(), translated),
             None::<GivenRowsSimple>,
-            source_query,
         ) {
             Ok(pipeline) => pipeline,
             Err((snapshot, err)) => return (Err(err), Arc::new(snapshot)),

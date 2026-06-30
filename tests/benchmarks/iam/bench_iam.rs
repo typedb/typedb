@@ -14,7 +14,10 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
 use options::{TransactionOptions, byte_size::ByteSize};
-use query::{given_rows::GivenRowsSimple, query_manager::translate_pipeline};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_manager::{QueryContext, TranslatedQuery, translate_pipeline},
+};
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
 
@@ -49,8 +52,8 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &type_manager,
             &thing_manager,
             &function_manager,
+            QueryContext::uninstrumented(schema_str),
             &schema_query,
-            &schema_str,
         )
         .unwrap();
     let tx = TransactionSchema::from_parts(
@@ -91,9 +94,8 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(data_str, translated),
             None::<GivenRowsSimple>,
-            &data_str,
         )
         .unwrap();
     let (_output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -154,9 +156,8 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            translated,
+            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
             None::<GivenRowsSimple>,
-            query_str,
         )
         .unwrap();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

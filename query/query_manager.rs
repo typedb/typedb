@@ -52,7 +52,7 @@ use resource::{
         QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_PARSE_CACHE_HITS, QUERY_PARSE_CACHE_MISSES,
         QUERY_TRANSLATION_CACHE_HITS, QUERY_TRANSLATION_CACHE_MISSES,
     },
-    profile::{CompileIRProfile, QueryProfile},
+    profile::{CompileProfile, QueryProfile},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{Level, event};
@@ -65,7 +65,7 @@ use crate::{
     define,
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRows},
-    query_cache::{ParsedQuery, QueryCache},
+    query_cache::QueryCache,
     redefine, undefine,
 };
 
@@ -74,49 +74,131 @@ pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
 }
 
+/// Cross-cutting state carried through a query's lifecycle (parse -> translate -> compile -> execute).
+/// Holds the originating query string and a single profile, so that each stage's timing is recorded
+/// against the same query even as it flows across the service's main loop and the execution thread.
+#[derive(Debug)]
+pub struct QueryContext {
+    source_query: String,
+    profile: QueryProfile,
+}
+
+impl QueryContext {
+    pub fn new(source_query: String, profile: QueryProfile) -> Self {
+        Self { source_query, profile }
+    }
+
+    /// Create a context whose profile is enabled iff TRACE-level tracing is on, matching the gating
+    /// previously applied at each compilation step. This is the normal entry point for served queries.
+    pub fn instrumented(source_query: String) -> Self {
+        Self::new(source_query, QueryProfile::new(tracing::enabled!(Level::TRACE)))
+    }
+
+    /// Create an uninstrumented context whose profile records nothing. Use where profiling is not
+    /// wanted, such as internal queries and tests.
+    pub fn uninstrumented(source_query: String) -> Self {
+        Self::new(source_query, QueryProfile::new(false))
+    }
+
+    pub fn source_query(&self) -> &str {
+        &self.source_query
+    }
+}
+
+/// The outcome of parsing, carrying the context it evolved from. Transient (never cached directly): a
+/// schema query is held by value, while a data pipeline is shared via `Arc` with the parse cache and
+/// the execution queue.
+#[derive(Debug)]
+pub enum ParsedQuery {
+    Schema(QueryContext, SchemaQuery),
+    Pipeline(QueryContext, Arc<typeql::query::Pipeline>),
+}
+
+/// A translated data pipeline, carrying the context it evolved from.
+#[derive(Debug)]
+pub struct TranslatedQuery {
+    context: QueryContext,
+    pipeline: TranslatedPipeline,
+}
+
+impl TranslatedQuery {
+    /// Bundle an already-translated pipeline with an uninstrumented context, for callers that
+    /// translate via `translate_pipeline` directly and then prepare (e.g. tests).
+    pub fn uninstrumented(source_query: String, pipeline: TranslatedPipeline) -> Self {
+        Self { context: QueryContext::uninstrumented(source_query), pipeline }
+    }
+
+    /// As [`Self::uninstrumented`], but the context's profile follows TRACE-level tracing (e.g. for
+    /// tests that assert on the profile).
+    pub fn instrumented(source_query: String, pipeline: TranslatedPipeline) -> Self {
+        Self { context: QueryContext::instrumented(source_query), pipeline }
+    }
+}
+
 impl QueryManager {
     pub fn new(cache: Option<Arc<QueryCache>>) -> Self {
         Self { cache }
     }
 
-    pub fn parse(&self, query: &str) -> Result<ParsedQuery, Box<QueryError>> {
-        if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(query)) {
+    pub fn parse(&self, mut context: QueryContext) -> Result<ParsedQuery, Box<QueryError>> {
+        context.profile.compilation_profile().start();
+        if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(&context.source_query)) {
             QUERY_PARSE_CACHE_HITS.increment();
-            return Ok(ParsedQuery::Pipeline(pipeline));
+            context.profile.compilation_profile().parsing_finished();
+            return Ok(ParsedQuery::Pipeline(context, pipeline));
         }
-        let parsed = typeql::parse_query(query)
-            .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
+        let parsed = typeql::parse_query(&context.source_query).map_err(|err| QueryError::ParseError {
+            source_query: context.source_query.clone(),
+            typedb_source: err,
+        })?;
         match parsed.into_structure() {
-            QueryStructure::Schema(schema_query) => Ok(ParsedQuery::Schema(schema_query)),
+            QueryStructure::Schema(schema_query) => {
+                context.profile.compilation_profile().parsing_finished();
+                Ok(ParsedQuery::Schema(context, schema_query))
+            }
             QueryStructure::Pipeline(pipeline) => {
                 QUERY_PARSE_CACHE_MISSES.increment();
                 let pipeline = Arc::new(pipeline);
                 if let Some(cache) = self.cache.as_ref() {
-                    cache.insert_parsed(query, pipeline.clone());
+                    cache.insert_parsed(&context.source_query, pipeline.clone());
                 }
-                Ok(ParsedQuery::Pipeline(pipeline))
+                context.profile.compilation_profile().parsing_finished();
+                Ok(ParsedQuery::Pipeline(context, pipeline))
             }
         }
     }
 
     pub fn translate(
         &self,
-        query: &str,
+        mut context: QueryContext,
         pipeline: &typeql::query::Pipeline,
         snapshot: &impl ReadableSnapshot,
         function_manager: &FunctionManager,
         thing_manager: &ThingManager,
-    ) -> Result<TranslatedPipeline, Box<QueryError>> {
-        if let Some(translated) = self.cache.as_ref().and_then(|cache| cache.get_translated(query)) {
-            QUERY_TRANSLATION_CACHE_HITS.increment();
-            return Ok(translated);
-        }
-        QUERY_TRANSLATION_CACHE_MISSES.increment();
-        let translated = translate_pipeline(snapshot, function_manager, pipeline, query)?;
-        if let Some(cache) = self.cache.as_ref() {
-            cache.may_insert_translated(thing_manager.statistics().sequence_number, query, translated.clone());
-        }
-        Ok(translated)
+    ) -> Result<TranslatedQuery, Box<QueryError>> {
+        // Reset the clock so the (potentially long) wait in the execution queue is not counted.
+        context.profile.compilation_profile().start();
+        let translated = match self.cache.as_ref().and_then(|cache| cache.get_translated(&context.source_query)) {
+            Some(translated) => {
+                QUERY_TRANSLATION_CACHE_HITS.increment();
+                translated
+            }
+            None => {
+                QUERY_TRANSLATION_CACHE_MISSES.increment();
+                let translated =
+                    translate_pipeline(snapshot, function_manager, pipeline, &context.source_query)?;
+                if let Some(cache) = self.cache.as_ref() {
+                    cache.may_insert_translated(
+                        thing_manager.statistics().sequence_number,
+                        &context.source_query,
+                        translated.clone(),
+                    );
+                }
+                translated
+            }
+        };
+        context.profile.compilation_profile().translation_finished();
+        Ok(TranslatedQuery { context, pipeline: translated })
     }
 
     pub fn execute_schema(
@@ -125,15 +207,15 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
+        context: QueryContext,
         query: &SchemaQuery,
-        source_query: &str,
     ) -> Result<(), Box<QueryError>> {
+        let QueryContext { source_query, profile } = context;
         event!(Level::TRACE, "Running schema query:\n{}", query);
-        let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match &query {
+        let result = match query {
             SchemaQuery::Define(define) => {
-                let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
-                let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));
+                let stage_profile = profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
+                let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Define pattern"));
                 let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Define execution"));
                 define::execute(
                     snapshot,
@@ -143,13 +225,11 @@ impl QueryManager {
                     define,
                     step_profile.storage_counters(),
                 )
-                .map_err(|err| {
-                    Box::new(QueryError::Define { source_query: source_query.to_string(), typedb_source: err })
-                })
+                .map_err(|err| Box::new(QueryError::Define { source_query: source_query.clone(), typedb_source: err }))
             }
             SchemaQuery::Redefine(redefine) => {
-                let profile = query_profile.profile_stage(|| String::from("Redefine"), 0); // TODO executable id
-                let pattern_profile = profile.create_or_get_pattern(|| String::from("Redefine pattern"));
+                let stage_profile = profile.profile_stage(|| String::from("Redefine"), 0); // TODO executable id
+                let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Redefine pattern"));
                 let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Redefine execution"));
                 redefine::execute(
                     snapshot,
@@ -160,18 +240,18 @@ impl QueryManager {
                     step_profile.storage_counters(),
                 )
                 .map_err(|err| {
-                    Box::new(QueryError::Redefine { source_query: source_query.to_string(), typedb_source: err })
+                    Box::new(QueryError::Redefine { source_query: source_query.clone(), typedb_source: err })
                 })
             }
             SchemaQuery::Undefine(undefine) => {
                 undefine::execute(snapshot, type_manager, thing_manager, function_manager, undefine).map_err(|err| {
-                    Box::new(QueryError::Undefine { source_query: source_query.to_string(), typedb_source: err })
+                    Box::new(QueryError::Undefine { source_query: source_query.clone(), typedb_source: err })
                 })
             }
         };
 
-        if query_profile.is_enabled() {
-            event!(Level::INFO, "Schema query done.\n{}", query_profile);
+        if profile.is_enabled() {
+            event!(Level::INFO, "Schema query done.\n{}", profile);
         }
 
         result
@@ -183,13 +263,13 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        pipeline: TranslatedPipeline,
+        query: TranslatedQuery,
         given_rows: Option<impl GivenRows>,
-        source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
+        let TranslatedQuery { context, pipeline } = query;
+        let QueryContext { source_query, mut profile } = context;
         event!(Level::TRACE, "Running read query:\n{}", source_query);
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let compile_profile = query_profile.compilation_profile();
+        let compile_profile = profile.compilation_profile();
         compile_profile.start();
         let TranslatedPipeline {
             translated_preamble,
@@ -214,7 +294,7 @@ impl QueryManager {
             None => {
                 let executable_pipeline = annotate_and_compile_query(
                     snapshot.as_ref(),
-                    source_query,
+                    &source_query,
                     type_manager,
                     thing_manager.clone(),
                     &function_manager,
@@ -265,7 +345,7 @@ impl QueryManager {
             executable_fetch,
             arced_parameters,
             given_batch,
-            Arc::new(query_profile),
+            Arc::new(profile),
         )
         .map_err(|typedb_source| {
             Box::new(QueryError::Pipeline { source_query: source_query.to_string(), typedb_source })
@@ -278,13 +358,13 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        pipeline: TranslatedPipeline,
+        query: TranslatedQuery,
         given_rows: Option<impl GivenRows>,
-        source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
+        let TranslatedQuery { context, pipeline } = query;
+        let QueryContext { source_query, mut profile } = context;
         event!(Level::TRACE, "Running write query:\n{}", source_query);
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let compile_profile = query_profile.compilation_profile();
+        let compile_profile = profile.compilation_profile();
         compile_profile.start();
         let TranslatedPipeline {
             translated_preamble,
@@ -310,7 +390,7 @@ impl QueryManager {
             None => {
                 let executable_pipeline_result = annotate_and_compile_query(
                     &snapshot,
-                    source_query,
+                    &source_query,
                     type_manager,
                     thing_manager.clone(),
                     &function_manager,
@@ -370,7 +450,7 @@ impl QueryManager {
             executable_fetch,
             arced_parameters.clone(),
             given_batch,
-            Arc::new(query_profile),
+            Arc::new(profile),
         ))
     }
 
@@ -379,12 +459,12 @@ impl QueryManager {
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         function_manager: &FunctionManager,
-        pipeline: TranslatedPipeline,
-        source_query: &str,
+        query: TranslatedQuery,
     ) -> Result<AnalysedQuery, Box<QueryError>> {
+        let TranslatedQuery { context, pipeline } = query;
+        let QueryContext { source_query, mut profile } = context;
         event!(Level::TRACE, "Running analyse query:\n{}", source_query);
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let compile_profile = query_profile.compilation_profile();
+        let compile_profile = profile.compilation_profile();
         compile_profile.start();
         let TranslatedPipeline {
             translated_preamble,
@@ -436,14 +516,14 @@ impl QueryManager {
             &variable_registry,
             arced_parameters.clone(),
             &annotated_pipeline,
-            source_query,
+            &source_query,
         );
         let query_structure_annotations = QueryStructureAnnotations::build(
             snapshot.as_ref(),
             type_manager,
             &variable_registry,
             arced_parameters,
-            source_query,
+            &source_query,
             &annotated_pipeline,
             &query_structure,
         )
@@ -451,8 +531,11 @@ impl QueryManager {
             Box::new(QueryError::QueryAnalysisFailed { source_query: source_query.to_owned(), typedb_source: source })
         })?;
 
+        if profile.is_enabled() {
+            event!(Level::INFO, "Analyse query done.\n{}", profile);
+        }
         Ok(AnalysedQuery {
-            source: source_query.to_owned(),
+            source: source_query,
             structure: query_structure,
             annotations: query_structure_annotations,
         })
@@ -488,7 +571,7 @@ fn annotate_and_compile_query(
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
     function_manager: &FunctionManager,
-    compile_profile: &mut CompileIRProfile,
+    compile_profile: &mut CompileProfile,
     variable_registry: &mut VariableRegistry,
     arced_parameters: Arc<ParameterRegistry>,
     arced_preamble: Arc<Vec<Function>>,

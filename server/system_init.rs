@@ -9,6 +9,7 @@ use database::{
     Database,
     transaction::{CommitIntent, SchemaCommitIntent},
 };
+use query::query_manager::QueryContext;
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
@@ -86,7 +87,8 @@ pub fn get_system_database_schema_commit_intent(
                 })
                 .into_structure()
                 .into_schema();
-            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, &query, SCHEMA).unwrap_or_else(|error| {
+            let context = QueryContext::uninstrumented(SCHEMA.to_string());
+            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, context, &query).unwrap_or_else(|error| {
                 panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
             });
         });

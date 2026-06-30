@@ -36,7 +36,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{QueryManager, translate_pipeline},
+    query_manager::{QueryContext, QueryManager, TranslatedQuery, translate_pipeline},
 };
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
@@ -69,7 +69,14 @@ fn setup(
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, schema)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            QueryContext::uninstrumented(schema.to_string()),
+            &define,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -82,9 +89,8 @@ fn setup(
             &type_manager,
             thing_manager.clone(),
             Arc::default(),
-            translated,
+            TranslatedQuery::uninstrumented(data.to_string(), translated),
             None::<GivenRowsSimple>,
-            data,
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::query_manager::QueryManager;
+use query::query_manager::{QueryContext, QueryManager};
 use resource::profile::CommitProfile;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -30,7 +30,14 @@ fn basic() {
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, query_str)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            QueryContext::uninstrumented(query_str.to_string()),
+            &schema_query,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }

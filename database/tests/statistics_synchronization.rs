@@ -15,7 +15,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::given_rows::GivenRowsSimple;
+use query::{given_rows::GivenRowsSimple, query_manager::QueryContext};
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 
@@ -54,7 +54,7 @@ fn statistics_synchronization_under_concurrent_load() {
 
         let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-        let (tx, result) = execute_schema_query(tx, schema_query, SCHEMA.to_string());
+        let (tx, result) = execute_schema_query(tx, QueryContext::uninstrumented(SCHEMA.to_string()), schema_query);
         result.unwrap();
         let (mut profile, intent) = tx.finalise();
         intent.unwrap().commit(profile.commit_profile()).unwrap();
@@ -102,9 +102,9 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
+            QueryContext::uninstrumented(query_str),
             Arc::new(pipeline),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
