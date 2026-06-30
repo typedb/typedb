@@ -50,8 +50,11 @@ pub struct QueryCache {
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
+<<<<<<< Updated upstream
 /// The outcome of parsing a query string. Transient (never cached directly): a schema query is held
 /// by value, while a data pipeline is shared via `Arc` with the parse cache and the execution queue.
+=======
+>>>>>>> Stashed changes
 #[derive(Debug)]
 pub enum ParsedQuery {
     Schema(SchemaQuery),

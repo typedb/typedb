@@ -79,12 +79,16 @@ impl QueryManager {
         Self { cache }
     }
 
+<<<<<<< Updated upstream
     /// Step 1 of query conversion: parse the raw query string into a typeql AST, consulting the
     /// parse cache. Parsing is schema-independent and needs no transaction, so this can run even
     /// while a write holds the transaction.
     pub fn parse(&self, query: &str) -> Result<ParsedQuery, Box<QueryError>> {
         // The parse cache only holds data pipelines (schema queries are one-shot), so a hit is always
         // a pipeline; a schema query simply falls through and is parsed (cheaply) every time.
+=======
+    pub fn parse(&self, query: &str) -> Result<ParsedQuery, Box<QueryError>> {
+>>>>>>> Stashed changes
         if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(query)) {
             QUERY_PARSE_CACHE_HITS.increment();
             return Ok(ParsedQuery::Pipeline(pipeline));
@@ -104,9 +108,12 @@ impl QueryManager {
         }
     }
 
+<<<<<<< Updated upstream
     /// Step 2 of query conversion: translate a parsed data pipeline into IR, consulting the
     /// translation cache. Translation resolves user-defined function calls against the schema, so it
     /// needs a snapshot and is invalidated on schema commits.
+=======
+>>>>>>> Stashed changes
     pub fn translate(
         &self,
         query: &str,
@@ -138,7 +145,7 @@ impl QueryManager {
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match query {
+        let result = match &query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));

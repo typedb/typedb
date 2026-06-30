@@ -15,6 +15,7 @@ use options::TransactionOptions;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
 use tokio::task::spawn_blocking;
+use query::query_manager::QueryManager;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +70,10 @@ impl Transaction {
 
     pub fn database_name(&self) -> Arc<str> {
         with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
+    }
+
+    pub fn query_manager(&self) -> Arc<QueryManager> {
+        with_readable_transaction!(self, |transaction| { transaction.query_manager.clone() })
     }
 
     pub fn close(self) {
