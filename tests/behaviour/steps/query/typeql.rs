@@ -298,7 +298,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             &tx.type_manager,
             &tx.thing_manager,
             &tx.function_manager,
-            typeql_schema,
+            &typeql_schema,
             query,
         );
         if let Either::Right(_err) = may_error.check_logic(result) {

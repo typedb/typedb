@@ -86,7 +86,7 @@ pub fn get_system_database_schema_commit_intent(
                 })
                 .into_structure()
                 .into_schema();
-            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(|error| {
+            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, &query, SCHEMA).unwrap_or_else(|error| {
                 panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
             });
         });

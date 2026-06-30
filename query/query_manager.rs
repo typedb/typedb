@@ -133,12 +133,12 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-        query: SchemaQuery,
+        query: &SchemaQuery,
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match &query {
+        let result = match query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));

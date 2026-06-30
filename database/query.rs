@@ -62,7 +62,7 @@ pub fn execute_schema_query(
                 &type_manager,
                 &thing_manager,
                 &function_manager,
-                query,
+                &query,
                 &source_query,
             )
         }

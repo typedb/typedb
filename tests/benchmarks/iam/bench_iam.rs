@@ -49,7 +49,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &type_manager,
             &thing_manager,
             &function_manager,
-            schema_query,
+            &schema_query,
             &schema_str,
         )
         .unwrap();
