@@ -91,7 +91,7 @@ impl QueryManager {
         let parsed = typeql::parse_query(query)
             .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
         let parsed = match parsed.into_structure() {
-            QueryStructure::Schema(schema_query) => ParsedQuery::Schema(schema_query),
+            QueryStructure::Schema(schema_query) => ParsedQuery::Schema(Arc::new(schema_query)),
             QueryStructure::Pipeline(pipeline) => ParsedQuery::Pipeline(Arc::new(pipeline)),
         };
         if let Some(cache) = self.cache.as_ref() {
@@ -129,12 +129,12 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-        query: SchemaQuery,
+        query: Arc<SchemaQuery>,
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match &query {
+        let result = match query.as_ref() {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));

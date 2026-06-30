@@ -50,7 +50,9 @@ pub struct QueryCache {
 
 #[derive(Debug, Clone)]
 pub enum ParsedQuery {
-    Schema(SchemaQuery),
+    // Both variants are Arc-wrapped so the parse-cache value is cheap to clone on every get,
+    // without requiring the typeql AST itself to be Clone.
+    Schema(Arc<SchemaQuery>),
     Pipeline(Arc<Pipeline>),
 }
 

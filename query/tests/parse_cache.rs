@@ -49,7 +49,7 @@ fn setup() -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     QueryManager::new(None)
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, SCHEMA)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, Arc::new(define), SCHEMA)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
