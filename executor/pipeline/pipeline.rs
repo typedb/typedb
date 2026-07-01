@@ -101,6 +101,10 @@ where
     pub fn stages(&self) -> &[Nonterminals] {
         &self.stages
     }
+
+    pub fn named_outputs(&self) -> &HashMap<String, VariablePosition> {
+        &self.named_outputs
+    }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<Snapshot>> {
