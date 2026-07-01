@@ -14,7 +14,7 @@ use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerato
 use function::function_manager::FunctionManager;
 use query::{
     query_cache::QueryCache,
-    query_manager::{ParsedQuery, QueryContext, QueryManager},
+    query_manager::{ParsedQuery, ParsedSchemaQuery, QueryContext, QueryManager},
 };
 use resource::profile::CommitProfile;
 use storage::{
@@ -54,8 +54,7 @@ fn setup() -> Context {
             &type_manager,
             &thing_manager,
             &function_manager,
-            QueryContext::uninstrumented(SCHEMA.to_string()),
-            &define,
+            ParsedSchemaQuery::new(QueryContext::no_profile(SCHEMA.to_string()), define),
         )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -69,21 +68,12 @@ fn setup() -> Context {
 
 fn translate(context: &Context) {
     let snapshot = context.storage.clone().open_snapshot_read();
-    let ParsedQuery::Pipeline(_, pipeline) =
-        context.query_manager.parse(QueryContext::uninstrumented(QUERY.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(QUERY.to_string())).unwrap()
     else {
-        panic!("expected a data pipeline");
+        panic!("expected a data pipeline")
     };
-    context
-        .query_manager
-        .translate(
-            QueryContext::uninstrumented(QUERY.to_string()),
-            &pipeline,
-            &snapshot,
-            &context.function_manager,
-            &context.thing_manager,
-        )
-        .unwrap();
+    context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
 }
 
 #[test]
@@ -94,7 +84,7 @@ fn identical_query_string_hits_parse_cache() {
     assert!(context.cache.get_parsed(QUERY).is_none());
 
     assert!(matches!(
-        context.query_manager.parse(QueryContext::uninstrumented(QUERY.to_string())).unwrap(),
+        context.query_manager.parse(QueryContext::no_profile(QUERY.to_string())).unwrap(),
         ParsedQuery::Pipeline(..)
     ));
 

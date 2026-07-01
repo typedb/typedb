@@ -67,23 +67,23 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let ParsedQuery::Schema(context, schema_query) =
-        query_manager.parse(QueryContext::uninstrumented(schema.to_string())).unwrap()
+    let ParsedQuery::Schema(parsed) =
+        query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap()
     else {
         panic!("expected a schema query")
     };
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let ParsedQuery::Pipeline(context, pipeline) =
-        query_manager.parse(QueryContext::uninstrumented(data.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        query_manager.parse(QueryContext::no_profile(data.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
-    let translated = query_manager.translate(context, &pipeline, &snapshot, &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,

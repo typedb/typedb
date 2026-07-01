@@ -103,13 +103,13 @@ fn setup_common(schema: &str) -> Context {
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let ParsedQuery::Schema(context, schema_query) =
-        query_manager.parse(QueryContext::uninstrumented(schema.to_string())).unwrap()
+    let ParsedQuery::Schema(parsed) =
+        query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap()
     else {
         panic!("expected a schema query")
     };
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -124,14 +124,14 @@ fn run_read_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let ParsedQuery::Pipeline(parsed_context, pipeline) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &pipeline, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -167,14 +167,14 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let ParsedQuery::Pipeline(parsed_context, pipeline) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &pipeline, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager

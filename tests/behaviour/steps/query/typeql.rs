@@ -94,14 +94,13 @@ fn execute_read_query(
     source_query: &str,
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
-        let ParsedQuery::Pipeline(query_context, parsed_pipeline) =
-            tx.query_manager.parse(QueryContext::uninstrumented(source_query.to_string()))?
+        let ParsedQuery::Pipeline(parsed) =
+            tx.query_manager.parse(QueryContext::no_profile(source_query.to_string()))?
         else {
             panic!("expected a data pipeline")
         };
         let translated = tx.query_manager.translate(
-            query_context,
-            &parsed_pipeline,
+            parsed,
             tx.snapshot.as_ref(),
             &tx.function_manager,
             &tx.thing_manager,
@@ -167,15 +166,14 @@ fn execute_write_query(
                                            query_manager,
                                            _db,
                                            _opts| {
-        let translated_result = match query_manager.parse(QueryContext::uninstrumented(source_query.to_string())) {
+        let translated_result = match query_manager.parse(QueryContext::no_profile(source_query.to_string())) {
             Err(error) => Err(error),
             Ok(parsed) => {
-                let ParsedQuery::Pipeline(query_context, parsed_pipeline) = parsed else {
+                let ParsedQuery::Pipeline(parsed_pipeline) = parsed else {
                     panic!("expected a data pipeline")
                 };
                 query_manager.translate(
-                    query_context,
-                    &parsed_pipeline,
+                    parsed_pipeline,
                     snapshot.as_ref(),
                     &function_manager,
                     &thing_manager,
@@ -265,16 +263,15 @@ fn execute_analyze(
     source_query: &str,
 ) -> Result<AnalysedQuery, BehaviourTestExecutionError> {
     with_read_tx!(context, |tx| {
-        let ParsedQuery::Pipeline(query_context, parsed_pipeline) =
+        let ParsedQuery::Pipeline(parsed) =
             tx.query_manager
-                .parse(QueryContext::uninstrumented(source_query.to_string()))
+                .parse(QueryContext::no_profile(source_query.to_string()))
                 .map_err(|source| BehaviourTestExecutionError::Query(*source))?
         else {
             panic!("expected a data pipeline")
         };
         let translated = match tx.query_manager.translate(
-            query_context,
-            &parsed_pipeline,
+            parsed,
             tx.snapshot.as_ref(),
             &tx.function_manager,
             &tx.thing_manager,
@@ -322,8 +319,8 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
 
     with_schema_tx!(context, |tx| {
-        let ParsedQuery::Schema(schema_context, schema_query) =
-            tx.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+        let ParsedQuery::Schema(parsed) =
+            tx.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
         else {
             panic!("expected a schema query")
         };
@@ -332,8 +329,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             &tx.type_manager,
             &tx.thing_manager,
             &tx.function_manager,
-            schema_context,
-            &schema_query,
+            parsed,
         );
         if let Either::Right(_err) = may_error.check_logic(result) {
             context.close_active_transaction();

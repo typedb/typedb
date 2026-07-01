@@ -43,13 +43,13 @@ fn define_schema(
                     owns nickname @card(0..1),
                     plays friendship:friend @card(0..);
     "#;
-    let ParsedQuery::Schema(context, schema_query) =
-        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Schema(parsed) =
+        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a schema query")
     };
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, context, &schema_query)
+        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -63,12 +63,12 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let ParsedQuery::Pipeline(context, pipeline) =
-        query_manager.parse(QueryContext::uninstrumented(query_string.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        query_manager.parse(QueryContext::no_profile(query_string.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
-    let translated = query_manager.translate(context, &pipeline, &snapshot, &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -190,14 +190,14 @@ fn query_profile_tree_structure() {
         limit 10;
     "#;
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let ParsedQuery::Pipeline(context, pipeline) =
-        query_manager.parse(QueryContext::instrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        query_manager.parse(QueryContext::with_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated =
-        query_manager.translate(context, &pipeline, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+        query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot,

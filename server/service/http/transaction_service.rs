@@ -36,7 +36,7 @@ use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
 use query::{
     error::QueryError,
-    query_manager::{ParsedQuery, QueryContext, QueryManager},
+    query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryContext, QueryManager},
 };
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -51,7 +51,6 @@ use tokio::{
     time::Instant,
 };
 use tracing::{Level, event};
-use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
 
 use crate::{
     service::{
@@ -162,8 +161,7 @@ pub(crate) struct TransactionService {
     // Cloned from the transaction at open so queries can be parsed (step 1, no transaction needed)
     // even while an in-flight write has taken the transaction. Shares the transaction's QueryCache.
     query_manager: Option<QueryManager>,
-    query_queue:
-        VecDeque<(TransactionResponder, QueueOptions, QueryContext, Arc<TypeQLPipeline>, Option<GivenRowsHttp>)>,
+    query_queue: VecDeque<(TransactionResponder, QueueOptions, ParsedPipeline, Option<GivenRowsHttp>)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
     close_sender: Sender<()>,
@@ -519,11 +517,9 @@ impl TransactionService {
 
     async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (responder, query_options, context, pipeline, given_rows) in
-            self.query_queue.drain(0..self.query_queue.len())
-        {
-            if query_options.is_query() && is_write_pipeline(&pipeline) {
-                write_queries.push_back((responder, query_options, context, pipeline, given_rows));
+        for (responder, query_options, parsed, given_rows) in self.query_queue.drain(0..self.query_queue.len()) {
+            if query_options.is_query() && is_write_pipeline(parsed.pipeline()) {
+                write_queries.push_back((responder, query_options, parsed, given_rows));
             } else {
                 respond_else_return_break!(
                     responder,
@@ -568,14 +564,14 @@ impl TransactionService {
 
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (responder, options, context, pipeline, given_rows) in self.query_queue.drain(0..self.query_queue.len()) {
-            if options.is_query() && is_write_pipeline(&pipeline) {
+        for (responder, options, parsed, given_rows) in self.query_queue.drain(0..self.query_queue.len()) {
+            if options.is_query() && is_write_pipeline(parsed.pipeline()) {
                 respond_else_return_break!(
                     responder,
                     TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
                 );
             } else {
-                read_queries.push_back((responder, options, context, pipeline, given_rows));
+                read_queries.push_back((responder, options, parsed, given_rows));
             }
         }
         self.query_queue = read_queries;
@@ -585,19 +581,17 @@ impl TransactionService {
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         self.finish_running_write_query_no_transmit(interrupt).await?;
         let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
-        for (responder, options, context, pipeline, given_rows) in requests.into_iter() {
-            if options.is_query() && is_write_pipeline(&pipeline) {
+        for (responder, options, parsed, given_rows) in requests.into_iter() {
+            if options.is_query() && is_write_pipeline(parsed.pipeline()) {
                 let QueueOptions::Query(query_options) = options else { unreachable!() };
-                if let Break(()) =
-                    self.run_write_query(responder, query_options, context, pipeline, given_rows).await
-                {
+                if let Break(()) = self.run_write_query(responder, query_options, parsed, given_rows).await {
                     return Break(());
                 }
                 if let Break(()) = self.finish_running_write_query_no_transmit(interrupt).await {
                     return Break(());
                 }
             } else {
-                self.query_queue.push_back((responder, options, context, pipeline, given_rows));
+                self.query_queue.push_back((responder, options, parsed, given_rows));
             }
         }
         Continue(())
@@ -607,24 +601,23 @@ impl TransactionService {
         debug_assert!(self.running_write_query.is_none());
 
         // unblock requests until the first write request, which we begin executing if it exists
-        while let Some((responder, queue_options, context, pipeline, given_rows)) = self.query_queue.pop_front() {
-            let is_write = is_write_pipeline(&pipeline);
+        while let Some((responder, queue_options, parsed, given_rows)) = self.query_queue.pop_front() {
+            let is_write = is_write_pipeline(parsed.pipeline());
             match (queue_options, is_write) {
                 (QueueOptions::Analyze, _) => {
                     debug_assert!(given_rows.is_none());
-                    if let Break(()) = self.run_analyse_query(responder, context, pipeline).await {
+                    if let Break(()) = self.run_analyse_query(responder, parsed).await {
                         return Break(());
                     }
                 }
                 (QueueOptions::Query(query_options), true) => {
-                    return self.run_write_query(responder, query_options, context, pipeline, given_rows).await;
+                    return self.run_write_query(responder, query_options, parsed, given_rows).await;
                 }
                 (QueueOptions::Query(query_options), false) => {
                     self.blocking_read_query_worker(
                         responder,
                         query_options,
-                        context,
-                        pipeline,
+                        parsed,
                         given_rows,
                         StorageCounters::DISABLED,
                     )
@@ -647,12 +640,12 @@ impl TransactionService {
             m.record_query();
         }
 
-        let context = QueryContext::instrumented(query);
-        let (context, pipeline) = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
-            Ok(ParsedQuery::Pipeline(context, pipeline)) => (context, pipeline),
-            Ok(ParsedQuery::Schema(context, schema_query)) => {
+        let context = QueryContext::with_profile(query);
+        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
+            Ok(ParsedQuery::Pipeline(parsed)) => parsed,
+            Ok(ParsedQuery::Schema(parsed)) => {
                 // schema queries are handled immediately so there is a query response or a fatal error
-                return match self.handle_query_schema(context, schema_query).await {
+                return match self.handle_query_schema(parsed).await {
                     Ok(response) => {
                         respond_else_return_break!(responder, response);
                         Continue(())
@@ -670,17 +663,16 @@ impl TransactionService {
         };
 
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-            self.query_queue.push_back((responder, QueueOptions::Query(query_options), context, pipeline, given_rows));
+            self.query_queue.push_back((responder, QueueOptions::Query(query_options), parsed, given_rows));
             // queued queries are not handled yet so there will be no query response yet
             Continue(())
-        } else if is_write_pipeline(&pipeline) {
-            self.run_write_query(responder, query_options, context, pipeline, given_rows).await
+        } else if is_write_pipeline(parsed.pipeline()) {
+            self.run_write_query(responder, query_options, parsed, given_rows).await
         } else {
             self.blocking_read_query_worker(
                 responder,
                 query_options,
-                context,
-                pipeline,
+                parsed,
                 given_rows,
                 StorageCounters::DISABLED,
             )
@@ -691,8 +683,7 @@ impl TransactionService {
 
     async fn handle_query_schema(
         &mut self,
-        context: QueryContext,
-        query: SchemaQuery,
+        parsed: ParsedSchemaQuery,
     ) -> Result<TransactionServiceResponse, TransactionServiceError> {
         self.interrupt(InterruptType::SchemaQueryExecution).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await {
@@ -710,7 +701,7 @@ impl TransactionService {
                         schema_transaction.database.name_arc(),
                     );
                     let (transaction, result) =
-                        spawn_blocking(move || execute_schema_query(schema_transaction, context, query))
+                        spawn_blocking(move || execute_schema_query(schema_transaction, parsed))
                             .await
                             .expect("Expected schema query execution finishing");
                     schema_metrics.observe_finished();
@@ -735,13 +726,12 @@ impl TransactionService {
         &mut self,
         responder: TransactionResponder,
         query_options: QueryOptions,
-        context: QueryContext,
-        pipeline: Arc<TypeQLPipeline>,
+        parsed: ParsedPipeline,
         given_rows: Option<GivenRowsHttp>,
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
         self.interrupt(InterruptType::WriteQueryExecution).await;
-        match self.spawn_blocking_execute_write_query(query_options, context, pipeline, given_rows) {
+        match self.spawn_blocking_execute_write_query(query_options, parsed, given_rows) {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
                 self.running_write_query = Some((responder, tokio::spawn(async move { handle.await.unwrap() })));
@@ -812,8 +802,7 @@ impl TransactionService {
     fn spawn_blocking_execute_write_query(
         &mut self,
         query_options: QueryOptions,
-        context: QueryContext,
-        pipeline: Arc<TypeQLPipeline>,
+        parsed: ParsedPipeline,
         given_rows: Option<GivenRowsHttp>,
     ) -> Result<JoinHandle<(Transaction, WriteQueryResult)>, TransactionServiceError> {
         debug_assert!(self.running_write_query.is_none());
@@ -821,25 +810,13 @@ impl TransactionService {
         let interrupt = self.query_interrupt_receiver.clone();
         match self.transaction.take() {
             Some(Transaction::Schema(schema_transaction)) => Ok(spawn_blocking(move || {
-                let (transaction, result) = execute_write_query_in_schema(
-                    schema_transaction,
-                    query_options,
-                    context,
-                    pipeline,
-                    given_rows,
-                    interrupt,
-                );
+                let (transaction, result) =
+                    execute_write_query_in_schema(schema_transaction, query_options, parsed, given_rows, interrupt);
                 (Transaction::Schema(transaction), result)
             })),
             Some(Transaction::Write(write_transaction)) => Ok(spawn_blocking(move || {
-                let (transaction, result) = execute_write_query_in_write(
-                    write_transaction,
-                    query_options,
-                    context,
-                    pipeline,
-                    given_rows,
-                    interrupt,
-                );
+                let (transaction, result) =
+                    execute_write_query_in_write(write_transaction, query_options, parsed, given_rows, interrupt);
                 (Transaction::Write(transaction), result)
             })),
             Some(Transaction::Read(transaction)) => {
@@ -974,8 +951,7 @@ impl TransactionService {
         &self,
         responder: TransactionResponder,
         query_options: QueryOptions,
-        context: QueryContext,
-        pipeline: Arc<TypeQLPipeline>,
+        parsed: ParsedPipeline,
         given_rows: Option<GivenRowsHttp>,
         storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {
@@ -992,15 +968,10 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
-                // Keep the source query for execution-error messages; the context is consumed by translate.
-                let source_query = context.source_query().to_owned();
-                let translated = match query_manager.translate(
-                    context,
-                    &pipeline,
-                    snapshot.as_ref(),
-                    &function_manager,
-                    &thing_manager,
-                ) {
+                // Keep the source query for execution-error messages; the parsed pipeline is consumed by translate.
+                let source_query = parsed.source_query().to_owned();
+                let translated = match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
+                {
                     Ok(translated) => translated,
                     Err(typedb_source) => {
                         respond_else_return_break!(
@@ -1201,9 +1172,9 @@ impl TransactionService {
     }
 
     async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        let context = QueryContext::instrumented(query);
-        let (context, pipeline) = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
-            Ok(ParsedQuery::Pipeline(context, pipeline)) => (context, pipeline),
+        let context = QueryContext::with_profile(query);
+        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
+            Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(..)) => {
                 respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});
             }
@@ -1217,19 +1188,14 @@ impl TransactionService {
         };
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
             // queued queries are not handled yet so there will be no query response yet
-            self.query_queue.push_back((responder, QueueOptions::Analyze, context, pipeline, None));
+            self.query_queue.push_back((responder, QueueOptions::Analyze, parsed, None));
             Continue(())
         } else {
-            self.run_analyse_query(responder, context, pipeline).await
+            self.run_analyse_query(responder, parsed).await
         }
     }
 
-    async fn run_analyse_query(
-        &mut self,
-        responder: TransactionResponder,
-        context: QueryContext,
-        pipeline: Arc<TypeQLPipeline>,
-    ) -> ControlFlow<(), ()> {
+    async fn run_analyse_query(&mut self, responder: TransactionResponder, parsed: ParsedPipeline) -> ControlFlow<(), ()> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
@@ -1238,15 +1204,10 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
-                // Keep the source query for the analysis-error message; the context is consumed by translate.
-                let source_query = context.source_query().to_owned();
-                let translated = match query_manager.translate(
-                    context,
-                    &pipeline,
-                    snapshot.as_ref(),
-                    &function_manager,
-                    &thing_manager,
-                ) {
+                // Keep the source query for the analysis-error message; the parsed pipeline is consumed by translate.
+                let source_query = parsed.source_query().to_owned();
+                let translated = match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
+                {
                     Ok(translated) => translated,
                     Err(typedb_source) => {
                         respond_else_return_break!(
