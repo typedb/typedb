@@ -32,7 +32,7 @@ use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryManager, TranslatedQuery, translate_pipeline},
+    query_manager::{ParsedQuery, QueryContext, QueryManager},
 };
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
@@ -126,17 +126,22 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_manager: QueryManager,
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
-    let typeql_insert = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
 
-    let translated = translate_pipeline(&snapshot, &function_manager, &typeql_insert, query_str).unwrap();
+    let ParsedQuery::Pipeline(context, typeql_insert) =
+        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated =
+        query_manager.translate(context, &typeql_insert, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .map_err(|(snapshot, err)| (err, snapshot))?;

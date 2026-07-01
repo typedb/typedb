@@ -28,7 +28,7 @@ use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{QueryContext, TranslatedQuery, translate_pipeline},
+    query_manager::{ParsedQuery, QueryContext},
 };
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
@@ -311,15 +311,20 @@ fn execute_relation_batch(
 fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
-    let translated = translate_pipeline(snapshot.as_ref(), function_manager, &query, query_str).unwrap();
+    let ParsedQuery::Pipeline(context, query) =
+        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated =
+        query_manager.translate(context, &query, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();
