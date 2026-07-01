@@ -134,7 +134,7 @@ pub mod query_util {
     use query::{
         error::QueryError,
         given_rows::GivenRowsSimple,
-        query_manager::{QueryManager, TranslatedQuery, translate_pipeline},
+        query_manager::{QueryContext, QueryManager},
     };
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
@@ -146,7 +146,13 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
-        let translated = match translate_pipeline(tx.snapshot.as_ref(), &tx.function_manager, &pipeline, source_query) {
+        let translated = match tx.query_manager.translate(
+            QueryContext::uninstrumented(source_query.to_owned()),
+            &pipeline,
+            tx.snapshot.as_ref(),
+            &tx.function_manager,
+            &tx.thing_manager,
+        ) {
             Ok(translated) => translated,
             Err(err) => return (tx, Err(err)),
         };
@@ -155,7 +161,7 @@ pub mod query_util {
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            TranslatedQuery::uninstrumented(source_query.to_owned(), translated),
+            translated,
             None::<GivenRowsSimple>,
         ) {
             Ok(pipeline) => pipeline,
@@ -198,7 +204,13 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
-        let translated = match translate_pipeline(&snapshot, &function_manager, &pipeline, source_query) {
+        let translated = match query_manager.translate(
+            QueryContext::uninstrumented(source_query.to_owned()),
+            &pipeline,
+            &snapshot,
+            &function_manager,
+            &thing_manager,
+        ) {
             Ok(translated) => translated,
             Err(err) => return (Err(err), Arc::new(snapshot)),
         };
@@ -207,7 +219,7 @@ pub mod query_util {
             type_manager,
             thing_manager,
             function_manager,
-            TranslatedQuery::uninstrumented(source_query.to_owned(), translated),
+            translated,
             None::<GivenRowsSimple>,
         ) {
             Ok(pipeline) => pipeline,

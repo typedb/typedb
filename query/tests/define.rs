@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::query_manager::{QueryContext, QueryManager};
+use query::query_manager::{ParsedQuery, QueryContext, QueryManager};
 use resource::profile::CommitProfile;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -28,16 +28,13 @@ fn basic() {
     attribute name value string;
     entity person owns name;
     "#;
-    let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
+    let ParsedQuery::Schema(context, schema_query) =
+        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    else {
+        panic!("expected a schema query")
+    };
     query_manager
-        .execute_schema(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            &function_manager,
-            QueryContext::uninstrumented(query_str.to_string()),
-            &schema_query,
-        )
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }

@@ -18,7 +18,7 @@ use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
-use query::query_manager::QueryContext;
+use query::query_manager::{ParsedQuery, QueryContext};
 use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
@@ -202,6 +202,13 @@ fn execute_schema_transaction(
     let mut transaction = TransactionSchema::open(reimport, TransactionOptions::default())
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     let schema_define = format!("define\n{}", types_syntax);
+    let ParsedQuery::Schema(context, schema_query) = transaction
+        .query_manager
+        .parse(QueryContext::uninstrumented(schema_define.clone()))
+        .map_err(|err| err as Box<dyn TypeDBError>)?
+    else {
+        panic!("expected a schema query")
+    };
     transaction
         .query_manager
         .execute_schema(
@@ -209,13 +216,10 @@ fn execute_schema_transaction(
             &transaction.type_manager,
             &transaction.thing_manager,
             &transaction.function_manager,
-            QueryContext::uninstrumented(schema_define.clone()),
-            &typeql::parse_query(&schema_define)
-                .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?
-                .into_structure()
-                .into_schema(),
+            context,
+            &schema_query,
         )
-        .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+        .map_err(|err| err as Box<dyn TypeDBError>)?;
     let (mut profile, result) = transaction.finalise();
     result
         .and_then(|intent| intent.commit(profile.commit_profile()))

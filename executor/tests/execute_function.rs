@@ -21,7 +21,7 @@ use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryContext, QueryManager, TranslatedQuery, translate_pipeline},
+    query_manager::{ParsedQuery, QueryContext, QueryManager},
 };
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -103,16 +103,13 @@ fn setup_common(schema: &str) -> Context {
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+    let ParsedQuery::Schema(context, schema_query) =
+        query_manager.parse(QueryContext::uninstrumented(schema.to_string())).unwrap()
+    else {
+        panic!("expected a schema query")
+    };
     query_manager
-        .execute_schema(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            &function_manager,
-            QueryContext::uninstrumented(schema.to_string()),
-            &define,
-        )
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -127,8 +124,15 @@ fn run_read_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
-    let translated = translate_pipeline(snapshot.as_ref(), &context.function_manager, &match_, query).unwrap();
+    let ParsedQuery::Pipeline(parsed_context, pipeline) =
+        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated = context
+        .query_manager
+        .translate(parsed_context, &pipeline, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -136,7 +140,7 @@ fn run_read_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            TranslatedQuery::uninstrumented(query.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();
@@ -163,8 +167,15 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let query_as_pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
-    let translated = translate_pipeline(&snapshot, &context.function_manager, &query_as_pipeline, query).unwrap();
+    let ParsedQuery::Pipeline(parsed_context, pipeline) =
+        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated = context
+        .query_manager
+        .translate(parsed_context, &pipeline, &snapshot, &context.function_manager, &context.thing_manager)
+        .unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -172,7 +183,7 @@ fn run_write_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            TranslatedQuery::uninstrumented(query.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();

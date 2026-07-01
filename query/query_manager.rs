@@ -114,25 +114,13 @@ pub enum ParsedQuery {
     Pipeline(QueryContext, Arc<typeql::query::Pipeline>),
 }
 
-/// A translated data pipeline, carrying the context it evolved from.
+/// A translated data pipeline, carrying the context it evolved from. Obtainable only from
+/// [`QueryManager::translate`] and consumed by the `prepare_*`/`analyse` methods, so that the whole
+/// parse -> translate -> compile flow always runs through the manager.
 #[derive(Debug)]
 pub struct TranslatedQuery {
     context: QueryContext,
     pipeline: TranslatedPipeline,
-}
-
-impl TranslatedQuery {
-    /// Bundle an already-translated pipeline with an uninstrumented context, for callers that
-    /// translate via `translate_pipeline` directly and then prepare (e.g. tests).
-    pub fn uninstrumented(source_query: String, pipeline: TranslatedPipeline) -> Self {
-        Self { context: QueryContext::uninstrumented(source_query), pipeline }
-    }
-
-    /// As [`Self::uninstrumented`], but the context's profile follows TRACE-level tracing (e.g. for
-    /// tests that assert on the profile).
-    pub fn instrumented(source_query: String, pipeline: TranslatedPipeline) -> Self {
-        Self { context: QueryContext::instrumented(source_query), pipeline }
-    }
 }
 
 impl QueryManager {
@@ -542,7 +530,7 @@ impl QueryManager {
     }
 }
 
-pub fn translate_pipeline<Snapshot: ReadableSnapshot>(
+fn translate_pipeline<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     function_manager: &FunctionManager,
     query: &typeql::query::Pipeline,

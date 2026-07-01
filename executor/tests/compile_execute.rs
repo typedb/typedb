@@ -36,7 +36,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{QueryContext, QueryManager, TranslatedQuery, translate_pipeline},
+    query_manager::{ParsedQuery, QueryContext, QueryManager},
 };
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
@@ -67,29 +67,30 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+    let ParsedQuery::Schema(context, schema_query) =
+        query_manager.parse(QueryContext::uninstrumented(schema.to_string())).unwrap()
+    else {
+        panic!("expected a schema query")
+    };
     query_manager
-        .execute_schema(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            &function_manager,
-            QueryContext::uninstrumented(schema.to_string()),
-            &define,
-        )
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let query = typeql::parse_query(data).unwrap().into_structure().into_pipeline();
-    let translated = translate_pipeline(&snapshot, &function_manager, &query, data).unwrap();
+    let ParsedQuery::Pipeline(context, pipeline) =
+        query_manager.parse(QueryContext::uninstrumented(data.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated = query_manager.translate(context, &pipeline, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
             thing_manager.clone(),
             Arc::default(),
-            TranslatedQuery::uninstrumented(data.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();

@@ -16,7 +16,7 @@ use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator}
 use options::{TransactionOptions, byte_size::ByteSize};
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{QueryContext, TranslatedQuery, translate_pipeline},
+    query_manager::{ParsedQuery, QueryContext},
 };
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
@@ -31,7 +31,6 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let mut contents = Vec::new();
     File::open(schema_tql).unwrap().read_to_end(&mut contents).unwrap();
     let schema_str = String::from_utf8(contents).unwrap();
-    let schema_query = typeql::parse_query(schema_str.as_str()).unwrap().into_structure().into_schema();
 
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionSchema {
@@ -44,6 +43,11 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
+    let ParsedQuery::Schema(context, schema_query) =
+        query_manager.parse(QueryContext::uninstrumented(schema_str)).unwrap()
+    else {
+        panic!("expected a schema query")
+    };
     let mut inner_snapshot =
         Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
     query_manager
@@ -52,7 +56,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &type_manager,
             &thing_manager,
             &function_manager,
-            QueryContext::uninstrumented(schema_str),
+            context,
             &schema_query,
         )
         .unwrap();
@@ -75,7 +79,6 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
 
     File::open(data_tql).unwrap().read_to_end(&mut contents).unwrap();
     let data_str = String::from_utf8(contents).unwrap();
-    let data_query = typeql::parse_query(data_str.as_str()).unwrap().into_structure().into_pipeline();
     let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionWrite {
         snapshot,
@@ -87,14 +90,20 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
-    let translated = translate_pipeline(snapshot.as_ref(), &function_manager, &data_query, &data_str).unwrap();
+    let ParsedQuery::Pipeline(context, data_query) =
+        query_manager.parse(QueryContext::uninstrumented(data_str)).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated =
+        query_manager.translate(context, &data_query, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let write_pipeline = query_manager
         .prepare_write_pipeline(
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            TranslatedQuery::uninstrumented(data_str, translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();
@@ -148,15 +157,20 @@ fn setup() -> Arc<Database<WALClient>> {
 fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
-    let translated = translate_pipeline(snapshot.as_ref(), function_manager, &query, query_str).unwrap();
+    let ParsedQuery::Pipeline(context, query) =
+        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated =
+        query_manager.translate(context, &query, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();

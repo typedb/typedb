@@ -13,7 +13,7 @@ use function::function_manager::FunctionManager;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{QueryContext, QueryManager, TranslatedQuery, translate_pipeline},
+    query_manager::{ParsedQuery, QueryContext, QueryManager},
 };
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -36,16 +36,13 @@ fn define_schema(
       relation friendship relates friend @card(0..);
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
-    let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
+    let ParsedQuery::Schema(context, schema_query) =
+        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    else {
+        panic!("expected a schema query")
+    };
     query_manager
-        .execute_schema(
-            &mut snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            QueryContext::uninstrumented(query_str.to_string()),
-            &schema_query,
-        )
+        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, context, &schema_query)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -59,15 +56,19 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let query = typeql::parse_query(query_string).unwrap().into_structure().into_pipeline();
-    let translated = translate_pipeline(&snapshot, &function_manager, &query, query_string).unwrap();
+    let ParsedQuery::Pipeline(context, pipeline) =
+        query_manager.parse(QueryContext::uninstrumented(query_string.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
+    let translated = query_manager.translate(context, &pipeline, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            TranslatedQuery::uninstrumented(query_string.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();
@@ -135,18 +136,22 @@ fetch {
 #    "list attributes": $x.name[], # TODO: Uncomment when it's implemented
     "all attributes": { $x.* }
 };"#;
-    let query = typeql::parse_query(query_str).unwrap();
-
-    let pipeline = query.into_structure().into_pipeline();
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
+    let ParsedQuery::Pipeline(context, pipeline) =
+        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    else {
+        panic!("expected a data pipeline")
+    };
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let translated = translate_pipeline(snapshot.as_ref(), &function_manager, &pipeline, query_str).unwrap();
-    let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new())))
+    let translated =
+        query_manager.translate(context, &pipeline, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+    let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
             &type_manager,
             thing_manager.clone(),
             function_manager,
-            TranslatedQuery::uninstrumented(query_str.to_string(), translated),
+            translated,
             None::<GivenRowsSimple>,
         )
         .unwrap();
