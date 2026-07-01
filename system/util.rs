@@ -134,7 +134,7 @@ pub mod query_util {
     use query::{
         error::QueryError,
         given_rows::GivenRowsSimple,
-        query_manager::{QueryContext, QueryManager},
+        query_manager::{ParsedPipeline, QueryContext, QueryManager},
     };
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
@@ -146,16 +146,12 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
-        let translated = match tx.query_manager.translate(
-            QueryContext::uninstrumented(source_query.to_owned()),
-            &pipeline,
-            tx.snapshot.as_ref(),
-            &tx.function_manager,
-            &tx.thing_manager,
-        ) {
-            Ok(translated) => translated,
-            Err(err) => return (tx, Err(err)),
-        };
+        let parsed = ParsedPipeline::new(QueryContext::no_profile(source_query.to_owned()), Arc::new(pipeline));
+        let translated =
+            match tx.query_manager.translate(parsed, tx.snapshot.as_ref(), &tx.function_manager, &tx.thing_manager) {
+                Ok(translated) => translated,
+                Err(err) => return (tx, Err(err)),
+            };
         let prepared_pipeline = match tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
@@ -204,13 +200,8 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
-        let translated = match query_manager.translate(
-            QueryContext::uninstrumented(source_query.to_owned()),
-            &pipeline,
-            &snapshot,
-            &function_manager,
-            &thing_manager,
-        ) {
+        let parsed = ParsedPipeline::new(QueryContext::no_profile(source_query.to_owned()), Arc::new(pipeline));
+        let translated = match query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager) {
             Ok(translated) => translated,
             Err(err) => return (Err(err), Arc::new(snapshot)),
         };

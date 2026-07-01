@@ -42,13 +42,13 @@ fn setup() -> (
 
     let schema = "define entity person;";
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let ParsedQuery::Schema(context, schema_query) =
-        query_manager.parse(QueryContext::uninstrumented(schema.to_string())).unwrap()
+    let ParsedQuery::Schema(parsed) =
+        query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap()
     else {
         panic!("expected a schema query")
     };
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -61,16 +61,16 @@ fn pipeline_at_limit_is_accepted() {
     let (_tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager) = setup();
 
     let query_str = build_pipeline_query(MAX_PIPELINE_STAGES);
-    let ParsedQuery::Pipeline(context, pipeline) =
-        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
-    assert_eq!(pipeline.stages.len(), MAX_PIPELINE_STAGES);
+    assert_eq!(parsed.pipeline().stages.len(), MAX_PIPELINE_STAGES);
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated = query_manager
-        .translate(context, &pipeline, snapshot.as_ref(), &function_manager, &thing_manager)
+        .translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
         .expect("pipeline at the stage limit should translate");
     let result = query_manager.prepare_read_pipeline(
         snapshot,
@@ -90,15 +90,15 @@ fn pipeline_over_limit_is_rejected() {
 
     let over = MAX_PIPELINE_STAGES + 1;
     let query_str = build_pipeline_query(over);
-    let ParsedQuery::Pipeline(context, pipeline) =
-        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
-    assert_eq!(pipeline.stages.len(), over);
+    assert_eq!(parsed.pipeline().stages.len(), over);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let result = query_manager.translate(context, &pipeline, &snapshot, &function_manager, &thing_manager);
+    let result = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager);
     let err = match result {
         Ok(_) => panic!("query with too many stages should fail"),
         Err(err) => err,

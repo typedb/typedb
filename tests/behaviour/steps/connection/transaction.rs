@@ -202,9 +202,9 @@ fn execute_schema_transaction(
     let mut transaction = TransactionSchema::open(reimport, TransactionOptions::default())
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     let schema_define = format!("define\n{}", types_syntax);
-    let ParsedQuery::Schema(context, schema_query) = transaction
+    let ParsedQuery::Schema(parsed) = transaction
         .query_manager
-        .parse(QueryContext::uninstrumented(schema_define.clone()))
+        .parse(QueryContext::no_profile(schema_define.clone()))
         .map_err(|err| err as Box<dyn TypeDBError>)?
     else {
         panic!("expected a schema query")
@@ -216,8 +216,7 @@ fn execute_schema_transaction(
             &transaction.type_manager,
             &transaction.thing_manager,
             &transaction.function_manager,
-            context,
-            &schema_query,
+            parsed,
         )
         .map_err(|err| err as Box<dyn TypeDBError>)?;
     let (mut profile, result) = transaction.finalise();

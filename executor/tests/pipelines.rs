@@ -58,13 +58,13 @@ fn setup_common() -> Context {
         relation membership relates member, relates group;
     "#;
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let ParsedQuery::Schema(context, schema_query) =
-        query_manager.parse(QueryContext::uninstrumented(schema.to_string())).unwrap()
+    let ParsedQuery::Schema(parsed) =
+        query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap()
     else {
         panic!("expected a schema query")
     };
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, context, &schema_query)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -79,14 +79,14 @@ fn test_insert() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
-    let ParsedQuery::Pipeline(parsed_context, query) =
-        context.query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -128,14 +128,14 @@ fn test_insert_insert() {
     insert
         (group: $org, member: $p) isa membership;
     "#;
-    let ParsedQuery::Pipeline(parsed_context, query) =
-        context.query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -173,14 +173,14 @@ fn test_match() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let ParsedQuery::Pipeline(parsed_context, query) =
-        context.query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -202,14 +202,14 @@ fn test_match() {
 
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
-    let ParsedQuery::Pipeline(parsed_context, match_) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -228,14 +228,14 @@ fn test_match() {
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
-    let ParsedQuery::Pipeline(parsed_context, match_) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -264,14 +264,14 @@ fn test_match_match() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let ParsedQuery::Pipeline(parsed_context, query) =
-        context.query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -296,14 +296,14 @@ fn test_match_match() {
         match $p isa person;
         match $p has age $a;
     ";
-    let ParsedQuery::Pipeline(parsed_context, match_) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -322,14 +322,14 @@ fn test_match_match() {
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
-    let ParsedQuery::Pipeline(parsed_context, match_) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -353,14 +353,14 @@ fn test_match_delete_has() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
-    let ParsedQuery::Pipeline(parsed_context, insert_query) =
-        context.query_manager.parse(QueryContext::uninstrumented(insert_query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &insert_query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -398,14 +398,14 @@ fn test_match_delete_has() {
         delete has $a of $p;
     "#;
 
-    let ParsedQuery::Pipeline(parsed_context, delete_query) =
-        context.query_manager.parse(QueryContext::uninstrumented(delete_query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(delete_query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &delete_query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -448,14 +448,14 @@ fn test_insert_match_insert() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let ParsedQuery::Pipeline(parsed_context, query) =
-        context.query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -485,14 +485,14 @@ fn test_insert_match_insert() {
         (group: $org, member: $p) isa membership;
     "#;
 
-    let ParsedQuery::Pipeline(parsed_context, query) =
-        context.query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -525,14 +525,14 @@ fn test_match_sort() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 1, has age 2, has age 3, has age 4;";
-    let ParsedQuery::Pipeline(parsed_context, insert_query) =
-        context.query_manager.parse(QueryContext::uninstrumented(insert_query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &insert_query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -555,14 +555,14 @@ fn test_match_sort() {
 
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $age isa age; sort $age desc;";
-    let ParsedQuery::Pipeline(parsed_context, match_) =
-        context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -604,14 +604,14 @@ fn test_select() {
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
-    let ParsedQuery::Pipeline(parsed_context, insert_query) =
-        context.query_manager.parse(QueryContext::uninstrumented(insert_query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &insert_query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -635,14 +635,14 @@ fn test_select() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age;";
-        let ParsedQuery::Pipeline(parsed_context, match_) =
-            context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+        let ParsedQuery::Pipeline(parsed) =
+            context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
         else {
             panic!("expected a data pipeline")
         };
         let translated = context
             .query_manager
-            .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -662,14 +662,14 @@ fn test_select() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
-        let ParsedQuery::Pipeline(parsed_context, match_) =
-            context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+        let ParsedQuery::Pipeline(parsed) =
+            context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
         else {
             panic!("expected a data pipeline")
         };
         let translated = context
             .query_manager
-            .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -695,14 +695,14 @@ fn test_require() {
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
-    let ParsedQuery::Pipeline(parsed_context, insert_query) =
-        context.query_manager.parse(QueryContext::uninstrumented(insert_query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated = context
         .query_manager
-        .translate(parsed_context, &insert_query, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -726,14 +726,14 @@ fn test_require() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; require $age;";
-        let ParsedQuery::Pipeline(parsed_context, match_) =
-            context.query_manager.parse(QueryContext::uninstrumented(query.to_string())).unwrap()
+        let ParsedQuery::Pipeline(parsed) =
+            context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap()
         else {
             panic!("expected a data pipeline")
         };
         let translated = context
             .query_manager
-            .translate(parsed_context, &match_, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager

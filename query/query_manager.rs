@@ -90,13 +90,13 @@ impl QueryContext {
 
     /// Create a context whose profile is enabled iff TRACE-level tracing is on, matching the gating
     /// previously applied at each compilation step. This is the normal entry point for served queries.
-    pub fn instrumented(source_query: String) -> Self {
+    pub fn with_profile(source_query: String) -> Self {
         Self::new(source_query, QueryProfile::new(tracing::enabled!(Level::TRACE)))
     }
 
-    /// Create an uninstrumented context whose profile records nothing. Use where profiling is not
+    /// Create a context with no profiling; its profile records nothing. Use where profiling is not
     /// wanted, such as internal queries and tests.
-    pub fn uninstrumented(source_query: String) -> Self {
+    pub fn no_profile(source_query: String) -> Self {
         Self::new(source_query, QueryProfile::new(false))
     }
 
@@ -105,13 +105,51 @@ impl QueryContext {
     }
 }
 
-/// The outcome of parsing, carrying the context it evolved from. Transient (never cached directly): a
-/// schema query is held by value, while a data pipeline is shared via `Arc` with the parse cache and
-/// the execution queue.
+/// The outcome of parsing, carrying the context it evolved from. Transient (never cached directly).
 #[derive(Debug)]
 pub enum ParsedQuery {
-    Schema(QueryContext, SchemaQuery),
-    Pipeline(QueryContext, Arc<typeql::query::Pipeline>),
+    Schema(ParsedSchemaQuery),
+    Pipeline(ParsedPipeline),
+}
+
+/// A parsed schema query (define/redefine/undefine) with its context. The schema query is held by
+/// value, since schema queries are one-shot and never cached.
+#[derive(Debug)]
+pub struct ParsedSchemaQuery {
+    context: QueryContext,
+    query: SchemaQuery,
+}
+
+impl ParsedSchemaQuery {
+    pub fn new(context: QueryContext, query: SchemaQuery) -> Self {
+        Self { context, query }
+    }
+
+    pub fn source_query(&self) -> &str {
+        self.context.source_query()
+    }
+}
+
+/// A parsed data pipeline with its context. The pipeline AST is shared via `Arc` with the parse cache
+/// and the execution queue.
+#[derive(Debug)]
+pub struct ParsedPipeline {
+    context: QueryContext,
+    pipeline: Arc<typeql::query::Pipeline>,
+}
+
+impl ParsedPipeline {
+    pub fn new(context: QueryContext, pipeline: Arc<typeql::query::Pipeline>) -> Self {
+        Self { context, pipeline }
+    }
+
+    pub fn source_query(&self) -> &str {
+        self.context.source_query()
+    }
+
+    pub fn pipeline(&self) -> &typeql::query::Pipeline {
+        &self.pipeline
+    }
 }
 
 /// A translated data pipeline, carrying the context it evolved from. Obtainable only from
@@ -133,7 +171,7 @@ impl QueryManager {
         if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(&context.source_query)) {
             QUERY_PARSE_CACHE_HITS.increment();
             context.profile.compilation_profile().parsing_finished();
-            return Ok(ParsedQuery::Pipeline(context, pipeline));
+            return Ok(ParsedQuery::Pipeline(ParsedPipeline { context, pipeline }));
         }
         let parsed = typeql::parse_query(&context.source_query).map_err(|err| QueryError::ParseError {
             source_query: context.source_query.clone(),
@@ -142,7 +180,7 @@ impl QueryManager {
         match parsed.into_structure() {
             QueryStructure::Schema(schema_query) => {
                 context.profile.compilation_profile().parsing_finished();
-                Ok(ParsedQuery::Schema(context, schema_query))
+                Ok(ParsedQuery::Schema(ParsedSchemaQuery { context, query: schema_query }))
             }
             QueryStructure::Pipeline(pipeline) => {
                 QUERY_PARSE_CACHE_MISSES.increment();
@@ -151,19 +189,19 @@ impl QueryManager {
                     cache.insert_parsed(&context.source_query, pipeline.clone());
                 }
                 context.profile.compilation_profile().parsing_finished();
-                Ok(ParsedQuery::Pipeline(context, pipeline))
+                Ok(ParsedQuery::Pipeline(ParsedPipeline { context, pipeline }))
             }
         }
     }
 
     pub fn translate(
         &self,
-        mut context: QueryContext,
-        pipeline: &typeql::query::Pipeline,
+        parsed: ParsedPipeline,
         snapshot: &impl ReadableSnapshot,
         function_manager: &FunctionManager,
         thing_manager: &ThingManager,
     ) -> Result<TranslatedQuery, Box<QueryError>> {
+        let ParsedPipeline { mut context, pipeline } = parsed;
         // Reset the clock so the (potentially long) wait in the execution queue is not counted.
         context.profile.compilation_profile().start();
         let translated = match self.cache.as_ref().and_then(|cache| cache.get_translated(&context.source_query)) {
@@ -174,7 +212,7 @@ impl QueryManager {
             None => {
                 QUERY_TRANSLATION_CACHE_MISSES.increment();
                 let translated =
-                    translate_pipeline(snapshot, function_manager, pipeline, &context.source_query)?;
+                    translate_pipeline(snapshot, function_manager, &pipeline, &context.source_query)?;
                 if let Some(cache) = self.cache.as_ref() {
                     cache.may_insert_translated(
                         thing_manager.statistics().sequence_number,
@@ -195,12 +233,12 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-        context: QueryContext,
-        query: &SchemaQuery,
+        parsed: ParsedSchemaQuery,
     ) -> Result<(), Box<QueryError>> {
+        let ParsedSchemaQuery { context, query } = parsed;
         let QueryContext { source_query, profile } = context;
         event!(Level::TRACE, "Running schema query:\n{}", query);
-        let result = match query {
+        let result = match &query {
             SchemaQuery::Define(define) => {
                 let stage_profile = profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Define pattern"));

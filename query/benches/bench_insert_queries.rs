@@ -128,13 +128,13 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
 
-    let ParsedQuery::Pipeline(context, typeql_insert) =
-        query_manager.parse(QueryContext::uninstrumented(query_str.to_string())).unwrap()
+    let ParsedQuery::Pipeline(parsed) =
+        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
     else {
         panic!("expected a data pipeline")
     };
     let translated =
-        query_manager.translate(context, &typeql_insert, &snapshot, &function_manager, &thing_manager).unwrap();
+        query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
