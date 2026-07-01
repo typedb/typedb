@@ -294,15 +294,6 @@ fn visit_steps_in_pattern(pattern: &PatternProfile, visit: &mut impl FnMut(&Step
     }
 }
 
-fn update_worst(step: &StepProfile, worst: &mut (f64, u64, u64, String)) {
-    let Some(advances) = step.storage_counters().get_raw_advance() else { return };
-    let Some(rows) = step.rows() else { return };
-    let ratio = advances as f64 / rows.max(1) as f64;
-    if ratio > worst.0 {
-        *worst = (ratio, advances, rows, step.description().unwrap_or_default());
-    }
-}
-
 fn get_intersection_steps(
     match_: &MatchStageExecutor<ReadStageIterator<ReadSnapshot<WALClient>>>,
 ) -> impl Iterator<Item = &IntersectionStep> + Clone + '_ {
@@ -314,41 +305,6 @@ fn get_intersection_steps(
 fn instruction_count(step: &IntersectionStep) -> usize {
     step.instructions.iter().count()
 }
-
-// /// Returns all `IntersectionStep`s across the plan that combine 2+ instructions
-// /// — i.e. real sort-merge intersections, not single-iterator wrappers. Structural
-// /// inspection of the compiled `ConjunctionExecutable`, so robust against changes
-// /// to step display formatting.
-// fn multi_iter_intersection_steps<'a>(
-//     pipeline: &'a Pipeline<ReadSnapshot<WALClient>, ReadPipelineStage<ReadSnapshot<WALClient>>>,
-// ) -> Vec<&'a IntersectionStep> {
-//     pipeline
-//         .stages()
-//         .iter()
-//         .filter_map(|s| s.as_match())
-//         .flat_map(|m| m.executable().steps())
-//         .filter_map(|s| match s {
-//             ExecutionStep::Intersection(i) if i.instructions.len() >= 2 => Some(i),
-//             _ => None,
-//         })
-//         .collect()
-// }
-
-/// Concatenated `PlannerStatistics` Display output across all match stages of the
-/// pipeline — matches what `QueryProfile` prints as the Conjunction line. Cheap
-/// proxy for "what did the planner actually decide the chosen plan would cost?";
-/// each test prints this so the actual numbers sit alongside the docstring estimate.
-// fn planner_cost_summary(
-//     pipeline: &Pipeline<ReadSnapshot<WALClient>, ReadPipelineStage<ReadSnapshot<WALClient>>>,
-// ) -> String {
-//     pipeline
-//         .stages()
-//         .iter()
-//         .filter_map(|s| s.as_match())
-//         .map(|m| format!("{}", m.executable().planner_statistics()))
-//         .collect::<Vec<_>>()
-//         .join(" | ")
-// }
 
 // --- Two-owner schema & noise helpers -------------------------------------------------------
 
@@ -497,9 +453,9 @@ fn merge_wins_symmetric_balanced() {
     // seek count: 1 for the  outer iterator, 500 for each of the other iterator
     assert_eq!(seeks, 501);
     // advance count:
-    //  Has iter: 1000 — the owner-type range walks every has edge: 500 × (1 join_attr + 1 key_1)
-    //    (resolves "expected 501 but got 1000": the @key has edges sit in the scanned range)
-    //  ReverseHas iter: one advance, then fail for each seek = 500
+    //  Has iter: 1000 — the owner-type range walks every has edge: 500 × (1 join_attr + 1 key_1).
+    //    The 1000th is the fail, since the first entry comes from the seek itself
+    //  ReverseHas iter: one failing advance per probe = 500 (the matching edge itself comes from the seek)
     assert_eq!(advances, 1500);
 
     println!("{}", profile);
@@ -608,9 +564,10 @@ fn merge_wins_true_zipper() {
     // seek count: 1 for the outer Has iterator, 1500 for the HasReverse iterator (one probe per scanned has edge)
     assert_eq!(seeks, 1501);
     // advance count:
-    //  Has iter: 2000 — the owner-type range walks every has edge: 500 owners × (3 join_attr + 1 key_1)
-    //    (same effect as symmetric_balanced's unexplained 1000: the @key has edges sit in the scanned range)
-    //  ReverseHas iter: one advance per successful probe = 500; the 1000 decoy probes fail on the seek itself
+    //  Has iter: 2000 — the owner-type range walks every has edge: 500 owners × (3 join_attr + 1 key_1).
+    //    The last is the fail, since the first entry comes from the seek itself
+    //  ReverseHas iter: one failing advance per successful probe = 500 (the edge itself comes from the
+    //    seek); the 1000 decoy probes detect the miss on the seek itself, costing no advance
     assert_eq!(advances, 2500);
 
     println!("{}", profile);
@@ -627,7 +584,7 @@ fn merge_wins_true_zipper() {
 /// Merge expected to win by ~5×.
 /// Actual planner cost: 8635 (sequential)
 ///
-/// Planner picks the wrong plan; this test fails expectedly.
+/// This test locks in the sequential behaviour
 /// TODO: our cartesian is expensive to compute so this might be the right plan for now!
 #[test]
 fn merge_wins_moderate_cartesian() {
@@ -664,25 +621,34 @@ fn merge_wins_moderate_cartesian() {
     load_data(&mut context, data_spec);
 
     let pipeline = compile_read(&context, &two_owner_join_query());
-    // println!("planner: {}", planner_cost_summary(&pipeline));
-    // let merges = multi_iter_intersection_steps(&pipeline);
-    // assert!(
-    //     !merges.is_empty(),
-    //     "moderate_cartesian: planner should pick a merge intersection \
-    //      (10:1 per-value fan-out symmetric — cartesian sub-iter amortizes); \
-    //      found none",
-    // );
+
+    let stage = match pipeline.stages().iter().next().unwrap() {
+        ReadPipelineStage::Match(stage) => stage,
+        _ => unreachable!(),
+    };
+    let steps = get_intersection_steps(stage).collect_vec();
+    assert_eq!(steps.len(), 2);
+    // first intersection
+    assert_eq!(instruction_count(steps[0]), 1);
+    assert!(matches!(steps[0].instructions[0].0, ConstraintInstruction::Has(_)));
+    // second intersection
+    assert_eq!(instruction_count(steps[1]), 1);
+    assert!(matches!(steps[1].instructions[0].0, ConstraintInstruction::HasReverse(_)));
 
     let (rows, profile) = execute_read(pipeline);
-    let (s, a) = total_storage_ops(&profile);
-    println!("storage: seeks={s} advances={a} weighted={}", s * 5 + a);
+    let (seeks, advances) = total_storage_ops(&profile);
+    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
     assert_eq!(rows, EXPECTED_ROWS, "moderate_cartesian: 50 values × 10 × 10 = 5000 rows");
-    // let (ratio, advances, prof_rows, descr) = worst_advances_per_row(&profile);
-    // assert!(
-    //     ratio < 20.0,
-    //     "moderate_cartesian: worst step should be O(1) per row (< 20 advances/row); \
-    //      got {ratio:.2} ({advances}/{prof_rows}). step: {descr}",
-    // );
+
+    // seek count: 1 for the outer Has iterator, 500 for the HasReverse iterator (one probe per scanned has edge)
+    assert_eq!(seeks, 501);
+    // advance count:
+    //  Has iter: 1000 — the owner-type range walks every has edge: 500 × (1 join_attr + 1 key)
+    //  ReverseHas iter: 10 per probe = 5000 — each probe walks its 10-owner cluster: the first owner
+    //    comes from the seek, 9 advances walk the rest, and the 10th is the fail
+    assert_eq!(advances, 6000);
+
+    println!("{}", profile);
 }
 
 /// Heavy per-value fan-out. Both sides 500 owners cyclic over 10 distinct
@@ -697,7 +663,8 @@ fn merge_wins_moderate_cartesian() {
 /// cartesian most clearly pays off.
 ///
 /// Actual planner cost: 29035 (sequential)
-/// Planner picks the wrong plan; this test fails.
+///
+/// This test locks in the sequential behaviour
 /// TODO: our cartesian is expensive to compute so this might be the right plan for now!
 #[test]
 fn merge_wins_heavy_cartesian() {
@@ -734,25 +701,34 @@ fn merge_wins_heavy_cartesian() {
     load_data(&mut context, data_spec);
 
     let pipeline = compile_read(&context, &two_owner_join_query());
-    // println!("planner: {}", planner_cost_summary(&pipeline));
-    // let merges = multi_iter_intersection_steps(&pipeline);
-    // assert!(
-    //     !merges.is_empty(),
-    //     "heavy_cartesian: planner should pick a merge intersection \
-    //      (50:1 per-value fan-out — the cartesian sub-iter should amortize \
-    //      scan cost over many emits per matched value); found none",
-    // );
+
+    let stage = match pipeline.stages().iter().next().unwrap() {
+        ReadPipelineStage::Match(stage) => stage,
+        _ => unreachable!(),
+    };
+    let steps = get_intersection_steps(stage).collect_vec();
+    assert_eq!(steps.len(), 2);
+    // first intersection
+    assert_eq!(instruction_count(steps[0]), 1);
+    assert!(matches!(steps[0].instructions[0].0, ConstraintInstruction::Has(_)));
+    // second intersection
+    assert_eq!(instruction_count(steps[1]), 1);
+    assert!(matches!(steps[1].instructions[0].0, ConstraintInstruction::HasReverse(_)));
 
     let (rows, profile) = execute_read(pipeline);
-    let (s, a) = total_storage_ops(&profile);
-    println!("storage: seeks={s} advances={a} weighted={}", s * 5 + a);
+    let (seeks, advances) = total_storage_ops(&profile);
+    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
     assert_eq!(rows, EXPECTED_ROWS, "heavy_cartesian: 10 values × 50 × 50 = 25000 rows");
-    // let (ratio, advances, prof_rows, descr) = worst_advances_per_row(&profile);
-    // assert!(
-    //     ratio < 20.0,
-    //     "heavy_cartesian: worst step should be O(1) per row (< 20 advances/row); \
-    //      got {ratio:.2} ({advances}/{prof_rows}). step: {descr}",
-    // );
+
+    // seek count: 1 for the outer Has iterator, 500 for the HasReverse iterator (one probe per scanned has edge)
+    assert_eq!(seeks, 501);
+    // advance count:
+    //  Has iter: 1000 — the owner-type range walks every has edge: 500 × (1 join_attr + 1 key)
+    //  ReverseHas iter: 50 per probe = 25000 — each probe walks its 50-owner cluster: the first owner
+    //    comes from the seek, 49 advances walk the rest, and the 50th is the fail
+    assert_eq!(advances, 26000);
+
+    println!("{}", profile);
 }
 
 // --- Multi-attribute filter helpers (single-entity, K-pattern intersection) -----------------
@@ -832,6 +808,9 @@ fn build_multi_attr_spec(n_owners: usize, k_attrs: usize, m_values: usize) -> Da
 /// sequential plan is paid on intermediate row counts, not just on the final
 /// ~37 outputs).
 /// Actual planner cost: 828.25 (merge — planner picks correctly).
+///
+/// Plan shape: K IsaReverse lookups bind the literal-valued attribute instances,
+/// then a single K-iterator HasReverse merge intersection sorted on $x.
 #[test]
 fn merge_wins_multi_attr_filter() {
     const N: usize = 1_000;
@@ -844,18 +823,27 @@ fn merge_wins_multi_attr_filter() {
     load_data(&mut context, build_multi_attr_spec(N, K, M));
 
     let pipeline = compile_read(&context, &multi_attr_query(K, 0));
-    // println!("planner: {}", planner_cost_summary(&pipeline));
-    // let merges = multi_iter_intersection_steps(&pipeline);
-    // assert!(
-    //     !merges.is_empty(),
-    //     "multi_attr_filter: planner should pick a merge intersection \
-    //      (K={K} same-entity attribute filters, all owner-id sorted — \
-    //      the canonical merge-wins shape); found none",
-    // );
+
+    let stage = match pipeline.stages().iter().next().unwrap() {
+        ReadPipelineStage::Match(stage) => stage,
+        _ => unreachable!(),
+    };
+    let steps = get_intersection_steps(stage).collect_vec();
+    // three IsaReverse steps resolve the literal-valued attribute instances, then one
+    // K-way merge intersection on $x — the planner picks merge correctly here
+    assert_eq!(steps.len(), K + 1);
+    for i in 0..K {
+        assert_eq!(instruction_count(steps[i]), 1);
+        assert!(matches!(steps[i].instructions[0].0, ConstraintInstruction::IsaReverse(_)));
+    }
+    assert_eq!(instruction_count(steps[K]), K);
+    for i in 0..K {
+        assert!(matches!(steps[K].instructions[i].0, ConstraintInstruction::HasReverse(_)));
+    }
 
     let (rows, profile) = execute_read(pipeline);
-    let (s, a) = total_storage_ops(&profile);
-    println!("storage: seeks={s} advances={a} weighted={}", s * 5 + a);
+    let (seeks, advances) = total_storage_ops(&profile);
+    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
     // Each base-M combination appears floor(N / M^K) or ceil(N / M^K) times due to
     // integer arithmetic in the digit-position generator. Allow ±a few rows of slack.
     let lo = EXPECTED_ROWS.saturating_sub(2);
@@ -865,15 +853,17 @@ fn merge_wins_multi_attr_filter() {
         "multi_attr_filter: expected ~{EXPECTED_ROWS} rows (= N / M^K with N={N}, M={M}, K={K}); \
          got {rows}",
     );
-    // let (ratio, advances, prof_rows, descr) = worst_advances_per_row(&profile);
-    // // Merge co-walks K iters each of ~N/M size. Per output row, roughly ~K × M
-    // // advances of "scan one position on each side"; bound generously at 30/row to
-    // // catch only a catastrophically-bad plan.
-    // assert!(
-    //     ratio < 30.0,
-    //     "multi_attr_filter: worst step should be bounded (< 30 advances/row); \
-    //      got {ratio:.2} ({advances}/{prof_rows}). step: {descr}",
-    // );
+
+    // seek count: each IsaReverse lookup costs 2 (type-prefix open + seek to the literal value);
+    //  the merge opens its 3 iterators then pays 222 zipper catch-up seeks between intersections
+    assert_eq!(seeks, 231);
+    // advance count:
+    //  IsaReverse lookups: 1 failing advance each (the attribute instance itself comes from the seek)
+    //  merge: 336 — advancing past intersections plus walking entries the catch-up seeks don't skip
+    //   (each iter holds ~333 owner-sorted entries in runs of 3^i consecutive owners)
+    assert_eq!(advances, 339);
+
+    println!("{}", profile);
 }
 
 // === Sequential should win tests ===============================================================
@@ -921,30 +911,34 @@ fn sequential_wins_tiny_outer_huge_inner() {
     load_data(&mut context, data_spec);
 
     let pipeline = compile_read(&context, &two_owner_join_query());
-    // println!("planner: {}", planner_cost_summary(&pipeline));
-    // let merges = multi_iter_intersection_steps(&pipeline);
-    // assert!(
-    //     merges.is_empty(),
-    //     "tiny_outer_huge_inner: planner should pick sequential \
-    //      (1 × {N_INNER} cardinality asymmetry — merge would do O(N_INNER) work for 1 row); \
-    //      found {} multi-iter merge step(s)",
-    //     merges.len(),
-    // );
+
+    let stage = match pipeline.stages().iter().next().unwrap() {
+        ReadPipelineStage::Match(stage) => stage,
+        _ => unreachable!(),
+    };
+    let steps = get_intersection_steps(stage).collect_vec();
+    assert_eq!(steps.len(), 2);
+    // first intersection: scan the 1-owner outer side
+    assert_eq!(instruction_count(steps[0]), 1);
+    assert!(matches!(steps[0].instructions[0].0, ConstraintInstruction::Has(_)));
+    // second intersection: bound probe into the 2000-owner inner side
+    assert_eq!(instruction_count(steps[1]), 1);
+    assert!(matches!(steps[1].instructions[0].0, ConstraintInstruction::HasReverse(_)));
 
     let (rows, profile) = execute_read(pipeline);
-    let (s, a) = total_storage_ops(&profile);
-    println!("storage: seeks={s} advances={a} weighted={}", s * 5 + a);
+    let (seeks, advances) = total_storage_ops(&profile);
+    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
     assert_eq!(rows, 1, "tiny_outer_huge_inner: 1 outer × 1 matching inner = 1 row");
-    // // Worst-step ratio: with 1 row of output, ratio = advances. Bound generously
-    // // to catch only catastrophic plans (a merge would do ~2000 advances on its
-    // // inner-scan step).
-    // let (ratio, advances, prof_rows, descr) = worst_advances_per_row(&profile);
-    // assert!(
-    //     ratio < (N_INNER as f64) * 0.5,
-    //     "tiny_outer_huge_inner: worst step ratio {ratio:.2} ({advances}/{prof_rows}) \
-    //      exceeds {} — a catastrophically-bad plan is likely. step: {descr}",
-    //     (N_INNER as f64) * 0.5,
-    // );
+
+    // seek count: 1 for the outer Has iterator, 1 for the single HasReverse probe
+    assert_eq!(seeks, 2);
+    // advance count:
+    //  Has iter: 2 — the single owner's has edges: 1 join_attr + 1 key; the last is the fail,
+    //    since the first entry comes from the seek itself
+    //  ReverseHas iter: one failing advance for the single probe (the edge itself comes from the seek)
+    assert_eq!(advances, 3);
+
+    println!("{}", profile);
 }
 
 /// Small outer, huge inner. owner_1: 100 owners with values 0..99 (full
@@ -992,27 +986,34 @@ fn sequential_wins_subset_coverage() {
     load_data(&mut context, data_spec);
 
     let pipeline = compile_read(&context, &two_owner_join_query());
-    // println!("planner: {}", planner_cost_summary(&pipeline));
-    // let merges = multi_iter_intersection_steps(&pipeline);
-    // assert!(
-    //     merges.is_empty(),
-    //     "subset_coverage: planner should pick sequential \
-    //      (outer's 100 values cover only 5% of inner's 2000-value domain — \
-    //      merge would waste 95% of its inner scan); \
-    //      found {} multi-iter merge step(s)",
-    //     merges.len(),
-    // );
+
+    let stage = match pipeline.stages().iter().next().unwrap() {
+        ReadPipelineStage::Match(stage) => stage,
+        _ => unreachable!(),
+    };
+    let steps = get_intersection_steps(stage).collect_vec();
+    assert_eq!(steps.len(), 2);
+    // first intersection: scan the 100-owner outer side
+    assert_eq!(instruction_count(steps[0]), 1);
+    assert!(matches!(steps[0].instructions[0].0, ConstraintInstruction::Has(_)));
+    // second intersection: bound probe into the 2000-owner inner side
+    assert_eq!(instruction_count(steps[1]), 1);
+    assert!(matches!(steps[1].instructions[0].0, ConstraintInstruction::HasReverse(_)));
 
     let (rows, profile) = execute_read(pipeline);
-    let (s, a) = total_storage_ops(&profile);
-    println!("storage: seeks={s} advances={a} weighted={}", s * 5 + a);
+    let (seeks, advances) = total_storage_ops(&profile);
+    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
     assert_eq!(rows, N_OUTER, "subset_coverage: outer ⊂ inner → N_OUTER rows");
-    // let (ratio, advances, prof_rows, descr) = worst_advances_per_row(&profile);
-    // assert!(
-    //     ratio < 10.0,
-    //     "subset_coverage: worst step should be tight (< 10 advances/row); \
-    //      got {ratio:.2} ({advances}/{prof_rows}). step: {descr}",
-    // );
+
+    // seek count: 1 for the outer Has iterator, 100 for the HasReverse iterator (one probe per outer edge)
+    assert_eq!(seeks, 101);
+    // advance count:
+    //  Has iter: 200 — the owner-type range walks every has edge: 100 × (1 join_attr + 1 key)
+    //  ReverseHas iter: one failing advance per probe = 100 (outer ⊂ inner, all probes hit;
+    //    the edge itself comes from the seek)
+    assert_eq!(advances, 300);
+
+    println!("{}", profile);
 }
 
 /// Noise inflates the storage scan range for any `Reverse[X has $join]` iter,
@@ -1066,24 +1067,33 @@ fn sequential_wins_noisy_inner() {
     load_data(&mut context, spec);
 
     let pipeline = compile_read(&context, &two_owner_join_query());
-    // println!("planner: {}", planner_cost_summary(&pipeline));
-    // let merges = multi_iter_intersection_steps(&pipeline);
-    // assert!(
-    //     merges.is_empty(),
-    //     "noisy_inner: planner should pick sequential \
-    //      (storage scan range bloated by noise — merge would double-pay the bloated scan); \
-    //      found {} multi-iter merge step(s)",
-    //     merges.len(),
-    // );
+
+    let stage = match pipeline.stages().iter().next().unwrap() {
+        ReadPipelineStage::Match(stage) => stage,
+        _ => unreachable!(),
+    };
+    let steps = get_intersection_steps(stage).collect_vec();
+    assert_eq!(steps.len(), 2);
+    // first intersection
+    assert_eq!(instruction_count(steps[0]), 1);
+    assert!(matches!(steps[0].instructions[0].0, ConstraintInstruction::Has(_)));
+    // second intersection
+    assert_eq!(instruction_count(steps[1]), 1);
+    assert!(matches!(steps[1].instructions[0].0, ConstraintInstruction::HasReverse(_)));
 
     let (rows, profile) = execute_read(pipeline);
-    let (s, a) = total_storage_ops(&profile);
-    println!("storage: seeks={s} advances={a} weighted={}", s * 5 + a);
+    let (seeks, advances) = total_storage_ops(&profile);
+    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
     assert_eq!(rows, N_QUERY, "noisy_inner: query sides fully overlap → N_QUERY rows");
-    // let (ratio, advances, prof_rows, descr) = worst_advances_per_row(&profile);
-    // assert!(
-    //     ratio < 30.0,
-    //     "noisy_inner: worst step bounded by outer scan / matches ratio (< 30 advances/row); \
-    //      got {ratio:.2} ({advances}/{prof_rows}). step: {descr}",
-    // );
+
+    // seek count: 1 for the outer Has iterator, 100 for the HasReverse iterator (one probe per outer edge).
+    // The noise types don't intrude: both scans are type-scoped, so the bloated attribute range is never walked.
+    assert_eq!(seeks, 101);
+    // advance count:
+    //  Has iter: 200 — the owner-type range walks every has edge: 100 × (1 join_attr + 1 key)
+    //  ReverseHas iter: one failing advance per probe = 100 (full overlap, all probes hit;
+    //    the edge itself comes from the seek)
+    assert_eq!(advances, 300);
+
+    println!("{}", profile);
 }
