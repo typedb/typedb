@@ -6,11 +6,7 @@
 use std::{sync::Arc, time::Duration};
 
 use concept::error::ConceptDecodeError;
-use database::transaction::{
-    CommitIntent, DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema,
-    TransactionWrite,
-};
-use diagnostics::metrics::LoadKind;
+use database::transaction::{CommitIntent, TransactionError, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use executor::{InterruptType, pipeline::PipelineExecutionError};
 use query::error::QueryError;

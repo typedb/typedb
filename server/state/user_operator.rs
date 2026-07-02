@@ -14,6 +14,7 @@ use database::database_manager::DatabaseManager;
 use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, User};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
+use uuid::Uuid;
 
 use super::TransactionOperator;
 use crate::{
@@ -30,7 +31,14 @@ pub trait UserOperator: Debug + Send + Sync {
 
     async fn get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError>;
 
-    async fn create(&self, accessor: Accessor, user: User, credential: Credential) -> Result<(), ArcServerStateError>;
+    async fn create(
+        &self,
+        accessor: Accessor,
+        user: User,
+        credential: Credential,
+        user_uuid: Option<Uuid>,
+        credential_uuid: Option<Uuid>,
+    ) -> Result<(), ArcServerStateError>;
 
     async fn update(
         &self,
@@ -147,14 +155,23 @@ impl UserOperator for LocalUserOperator {
         }
     }
 
-    async fn create(&self, accessor: Accessor, user: User, credential: Credential) -> Result<(), ArcServerStateError> {
+    async fn create(
+        &self,
+        accessor: Accessor,
+        user: User,
+        credential: Credential,
+        user_uuid: Option<Uuid>,
+        credential_uuid: Option<Uuid>,
+    ) -> Result<(), ArcServerStateError> {
         if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
+        let user_uuid = user_uuid.unwrap_or_else(Uuid::new_v4);
+        let credential_uuid = credential_uuid.unwrap_or_else(Uuid::new_v4);
         user_manager
-            .create(&user, &credential)
+            .create(&user, &credential, user_uuid, credential_uuid)
             .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source }))
     }
 

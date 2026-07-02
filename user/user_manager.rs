@@ -14,6 +14,7 @@ use system::{
     repositories::{user_repository, user_repository::SystemDBError},
     util::transaction_util::TransactionUtil,
 };
+use uuid::Uuid;
 
 use crate::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
 
@@ -44,7 +45,13 @@ impl UserManager {
         self.get(username).map(|opt| opt.is_some())
     }
 
-    pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
+    pub fn create(
+        &self,
+        user: &User,
+        credential: &Credential,
+        user_uuid: Uuid,
+        credential_uuid: Uuid,
+    ) -> Result<(), UserCreateError> {
         if self.contains(&user.name)? {
             return Err(UserCreateError::UserAlreadyExist {});
         }
@@ -59,6 +66,8 @@ impl UserManager {
                     &query_mgr,
                     user,
                     credential,
+                    user_uuid,
+                    credential_uuid,
                 )
             })
             .1;

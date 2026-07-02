@@ -5981,6 +5981,7 @@ dependencies = [
  "storage",
  "system",
  "typeql",
+ "uuid",
 ]
 
 [[package]]

@@ -66,6 +66,8 @@ pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), A
                 accessor,
                 User::new(DEFAULT_USER_NAME.to_string()),
                 Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
+                None,
+                None,
             )
             .await?;
     }
