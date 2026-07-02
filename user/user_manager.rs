@@ -44,7 +44,13 @@ impl UserManager {
         self.get(username).map(|opt| opt.is_some())
     }
 
-    pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
+    pub fn create(
+        &self,
+        user: &User,
+        credential: &Credential,
+        user_uuid: &str,
+        credential_uuid: &str,
+    ) -> Result<(), UserCreateError> {
         if self.contains(&user.name)? {
             return Err(UserCreateError::UserAlreadyExist {});
         }
@@ -59,6 +65,8 @@ impl UserManager {
                     &query_mgr,
                     user,
                     credential,
+                    user_uuid,
+                    credential_uuid,
                 )
             })
             .1;

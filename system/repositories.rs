@@ -18,7 +18,6 @@ pub mod user_repository {
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use thing_manager::ThingManager;
     use typeql::{common::identifier::is_valid_label, parse_query};
-    use uuid::Uuid;
 
     use crate::{
         concepts::{Credential, PasswordHash, User},
@@ -75,6 +74,8 @@ pub mod user_repository {
         query_manager: &QueryManager,
         user: &User,
         credentials: &Credential,
+        user_uuid: &str,
+        credential_uuid: &str,
     ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
         if !is_valid_typeql_value(&user.name) {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
@@ -82,14 +83,12 @@ pub mod user_repository {
         let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
         let (query, query_string) = match credentials {
             Credential::PasswordType { password_hash: PasswordHash { value: hash } } => {
-                let user_uuid = Uuid::new_v4().to_string();
-                let cred_uuid = Uuid::new_v4().to_string();
                 let query_string = format!(
                     "insert $u isa user, has uuid '{user_uuid}', has name '{name}';
                         $p isa password, has uuid '{cred_uuid}', has hash '{hash}';
                         (user: $u, credentials: $p) isa user-credentials;",
                     user_uuid = user_uuid,
-                    cred_uuid = cred_uuid,
+                    cred_uuid = credential_uuid,
                     name = user.name,
                     hash = hash
                 );
