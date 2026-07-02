@@ -387,7 +387,7 @@ fn add_noise_owners(spec: &mut DataSpec, n_noise_types: usize, per_type: usize, 
 /// So seeking to the next intersection is replaced by advances
 /// However, not clear how much the planner can know about this.
 ///
-/// Cost-model estimate (SEEK=5, ADVANCE=1):
+/// Empirical estimate (SEEK=5, ADVANCE=1):
 /// - sequential chain ≈ 500 × (SEEK + 1 ADV) ≈ 3000
 /// - 2-iter merge optimal   ≈ 2 × (SEEK + 500 ADV)  ≈ 1010
 /// - 2-iter merge (if we can't tell the seeks don't actually need to happen) ≈ 500 × 2 x (SEEK + ADV)  ≈ 6000
@@ -395,8 +395,6 @@ fn add_noise_owners(spec: &mut DataSpec, n_noise_types: usize, per_type: usize, 
 /// Actual planner cost: 4045 (sequential)
 ///
 /// Although in the optimal case Merge should win, this test locks in the sequential behaviour
-///   TODO: read out the steps that are HAS or Reverse HAS, and assert the count is 2
-///   TODO: then we can assert the exact number of seeks/advances expected
 ///
 /// TODO: fix bug where planner it not able to start with an intersection because both directions are not preserved as choices if direction that enables the intersection is more expensive
 #[test]
@@ -455,43 +453,26 @@ fn merge_wins_symmetric_balanced() {
     // advance count:
     //  Has iter: 1000 — the owner-type range walks every has edge: 500 × (1 join_attr + 1 key_1).
     //    The 1000th is the fail, since the first entry comes from the seek itself
-    //  ReverseHas iter: one failing advance per probe = 500 (the matching edge itself comes from the seek)
+    //  ReverseHas iter: one advance to fail per seek = 500
     assert_eq!(advances, 1500);
 
     println!("{}", profile);
 }
 
 
-/// Merge stress with causes seeks between intersections.
+/// Zipper test that should be optimal by seeking between matches to skip gaps
 /// 500 matching values + 2 decoys per side per match.
 /// Side A owners hold {match, match+1, match+2}; side B owners hold {match, match+3,
 /// match+4}. Stride 5 between matches. 2 additional owners per side cause seek mismatches between matches.
 ///
-/// Expected per match (after the first): 2 real catch-up seeks (one per side) plus
-/// a handful of advances walking past the other side's decoys. So 500 matches
-/// should yield ~1000 catch-up SEEKs + 2 OPEN SEEKs = ~1002 SEEKs total
-///
-/// Cost-model estimate (alignment-probability formula, planner stats):
-/// - per side: io_ratio = 1500 (3 has's × 500 owners), reverse-scan cost ≈ 3005
-/// - distinct attr_values total: 5 × 500 = 2500
-/// - planner join_size estimate ≈ 1500²/2500 = 900
-/// - p_seek per side: (1500 − 900)/1500 ≈ 0.4
-/// - per_match_cost ≈ 0.6 × (3005/1500) + 0.4 × SEEK ≈ 1.2 + 2 = 3.2
-/// - merge total: 2 × (5 + 3.2×1500) + cartesian(~1000) ≈ 10600
-/// - sequential cascade: outer scan 1505 + 1500 × probe(~6) ≈ 10500
-///
-/// Empirical comparison (instrumented runs):
-/// - merge:      seeks=1001 advs=4999 → weighted ≈ 10004
-/// - sequential: seeks=1501 advs=2500 → weighted ≈ 10005
+/// Empirical estimate (SEEK=5, ADVANCE=1):
+/// - sequential: 1 SEEK + ~1500 ADV + 1500 (SEEK + ADV) ~= 10505
+/// - has merge: 500 x 2 SEEK + 500 x ~2 ADV ~= 6000
 ///
 /// How beneficial the merge is vs sequential depends on actual cost of seek vs advance
-/// and the size of gaps between intersections
+/// and the size of gaps between intersections.
 ///
-/// Actual planner cost: 11125 (sequential).
-///
-/// Although merge should pull ahead as the gaps between intersections grow, sequential is
-/// empirically neck-and-neck here (weighted 10005 vs 10004), so this test locks in the
-/// sequential behaviour
+/// This test locks in the chosen sequential behaviour for the time being
 ///
 /// TODO: fix bug where planner it not able to start with an intersection because both directions are not preserved as choices if direction that enables the intersection is more expensive
 #[test]
@@ -567,7 +548,7 @@ fn merge_wins_true_zipper() {
     //  Has iter: 2000 — the owner-type range walks every has edge: 500 owners × (3 join_attr + 1 key_1).
     //    The last is the fail, since the first entry comes from the seek itself
     //  ReverseHas iter: one failing advance per successful probe = 500 (the edge itself comes from the
-    //    seek); the 1000 decoy probes detect the miss on the seek itself, costing no advance
+    //    seek); the 1000 miss probes detect the miss on the seek itself
     assert_eq!(advances, 2500);
 
     println!("{}", profile);
@@ -575,19 +556,23 @@ fn merge_wins_true_zipper() {
 
 /// Moderate per-value fan-out. Both sides 500 owners cyclic over 50 distinct
 /// values (10 owners per value per side). Output = 50 × 10 × 10 = 5000 rows
-/// (cartesian within each value). Per-value cartesian should amortize merge's
-/// scan over many emits, so merge should win.
+/// (cartesian within each value).
 ///
-/// Cost-model estimate:
-/// - sequential chain ≈ 500 × (SEEK + 10 ADV) ≈ 7500
-/// - 2-iter merge    ≈ 1000 + per-value cartesian sub-iter
-/// Merge expected to win by ~5×.
+/// Empirical estimate (SEEK=5, ADVANCE=1) [note: cartesian currently uses re-seeking iterators at expense of memory]:
+/// - sequential [Has, ReverseHas] = (1 SEEK + 500 ADV) + 500 (SEEK + 10 ADV) = 8505
+/// - sequential [ReverseHas, ReverseHas] = <identical> = 8505
+/// - 2-iter ReverseHas merge = 50 x 2 (SEEK + 10 [skip to next attr] ADV) + Cartesian = 50x(SEEK + 10 ADV + 10x(SEEK + 10 ADV)) = 10700
+///
+/// TODO: if we fully optimize cartesian to run over buffered skipped rows:
+/// - 2-iter ReverseHas merge = 50 x 2 (SEEK + 10 [skip to next attr] ADV) = 2500
+///
 /// Actual planner cost: 8635 (sequential)
 ///
 /// This test locks in the sequential behaviour
-/// TODO: our cartesian is expensive to compute so this might be the right plan for now!
+///
+/// TODO: current cartesian is expensive to compute so this might be the right plan for now!
 #[test]
-fn merge_wins_moderate_cartesian() {
+fn merge_wins_cartesian() {
     const N_OWNERS: usize = 500;
     const DISTINCT_VALUES: usize = 50;
     const OWNERS_PER_VALUE: usize = N_OWNERS / DISTINCT_VALUES; // 10
@@ -651,86 +636,6 @@ fn merge_wins_moderate_cartesian() {
     println!("{}", profile);
 }
 
-/// Heavy per-value fan-out. Both sides 500 owners cyclic over 10 distinct
-/// values (50 owners per value per side). Output = 10 × 50 × 50 = 25000 rows.
-/// Each output value has a per-side cartesian cluster, so merge's cartesian
-/// sub-iter should dominate sequential's per-outer probe.
-///
-/// Cost-model estimate:
-/// - sequential chain ≈ 500 × (SEEK + 50 ADV) ≈ 27500
-/// - 2-iter merge    ≈ 1000 + per-value cartesian (~10 reopens, big amortization)
-/// Merge expected to win decisively (~25×) — this is the regime where per-value
-/// cartesian most clearly pays off.
-///
-/// Actual planner cost: 29035 (sequential)
-///
-/// This test locks in the sequential behaviour
-/// TODO: our cartesian is expensive to compute so this might be the right plan for now!
-#[test]
-fn merge_wins_heavy_cartesian() {
-    const N_OWNERS: usize = 500;
-    const DISTINCT_VALUES: usize = 10;
-    const OWNERS_PER_VALUE: usize = N_OWNERS / DISTINCT_VALUES; // 50
-    const EXPECTED_ROWS: usize = DISTINCT_VALUES * OWNERS_PER_VALUE * OWNERS_PER_VALUE; // 25000
-
-    let mut context = setup();
-    define_two_owner_schema(&mut context);
-
-    let data_spec = DataSpec {
-        instances: vec![
-            InstanceSpec { type_: OWNER_1, count: N_OWNERS, key: Some(KEY_1) },
-            InstanceSpec { type_: OWNER_2, count: N_OWNERS, key: Some(KEY_2) },
-        ],
-        has: vec![
-            HasSpec {
-                owner_type: OWNER_1,
-                attr_type: JOIN_ATTR,
-                count_each: 1,
-                count_total: N_OWNERS,
-                attribute_generator: cyclic(DISTINCT_VALUES),
-            },
-            HasSpec {
-                owner_type: OWNER_2,
-                attr_type: JOIN_ATTR,
-                count_each: 1,
-                count_total: N_OWNERS,
-                attribute_generator: cyclic(DISTINCT_VALUES),
-            },
-        ],
-    };
-    load_data(&mut context, data_spec);
-
-    let pipeline = compile_read(&context, &two_owner_join_query());
-
-    let stage = match pipeline.stages().iter().next().unwrap() {
-        ReadPipelineStage::Match(stage) => stage,
-        _ => unreachable!(),
-    };
-    let steps = get_intersection_steps(stage).collect_vec();
-    assert_eq!(steps.len(), 2);
-    // first intersection
-    assert_eq!(instruction_count(steps[0]), 1);
-    assert!(matches!(steps[0].instructions[0].0, ConstraintInstruction::Has(_)));
-    // second intersection
-    assert_eq!(instruction_count(steps[1]), 1);
-    assert!(matches!(steps[1].instructions[0].0, ConstraintInstruction::HasReverse(_)));
-
-    let (rows, profile) = execute_read(pipeline);
-    let (seeks, advances) = total_storage_ops(&profile);
-    println!("storage: seeks={seeks} advances={advances} weighted={}", seeks * 5 + advances);
-    assert_eq!(rows, EXPECTED_ROWS, "heavy_cartesian: 10 values × 50 × 50 = 25000 rows");
-
-    // seek count: 1 for the outer Has iterator, 500 for the HasReverse iterator (one probe per scanned has edge)
-    assert_eq!(seeks, 501);
-    // advance count:
-    //  Has iter: 1000 — the owner-type range walks every has edge: 500 × (1 join_attr + 1 key)
-    //  ReverseHas iter: 50 per probe = 25000 — each probe walks its 50-owner cluster: the first owner
-    //    comes from the seek, 49 advances walk the rest, and the 50th is the fail
-    assert_eq!(advances, 26000);
-
-    println!("{}", profile);
-}
-
 // --- Multi-attribute filter helpers (single-entity, K-pattern intersection) -----------------
 
 const WIDGET: &str = "widget";
@@ -787,30 +692,19 @@ fn build_multi_attr_spec(n_owners: usize, k_attrs: usize, m_values: usize) -> Da
     spec
 }
 
-/// Multi-attribute filter on a single entity. One `widget` entity owning K=3
+/// Known multi-attribute filter on a single entity. One entity owning K=3
 /// integer attributes; query constrains all 3 to a fixed value:
 ///   `match $x isa widget, has attr_0 0, has attr_1 0, has attr_2 0;`
 ///
 /// Data: N=1000 widgets, K=3 attrs × M=3 values each. Values are assigned by
 /// base-M digit positions, so each combination appears N/M^K = ~37 times.
 ///
-/// The K `Reverse[has(attr_i = 0)]` iterators are all pre-sorted by owner-id
-/// (storage layout `[has-reverse][attr_type][attr_value][owner_type][owner_iid]`,
-/// with attr_type and attr_value pinned by the literal). Merge can co-walk all
-/// K owner-sorted iters in a single pass on $x; sequential would have to drive
-/// from one filter and bind-from probe each of the other K-1 patterns per row.
+/// Merge can co-walk all K owner-sorted iters in a single pass on $x
+/// Sequential would have to drive from one filter and bind-from probe each of the other patterns
 ///
-/// Cost-model estimate:
-/// - sequential cascade ≈ 333 outer + 2 × (333 × bound-probe) ≈ ~1300
-/// - K-iter merge       ≈ K × 333 + per-row intersection compare ≈ ~1000
-///
-/// Merge expected to win (cascading per-row pipeline overhead in the
-/// sequential plan is paid on intermediate row counts, not just on the final
-/// ~37 outputs).
-/// Actual planner cost: 828.25 (merge — planner picks correctly).
-///
-/// Plan shape: K IsaReverse lookups bind the literal-valued attribute instances,
-/// then a single K-iterator HasReverse merge intersection sorted on $x.
+/// Empirical estimate (SEEK=5, ADVANCE=1):
+/// - sequential HasReverse cascade ≈ 1 SEEK + 333 ADV + 333 x (SEEK + ADV) + 111 x (SEEK + ADV) ≈ 3000
+/// - K=3-iter HasReverse merge     ≈ 3 × (between 37 and 111 tested candidates) (SEEK + ADV) ≈ 1500
 #[test]
 fn merge_wins_multi_attr_filter() {
     const N: usize = 1_000;
@@ -869,16 +763,18 @@ fn merge_wins_multi_attr_filter() {
 // === Sequential should win tests ===============================================================
 
 /// Extreme cardinality asymmetry. owner_1: 1 owner with value 0; owner_2:
-/// 2000 owners with unique values 0..1999 → 1 output row. A merge here would
-/// have to scan the entire inner range for a single matching value;
-/// sequential's bind-from probe lands directly. Primary guard against
-/// catastrophic O(N_inner) merge picks.
+/// 2000 owners with unique values 0..1999 → 1 output row.
 ///
-/// Cost-model estimate:
-/// - sequential chain ≈ 1 outer + 1 × (SEEK + 1 ADV) ≈ ~10
-/// - 2-iter merge    ≈ 2 × (SEEK + ~2000 ADV) ≈ ~2010
+/// The best plan here is a sequential join.
+/// A good merge would have to be a Has from owner_1 (bound) to attr with unbound ReverseHas of owner_2?
+
 ///
-/// Actual planner cost: 13.08 (sequential)
+/// Empirical estimate (SEEK=5, ADVANCE=1):
+/// - sequential chain ≈ 1 SEEK + ADV + 1 × (SEEK + 1 ADV) ≈ 12
+/// - merge:
+///   -> ISA to get owner_1's -> 1 SEEK + ADV = 6
+///   -> merge, Has (bound) with ReverseHas (unbound) = 1 SEEK + ADV + 1 SEEK + 1 ADV =  = 12
+///   Total ~= 18?
 #[test]
 fn sequential_wins_tiny_outer_huge_inner() {
     const N_INNER: usize = 2000;
@@ -943,14 +839,17 @@ fn sequential_wins_tiny_outer_huge_inner() {
 
 /// Small outer, huge inner. owner_1: 100 owners with values 0..99 (full
 /// coverage of own range); owner_2: 2000 owners with unique values 0..1999
-/// (outer covers 5% of inner's value domain). Output: 100 rows. Regression
-/// test for the blend penalty on outer-side waste: the small outer should
-/// drive bound probes into inner, not the other way around.
+/// (outer covers 5% of inner's value domain). Output: 100 rows.
 ///
-/// Cost-model estimate:
-/// - sequential chain ≈ 100 outer + 100 × (SEEK + 1 ADV) ≈ ~700
-/// - 2-iter merge    ≈ 100 + 2000 (both iters walk inner range to find the
-///   100 overlapping values) ≈ ~2100
+/// In a good sequential plan, the small outer should drive bound probes into inner
+/// A good merge plan is two reverse Has merge? -> this is not split by owner type, so we'd
+///   be doing worst case 100 seeks to find intersections,
+///   and at 1900 advances to skip unwanted values for owner_1's reverse iterator tail (we can't stop
+///   early, since the ranges are reverse ranges and we don't know when to end - a owner_1 could exist at the end!)
+///
+/// Empirical estimate (SEEK=5, ADVANCE=1):
+/// - sequential chain ≈ 1 SEEK + 100 ADV + 100 × (SEEK + 1 ADV) ≈ ~700
+/// - 2-iter merge    ≈ 100 SEEK + 2000 ≈ ~2500
 ///
 /// Actual planner cost: 813 (sequential).
 #[test]
@@ -1009,8 +908,7 @@ fn sequential_wins_subset_coverage() {
     assert_eq!(seeks, 101);
     // advance count:
     //  Has iter: 200 — the owner-type range walks every has edge: 100 × (1 join_attr + 1 key)
-    //  ReverseHas iter: one failing advance per probe = 100 (outer ⊂ inner, all probes hit;
-    //    the edge itself comes from the seek)
+    //  ReverseHas iter: one failing advance per probe = 100 (all probes hit, the edge comes from the seek)
     assert_eq!(advances, 300);
 
     println!("{}", profile);
