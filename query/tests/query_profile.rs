@@ -15,7 +15,7 @@ use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{ParsedQuery, QueryContext, QueryManager},
+    query_manager::{QueryContext, QueryManager},
 };
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -43,11 +43,7 @@ fn define_schema(
                     owns nickname @card(0..1),
                     plays friendship:friend @card(0..);
     "#;
-    let ParsedQuery::Schema(parsed) =
-        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
-    else {
-        panic!("expected a schema query")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed)
         .unwrap();
@@ -63,11 +59,7 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::no_profile(query_string.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(query_string.to_string())).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
@@ -190,11 +182,7 @@ fn query_profile_tree_structure() {
         limit 10;
     "#;
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::with_profile(query_str.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::with_profile(query_str.to_string())).unwrap().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated =
         query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();

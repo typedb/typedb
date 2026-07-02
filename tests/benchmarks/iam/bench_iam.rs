@@ -16,7 +16,7 @@ use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator}
 use options::{TransactionOptions, byte_size::ByteSize};
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{ParsedQuery, QueryContext},
+    query_manager::QueryContext,
 };
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
@@ -43,11 +43,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
-    let ParsedQuery::Schema(parsed) =
-        query_manager.parse(QueryContext::no_profile(schema_str)).unwrap()
-    else {
-        panic!("expected a schema query")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(schema_str)).unwrap().into_schema();
     let mut inner_snapshot =
         Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
     query_manager
@@ -89,11 +85,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::no_profile(data_str)).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(data_str)).unwrap().into_pipeline();
     let translated =
         query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let write_pipeline = query_manager
@@ -156,11 +148,7 @@ fn setup() -> Arc<Database<WALClient>> {
 fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated =
         query_manager.translate(parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::query_manager::{ParsedQuery, QueryContext, QueryManager};
+use query::query_manager::{QueryContext, QueryManager};
 use resource::profile::CommitProfile;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -28,11 +28,7 @@ fn basic() {
     attribute name value string;
     entity person owns name;
     "#;
-    let ParsedQuery::Schema(parsed) =
-        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
-    else {
-        panic!("expected a schema query")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();

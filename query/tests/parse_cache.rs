@@ -68,11 +68,7 @@ fn setup() -> Context {
 
 fn translate(context: &Context) {
     let snapshot = context.storage.clone().open_snapshot_read();
-    let ParsedQuery::Pipeline(parsed) =
-        context.query_manager.parse(QueryContext::no_profile(QUERY.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = context.query_manager.parse(QueryContext::no_profile(QUERY.to_string())).unwrap().into_pipeline();
     context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
 }
 

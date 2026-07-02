@@ -28,7 +28,7 @@ use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryContext},
+    query_manager::{ParsedPipeline, ParsedSchemaQuery, QueryContext},
 };
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
@@ -308,11 +308,7 @@ fn execute_relation_batch(
 fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated =
         query_manager.translate(parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager
