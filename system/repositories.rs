@@ -18,6 +18,7 @@ pub mod user_repository {
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use thing_manager::ThingManager;
     use typeql::{common::identifier::is_valid_label, parse_query};
+    use uuid::Uuid;
 
     use crate::{
         concepts::{Credential, PasswordHash, User},
@@ -74,8 +75,8 @@ pub mod user_repository {
         query_manager: &QueryManager,
         user: &User,
         credentials: &Credential,
-        user_uuid: &str,
-        credential_uuid: &str,
+        user_uuid: Uuid,
+        credential_uuid: Uuid,
     ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
         if !is_valid_typeql_value(&user.name) {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));

@@ -23,6 +23,7 @@ rust_library(
         "//storage",
         "//system",
         "@typeql//rust:typeql",
+        "@crates//:uuid",
     ]
 )
 

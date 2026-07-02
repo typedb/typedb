@@ -168,10 +168,10 @@ impl UserOperator for LocalUserOperator {
         }
 
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
-        let user_uuid = user_uuid.unwrap_or_else(Uuid::new_v4).to_string();
-        let credential_uuid = credential_uuid.unwrap_or_else(Uuid::new_v4).to_string();
+        let user_uuid = user_uuid.unwrap_or_else(Uuid::new_v4);
+        let credential_uuid = credential_uuid.unwrap_or_else(Uuid::new_v4);
         user_manager
-            .create(&user, &credential, &user_uuid, &credential_uuid)
+            .create(&user, &credential, user_uuid, credential_uuid)
             .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source }))
     }
 
