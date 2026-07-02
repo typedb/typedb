@@ -27,12 +27,8 @@ use database::query::{
     StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
     execute_write_query_in_schema, execute_write_query_in_write,
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{
-        ActionKind, ClientEndpoint, LoadKind, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics,
-        WriteQueryMetrics,
-    },
+use diagnostics::metrics::{
+    ActionKind, ClientEndpoint, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics,
 };
 use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use executor::{

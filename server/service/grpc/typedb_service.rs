@@ -300,7 +300,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
 
                 self.server_state
                     .users()
-                    .create(accessor, user, credential)
+                    .create(accessor, user, credential, None, None)
                     .await
                     .map(|_| Response::new(user_create_res()))
                     .map_err(|err| err.into_status())

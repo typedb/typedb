@@ -42,6 +42,9 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
+	[dependencies.uuid]
+		workspace = true
+
 	[dependencies.lending_iterator]
 		workspace = true
 

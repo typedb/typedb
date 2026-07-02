@@ -479,7 +479,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .users()
-                    .create(accessor, user, credential)
+                    .create(accessor, user, credential, None, None)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
