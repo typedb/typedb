@@ -112,6 +112,24 @@ pub enum ParsedQuery {
     Pipeline(ParsedPipeline),
 }
 
+impl ParsedQuery {
+    /// Unwrap the parsed schema query, panicking if this is a data pipeline.
+    pub fn into_schema(self) -> ParsedSchemaQuery {
+        match self {
+            ParsedQuery::Schema(schema) => schema,
+            ParsedQuery::Pipeline(_) => panic!("Expected a schema query, but got a data pipeline"),
+        }
+    }
+
+    /// Unwrap the parsed data pipeline, panicking if this is a schema query.
+    pub fn into_pipeline(self) -> ParsedPipeline {
+        match self {
+            ParsedQuery::Pipeline(pipeline) => pipeline,
+            ParsedQuery::Schema(_) => panic!("Expected a data pipeline, but got a schema query"),
+        }
+    }
+}
+
 /// A parsed schema query (define/redefine/undefine) with its context. The schema query is held by
 /// value, since schema queries are one-shot and never cached.
 #[derive(Debug)]

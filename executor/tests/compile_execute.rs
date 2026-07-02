@@ -36,7 +36,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{ParsedQuery, QueryContext, QueryManager},
+    query_manager::{QueryContext, QueryManager},
 };
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
@@ -67,22 +67,14 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let ParsedQuery::Schema(parsed) =
-        query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap()
-    else {
-        panic!("expected a schema query")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::no_profile(data.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(data.to_string())).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(

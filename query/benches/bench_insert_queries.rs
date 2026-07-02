@@ -32,7 +32,7 @@ use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_cache::QueryCache,
-    query_manager::{ParsedQuery, QueryContext, QueryManager},
+    query_manager::{QueryContext, QueryManager},
 };
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
@@ -128,11 +128,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
 
-    let ParsedQuery::Pipeline(parsed) =
-        query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap()
-    else {
-        panic!("expected a data pipeline")
-    };
+    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated =
         query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager

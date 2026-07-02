@@ -18,7 +18,7 @@ use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
-use query::query_manager::{ParsedQuery, QueryContext};
+use query::query_manager::QueryContext;
 use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
@@ -202,13 +202,11 @@ fn execute_schema_transaction(
     let mut transaction = TransactionSchema::open(reimport, TransactionOptions::default())
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     let schema_define = format!("define\n{}", types_syntax);
-    let ParsedQuery::Schema(parsed) = transaction
+    let parsed = transaction
         .query_manager
         .parse(QueryContext::no_profile(schema_define.clone()))
         .map_err(|err| err as Box<dyn TypeDBError>)?
-    else {
-        panic!("expected a schema query")
-    };
+        .into_schema();
     transaction
         .query_manager
         .execute_schema(
