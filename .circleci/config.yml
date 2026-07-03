@@ -115,6 +115,14 @@ commands:
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-all --compilation_mode=opt --//server:mode=published -- release
 
+  deploy-snapshot-apt:
+    steps:
+      - run: |
+          export DEPLOY_APT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_APT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --config=ci --jobs=8 --define version=$(git rev-parse HEAD) //:deploy-apt --compilation_mode=opt -- snapshot
+
   deploy-release-apt:
     steps:
       - run: |
@@ -325,6 +333,22 @@ jobs:
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
+  deploy-apt-x86_64:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - deploy-snapshot-apt
+
+  deploy-apt-arm64:
+    executor: linux-arm64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: arm64
+      - deploy-snapshot-apt
+
   deploy-release-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
     steps:
@@ -385,6 +409,7 @@ jobs:
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
               -c ${CIRCLE_SHA1} -delete $(cat VERSION)
 
+
   sync-to-typedb-benchmark:
     machine:
       image: ubuntu-2204:2024.11.1
@@ -400,6 +425,11 @@ jobs:
             git add .
             git commit -m "Update TypeDB Core version to $CIRCLE_SHA1"
             git push origin development
+
+
+  # distribution tests
+
+
 
   # generic
   release-cleanup:
