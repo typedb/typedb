@@ -8,15 +8,13 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
     sync::Arc,
-    time::Duration,
 };
 
 use async_trait::async_trait;
-use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
+use concurrency::TokioTaskSpawner;
 use database::{database_manager::DatabaseManager, transaction::TransactionId};
 use futures::future::join_all;
 use options::TransactionOptions;
-use resource::constants::common::SECONDS_IN_MINUTE;
 use tokio::sync::{RwLock, mpsc::Sender};
 
 use crate::{
@@ -57,25 +55,12 @@ pub trait TransactionOperator: Debug + Send + Sync {
 pub struct LocalTransactionOperator {
     database_manager: Arc<DatabaseManager>,
     transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
+    background_task_spawner: TokioTaskSpawner,
 }
 
 impl LocalTransactionOperator {
-    const CLEANUP_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
-
     pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
-        let transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>> = Arc::new(RwLock::new(HashMap::new()));
-        let cleanup_transactions = transactions.clone();
-        background_task_spawner.spawn_interval(
-            move || {
-                let transactions = cleanup_transactions.clone();
-                async move {
-                    let mut transactions = transactions.write().await;
-                    transactions.retain(|_, info| !info.close_sender.is_closed());
-                }
-            },
-            IntervalTaskParameters::new_with_delay(Self::CLEANUP_INTERVAL, Self::CLEANUP_INTERVAL, false),
-        );
-        Self { database_manager, transactions }
+        Self { database_manager, transactions: Arc::new(RwLock::new(HashMap::new())), background_task_spawner }
     }
 
     pub async fn record(
@@ -86,8 +71,14 @@ impl LocalTransactionOperator {
         transaction_type: TransactionType,
         close_sender: Sender<()>,
     ) {
+        let close_sender_for_cleanup = close_sender.clone();
+        let transactions_for_cleanup = self.transactions.clone();
         let mut transactions = self.transactions.write().await;
         transactions.insert(transaction_id, TransactionInfo { transaction_type, database_name, owner, close_sender });
+        self.background_task_spawner.spawn(async move {
+            close_sender_for_cleanup.closed().await;
+            transactions_for_cleanup.write().await.remove(&transaction_id);
+        });
     }
 
     async fn close_matching(&self, matches: impl Fn(&TransactionInfo) -> bool) {
