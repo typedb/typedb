@@ -204,7 +204,7 @@ fn execute_schema_transaction(
     let schema_define = format!("define\n{}", types_syntax);
     let parsed = transaction
         .query_manager
-        .parse(QueryContext::no_profile(schema_define.clone()))
+        .parse(QueryContext::unprofiled(schema_define.clone()))
         .map_err(|err| err as Box<dyn TypeDBError>)?
         .into_schema();
     transaction

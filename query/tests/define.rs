@@ -28,7 +28,7 @@ fn basic() {
     attribute name value string;
     entity person owns name;
     "#;
-    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(QueryContext::unprofiled(query_str.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();

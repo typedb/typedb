@@ -94,7 +94,7 @@ fn execute_read_query(
     source_query: &str,
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
-        let parsed = tx.query_manager.parse(QueryContext::no_profile(source_query.to_string()))?.into_pipeline();
+        let parsed = tx.query_manager.parse(QueryContext::unprofiled(source_query.to_string()))?.into_pipeline();
         let translated = tx.query_manager.translate(
             &parsed,
             tx.snapshot.as_ref(),
@@ -164,7 +164,7 @@ fn execute_write_query(
                                            _opts| {
         // `parsed_pipeline` is bound in this arm so the translation (which borrows it) outlives the
         // whole prepare/execute chain nested below.
-        match query_manager.parse(QueryContext::no_profile(source_query.to_string())) {
+        match query_manager.parse(QueryContext::unprofiled(source_query.to_string())) {
             Err(error) => (Err(BehaviourTestExecutionError::Query(*error)), snapshot),
             Ok(parsed) => {
                 let parsed_pipeline = parsed.into_pipeline();
@@ -257,7 +257,7 @@ fn execute_analyze(
     with_read_tx!(context, |tx| {
         let parsed = tx
             .query_manager
-            .parse(QueryContext::no_profile(source_query.to_string()))
+            .parse(QueryContext::unprofiled(source_query.to_string()))
             .map_err(|source| BehaviourTestExecutionError::Query(*source))?
             .into_pipeline();
         let translated = match tx.query_manager.translate(
@@ -309,7 +309,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
 
     with_schema_tx!(context, |tx| {
-        let parsed = tx.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_schema();
+        let parsed = tx.query_manager.parse(QueryContext::unprofiled(query.to_string())).unwrap().into_schema();
         let result = tx.query_manager.execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,

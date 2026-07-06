@@ -54,7 +54,7 @@ fn setup() -> Context {
             &type_manager,
             &thing_manager,
             &function_manager,
-            ParsedSchemaQuery::new(QueryContext::no_profile(SCHEMA.to_string()), define),
+            ParsedSchemaQuery::new(QueryContext::unprofiled(SCHEMA.to_string()), define),
         )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -68,7 +68,7 @@ fn setup() -> Context {
 
 fn translate(context: &Context) {
     let snapshot = context.storage.clone().open_snapshot_read();
-    let parsed = context.query_manager.parse(QueryContext::no_profile(QUERY.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(QueryContext::unprofiled(QUERY.to_string())).unwrap().into_pipeline();
     context.query_manager.translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
 }
 
@@ -80,7 +80,7 @@ fn identical_query_string_hits_parse_cache() {
     assert!(context.cache.get_parsed(QUERY).is_none());
 
     assert!(matches!(
-        context.query_manager.parse(QueryContext::no_profile(QUERY.to_string())).unwrap(),
+        context.query_manager.parse(QueryContext::unprofiled(QUERY.to_string())).unwrap(),
         ParsedQuery::Pipeline(..)
     ));
 

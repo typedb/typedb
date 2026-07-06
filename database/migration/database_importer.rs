@@ -564,7 +564,7 @@ impl DatabaseImporter {
             typeql::query::QueryStructure::Schema(schema_query) => match &schema_query {
                 SchemaQuery::Define(_) => {
                     let transaction = Self::open_schema_transaction(self.database()?)?;
-                    let parsed = ParsedSchemaQuery::new(QueryContext::no_profile(schema), schema_query);
+                    let parsed = ParsedSchemaQuery::new(QueryContext::unprofiled(schema), schema_query);
                     let (transaction, query_result) =
                         spawn_blocking(move || execute_schema_query(transaction, parsed))
                             .await
