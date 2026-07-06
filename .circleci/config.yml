@@ -11,14 +11,14 @@ orbs:
 executors:
   linux-arm64-amazonlinux-2:
     docker:
-      - image: amazonlinux:2
+      - image: typedb/amazonlinux2-ci:3.12.0-arm64
     resource_class: arm.large
     working_directory: ~/typedb
 
   # All builds go on amazon-linux.
   linux-x86_64-amazonlinux-2:
     docker:
-      - image: amazonlinux:2
+      - image: typedb/amazonlinux2-ci:3.12.0-amd64
     resource_class: large
     working_directory: ~/typedb
 
@@ -56,16 +56,6 @@ commands:
           export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64/')
           echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
           echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
-
-          amazon-linux-extras install java-openjdk11 docker python3.8 -y
-          yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
-
-          rm /usr/bin/python3
-          ln -s /usr/bin/python3.8 /usr/bin/python3
-          
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
-          mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/bazel
 
   install-deps-brew:
     parameters:
