@@ -203,6 +203,15 @@ impl KindAPI for RoleType {
     ) -> Result<(), Box<ConceptReadError>> {
         Ok(())
     }
+
+    fn sub_syntax(
+        &self,
+        _f: &mut impl std::fmt::Write,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Ok(())
+    }
 }
 
 impl RoleType {
