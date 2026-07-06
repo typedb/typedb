@@ -273,6 +273,16 @@
   
 
 ## Other Improvements
+- **Show sub annotations in schema dump**
+  
+  Fix a bug where `sub` annotations (`@doc` and `@meta`) would not be retrieved when retrieving database schema.
+  
+  
+- **doc and metadata annotations don't need validation**
+  
+  We mark `@doc` and `@meta` annotations as not requiring validation. Otherwise the operation level validation of schema queries fails in debug mode as there are unhandled constraints.
+  
+  
 - **Fix 'function not found' for built-in functions in fetch**
   
   Built-in functions that are not explicitly enumerated in the grammar need to be resolved during translation. There was a leftover check that a function name not included in the typeql grammar must be in the index of user-defined functions, which of course does not hold for built-in functions. We modify that check to account for non-grammar built-ins.
