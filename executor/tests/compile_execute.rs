@@ -67,14 +67,14 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let parsed = query_manager.parse(QueryContext::unprofiled(schema.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let parsed = query_manager.parse(QueryContext::unprofiled(data.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(data.to_string())).unwrap().into_pipeline();
     let translated = query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(

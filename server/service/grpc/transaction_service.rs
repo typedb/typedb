@@ -764,7 +764,7 @@ impl TransactionService {
         req_id: Uuid,
         analyse_req: typedb_protocol::analyze::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        let context = QueryContext::with_profile(analyse_req.query);
+        let context = QueryContext::new(analyse_req.query);
         let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(..)) => {
@@ -808,7 +808,7 @@ impl TransactionService {
         }
 
         let given_rows = query_req.given.map(GivenRowsGrpc);
-        let context = QueryContext::with_profile(query_req.query);
+        let context = QueryContext::new(query_req.query);
         let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(parsed)) => {

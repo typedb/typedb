@@ -42,7 +42,7 @@ fn setup() -> (
 
     let schema = "define entity person;";
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let parsed = query_manager.parse(QueryContext::unprofiled(schema.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
@@ -57,7 +57,7 @@ fn pipeline_at_limit_is_accepted() {
     let (_tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager) = setup();
 
     let query_str = build_pipeline_query(MAX_PIPELINE_STAGES);
-    let parsed = query_manager.parse(QueryContext::unprofiled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     assert_eq!(parsed.pipeline().stages.len(), MAX_PIPELINE_STAGES);
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -82,7 +82,7 @@ fn pipeline_over_limit_is_rejected() {
 
     let over = MAX_PIPELINE_STAGES + 1;
     let query_str = build_pipeline_query(over);
-    let parsed = query_manager.parse(QueryContext::unprofiled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     assert_eq!(parsed.pipeline().stages.len(), over);
 
     let snapshot = storage.clone().open_snapshot_read();
