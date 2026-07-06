@@ -357,7 +357,7 @@ jobs:
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
-  deploy-apt-x86_64:
+  deploy-snapshot-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
@@ -365,7 +365,7 @@ jobs:
           bazel-arch: amd64
       - deploy-snapshot-apt
 
-  deploy-apt-arm64:
+  deploy-snapshot-apt-arm64:
     executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
@@ -534,12 +534,37 @@ workflows:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
 
+      - deploy-snapshot-apt-x86_64:
+          filters:
+            branches:
+              only: [ master ]
+
+      - deploy-snapshot-apt-arm64:
+          filters:
+            branches:
+              only: [ master ]
+
+      - test-distribution-apt-snapshot-x86_64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-snapshot-apt-x86_64
+
+      - test-distribution-apt-snapshot-arm64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-snapshot-apt-arm64
+
       - sync-to-typedb-benchmark:
           filters:
             branches:
               only: [ master ]
           requires:
             - test-deploy-snapshot-linux-x86_64
+
   release:
     jobs:
       - deploy-release-linux-x86_64:
