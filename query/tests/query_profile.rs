@@ -43,7 +43,7 @@ fn define_schema(
                     owns nickname @card(0..1),
                     plays friendship:friend @card(0..);
     "#;
-    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(QueryContext::unprofiled(query_str.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed)
         .unwrap();
@@ -59,7 +59,7 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let parsed = query_manager.parse(QueryContext::no_profile(query_string.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::unprofiled(query_string.to_string())).unwrap().into_pipeline();
     let translated = query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(

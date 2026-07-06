@@ -103,7 +103,7 @@ fn setup_common(schema: &str) -> Context {
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let parsed = query_manager.parse(QueryContext::no_profile(schema.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(QueryContext::unprofiled(schema.to_string())).unwrap().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
@@ -120,7 +120,7 @@ fn run_read_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(QueryContext::unprofiled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -159,7 +159,7 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(QueryContext::unprofiled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)

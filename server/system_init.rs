@@ -87,7 +87,7 @@ pub fn get_system_database_schema_commit_intent(
                 })
                 .into_structure()
                 .into_schema();
-            let parsed = ParsedSchemaQuery::new(QueryContext::no_profile(SCHEMA.to_string()), query);
+            let parsed = ParsedSchemaQuery::new(QueryContext::unprofiled(SCHEMA.to_string()), query);
             query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, parsed).unwrap_or_else(|error| {
                 panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
             });

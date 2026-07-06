@@ -96,9 +96,9 @@ impl QueryContext {
         Self::new(source_query, Arc::new(QueryProfile::new(tracing::enabled!(Level::TRACE))))
     }
 
-    /// Create a context with no profiling; its profile records nothing. Use where profiling is not
-    /// wanted, such as internal queries and tests.
-    pub fn no_profile(source_query: String) -> Self {
+    /// Create a context whose profile is disabled and records nothing, regardless of tracing. Use
+    /// where profiling is not wanted, such as internal queries and tests.
+    pub fn unprofiled(source_query: String) -> Self {
         Self::new(source_query, Arc::new(QueryProfile::new(false)))
     }
 

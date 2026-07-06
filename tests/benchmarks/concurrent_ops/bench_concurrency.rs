@@ -156,7 +156,7 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
 
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-    let parsed = ParsedSchemaQuery::new(QueryContext::no_profile(schema.to_string()), schema_query);
+    let parsed = ParsedSchemaQuery::new(QueryContext::unprofiled(schema.to_string()), schema_query);
     let (tx, result) = execute_schema_query(tx, parsed);
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
@@ -179,7 +179,7 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             let (returned_tx, result) = execute_write_query_in_write(
                 tx,
                 QueryOptions::default_grpc(),
-                ParsedPipeline::new(QueryContext::no_profile(query_str), Arc::new(pipeline)),
+                ParsedPipeline::new(QueryContext::unprofiled(query_str), Arc::new(pipeline)),
                 None::<GivenRowsSimple>,
                 ExecutionInterrupt::new_uninterruptible(),
             );
@@ -213,7 +213,7 @@ fn execute_insert_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            ParsedPipeline::new(QueryContext::no_profile(query_str), Arc::new(pipeline)),
+            ParsedPipeline::new(QueryContext::unprofiled(query_str), Arc::new(pipeline)),
             None::<GivenRowsSimple>,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -249,7 +249,7 @@ fn execute_update_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            ParsedPipeline::new(QueryContext::no_profile(query_str), Arc::new(pipeline)),
+            ParsedPipeline::new(QueryContext::unprofiled(query_str), Arc::new(pipeline)),
             None::<GivenRowsSimple>,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -287,7 +287,7 @@ fn execute_relation_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            ParsedPipeline::new(QueryContext::no_profile(query_str), Arc::new(pipeline)),
+            ParsedPipeline::new(QueryContext::unprofiled(query_str), Arc::new(pipeline)),
             None::<GivenRowsSimple>,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -308,7 +308,7 @@ fn execute_relation_batch(
 fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::unprofiled(query_str.to_string())).unwrap().into_pipeline();
     let translated =
         query_manager.translate(&parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager

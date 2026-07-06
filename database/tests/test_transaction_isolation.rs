@@ -45,7 +45,7 @@ fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
 fn commit_schema(database: Arc<Database<WALClient>>, schema: &str) {
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database, TransactionOptions::default()).unwrap();
-    let parsed = ParsedSchemaQuery::new(QueryContext::no_profile(schema.to_string()), schema_query);
+    let parsed = ParsedSchemaQuery::new(QueryContext::unprofiled(schema.to_string()), schema_query);
     let (tx, result) = execute_schema_query(tx, parsed);
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
@@ -68,7 +68,7 @@ fn run_write(tx: TransactionWrite<WALClient>, query: &str) -> TransactionWrite<W
     let (tx, result) = execute_write_query_in_write(
         tx,
         QueryOptions::default_grpc(),
-        ParsedPipeline::new(QueryContext::no_profile(query.to_string()), Arc::new(pipeline)),
+        ParsedPipeline::new(QueryContext::unprofiled(query.to_string()), Arc::new(pipeline)),
         None::<GivenRowsSimple>,
         ExecutionInterrupt::new_uninterruptible(),
     );
