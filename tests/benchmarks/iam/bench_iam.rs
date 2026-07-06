@@ -87,7 +87,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
     } = tx;
     let parsed = query_manager.parse(QueryContext::no_profile(data_str)).unwrap().into_pipeline();
     let translated =
-        query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+        query_manager.translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let write_pipeline = query_manager
         .prepare_write_pipeline(
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
@@ -150,7 +150,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let parsed = query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated =
-        query_manager.translate(parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
+        query_manager.translate(&parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),

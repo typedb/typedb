@@ -164,9 +164,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {
     let start_time = Instant::now();
-    // Keep the source query for execution-error messages; the context is consumed by translate.
-    let source_query = parsed.source_query().to_owned();
-    let translated = match query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager) {
+    let translated = match query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager) {
         Ok(translated) => translated,
         Err(err) => return (snapshot, Err(err)),
     };
@@ -192,7 +190,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
                 return (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(Box::new(QueryError::WritePipelineExecution {
-                        source_query: source_query.to_string(),
+                        source_query: parsed.source_query().to_string(),
                         typedb_source: err,
                     })),
                 );
@@ -202,7 +200,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         let result = match iterator.collect::<Result<Vec<_>, _>>() {
             Ok(documents) => Ok(WriteQueryAnswer::new_documents(query_options, (parameters, documents))),
             Err(err) => Err(Box::new(QueryError::WritePipelineExecution {
-                source_query: source_query.to_string(),
+                source_query: parsed.source_query().to_string(),
                 typedb_source: err,
             })),
         };
@@ -226,7 +224,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
                 return (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(Box::new(QueryError::WritePipelineExecution {
-                        source_query: source_query.to_string(),
+                        source_query: parsed.source_query().to_string(),
                         typedb_source: err,
                     })),
                 );
@@ -241,7 +239,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
             Err(err) => (
                 Arc::into_inner(snapshot).unwrap(),
                 Err(Box::new(QueryError::WritePipelineExecution {
-                    source_query: source_query.to_string(),
+                    source_query: parsed.source_query().to_string(),
                     typedb_source: err,
                 })),
             ),

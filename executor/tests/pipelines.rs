@@ -78,7 +78,7 @@ fn test_insert() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -123,7 +123,7 @@ fn test_insert_insert() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -164,7 +164,7 @@ fn test_match() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -189,7 +189,7 @@ fn test_match() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -211,7 +211,7 @@ fn test_match() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -243,7 +243,7 @@ fn test_match_match() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -271,7 +271,7 @@ fn test_match_match() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -293,7 +293,7 @@ fn test_match_match() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -320,7 +320,7 @@ fn test_match_delete_has() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -361,7 +361,7 @@ fn test_match_delete_has() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(delete_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -407,7 +407,7 @@ fn test_insert_match_insert() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -440,7 +440,7 @@ fn test_insert_match_insert() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -476,7 +476,7 @@ fn test_match_sort() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -502,7 +502,7 @@ fn test_match_sort() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -547,7 +547,7 @@ fn test_select() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -574,7 +574,7 @@ fn test_select() {
         let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
-            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -597,7 +597,7 @@ fn test_select() {
         let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
-            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -626,7 +626,7 @@ fn test_require() {
     let parsed = context.query_manager.parse(QueryContext::no_profile(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -653,7 +653,7 @@ fn test_require() {
         let parsed = context.query_manager.parse(QueryContext::no_profile(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
-            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager

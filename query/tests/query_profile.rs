@@ -60,7 +60,7 @@ fn insert_data(
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let parsed = query_manager.parse(QueryContext::no_profile(query_string.to_string())).unwrap().into_pipeline();
-    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -185,7 +185,7 @@ fn query_profile_tree_structure() {
     let parsed = query_manager.parse(QueryContext::with_profile(query_str.to_string())).unwrap().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated =
-        query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+        query_manager.translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot,
