@@ -75,7 +75,7 @@ fn setup(
 
     let snapshot = storage.clone().open_snapshot_write();
     let parsed = query_manager.parse(QueryContext::no_profile(data.to_string())).unwrap().into_pipeline();
-    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,

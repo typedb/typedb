@@ -9,7 +9,7 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
     sync::{
-        Arc, OnceLock, RwLock,
+        Arc, Mutex, MutexGuard, OnceLock, RwLock,
         atomic::{AtomicU64, Ordering},
     },
     time::{Duration, Instant},
@@ -434,22 +434,29 @@ impl CommitProfileData {
 
 #[derive(Debug)]
 pub struct QueryProfile {
-    compile_profile: CompileProfile,
+    // Interior-mutable so the profile can be shared as `Arc<QueryProfile>` from creation (parse) all
+    // the way into the executor, while each compilation phase still records into it. The compilation
+    // phases run strictly sequentially, so this lock is never contended.
+    compile_profile: Mutex<CompileProfile>,
     stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
 }
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { compile_profile: CompileProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
+        Self {
+            compile_profile: Mutex::new(CompileProfile::new(enabled)),
+            stage_profiles: RwLock::new(HashMap::new()),
+            enabled,
+        }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn compilation_profile(&mut self) -> &mut CompileProfile {
-        &mut self.compile_profile
+    pub fn compilation_profile(&self) -> MutexGuard<'_, CompileProfile> {
+        self.compile_profile.lock().unwrap()
     }
 
     pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
@@ -478,7 +485,7 @@ impl QueryProfile {
             .values()
             .map(|stage_profile| stage_profile.pattern_profile.get().map_or(0, |profile| profile.total_nanos()))
             .sum();
-        self.compile_profile.total_nanos() + stage_nanos
+        self.compilation_profile().total_nanos() + stage_nanos
     }
 }
 
@@ -493,7 +500,7 @@ impl IndentDisplay for QueryProfile {
         let total_micros = self.total_nanos() as f64 / 1000.0;
         write_indent(f, indent)?;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
-        self.compile_profile.indent_fmt(f, indent + 1)?;
+        self.compilation_profile().indent_fmt(f, indent + 1)?;
         let stage_profiles = self.stage_profiles.read().unwrap();
         for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
             write_indent(f, indent + 1)?;

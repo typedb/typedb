@@ -62,7 +62,7 @@ fn pipeline_at_limit_is_accepted() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated = query_manager
-        .translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
+        .translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager)
         .expect("pipeline at the stage limit should translate");
     let result = query_manager.prepare_read_pipeline(
         snapshot,
@@ -86,7 +86,7 @@ fn pipeline_over_limit_is_rejected() {
     assert_eq!(parsed.pipeline().stages.len(), over);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let result = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager);
+    let result = query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager);
     let err = match result {
         Ok(_) => panic!("query with too many stages should fail"),
         Err(err) => err,

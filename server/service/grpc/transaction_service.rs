@@ -879,7 +879,7 @@ impl TransactionService {
 
             let result = spawn_blocking(move || {
                 let translated =
-                    query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)?;
+                    query_manager.translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager)?;
                 query_manager.analyse(snapshot, &type_manager, &function_manager, translated)
             })
             .await
@@ -1191,10 +1191,8 @@ impl TransactionService {
             spawn_blocking(move || {
                 let start_time = Instant::now();
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
-                // Keep the source query for execution-error messages; the parsed pipeline is consumed by translate.
-                let source_query = parsed.source_query().to_owned();
                 let translated =
-                    query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager);
+                    query_manager.translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager);
                 let translated = unwrap_or_execute_and_return!(translated, |err| {
                     Self::submit_read_response_with_metrics(
                         &sender,
@@ -1220,7 +1218,7 @@ impl TransactionService {
                 Self::respond_read_query_sync(
                     query_options,
                     pipeline,
-                    &source_query,
+                    parsed.source_query(),
                     timeout_at,
                     interrupt,
                     &sender,

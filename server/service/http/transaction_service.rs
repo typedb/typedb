@@ -968,9 +968,7 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
-                // Keep the source query for execution-error messages; the parsed pipeline is consumed by translate.
-                let source_query = parsed.source_query().to_owned();
-                let translated = match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
+                let translated = match query_manager.translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager)
                 {
                     Ok(translated) => translated,
                     Err(typedb_source) => {
@@ -1002,7 +1000,7 @@ impl TransactionService {
                 Self::respond_read_query_sync(
                     query_options,
                     pipeline,
-                    &source_query,
+                    parsed.source_query(),
                     timeout_at,
                     interrupt,
                     responder,
@@ -1204,9 +1202,7 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
-                // Keep the source query for the analysis-error message; the parsed pipeline is consumed by translate.
-                let source_query = parsed.source_query().to_owned();
-                let translated = match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
+                let translated = match query_manager.translate(&parsed, snapshot.as_ref(), &function_manager, &thing_manager)
                 {
                     Ok(translated) => translated,
                     Err(typedb_source) => {
@@ -1233,7 +1229,10 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::AnalyseQueryFailed {
-                            typedb_source: QueryError::QueryAnalysisFailed { source_query, typedb_source },
+                            typedb_source: QueryError::QueryAnalysisFailed {
+                                source_query: parsed.source_query().to_owned(),
+                                typedb_source,
+                            },
                         }
                     }
                 );
