@@ -180,6 +180,30 @@ commands:
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
+  distribution-test-run-console-script:
+    parameters:
+      script-path:
+        type: string
+    steps:
+      - run: |
+          typedb server --development-mode.enabled=true &
+          export TYPEDB_PID=$!
+          sleep 10
+          typedb console --username=admin --password=password --address=localhost:1729 --tls-disabled --script=<<parameters.script-path>>
+          kill -s TERM $!
+          sleep 3
+
+  install-apt-snapshot:
+    steps:
+      - run: |
+          apt update
+          apt install -y software-properties-common apt-transport-https gpg
+          gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key 17507562824cfdcc
+          gpg --export 17507562824cfdcc | tee /etc/apt/trusted.gpg.d/typedb.gpg > /dev/null
+          echo "deb https://repo.typedb.com/public/public-snapshot/deb/ubuntu trusty main" | tee /etc/apt/sources.list.d/typedb.list > /dev/null
+          apt update
+          apt install -y typedb=$(git rev-parse HEAD)
+
 jobs:
   # per platform snapshot deployment
   test-deploy-snapshot-linux-x86_64:
@@ -428,8 +452,31 @@ jobs:
 
 
   # distribution tests
+  test-distribution-apt-snapshot-x86_64:
+    machine:
+      image: ubuntu-2204:2024.11.1
+    resource_class: large
+    steps:
+      - install-apt-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/script.tql
+      - run: apt install --reinstall -y typedb=$(git rev-parse HEAD)
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/verify.tql
 
+  test-distribution-apt-snapshot-arm64:
+    machine:
+      image: ubuntu-2204:2024.11.1
+    resource_class: arm.large
+    steps:
+      - install-apt-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/script.tql
+      - run: apt install --reinstall -y typedb=$(git rev-parse HEAD)
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/verify.tql
 
+  
 
   # generic
   release-cleanup:

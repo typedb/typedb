@@ -1,0 +1,7 @@
+transaction read foo
+match
+  marriage (spouse: $p, spouse: $_);
+  $p has name $n;
+select $n;
+
+close
