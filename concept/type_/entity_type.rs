@@ -19,6 +19,7 @@ use encoding::{
     layout::prefix::{Prefix, Prefix::VertexEntityType},
     value::label::Label,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
@@ -44,6 +45,7 @@ use crate::{
         owns::Owns,
         plays::Plays,
         role_type::RoleType,
+        sub::Sub,
         type_manager::TypeManager,
     },
 };
@@ -210,6 +212,27 @@ impl KindAPI for EntityType {
     ) -> Result<(), Box<ConceptReadError>> {
         self.owns_syntax(f, snapshot, type_manager)?;
         self.plays_syntax(f, snapshot, type_manager)?;
+        Ok(())
+    }
+
+    fn sub_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if let Some(supertype) = self.get_supertype(snapshot, type_manager)? {
+            let supertype_label = supertype.get_label(snapshot, type_manager)?;
+            write!(f, ",\n  {} {}", typeql::token::Keyword::Sub, supertype_label.name.as_str())
+                .map_err(|err| Box::new(err.into()))?;
+            for annotation in Sub::<Self>::new(*self, supertype)
+                .get_annotations_declared(snapshot, type_manager)?
+                .iter()
+                .sorted_by_key(|annotation| annotation.category())
+            {
+                write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+            }
+        }
         Ok(())
     }
 }

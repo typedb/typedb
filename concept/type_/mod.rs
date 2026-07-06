@@ -228,13 +228,16 @@ pub trait KindAPI: TypeAPI {
         let label = self.get_label(snapshot, type_manager)?;
         write!(f, "\n{} {}", Self::KIND, label.scoped_name().as_str()).map_err(|err| Box::new(err.into()))?;
         self.type_annotations_syntax(f, snapshot, type_manager)?;
-        if let Some(supertype) = self.get_supertype(snapshot, type_manager)? {
-            let supertype_label = supertype.get_label(snapshot, type_manager)?;
-            write!(f, ",\n  {} {}", typeql::token::Keyword::Sub, supertype_label.name.as_str())
-                .map_err(|err| Box::new(err.into()))?;
-        }
+        self.sub_syntax(f, snapshot, type_manager)?;
         Ok(())
     }
+
+    fn sub_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>>;
 
     fn type_annotations_syntax(
         &self,

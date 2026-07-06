@@ -35,7 +35,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, thing_manager::ThingManager},
     type_::{
-        KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
+        Capability, KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
             AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation, HasAnnotationCategory,
@@ -44,6 +44,7 @@ use crate::{
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         owns::Owns,
+        sub::Sub,
         type_manager::TypeManager,
     },
 };
@@ -206,6 +207,7 @@ impl KindAPI for AttributeType {
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType>>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_constraints(snapshot, self)
     }
+
     fn capabilities_syntax(
         &self,
         f: &mut impl std::fmt::Write,
@@ -241,6 +243,27 @@ impl KindAPI for AttributeType {
             .sorted_by_key(|annotation| annotation.category())
         {
             write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+        }
+        Ok(())
+    }
+
+    fn sub_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if let Some(supertype) = self.get_supertype(snapshot, type_manager)? {
+            let supertype_label = supertype.get_label(snapshot, type_manager)?;
+            write!(f, ",\n  {} {}", typeql::token::Keyword::Sub, supertype_label.name.as_str())
+                .map_err(|err| Box::new(err.into()))?;
+            for annotation in Sub::<Self>::new(*self, supertype)
+                .get_annotations_declared(snapshot, type_manager)?
+                .iter()
+                .sorted_by_key(|annotation| annotation.category())
+            {
+                write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+            }
         }
         Ok(())
     }
