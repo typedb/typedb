@@ -649,6 +649,15 @@ macro_rules! FromAnnotation {
                 }
             }
         }
+
+        impl std::fmt::Display for $Enum {
+            #[allow(unused_variables, reason = "`f` is unused for empty enums")]
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match *self {
+                    $($Enum::$Variant(ref annotation) => std::fmt::Display::fmt(annotation, f),)*
+                }
+            }
+        }
     };
 
     (@cat $vis:vis $Enum:ident { $($inner:tt)* } Meta $($tail:tt)*) => { FromAnnotation! { @cat $vis $Enum { $($inner)* Meta(String), } $($tail)* } };
