@@ -192,7 +192,7 @@ commands:
           gpg --export 17507562824cfdcc | sudo tee /etc/apt/trusted.gpg.d/typedb.gpg > /dev/null
           echo "deb https://repo.typedb.com/public/public-snapshot/deb/ubuntu trusty main" | sudo tee /etc/apt/sources.list.d/typedb.list > /dev/null
           sudo apt update
-          sudo apt install -y typedb=$(git rev-parse HEAD)
+          sudo apt install -y typedb=0.0.0-$(git rev-parse HEAD)
 
 jobs:
   # per platform snapshot deployment
@@ -451,7 +451,7 @@ jobs:
       - install-apt-snapshot
       - distribution-test-run-console-script:
           script-path: tests/assembly/script.tql
-      - run: sudo apt install --reinstall -y typedb=$(git rev-parse HEAD)
+      - run: sudo apt install --reinstall -y typedb=0.0.0-$(git rev-parse HEAD)
       - distribution-test-run-console-script:
           script-path: tests/assembly/verify.tql
 
@@ -464,7 +464,7 @@ jobs:
       - install-apt-snapshot
       - distribution-test-run-console-script:
           script-path: tests/assembly/script.tql
-      - run: sudo apt install --reinstall -y typedb=$(git rev-parse HEAD)
+      - run: sudo apt install --reinstall -y typedb=0.0.0-$(git rev-parse HEAD)
       - distribution-test-run-console-script:
           script-path: tests/assembly/verify.tql
 
