@@ -200,7 +200,7 @@ commands:
           sudo apt install -y software-properties-common apt-transport-https gpg
           gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key 17507562824cfdcc
           gpg --export 17507562824cfdcc | sudo tee /etc/apt/trusted.gpg.d/typedb.gpg > /dev/null
-          echo "deb https://repo.typedb.com/public/public-snapshot/deb/ubuntu trusty main" | tee /etc/apt/sources.list.d/typedb.list > /dev/null
+          echo "deb https://repo.typedb.com/public/public-snapshot/deb/ubuntu trusty main" | sudo tee /etc/apt/sources.list.d/typedb.list > /dev/null
           sudo apt update
           sudo apt install -y typedb=$(git rev-parse HEAD)
 
