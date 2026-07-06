@@ -163,6 +163,8 @@ impl ConstraintDescription {
         match self {
             ConstraintDescription::Cardinality(cardinality) => cardinality.requires_validation(),
             ConstraintDescription::Independent(_) => false,
+            ConstraintDescription::Doc(_) => false,
+            ConstraintDescription::Meta(_) => false,
             _ => true,
         }
     }
@@ -171,6 +173,8 @@ impl ConstraintDescription {
         match self {
             ConstraintDescription::Cardinality(_) => false, // only commit time
             ConstraintDescription::Independent(_) => false, // never
+            ConstraintDescription::Doc(_) => false,         // never
+            ConstraintDescription::Meta(_) => false,        // never
             _ => true,
         }
     }
