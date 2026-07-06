@@ -534,7 +534,7 @@ workflows:
       - deploy-snapshot-apt-x86_64:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
 
       - deploy-snapshot-apt-arm64:
           filters:
@@ -544,7 +544,7 @@ workflows:
       - test-distribution-apt-snapshot-x86_64:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
           requires:
             - deploy-snapshot-apt-x86_64
 
