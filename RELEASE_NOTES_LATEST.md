@@ -1,13 +1,18 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.12.0-rc2](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0-rc2)
+[Distributions for 3.12.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.0)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.12.0-rc2```
+```docker pull typedb/typedb:3.12.0```
 
 
 ## New Features
+- **Allow passing UUIDs for users and credentials on creation**
+  
+  Allow passing pre-created UUIDs for users and credentials when creating a new user. This is valuable in multiple situations: e.g., in a distributed environment, where the inner state of the server must be shared 1-to-1 with the other members of a cluster (before, the UUIDs were strictly generated locally, leading to different states).
+  
+  
 - **Await transactions closing in transaction operator**
   
   Ensure the `TransactionOperator` closes all transactions requested to be closed before returning from the function. Before, it used to "fire and forget", which does not have enough guarantees for real use cases of these methods.
@@ -154,6 +159,11 @@
   
 
 ## Bugs Fixed
+- **Instantly cleanup transaction operator's registry on transaction close**
+  
+  Fix a bug where the transaction operator's `has` methods returned false positive answers due to stale inner caches.
+  
+  
 - **Fix protocol extension mismatch error handling**
   Fix how errors are handled when the driver protocol extension is ahead of the server - it previously crashed, now returns an error as expected. Sample message:
   
@@ -186,6 +196,28 @@
   
 
 ## Code Refactors
+- **Optimize schema commit with in-memory preloaded snapshot**
+  
+  Optimize schema commit by preloading the entire schema storage range into a new in-memory data structure. This makes the thousands of validation and cache rebuild lookups up significantly faster compared to the previous approach of always going to RocksDB.
+  
+  As an example, a schema with 21k schema types being committed with a set of new types, went from 40s to ~9s for the complete schema revalidation and cache rebuilds.
+  
+  
+- **Optimize iterator KMerge**
+  
+  We optimize the read path of our executors and iterators by letting the core KMerge iterator box iterators that are moved in and out of the internal heap frequently, and sometimes bypassing it entirely.
+  
+  We also introduce new executor microbenchmarks, which are extremely useful for optimizing the overhead of our iterators. See `//executor/benches/BUILD`, which also shows how to produce a flamegraph — confirmed working on Linux and on Mac 26.
+  
+  ```
+    >> bazel run --compilation_mode=opt //executor/benches:bench_instructions -- --bench [ "has_reverse_unbound/multi_type" ] # bench specific test
+  
+    # To generate a flamegraph instead of timing, pass --profile-time <seconds>.
+    # Criterion will run each matched bench under pprof's SIGPROF sampler and write
+    # a flamegraph.svg per bench function.
+    >> bazel run --compilation_mode=opt //executor/benches:bench_instructions -- --bench --profile-time 30 [ "has_reverse_unbound/multi_type" ] # bench specific test
+  ```
+  
 - **Use Bazel `exclusive` tag for HTTP service tests instead of CLI --jobs=1**
   
   Replace the CI Bazel `--jobs=1` flag to ensure jobs aren't running in parallel and clashing for resources with the `exclusive` bazel tag.
@@ -241,8 +273,9 @@
   
 
 ## Other Improvements
-- **Prepare release 3.12.0-rc0**
-  Bump version, prepare release notes
+- **Fix 'function not found' for built-in functions in fetch**
+  
+  Built-in functions that are not explicitly enumerated in the grammar need to be resolved during translation. There was a leftover check that a function name not included in the typeql grammar must be in the index of user-defined functions, which of course does not hold for built-in functions. We modify that check to account for non-grammar built-ins.
   
   
 - **Allow committing schema functions on abstract types**
@@ -315,7 +348,7 @@
   
   Fix the recently introduced broken entrypoint for the Docker image: the binary the entrypoint points at did not exist inside the image.
   
-  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-3.12.0-rc2"`. Inside the docker layer the binary lived at:
+  The regression was introduced in https://github.com/typedb/typedb/commit/e4f16b8b40114eeb4ebf2f8b5bc053a60c823fdb ("Fix CI pipelines after rules_python upgrade #7829"), which migrated the assembly rules from `assemble_targz`/`assemble_zip` to `pkg_tar`/`pkg_zip` with explicit `package_dir = "...-{version}"`. Inside the docker layer the binary lived at:
   
   ```
   /opt/typedb-server-linux-<arch>-<version>/typedb
@@ -327,7 +360,7 @@
   /opt/typedb-server-linux-<arch>/typedb
   ```
   
-  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-3.12.0-rc2` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
+  The downloadable `assemble-server-*` and `assemble-all-*` tarballs/zips are unchanged: they keep the `-{version}` suffix in their extracted directory names, which is what end users want when extracting a downloaded archive locally.
   
   Current release artifacts breakdown:
   ```
