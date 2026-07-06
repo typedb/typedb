@@ -86,20 +86,21 @@ pub struct QueryContext {
 }
 
 impl QueryContext {
-    pub fn new(source_query: String, profile: Arc<QueryProfile>) -> Self {
-        Self { source_query, profile }
+    /// Create a context whose profile is enabled iff TRACE-level tracing is on. This is the default
+    /// entry point for served queries.
+    pub fn new(source_query: String) -> Self {
+        Self { source_query, profile: Arc::new(QueryProfile::new(tracing::enabled!(Level::TRACE))) }
     }
 
-    /// Create a context whose profile is enabled iff TRACE-level tracing is on, matching the gating
-    /// previously applied at each compilation step. This is the normal entry point for served queries.
-    pub fn with_profile(source_query: String) -> Self {
-        Self::new(source_query, Arc::new(QueryProfile::new(tracing::enabled!(Level::TRACE))))
+    /// Create a context whose profile is always disabled, regardless of tracing. Use where profiling
+    /// is not wanted, such as internal queries and tests.
+    pub fn new_profile_disabled(source_query: String) -> Self {
+        Self { source_query, profile: Arc::new(QueryProfile::new(false)) }
     }
 
-    /// Create a context whose profile is disabled and records nothing, regardless of tracing. Use
-    /// where profiling is not wanted, such as internal queries and tests.
-    pub fn unprofiled(source_query: String) -> Self {
-        Self::new(source_query, Arc::new(QueryProfile::new(false)))
+    /// Create a context whose profile is always enabled, regardless of tracing.
+    pub fn new_profile_enabled(source_query: String) -> Self {
+        Self { source_query, profile: Arc::new(QueryProfile::new(true)) }
     }
 
     pub fn source_query(&self) -> &str {

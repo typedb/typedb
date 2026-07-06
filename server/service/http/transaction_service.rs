@@ -640,7 +640,7 @@ impl TransactionService {
             m.record_query();
         }
 
-        let context = QueryContext::with_profile(query);
+        let context = QueryContext::new(query);
         let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(parsed)) => {
@@ -1170,7 +1170,7 @@ impl TransactionService {
     }
 
     async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        let context = QueryContext::with_profile(query);
+        let context = QueryContext::new(query);
         let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(..)) => {
