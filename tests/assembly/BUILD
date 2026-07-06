@@ -53,6 +53,7 @@ checkstyle_test(
     exclude = glob([
         "Cargo.*",
         "script.tql",
+        "verify.tql",
     ]),
     license_type = "mpl-header",
 )
