@@ -457,6 +457,7 @@ jobs:
       image: ubuntu-2204:2024.11.1
     resource_class: large
     steps:
+      - checkout
       - install-apt-snapshot
       - distribution-test-run-console-script:
           script-path: tests/assembly/script.tql
@@ -469,6 +470,7 @@ jobs:
       image: ubuntu-2204:2024.11.1
     resource_class: arm.large
     steps:
+      - checkout
       - install-apt-snapshot
       - distribution-test-run-console-script:
           script-path: tests/assembly/script.tql
