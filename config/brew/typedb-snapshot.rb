@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # IMPORTANT: any changes to the formula should be propagated to Homebrew/homebrew-core
-class Typedb < Formula
+class TypedbSnapshot < Formula
   desc "The power of programming, in your database"
   homepage "https://typedb.com"
 
