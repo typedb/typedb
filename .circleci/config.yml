@@ -236,6 +236,10 @@ jobs:
       - deploy-snapshot-unix
       - run: |
           mkdir -p ~/dist && cp bazel-bin/typedb-all-mac-x86_64.zip ~/dist
+      - persist_to_workspace:
+          root: ~/dist
+          paths:
+            - ./*
 
   test-deploy-snapshot-mac-arm64:
     executor: mac-arm64
@@ -248,6 +252,10 @@ jobs:
       - deploy-snapshot-unix
       - run: |
           mkdir -p ~/dist && cp bazel-bin/typedb-all-mac-arm64.zip ~/dist
+      - persist_to_workspace:
+          root: ~/dist
+          paths:
+            - ./*
 
   test-deploy-snapshot-windows-x86_64:
     executor: win-x86_64
