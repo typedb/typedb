@@ -183,6 +183,12 @@ commands:
           kill -s TERM $!
           sleep 3
 
+  install-brew-snapshot:
+    steps:
+      - run: |
+          brew tap typedb/tap
+          brew install typedb/tap/typedb-snapshot
+
   install-apt-snapshot:
     steps:
       - run: |
@@ -278,6 +284,39 @@ jobs:
           bazel-arch: amd64
       - deploy-docker-snapshot-multiarch
 
+  deploy-snapshot-brew:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - run: yum install -y tar gzip
+      - attach_workspace:
+          at: ~/dist
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - run: |
+          export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
+          sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
+          sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          echo "0.0.0-$(git rev parse-head)" > VERSION 
+          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-snapshot --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- snapshot
+
+  deploy-snapshot-apt-x86_64:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - deploy-snapshot-apt
+
+  deploy-snapshot-apt-arm64:
+    executor: linux-arm64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: arm64
+      - deploy-snapshot-apt
+
   # per platform release deployment
   deploy-release-linux-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -346,23 +385,7 @@ jobs:
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
           sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
-
-  deploy-snapshot-apt-x86_64:
-    executor: linux-x86_64-amazonlinux-2
-    steps:
-      - checkout
-      - install-deps-yum:
-          bazel-arch: amd64
-      - deploy-snapshot-apt
-
-  deploy-snapshot-apt-arm64:
-    executor: linux-arm64-amazonlinux-2
-    steps:
-      - checkout
-      - install-deps-yum:
-          bazel-arch: arm64
-      - deploy-snapshot-apt
+          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-release --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
   deploy-release-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -475,6 +498,30 @@ jobs:
 
   
 
+  test-distribution-brew-snapshot-arm64:
+    executor: mac-arm64
+    steps:
+      - checkout
+      - install-brew-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/script.tql
+      - run: brew reinstall typedb/tap/typedb-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/verify.tql
+
+  test-distribution-brew-snapshot-x86_64:
+    executor: mac-arm64
+    steps:
+      - macos/install-rosetta
+      - checkout
+      - install-brew-rosetta
+      - install-brew-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/script.tql
+      - run: brew reinstall typedb/tap/typedb-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/assembly/verify.tql
+
   # generic
   release-cleanup:
     executor: linux-x86_64-ubuntu-2204
@@ -541,6 +588,14 @@ workflows:
             branches:
               only: [ master ]
 
+      - deploy-snapshot-brew:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - test-deploy-snapshot-mac-arm64
+            - test-deploy-snapshot-mac-x86_64
+
       - test-distribution-apt-snapshot-x86_64:
           filters:
             branches:
@@ -554,6 +609,16 @@ workflows:
               only: [ master ]
           requires:
             - deploy-snapshot-apt-arm64
+
+      - test-distribution-brew-snapshot-arm64:
+          filters:
+            branches:
+              only: [ master ]
+
+      - test-distribution-brew-snapshot-x86_64:
+          filters:
+            branches:
+              only: [ master ]
 
       - sync-to-typedb-benchmark:
           filters:
