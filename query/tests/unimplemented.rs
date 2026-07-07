@@ -72,7 +72,7 @@ fn run_read_query(
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).map_err(Either::Left)?.into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .map_err(|query_error| Either::Left(query_error))?;
     let pipeline = context
         .query_manager
@@ -84,7 +84,8 @@ fn run_read_query(
             translated,
             None::<GivenRowsSimple>,
         )
-        .map_err(|query_error| Either::Left(query_error))?;
+        .map_err(|query_error| Either::Left(query_error))?
+        .into_pipeline();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -102,7 +103,7 @@ fn run_write_query(
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -114,7 +115,8 @@ fn run_write_query(
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

@@ -130,7 +130,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated =
-        query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager).unwrap();
+        query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -140,7 +140,8 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             translated,
             None::<GivenRowsSimple>,
         )
-        .map_err(|(snapshot, err)| (err, snapshot))?;
+        .map_err(|(snapshot, err)| (err, snapshot))?
+        .into_pipeline();
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {

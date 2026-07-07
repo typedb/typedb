@@ -148,7 +148,7 @@ pub mod query_util {
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
         let parsed = ParsedPipeline::new(QueryContext::new_profile_disabled(source_query.to_owned()), Arc::new(pipeline));
         let translated =
-            match tx.query_manager.translate(&parsed, tx.snapshot.as_ref(), &tx.function_manager, &tx.thing_manager) {
+            match tx.query_manager.translate(parsed, tx.snapshot.as_ref(), &tx.function_manager, &tx.thing_manager) {
                 Ok(translated) => translated,
                 Err(err) => return (tx, Err(err)),
             };
@@ -160,7 +160,7 @@ pub mod query_util {
             translated,
             None::<GivenRowsSimple>,
         ) {
-            Ok(pipeline) => pipeline,
+            Ok(compiled) => compiled.into_pipeline(),
             Err(err) => return (tx, Err(err)),
         };
 
@@ -201,7 +201,7 @@ pub mod query_util {
         source_query: &str,
     ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
         let parsed = ParsedPipeline::new(QueryContext::new_profile_disabled(source_query.to_owned()), Arc::new(pipeline));
-        let translated = match query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager) {
+        let translated = match query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager) {
             Ok(translated) => translated,
             Err(err) => return (Err(err), Arc::new(snapshot)),
         };
@@ -213,7 +213,7 @@ pub mod query_util {
             translated,
             None::<GivenRowsSimple>,
         ) {
-            Ok(pipeline) => pipeline,
+            Ok(compiled) => compiled.into_pipeline(),
             Err((snapshot, err)) => return (Err(err), Arc::new(snapshot)),
         };
 
