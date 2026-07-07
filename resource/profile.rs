@@ -434,9 +434,6 @@ impl CommitProfileData {
 
 #[derive(Debug)]
 pub struct QueryProfile {
-    // Interior-mutable so the profile can be shared as `Arc<QueryProfile>` from creation (parse) all
-    // the way into the executor, while each compilation phase still records into it. The compilation
-    // phases run strictly sequentially, so this lock is never contended.
     compile_profile: Mutex<CompileProfile>,
     stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
@@ -536,7 +533,7 @@ impl CompileProfile {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn set_stage_timer(&mut self) {
         if let Some(data) = &mut self.data {
             data.stage_start = Instant::now()
         }
