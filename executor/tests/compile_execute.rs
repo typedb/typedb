@@ -75,7 +75,7 @@ fn setup(
 
     let snapshot = storage.clone().open_snapshot_write();
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(data.to_string())).unwrap().into_pipeline();
-    let translated = query_manager.translate(&parsed, &snapshot, &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -85,7 +85,8 @@ fn setup(
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));

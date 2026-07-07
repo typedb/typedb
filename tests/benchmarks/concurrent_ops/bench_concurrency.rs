@@ -310,7 +310,7 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated =
-        query_manager.translate(&parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
+        query_manager.translate(parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
@@ -320,7 +320,8 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _batch = rows.collect_owned().unwrap();
 }

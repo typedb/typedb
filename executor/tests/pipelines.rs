@@ -78,7 +78,7 @@ fn test_insert() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -90,7 +90,8 @@ fn test_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -123,7 +124,7 @@ fn test_insert_insert() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -135,7 +136,8 @@ fn test_insert_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -164,7 +166,7 @@ fn test_match() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -176,7 +178,8 @@ fn test_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
@@ -189,7 +192,7 @@ fn test_match() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -201,7 +204,8 @@ fn test_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
@@ -211,7 +215,7 @@ fn test_match() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -223,7 +227,8 @@ fn test_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
@@ -243,7 +248,7 @@ fn test_match_match() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -255,7 +260,8 @@ fn test_match_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
@@ -271,7 +277,7 @@ fn test_match_match() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -283,7 +289,8 @@ fn test_match_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
@@ -293,7 +300,7 @@ fn test_match_match() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -305,7 +312,8 @@ fn test_match_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
@@ -320,7 +328,7 @@ fn test_match_delete_has() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -332,7 +340,8 @@ fn test_match_delete_has() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -361,7 +370,7 @@ fn test_match_delete_has() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(delete_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -373,7 +382,8 @@ fn test_match_delete_has() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -407,7 +417,7 @@ fn test_insert_match_insert() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -419,7 +429,8 @@ fn test_insert_match_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
@@ -440,7 +451,7 @@ fn test_insert_match_insert() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -452,7 +463,8 @@ fn test_insert_match_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -476,7 +488,7 @@ fn test_match_sort() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -488,7 +500,8 @@ fn test_match_sort() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -502,7 +515,7 @@ fn test_match_sort() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -514,7 +527,8 @@ fn test_match_sort() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let named_outputs = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -547,7 +561,7 @@ fn test_select() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -559,7 +573,8 @@ fn test_select() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -574,7 +589,7 @@ fn test_select() {
         let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
-            .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -586,7 +601,8 @@ fn test_select() {
                 translated,
                 None::<GivenRowsSimple>,
             )
-            .unwrap();
+            .unwrap()
+            .into_pipeline();
         let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));
@@ -597,7 +613,7 @@ fn test_select() {
         let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
-            .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -609,7 +625,8 @@ fn test_select() {
                 translated,
                 None::<GivenRowsSimple>,
             )
-            .unwrap();
+            .unwrap()
+            .into_pipeline();
         let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(!named_outputs.contains_key("p"));
@@ -626,7 +643,7 @@ fn test_require() {
     let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
-        .translate(&parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
         .unwrap();
     let pipeline = context
         .query_manager
@@ -638,7 +655,8 @@ fn test_require() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -653,7 +671,7 @@ fn test_require() {
         let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
-            .translate(&parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+            .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
             .unwrap();
         let pipeline = context
             .query_manager
@@ -665,7 +683,8 @@ fn test_require() {
                 translated,
                 None::<GivenRowsSimple>,
             )
-            .unwrap();
+            .unwrap()
+            .into_pipeline();
         let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));

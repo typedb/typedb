@@ -96,19 +96,22 @@ fn execute_read_query(
     with_read_tx!(context, |tx| {
         let parsed = tx.query_manager.parse(QueryContext::new_profile_disabled(source_query.to_string()))?.into_pipeline();
         let translated = tx.query_manager.translate(
-            &parsed,
+            parsed,
             tx.snapshot.as_ref(),
             &tx.function_manager,
             &tx.thing_manager,
         )?;
-        let pipeline = tx.query_manager.prepare_read_pipeline(
-            tx.snapshot.clone(),
-            &tx.type_manager,
-            tx.thing_manager.clone(),
-            tx.function_manager.clone(),
-            translated,
-            given_rows,
-        )?;
+        let pipeline = tx
+            .query_manager
+            .prepare_read_pipeline(
+                tx.snapshot.clone(),
+                &tx.type_manager,
+                tx.thing_manager.clone(),
+                tx.function_manager.clone(),
+                translated,
+                given_rows,
+            )?
+            .into_pipeline();
         if pipeline.has_fetch() {
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, ExecutionContext { parameters, .. })) => {
@@ -162,13 +165,11 @@ fn execute_write_query(
                                            query_manager,
                                            _db,
                                            _opts| {
-        // `parsed_pipeline` is bound in this arm so the translation (which borrows it) outlives the
-        // whole prepare/execute chain nested below.
         match query_manager.parse(QueryContext::new_profile_disabled(source_query.to_string())) {
             Err(error) => (Err(BehaviourTestExecutionError::Query(*error)), snapshot),
             Ok(parsed) => {
                 let parsed_pipeline = parsed.into_pipeline();
-                match query_manager.translate(&parsed_pipeline, snapshot.as_ref(), &function_manager, &thing_manager) {
+                match query_manager.translate(parsed_pipeline, snapshot.as_ref(), &function_manager, &thing_manager) {
                     Err(error) => (Err(BehaviourTestExecutionError::Query(*error)), snapshot),
                     Ok(translated) => {
                         let pipeline_result = query_manager.prepare_write_pipeline(
@@ -185,6 +186,7 @@ fn execute_write_query(
                                 (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot))
                             }
                             Ok(pipeline) => {
+                                let pipeline = pipeline.into_pipeline();
                         if pipeline.has_fetch() {
                             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
                                 Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => (
@@ -261,7 +263,7 @@ fn execute_analyze(
             .map_err(|source| BehaviourTestExecutionError::Query(*source))?
             .into_pipeline();
         let translated = match tx.query_manager.translate(
-            &parsed,
+            parsed,
             tx.snapshot.as_ref(),
             &tx.function_manager,
             &tx.thing_manager,

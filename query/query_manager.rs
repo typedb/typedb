@@ -28,7 +28,7 @@ use executor::{
     batch::Batch,
     pipeline::{
         pipeline::Pipeline,
-        stage::{ReadPipelineStage, WritePipelineStage},
+        stage::{ReadPipelineStage, StageAPI, WritePipelineStage},
     },
 };
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
@@ -164,10 +164,6 @@ impl ParsedPipeline {
         Self { context, pipeline }
     }
 
-    pub fn context(&self) -> &QueryContext {
-        &self.context
-    }
-
     pub fn source_query(&self) -> &str {
         self.context.source_query()
     }
@@ -177,13 +173,36 @@ impl ParsedPipeline {
     }
 }
 
-/// A translated data pipeline that borrows the context it evolved from, so the single shared
-/// `QueryProfile` keeps being recorded into (and is handed to the executor) without moving or cloning
-/// the context. Obtainable only from [`QueryManager::translate`] and consumed by `prepare_*`/`analyse`.
+/// A translated data pipeline that owns the context it evolved from, keeping ownership symmetric with
+/// [`ParsedPipeline`]/[`ParsedSchemaQuery`]. The single shared `QueryProfile` travels by value through
+/// parse -> translate -> compile and is handed to the executor with one `Arc` clone. Obtainable only
+/// from [`QueryManager::translate`] and consumed by `prepare_*`/`analyse`.
 #[derive(Debug)]
-pub struct TranslatedQuery<'a> {
-    context: &'a QueryContext,
+pub struct TranslatedQuery {
+    context: QueryContext,
     pipeline: TranslatedPipeline,
+}
+
+/// An executable pipeline together with the [`QueryContext`] it evolved from. Owning the context keeps
+/// the source query available for responses and error reporting without the caller having to retain the
+/// originating [`ParsedPipeline`], and keeps the shared `QueryProfile` reachable. Produced by
+/// [`QueryManager::prepare_read_pipeline`] and [`QueryManager::prepare_write_pipeline`].
+pub struct CompiledPipeline<Snapshot: ReadableSnapshot, Stage: StageAPI<Snapshot>> {
+    context: QueryContext,
+    pipeline: Pipeline<Snapshot, Stage>,
+}
+
+impl<Snapshot: ReadableSnapshot, Stage: StageAPI<Snapshot>> CompiledPipeline<Snapshot, Stage> {
+    /// Take the executable pipeline, discarding the context. Use when only the pipeline is needed.
+    pub fn into_pipeline(self) -> Pipeline<Snapshot, Stage> {
+        self.pipeline
+    }
+
+    /// Take both the context and the executable pipeline. Use when the source query is still needed
+    /// (e.g. for responses or error reporting) alongside the pipeline.
+    pub fn into_parts(self) -> (QueryContext, Pipeline<Snapshot, Stage>) {
+        (self.context, self.pipeline)
+    }
 }
 
 impl QueryManager {
@@ -219,14 +238,14 @@ impl QueryManager {
         }
     }
 
-    pub fn translate<'p>(
+    pub fn translate(
         &self,
-        parsed: &'p ParsedPipeline,
+        parsed: ParsedPipeline,
         snapshot: &impl ReadableSnapshot,
         function_manager: &FunctionManager,
         thing_manager: &ThingManager,
-    ) -> Result<TranslatedQuery<'p>, Box<QueryError>> {
-        let context = parsed.context();
+    ) -> Result<TranslatedQuery, Box<QueryError>> {
+        let ParsedPipeline { context, pipeline } = parsed;
         // Reset the clock so the (potentially long) wait in the execution queue is not counted.
         context.profile.compilation_profile().start();
         let translated = match self.cache.as_ref().and_then(|cache| cache.get_translated(&context.source_query)) {
@@ -236,8 +255,7 @@ impl QueryManager {
             }
             None => {
                 QUERY_TRANSLATION_CACHE_MISSES.increment();
-                let translated =
-                    translate_pipeline(snapshot, function_manager, parsed.pipeline(), &context.source_query)?;
+                let translated = translate_pipeline(snapshot, function_manager, &pipeline, &context.source_query)?;
                 if let Some(cache) = self.cache.as_ref() {
                     cache.may_insert_translated(
                         thing_manager.statistics().sequence_number,
@@ -314,9 +332,9 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        query: TranslatedQuery<'_>,
+        query: TranslatedQuery,
         given_rows: Option<impl GivenRows>,
-    ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
+    ) -> Result<CompiledPipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         let TranslatedQuery { context, pipeline } = query;
         event!(Level::TRACE, "Running read query:\n{}", context.source_query);
         context.profile.compilation_profile().start();
@@ -382,7 +400,7 @@ impl QueryManager {
         let given_batch = validate_and_decode_given(executable_given.clone(), given_rows, &variable_registry)?;
 
         // 4: Executor
-        Pipeline::build_read_pipeline(
+        let pipeline = Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
             function_manager,
@@ -398,7 +416,8 @@ impl QueryManager {
         )
         .map_err(|typedb_source| {
             Box::new(QueryError::Pipeline { source_query: context.source_query.to_string(), typedb_source })
-        })
+        })?;
+        Ok(CompiledPipeline { context, pipeline })
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -407,9 +426,9 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        query: TranslatedQuery<'_>,
+        query: TranslatedQuery,
         given_rows: Option<impl GivenRows>,
-    ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
+    ) -> Result<CompiledPipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         let TranslatedQuery { context, pipeline } = query;
         event!(Level::TRACE, "Running write query:\n{}", context.source_query);
         context.profile.compilation_profile().start();
@@ -485,7 +504,7 @@ impl QueryManager {
         };
 
         // 4: Executor
-        Ok(Pipeline::build_write_pipeline(
+        let pipeline = Pipeline::build_write_pipeline(
             snapshot,
             variable_registry.variable_names(),
             (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
@@ -498,7 +517,8 @@ impl QueryManager {
             arced_parameters.clone(),
             given_batch,
             Arc::clone(&context.profile),
-        ))
+        );
+        Ok(CompiledPipeline { context, pipeline })
     }
 
     pub fn analyse<Snapshot: ReadableSnapshot + 'static>(
@@ -506,7 +526,7 @@ impl QueryManager {
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         function_manager: &FunctionManager,
-        query: TranslatedQuery<'_>,
+        query: TranslatedQuery,
     ) -> Result<AnalysedQuery, Box<QueryError>> {
         let TranslatedQuery { context, pipeline } = query;
         event!(Level::TRACE, "Running analyse query:\n{}", context.source_query);
