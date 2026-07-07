@@ -311,7 +311,7 @@ jobs:
           sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           echo "$(git rev-parse HEAD)" > VERSION 
-          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- snapshot
+          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-snapshot --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- snapshot
 
   deploy-snapshot-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
