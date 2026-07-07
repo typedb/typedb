@@ -548,12 +548,12 @@ workflows:
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
@@ -591,7 +591,7 @@ workflows:
       - deploy-snapshot-brew:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
           requires:
             - test-deploy-snapshot-mac-arm64
             - test-deploy-snapshot-mac-x86_64
@@ -613,12 +613,12 @@ workflows:
       - test-distribution-brew-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
 
       - test-distribution-brew-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
 
       - sync-to-typedb-benchmark:
           filters:
