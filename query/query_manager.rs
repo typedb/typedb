@@ -10,18 +10,16 @@ use std::{
 };
 
 use compiler::{
-    VariablePosition,
     annotation::{
-        expression::compiled_expression::ExpressionValueType,
-        function::FunctionParameterAnnotation,
-        pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
+        pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     },
-    executable::pipeline::{ExecutablePipeline, ExecutableStage, GivenExecutable, compile_pipeline_and_functions},
+    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline, ExecutableStage, GivenExecutable},
     query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
     transformation::transform::apply_transformations,
+    VariablePosition,
 };
 use concept::{
-    thing::{ThingAPI, thing_manager::ThingManager},
+    thing::{thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
 use executor::{
@@ -31,18 +29,17 @@ use executor::{
         stage::{ReadPipelineStage, StageAPI, WritePipelineStage},
     },
 };
-use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
+use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
-    LiteralParseError, RepresentationError,
-    pattern::{Vertex, variable_category::VariableOptionality},
+    pattern::{variable_category::VariableOptionality},
     pipeline::{
-        ParameterRegistry, VariableRegistry,
-        fetch::FetchObject,
-        function::Function,
+        fetch::FetchObject, function::Function,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+        ParameterRegistry,
+        VariableRegistry,
     },
     translation::{
-        literal::{FromTypeQLLiteral, translate_literal},
+        literal::FromTypeQLLiteral,
         pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
     },
 };
@@ -55,16 +52,16 @@ use resource::{
     profile::QueryProfile,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use tracing::{Level, event};
+use tracing::{event, Level};
 use typeql::query::{QueryStructure, SchemaQuery};
 
 use crate::{
     analyse::{
-        AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
+        AnalysedQuery, QueryStructureAnnotations,
     },
     define,
     error::QueryError,
-    given_rows::{GivenRowDecodeError, GivenRows},
+    given_rows::{GivenRows},
     query_cache::QueryCache,
     redefine, undefine,
 };
@@ -74,31 +71,21 @@ pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
 }
 
-/// Cross-cutting state carried through a query's lifecycle (parse -> translate -> compile -> execute).
-/// Holds the originating query string and a single profile, so that each stage's timing is recorded
-/// against the same query even as it flows across the service's main loop and the execution thread.
 #[derive(Debug)]
 pub struct QueryContext {
     source_query: String,
-    // Shared and interior-mutable, so the same profile is recorded into at every compilation step and
-    // then handed to the executor as `Arc<QueryProfile>` without moving (or re-owning) the context.
     profile: Arc<QueryProfile>,
 }
 
 impl QueryContext {
-    /// Create a context whose profile is enabled iff TRACE-level tracing is on. This is the default
-    /// entry point for served queries.
     pub fn new(source_query: String) -> Self {
         Self { source_query, profile: Arc::new(QueryProfile::new(tracing::enabled!(Level::TRACE))) }
     }
 
-    /// Create a context whose profile is always disabled, regardless of tracing. Use where profiling
-    /// is not wanted, such as internal queries and tests.
     pub fn new_profile_disabled(source_query: String) -> Self {
         Self { source_query, profile: Arc::new(QueryProfile::new(false)) }
     }
 
-    /// Create a context whose profile is always enabled, regardless of tracing.
     pub fn new_profile_enabled(source_query: String) -> Self {
         Self { source_query, profile: Arc::new(QueryProfile::new(true)) }
     }
@@ -108,7 +95,6 @@ impl QueryContext {
     }
 }
 
-/// The outcome of parsing, carrying the context it evolved from. Transient (never cached directly).
 #[derive(Debug)]
 pub enum ParsedQuery {
     Schema(ParsedSchemaQuery),
@@ -116,7 +102,6 @@ pub enum ParsedQuery {
 }
 
 impl ParsedQuery {
-    /// Unwrap the parsed schema query, panicking if this is a data pipeline.
     pub fn into_schema(self) -> ParsedSchemaQuery {
         match self {
             ParsedQuery::Schema(schema) => schema,
@@ -124,7 +109,6 @@ impl ParsedQuery {
         }
     }
 
-    /// Unwrap the parsed data pipeline, panicking if this is a schema query.
     pub fn into_pipeline(self) -> ParsedPipeline {
         match self {
             ParsedQuery::Pipeline(pipeline) => pipeline,
@@ -133,8 +117,6 @@ impl ParsedQuery {
     }
 }
 
-/// A parsed schema query (define/redefine/undefine) with its context. The schema query is held by
-/// value, since schema queries are one-shot and never cached.
 #[derive(Debug)]
 pub struct ParsedSchemaQuery {
     context: QueryContext,
@@ -151,8 +133,6 @@ impl ParsedSchemaQuery {
     }
 }
 
-/// A parsed data pipeline with its context. The pipeline AST is shared via `Arc` with the parse cache
-/// and the execution queue.
 #[derive(Debug)]
 pub struct ParsedPipeline {
     context: QueryContext,
@@ -173,33 +153,22 @@ impl ParsedPipeline {
     }
 }
 
-/// A translated data pipeline that owns the context it evolved from, keeping ownership symmetric with
-/// [`ParsedPipeline`]/[`ParsedSchemaQuery`]. The single shared `QueryProfile` travels by value through
-/// parse -> translate -> compile and is handed to the executor with one `Arc` clone. Obtainable only
-/// from [`QueryManager::translate`] and consumed by `prepare_*`/`analyse`.
 #[derive(Debug)]
 pub struct TranslatedQuery {
     context: QueryContext,
     pipeline: TranslatedPipeline,
 }
 
-/// An executable pipeline together with the [`QueryContext`] it evolved from. Owning the context keeps
-/// the source query available for responses and error reporting without the caller having to retain the
-/// originating [`ParsedPipeline`], and keeps the shared `QueryProfile` reachable. Produced by
-/// [`QueryManager::prepare_read_pipeline`] and [`QueryManager::prepare_write_pipeline`].
 pub struct CompiledPipeline<Snapshot: ReadableSnapshot, Stage: StageAPI<Snapshot>> {
     context: QueryContext,
     pipeline: Pipeline<Snapshot, Stage>,
 }
 
 impl<Snapshot: ReadableSnapshot, Stage: StageAPI<Snapshot>> CompiledPipeline<Snapshot, Stage> {
-    /// Take the executable pipeline, discarding the context. Use when only the pipeline is needed.
     pub fn into_pipeline(self) -> Pipeline<Snapshot, Stage> {
         self.pipeline
     }
 
-    /// Take both the context and the executable pipeline. Use when the source query is still needed
-    /// (e.g. for responses or error reporting) alongside the pipeline.
     pub fn into_parts(self) -> (QueryContext, Pipeline<Snapshot, Stage>) {
         (self.context, self.pipeline)
     }
@@ -211,7 +180,7 @@ impl QueryManager {
     }
 
     pub fn parse(&self, context: QueryContext) -> Result<ParsedQuery, Box<QueryError>> {
-        context.profile.compilation_profile().start();
+        context.profile.compilation_profile().set_stage_timer();
         if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(&context.source_query)) {
             QUERY_PARSE_CACHE_HITS.increment();
             context.profile.compilation_profile().parsing_finished();
@@ -246,8 +215,7 @@ impl QueryManager {
         thing_manager: &ThingManager,
     ) -> Result<TranslatedQuery, Box<QueryError>> {
         let ParsedPipeline { context, pipeline } = parsed;
-        // Reset the clock so the (potentially long) wait in the execution queue is not counted.
-        context.profile.compilation_profile().start();
+        context.profile.compilation_profile().set_stage_timer();
         let translated = match self.cache.as_ref().and_then(|cache| cache.get_translated(&context.source_query)) {
             Some(translated) => {
                 QUERY_TRANSLATION_CACHE_HITS.increment();
@@ -336,8 +304,8 @@ impl QueryManager {
         given_rows: Option<impl GivenRows>,
     ) -> Result<CompiledPipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         let TranslatedQuery { context, pipeline } = query;
-        event!(Level::TRACE, "Running read query:\n{}", context.source_query);
-        context.profile.compilation_profile().start();
+        event!(Level::TRACE, "Preparing read query:\n{}", context.source_query);
+        context.profile.compilation_profile().set_stage_timer();
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -430,8 +398,8 @@ impl QueryManager {
         given_rows: Option<impl GivenRows>,
     ) -> Result<CompiledPipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         let TranslatedQuery { context, pipeline } = query;
-        event!(Level::TRACE, "Running write query:\n{}", context.source_query);
-        context.profile.compilation_profile().start();
+        event!(Level::TRACE, "Preparing write query:\n{}", context.source_query);
+        context.profile.compilation_profile().set_stage_timer();
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -530,7 +498,7 @@ impl QueryManager {
     ) -> Result<AnalysedQuery, Box<QueryError>> {
         let TranslatedQuery { context, pipeline } = query;
         event!(Level::TRACE, "Running analyse query:\n{}", context.source_query);
-        context.profile.compilation_profile().start();
+        context.profile.compilation_profile().set_stage_timer();
         let TranslatedPipeline {
             translated_preamble,
             translated_given,

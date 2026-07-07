@@ -34,18 +34,10 @@ struct ValidityRequirements {
     latest_schema_commit: Option<SequenceNumber>,
 }
 
-/// Three-stage query front-end cache, each stage keyed by the raw query string:
-/// - `parse_cache`: string -> parsed data pipeline. Purely syntactic, so it never needs
-///   invalidation. Only data pipelines are cached; schema queries (define/redefine/undefine) are
-///   one-shot, so parsing them every time is fine and keeps them off this cache.
-/// - `translation_cache`: string -> translated IR. Translation resolves user-defined functions, so
-///   it is flushed on schema commits (but not on statistics-only changes).
-/// - `compile_cache`: translated IR -> executable pipeline. Flushed on schema commits, and when
-///   statistics drift far enough to change query plans.
 #[derive(Debug)]
 pub struct QueryCache {
     parse_cache: Cache<String, Arc<Pipeline>>,
-    translation_cache: Cache<String, TranslatedPipeline>,
+    translate_cache: Cache<String, TranslatedPipeline>,
     compile_cache: Cache<IRQuery, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
@@ -53,11 +45,11 @@ pub struct QueryCache {
 impl QueryCache {
     pub fn new() -> Self {
         let parse_cache = CacheBuilder::new(QUERY_PARSE_CACHE_SIZE).build();
-        let translation_cache = CacheBuilder::new(QUERY_TRANSLATION_CACHE_SIZE).build();
+        let translate_cache = CacheBuilder::new(QUERY_TRANSLATION_CACHE_SIZE).build();
         let compile_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
         let validity_requirements =
             RwLock::new(ValidityRequirements { latest_statistics: None, latest_schema_commit: None });
-        QueryCache { parse_cache, translation_cache, compile_cache, validity_requirements }
+        QueryCache { parse_cache, translate_cache, compile_cache, validity_requirements }
     }
 
     pub fn get_parsed(&self, query: &str) -> Option<Arc<Pipeline>> {
@@ -69,7 +61,7 @@ impl QueryCache {
     }
 
     pub fn get_translated(&self, query: &str) -> Option<TranslatedPipeline> {
-        self.translation_cache.get(query)
+        self.translate_cache.get(query)
     }
 
     pub(crate) fn may_insert_translated(
@@ -83,7 +75,7 @@ impl QueryCache {
             .latest_schema_commit
             .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
         if may_insert {
-            self.translation_cache.insert(source_query.to_owned(), translated);
+            self.translate_cache.insert(source_query.to_owned(), translated);
         }
         drop(read_lock);
     }
@@ -144,7 +136,7 @@ impl QueryCache {
         let mut write_lock = self.validity_requirements.write().unwrap();
         (*write_lock).latest_schema_commit = Some(statistics.sequence_number);
         drop(write_lock);
-        self.translation_cache.invalidate_all();
+        self.translate_cache.invalidate_all();
         self.compile_cache.invalidate_all();
         QUERY_CACHE_FLUSH.increment();
     }

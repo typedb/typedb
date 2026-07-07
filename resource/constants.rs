@@ -114,10 +114,7 @@ pub mod database {
     // anything over 8.0 often does not plan frequently enough, as the data scales
     pub const QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION: f64 = 3.0;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
-    // String -> parsed typeql AST cache. Parsing is schema-independent so this is never invalidated.
     pub const QUERY_PARSE_CACHE_SIZE: u64 = 200;
-    // String -> translated IR cache. Larger than the plan cache: many distinct query strings
-    // (especially parametrised `given`-stage queries) can share the cheap-to-store translated IR.
     pub const QUERY_TRANSLATION_CACHE_SIZE: u64 = 200;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_COUNT: u64 = 10_000;
     pub const STATISTICS_DURABLE_WRITE_SEQ_NUMBERS: usize = 1_000;
