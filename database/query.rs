@@ -204,21 +204,13 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
             }
         };
 
-        let mut documents = Vec::new();
-        for next in iterator {
-            match next {
-                Ok(document) => documents.push(document),
-                Err(typedb_source) => {
-                    return (
-                        Arc::into_inner(snapshot).unwrap(),
-                        Err(Box::new(QueryError::WritePipelineExecution {
-                            source_query: source_query.to_string(),
-                            typedb_source,
-                        })),
-                    );
-                }
-            }
-        }
+        let result = match iterator.collect::<Result<Vec<_>, _>>() {
+            Ok(documents) => Ok(WriteQueryAnswer::new_documents(query_options, (parameters, documents))),
+            Err(err) => Err(Box::new(QueryError::WritePipelineExecution {
+                source_query: source_query.to_string(),
+                typedb_source: err,
+            })),
+        };
         if query_profile.is_enabled() {
             let micros = Instant::now().duration_since(start_time).as_micros();
             event!(
@@ -228,10 +220,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
                 query_profile
             );
         }
-        (
-            Arc::into_inner(snapshot).unwrap(),
-            Ok(WriteQueryAnswer::new_documents(query_options, (parameters, documents))),
-        )
+        (Arc::into_inner(snapshot).unwrap(), result)
     } else {
         let named_outputs = pipeline.rows_positions().unwrap();
         let pipeline_structure = pipeline.pipeline_structure().cloned();
