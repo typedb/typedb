@@ -406,24 +406,12 @@ oci_push(
 
 # brew
 deploy_brew(
-    name = "deploy-brew-release",
+    name = "deploy-brew",
     file_substitutions = {
         "//:checksum-mac-arm64": "{sha256-arm64}",
         "//:checksum-mac-x86_64": "{sha256-x86_64}",
     },
     formula = "//config/brew:typedb.rb",
-    release = deployment["brew"]["release"],
-    snapshot = deployment["brew"]["snapshot"],
-    version_file = "//:VERSION",
-)
-
-deploy_brew(
-    name = "deploy-brew-snapshot",
-    file_substitutions = {
-        "//:checksum-mac-arm64": "{sha256-arm64}",
-        "//:checksum-mac-x86_64": "{sha256-x86_64}",
-    },
-    formula = "//config/brew:typedb-snapshot.rb",
     release = deployment["brew"]["release"],
     snapshot = deployment["brew"]["snapshot"],
     version_file = "//:VERSION",
