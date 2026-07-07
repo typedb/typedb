@@ -508,8 +508,6 @@ jobs:
       - distribution-test-run-console-script:
           script-path: tests/assembly/verify.tql
 
-  
-
   test-distribution-brew-snapshot-arm64:
     executor: mac-arm64
     steps:
@@ -517,7 +515,7 @@ jobs:
       - install-brew-snapshot
       - distribution-test-run-console-script:
           script-path: tests/assembly/script.tql
-      - run: brew reinstall typedb/tap/typedb-snapshot
+      - run: brew reinstall typedb/tap-test/typedb-snapshot
       - distribution-test-run-console-script:
           script-path: tests/assembly/verify.tql
 
