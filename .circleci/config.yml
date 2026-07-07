@@ -608,17 +608,17 @@ workflows:
       - deploy-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
 
       - deploy-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
 
       - deploy-docker-snapshot-multiarch:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
           requires:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
@@ -672,14 +672,14 @@ workflows:
       - test-distribution-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
           requires:
             - deploy-docker-snapshot-multiarch
 
       - test-distribution-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
           requires:
             - deploy-docker-snapshot-multiarch
 
