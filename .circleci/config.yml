@@ -614,11 +614,15 @@ workflows:
           filters:
             branches:
               only: [ master, distribution-tests ]
+          requires:
+            - deploy-snapshot-brew
 
       - test-distribution-brew-snapshot-x86_64:
           filters:
             branches:
               only: [ master, distribution-tests ]
+          requires:
+            - deploy-snapshot-brew
 
       - sync-to-typedb-benchmark:
           filters:
