@@ -558,6 +558,11 @@ jobs:
     resource_class: large
     steps:
       - checkout
+      - setup_remote_docker
+      - run: |
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
+          sudo mv "bazelisk-linux-amd64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
       - test-distribution-docker:
           arch: x86_64
 
@@ -567,6 +572,11 @@ jobs:
     resource_class: arm.large
     steps:
       - checkout
+      - setup_remote_docker
+      - run: |
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64"
+          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
       - test-distribution-docker:
           arch: arm64
 
