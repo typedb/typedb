@@ -57,11 +57,8 @@ commands:
           echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
           echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
 
-          amazon-linux-extras install java-openjdk11 docker python3.8 -y
+          amazon-linux-extras install java-openjdk11 docker -y
           yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
-
-          rm /usr/bin/python3
-          ln -s /usr/bin/python3.8 /usr/bin/python3
           
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
           mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
@@ -417,7 +414,7 @@ workflows:
       - test-deploy-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, why-rules-python-break-deploy ]
 
       - test-deploy-snapshot-linux-arm64:
           filters:
