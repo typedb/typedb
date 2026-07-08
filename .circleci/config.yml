@@ -214,7 +214,7 @@ commands:
           docker run -d --name typedb-first -p 1729:1729 -v typedb-data:/var/lib/typedb/data typedb/typedb-snapshot:$VERSION-<<parameters.arch>>
           sleep 15
           bazel run @typedb_console_artifact_linux-<<parameters.arch>>-extracted//:typedb console -- --username=admin --password=password --address=localhost:1729 --tls-disabled --script=tests/assembly/script.tql
-          docker stop typedb-first && docker rm typedb
+          docker stop typedb-first && docker rm typedb-first
           # Start new instance
           docker run -d --name typedb-second -p 1729:1729 -v typedb-data:/var/lib/typedb/data typedb/typedb-snapshot:$VERSION-<<parameters.arch>>
           sleep 15
