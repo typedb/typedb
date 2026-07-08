@@ -164,6 +164,13 @@ impl DiagnosticsConfig {
             monitoring: Monitoring { enabled: true, port: MONITORING_DEFAULT_PORT },
         }
     }
+
+    pub fn disabled() -> Self {
+        Self {
+            reporting: Reporting { report_errors: false, report_metrics: false },
+            monitoring: Monitoring { enabled: false, port: MONITORING_DEFAULT_PORT },
+        }
+    }
 }
 
 impl Default for DiagnosticsConfig {

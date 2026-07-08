@@ -24,8 +24,14 @@ use futures::{
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
-use server::{Server, service::http::message::analyze::AnalysedQueryResponse};
+use resource::distribution_info::DistributionInfo;
+use server::{
+    Server, ServerBuilder,
+    parameters::config::{ConfigBuilder, DiagnosticsConfig},
+    service::http::message::analyze::AnalysedQueryResponse,
+};
 use storage::durability_client::WALClient;
+use test_utils::{TempDir, create_tmp_storage_dir};
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
 
@@ -101,9 +107,49 @@ impl<I: AsRef<Path>> cucumber::Parser<I> for SingletonParser {
     }
 }
 
+#[derive(Debug)]
+struct ServerInstance {
+    pub(crate) server: Arc<Mutex<Server>>,
+    server_dir: TempDir,
+}
+
+impl ServerInstance {
+    const ADDRESS: &str = "0.0.0.0:1729";
+    const DISTRIBUTION_INFO: DistributionInfo =
+        DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
+
+    fn config_path() -> PathBuf {
+        return std::env::current_dir().unwrap().join("server/config.yml");
+    }
+
+    async fn new() -> Self {
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+        let shutdown_sender_clone = shutdown_sender.clone();
+        let server_dir = create_tmp_storage_dir();
+        let config = ConfigBuilder::from_file(Self::config_path())
+            .expect("Failed to load config file")
+            .server_listen_address(Self::ADDRESS)
+            .admin_enabled(false)
+            .data_directory(server_dir.as_ref())
+            .development_mode(true)
+            .diagnostics(DiagnosticsConfig::disabled())
+            .build()
+            .unwrap();
+        let server = ServerBuilder::new()
+            .distribution_info(Self::DISTRIBUTION_INFO)
+            .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
+            .build(config)
+            .await
+            .expect("Failed to start TypeDB server");
+        Self { server_dir, server: Arc::new(Mutex::new(server)) }
+    }
+}
+
 #[derive(Debug, Default, World)]
 pub struct Context {
-    server: Option<Arc<Mutex<Server>>>,
+    server_instance: Option<Arc<Mutex<Server>>>, // Instantiation of server which may not be "started"
+
+    server: Option<Arc<Mutex<Server>>>, // Some if server is started
     active_transaction: Option<ActiveTransaction>,
     active_concurrent_transactions: Vec<ActiveTransaction>,
 
@@ -124,13 +170,17 @@ impl Context {
             let relative_log_dir: PathBuf = "typedb-logs".into();
             logger::initialise_logging_global(&std::env::current_dir().unwrap().join(relative_log_dir));
         });
+
+        let server_instance = ServerInstance::new().await;
+
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()
             .fail_on_skipped()
             .with_default_cli()
-            .before(move |_, _, _, _| {
+            .before(move |_, _, _, context| {
                 // cucumber removes the default hook before each scenario and restores it after!
+                context.server_instance = Some(server_instance.server.clone());
                 std::panic::set_hook(Box::new(move |info| println!("{}", info)));
                 Box::pin(async move {})
             })
