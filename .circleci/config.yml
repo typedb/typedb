@@ -559,8 +559,8 @@ jobs:
     steps:
       - checkout
       - run: |
-          apt update
-          apt install docker
+          sudo apt update
+          sudo apt install -y docker 
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
           sudo mv "bazelisk-linux-amd64" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -574,8 +574,8 @@ jobs:
     steps:
       - checkout
       - run: |
-          apt update
-          apt install docker
+          sudo apt update
+          sudo apt install -y docker
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64"
           sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
