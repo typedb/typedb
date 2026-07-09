@@ -179,8 +179,8 @@ impl Context {
             .fail_on_skipped()
             .with_default_cli()
             .before(move |_, _, _, context| {
-                // cucumber removes the default hook before each scenario and restores it after!
                 context.server_instance = Some(server_instance.server.clone());
+                // cucumber removes the default hook before each scenario and restores it after!
                 std::panic::set_hook(Box::new(move |info| println!("{}", info)));
                 Box::pin(async move {})
             })
