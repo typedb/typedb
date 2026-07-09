@@ -133,7 +133,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
+        bazel test --config=ci //tests/behaviour/concept:test_concept --test_output=errors
 
     test-behaviour-query-read:
       image: typedb-ubuntu-22.04
@@ -144,7 +144,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_read"
 
     test-behaviour-query-write:
       image: typedb-ubuntu-22.04
@@ -155,7 +155,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_write"
 
     test-behaviour-query-analyze:
       image: typedb-ubuntu-22.04
@@ -166,7 +166,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_analyze"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_analyze"
 
     test-behaviour-query-definable:
       image: typedb-ubuntu-22.04
@@ -177,7 +177,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_definable"
 
     test-behaviour-functions:
       image: typedb-ubuntu-22.04
@@ -188,7 +188,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="functions::"
 
     test-assembly:
       image: typedb-ubuntu-22.04
@@ -217,7 +217,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/assembly:test_fail_points --test_arg="--test-threads=1" --test_arg="test_fail_point_always" --test_output=streamed
+        bazel test --config=ci //tests/assembly:test_fail_points --test_arg="test_fail_point_always" --test_output=streamed
 
     test-fail-points-randomized:
       image: typedb-ubuntu-22.04
@@ -228,7 +228,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/assembly:test_fail_points --test_arg="--test-threads=1" --test_arg="test_fail_point_chance" --test_output=streamed
+        bazel test --config=ci //tests/assembly:test_fail_points --test_arg="test_fail_point_chance" --test_output=streamed
 
     test-behaviour-service:
       image: typedb-ubuntu-22.04
