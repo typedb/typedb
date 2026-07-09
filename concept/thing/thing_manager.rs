@@ -577,7 +577,7 @@ impl ThingManager {
                     Either::First(vertex) => vertex.into_storage_key(),
                     Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
                 };
-                RangeStart::ExcludePrefix(storage_key_prefix)
+                RangeStart::Inclusive(storage_key_prefix)
             }
             Bound::Unbounded => RangeStart::Inclusive(
                 AttributeVertex::build_prefix_type(
@@ -619,7 +619,7 @@ impl ThingManager {
                     Either::First(vertex) => vertex.into_storage_key(),
                     Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
                 };
-                RangeEnd::EndPrefixExclusive(storage_key_prefix)
+                RangeEnd::EndPrefixInclusive(storage_key_prefix)
             }
             Bound::Unbounded => {
                 let prefix = AttributeVertex::build_prefix_type(
