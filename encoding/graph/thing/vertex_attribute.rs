@@ -743,8 +743,8 @@ impl StringAttributeID {
         bytes: &mut [u8],
     ) -> usize {
         debug_assert!(bytes.len() >= Self::LENGTH);
-        bytes.fill(0);
         bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+        bytes[Self::HASHED_PREFIX_RANGE].fill(0);
         let prefix_len = usize::min(Self::HASHED_PREFIX_LENGTH, string.len());
         bytes[Self::HASHED_PREFIX_RANGE.start..][..prefix_len].copy_from_slice(&string.bytes()[..prefix_len]);
         Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH
