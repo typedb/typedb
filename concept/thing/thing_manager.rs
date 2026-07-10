@@ -573,11 +573,13 @@ impl ThingManager {
                     lower_value,
                     self.vertex_generator.hasher(),
                 );
-                let storage_key_prefix = match vertex_or_prefix {
-                    Either::First(vertex) => vertex.into_storage_key(),
-                    Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
-                };
-                RangeStart::Inclusive(storage_key_prefix)
+                match vertex_or_prefix {
+                    Either::First(vertex) => RangeStart::ExcludePrefix(vertex.into_storage_key()),
+                    Either::Second(incomplete_attribute_prefix) => {
+                        // we have to include values above the bound which may share prefix
+                        RangeStart::Inclusive(incomplete_attribute_prefix)
+                    }
+                }
             }
             Bound::Unbounded => RangeStart::Inclusive(
                 AttributeVertex::build_prefix_type(
@@ -615,11 +617,13 @@ impl ThingManager {
                     upper_value,
                     self.vertex_generator.hasher(),
                 );
-                let storage_key_prefix = match vertex_or_prefix {
-                    Either::First(vertex) => vertex.into_storage_key(),
-                    Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
-                };
-                RangeEnd::EndPrefixInclusive(storage_key_prefix)
+                match vertex_or_prefix {
+                    Either::First(vertex) => RangeEnd::EndPrefixExclusive(vertex.into_storage_key()),
+                    Either::Second(incomplete_attribute_prefix) => {
+                        // we have to include values below the bound which may share prefix
+                        RangeEnd::EndPrefixInclusive(incomplete_attribute_prefix)
+                    }
+                }
             }
             Bound::Unbounded => {
                 let prefix = AttributeVertex::build_prefix_type(
