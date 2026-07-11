@@ -914,15 +914,21 @@ fn sequential_wins_subset_coverage() {
     println!("{}", profile);
 }
 
-/// Noise inflates the storage scan range for any `Reverse[X has $join]` iter,
-/// so merge pays for the bloated range twice (once per side) while sequential
+/// Additional owner types of the same attribute values
+/// inflate the storage scan range for any `Reverse[X has $join]` iter,
+/// so merge of reverse Has pays for the bloated range twice (once per side) while sequential
 /// pays once on the outer scan plus tight bound-from probes on the inner.
 /// owner_1: 100 owners values 0..99; owner_2: 100 owners values 0..99 (full
-/// overlap with outer); plus 2000 noise entries with values 100..2099
-/// inflating the value range. Output: 100 rows. Sequential should win.
+/// overlap with outer); plus 2000 noise owner_3 owners with values 100..2099
+/// inflating the value range. Output: 100 rows.
+///
+/// A good merge plan is two reverse Has merge? -> this is not split by owner type, so we'd
+///   be doing worst case 100 seeks to find intersections,
+///   and at 1900 advances to skip unwanted values for owner_1's reverse iterator tail
+///   and the same for owner_2?
 ///
 /// Cost-model estimate (noise puts the effective per-side scan at ~2100):
-/// - sequential chain ≈ 2100 outer + 100 × (SEEK + 1 ADV) ≈ ~2700
+/// - sequential chain ≈ 1 SEEK + 100 ADV + 100 × (SEEK + 1 ADV) ≈ ~700
 /// - 2-iter merge    ≈ 2 × 2100 (both iters walk the bloated range) ≈ ~4200
 /// Sequential expected to win by ~1.5×.
 /// Actual planner cost: 813 (sequential — planner picks correctly;
