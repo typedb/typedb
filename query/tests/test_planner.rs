@@ -4,38 +4,37 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::executable::match_::planner::conjunction_executable::{ExecutionStep, IntersectionStep};
+use std::{collections::HashMap, sync::Arc};
+
+use compiler::executable::match_::{
+    instructions::{ConstraintInstruction, thing::HasInstruction},
+    planner::conjunction_executable::{ExecutionStep, IntersectionStep},
+};
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
-    type_::type_manager::{type_cache::TypeCache, TypeManager},
+    type_::type_manager::{TypeManager, type_cache::TypeCache},
 };
 use durability::DurabilitySequenceNumber;
 use encoding::graph::{
     definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
 };
-use executor::pipeline::match_::MatchStageExecutor;
-use executor::pipeline::stage::ReadStageIterator;
 use executor::{
-    pipeline::{
-        pipeline::Pipeline,
-        stage::{ExecutionContext, ReadPipelineStage, StageIterator},
-    },
     ExecutionInterrupt,
+    pipeline::{
+        match_::MatchStageExecutor,
+        pipeline::Pipeline,
+        stage::{ExecutionContext, ReadPipelineStage, ReadStageIterator, StageIterator},
+    },
 };
 use function::function_manager::FunctionManager;
-use options::InternalQueryOptions;
-use query::given_rows::GivenRowsSimple;
-use query::{query_cache::QueryCache, query_manager::QueryManager};
-use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StepProfile, SubstepProfile};
-use std::{collections::HashMap, sync::Arc};
 use itertools::Itertools;
-use compiler::executable::match_::instructions::ConstraintInstruction;
-use compiler::executable::match_::instructions::thing::HasInstruction;
-use storage::snapshot::ReadableSnapshot;
+use options::InternalQueryOptions;
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StepProfile, SubstepProfile};
 use storage::{
-    durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot},
     MVCCStorage,
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot},
 };
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -297,9 +296,11 @@ fn visit_steps_in_pattern(pattern: &PatternProfile, visit: &mut impl FnMut(&Step
 fn get_intersection_steps(
     match_: &MatchStageExecutor<ReadStageIterator<ReadSnapshot<WALClient>>>,
 ) -> impl Iterator<Item = &IntersectionStep> + Clone + '_ {
-    match_.executable().steps().into_iter().filter_map(|step| {
-        if let ExecutionStep::Intersection(intersection) = step { Some(intersection) } else { None }
-    })
+    match_
+        .executable()
+        .steps()
+        .into_iter()
+        .filter_map(|step| if let ExecutionStep::Intersection(intersection) = step { Some(intersection) } else { None })
 }
 
 fn instruction_count(step: &IntersectionStep) -> usize {
@@ -458,7 +459,6 @@ fn merge_wins_symmetric_balanced() {
 
     println!("{}", profile);
 }
-
 
 /// Zipper test that should be optimal by seeking between matches to skip gaps
 /// 500 matching values + 2 decoys per side per match.

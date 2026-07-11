@@ -27,8 +27,7 @@ use encoding::{
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use options::InternalQueryOptions;
-use options::QueryOptions;
+use options::{InternalQueryOptions, QueryOptions};
 use pprof::ProfilerGuard;
 use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};

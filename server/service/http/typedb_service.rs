@@ -107,10 +107,8 @@ impl HTTPTypeDBService {
         payload: TransactionOpenPayload,
     ) -> Result<(TransactionInfo, u64), HttpServiceError> {
         let (request_sender, request_stream) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
-        let options = payload
-            .transaction_options
-            .map(|options| options.into())
-            .unwrap_or_else(|| TransactionOptions::default());
+        let options =
+            payload.transaction_options.map(|options| options.into()).unwrap_or_else(|| TransactionOptions::default());
         let transaction_timeout_millis = options.transaction_timeout_millis;
         let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream);
 

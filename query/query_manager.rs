@@ -9,8 +9,6 @@ use std::{
     sync::Arc,
 };
 
-use options::InternalQueryOptions;
-
 use compiler::{
     VariablePosition,
     annotation::{
@@ -48,7 +46,7 @@ use ir::{
         pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
     },
 };
-use options::QueryOptions;
+use options::{InternalQueryOptions, QueryOptions};
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
