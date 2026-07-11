@@ -748,14 +748,18 @@ fn merge_wins_multi_attr_filter() {
          got {rows}",
     );
 
-    // seek count: each IsaReverse lookup costs 2 (type-prefix open + seek to the literal value);
-    //  the merge opens its 3 iterators then pays 222 zipper catch-up seeks between intersections
-    assert_eq!(seeks, 231);
-    // advance count:
-    //  IsaReverse lookups: 1 failing advance each (the attribute instance itself comes from the seek)
-    //  merge: 336 — advancing past intersections plus walking entries the catch-up seeks don't skip
-    //   (each iter holds ~333 owner-sorted entries in runs of 3^i consecutive owners)
-    assert_eq!(advances, 339);
+    // Each IsaReverse lookup costs 2 seeks (type-prefix open + seek to the literal value) and 1
+    // failing advance; the merge opens its K iterators then zipper-walks them with catch-up seeks
+    // between intersections. The exact seek/advance split depends on the merge's iterator order,
+    // which is nondeterministic run-to-run (HashSet/HashMap iteration order in the beam decides
+    // between equal-cost states): observed orderings give 231 seeks / 339 advances (weighted 1494)
+    // and 157 / 265 (weighted 1050). Bound the weighted cost instead of pinning: both orderings
+    // sit far below the ~2700 a sequential cascade would pay.
+    let weighted = seeks * 5 + advances;
+    assert!(
+        weighted < 1600,
+        "multi_attr_filter: merge should stay cheap; got weighted {weighted} ({seeks} seeks, {advances} advances)"
+    );
 
     println!("{}", profile);
 }
