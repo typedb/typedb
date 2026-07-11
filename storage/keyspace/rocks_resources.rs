@@ -21,9 +21,7 @@ impl RocksResources {
     /// it is possible to exceed it with pinned index and filter blocks
     pub fn new(cache_limit: ByteSize, write_buffers_limit: ByteSize) -> Self {
         let cache = Cache::new_lru_cache(cache_limit.as_usize());
-        // `allow_stall=true` lets RocksDB pause writes when the buffer manager
-        // is over budget, instead of OOM'ing the process.
-        let write_buffer_manager = WriteBufferManager::new_write_buffer_manager(write_buffers_limit.as_usize(), true);
+        let write_buffer_manager = WriteBufferManager::new_write_buffer_manager(write_buffers_limit.as_usize(), false);
         Self { cache, write_buffer_manager, cache_limit, write_buffers_limit }
     }
 
