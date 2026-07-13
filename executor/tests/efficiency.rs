@@ -223,7 +223,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
            has name "abby",
            has name "bolton",
            has name "longy-mc-long-face-uninlineable"
-           has name "willa";
+           has name "willow";
 
          $person_3 isa person,
            has age 10,
@@ -276,7 +276,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let name_uninlineable = thing_manager
         .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)))
         .unwrap();
-    let name_willa = thing_manager
+    let name_willow = thing_manager
         .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(VALUE_STRING_WILLOW)))
         .unwrap();
 
@@ -292,7 +292,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_abby, StorageCounters::DISABLED).unwrap();
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_bolton, StorageCounters::DISABLED).unwrap();
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_uninlineable, StorageCounters::DISABLED).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_willa, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_willow, StorageCounters::DISABLED).unwrap();
 
     let person_3 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_10, StorageCounters::DISABLED).unwrap();
