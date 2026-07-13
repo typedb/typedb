@@ -1222,8 +1222,13 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     // 2 seeks: each of the 2 comparison check filters get the value of the Attribute repeatedly...
     //      TODO: if we embed the Value cache into the AttributeVertex, this could be avoided? Note: only expensive for un-inlined values!
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 8);
-    // 2 advance: the iterator matching person 1 will advance twice (once to find the second name, then to fail)
-    assert_eq!(storage_counters.get_raw_advance().unwrap(), 2)
+    // 3 advance: the iterator matching person 1 will advance three times:
+    // - once to find the second name "longy-etc",
+    // - once to find "willow", which has the same prefix as the upper bound so we continue
+    // - once to find the next prefix (end of `name`s in this case)
+    // Note that it is impossible in this case to have a match past "willow" but we do not have the information that we may
+    // stop the search.
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 3)
 }
 
 #[test]
