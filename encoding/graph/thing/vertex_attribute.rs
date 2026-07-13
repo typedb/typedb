@@ -280,10 +280,9 @@ impl AttributeID {
             ValueTypeCategory::DateTime => (DateTimeAttributeID::write(value.encode_date_time(), bytes), true),
             ValueTypeCategory::DateTimeTZ => (DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes), true),
             ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
-            ValueTypeCategory::String => (
-                StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes),
-                false,
-            ),
+            ValueTypeCategory::String => {
+                (StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), bytes), false)
+            }
             ValueTypeCategory::Struct => (
                 StructAttributeID::write_hashed_id_deterministic_prefix(
                     value.encode_struct::<64>(),
@@ -741,20 +740,14 @@ impl StringAttributeID {
     // write the deterministic prefix of the hash ID, and return the length of the prefix written
     pub(crate) fn write_deterministic_prefix<const INLINE_LENGTH: usize>(
         string: StringBytes<INLINE_LENGTH>,
-        hasher: &impl Fn(&[u8]) -> u64,
         bytes: &mut [u8],
     ) -> usize {
         debug_assert!(bytes.len() >= Self::LENGTH);
-        if Self::is_inlineable(string.as_reference()) {
-            let bytes_range = &mut bytes[0..Self::LENGTH];
-            Self::write_inline_id(bytes_range.try_into().unwrap(), string);
-            Self::LENGTH
-        } else {
-            bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
-            bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
-            let hash_length = Self::write_hash(&mut bytes[Self::HASHED_HASH_RANGE], hasher, string.bytes());
-            Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH + hash_length
-        }
+        bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+        bytes[Self::HASHED_PREFIX_RANGE].fill(0);
+        let prefix_len = usize::min(Self::HASHED_PREFIX_LENGTH, string.len());
+        bytes[Self::HASHED_PREFIX_RANGE.start..][..prefix_len].copy_from_slice(&string.bytes()[..prefix_len]);
+        Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH
     }
 
     ///
