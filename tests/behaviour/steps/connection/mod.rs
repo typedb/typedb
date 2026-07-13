@@ -12,9 +12,6 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::distribution_info::DistributionInfo;
-use server::{Server, ServerBuilder, parameters::config::ConfigBuilder};
-use test_utils::{TempDir, create_tmp_storage_dir};
 use tokio::sync::OnceCell;
 
 use crate::{Context, generic_step};
@@ -22,43 +19,11 @@ use crate::{Context, generic_step};
 mod database;
 mod transaction;
 
-const ADDRESS: &str = "0.0.0.0:1729";
-const DISTRIBUTION_INFO: DistributionInfo =
-    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
-static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
-
-fn config_path() -> PathBuf {
-    return std::env::current_dir().unwrap().join("server/config.yml");
-}
-
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
-    TYPEDB
-        .get_or_init(|| async {
-            let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
-            let shutdown_sender_clone = shutdown_sender.clone();
-            let server_dir = create_tmp_storage_dir();
-            let config = ConfigBuilder::from_file(config_path())
-                .expect("Failed to load config file")
-                .server_listen_address(ADDRESS)
-                .admin_enabled(false)
-                .data_directory(server_dir.as_ref())
-                .development_mode(true)
-                .build()
-                .unwrap();
-            let server = ServerBuilder::new()
-                .distribution_info(DISTRIBUTION_INFO)
-                .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
-                .build(config)
-                .await
-                .expect("Failed to start TypeDB server");
-            (server_dir, Arc::new(Mutex::new(server)))
-        })
-        .await;
-
-    let (_, server) = TYPEDB.get().expect("Expected TypeDB to get or be initialised");
-    context.server = Some(server.clone());
+    let server_instance = context.server_instance.as_ref().expect("Expected TypeDB to get or be initialised");
+    context.server = Some(server_instance.clone());
 }
 
 #[apply(generic_step)]
