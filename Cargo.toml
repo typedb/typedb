@@ -223,7 +223,7 @@ features = {}
 		[workspace.dependencies.typeql]
 			features = []
 			git = "https://github.com/typedb/typeql"
-			tag = "3.12.0-rc0"
+			tag = "3.12.0"
 			default-features = false
 
 		[workspace.dependencies.cache]
@@ -494,7 +494,7 @@ features = {}
 		[workspace.dependencies.typedb-protocol]
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.12.0-rc0"
+			tag = "3.12.0"
 			default-features = false
 
 		[workspace.dependencies.resource]
