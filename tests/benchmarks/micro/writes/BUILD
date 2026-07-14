@@ -3,14 +3,17 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "lib_benchmark",
-    srcs = ["common.rs"],
-    crate_root = "common.rs",
+# To run this via Bazel, Criterion must be provided the --bench argument:
+#   bazel run --compilation_mode=opt //tests/benchmarks/micro:microbench_<whatever> -- --bench
+rust_binary(
+    name = "microbench_writes",
+    srcs = glob(["*.rs"]),
     deps = [
+        "//tests/benchmarks/micro:lib_benchmark",
+
         "//common/options",
         "//common/primitive",
         "//compiler",
@@ -18,21 +21,24 @@ rust_library(
         "//diagnostics",
         "//executor",
         "//query",
-        "//resource",
         "//storage",
         "//util/test:test_utils",
 
-        "@typeql//rust:typeql",
-
+        "@crates//:rand",
+        "@crates//:criterion",
         "@crates//:itertools",
+        "@crates//:pprof",
         "@crates//:xoshiro",
-    ]
+        "@typeql//rust:typeql",
+    ],
+    tags = ["manual"],  # in order for bazel test //... to not fail
+#     use_libtest_harness = False,
 )
 
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
-        ":lib_benchmark",
+        ":microbench_writes",
     ],
     size = "small",
 )

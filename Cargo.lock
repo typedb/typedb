@@ -2811,8 +2811,23 @@ name = "lending_iterator"
 version = "0.0.0"
 
 [[package]]
-name = "lib_common"
+name = "lib_benchmark"
 version = "0.0.0"
+dependencies = [
+ "compiler",
+ "database",
+ "diagnostics",
+ "executor",
+ "itertools 0.14.0",
+ "options",
+ "primitive",
+ "query",
+ "resource",
+ "storage",
+ "test_utils",
+ "typeql",
+ "xoshiro",
+]
 
 [[package]]
 name = "libc"
@@ -2992,6 +3007,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "microbench_writes"
+version = "0.0.0"
+dependencies = [
+ "compiler",
+ "criterion",
+ "database",
+ "diagnostics",
+ "executor",
+ "itertools 0.14.0",
+ "lib_benchmark",
+ "options",
+ "pprof",
+ "primitive",
+ "query",
+ "rand 0.8.6",
+ "storage",
+ "test_utils",
+ "typeql",
+ "xoshiro",
 ]
 
 [[package]]
@@ -5919,7 +5956,6 @@ version = "0.0.0"
 dependencies = [
  "answer",
  "clap",
- "criterion",
  "database",
  "diagnostics",
  "executor",
@@ -5927,10 +5963,8 @@ dependencies = [
  "function",
  "http_steps",
  "lending_iterator",
- "lib_common",
  "logger",
  "options",
- "pprof",
  "query",
  "rand 0.8.8",
  "rand_core 0.3.2",
