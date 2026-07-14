@@ -17,7 +17,13 @@ features = {}
 	[dev-dependencies.xoshiro]
 		workspace = true
 
+	[dev-dependencies.criterion]
+		workspace = true
+
 	[dev-dependencies.query]
+		workspace = true
+
+	[dev-dependencies.lib_common]
 		workspace = true
 
 	[dev-dependencies.storage]
@@ -39,6 +45,9 @@ features = {}
 		workspace = true
 
 	[dev-dependencies.executor]
+		workspace = true
+
+	[dev-dependencies.pprof]
 		workspace = true
 
 	[dev-dependencies.function]
@@ -92,6 +101,10 @@ features = {}
 [[test]]
 	path = "tests/assembly/fail_points.rs"
 	name = "test_fail_points"
+
+[[test]]
+	path = "tests/benchmarks/micro/writes.rs"
+	name = "microbench_writes"
 
 [[test]]
 	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
@@ -156,7 +169,7 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "admin", "admin/client", "encoding/tests", "encoding", "server", "server/service/admin/proto", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/benchmarks/micro", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "admin", "admin/client", "encoding/tests", "encoding", "server", "server/service/admin/proto", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
 	[workspace.dependencies]
 
@@ -172,6 +185,11 @@ features = {}
 
 		[workspace.dependencies.fail_point]
 			path = "common/fail_point"
+			features = []
+			default-features = false
+
+		[workspace.dependencies.lib_common]
+			path = "tests/benchmarks/micro"
 			features = []
 			default-features = false
 
@@ -446,6 +464,11 @@ features = {}
 			version = "0.13.5"
 			default-features = false
 
+		[workspace.dependencies.pprof]
+			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
+			version = "0.13.0"
+			default-features = false
+
 		[workspace.dependencies.function]
 			path = "function"
 			features = []
@@ -454,11 +477,6 @@ features = {}
 		[workspace.dependencies.rustls-pemfile]
 			features = ["default", "std"]
 			version = "2.2.0"
-			default-features = false
-
-		[workspace.dependencies.pprof]
-			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
-			version = "0.13.0"
 			default-features = false
 
 		[workspace.dependencies.sysinfo]
