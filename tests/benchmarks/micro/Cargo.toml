@@ -3,14 +3,54 @@
 # Do not modify this file.
 
 features = {}
-dependencies = {}
 
 [package]
-	name = "lib_common"
+	name = "lib_benchmark"
 	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "common.rs"
 	crate-type = ["lib"]
+
+[dependencies]
+
+	[dependencies.test_utils]
+		workspace = true
+
+	[dependencies.xoshiro]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.query]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.database]
+		workspace = true
+
+	[dependencies.diagnostics]
+		workspace = true
+
+	[dependencies.executor]
+		workspace = true
+
+	[dependencies.options]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.compiler]
+		workspace = true
 

@@ -6,21 +6,37 @@
 
 use std::{fs::File, os::raw::c_int, path::Path};
 
+use database::transaction::{CommitIntent, DataCommitError};
 use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use pprof::ProfilerGuard;
+use database::transaction::TransactionWrite;
+use lib_benchmark::{Config, Context};
+use options::TransactionOptions;
+use storage::durability_client::WALClient;
 
-fn do_something() -> u64 {
-    1
-}
+const SCHEMA: &str = r#"
+define
+    attribute name, value string;
+    entity person, owns name;
+"#;
 
-fn do_something_else() -> u64 {
-    lib_common::get_int()
+fn bench_insert_person_only(c: &mut Criterion) {
+    let query = "insert $_ isa person;".to_owned();
+    let context = Context::init(Config::default());
+    let db = context.create_database("insert_person_only").unwrap();
+
+    lib_benchmark::create_schema(db.clone(), SCHEMA);
+    c.bench_function("bench_insert_person_only", |b| b.iter(|| {
+        let tx = TransactionWrite::open(db.clone(), TransactionOptions::default()).unwrap();
+        let (tx, query_result) = lib_benchmark::execute_write_query_in(tx, query.clone(), None);
+        query_result.unwrap();
+        lib_benchmark::commit_write_tx(tx);
+    }));
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
     println!("In criterion benchmark");
-    c.bench_function("do-something", |b| b.iter(|| do_something()));
-    c.bench_function("do-something_else", |b| b.iter(|| do_something_else()));
+    bench_insert_person_only(c);
 }
 
 // --- Code to generate flamegraphs copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---
