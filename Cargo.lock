@@ -2811,6 +2811,10 @@ name = "lending_iterator"
 version = "0.0.0"
 
 [[package]]
+name = "lib_common"
+version = "0.0.0"
+
+[[package]]
 name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5915,6 +5919,7 @@ version = "0.0.0"
 dependencies = [
  "answer",
  "clap",
+ "criterion",
  "database",
  "diagnostics",
  "executor",
@@ -5922,8 +5927,10 @@ dependencies = [
  "function",
  "http_steps",
  "lending_iterator",
+ "lib_common",
  "logger",
  "options",
+ "pprof",
  "query",
  "rand 0.8.8",
  "rand_core 0.3.2",
