@@ -16,7 +16,7 @@ use executor::{
 use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
-use options::QueryOptions;
+use options::{InternalQueryOptions, QueryOptions};
 use query::{error::QueryError, given_rows::GivenRows, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{Level, event};
@@ -64,6 +64,7 @@ pub fn execute_schema_query(
                 &function_manager,
                 query,
                 &source_query,
+                InternalQueryOptions::default(),
             )
         }
     )
@@ -182,6 +183,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         &pipeline,
         given_rows,
         source_query,
+        InternalQueryOptions::default(),
     );
     let pipeline = match result {
         Ok(pipeline) => pipeline,

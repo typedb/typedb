@@ -408,6 +408,10 @@ impl TypeManager {
         self.definition_key_generator.clone()
     }
 
+    pub fn type_vertex_generator(&self) -> Arc<TypeVertexGenerator> {
+        self.vertex_generator.clone()
+    }
+
     pub fn get_struct_definition_key(
         &self,
         snapshot: &impl ReadableSnapshot,

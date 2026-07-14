@@ -12,6 +12,7 @@ use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use options::InternalQueryOptions;
 use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
@@ -41,7 +42,15 @@ fn define_schema(
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, schema_query, query_str)
+        .execute_schema(
+            &mut snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            schema_query,
+            query_str,
+            InternalQueryOptions::default(),
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -65,6 +74,7 @@ fn insert_data(
             &query,
             None::<GivenRowsSimple>,
             query_string,
+            InternalQueryOptions::default(),
         )
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -188,6 +198,7 @@ fn query_profile_tree_structure() {
             &query,
             None::<GivenRowsSimple>,
             query_str,
+            InternalQueryOptions::default(),
         )
         .unwrap();
 
