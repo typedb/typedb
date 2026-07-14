@@ -40,9 +40,6 @@
 	[dev-dependencies.answer]
 		workspace = true
 
-	[dev-dependencies.criterion]
-		workspace = true
-
 	[dev-dependencies.diagnostics]
 		workspace = true
 
@@ -58,13 +55,7 @@
 	[dev-dependencies.lending_iterator]
 		workspace = true
 
-	[dev-dependencies.lib_common]
-		workspace = true
-
 	[dev-dependencies.options]
-		workspace = true
-
-	[dev-dependencies.pprof]
 		workspace = true
 
 	[dev-dependencies.query]
@@ -92,7 +83,7 @@
 		workspace = true
 
 [workspace]
-	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro", "user", "util/project", "util/test"]
+	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
 	resolver = "2"
 
 	[workspace.dependencies]
@@ -297,7 +288,7 @@
 			features = []
 			path = "common/lending_iterator"
 
-		[workspace.dependencies.lib_common]
+		[workspace.dependencies.lib_benchmark]
 			default-features = false
 			features = []
 			path = "tests/benchmarks/micro"
@@ -635,10 +626,6 @@
 [[test]]
 	name = "bench_iam"
 	path = "tests/benchmarks/iam/bench_iam.rs"
-
-[[test]]
-	name = "microbench_writes"
-	path = "tests/benchmarks/micro/writes.rs"
 
 [[test]]
 	name = "test_assembly"

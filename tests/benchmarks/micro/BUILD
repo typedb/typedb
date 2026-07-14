@@ -7,30 +7,34 @@ load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_library(
-    name = "lib_common",
+    name = "lib_benchmark",
     srcs = ["common.rs"],
     crate_root = "common.rs",
     deps = [
+        "//common/options",
+        "//common/primitive",
+        "//compiler",
+        "//database",
+        "//diagnostics",
+        "//executor",
+        "//query",
+        "//resource",
+        "//storage",
+        "//util/test:test_utils",
 
+        "@typeql//rust:typeql",
+
+        "@crates//:itertools",
+        "@crates//:xoshiro",
     ]
 )
 
-# To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //tests/benchmarks/micro:microbench_<whatever> -- --bench
-
-rust_test(
-    name = "microbench_writes",
-    srcs = ["writes.rs"],
-    deps = [
-        ":lib_common",
-
-        "@crates//:rand",
-        "@crates//:criterion",
-        "@crates//:pprof",
-        "@crates//:xoshiro",
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":lib_benchmark",
     ],
-    tags = ["manual"],  # in order for bazel test //... to not fail
-    use_libtest_harness = False,
+    size = "small",
 )
 
 checkstyle_test(
