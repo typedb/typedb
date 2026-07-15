@@ -36,12 +36,12 @@ pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsum
         let result = pipeline
             .into_documents_iterator(interrupt)
             .and_then(|(mut iter, context)| pack_result(AC::consume_docs(&mut iter), context));
-        to_pipeline_query_result(partial_tx, query, result)
+        to_result_with_tx(partial_tx, query, result)
     } else {
         let result = pipeline
             .into_rows_iterator(interrupt)
             .and_then(|(mut iter, context)| pack_result(AC::consume_rows(&mut iter), context));
-        to_pipeline_query_result(partial_tx, query, result)
+        to_result_with_tx(partial_tx, query, result)
     }
 }
 
@@ -59,12 +59,12 @@ pub(super) fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransacti
         let result = pipeline
             .into_documents_iterator(interrupt)
             .and_then(|(mut iter, context)| pack_result(AC::consume_docs(&mut iter), context));
-        to_pipeline_query_result(partial_tx, query, result)
+        to_result_with_tx(partial_tx, query, result)
     } else {
         let result = pipeline
             .into_rows_iterator(interrupt)
             .and_then(|(mut iter, context)| pack_result(AC::consume_rows(&mut iter), context));
-        to_pipeline_query_result(partial_tx, query, result)
+        to_result_with_tx(partial_tx, query, result)
     }
 }
 
@@ -140,7 +140,7 @@ fn to_err_and_tx<TX: UnifiedTransactionView, Err>(error_wrapper: ErrorWrapper<TX
     (error_wrapper.err, TX::reconstruct(error_wrapper.snapshot, error_wrapper.partial_tx))
 }
 
-fn to_pipeline_query_result<T, TX: UnifiedTransactionView>(
+fn to_result_with_tx<T, TX: UnifiedTransactionView>(
     partial_tx: PartialTx,
     source_query: &str,
     result: Result<(T, ExecutionContext<TX::Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<TX::Snapshot>)>,
