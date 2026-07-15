@@ -5,15 +5,14 @@
 features = {}
 
 [package]
-	name = "lib_benchmark"
+	name = "microbench_writes"
 	edition = "2024"
 	version = "0.0.0"
 
-[lib]
-	path = "common.rs"
-	crate-type = ["lib"]
-
 [dependencies]
+
+	[dependencies.lib_benchmark]
+		workspace = true
 
 	[dependencies.test_utils]
 		workspace = true
@@ -21,10 +20,10 @@ features = {}
 	[dependencies.xoshiro]
 		workspace = true
 
-	[dependencies.primitive]
+	[dependencies.criterion]
 		workspace = true
 
-	[dependencies.resource]
+	[dependencies.primitive]
 		workspace = true
 
 	[dependencies.query]
@@ -36,6 +35,9 @@ features = {}
 	[dependencies.itertools]
 		workspace = true
 
+	[dependencies.rand]
+		workspace = true
+
 	[dependencies.database]
 		workspace = true
 
@@ -43,6 +45,9 @@ features = {}
 		workspace = true
 
 	[dependencies.executor]
+		workspace = true
+
+	[dependencies.pprof]
 		workspace = true
 
 	[dependencies.options]
@@ -53,4 +58,8 @@ features = {}
 
 	[dependencies.compiler]
 		workspace = true
+
+[[bin]]
+	path = "main.rs"
+	name = "microbench_writes"
 

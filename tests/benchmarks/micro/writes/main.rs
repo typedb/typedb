@@ -30,7 +30,7 @@ fn bench_insert_person_only(c: &mut Criterion) {
         let tx = TransactionWrite::open(db.clone(), TransactionOptions::default()).unwrap();
         let (tx, query_result) = lib_benchmark::execute_write_query_in(tx, query.clone(), None);
         query_result.unwrap();
-        lib_benchmark::commit_write_tx(tx);
+        lib_benchmark::commit(tx);
     }));
 }
 
