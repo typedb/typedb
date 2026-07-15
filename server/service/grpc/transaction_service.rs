@@ -1228,6 +1228,7 @@ impl TransactionService {
                     &pipeline,
                     given_rows,
                     &source_query,
+                    None,
                 );
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
                     Self::submit_read_response_with_metrics(

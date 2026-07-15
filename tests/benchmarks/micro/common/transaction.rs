@@ -42,7 +42,7 @@ pub(crate) trait UnifiedTransactionView {
     fn commit(self) -> Result<TransactionProfile, CommitError>;
 }
 
-pub(crate) trait WriteTransactionView: UnifiedTransactionView<Snapshot: WritableSnapshot> { }
+pub(crate) trait WriteTransactionView: UnifiedTransactionView<Snapshot: WritableSnapshot> {}
 
 impl UnifiedTransactionView for TransactionWrite<WALClient> {
     type Snapshot = WriteSnapshot<WALClient>;

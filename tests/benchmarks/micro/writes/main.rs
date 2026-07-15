@@ -8,7 +8,10 @@ use std::{fs::File, os::raw::c_int, path::Path};
 
 use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use database::transaction::TransactionWrite;
-use lib_benchmark::{Config, Context, utils::{ResultCounter, unpack_result}};
+use lib_benchmark::{
+    Config, Context,
+    utils::{ResultCounter, unpack_result},
+};
 use options::TransactionOptions;
 use pprof::ProfilerGuard;
 

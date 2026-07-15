@@ -186,10 +186,11 @@ impl QueryManager {
         pipeline: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
+        tmp_enable_profiling: Option<bool>, // TODO: Fix with more permanent solution
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", source_query);
         let pipeline = self.translate(source_query, pipeline, snapshot.as_ref(), &function_manager, &thing_manager)?;
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let mut query_profile = QueryProfile::new(tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE)));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         let TranslatedPipeline {
@@ -282,13 +283,14 @@ impl QueryManager {
         pipeline: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
+        tmp_enable_profiling: Option<bool>,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", source_query);
         let pipeline = match self.translate(source_query, pipeline, &snapshot, &function_manager, &thing_manager) {
             Ok(translated) => translated,
             Err(err) => return Err((snapshot, err)),
         };
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let mut query_profile = QueryProfile::new(tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE)));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         let TranslatedPipeline {
