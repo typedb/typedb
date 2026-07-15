@@ -8,6 +8,7 @@ mod transaction;
 pub mod utils;
 
 use std::sync::Arc;
+
 use database::{
     Database,
     database::DatabaseCreateError,
@@ -16,19 +17,18 @@ use database::{
     transaction::{CommitIntent, TransactionSchema},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use executor::document::ConceptDocument;
-use executor::pipeline::PipelineExecutionError;
-use executor::row::MaybeOwnedRow;
+use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
 use options::{TransactionOptions, byte_size::ByteSize};
 use query::{error::QueryError, given_rows::GivenRowsSimple};
-use resource::profile::TransactionProfile;
-use storage::{
-    durability_client::WALClient,
-};
+use resource::profile::{QueryProfile, TransactionProfile};
+use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
 
-use crate::transaction::{CommitError, UnifiedTransactionView, WriteTransactionView};
+use crate::{
+    transaction::{CommitError, UnifiedTransactionView, WriteTransactionView},
+    utils::PackedResult,
+};
 
 #[derive(Debug)]
 pub struct Config {
@@ -83,18 +83,23 @@ pub trait AnswerConsumer {
     type Output;
     fn consume_rows<Iter>(iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
     where
-            for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>;
+        for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>;
 
     fn consume_docs(
         iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
     ) -> Result<Self::Output, Box<PipelineExecutionError>>;
 }
 
+pub struct QueryAnswer<T> {
+    pub answer: T,
+    pub profile: Arc<QueryProfile>,
+}
+
 pub fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsumer>(
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
-) -> Result<(AC::Output, TX), (Box<QueryError>, TX)> {
+) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
     pipelines::execute_read_query_in::<_, AC>(tx, query, given_rows)
 }
 
@@ -102,6 +107,6 @@ pub fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView,
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
-) -> Result<(AC::Output, TX), (Box<QueryError>, TX)> {
+) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
     pipelines::execute_write_query_in::<_, AC>(tx, query, given_rows)
 }

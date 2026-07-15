@@ -18,7 +18,7 @@ use query::{error::QueryError, given_rows::GivenRowsSimple};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    AnswerConsumer,
+    AnswerConsumer, QueryAnswer,
     transaction::{PartialTx, UnifiedTransactionView, WriteTransactionView},
     utils::{PackedResult, pack_result},
 };
@@ -27,7 +27,7 @@ pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsum
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
-) -> Result<(AC::Output, TX), (Box<QueryError>, TX)> {
+) -> Result<(QueryAnswer<AC::Output>, TX), (Box<QueryError>, TX)> {
     let (snapshot, partial_tx) = tx.into_parts();
     let prepare_result = prepare_read_pipeline(snapshot, partial_tx, query, given_rows);
     let ReadPipelineWrapper { pipeline, partial_tx, .. } = prepare_result.map_err(to_err_and_tx)?;
@@ -49,7 +49,7 @@ pub(super) fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransacti
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
-) -> Result<(AC::Output, TX), (Box<QueryError>, TX)> {
+) -> Result<(QueryAnswer<AC::Output>, TX), (Box<QueryError>, TX)> {
     let (arc_snapshot, partial_tx) = tx.into_parts();
     let snapshot = Arc::into_inner(arc_snapshot).expect("Expected exclusive ownership");
     let prepare_result = prepare_write_pipeline(snapshot, partial_tx, query, given_rows);
@@ -93,6 +93,7 @@ fn prepare_read_pipeline<Snapshot: ReadableSnapshot>(
         &parsed,
         given_rows,
         &query,
+        Some(true),
     );
     match prepare_result {
         Ok(pipeline) => Ok(ReadPipelineWrapper { partial_tx, pipeline }),
@@ -115,6 +116,7 @@ fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
         &parsed,
         given_rows,
         &query,
+        Some(true),
     );
     match prepare_result {
         Ok(pipeline) => Ok(WritePipelineWrapper { partial_tx, pipeline }),
@@ -143,9 +145,11 @@ fn to_result_with_tx<T, TX: UnifiedTransactionView>(
     partial_tx: PartialTx,
     source_query: &str,
     result: PackedResult<T, Box<PipelineExecutionError>, ExecutionContext<TX::Snapshot>>,
-) -> PackedResult<T, Box<QueryError>, TX> {
+) -> PackedResult<QueryAnswer<T>, Box<QueryError>, TX> {
     match result {
-        Ok((consumed, context)) => Ok((consumed, TX::reconstruct(context.snapshot, partial_tx))),
+        Ok((answer, context)) => {
+            Ok((QueryAnswer { answer, profile: context.profile }, TX::reconstruct(context.snapshot, partial_tx)))
+        }
         Err((err, context)) => Err((
             Box::new(QueryError::ReadPipelineExecution { source_query: source_query.to_owned(), typedb_source: err }),
             TX::reconstruct(context.snapshot, partial_tx),

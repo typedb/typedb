@@ -4,12 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::collections::HashMap;
+
 use compiler::VariablePosition;
-use executor::batch::Batch;
-use executor::document::ConceptDocument;
-use executor::pipeline::PipelineExecutionError;
-use executor::row::MaybeOwnedRow;
+use executor::{batch::Batch, document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
+
 use crate::AnswerConsumer;
 
 pub type PackedResult<OK, ERR, T> = Result<(OK, T), (ERR, T)>;
@@ -39,7 +38,7 @@ impl AnswerConsumer for ResultCounter {
     type Output = usize;
     fn consume_rows<Iter>(iter: &mut Iter) -> Result<usize, Box<PipelineExecutionError>>
     where
-            for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>,
+        for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>,
     {
         let mut count: usize = 0;
         while let Some(row) = iter.next() {
