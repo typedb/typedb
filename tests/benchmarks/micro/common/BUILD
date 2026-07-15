@@ -6,14 +6,21 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
+#   bazel run --compilation_mode=opt //tests/benchmarks/micro/<folder>:microbench_<whatever> -- --bench
+#   For the profile to kick in, you need to specify `--profile-time <seconds>`
+#   Flamegraph still crashes on my mac
+
 rust_library(
     name = "lib_benchmark",
-    srcs = ["common.rs"],
-    crate_root = "common.rs",
+    srcs = glob(["*.rs"]),
+    crate_root = "lib.rs",
     deps = [
+        "//answer",
         "//common/options",
         "//common/primitive",
         "//compiler",
+        "//concept",
+        "//function",
         "//database",
         "//diagnostics",
         "//executor",

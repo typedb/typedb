@@ -2814,10 +2814,13 @@ version = "0.0.0"
 name = "lib_benchmark"
 version = "0.0.0"
 dependencies = [
+ "answer",
  "compiler",
+ "concept",
  "database",
  "diagnostics",
  "executor",
+ "function",
  "itertools 0.14.0",
  "options",
  "primitive",
