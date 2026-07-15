@@ -20,7 +20,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     AnswerConsumer,
     transaction::{PartialTx, UnifiedTransactionView, WriteTransactionView},
-    utils::pack_result,
+    utils::{PackedResult, pack_result},
 };
 
 pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsumer>(
@@ -69,7 +69,6 @@ pub(super) fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransacti
 }
 
 struct ReadPipelineWrapper<Snapshot: ReadableSnapshot + 'static> {
-    snapshot: Arc<Snapshot>,
     partial_tx: PartialTx,
     pipeline: Pipeline<Snapshot, ReadPipelineStage<Snapshot>>,
 }
@@ -96,7 +95,7 @@ fn prepare_read_pipeline<Snapshot: ReadableSnapshot>(
         &query,
     );
     match prepare_result {
-        Ok(pipeline) => Ok(ReadPipelineWrapper { snapshot, partial_tx, pipeline }),
+        Ok(pipeline) => Ok(ReadPipelineWrapper { partial_tx, pipeline }),
         Err(err) => Err(ErrorWrapper::new(snapshot, partial_tx, err)),
     }
 }
@@ -143,8 +142,8 @@ fn to_err_and_tx<TX: UnifiedTransactionView, Err>(error_wrapper: ErrorWrapper<TX
 fn to_result_with_tx<T, TX: UnifiedTransactionView>(
     partial_tx: PartialTx,
     source_query: &str,
-    result: Result<(T, ExecutionContext<TX::Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<TX::Snapshot>)>,
-) -> Result<(T, TX), (Box<QueryError>, TX)> {
+    result: PackedResult<T, Box<PipelineExecutionError>, ExecutionContext<TX::Snapshot>>,
+) -> PackedResult<T, Box<QueryError>, TX> {
     match result {
         Ok((consumed, context)) => Ok((consumed, TX::reconstruct(context.snapshot, partial_tx))),
         Err((err, context)) => Err((

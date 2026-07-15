@@ -8,7 +8,7 @@ use std::{fs::File, os::raw::c_int, path::Path};
 
 use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use database::transaction::TransactionWrite;
-use lib_benchmark::{Config, Context, ResultCounter, utils::unpack_result};
+use lib_benchmark::{Config, Context, utils::{ResultCounter, unpack_result}};
 use options::TransactionOptions;
 use pprof::ProfilerGuard;
 
@@ -30,7 +30,7 @@ fn bench_insert_person_only(c: &mut Criterion) {
             let (query_result, tx) =
                 unpack_result(lib_benchmark::execute_write_query_in::<_, ResultCounter>(tx, query, None));
             query_result.unwrap();
-            lib_benchmark::commit(tx);
+            lib_benchmark::commit(tx).unwrap();
         })
     });
 }

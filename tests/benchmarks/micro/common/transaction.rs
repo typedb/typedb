@@ -19,6 +19,7 @@ use storage::{
     snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
 };
 
+#[derive(Debug)]
 pub enum CommitError {
     Data(DataCommitError),
     Schema(SchemaCommitError),
@@ -38,12 +39,10 @@ pub(crate) trait UnifiedTransactionView {
     type Snapshot: ReadableSnapshot + 'static;
     fn into_parts(self) -> (Arc<Self::Snapshot>, PartialTx);
     fn reconstruct(snapshot: Arc<Self::Snapshot>, partial_tx: PartialTx) -> Self;
-}
-
-pub(crate) trait WriteTransactionView: UnifiedTransactionView<Snapshot: WritableSnapshot> {
-    // fn unwrap_to_write_snapshot(s: Arc<Self::Snapshot>) -> Option<impl WritableSnapshot>;
     fn commit(self) -> Result<TransactionProfile, CommitError>;
 }
+
+pub(crate) trait WriteTransactionView: UnifiedTransactionView<Snapshot: WritableSnapshot> { }
 
 impl UnifiedTransactionView for TransactionWrite<WALClient> {
     type Snapshot = WriteSnapshot<WALClient>;
@@ -93,12 +92,6 @@ impl UnifiedTransactionView for TransactionWrite<WALClient> {
             profile,
         )
     }
-}
-
-impl WriteTransactionView for TransactionWrite<WALClient> {
-    // fn unwrap_to_write_snapshot(s: Arc<Self::Snapshot>) -> Option<impl WritableSnapshot> {
-    //     Arc::into_inner(s)
-    // }
 
     fn commit(self) -> Result<TransactionProfile, CommitError> {
         let (mut profile, finalise_result) = self.finalise();
@@ -108,6 +101,8 @@ impl WriteTransactionView for TransactionWrite<WALClient> {
         }
     }
 }
+
+impl WriteTransactionView for TransactionWrite<WALClient> {}
 
 impl UnifiedTransactionView for TransactionRead<WALClient> {
     type Snapshot = ReadSnapshot<WALClient>;
@@ -154,5 +149,9 @@ impl UnifiedTransactionView for TransactionRead<WALClient> {
             transaction_options,
             profile,
         }
+    }
+
+    fn commit(self) -> Result<TransactionProfile, CommitError> {
+        Ok(self.profile)
     }
 }
