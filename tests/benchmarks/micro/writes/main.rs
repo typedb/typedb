@@ -7,11 +7,10 @@
 use std::{fs::File, os::raw::c_int, path::Path};
 
 use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
-use database::transaction::{CommitIntent, DataCommitError, TransactionWrite};
-use lib_benchmark::{Config, Context};
+use database::transaction::TransactionWrite;
+use lib_benchmark::{Config, Context, ResultCounter, utils::unpack_result};
 use options::TransactionOptions;
 use pprof::ProfilerGuard;
-use storage::durability_client::WALClient;
 
 const SCHEMA: &str = r#"
 define
@@ -20,7 +19,7 @@ define
 "#;
 
 fn bench_insert_person_only(c: &mut Criterion) {
-    let query = "insert $_ isa person;".to_owned();
+    let query = "insert $_ isa person;";
     let context = Context::init(Config::default());
     let db = context.create_database("insert_person_only").unwrap();
 
@@ -28,7 +27,8 @@ fn bench_insert_person_only(c: &mut Criterion) {
     c.bench_function("bench_insert_person_only", |b| {
         b.iter(|| {
             let tx = TransactionWrite::open(db.clone(), TransactionOptions::default()).unwrap();
-            let (tx, query_result) = lib_benchmark::execute_write_query_in(tx, query.clone(), None);
+            let (query_result, tx) =
+                unpack_result(lib_benchmark::execute_write_query_in::<_, ResultCounter>(tx, query, None));
             query_result.unwrap();
             lib_benchmark::commit(tx);
         })
