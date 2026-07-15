@@ -1000,6 +1000,7 @@ impl TransactionService {
                     &pipeline,
                     given_rows,
                     &source_query,
+                    None,
                 );
                 let pipeline = match pipeline_result {
                     Ok(pipeline) => pipeline,

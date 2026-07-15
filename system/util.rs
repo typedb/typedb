@@ -150,6 +150,7 @@ pub mod query_util {
             &pipeline,
             None::<GivenRowsSimple>,
             source_query,
+            None,
         ) {
             Ok(pipeline) => pipeline,
             Err(err) => return (tx, Err(err)),
@@ -199,6 +200,7 @@ pub mod query_util {
             &pipeline,
             None::<GivenRowsSimple>,
             source_query,
+            None,
         ) {
             Ok(pipeline) => pipeline,
             Err((snapshot, err)) => return (Err(err), Arc::new(snapshot)),

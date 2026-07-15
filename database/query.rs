@@ -182,6 +182,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         &query_pipeline,
         given_rows,
         source_query,
+        None,
     );
     let pipeline = match result {
         Ok(pipeline) => pipeline,
