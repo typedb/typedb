@@ -3,17 +3,64 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::collections::HashMap;
+use compiler::VariablePosition;
+use executor::batch::Batch;
+use executor::document::ConceptDocument;
+use executor::pipeline::PipelineExecutionError;
+use executor::row::MaybeOwnedRow;
+use lending_iterator::LendingIterator;
+use crate::AnswerConsumer;
 
-pub fn pack_result<T, OK, ERR>(result: Result<OK, ERR>, t: T) -> Result<(OK, T), (ERR, T)> {
+pub type PackedResult<OK, ERR, T> = Result<(OK, T), (ERR, T)>;
+
+pub fn pack_result<OK, ERR, T>(result: Result<OK, ERR>, t: T) -> Result<(OK, T), (ERR, T)> {
     match result {
         Ok(ok) => Ok((ok, t)),
         Err(err) => Err((err, t)),
     }
 }
 
-pub fn unpack_result<T, OK, ERR>(result: Result<(OK, T), (ERR, T)>) -> (Result<OK, ERR>, T) {
+pub fn unpack_result<OK, ERR, T>(result: Result<(OK, T), (ERR, T)>) -> (Result<OK, ERR>, T) {
     match result {
         Ok((ok, t)) => (Ok(ok), t),
         Err((err, t)) => (Err(err), t),
+    }
+}
+
+pub enum CollectedAnswer {
+    Rows { descriptor: HashMap<String, VariablePosition>, rows: Batch },
+    Documents { documents: Vec<ConceptDocument> },
+}
+
+/// ANSWER CONSUMER
+pub struct ResultCounter;
+impl AnswerConsumer for ResultCounter {
+    type Output = usize;
+    fn consume_rows<Iter>(iter: &mut Iter) -> Result<usize, Box<PipelineExecutionError>>
+    where
+            for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>,
+    {
+        let mut count: usize = 0;
+        while let Some(row) = iter.next() {
+            if let Err(err) = row {
+                return Err(err);
+            }
+            count += 1;
+        }
+        Ok(count)
+    }
+
+    fn consume_docs(
+        iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
+    ) -> Result<usize, Box<PipelineExecutionError>> {
+        let mut count: usize = 0;
+        while let Some(row) = iter.next() {
+            if let Err(err) = row {
+                return Err(err);
+            }
+            count += 1;
+        }
+        Ok(count)
     }
 }
