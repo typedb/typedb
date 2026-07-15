@@ -25,7 +25,7 @@ package(default_visibility = [
     "//query:__subpackages__",
     "//server:__subpackages__",
     "//system:__subpackages__",
-    "//tests/behaviour:__subpackages__",
+    "//tests:__subpackages__",
 ])
 
 rust_library(

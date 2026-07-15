@@ -64,7 +64,7 @@ pub struct TransactionRead<D> {
     pub function_manager: Arc<FunctionManager>,
     pub query_manager: Arc<QueryManager>,
     pub database: DatabaseDropGuard<D>,
-    transaction_options: TransactionOptions,
+    pub transaction_options: TransactionOptions,
     pub profile: TransactionProfile,
 }
 

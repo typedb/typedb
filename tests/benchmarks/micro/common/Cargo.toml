@@ -8,11 +8,17 @@
 
 [lib]
 	crate-type = ["lib"]
-	path = "common.rs"
+	path = "lib.rs"
 
 [dependencies]
 
+	[dependencies.answer]
+		workspace = true
+
 	[dependencies.compiler]
+		workspace = true
+
+	[dependencies.concept]
 		workspace = true
 
 	[dependencies.database]
@@ -22,6 +28,9 @@
 		workspace = true
 
 	[dependencies.executor]
+		workspace = true
+
+	[dependencies.function]
 		workspace = true
 
 	[dependencies.itertools]
