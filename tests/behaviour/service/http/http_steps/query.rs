@@ -23,7 +23,7 @@ use server::service::{
                 encode_pipeline_structure_as_functor,
             },
         },
-        query::{GivenEntryPayload, GivenRowsPayload, QueryAnswerResponse},
+        query::{GivenEntryPayload, GivenRowsPayload, QueryAnswerResponse, TaggedEntryPayload, concept::ValueResponse},
     },
 };
 
@@ -159,7 +159,7 @@ fn check_is_value(
 #[cucumber::when(expr = "set answers of typeql read query as given rows with order: {variable_list}")]
 #[cucumber::given(expr = "set answers of typeql read query as given rows dictionary with variables: {variable_list}")]
 #[cucumber::when(expr = "set answers of typeql read query as given rows dictionary with variables: {variable_list}")]
-async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &Step) {
+async fn set_answers_of_typeql_read_query_as_given_rows(context: &mut Context, var_list: VariableList, step: &Step) {
     let result = (transactions_query(
         context.http_client(),
         context.auth_token(),
@@ -190,6 +190,55 @@ async fn set_given_rows(context: &mut Context, var_list: VariableList, step: &St
     }
 
     context.given_rows = Some(GivenRowsPayload(given_rows))
+}
+
+#[cucumber::given(expr = "set given rows to:")]
+#[cucumber::when(expr = "set given rows to:")]
+async fn set_given_rows(context: &mut Context, step: &Step) {
+    let table = step.table().expect("Expected a data table for 'set given rows to:'");
+    let variables: Vec<String> =
+        table.rows[0].iter().map(|cell| cell.split(':').next().unwrap().trim().to_owned()).collect();
+    let mut given_rows = Vec::with_capacity(table.rows.len().saturating_sub(1));
+    for row in &table.rows[1..] {
+        let entry = variables
+            .iter()
+            .cloned()
+            .zip(row.iter().map(|cell| parse_literal_given_entry(cell.trim())))
+            .collect::<BTreeMap<String, Option<GivenEntryPayload>>>();
+        given_rows.push(entry);
+    }
+    context.given_rows = Some(GivenRowsPayload(given_rows));
+}
+
+fn parse_literal_given_entry(cell: &str) -> Option<GivenEntryPayload> {
+    if cell == "none" {
+        return None;
+    }
+    let mut parts = cell.splitn(3, ':');
+    let encoding = parts.next().unwrap();
+    let value_type = parts.next().expect("expected <encoding>:<type>:<value>");
+    let value = parts.next().expect("expected <encoding>:<type>:<value>");
+    Some(match encoding {
+        "raw" => match value_type {
+            "boolean" => GivenEntryPayload::RawBool(value.parse().unwrap()),
+            "integer" => GivenEntryPayload::RawNumber(value.parse::<i64>().unwrap().into()),
+            "double" => GivenEntryPayload::RawNumber(serde_json::Number::from_f64(value.parse().unwrap()).unwrap()),
+            _ => GivenEntryPayload::RawString(value.to_owned()),
+        },
+        "value" => {
+            let json_value = match value_type {
+                "boolean" => serde_json::Value::Bool(value.parse().unwrap()),
+                "integer" => serde_json::json!(value.parse::<i64>().unwrap()),
+                "double" => serde_json::json!(value.parse::<f64>().unwrap()),
+                _ => serde_json::Value::String(value.to_owned()),
+            };
+            GivenEntryPayload::Concept(TaggedEntryPayload::Value(ValueResponse {
+                value: json_value,
+                value_type: value_type.to_owned(),
+            }))
+        }
+        other => panic!("Unknown given-entry encoding '{other}', expected 'raw', 'value', or 'none'"),
+    })
 }
 
 #[apply(generic_step)]
