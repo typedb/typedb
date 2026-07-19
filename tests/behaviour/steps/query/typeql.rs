@@ -246,9 +246,9 @@ fn may_take_given_rows(context: &mut Context, with_given: params::WithGiven) -> 
     (with_given == params::WithGiven::True).then(|| context.take_given_rows().expect("Expected given rows available"))
 }
 
-#[cucumber::given("query is given rows")]
-#[cucumber::when("query is given rows")]
-async fn given_rows(context: &mut Context, step: &Step) {
+#[cucumber::given("set query given rows")]
+#[cucumber::when("set query given rows")]
+async fn set_query_given_rows(context: &mut Context, step: &Step) {
     let table = step.table.as_ref().expect("Expected table for given rows");
     let length = table.rows.len();
     let width = table.rows.first().unwrap().len() as u32;
@@ -786,9 +786,9 @@ fn parse_query_given_row_entry(entry: &String) -> GivenRowEntry {
         "none" => GivenRowEntry::None,
         "value" => {
             let value_type_str = parts.next().expect("value:<value-type>:<value>");
-            let value_str = parts.next().expect("value:<value-type>:<value>");
+            let value_str = parts.collect::<Vec<&str>>().join(":");
             let expected_value_type = parse_value_type(value_type_str);
-            let value = params::Value::from_str(value_str).unwrap().into_typedb(expected_value_type);
+            let value = params::Value::from_str(&value_str).unwrap().into_typedb(expected_value_type);
             GivenRowEntry::Value(value)
         }
         "iid" => {
