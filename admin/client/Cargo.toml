@@ -26,6 +26,9 @@ features = {}
 	[dependencies.hyper-util]
 		workspace = true
 
+	[dependencies.tonic-types]
+		workspace = true
+
 	[dependencies.rustyline]
 		workspace = true
 

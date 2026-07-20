@@ -5801,6 +5801,7 @@ dependencies = [
  "test_utils",
  "tokio",
  "tonic",
+ "tonic-types",
  "tower 0.4.13",
  "typeql",
 ]
