@@ -25,6 +25,7 @@ rust_library(
         "@crates//:hyper-util",
         "@crates//:tokio",
         "@crates//:tonic",
+        "@crates//:tonic-types",
         "@crates//:tower",
         "@typeql//rust:typeql",
     ],
