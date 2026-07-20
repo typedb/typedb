@@ -12,7 +12,7 @@ use tonic_types::StatusExt;
 typedb_error! {
     pub AdminError(component = "Admin", prefix = "ADM") {
         ConnectionFailed(1, "Failed to connect to '{address}'.", address: String, source: Arc<tonic::transport::Error>),
-        RpcFailed(2, "{message}", message: String),
+        RpcFailed(2, "Request failed.\n{cause}", cause: String),
         InvalidArgCount(3, "Invalid number of arguments. Usage: {usage}", usage: String),
         InvalidArgument(4, "Invalid argument '{name}': {reason}", name: String, reason: String),
         UnknownCommand(5, "Unknown command: '{input}'. Type 'help' for available commands.", input: String),
@@ -33,19 +33,16 @@ impl From<tonic::Status> for AdminError {
     fn from(status: tonic::Status) -> Self {
         if let Ok(details) = status.check_error_details() {
             if let Some(error_info) = details.error_info() {
-                let stack_trace =
-                    details.debug_info().map(|debug_info| debug_info.stack_entries.clone()).unwrap_or_default();
-                let message = if stack_trace.is_empty() {
-                    format!("[{}] {}", error_info.reason, error_info.domain)
-                } else {
-                    stack_trace.join("\nCaused: ")
+                let cause = match details.debug_info() {
+                    Some(debug_info) if !debug_info.stack_entries.is_empty() => debug_info.stack_entries.join("\n"),
+                    _ => format!("[{}] {}", error_info.reason, error_info.domain),
                 };
-                return Self::RpcFailed { message };
+                return Self::RpcFailed { cause };
             }
         }
         let code = status.code();
         let message = status.message();
-        let formatted = if message.is_empty() { format!("{code}") } else { format!("{code}: {message}") };
-        Self::RpcFailed { message: formatted }
+        let cause = if message.is_empty() { format!("{code}") } else { format!("{code}: {message}") };
+        Self::RpcFailed { cause }
     }
 }
