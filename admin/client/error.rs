@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use error::typedb_error;
+use tonic_types::StatusExt;
 
 typedb_error! {
     pub AdminError(component = "Admin", prefix = "ADM") {
@@ -30,6 +31,18 @@ typedb_error! {
 
 impl From<tonic::Status> for AdminError {
     fn from(status: tonic::Status) -> Self {
+        if let Ok(details) = status.check_error_details() {
+            if let Some(error_info) = details.error_info() {
+                let stack_trace =
+                    details.debug_info().map(|debug_info| debug_info.stack_entries.clone()).unwrap_or_default();
+                let message = if stack_trace.is_empty() {
+                    format!("[{}] {}", error_info.reason, error_info.domain)
+                } else {
+                    stack_trace.join("\nCaused: ")
+                };
+                return Self::RpcFailed { message };
+            }
+        }
         let code = status.code();
         let message = status.message();
         let formatted = if message.is_empty() { format!("{code}") } else { format!("{code}: {message}") };
