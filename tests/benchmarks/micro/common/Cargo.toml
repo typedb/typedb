@@ -51,6 +51,9 @@ features = {}
 	[dependencies.executor]
 		workspace = true
 
+	[dependencies.pprof]
+		workspace = true
+
 	[dependencies.function]
 		workspace = true
 

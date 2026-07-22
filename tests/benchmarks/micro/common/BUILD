@@ -32,7 +32,9 @@ rust_library(
 
         "@typeql//rust:typeql",
 
+        "@crates//:criterion",
         "@crates//:itertools",
+        "@crates//:pprof",
         "@crates//:xoshiro",
     ]
 )
