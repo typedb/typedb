@@ -4,41 +4,59 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use criterion::{Criterion, criterion_group, criterion_main};
+use database::Database;
 use database::transaction::TransactionWrite;
-use lib_benchmark::{
-    Config, Context,
-    profiler::FlamegraphProfiler,
-    utils::{ResultCounter, unpack_result},
-};
+use lib_benchmark::{profiler::FlamegraphProfiler, Context};
+use lib_benchmark::templates::SimpleBenchmark;
+use lib_benchmark::utils::{unpack_result, ResultCounter};
 use options::TransactionOptions;
+use query::given_rows::GivenRowsSimple;
+use storage::durability_client::WALClient;
+
+mod simple_inserts;
 
 
-const SCHEMA: &str = r#"
-define
-    attribute name, value string;
-    entity person, owns name;
-"#;
-
-fn bench_insert_person_only(c: &mut Criterion) {
-    let query = "insert $_ isa person;";
-    let context = Context::init(Config::default());
-    let db = context.create_database("insert_person_only").unwrap();
-
-    lib_benchmark::create_schema(db.clone(), SCHEMA);
-    c.bench_function("bench_insert_person_only", |b| {
-        b.iter(|| {
-            let tx = TransactionWrite::open(db.clone(), TransactionOptions::default()).unwrap();
-            let (query_result, tx) =
-                unpack_result(lib_benchmark::execute_write_query_in::<_, ResultCounter>(tx, query, None));
-            query_result.unwrap();
-            lib_benchmark::commit(tx).unwrap();
-        })
-    });
+struct InsertBenchmark {
+    pub(crate) name: &'static str,
+    pub(crate) schema: &'static str,
+    pub(crate) query: &'static str,
+    pub(crate) given_rows: Option<GivenRowsSimple>,
 }
 
+impl InsertBenchmark {
+    fn new(name: &'static str, schema: &'static str, query: &'static str, given_rows: Option<GivenRowsSimple>) -> Self {
+        Self { name, schema, query, given_rows }
+    }
+}
+
+impl SimpleBenchmark for InsertBenchmark {
+    type IterInput = Arc<Database<WALClient>>;
+
+    fn name(&self) -> String {
+        self.name.to_owned()
+    }
+
+    fn prepare(&self, context: &Context) -> Self::IterInput {
+        let database = context.recreate_database(self.name).unwrap();
+        lib_benchmark::create_schema(database.clone(), self.schema);
+        database
+    }
+
+    fn run(&self, _context: &Context, database: &mut Arc<Database<WALClient>>) {
+        let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+        let (query_result, tx) =
+            unpack_result(lib_benchmark::execute_write_query_in::<_, ResultCounter>(tx, self.query, None));
+        query_result.unwrap();
+        lib_benchmark::commit(tx).unwrap();
+    }
+}
+
+
 fn criterion_benchmark(c: &mut Criterion) {
-    bench_insert_person_only(c);
+    simple_inserts::run_all(c);
 }
 
 fn profiled() -> Criterion {

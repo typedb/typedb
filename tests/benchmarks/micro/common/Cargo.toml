@@ -21,6 +21,9 @@ features = {}
 	[dependencies.xoshiro]
 		workspace = true
 
+	[dependencies.criterion]
+		workspace = true
+
 	[dependencies.primitive]
 		workspace = true
 
