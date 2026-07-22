@@ -4,16 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs::File, os::raw::c_int, path::Path};
-
-use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
+use criterion::{Criterion, criterion_group, criterion_main};
 use database::transaction::TransactionWrite;
 use lib_benchmark::{
     Config, Context,
+    profiler::FlamegraphProfiler,
     utils::{ResultCounter, unpack_result},
 };
 use options::TransactionOptions;
-use pprof::ProfilerGuard;
+
 
 const SCHEMA: &str = r#"
 define
@@ -39,39 +38,7 @@ fn bench_insert_person_only(c: &mut Criterion) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    println!("In criterion benchmark");
     bench_insert_person_only(c);
-}
-
-// --- Code to generate flamegraphs copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---
-// This causes a SIGBUS on (mac) arm64 if the frequency is set too high.
-
-pub struct FlamegraphProfiler<'a> {
-    frequency: c_int,
-    active_profiler: Option<ProfilerGuard<'a>>,
-}
-
-impl<'a> FlamegraphProfiler<'a> {
-    #[allow(dead_code)]
-    pub fn new(frequency: c_int) -> Self {
-        FlamegraphProfiler { frequency, active_profiler: None }
-    }
-}
-
-impl<'a> Profiler for FlamegraphProfiler<'a> {
-    fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
-        self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
-    }
-
-    fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
-        std::fs::create_dir_all(benchmark_dir).unwrap();
-        let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(&flamegraph_path).expect("File system error while creating flamegraph.svg");
-        if let Some(profiler) = self.active_profiler.take() {
-            profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("Error writing flamegraph");
-            println!("Wrote flamegraph to {}", flamegraph_path.display());
-        }
-    }
 }
 
 fn profiled() -> Criterion {

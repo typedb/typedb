@@ -24,12 +24,13 @@ rust_binary(
         "//storage",
         "//util/test:test_utils",
 
+        "@typeql//rust:typeql",
+
         "@crates//:rand",
         "@crates//:criterion",
         "@crates//:itertools",
         "@crates//:pprof",
         "@crates//:xoshiro",
-        "@typeql//rust:typeql",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
 #     use_libtest_harness = False,
