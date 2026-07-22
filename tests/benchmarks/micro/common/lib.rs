@@ -3,10 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 mod pipelines;
 mod transaction;
 pub mod utils;
 pub mod profiler;
+pub mod templates;
 
 use std::sync::Arc;
 
@@ -61,7 +63,10 @@ impl Context {
         Self { config, _tmp_dir: tmp_dir, database_manager }
     }
 
-    pub fn create_database(&self, name: &str) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
+    pub fn recreate_database(&self, name: &str) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
+        if self.database_manager.database(name).is_some() {
+            self.database_manager.delete_database(name).unwrap();
+        }
         self.database_manager.put_database(name)?;
         Ok(self.database_manager.database(name).unwrap())
     }
