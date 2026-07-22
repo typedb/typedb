@@ -21,6 +21,9 @@
 	[dependencies.concept]
 		workspace = true
 
+	[dependencies.criterion]
+		workspace = true
+
 	[dependencies.database]
 		workspace = true
 
@@ -28,9 +31,6 @@
 		workspace = true
 
 	[dependencies.executor]
-		workspace = true
-
-	[dependencies.pprof]
 		workspace = true
 
 	[dependencies.function]
@@ -43,6 +43,9 @@
 		workspace = true
 
 	[dependencies.options]
+		workspace = true
+
+	[dependencies.pprof]
 		workspace = true
 
 	[dependencies.primitive]
