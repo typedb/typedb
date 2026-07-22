@@ -6,6 +6,7 @@
 mod pipelines;
 mod transaction;
 pub mod utils;
+pub mod profiler;
 
 use std::sync::Arc;
 
