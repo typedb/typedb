@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use criterion::{BatchSize, BenchmarkGroup, measurement::Measurement};
 use database::{Database, transaction::TransactionWrite};
+use itertools::repeat_n;
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
@@ -104,6 +105,15 @@ pub fn no_initial_data() -> Option<PreloadDataFn> {
 // prepare_iter
 pub fn no_given_rows() -> PrepareIterFn<Option<GivenRowsSimple>> {
     Box::new(|_: Arc<Database<WALClient>>| None)
+}
+
+pub fn n_empty_given_rows(n: usize) -> PrepareIterFn<Option<GivenRowsSimple>> {
+    Box::new(move |_: Arc<Database<WALClient>>| {
+        let variables = Vec::new();
+        let mut rows = Vec::with_capacity(n);
+        rows.resize(n, Vec::new());
+        Some(GivenRowsSimple { variables, rows })
+    })
 }
 
 // queries
