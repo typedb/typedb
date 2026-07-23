@@ -673,14 +673,14 @@ workflows:
       - test-distribution-brew-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
           requires:
             - deploy-snapshot-brew
 
       - test-distribution-brew-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests ]
           requires:
             - deploy-snapshot-brew
 
