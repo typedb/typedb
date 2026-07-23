@@ -5,10 +5,10 @@
  */
 
 mod pipelines;
-mod transaction;
-pub mod utils;
 pub mod profiler;
 pub mod templates;
+mod transaction;
+pub mod utils;
 
 use std::sync::Arc;
 
