@@ -23,9 +23,9 @@ class Typedb < Formula
     libexec.install Dir["*"]
     bin.install_symlink libexec / "typedb"
     mkdir_p var/"typedb/data"
-    inreplace libexec/"server/conf/config.yml", "server/data", var/"typedb/data"
+    inreplace libexec/"server/config.yml", "server/data", var/"typedb/data"
     mkdir_p var/"typedb/logs"
-    inreplace libexec/"server/conf/config.yml", "server/logs", var/"typedb/logs"
+    inreplace libexec/"server/config.yml", "server/logs", var/"typedb/logs"
   end
 
 end
