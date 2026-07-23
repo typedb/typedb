@@ -608,12 +608,12 @@ workflows:
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
@@ -651,7 +651,7 @@ workflows:
       - deploy-snapshot-brew:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
           requires:
             - test-deploy-snapshot-mac-arm64
             - test-deploy-snapshot-mac-x86_64
@@ -673,14 +673,14 @@ workflows:
       - test-distribution-brew-snapshot-arm64:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
           requires:
             - deploy-snapshot-brew
 
       - test-distribution-brew-snapshot-x86_64:
           filters:
             branches:
-              only: [ master, distribution-tests ]
+              only: [ master ]
           requires:
             - deploy-snapshot-brew
 
