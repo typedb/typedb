@@ -6,6 +6,7 @@
 class Typedb < Formula
   desc "The power of programming, in your database"
   homepage "https://typedb.com"
+  version "{version}"
 
   on_arm do
     url "https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-arm64/versions/{version}/typedb-all-mac-arm64-{version}.zip"

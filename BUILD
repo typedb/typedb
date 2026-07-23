@@ -410,6 +410,7 @@ deploy_brew(
     file_substitutions = {
         "//:checksum-mac-arm64": "{sha256-arm64}",
         "//:checksum-mac-x86_64": "{sha256-x86_64}",
+        "//:VERSION": "{version}"
     },
     formula = "//config/brew:typedb.rb",
     release = deployment["brew"]["release"],
@@ -422,6 +423,7 @@ deploy_brew(
     file_substitutions = {
         "//:checksum-mac-arm64": "{sha256-arm64}",
         "//:checksum-mac-x86_64": "{sha256-x86_64}",
+        "//:VERSION": "{version}"
     },
     formula = "//config/brew:typedb-snapshot.rb",
     release = "INVALID: Use deploy-brew-release target",
