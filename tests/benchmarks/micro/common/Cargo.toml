@@ -30,6 +30,9 @@
 	[dependencies.diagnostics]
 		workspace = true
 
+	[dependencies.encoding]
+		workspace = true
+
 	[dependencies.executor]
 		workspace = true
 
@@ -54,6 +57,12 @@
 	[dependencies.query]
 		workspace = true
 
+	[dependencies.rand]
+		workspace = true
+
+	[dependencies.rand_core]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
@@ -64,7 +73,4 @@
 		workspace = true
 
 	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.xoshiro]
 		workspace = true

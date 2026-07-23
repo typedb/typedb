@@ -24,6 +24,7 @@ rust_library(
         "//function",
         "//database",
         "//diagnostics",
+        "//encoding",
         "//executor",
         "//query",
         "//resource",
@@ -35,7 +36,8 @@ rust_library(
         "@crates//:criterion",
         "@crates//:itertools",
         "@crates//:pprof",
-        "@crates//:xoshiro",
+        "@crates//:rand",
+        "@crates//:rand_core",
     ]
 )
 

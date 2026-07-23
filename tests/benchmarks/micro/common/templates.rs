@@ -9,11 +9,13 @@ use criterion::{BatchSize, BenchmarkGroup, measurement::Measurement};
 use database::{Database, transaction::TransactionWrite};
 use itertools::repeat_n;
 use options::TransactionOptions;
-use query::given_rows::GivenRowsSimple;
+use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use storage::durability_client::WALClient;
 
 use crate::{
-    Config, Context, commit, execute_write_query_in,
+    Config, Context, commit,
+    datagen::RandomDataGen,
+    execute_write_query_in,
     utils::{CountResults, unpack_result},
 };
 
@@ -113,6 +115,21 @@ pub fn n_empty_given_rows(n: usize) -> PrepareIterFn<Option<GivenRowsSimple>> {
         let mut rows = Vec::with_capacity(n);
         rows.resize(n, Vec::new());
         Some(GivenRowsSimple { variables, rows })
+    })
+}
+
+pub fn given_rows_with(
+    n_rows: usize,
+    variables: Vec<String>,
+    gen_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
+) -> PrepareIterFn<Option<GivenRowsSimple>> {
+    Box::new(move |_: Arc<Database<WALClient>>| {
+        let variables = variables.clone();
+        let mut rows = Vec::with_capacity(n_rows);
+        let mut rng = RandomDataGen::new();
+        let gen_row = move || gen_row(&mut rng);
+        rows.resize_with(n_rows, gen_row);
+        Some(GivenRowsSimple { variables: variables, rows })
     })
 }
 

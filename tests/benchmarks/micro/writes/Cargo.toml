@@ -53,9 +53,6 @@
 	[dependencies.typeql]
 		workspace = true
 
-	[dependencies.xoshiro]
-		workspace = true
-
 [[bin]]
 	name = "microbench_writes"
 	path = "main.rs"
