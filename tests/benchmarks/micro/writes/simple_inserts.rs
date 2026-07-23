@@ -6,6 +6,7 @@
 
 use criterion::Criterion;
 use lib_benchmark::templates::run_simple_benchmark;
+
 use crate::InsertBenchmark;
 
 const SCHEMA: &'static str = r#"
@@ -17,7 +18,5 @@ define
 pub(crate) fn run_all(c: &mut Criterion) {
     let mut g = c.benchmark_group("simple_inserts");
     g.sample_size(20);
-    run_simple_benchmark(&mut g,
-         InsertBenchmark::new("person_only", SCHEMA, "insert $x isa person;", None),
-    )
+    run_simple_benchmark(&mut g, InsertBenchmark::new("person_only", SCHEMA, "insert $x isa person;", None))
 }

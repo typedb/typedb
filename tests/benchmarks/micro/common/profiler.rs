@@ -7,10 +7,9 @@
 // --- Code to generate flamegraphs copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---
 // This causes a SIGBUS on (mac) arm64 if the frequency is set too high.
 
+use std::{fs::File, os::raw::c_int, path::Path};
+
 use criterion::profiler::Profiler;
-use std::fs::File;
-use std::os::raw::c_int;
-use std::path::Path;
 use pprof::ProfilerGuard;
 
 pub struct FlamegraphProfiler<'a> {
