@@ -4,11 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::sync::Arc;
+
 use criterion::{BatchSize, BenchmarkGroup, measurement::Measurement};
-use database::Database;
+use database::{Database, transaction::TransactionWrite};
+use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
-use crate::{Config, Context};
+
+use crate::{
+    Config, Context, commit, execute_write_query_in,
+    utils::{CountResults, unpack_result},
+};
 
 pub trait SimpleBenchmark {
     type IterInput;
@@ -33,7 +39,6 @@ pub trait SimpleBenchmark {
     /// Create given_rows if needed
     fn prepare_iter(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::IterInput;
 
-
     /// The actual iteration which gets timed over and over again.
     fn run_iter(&self, context: &Context, database: Arc<Database<WALClient>>, input: Self::IterInput);
 
@@ -45,6 +50,7 @@ pub trait SimpleBenchmark {
             // This should also be run only once per "batch"
             // We create the database outside the batch creation so the Arc isn't dropped in the timed part
             let database = self.create_database(&mut context);
+            self.prepare_database(&mut context, database.clone());
             b.iter_batched(
                 || self.prepare_iter(&context, database.clone()),
                 |input| self.run_iter(&context, database.clone(), input),
@@ -55,21 +61,16 @@ pub trait SimpleBenchmark {
     }
 }
 
-pub(crate) type PreloadDataFn = fn(Arc<Database<WALClient>>);
-pub(crate) type PrepareIterFn<T> = fn(Arc<Database<WALClient>>) -> T;
-pub(crate) type BenchmarkedFn<T> = fn(Arc<Database<WALClient>>, input: T);
-struct TypeDBMicroBenchmark<T> {
-    name: &'static str,
-    schema: &'static str,
-    preload_data_fn: Option<PreloadDataFn>,
-    prepare_iter_fn: PrepareIterFn<T>,
-    benchmark_fn: BenchmarkedFn<T>,
-}
+pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
+pub type PrepareIterFn<T> = Box<dyn Fn(Arc<Database<WALClient>>) -> T>;
+pub type BenchmarkedFn<T> = Box<dyn Fn(Arc<Database<WALClient>>, T)>;
 
-impl<T> TypeDBMicroBenchmark<T> {
-    fn new(name: &'static str, schema: &'static str, preload_data_fn: Option<PreloadDataFn>, prepare_iter_fn: PrepareIterFn<T>, benchmark_fn: BenchmarkedFn<T>) -> Self {
-        Self { name, schema, preload_data_fn, prepare_iter_fn, benchmark_fn }
-    }
+pub struct TypeDBMicroBenchmark<T> {
+    pub name: &'static str,
+    pub schema: &'static str,
+    pub preload_data_fn: Option<PreloadDataFn>,
+    pub prepare_iter_fn: PrepareIterFn<T>,
+    pub benchmark_fn: BenchmarkedFn<T>,
 }
 
 impl<T> SimpleBenchmark for TypeDBMicroBenchmark<T> {
@@ -81,7 +82,7 @@ impl<T> SimpleBenchmark for TypeDBMicroBenchmark<T> {
 
     fn prepare_database(&self, _context: &Context, database: Arc<Database<WALClient>>) {
         crate::create_schema(database.clone(), self.schema);
-        if let Some(preload_fn) = self.preload_data_fn {
+        if let Some(preload_fn) = &self.preload_data_fn {
             preload_fn(database.clone())
         }
     }
@@ -93,4 +94,26 @@ impl<T> SimpleBenchmark for TypeDBMicroBenchmark<T> {
     fn run_iter(&self, _context: &Context, database: Arc<Database<WALClient>>, input: Self::IterInput) {
         (self.benchmark_fn)(database, input)
     }
+}
+
+// Initial data
+pub fn no_initial_data() -> Option<PreloadDataFn> {
+    None
+}
+
+// prepare_iter
+pub fn no_given_rows() -> PrepareIterFn<Option<GivenRowsSimple>> {
+    Box::new(|_: Arc<Database<WALClient>>| None)
+}
+
+// queries
+pub fn query_in_write_tx(query: &str) -> BenchmarkedFn<Option<GivenRowsSimple>> {
+    let query_owned = query.to_owned();
+    Box::new(move |database: Arc<Database<WALClient>>, given_rows: Option<GivenRowsSimple>| {
+        let tx = TransactionWrite::open(database, TransactionOptions::default()).unwrap();
+        let (result, tx) =
+            unpack_result(execute_write_query_in::<_, CountResults>(tx, query_owned.as_str(), given_rows));
+        result.unwrap();
+        commit(tx).unwrap();
+    })
 }
