@@ -1797,7 +1797,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let cardinality_change_tracker =
-            CardinalityChangeTracker::build(snapshot, self.type_manager(), &self, storage_counters.clone())
+            CardinalityChangeTracker::build(snapshot, self.type_manager(), self, storage_counters.clone())
                 .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
 
         self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
@@ -2167,7 +2167,7 @@ impl ThingManager {
                 snapshot,
                 self,
                 *object,
-                &modified_owns,
+                modified_owns,
                 &mut errors,
                 storage_counters.clone(),
             );
@@ -2179,7 +2179,7 @@ impl ThingManager {
                 snapshot,
                 self,
                 *object,
-                &modified_plays,
+                modified_plays,
                 &mut errors,
                 storage_counters.clone(),
             );
@@ -2191,7 +2191,7 @@ impl ThingManager {
                 snapshot,
                 self,
                 *relation,
-                &modified_relates,
+                modified_relates,
                 &mut errors,
                 storage_counters.clone(),
             );
@@ -2223,7 +2223,7 @@ impl ThingManager {
             self.update_relation_index_on_schema_commit(
                 snapshot,
                 *relation,
-                &modified_relates,
+                modified_relates,
                 qualifies_for_relation_index,
                 storage_counters.clone(),
             )?;
@@ -2263,8 +2263,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for role_type in affected_role_types {
-            let mut it = relation.get_players_by_role(snapshot, &self, *role_type, storage_counters.clone());
-            while let Some(player) = it.next() {
+            for player in relation.get_players_by_role(snapshot, self, *role_type, storage_counters.clone()) {
                 let (player, count) =
                     player.map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
                 if qualifies_for_relation_index {
