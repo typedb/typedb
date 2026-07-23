@@ -5,8 +5,6 @@
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 
-exports_files(["script.tql", "verify.tql"])
-
 env = select({
     "@typedb_bazel_distribution//platform:is_linux_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-linux-x86_64.tar.gz" },
     "@typedb_bazel_distribution//platform:is_linux_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-linux-arm64.tar.gz"},
@@ -53,7 +51,6 @@ checkstyle_test(
     exclude = glob([
         "Cargo.*",
         "script.tql",
-        "verify.tql",
     ]),
     license_type = "mpl-header",
 )
