@@ -7,7 +7,7 @@ load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
 # To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //tests/benchmarks/micro:microbench_<whatever> -- --bench
+#   bazel run --compilation_mode=opt //tests/benchmarks/micro:microbench_<whatever> -- --bench [substring_filter]
 rust_binary(
     name = "microbench_writes",
     srcs = glob(["*.rs"]),
