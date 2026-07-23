@@ -5,7 +5,9 @@
  */
 
 use criterion::Criterion;
-use lib_benchmark::templates::{SimpleBenchmark, no_given_rows, no_initial_data, query_in_write_tx};
+use lib_benchmark::templates::{
+    SimpleBenchmark, n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx,
+};
 
 use crate::TransactionInsertBenchmark;
 
@@ -15,9 +17,9 @@ define
     entity person, owns name;
 "#;
 
-fn person_only() -> TransactionInsertBenchmark {
+fn entities_one() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "person_only",
+        name: "entities_one",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
         prepare_iter_fn: no_given_rows(),
@@ -25,8 +27,19 @@ fn person_only() -> TransactionInsertBenchmark {
     }
 }
 
+fn entities_thousand() -> TransactionInsertBenchmark {
+    TransactionInsertBenchmark {
+        name: "entities_thousand",
+        schema: SCHEMA,
+        preload_data_fn: no_initial_data(),
+        prepare_iter_fn: n_empty_given_rows(1000),
+        benchmark_fn: query_in_write_tx("given ; insert $x isa person;"),
+    }
+}
+
 pub(crate) fn run_all(c: &mut Criterion) {
     let mut g = c.benchmark_group("simple_inserts");
     g.sample_size(20);
-    person_only().run_benchmark(&mut g);
+    entities_one().run_benchmark(&mut g);
+    entities_thousand().run_benchmark(&mut g);
 }
