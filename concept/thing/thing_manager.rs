@@ -7,7 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    iter::{Map, once},
+    iter::{self, Map, once},
     ops::RangeBounds,
     sync::Arc,
 };
@@ -2065,12 +2065,22 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for (key, _write) in snapshot
-            .iterate_writes_range(&KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
-            .filter(|(_, write)| matches!(write, Write::Delete))
+        let deleted_reverse_has = iter::chain(
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                ThingEdgeHasReverse::prefix_short(),
+                ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+            )),
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                ThingEdgeHasReverse::prefix_long(),
+                ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+            )),
+        )
+        .filter(|(_, write)| matches!(write, Write::Delete));
+        for attribute_vertex in deleted_reverse_has
+            .map(|(key, _)| ThingEdgeHasReverse::decode(Bytes::Reference(key.byte_array())).from())
+            .dedup()
         {
-            let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
-            let attribute = Attribute::new(edge.to());
+            let attribute = Attribute::new(attribute_vertex);
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if attribute.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
                 continue;
@@ -2081,26 +2091,18 @@ impl ThingManager {
         }
 
         // link together long and short attributes
-        for (key, _value) in snapshot
-            .iterate_writes_range(&KeyRange::new_within(
-                StorageKey::new(
-                    AttributeVertex::keyspace_for_is_short(true),
-                    Bytes::inline(Prefix::VertexAttribute.prefix_id().to_bytes(), 1),
-                ),
+        let new_attributes = iter::chain(
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                AttributeVertex::prefix_short(),
                 Prefix::VertexAttribute.fixed_width_keys(),
-            ))
-            .chain(snapshot.iterate_writes_range(&KeyRange::new_within(
-                StorageKey::new(
-                    AttributeVertex::keyspace_for_is_short(false),
-                    Bytes::inline(Prefix::VertexAttribute.prefix_id().to_bytes(), 1),
-                ),
+            )),
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                AttributeVertex::prefix_short(),
                 Prefix::VertexAttribute.fixed_width_keys(),
-            )))
-            .filter_map(|(key, write)| match write {
-                Write::Put { value, .. } => Some((key, value)),
-                _ => None,
-            })
-        {
+            )),
+        )
+        .filter(|(_, write)| matches!(write, Write::Put { .. }));
+        for (key, _write) in new_attributes {
             let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone())? {

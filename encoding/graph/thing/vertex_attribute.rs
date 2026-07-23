@@ -131,6 +131,20 @@ impl AttributeVertex {
         PrefixID::LENGTH + TypeID::LENGTH + self.attribute_id.length()
     }
 
+    pub fn prefix_short() -> StorageKey<'static, { PrefixID::LENGTH }> {
+        StorageKey::new(
+            AttributeVertex::keyspace_for_is_short(true),
+            Bytes::copy(&Prefix::VertexAttribute.prefix_id().to_bytes()),
+        )
+    }
+
+    pub fn prefix_long() -> StorageKey<'static, { PrefixID::LENGTH }> {
+        StorageKey::new(
+            AttributeVertex::keyspace_for_is_short(false),
+            Bytes::copy(&Prefix::VertexAttribute.prefix_id().to_bytes()),
+        )
+    }
+
     pub fn keyspace_for_is_short(is_short_encoding: bool) -> EncodingKeyspace {
         if is_short_encoding { EncodingKeyspace::DefaultOptimisedPrefix11 } else { EncodingKeyspace::OptimisedPrefix17 }
     }

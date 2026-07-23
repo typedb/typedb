@@ -346,6 +346,14 @@ impl ThingEdgeHasReverse {
     }
     // end TODO
 
+    pub fn prefix_short() -> StorageKey<'static, { PrefixID::LENGTH }> {
+        StorageKey::new_owned(Self::keyspace_for_is_short(true), ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()))
+    }
+
+    pub fn prefix_long() -> StorageKey<'static, { PrefixID::LENGTH }> {
+        StorageKey::new_owned(Self::keyspace_for_is_short(false), ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()))
+    }
+
     pub fn is_has_reverse(key: StorageKeyReference<'_>) -> bool {
         if !key.bytes().is_empty() && key.bytes()[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte {
             let edge = ThingEdgeHasReverse::decode(Bytes::Reference(key.bytes()));
