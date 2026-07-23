@@ -22,10 +22,10 @@ class TypedbSnapshot < Formula
   def install
     libexec.install Dir["*"]
     bin.install_symlink libexec / "typedb"
-    (var/"typedb/data").mkpath
-    (var/"typedb/logs").mkpath
-    (libexec/"server/data").make_relative_symlink(var/"typedb/data")
-    (libexec/"server/logs").make_relative_symlink(var/"typedb/logs")
+    mkdir_p var/"typedb/data"
+    inreplace libexec/"server/conf/config.yml", "server/data", var/"typedb/data"
+    mkdir_p var/"typedb/logs"
+    inreplace libexec/"server/conf/config.yml", "server/logs", var/"typedb/logs"
   end
 
 end
