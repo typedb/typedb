@@ -7,17 +7,18 @@
 use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use database::Database;
-use database::transaction::TransactionWrite;
-use lib_benchmark::{profiler::FlamegraphProfiler, Context};
-use lib_benchmark::templates::SimpleBenchmark;
-use lib_benchmark::utils::{unpack_result, ResultCounter};
+use database::{Database, transaction::TransactionWrite};
+use lib_benchmark::{
+    Context,
+    profiler::FlamegraphProfiler,
+    templates::SimpleBenchmark,
+    utils::{ResultCounter, unpack_result},
+};
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 
 mod simple_inserts;
-
 
 struct InsertBenchmark {
     pub(crate) name: &'static str,
@@ -53,7 +54,6 @@ impl SimpleBenchmark for InsertBenchmark {
         lib_benchmark::commit(tx).unwrap();
     }
 }
-
 
 fn criterion_benchmark(c: &mut Criterion) {
     simple_inserts::run_all(c);

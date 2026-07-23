@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use criterion::{BatchSize, BenchmarkGroup, Criterion};
-use criterion::measurement::Measurement;
+use criterion::{BatchSize, BenchmarkGroup, Criterion, measurement::Measurement};
+
 use crate::{Config, Context};
 
 pub trait SimpleBenchmark {
@@ -37,4 +37,3 @@ pub fn run_simple_benchmark<M: Measurement>(group: &mut BenchmarkGroup<M>, mut b
         );
     });
 }
-
