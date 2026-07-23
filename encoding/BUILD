@@ -27,6 +27,7 @@ package(default_visibility = [
     "//traversal:__subpackages__",
     "//query:__subpackages__",
     "//tests/behaviour:__subpackages__",
+    "//tests/benchmarks:__subpackages__",
 ])
 
 rust_library(

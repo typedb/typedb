@@ -2828,11 +2828,12 @@ dependencies = [
  "pprof",
  "primitive",
  "query",
+ "rand 0.8.6",
+ "rand_core 0.3.1",
  "resource",
  "storage",
  "test_utils",
  "typeql",
- "xoshiro",
 ]
 
 [[package]]
@@ -3034,7 +3035,6 @@ dependencies = [
  "storage",
  "test_utils",
  "typeql",
- "xoshiro",
 ]
 
 [[package]]

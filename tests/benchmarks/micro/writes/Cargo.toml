@@ -17,9 +17,6 @@ features = {}
 	[dependencies.test_utils]
 		workspace = true
 
-	[dependencies.xoshiro]
-		workspace = true
-
 	[dependencies.criterion]
 		workspace = true
 
