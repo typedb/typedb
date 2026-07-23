@@ -30,7 +30,6 @@ rust_binary(
         "@crates//:criterion",
         "@crates//:itertools",
         "@crates//:pprof",
-        "@crates//:xoshiro",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
 #     use_libtest_harness = False,

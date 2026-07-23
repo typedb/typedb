@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod datagen;
 mod pipelines;
 pub mod profiler;
 pub mod templates;
