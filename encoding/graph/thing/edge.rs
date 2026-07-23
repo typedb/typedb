@@ -24,7 +24,7 @@ use crate::{
         Typed,
         thing::{
             THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex,
-            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_attribute::{AttributeID, AttributeVertex, ValueEncodingLength},
             vertex_object::{ObjectID, ObjectVertex},
         },
         type_::vertex::{TypeID, TypeVertex},
@@ -245,13 +245,13 @@ impl ThingEdgeHasReverse {
     pub fn prefix_from_prefix_short(
         from_prefix: Prefix,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
-        Self::prefix_from_prefix(from_prefix, Self::keyspace_for_is_short(true))
+        Self::prefix_from_prefix(from_prefix, Self::keyspace_for_short_encoding())
     }
 
     pub fn prefix_from_prefix_long(
         from_prefix: Prefix,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
-        Self::prefix_from_prefix(from_prefix, Self::keyspace_for_is_short(false))
+        Self::prefix_from_prefix(from_prefix, Self::keyspace_for_long_encoding())
     }
 
     fn prefix_from_prefix(
@@ -276,7 +276,9 @@ impl ThingEdgeHasReverse {
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
         bytes[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.to_bytes());
         StorageKey::new_owned(
-            Self::keyspace_for_is_short(AttributeVertex::is_category_short_encoding(from_type_value_type_category)),
+            Self::keyspace_for_encoding_length(AttributeVertex::category_encoding_length(
+                from_type_value_type_category,
+            )),
             bytes,
         )
     }
@@ -292,8 +294,8 @@ impl ThingEdgeHasReverse {
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + attribute_vertex_prefix.len()]
             .copy_from_slice(attribute_vertex_prefix);
-        let is_short_attribute = AttributeVertex::is_category_short_encoding(attribute_vertex_value_type_category);
-        StorageKey::new_owned(Self::keyspace_for_is_short(is_short_attribute), bytes)
+        let encoding_length = AttributeVertex::category_encoding_length(attribute_vertex_value_type_category);
+        StorageKey::new_owned(Self::keyspace_for_encoding_length(encoding_length), bytes)
     }
 
     // TODO cleanup
@@ -304,7 +306,7 @@ impl ThingEdgeHasReverse {
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::range_from_for_vertex(from)].copy_from_slice(&from.to_bytes());
         bytes.truncate(Self::range_from_for_vertex(from).end);
-        StorageKey::new_owned(Self::keyspace_for_is_short(from.is_short_encoding()), bytes)
+        StorageKey::new_owned(Self::keyspace_for_encoding_length(from.encoding_length()), bytes)
     }
 
     pub fn prefix_from_attribute_to_type(
@@ -330,8 +332,8 @@ impl ThingEdgeHasReverse {
             to_type_id,
         );
         bytes.truncate(range_from.end + TypeVertex::LENGTH);
-        let is_from_short_encoding = from.is_short_encoding();
-        StorageKey::new_owned(Self::keyspace_for_is_short(is_from_short_encoding), bytes)
+        let from_encoding_length = from.encoding_length();
+        StorageKey::new_owned(Self::keyspace_for_encoding_length(from_encoding_length), bytes)
     }
 
     pub fn prefix_from_attribute_to_type_range(
@@ -347,11 +349,14 @@ impl ThingEdgeHasReverse {
     // end TODO
 
     pub fn prefix_short() -> StorageKey<'static, { PrefixID::LENGTH }> {
-        StorageKey::new_owned(Self::keyspace_for_is_short(true), ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()))
+        StorageKey::new_owned(
+            Self::keyspace_for_short_encoding(),
+            ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()),
+        )
     }
 
     pub fn prefix_long() -> StorageKey<'static, { PrefixID::LENGTH }> {
-        StorageKey::new_owned(Self::keyspace_for_is_short(false), ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()))
+        StorageKey::new_owned(Self::keyspace_for_long_encoding(), ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()))
     }
 
     pub fn is_has_reverse(key: StorageKeyReference<'_>) -> bool {
@@ -363,12 +368,24 @@ impl ThingEdgeHasReverse {
         }
     }
 
-    pub fn keyspace_for_is_short(is_short_attribute: bool) -> EncodingKeyspace {
-        if is_short_attribute { EncodingKeyspace::OptimisedPrefix16 } else { EncodingKeyspace::OptimisedPrefix25 }
+    fn keyspace_for_encoding_length(encoding_length: ValueEncodingLength) -> EncodingKeyspace {
+        if encoding_length.is_short() {
+            Self::keyspace_for_short_encoding()
+        } else {
+            Self::keyspace_for_long_encoding()
+        }
+    }
+
+    pub fn keyspace_for_short_encoding() -> EncodingKeyspace {
+        EncodingKeyspace::OptimisedPrefix16
+    }
+
+    pub fn keyspace_for_long_encoding() -> EncodingKeyspace {
+        EncodingKeyspace::OptimisedPrefix25
     }
 
     pub fn keyspace(&self) -> EncodingKeyspace {
-        Self::keyspace_for_is_short(self.from().is_short_encoding())
+        Self::keyspace_for_encoding_length(self.from().encoding_length())
     }
 
     pub fn from(self) -> AttributeVertex {

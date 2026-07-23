@@ -111,12 +111,12 @@ impl AttributeVertex {
         self.attribute_id
     }
 
-    pub(crate) fn is_category_short_encoding(value_type_category: ValueTypeCategory) -> bool {
-        AttributeID::value_type_encoded_value_length(value_type_category).is_short()
+    pub(crate) fn category_encoding_length(value_type_category: ValueTypeCategory) -> ValueEncodingLength {
+        AttributeID::value_type_encoded_value_length(value_type_category)
     }
 
-    pub(crate) fn is_short_encoding(&self) -> bool {
-        Self::is_category_short_encoding(self.value_type_category())
+    pub(crate) fn encoding_length(&self) -> ValueEncodingLength {
+        Self::category_encoding_length(self.value_type_category())
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
@@ -133,28 +133,40 @@ impl AttributeVertex {
 
     pub fn prefix_short() -> StorageKey<'static, { PrefixID::LENGTH }> {
         StorageKey::new(
-            AttributeVertex::keyspace_for_is_short(true),
+            AttributeVertex::keyspace_for_short_encoding(),
             Bytes::copy(&Prefix::VertexAttribute.prefix_id().to_bytes()),
         )
     }
 
     pub fn prefix_long() -> StorageKey<'static, { PrefixID::LENGTH }> {
         StorageKey::new(
-            AttributeVertex::keyspace_for_is_short(false),
+            AttributeVertex::keyspace_for_long_encoding(),
             Bytes::copy(&Prefix::VertexAttribute.prefix_id().to_bytes()),
         )
     }
 
-    pub fn keyspace_for_is_short(is_short_encoding: bool) -> EncodingKeyspace {
-        if is_short_encoding { EncodingKeyspace::DefaultOptimisedPrefix11 } else { EncodingKeyspace::OptimisedPrefix17 }
+    fn keyspace_for_encoding_length(encoding_length: ValueEncodingLength) -> EncodingKeyspace {
+        if encoding_length.is_short() {
+            Self::keyspace_for_short_encoding()
+        } else {
+            Self::keyspace_for_long_encoding()
+        }
+    }
+
+    pub fn keyspace_for_short_encoding() -> EncodingKeyspace {
+        EncodingKeyspace::DefaultOptimisedPrefix11
+    }
+
+    pub fn keyspace_for_long_encoding() -> EncodingKeyspace {
+        EncodingKeyspace::OptimisedPrefix17
     }
 
     pub fn keyspace_for_category(value_type_category: ValueTypeCategory) -> EncodingKeyspace {
-        Self::keyspace_for_is_short(AttributeID::value_type_encoded_value_length(value_type_category).is_short())
+        Self::keyspace_for_encoding_length(AttributeID::value_type_encoded_value_length(value_type_category))
     }
 
     pub(crate) fn keyspace(&self) -> EncodingKeyspace {
-        Self::keyspace_for_is_short(self.is_short_encoding())
+        Self::keyspace_for_encoding_length(self.encoding_length())
     }
 
     pub(crate) fn is_valid_keyspace(keyspace_id: KeyspaceId) -> bool {
@@ -219,7 +231,7 @@ impl ValueEncodingLength {
         }
     }
 
-    const fn is_short(&self) -> bool {
+    pub(crate) const fn is_short(&self) -> bool {
         matches!(self, Self::Short)
     }
 
