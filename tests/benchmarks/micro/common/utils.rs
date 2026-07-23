@@ -32,11 +32,12 @@ pub enum CollectedAnswer {
     Documents { documents: Vec<ConceptDocument> },
 }
 
-/// ANSWER CONSUMER
-pub struct ResultCounter;
-impl AnswerConsumer for ResultCounter {
+// ANSWER CONSUMER
+
+pub struct CountResults;
+impl AnswerConsumer for CountResults {
     type Output = usize;
-    fn consume_rows<Iter>(iter: &mut Iter) -> Result<usize, Box<PipelineExecutionError>>
+    fn consume_rows<Iter>(iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
     where
         for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>,
     {
@@ -52,7 +53,7 @@ impl AnswerConsumer for ResultCounter {
 
     fn consume_docs(
         iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
-    ) -> Result<usize, Box<PipelineExecutionError>> {
+    ) -> Result<Self::Output, Box<PipelineExecutionError>> {
         let mut count: usize = 0;
         while let Some(row) = iter.next() {
             if let Err(err) = row {
@@ -61,5 +62,23 @@ impl AnswerConsumer for ResultCounter {
             count += 1;
         }
         Ok(count)
+    }
+}
+
+/// Warning: doesn't execute the last stages
+pub struct IgnoreRowsForWriteQuery;
+impl AnswerConsumer for IgnoreRowsForWriteQuery {
+    type Output = ();
+    fn consume_rows<Iter>(_iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
+    where
+        for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>,
+    {
+        Ok(())
+    }
+
+    fn consume_docs(
+        _iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
+    ) -> Result<Self::Output, Box<PipelineExecutionError>> {
+        Ok(())
     }
 }
