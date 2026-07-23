@@ -20,20 +20,23 @@ use storage::durability_client::WALClient;
 
 mod simple_inserts;
 
-struct InsertBenchmark {
+pub(crate) type PreloadDataFn = fn(TransactionWrite<WALClient>) -> TransactionWrite<WALClient>;
+pub(crate) type BenchmarkQueries = fn(TransactionWrite<WALClient>) -> TransactionWrite<WALClient>;
+struct TransactionInsertBenchmark {
     pub(crate) name: &'static str,
     pub(crate) schema: &'static str,
+    pub(crate) preload_data: Option<PreloadDataFn>,
     pub(crate) query: &'static str,
     pub(crate) given_rows: Option<GivenRowsSimple>,
 }
 
-impl InsertBenchmark {
+impl TransactionInsertBenchmark {
     fn new(name: &'static str, schema: &'static str, query: &'static str, given_rows: Option<GivenRowsSimple>) -> Self {
         Self { name, schema, query, given_rows }
     }
 }
 
-impl SimpleBenchmark for InsertBenchmark {
+impl SimpleBenchmark for TransactionInsertBenchmark {
     type IterInput = Arc<Database<WALClient>>;
 
     fn name(&self) -> String {
