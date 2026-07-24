@@ -185,7 +185,7 @@ fn attribute_equality() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 

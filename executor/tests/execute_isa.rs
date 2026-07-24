@@ -155,7 +155,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -231,7 +231,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -321,7 +321,7 @@ fn traverse_isa_bounded_thing() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -399,7 +399,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -475,7 +475,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -565,7 +565,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -659,7 +659,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -738,7 +738,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -814,7 +814,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 

@@ -79,7 +79,7 @@ impl<'a> IntoIterator for &'a TypePopulations {
 }
 
 #[derive(Debug, Clone)]
-pub struct ExecutablePipeline {
+pub struct CompiledPipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_given: Option<Arc<GivenExecutable>>,
     pub executable_stages: Vec<ExecutableStage>,
@@ -154,7 +154,7 @@ pub fn compile_pipeline_and_functions(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     pipeline_structure: Arc<ParametrisedPipelineStructure>,
-) -> Result<ExecutablePipeline, ExecutableCompilationError> {
+) -> Result<CompiledPipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let referenced_functions = find_referenced_functions(
         annotated_schema_functions,
@@ -202,7 +202,7 @@ pub fn compile_pipeline_and_functions(
             .all(|(i, v)| { _input_positions.get(v) == Some(&VariablePosition::new(i as u32)) })
     );
     debug_assert!(!executable_stages.is_empty());
-    Ok(ExecutablePipeline {
+    Ok(CompiledPipeline {
         pipeline_structure,
         executable_functions: schema_and_preamble_functions,
         executable_given,

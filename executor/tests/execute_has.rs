@@ -223,7 +223,7 @@ fn traverse_has_unbounded_sorted_from() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -330,7 +330,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -425,7 +425,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -508,7 +508,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -607,7 +607,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 

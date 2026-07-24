@@ -5,13 +5,13 @@
  */
 use std::{sync::Arc, time::Instant};
 
-use compiler::{VariablePosition, query_structure::PipelineStructure};
+use compiler::{query_structure::PipelineStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
-    ExecutionInterrupt,
     batch::Batch,
     document::ConceptDocument,
     pipeline::stage::{ExecutionContext, StageIterator},
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
@@ -23,7 +23,7 @@ use query::{
     query_manager::{ParsedPipeline, ParsedSchemaQuery, QueryManager},
 };
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use tracing::{Level, event};
+use tracing::{event, Level};
 
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},
@@ -176,21 +176,20 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         translated,
         given_rows,
     );
-    let (context, pipeline) = match result {
-        Ok(compiled) => compiled.into_parts(),
+    let pipeline = match result {
+        Ok(pipeline) => pipeline,
         Err((snapshot, err)) => return (snapshot, Err(err)),
     };
 
+    let query_context = pipeline.query_context();
     if pipeline.has_fetch() {
-        let (iterator, parameters, snapshot, query_profile) = match pipeline.into_documents_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, profile, parameters, .. })) => {
-                (iterator, parameters, snapshot, profile)
-            }
+        let (iterator, snapshot) = match pipeline.into_documents_iterator(interrupt) {
+            Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(Box::new(QueryError::WritePipelineExecution {
-                        source_query: context.source_query().to_string(),
+                        source_query: query_context.source_query.as_ref().to_owned(),
                         typedb_source: err,
                     })),
                 );
@@ -198,19 +197,21 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         };
 
         let result = match iterator.collect::<Result<Vec<_>, _>>() {
-            Ok(documents) => Ok(WriteQueryAnswer::new_documents(query_options, (parameters, documents))),
+            Ok(documents) => {
+                Ok(WriteQueryAnswer::new_documents(query_options, (query_context.parameters.clone(), documents)))
+            }
             Err(err) => Err(Box::new(QueryError::WritePipelineExecution {
-                source_query: context.source_query().to_string(),
+                source_query: query_context.source_query.as_ref().to_owned(),
                 typedb_source: err,
             })),
         };
-        if query_profile.is_enabled() {
+        if query_context.profile.is_enabled() {
             let micros = Instant::now().duration_since(start_time).as_micros();
             event!(
                 Level::INFO,
                 "Write query done (excluding network request time) in {} micros.\n{}",
                 micros,
-                query_profile
+                query_context.profile,
             );
         }
         (Arc::into_inner(snapshot).unwrap(), result)
@@ -218,13 +219,13 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         let named_outputs = pipeline.rows_positions().unwrap();
         let pipeline_structure = pipeline.pipeline_structure().cloned();
         let query_output_descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-        let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
+        let (iterator, snapshot) = match pipeline.into_rows_iterator(interrupt) {
+            Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(Box::new(QueryError::WritePipelineExecution {
-                        source_query: context.source_query().to_string(),
+                        source_query: query_context.source_query.as_ref().to_owned(),
                         typedb_source: err,
                     })),
                 );
@@ -239,19 +240,19 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
             Err(err) => (
                 Arc::into_inner(snapshot).unwrap(),
                 Err(Box::new(QueryError::WritePipelineExecution {
-                    source_query: context.source_query().to_string(),
+                    source_query: query_context.source_query.as_ref().to_owned(),
                     typedb_source: err,
                 })),
             ),
         };
 
-        if query_profile.is_enabled() {
+        if query_context.profile.is_enabled() {
             let micros = Instant::now().duration_since(start_time).as_micros();
             event!(
                 Level::INFO,
                 "Write query done (excluding network request time) in {} micros.\n{}",
                 micros,
-                query_profile
+                query_context.profile
             );
         }
         result

@@ -10,6 +10,7 @@ use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
 use itertools::{Itertools, UniqueBy};
+use ir::pipeline::QueryContext;
 use lending_iterator::{IntoIter, LendingIterator, adaptors::Map};
 use storage::snapshot::ReadableSnapshot;
 
@@ -47,7 +48,8 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -55,14 +57,15 @@ where
     > {
         let Self { executable, function_registry, .. } = self;
         Ok((
-            MatchStageIterator::new(input_iterator, executable, function_registry, context.clone(), interrupt),
-            context,
+            MatchStageIterator::new(input_iterator, executable, function_registry, execution_context.clone(), query_context, interrupt),
+            execution_context,
         ))
     }
 }
 
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, InputIterator> {
-    context: ExecutionContext<Snapshot>,
+    execution_context: ExecutionContext<Snapshot>,
+    query_context: Arc<QueryContext>,
     executable: Arc<ConjunctionExecutable>,
     function_registry: Arc<ExecutableFunctionRegistry>,
     source_iterator: InputIterator,
@@ -75,10 +78,11 @@ impl<Snapshot: ReadableSnapshot + 'static, InputIterator> MatchStageIterator<Sna
         iterator: InputIterator,
         executable: Arc<ConjunctionExecutable>,
         function_registry: Arc<ExecutableFunctionRegistry>,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         interrupt: ExecutionInterrupt,
     ) -> Self {
-        Self { context, executable, function_registry, source_iterator: iterator, current_iterator: None, interrupt }
+        Self { execution_context, query_context, executable, function_registry, source_iterator: iterator, current_iterator: None, interrupt }
     }
 }
 
@@ -91,7 +95,6 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
-            let ExecutionContext { snapshot, thing_manager, profile, .. } = &self.context;
 
             let input_row = match self.source_iterator.next()? {
                 Ok(row) => row,
@@ -100,11 +103,10 @@ where
 
             let executor = MatchExecutor::new(
                 &self.executable,
-                snapshot,
-                thing_manager,
+                &self.execution_context,
                 input_row,
                 self.function_registry.clone(),
-                profile,
+                &self.query_context.profile,
             )
             .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }));
 
@@ -112,7 +114,7 @@ where
                 Ok(executor) => {
                     self.current_iterator = Some(
                         unique_rows(as_owned_rows(
-                            executor.into_iterator(self.context.clone(), self.interrupt.clone()),
+                            executor.into_iterator(self.execution_context.clone(), self.query_context.clone(), self.interrupt.clone()),
                         ))
                         .peekable(),
                     );

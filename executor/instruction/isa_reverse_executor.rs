@@ -20,6 +20,7 @@ use concept::{
 use encoding::value::value::Value;
 use ir::pattern::constraint::{Isa, IsaKind};
 use itertools::Itertools;
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -86,25 +87,27 @@ impl IsaReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,
         });
 
         let range = self.checker.value_range_for(
-            context,
+            execution_context,
+            parameters,
             Some(row.as_reference()),
             self.isa.thing().as_variable().unwrap(),
             storage_counters.clone(),
         )?;
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let thing_iter = instances_of_types_chained(

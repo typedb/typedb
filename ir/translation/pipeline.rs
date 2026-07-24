@@ -9,7 +9,7 @@ use std::{
     iter::empty,
     mem,
 };
-
+use std::sync::Arc;
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 use typeql::{
@@ -17,7 +17,7 @@ use typeql::{
     query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage},
     type_::NamedTypeAny,
 };
-
+use resource::profile::QueryProfile;
 use crate::{
     RepresentationError,
     pattern::Pattern,
@@ -42,6 +42,7 @@ use crate::{
         writes::{translate_delete, translate_insert, translate_put, translate_update},
     },
 };
+use crate::pipeline::QueryContext;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -50,17 +51,17 @@ pub struct TranslatedPipeline {
     pub translated_stages: Vec<TranslatedStage>,
     pub translated_fetch: Option<FetchObject>,
     pub variable_registry: VariableRegistry,
-    pub value_parameters: ParameterRegistry,
+    pub query_context: QueryContext,
 }
 
 impl TranslatedPipeline {
     pub(crate) fn new(
         translation_context: PipelineTranslationContext,
-        value_parameters: ParameterRegistry,
         translated_preamble: Vec<Function>,
         translated_given: Option<TranslatedGiven>,
         translated_stages: Vec<TranslatedStage>,
         translated_fetch: Option<FetchObject>,
+        query_context: QueryContext,
     ) -> Self {
         TranslatedPipeline {
             translated_preamble,
@@ -68,7 +69,7 @@ impl TranslatedPipeline {
             translated_stages,
             translated_fetch,
             variable_registry: translation_context.variable_registry,
-            value_parameters,
+            query_context,
         }
     }
 }
@@ -168,6 +169,8 @@ impl StructuralEquality for TranslatedStage {
 pub fn translate_pipeline(
     all_function_signatures: &impl FunctionSignatureIndex,
     query: &typeql::query::Pipeline,
+    source_query: Arc<String>,
+    query_profile: QueryProfile,
 ) -> Result<TranslatedPipeline, Box<RepresentationError>> {
     // all_function_signatures contains the preambles already!
     let translated_preamble = query
@@ -186,13 +189,20 @@ pub fn translate_pipeline(
         &query.stages,
     )?;
 
+    let query_context = QueryContext::new(
+        Arc::new(value_parameters),
+        source_query,
+        Arc::new(query_profile),
+    );
+
     Ok(TranslatedPipeline::new(
         translation_context,
-        value_parameters,
+        // value_parameters,
         translated_preamble,
         translated_given,
         translated_stages,
         translated_fetch,
+        query_context,
     ))
 }
 

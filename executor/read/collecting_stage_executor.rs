@@ -25,19 +25,25 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) enum CollectingStageExecutor {
-    Reduce { pattern: PatternExecutor, reduce_rows_executable: Arc<ReduceRowsExecutable> },
-    Sort { pattern: PatternExecutor, sort_on: Arc<Vec<(usize, bool)>> },
+    Reduce { pattern: PatternExecutor, reduce_rows_executable: Arc<ReduceRowsExecutable>, profile: Arc<StepProfile> },
+    Sort { pattern: PatternExecutor, sort_on: Arc<Vec<(usize, bool)>>, profile: Arc<StepProfile> },
 }
 
 impl CollectingStageExecutor {
     pub(crate) fn new_reduce(
         previous_stage: PatternExecutor,
         reduce_rows_executable: Arc<ReduceRowsExecutable>,
+        query_profile: &QueryProfile,
     ) -> Self {
-        Self::Reduce { pattern: previous_stage, reduce_rows_executable }
+        let profile = Self::create_step_profile(query_profile, "Reduce");
+        Self::Reduce { pattern: previous_stage, reduce_rows_executable, profile }
     }
 
-    pub(crate) fn new_sort(previous_stage: PatternExecutor, sort_executable: &SortExecutable) -> Self {
+    pub(crate) fn new_sort(
+        previous_stage: PatternExecutor,
+        sort_executable: &SortExecutable,
+        query_profile: &QueryProfile,
+    ) -> Self {
         let sort_on = sort_executable
             .sort_on
             .iter()
@@ -46,7 +52,14 @@ impl CollectingStageExecutor {
                 SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
             })
             .collect();
-        Self::Sort { pattern: previous_stage, sort_on: Arc::new(sort_on) }
+        let profile = Self::create_step_profile(query_profile, "Sort");
+        Self::Sort { pattern: previous_stage, sort_on: Arc::new(sort_on), profile }
+    }
+
+    fn create_step_profile(query_profile: &QueryProfile, name: &'static str) -> Arc<StepProfile> {
+        let stage = query_profile.profile_stage(|| String::from(name), 0); // TODO executable id
+        let pattern = stage.create_or_get_pattern(|| format!("{name} pattern"));
+        pattern.extend_or_get_step(0, || format!("{name} execution"))
     }
 
     pub(crate) fn output_width(&self) -> u32 {
@@ -83,23 +96,16 @@ impl CollectingStageExecutor {
             CollectingStageExecutor::Reduce { reduce_rows_executable, .. } => {
                 CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable.clone()))
             }
-            CollectingStageExecutor::Sort { sort_on, pattern } => {
+            CollectingStageExecutor::Sort { sort_on, pattern, .. } => {
                 CollectorEnum::Sort(SortCollector::new(pattern.output_width(), sort_on.clone()))
             }
         }
     }
 
-    pub(super) fn step_profile(&self, profile: &QueryProfile) -> Arc<StepProfile> {
+    pub(super) fn step_profile(&self) -> Arc<StepProfile> {
         match self {
-            CollectingStageExecutor::Reduce { .. } => {
-                let stage = profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
-                let pattern = stage.create_or_get_pattern(|| String::from("Reduce pattern"));
-                pattern.extend_or_get_step(0, || String::from("Reduce execution"))
-            }
-            CollectingStageExecutor::Sort { .. } => {
-                let stage = profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
-                let pattern = stage.create_or_get_pattern(|| String::from("Sort pattern"));
-                pattern.extend_or_get_step(0, || String::from("Sort execution"))
+            CollectingStageExecutor::Reduce { profile, .. } | CollectingStageExecutor::Sort { profile, .. } => {
+                profile.clone()
             }
         }
     }

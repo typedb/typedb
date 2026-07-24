@@ -16,7 +16,7 @@ use compiler::{
     },
 };
 use concept::thing::thing_manager::ThingManager;
-use ir::pipeline::ParameterRegistry;
+use ir::pipeline::{ParameterRegistry, QueryContext};
 use itertools::Itertools;
 use resource::{
     constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS,
@@ -61,7 +61,8 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        mut context: ExecutionContext<Snapshot>,
+        mut execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -69,7 +70,7 @@ where
     > {
         let Self { executable, .. } = self;
 
-        let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
+        let profile = query_context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Update pattern"));
         let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
             build_step_profiles(&executable, &pattern_profile);
@@ -86,11 +87,11 @@ where
         let mut batch =
             match prepare_output_rows(executable.output_width() as u32, input_iterator, &input_output_mapping) {
                 Ok(output_rows) => output_rows,
-                Err(err) => return Err((err, context)),
+                Err(err) => return Err((err, execution_context)),
             };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
-        let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
+        let snapshot_mut = Arc::get_mut(&mut execution_context.snapshot).unwrap();
         for index in 0..batch.len() {
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
@@ -98,24 +99,24 @@ where
             if let Err(typedb_source) = execute_update(
                 &executable,
                 snapshot_mut,
-                &context.thing_manager,
-                &context.parameters,
+                &execution_context.thing_manager,
+                &query_context.parameters,
                 &mut row,
                 &concept_profiles,
                 &connection_profiles,
                 &optional_concept_profiles,
                 &optional_connection_profiles,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
             }
 
             if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), execution_context));
                 }
             }
         }
-        Ok((WrittenRowsIterator::new(batch), context))
+        Ok((WrittenRowsIterator::new(batch), execution_context))
     }
 }
 

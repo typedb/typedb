@@ -13,7 +13,7 @@ use compiler::{
     executable::match_::instructions::{ConstraintInstruction, VariableMode, VariableModes},
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pattern::Vertex;
+use ir::{pattern::Vertex, pipeline::ParameterRegistry};
 use itertools::Itertools;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -151,29 +151,30 @@ impl InstructionExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         match self {
-            Self::Is(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Iid(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::TypeList(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Sub(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::SubReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Owns(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::OwnsReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Relates(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::RelatesReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Plays(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::PlaysReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Isa(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::IsaReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Has(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::HasReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Links(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::LinksReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::IndexedRelation(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Is(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Iid(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::TypeList(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Sub(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::SubReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Owns(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::OwnsReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Relates(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::RelatesReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Plays(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::PlaysReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Isa(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::IsaReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Has(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::HasReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::Links(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::LinksReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::IndexedRelation(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
         }
     }
 

@@ -11,6 +11,7 @@ use concept::thing::ThingAPI;
 use encoding::value::ValueEncodable;
 use error::needs_update_when_feature_is_implemented;
 use ir::pattern::variable_category::VariableOptionality;
+use ir::pipeline::QueryContext;
 use lending_iterator::LendingIterator;
 use resource::profile::{StepProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -46,13 +47,14 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
-        interrupt: ExecutionInterrupt,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        Ok((GivenStageIterator::new(context.clone(), self.executable, input_iterator), context))
+        Ok((GivenStageIterator::new(execution_context.clone(), &query_context, self.executable, input_iterator), execution_context))
     }
 }
 
@@ -67,10 +69,11 @@ pub struct GivenStageIterator<Snapshot: ReadableSnapshot + 'static, InputIterato
 impl<Snapshot: ReadableSnapshot + 'static, InputIterator: StageIterator> GivenStageIterator<Snapshot, InputIterator> {
     pub(crate) fn new(
         context: ExecutionContext<Snapshot>,
+        query_context: &QueryContext,
         executable: Arc<GivenExecutable>,
         source_iterator: InputIterator,
     ) -> Self {
-        let stage_profile = context.profile.profile_stage(|| "Given".to_owned(), executable.executable_id);
+        let stage_profile = query_context.profile.profile_stage(|| "Given".to_owned(), executable.executable_id);
         let pattern_profile = stage_profile.create_or_get_pattern(|| "Given".to_owned());
         let profile = pattern_profile.extend_or_get_step(0, || "Given validation".to_owned());
         Self { context, executable, source_iterator, row_counter: 0, profile }

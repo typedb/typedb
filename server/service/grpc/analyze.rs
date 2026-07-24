@@ -93,7 +93,7 @@ pub fn encode_analyzed_query(
                 .map(|object| analyze_proto::Fetch { node: Some(analyze_proto::fetch::Node::Object(object)) })
         })
         .transpose()?;
-    Ok(typedb_protocol::analyze::res::AnalyzedQuery { source, query: Some(query), preamble, fetch, given })
+    Ok(typedb_protocol::analyze::res::AnalyzedQuery { source: source.as_ref().to_owned(), query: Some(query), preamble, fetch, given })
 }
 
 fn encode_function(

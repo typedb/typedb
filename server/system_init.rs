@@ -9,12 +9,13 @@ use database::{
     Database,
     transaction::{CommitIntent, SchemaCommitIntent},
 };
-use query::query_manager::{ParsedSchemaQuery, QueryContext};
+use query::query_manager::{ParsedSchemaQuery};
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
     profile::TransactionProfile,
 };
+use resource::profile::QueryProfile;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, PasswordHash, User},
@@ -87,7 +88,7 @@ pub fn get_system_database_schema_commit_intent(
                 })
                 .into_structure()
                 .into_schema();
-            let parsed = ParsedSchemaQuery::new(QueryContext::new_profile_disabled(SCHEMA.to_string()), query);
+            let parsed = ParsedSchemaQuery::new(query, Arc::new(SCHEMA.to_owned()), QueryProfile::new(false));
             query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, parsed).unwrap_or_else(|error| {
                 panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
             });

@@ -13,6 +13,7 @@ use compiler::{
     },
 };
 use ir::pipeline::modifier::SortVariable;
+use ir::pipeline::QueryContext;
 use lending_iterator::{LendingIterator, Peekable};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -50,7 +51,8 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -60,17 +62,17 @@ where
         // accumulate once, then we will operate in-place
         let batch = match input_iterator.collect_owned() {
             Ok(batch) => batch,
-            Err(err) => return Err((err, context)),
+            Err(err) => return Err((err, execution_context)),
         };
         let batch_len = batch.len();
-        let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
+        let profile = query_context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Sort"));
         let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Sort execution"));
         let measurement = step_profile.start_measurement();
         let sorted_iterator =
-            SortStageIterator::from_unsorted(batch, &executable, &context, step_profile.storage_counters());
+            SortStageIterator::from_unsorted(batch, &executable, &execution_context, step_profile.storage_counters());
         measurement.end(&step_profile, 1, batch_len as u64);
-        Ok((sorted_iterator, context))
+        Ok((sorted_iterator, execution_context))
     }
 }
 
@@ -139,14 +141,15 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        _query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { offset_executable, .. } = self;
-        Ok((OffsetStageIterator::new(input_iterator, offset_executable.offset), context))
+        Ok((OffsetStageIterator::new(input_iterator, offset_executable.offset), execution_context))
     }
 }
 
@@ -205,14 +208,15 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        _query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { limit_executable, .. } = self;
-        Ok((LimitStageIterator::new(input_iterator, limit_executable.limit), context))
+        Ok((LimitStageIterator::new(input_iterator, limit_executable.limit), execution_context))
     }
 }
 
@@ -268,13 +272,14 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        _query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        Ok((SelectStageIterator::new(input_iterator, self.select_executable.retained_positions.clone()), context))
+        Ok((SelectStageIterator::new(input_iterator, self.select_executable.retained_positions.clone()), execution_context))
     }
 }
 
@@ -338,14 +343,15 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        _query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { require_executable, .. } = self;
-        Ok((RequireStageIterator::new(input_iterator, require_executable), context))
+        Ok((RequireStageIterator::new(input_iterator, require_executable), execution_context))
     }
 }
 
@@ -407,7 +413,8 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        _query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -415,7 +422,7 @@ where
     > {
         let Self { .. } = self;
         let distinct_iterator = DistinctStageIterator::new(input_iterator);
-        Ok((distinct_iterator, context))
+        Ok((distinct_iterator, execution_context))
     }
 }
 
