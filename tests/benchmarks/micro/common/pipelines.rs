@@ -27,9 +27,10 @@ pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsum
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
 ) -> Result<(QueryAnswer<AC::Output>, TX), (Box<QueryError>, TX)> {
     let (snapshot, partial_tx) = tx.into_parts();
-    let prepare_result = prepare_read_pipeline(snapshot, partial_tx, query, given_rows);
+    let prepare_result = prepare_read_pipeline(snapshot, partial_tx, query, given_rows, enable_profiling);
     let ReadPipelineWrapper { pipeline, partial_tx, .. } = prepare_result.map_err(to_err_and_tx)?;
     let interrupt = ExecutionInterrupt::new_uninterruptible();
     if pipeline.has_fetch() {
@@ -49,10 +50,11 @@ pub(super) fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransacti
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
 ) -> Result<(QueryAnswer<AC::Output>, TX), (Box<QueryError>, TX)> {
     let (arc_snapshot, partial_tx) = tx.into_parts();
     let snapshot = Arc::into_inner(arc_snapshot).expect("Expected exclusive ownership");
-    let prepare_result = prepare_write_pipeline(snapshot, partial_tx, query, given_rows);
+    let prepare_result = prepare_write_pipeline(snapshot, partial_tx, query, given_rows, enable_profiling);
     let WritePipelineWrapper { pipeline, partial_tx, .. } = prepare_result.map_err(to_err_and_tx)?;
     let interrupt = ExecutionInterrupt::new_uninterruptible();
     if pipeline.has_fetch() {
@@ -83,6 +85,7 @@ fn prepare_read_pipeline<Snapshot: ReadableSnapshot>(
     partial_tx: PartialTx,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
 ) -> Result<ReadPipelineWrapper<Snapshot>, ErrorWrapper<Snapshot, Box<QueryError>>> {
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
     let prepare_result = partial_tx.query_manager.prepare_read_pipeline(
@@ -93,7 +96,7 @@ fn prepare_read_pipeline<Snapshot: ReadableSnapshot>(
         &parsed,
         given_rows,
         &query,
-        Some(true),
+        Some(enable_profiling),
     );
     match prepare_result {
         Ok(pipeline) => Ok(ReadPipelineWrapper { partial_tx, pipeline }),
@@ -106,6 +109,7 @@ fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
     partial_tx: PartialTx,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
 ) -> Result<WritePipelineWrapper<Snapshot>, ErrorWrapper<Snapshot, Box<QueryError>>> {
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
     let prepare_result = partial_tx.query_manager.prepare_write_pipeline(
@@ -116,7 +120,7 @@ fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
         &parsed,
         given_rows,
         &query,
-        Some(true),
+        Some(enable_profiling),
     );
     match prepare_result {
         Ok(pipeline) => Ok(WritePipelineWrapper { partial_tx, pipeline }),

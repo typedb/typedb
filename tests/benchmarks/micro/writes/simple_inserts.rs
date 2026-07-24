@@ -3,20 +3,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use criterion::Criterion;
-use lib_benchmark::templates::{
-    SimpleBenchmark, given_rows_with, n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx,
+use lib_benchmark::{
+    runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    templates::{given_rows_with, n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx},
 };
 
 use crate::TransactionInsertBenchmark;
 
-pub(crate) fn run_all(c: &mut Criterion) {
-    let mut g = c.benchmark_group("simple_inserts");
-    g.sample_size(20);
-    entities_one().run_with_criterion(&mut g);
-    entities_thousand().run_with_criterion(&mut g);
-    ownerships_thousand_names_short().run_with_criterion(&mut g);
-    ownerships_thousand_names_long().run_with_criterion(&mut g);
+pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
+    let mut group = runner.new_group("simple_inserts");
+    group.run_benchmark(entities_one());
+    group.run_benchmark(entities_thousand());
+    group.run_benchmark(ownerships_thousand_names_short());
+    group.run_benchmark(ownerships_thousand_names_long());
 }
 
 const SCHEMA: &'static str = r#"
