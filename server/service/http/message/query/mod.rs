@@ -175,9 +175,9 @@ pub enum TaggedEntryPayload {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GivenEntryPayload {
-    PlainString(String),
-    PlainNumber(serde_json::Number),
-    PlainBool(bool),
+    RawString(String),
+    RawNumber(serde_json::Number),
+    RawBool(bool),
     Concept(TaggedEntryPayload),
 }
 
@@ -225,7 +225,7 @@ impl GivenRows for GivenRowsHttp {
     ) -> Result<GivenRowEntry, GivenRowDecodeError> {
         if let Some(item) = item {
             match item {
-                GivenEntryPayload::PlainNumber(value) => {
+                GivenEntryPayload::RawNumber(value) => {
                     let FunctionParameterAnnotation::Value(expected_type) = expected_type else {
                         return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {});
                     };
@@ -241,7 +241,7 @@ impl GivenRows for GivenRowsHttp {
                     })?;
                     Ok(GivenRowEntry::Value(decoded_value))
                 }
-                GivenEntryPayload::PlainBool(value) => {
+                GivenEntryPayload::RawBool(value) => {
                     let FunctionParameterAnnotation::Value(expected_type) = expected_type else {
                         return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {});
                     };
@@ -254,7 +254,7 @@ impl GivenRows for GivenRowsHttp {
                         }),
                     }
                 }
-                GivenEntryPayload::PlainString(value) => match expected_type {
+                GivenEntryPayload::RawString(value) => match expected_type {
                     FunctionParameterAnnotation::AnyConcept => unreachable!("Can't be"),
                     FunctionParameterAnnotation::Concept(expected_type) => decode_string_as_iid(value, expected_type),
                     FunctionParameterAnnotation::Value(expected_type) => decode_string_as_value(value, expected_type),
@@ -338,9 +338,10 @@ fn decode_string_as_iid(iid_string: String, _types: &BTreeSet<Type>) -> Result<G
 }
 
 fn decode_string_as_value(value: String, expected_type: &ValueType) -> Result<GivenRowEntry, GivenRowDecodeError> {
-    let parsed_value = if expected_type == &ValueType::String {
-        parse_value(format!("\"{value}\"").as_str())
-    } else if expected_type == &ValueType::Decimal && !value.as_str().ends_with("dec") {
+    if expected_type == &ValueType::String {
+        return Ok(GivenRowEntry::Value(Value::String(value.into())));
+    }
+    let parsed_value = if expected_type == &ValueType::Decimal && !value.as_str().ends_with("dec") {
         parse_value(format!("{value}dec").as_str())
     } else {
         parse_value(value.as_str())
@@ -374,8 +375,64 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
     }
     let as_str = value.value.to_string();
     match value.value_type.as_str() {
-        "decimal" => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
+        "decimal" => {
+            let literal = &as_str[1..as_str.len() - 1];
+            decode(&if literal.ends_with("dec") { literal.to_owned() } else { format!("{literal}dec") })
+        }
         "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
         _ => decode(&as_str),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn decode_string(value: &str) -> String {
+        match decode_string_as_value(value.to_owned(), &ValueType::String) {
+            Ok(GivenRowEntry::Value(Value::String(decoded))) => decoded.into_owned(),
+            other => panic!("expected a decoded string value for {value:?}, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn strings_are_taken_verbatim() {
+        assert_eq!(decode_string(r#"a"b"#), r#"a"b"#);
+        assert_eq!(decode_string(r#"{"a":1}"#), r#"{"a":1}"#);
+        assert_eq!(decode_string(r#"["a"]"#), r#"["a"]"#);
+        for value in ["hello", "{a:1}", "[1,2]", "a b c", r"a\b", ""] {
+            assert_eq!(decode_string(value), value);
+        }
+        assert_eq!(decode_string(r"a\nb"), r"a\nb");
+        assert_eq!(decode_string(r"a\tb"), r"a\tb");
+    }
+
+    #[test]
+    fn json_transport_escape_is_consumed_before_decoding() {
+        let payload: GivenRowsPayload = serde_json::from_str(r#"[{"v":"a\"b"}]"#).unwrap();
+        let entry = payload.0[0].get("v").unwrap().as_ref().unwrap();
+        match entry {
+            GivenEntryPayload::RawString(s) => assert_eq!(s, "a\"b"),
+            other => panic!("expected a raw string, got: {other:?}"),
+        }
+
+        let payload: GivenRowsPayload = serde_json::from_str(r#"[{"v":"a\\\"b"}]"#).unwrap();
+        let GivenEntryPayload::RawString(s) = payload.0[0].get("v").unwrap().as_ref().unwrap() else {
+            panic!("expected a raw string")
+        };
+        assert_eq!(s, r#"a\"b"#);
+        assert_eq!(decode_string(s), r#"a\"b"#);
+    }
+
+    #[test]
+    fn given_non_string_value_is_still_parsed() {
+        match decode_string_as_value("42".to_owned(), &ValueType::Integer) {
+            Ok(GivenRowEntry::Value(Value::Integer(42))) => {}
+            other => panic!("expected integer 42, got: {other:?}"),
+        }
+        match decode_string_as_value("true".to_owned(), &ValueType::Boolean) {
+            Ok(GivenRowEntry::Value(Value::Boolean(true))) => {}
+            other => panic!("expected boolean true, got: {other:?}"),
+        }
     }
 }

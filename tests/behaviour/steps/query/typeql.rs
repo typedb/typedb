@@ -786,9 +786,11 @@ fn parse_query_given_row_entry(entry: &String) -> GivenRowEntry {
         "none" => GivenRowEntry::None,
         "value" => {
             let value_type_str = parts.next().expect("value:<value-type>:<value>");
-            let value_str = parts.next().expect("value:<value-type>:<value>");
+            // The value is the whole remainder after `value:<value-type>:`; it may itself contain
+            // ':' (e.g. datetime `12:15:05`), so re-join rather than taking a single part.
+            let value_str = parts.collect::<Vec<&str>>().join(":");
             let expected_value_type = parse_value_type(value_type_str);
-            let value = params::Value::from_str(value_str).unwrap().into_typedb(expected_value_type);
+            let value = params::Value::from_str(&value_str).unwrap().into_typedb(expected_value_type);
             GivenRowEntry::Value(value)
         }
         "iid" => {
