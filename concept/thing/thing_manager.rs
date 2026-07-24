@@ -2097,7 +2097,7 @@ impl ThingManager {
                 Prefix::VertexAttribute.fixed_width_keys(),
             )),
             snapshot.iterate_writes_range(&KeyRange::new_within(
-                AttributeVertex::prefix_short(),
+                AttributeVertex::prefix_long(),
                 Prefix::VertexAttribute.fixed_width_keys(),
             )),
         )
