@@ -237,6 +237,7 @@ fn execute_analyze(
                 &tx.thing_manager,
                 &parsed_pipeline,
                 source_query,
+                None,
             )
             .map_err(|source| BehaviourTestExecutionError::Query(*source))
     })

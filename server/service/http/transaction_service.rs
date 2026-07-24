@@ -1259,6 +1259,7 @@ impl TransactionService {
                     &thing_manager,
                     &pipeline,
                     &source_query,
+                    None,
                 );
                 let analysed = unwrap_or_execute_else_respond_error_and_return_break!(
                     analyse_result,
