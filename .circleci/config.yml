@@ -11,14 +11,14 @@ orbs:
 executors:
   linux-arm64-amazonlinux-2:
     docker:
-      - image: amazonlinux:2
+      - image: typedb/amazonlinux2-ci:3.12.0-arm64
     resource_class: arm.large
     working_directory: ~/typedb
 
   # All builds go on amazon-linux.
   linux-x86_64-amazonlinux-2:
     docker:
-      - image: amazonlinux:2
+      - image: typedb/amazonlinux2-ci:3.12.0-amd64
     resource_class: large
     working_directory: ~/typedb
 
@@ -53,19 +53,10 @@ commands:
         type: string
     steps:
       - run: |
+          amazon-linux-extras install docker -y 
           export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64/')
           echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
           echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
-
-          amazon-linux-extras install java-openjdk11 docker python3.8 -y
-          yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
-
-          rm /usr/bin/python3
-          ln -s /usr/bin/python3.8 /usr/bin/python3
-          
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
-          mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/bazel
 
   install-deps-brew:
     parameters:
@@ -114,6 +105,14 @@ commands:
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-all --compilation_mode=opt --//server:mode=published -- release
+
+  deploy-snapshot-apt:
+    steps:
+      - run: |
+          export DEPLOY_APT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_APT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --config=ci --jobs=8 --define version=$(git rev-parse HEAD) //:deploy-apt --compilation_mode=opt -- snapshot
 
   deploy-release-apt:
     steps:
@@ -172,6 +171,55 @@ commands:
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
+  distribution-test-run-console-script:
+    parameters:
+      script-path:
+        type: string
+    steps:
+      - run: |
+          typedb server --development-mode.enabled=true &
+          export TYPEDB_PID=$!
+          sleep 10
+          typedb console --username=admin --password=password --address=localhost:1729 --tls-disabled --script=<<parameters.script-path>>
+          kill -s TERM $!
+          sleep 3
+
+  install-brew-snapshot:
+    steps:
+      - run: |
+          brew install typedb/tap-test/typedb-snapshot
+
+  install-apt-snapshot:
+    steps:
+      - run: |
+          sudo apt update
+          sudo apt install -y software-properties-common apt-transport-https gpg
+          gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key 17507562824cfdcc
+          gpg --export 17507562824cfdcc | sudo tee /etc/apt/trusted.gpg.d/typedb.gpg > /dev/null
+          echo "deb https://repo.typedb.com/public/public-snapshot/deb/ubuntu trusty main" | sudo tee /etc/apt/sources.list.d/typedb.list > /dev/null
+          sudo apt update
+          sudo apt install -y typedb=0.0.0-$(git rev-parse HEAD)
+          sudo chmod +x /opt/typedb/core/typedb /opt/typedb/core/console/typedb_console_bin /opt/typedb/core/server/typedb_server_bin
+
+  test-distribution-docker:
+    parameters:
+      arch:
+        type: string
+    steps:
+      - run: |
+          export VERSION=$(git rev-parse HEAD)
+          # Use console via bazel since we don't seem to ship with console
+          
+          docker run -d --name typedb-first -p 1729:1729 -v typedb-data:/var/lib/typedb/data typedb/typedb-snapshot:$VERSION-<<parameters.arch>>
+          sleep 15
+          bazel run @typedb_console_artifact_linux-<<parameters.arch>>-extracted//:typedb console -- --username=admin --password=password --address=localhost:1729 --tls-disabled --script=tests/distribution/script.tql
+          docker stop typedb-first && docker rm typedb-first
+          # Start new instance
+          docker run -d --name typedb-second -p 1729:1729 -v typedb-data:/var/lib/typedb/data typedb/typedb-snapshot:$VERSION-<<parameters.arch>>
+          sleep 15
+          bazel run @typedb_console_artifact_linux-<<parameters.arch>>-extracted//:typedb console -- --username=admin --password=password --address=localhost:1729 --tls-disabled --script=tests/distribution/verify.tql
+          docker stop typedb-second
+
 jobs:
   # per platform snapshot deployment
   test-deploy-snapshot-linux-x86_64:
@@ -205,6 +253,12 @@ jobs:
       - test-assembly-unix
       - test-admin-unix
       - deploy-snapshot-unix
+      - run: |
+          mkdir -p ~/dist && cp bazel-bin/typedb-all-mac-x86_64.zip ~/dist
+      - persist_to_workspace:
+          root: ~/dist
+          paths:
+            - ./*
 
   test-deploy-snapshot-mac-arm64:
     executor: mac-arm64
@@ -215,6 +269,12 @@ jobs:
       - test-assembly-unix
       - test-admin-unix
       - deploy-snapshot-unix
+      - run: |
+          mkdir -p ~/dist && cp bazel-bin/typedb-all-mac-arm64.zip ~/dist
+      - persist_to_workspace:
+          root: ~/dist
+          paths:
+            - ./*
 
   test-deploy-snapshot-windows-x86_64:
     executor: win-x86_64
@@ -254,6 +314,39 @@ jobs:
       - install-deps-yum:
           bazel-arch: amd64
       - deploy-docker-snapshot-multiarch
+
+  deploy-snapshot-brew:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - run: yum install -y tar gzip
+      - attach_workspace:
+          at: ~/dist
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - run: |
+          export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
+          sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
+          sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          echo "$(git rev-parse HEAD)" > VERSION 
+          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-snapshot --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- snapshot
+
+  deploy-snapshot-apt-x86_64:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - deploy-snapshot-apt
+
+  deploy-snapshot-apt-arm64:
+    executor: linux-arm64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: arm64
+      - deploy-snapshot-apt
 
   # per platform release deployment
   deploy-release-linux-x86_64:
@@ -323,7 +416,7 @@ jobs:
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
           sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
+          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-release --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
   deploy-release-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -385,6 +478,7 @@ jobs:
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
               -c ${CIRCLE_SHA1} -delete $(cat VERSION)
 
+
   sync-to-typedb-benchmark:
     machine:
       image: ubuntu-2204:2024.11.1
@@ -400,6 +494,92 @@ jobs:
             git add .
             git commit -m "Update TypeDB Core version to $CIRCLE_SHA1"
             git push origin development
+
+
+  # distribution tests
+  test-distribution-apt-snapshot-x86_64:
+    machine:
+      image: ubuntu-2204:2024.11.1
+    resource_class: large
+    steps:
+      - checkout
+      - install-apt-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/load.tql
+      - run: |
+          sudo apt install --reinstall -y typedb=0.0.0-$(git rev-parse HEAD)
+          sudo chmod +x /opt/typedb/core/typedb /opt/typedb/core/console/typedb_console_bin /opt/typedb/core/server/typedb_server_bin
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/verify.tql
+
+  test-distribution-apt-snapshot-arm64:
+    machine:
+      image: ubuntu-2204:2024.11.1
+    resource_class: arm.large
+    steps:
+      - checkout
+      - install-apt-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/load.tql
+      - run: |
+          sudo apt install --reinstall -y typedb=0.0.0-$(git rev-parse HEAD)
+          sudo chmod +x /opt/typedb/core/typedb /opt/typedb/core/console/typedb_console_bin /opt/typedb/core/server/typedb_server_bin
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/verify.tql
+
+  test-distribution-brew-snapshot-arm64:
+    executor: mac-arm64
+    steps:
+      - checkout
+      - install-brew-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/load.tql
+      - run: brew reinstall typedb/tap-test/typedb-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/verify.tql
+
+  test-distribution-brew-snapshot-x86_64:
+    executor: mac-arm64
+    steps:
+      - macos/install-rosetta
+      - checkout
+      - install-brew-rosetta
+      - install-brew-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/load.tql
+      - run: brew reinstall typedb/tap-test/typedb-snapshot
+      - distribution-test-run-console-script:
+          script-path: tests/distribution/verify.tql
+
+  test-distribution-docker-snapshot-x86_64:
+    machine:
+      image: ubuntu-2204:2024.11.1
+    resource_class: large
+    steps:
+      - checkout
+      - run: |
+          sudo apt update
+          sudo apt install -y docker 
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
+          sudo mv "bazelisk-linux-amd64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
+      - test-distribution-docker:
+          arch: x86_64
+
+  test-distribution-docker-snapshot-arm64:
+    machine:
+      image: ubuntu-2204:2024.11.1
+    resource_class: arm.large
+    steps:
+      - checkout
+      - run: |
+          sudo apt update
+          sudo apt install -y docker
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64"
+          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
+      - test-distribution-docker:
+          arch: arm64
 
   # generic
   release-cleanup:
@@ -457,12 +637,73 @@ workflows:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
 
+      - deploy-snapshot-apt-x86_64:
+          filters:
+            branches:
+              only: [ master ]
+
+      - deploy-snapshot-apt-arm64:
+          filters:
+            branches:
+              only: [ master ]
+
+      - deploy-snapshot-brew:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - test-deploy-snapshot-mac-arm64
+            - test-deploy-snapshot-mac-x86_64
+
+      - test-distribution-apt-snapshot-x86_64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-snapshot-apt-x86_64
+
+      - test-distribution-apt-snapshot-arm64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-snapshot-apt-arm64
+
+      - test-distribution-brew-snapshot-arm64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-snapshot-brew
+
+      - test-distribution-brew-snapshot-x86_64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-snapshot-brew
+
+      - test-distribution-docker-snapshot-x86_64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-docker-snapshot-multiarch
+
+      - test-distribution-docker-snapshot-arm64:
+          filters:
+            branches:
+              only: [ master ]
+          requires:
+            - deploy-docker-snapshot-multiarch
+
       - sync-to-typedb-benchmark:
           filters:
             branches:
               only: [ master ]
           requires:
             - test-deploy-snapshot-linux-x86_64
+
   release:
     jobs:
       - deploy-release-linux-x86_64:

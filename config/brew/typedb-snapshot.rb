@@ -3,18 +3,18 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # IMPORTANT: any changes to the formula should be propagated to Homebrew/homebrew-core
-class Typedb < Formula
+class TypedbSnapshot < Formula
   desc "The power of programming, in your database"
   homepage "https://typedb.com"
   version "{version}"
 
   on_arm do
-    url "https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-arm64/versions/{version}/typedb-all-mac-arm64-{version}.zip"
+    url "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/{version}/typedb-all-mac-arm64-{version}.zip"
     sha256 "{sha256-arm64}"
   end
 
   on_intel do
-    url "https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-x86_64/versions/{version}/typedb-all-mac-x86_64-{version}.zip"
+    url "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/{version}/typedb-all-mac-x86_64-{version}.zip"
     sha256 "{sha256-x86_64}"
   end
 
