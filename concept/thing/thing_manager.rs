@@ -2067,11 +2067,11 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let deleted_reverse_has = iter::chain(
             snapshot.iterate_writes_range(&KeyRange::new_within(
-                ThingEdgeHasReverse::prefix_short(),
+                ThingEdgeHasReverse::prefix_key_short(),
                 ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
             )),
             snapshot.iterate_writes_range(&KeyRange::new_within(
-                ThingEdgeHasReverse::prefix_long(),
+                ThingEdgeHasReverse::prefix_key_long(),
                 ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
             )),
         )
@@ -2093,11 +2093,11 @@ impl ThingManager {
         // link together long and short attributes
         let new_attributes = iter::chain(
             snapshot.iterate_writes_range(&KeyRange::new_within(
-                AttributeVertex::prefix_short(),
+                AttributeVertex::prefix_key_short(),
                 Prefix::VertexAttribute.fixed_width_keys(),
             )),
             snapshot.iterate_writes_range(&KeyRange::new_within(
-                AttributeVertex::prefix_long(),
+                AttributeVertex::prefix_key_long(),
                 Prefix::VertexAttribute.fixed_width_keys(),
             )),
         )

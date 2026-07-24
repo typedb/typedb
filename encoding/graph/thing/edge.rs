@@ -348,14 +348,14 @@ impl ThingEdgeHasReverse {
     }
     // end TODO
 
-    pub fn prefix_short() -> StorageKey<'static, { PrefixID::LENGTH }> {
+    pub fn prefix_key_short() -> StorageKey<'static, { PrefixID::LENGTH }> {
         StorageKey::new_owned(
             Self::keyspace_for_short_encoding(),
             ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()),
         )
     }
 
-    pub fn prefix_long() -> StorageKey<'static, { PrefixID::LENGTH }> {
+    pub fn prefix_key_long() -> StorageKey<'static, { PrefixID::LENGTH }> {
         StorageKey::new_owned(Self::keyspace_for_long_encoding(), ByteArray::copy(&Self::PREFIX.prefix_id().to_bytes()))
     }
 
