@@ -13,10 +13,10 @@ use crate::TransactionInsertBenchmark;
 pub(crate) fn run_all(c: &mut Criterion) {
     let mut g = c.benchmark_group("simple_inserts");
     g.sample_size(20);
-    entities_one().run_benchmark(&mut g);
-    entities_thousand().run_benchmark(&mut g);
-    ownerships_thousand_names_short().run_benchmark(&mut g);
-    ownerships_thousand_names_long().run_benchmark(&mut g);
+    entities_one().run_with_criterion(&mut g);
+    entities_thousand().run_with_criterion(&mut g);
+    ownerships_thousand_names_short().run_with_criterion(&mut g);
+    ownerships_thousand_names_long().run_with_criterion(&mut g);
 }
 
 const SCHEMA: &'static str = r#"

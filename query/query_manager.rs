@@ -127,9 +127,10 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &SchemaQuery,
         source_query: &str,
+        tmp_enable_profiling: Option<bool>, // TODO: Fix with more permanent solution
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
-        let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let query_profile = QueryProfile::new(tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE)));
         let result = match &query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
@@ -389,10 +390,11 @@ impl QueryManager {
         thing_manager: &ThingManager,
         pipeline: &typeql::query::Pipeline,
         source_query: &str,
+        tmp_enable_profiling: Option<bool>,
     ) -> Result<AnalysedQuery, Box<QueryError>> {
         event!(Level::TRACE, "Running analyse query:\n{}", source_query);
         let pipeline = self.translate(source_query, pipeline, snapshot.as_ref(), function_manager, thing_manager)?;
-        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let mut query_profile = QueryProfile::new(tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE)));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         let TranslatedPipeline {
