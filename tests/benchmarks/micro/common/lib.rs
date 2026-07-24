@@ -7,6 +7,7 @@
 pub mod datagen;
 mod pipelines;
 pub mod profiler;
+pub mod runner;
 pub mod templates;
 mod transaction;
 pub mod utils;
@@ -106,8 +107,9 @@ pub fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsumer>(
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
 ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
-    pipelines::execute_read_query_in::<_, AC>(tx, query, given_rows)
+    pipelines::execute_read_query_in::<_, AC>(tx, query, given_rows, enable_profiling)
 }
 
 pub fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView, AC: AnswerConsumer>(
@@ -116,5 +118,5 @@ pub fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView,
     given_rows: Option<GivenRowsSimple>,
     enable_profiling: bool,
 ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
-    pipelines::execute_write_query_in::<_, AC>(tx, query, given_rows)
+    pipelines::execute_write_query_in::<_, AC>(tx, query, given_rows, enable_profiling)
 }

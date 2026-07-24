@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 use encoding::value::value::Value;
 use query::given_rows::GivenRowEntry;
-use rand::{Rng, RngCore, SeedableRng, prelude::SmallRng, thread_rng};
+use rand::{Rng, SeedableRng, prelude::SmallRng, thread_rng};
 
 pub struct RandomDataGen {
     rng: SmallRng,

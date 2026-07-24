@@ -3,12 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::{sync::Arc, time::Duration};
 
-use criterion::{BatchSize, BenchmarkGroup, measurement::Measurement};
 use database::{Database, transaction::TransactionWrite};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
@@ -22,6 +18,7 @@ use crate::{
     utils::{CountResults, unpack_result},
 };
 
+/// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
     type IterInput;
     type IterOutput;
@@ -53,36 +50,6 @@ pub trait SimpleBenchmark {
         database: Arc<Database<WALClient>>,
         input: Self::IterInput,
     ) -> Self::IterOutput;
-
-    /// Prepares & runs the iters. Abstracts away criterion so we don't make mistakes in the setup.
-    fn run_with_criterion<M: Measurement>(&self, group: &mut BenchmarkGroup<M>) {
-        let mut context = self.init_context();
-        self.before_all(&mut context);
-        group.bench_function(self.name(), |b| {
-            // This should also be run only once per "batch"
-            // We create the database outside the batch creation so the Arc isn't dropped in the timed part
-            let database = self.create_database(&mut context);
-            self.prepare_database(&mut context, database.clone());
-            b.iter_batched(
-                || self.prepare_iter(&context, database.clone()),
-                |input| self.run_iter(&context, database.clone(), input),
-                BatchSize::PerIteration,
-            );
-            drop(database);
-        });
-    }
-
-    /// Prepares & runs the iters. Abstracts away criterion so we don't make mistakes in the setup.
-    fn run_simple(&self) -> Self::IterOutput {
-        let mut context = self.init_context();
-        self.before_all(&mut context);
-        let database = self.create_database(&mut context);
-        self.prepare_database(&mut context, database.clone());
-        let input = self.prepare_iter(&context, database.clone());
-        let query_result = self.run_iter(&context, database.clone(), input);
-        drop(database);
-        query_result
-    }
 }
 
 pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
@@ -139,8 +106,8 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
 
 // Util return
 pub struct TxQueryProfile {
-    tx_profile: Option<TransactionProfile>,
-    query_profile: Arc<QueryProfile>,
+    pub tx_profile: Option<TransactionProfile>,
+    pub query_profile: Arc<QueryProfile>,
 }
 
 // Initial data
@@ -173,7 +140,7 @@ pub fn given_rows_with(
         let mut rng = RandomDataGen::new();
         let gen_row = move || gen_row(&mut rng);
         rows.resize_with(n_rows, gen_row);
-        Some(GivenRowsSimple { variables: variables, rows })
+        Some(GivenRowsSimple { variables, rows })
     })
 }
 
