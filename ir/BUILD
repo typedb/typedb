@@ -28,6 +28,7 @@ rust_library(
         "//durability",
         "//encoding",
         "//storage",
+        "//resource",
 
         "@typeql//rust:typeql",
 

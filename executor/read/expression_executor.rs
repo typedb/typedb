@@ -53,7 +53,7 @@ impl ExpressionValue {
             VariableValue::Value(value) => Ok(ExpressionValue::Single(value)),
             VariableValue::ValueList(values) => Ok(ExpressionValue::List(values)),
             VariableValue::Thing(Thing::Attribute(attr)) => Ok(ExpressionValue::Single(
-                attr.get_value(&**context.snapshot(), context.thing_manager(), storage_counters)
+                attr.get_value(context.snapshot.as_ref(), context.thing_manager(), storage_counters)
                     .map_err(|source| ExpressionEvaluationError::ConceptRead { typedb_source: source })?
                     .into_owned(),
             )),

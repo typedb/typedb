@@ -44,7 +44,7 @@ use options::QueryOptions;
 use query::{
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows},
-    query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryContext, QueryManager},
+    query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryManager},
 };
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -764,8 +764,7 @@ impl TransactionService {
         req_id: Uuid,
         analyse_req: typedb_protocol::analyze::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        let context = QueryContext::new(analyse_req.query);
-        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
+        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(analyse_req.query) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(..)) => {
                 let response =
@@ -808,8 +807,7 @@ impl TransactionService {
         }
 
         let given_rows = query_req.given.map(GivenRowsGrpc);
-        let context = QueryContext::new(query_req.query);
-        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
+        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(query_req.query) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(parsed)) => {
                 // schema queries are handled immediately so there is a query response or a fatal Status
@@ -1200,7 +1198,7 @@ impl TransactionService {
                         &mut read_metrics,
                     );
                 });
-                let compiled = query_manager.prepare_read_pipeline(
+                let executable = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
@@ -1208,18 +1206,16 @@ impl TransactionService {
                     translated,
                     given_rows,
                 );
-                let compiled = unwrap_or_execute_and_return!(compiled, |err| {
+                let executable = unwrap_or_execute_and_return!(executable, |err| {
                     Self::submit_read_response_with_metrics(
                         &sender,
                         StreamQueryResponse::done_err(err),
                         &mut read_metrics,
                     );
                 });
-                let (context, pipeline) = compiled.into_parts();
                 Self::respond_read_query_sync(
                     query_options,
-                    pipeline,
-                    context.source_query(),
+                    executable,
                     timeout_at,
                     interrupt,
                     &sender,
@@ -1236,7 +1232,6 @@ impl TransactionService {
     fn respond_read_query_sync<Snapshot: ReadableSnapshot>(
         query_options: QueryOptions,
         pipeline: Pipeline<Snapshot, ReadPipelineStage<Snapshot>>,
-        source_query: &str,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
         sender: &Sender<StreamQueryResponse>,
@@ -1246,9 +1241,8 @@ impl TransactionService {
         start_time: Instant,
         read_metrics: &mut ReadQueryMetrics,
     ) {
-        let query_profile: Arc<QueryProfile>;
         let encoding_profile: EncodingProfile;
-
+        let query_context = pipeline.query_context();
         if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);
@@ -1257,16 +1251,14 @@ impl TransactionService {
                     Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(QueryError::ReadPipelineExecution {
-                            source_query: source_query.to_string(),
+                            source_query: query_context.source_query.as_ref().to_owned(),
                             typedb_source: err,
                         }),
                         read_metrics,
                     );
                 });
-            query_profile = context.profile;
-            encoding_profile = EncodingProfile::new(query_profile.is_enabled());
+            encoding_profile = EncodingProfile::new(query_context.profile.is_enabled());
 
-            let parameters = context.parameters;
             for next in iterator {
                 if let Some(interrupt) = interrupt.check() {
                     Self::submit_read_response_with_metrics(
@@ -1294,7 +1286,7 @@ impl TransactionService {
                     snapshot.as_ref(),
                     type_manager,
                     &thing_manager,
-                    &parameters,
+                    &query_context.parameters,
                     encoding_profile.storage_counters(),
                 );
                 match encoded_document {
@@ -1336,14 +1328,13 @@ impl TransactionService {
                     Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(QueryError::ReadPipelineExecution {
-                            source_query: source_query.to_string(),
+                            source_query: query_context.source_query.as_ref().to_owned(),
                             typedb_source: err,
                         }),
                         read_metrics,
                     );
                 });
-            query_profile = context.profile;
-            encoding_profile = EncodingProfile::new(query_profile.is_enabled());
+            encoding_profile = EncodingProfile::new(query_context.profile.is_enabled());
 
             while let Some(next) = iterator.next() {
                 if let Some(interrupt) = interrupt.check() {
@@ -1395,13 +1386,13 @@ impl TransactionService {
             }
         }
 
-        if query_profile.is_enabled() {
+        if query_context.profile.is_enabled() {
             let micros = Instant::now().duration_since(start_time).as_micros();
             event!(
                 Level::INFO,
                 "Read query done (including network request time) in {} micros.\n{}\n{}",
                 micros,
-                query_profile,
+                query_context.profile,
                 encoding_profile
             );
         }

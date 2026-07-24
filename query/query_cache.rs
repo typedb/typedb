@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::executable::pipeline::ExecutablePipeline;
+use compiler::executable::pipeline::CompiledPipeline;
 use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
@@ -38,7 +38,7 @@ struct ValidityRequirements {
 pub struct QueryCache {
     parse_cache: Cache<String, Arc<Pipeline>>,
     translate_cache: Cache<String, TranslatedPipeline>,
-    compile_cache: Cache<IRQuery, ExecutablePipeline>,
+    compile_cache: Cache<IRQuery, CompiledPipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
@@ -86,7 +86,7 @@ impl QueryCache {
         given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
-    ) -> Option<ExecutablePipeline> {
+    ) -> Option<CompiledPipeline> {
         let key = IRQuery::new(preamble.clone(), given, stages, fetch);
         self.compile_cache.get(&key).map(|mut found| {
             let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
@@ -102,7 +102,7 @@ impl QueryCache {
         given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
-        pipeline: ExecutablePipeline,
+        pipeline: CompiledPipeline,
     ) {
         let key = IRQuery::new(preamble, given, stages, fetch);
         let read_lock = self.validity_requirements.read().unwrap();
@@ -148,7 +148,7 @@ impl Default for QueryCache {
     }
 }
 
-fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &ExecutablePipeline) -> bool {
+fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &CompiledPipeline) -> bool {
     let mut total_increase = 1.0;
     let mut total_decrease = 1.0;
     for (&ty, &pop) in &pipeline.type_populations {

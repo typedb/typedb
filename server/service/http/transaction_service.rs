@@ -36,7 +36,7 @@ use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
 use query::{
     error::QueryError,
-    query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryContext, QueryManager},
+    query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryManager},
 };
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -640,8 +640,7 @@ impl TransactionService {
             m.record_query();
         }
 
-        let context = QueryContext::new(query);
-        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
+        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(query) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(parsed)) => {
                 // schema queries are handled immediately so there is a query response or a fatal error
@@ -987,8 +986,8 @@ impl TransactionService {
                     translated,
                     given_rows,
                 );
-                let (context, pipeline) = match pipeline_result {
-                    Ok(compiled) => compiled.into_parts(),
+                let pipeline = match pipeline_result {
+                    Ok(pipeline) => pipeline,
                     Err(typedb_source) => {
                         respond_else_return_break!(
                             responder,
@@ -1000,7 +999,6 @@ impl TransactionService {
                 Self::respond_read_query_sync(
                     query_options,
                     pipeline,
-                    context.source_query(),
                     timeout_at,
                     interrupt,
                     responder,
@@ -1017,7 +1015,6 @@ impl TransactionService {
     fn respond_read_query_sync<Snapshot: ReadableSnapshot>(
         query_options: QueryOptions,
         pipeline: Pipeline<Snapshot, ReadPipelineStage<Snapshot>>,
-        source_query: &str,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
         responder: TransactionResponder,
@@ -1027,21 +1024,21 @@ impl TransactionService {
         storage_counters: StorageCounters,
         read_metrics: &mut ReadQueryMetrics,
     ) -> ControlFlow<(), ()> {
-        let query_profile = if pipeline.has_fetch() {
-            let (iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
+        let query_context = pipeline.query_context();
+         if pipeline.has_fetch() {
+            let (iterator, _context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_documents_iterator(interrupt.clone()),
                 responder,
                 |(err, _)| {
                     TransactionServiceError::QueryFailed {
                         typedb_source: Box::new(QueryError::ReadPipelineExecution {
-                            source_query: source_query.to_string(),
+                            source_query: query_context.source_query.as_ref().to_owned(),
                             typedb_source: err,
                         }),
                     }
                 }
             );
 
-            let parameters = context.parameters;
             let mut result = vec![];
             let mut warning = None;
             for next in iterator {
@@ -1065,7 +1062,7 @@ impl TransactionService {
                     snapshot.as_ref(),
                     type_manager,
                     &thing_manager,
-                    &parameters,
+                    &query_context.parameters,
                     storage_counters.clone(),
                 );
                 match encoded_document {
@@ -1085,7 +1082,6 @@ impl TransactionService {
                 responder,
                 TransactionServiceResponse::Query(QueryAnswer::ResDocuments((QueryType::Read, result, warning)))
             );
-            context.profile
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
@@ -1099,13 +1095,13 @@ impl TransactionService {
                         typedb_source: PipelineExecutionError::ConceptRead { typedb_source },
                     }
                 });
-            let (mut iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
+            let (mut iterator, _context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_rows_iterator(interrupt.clone()),
                 responder,
                 |(err, _)| {
                     TransactionServiceError::QueryFailed {
                         typedb_source: Box::new(QueryError::ReadPipelineExecution {
-                            source_query: source_query.to_string(),
+                            source_query: query_context.source_query.as_ref().to_owned(),
                             typedb_source: err,
                         }),
                     }
@@ -1161,17 +1157,15 @@ impl TransactionService {
                     warning
                 )))
             );
-            context.profile
         };
-        if query_profile.is_enabled() {
-            event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
+        if query_context.profile.is_enabled() {
+            event!(Level::INFO, "Read query done (including network request time).\n{}", query_context.profile);
         }
         Continue(())
     }
 
     async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        let context = QueryContext::new(query);
-        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(context) {
+        let parsed = match self.query_manager.as_ref().expect("transaction is open").parse(query) {
             Ok(ParsedQuery::Pipeline(parsed)) => parsed,
             Ok(ParsedQuery::Schema(..)) => {
                 respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});

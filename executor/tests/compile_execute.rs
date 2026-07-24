@@ -33,6 +33,7 @@ use ir::{
     translation::{PipelineTranslationContext, match_::translate_match},
 };
 use itertools::Itertools;
+use ir::pipeline::QueryContext;
 use lending_iterator::LendingIterator;
 use query::{
     given_rows::GivenRowsSimple,
@@ -160,12 +161,13 @@ fn test_has_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default()); //, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::new(value_parameters), "".to_owned(), Arc::default());
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -259,7 +261,7 @@ fn test_expression_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -346,7 +348,7 @@ fn test_links_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -440,7 +442,7 @@ fn test_links_intersection() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -525,7 +527,7 @@ fn test_negation_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -632,7 +634,7 @@ fn test_forall_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -724,7 +726,7 @@ fn test_named_var_select() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -816,7 +818,7 @@ fn test_disjunction_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -912,7 +914,7 @@ fn test_disjunction_planning_nested_negations() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -971,7 +973,7 @@ fn test_mismatched_input_types() {
             &thing_manager,
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
-            &QueryProfile::new(false),
+            &Arc::new(QueryProfile::new(false)),
         )
         .unwrap();
         let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());
@@ -1006,7 +1008,7 @@ fn test_mismatched_input_types() {
             &thing_manager,
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
-            &QueryProfile::new(false),
+            &Arc::new(QueryProfile::new(false)),
         )
         .unwrap();
         let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());

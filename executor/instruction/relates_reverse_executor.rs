@@ -17,6 +17,7 @@ use concept::{
     error::ConceptReadError,
     type_::{relation_type::RelationType, role_type::RoleType},
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -118,12 +119,13 @@ impl RelatesReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters);
         let filter_for_row: Box<RelatesFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -133,11 +135,11 @@ impl RelatesReverseExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
+        let snapshot = &**execution_context.snapshot();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let relates: Vec<_> = self
                     .role_relation_types
                     .keys()
@@ -170,7 +172,7 @@ impl RelatesReverseExecutor {
                     type_from_row_or_annotations(self.relates.role_type(), row, self.role_relation_types.keys())
                         .as_role_type();
                 let relates = role_type
-                    .get_relation_types(snapshot, context.type_manager())?
+                    .get_relation_types(snapshot, execution_context.type_manager())?
                     .to_owned()
                     .into_keys()
                     .map(|relation_type| (relation_type, role_type));

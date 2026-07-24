@@ -17,6 +17,7 @@ use concept::{
     error::ConceptReadError,
     type_::{ObjectTypeAPI, PlayerAPI, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager},
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -124,12 +125,13 @@ impl PlaysExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters);
         let filter_for_row: Box<PlaysFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -139,11 +141,11 @@ impl PlaysExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
+        let snapshot = &**execution_context.snapshot();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let plays: Vec<_> = self
                     .player_role_types
                     .keys()
@@ -168,7 +170,7 @@ impl PlaysExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let player = type_from_row_or_annotations(self.plays.player(), row, self.player_role_types.keys());
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let plays = self.get_plays_for_player(snapshot, type_manager, player)?;
 
                 let iterator = plays.into_iter().sorted_by_key(|&(player, role)| (role, player)).map(Ok as _);

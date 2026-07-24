@@ -41,7 +41,7 @@ use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
 pub struct AnalysedQuery {
-    pub source: String,
+    pub source: Arc<String>,
     pub structure: QueryStructure,
     pub annotations: QueryStructureAnnotations,
 }

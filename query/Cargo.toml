@@ -126,3 +126,7 @@ features = {}
 	path = "tests/define.rs"
 	name = "test_define"
 
+[[test]]
+	path = "tests/parse_cache.rs"
+	name = "test_parse_cache"
+

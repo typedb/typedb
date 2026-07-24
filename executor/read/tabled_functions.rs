@@ -14,6 +14,7 @@ use compiler::executable::function::{
     ExecutableFunctionRegistry, FunctionTablingType, StronglyConnectedComponentID, executable::ExecutableReturn,
 };
 use ir::pipeline::{ParameterRegistry, function_signature::FunctionID};
+use resource::profile::QueryProfile;
 use smallvec::SmallVec;
 use storage::snapshot::ReadableSnapshot;
 
@@ -31,12 +32,13 @@ use crate::{
 
 pub struct TabledFunctions {
     function_registry: Arc<ExecutableFunctionRegistry>,
+    profile: Arc<QueryProfile>,
     state: HashMap<CallKey, Arc<TabledFunctionState>>, // TODO: Splitting these by SCCID would be nice.
 }
 
 impl TabledFunctions {
-    pub(crate) fn new(function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
-        Self { state: HashMap::new(), function_registry }
+    pub(crate) fn new(function_registry: Arc<ExecutableFunctionRegistry>, profile: Arc<QueryProfile>) -> Self {
+        Self { state: HashMap::new(), function_registry, profile }
     }
 
     pub(crate) fn get_or_create_function_state(
@@ -47,10 +49,9 @@ impl TabledFunctions {
         if !self.state.contains_key(call_key) {
             let function = &self.function_registry.get(&call_key.function_id).unwrap();
             let executors = create_executors_for_function(
-                &context.snapshot,
-                &context.thing_manager,
+                context,
                 &self.function_registry,
-                context.profile.clone(),
+                self.profile.clone(),
                 function,
             )
             .map_err(|source| ReadExecutionError::ConceptRead { typedb_source: source })?;
