@@ -9,8 +9,8 @@ use std::{iter::Peekable, marker::PhantomData, sync::Arc};
 use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
-use itertools::{Itertools, UniqueBy};
 use ir::pipeline::QueryContext;
+use itertools::{Itertools, UniqueBy};
 use lending_iterator::{IntoIter, LendingIterator, adaptors::Map};
 use storage::snapshot::ReadableSnapshot;
 
@@ -57,7 +57,14 @@ where
     > {
         let Self { executable, function_registry, .. } = self;
         Ok((
-            MatchStageIterator::new(input_iterator, executable, function_registry, execution_context.clone(), query_context, interrupt),
+            MatchStageIterator::new(
+                input_iterator,
+                executable,
+                function_registry,
+                execution_context.clone(),
+                query_context,
+                interrupt,
+            ),
             execution_context,
         ))
     }
@@ -82,7 +89,15 @@ impl<Snapshot: ReadableSnapshot + 'static, InputIterator> MatchStageIterator<Sna
         query_context: Arc<QueryContext>,
         interrupt: ExecutionInterrupt,
     ) -> Self {
-        Self { execution_context, query_context, executable, function_registry, source_iterator: iterator, current_iterator: None, interrupt }
+        Self {
+            execution_context,
+            query_context,
+            executable,
+            function_registry,
+            source_iterator: iterator,
+            current_iterator: None,
+            interrupt,
+        }
     }
 }
 
@@ -95,7 +110,6 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
-
             let input_row = match self.source_iterator.next()? {
                 Ok(row) => row,
                 Err(err) => return Some(Err(err)),
@@ -113,9 +127,11 @@ where
             match executor {
                 Ok(executor) => {
                     self.current_iterator = Some(
-                        unique_rows(as_owned_rows(
-                            executor.into_iterator(self.execution_context.clone(), self.query_context.clone(), self.interrupt.clone()),
-                        ))
+                        unique_rows(as_owned_rows(executor.into_iterator(
+                            self.execution_context.clone(),
+                            self.query_context.clone(),
+                            self.interrupt.clone(),
+                        )))
                         .peekable(),
                     );
                 }

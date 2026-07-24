@@ -12,8 +12,7 @@ use compiler::{
         DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
     },
 };
-use ir::pipeline::modifier::SortVariable;
-use ir::pipeline::QueryContext;
+use ir::pipeline::{QueryContext, modifier::SortVariable};
 use lending_iterator::{LendingIterator, Peekable};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -279,7 +278,10 @@ where
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        Ok((SelectStageIterator::new(input_iterator, self.select_executable.retained_positions.clone()), execution_context))
+        Ok((
+            SelectStageIterator::new(input_iterator, self.select_executable.retained_positions.clone()),
+            execution_context,
+        ))
     }
 }
 

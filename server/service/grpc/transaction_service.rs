@@ -46,7 +46,7 @@ use query::{
     given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows},
     query_manager::{ParsedPipeline, ParsedQuery, ParsedSchemaQuery, QueryManager},
 };
-use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
+use resource::profile::{EncodingProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
     spawn,
@@ -1189,8 +1189,7 @@ impl TransactionService {
             spawn_blocking(move || {
                 let start_time = Instant::now();
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
-                let translated =
-                    query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager);
+                let translated = query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager);
                 let translated = unwrap_or_execute_and_return!(translated, |err| {
                     Self::submit_read_response_with_metrics(
                         &sender,

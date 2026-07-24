@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::ops::DerefMut;
+
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
-use std::ops::DerefMut;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -137,7 +138,8 @@ impl PatternExecutor {
                 }
                 ControlInstruction::ExecuteNegation(ExecuteNegation { index, input }) => {
                     let NegationExecutor { inner } = &mut executors[*index].unwrap_negation();
-                    let result = inner.compute_next_batch(execution_context, parameters, interrupt, tabled_functions)?;
+                    let result =
+                        inner.compute_next_batch(execution_context, parameters, interrupt, tabled_functions)?;
                     match result {
                         None => self.push_next_instruction(
                             execution_context,
@@ -160,7 +162,7 @@ impl PatternExecutor {
                     if let Some(batch) = batch_opt {
                         debug_assert!(!batch.is_empty());
                         control_stack.push(ExecuteOptional { index, input, any_found: true }.into());
-                        self.push_next_instruction(execution_context,parameters, index.next(), batch)?;
+                        self.push_next_instruction(execution_context, parameters, index.next(), batch)?;
                     } else if !any_found {
                         // if we never found anything for this input, we still push the next instruction
                         //   this will continue with None for all the new variables
@@ -177,13 +179,7 @@ impl PatternExecutor {
                     let disjunction = &mut executors[*index].unwrap_disjunction();
                     let branch = &mut disjunction.branches[*branch_index];
                     let batch_opt = may_push_nested(suspensions, index, branch_index, &input, |suspensions| {
-                        branch.batch_continue(
-                            execution_context,
-                            parameters,
-                            interrupt,
-                            tabled_functions,
-                            suspensions,
-                        )
+                        branch.batch_continue(execution_context, parameters, interrupt, tabled_functions, suspensions)
                     })?;
                     if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(branch_index, unmapped)) {
                         control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input }.into());
@@ -203,7 +199,7 @@ impl PatternExecutor {
                     })?;
                     if let Some(mapped) = batch_opt.map(|batch| executor.map_output(input.as_reference(), batch)) {
                         control_stack.push(ExecuteInlinedFunction { index, input: input.into_owned() }.into());
-                        self.push_next_instruction(execution_context,  parameters, index.next(), mapped)?;
+                        self.push_next_instruction(execution_context, parameters, index.next(), mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
@@ -237,7 +233,9 @@ impl PatternExecutor {
                     let storage_counters = step_profile.storage_counters();
                     let inner = collecting_stage.pattern_mut();
                     let mut batches = 0;
-                    while let Some(batch) = inner.compute_next_batch(execution_context, parameters, interrupt, tabled_functions)? {
+                    while let Some(batch) =
+                        inner.compute_next_batch(execution_context, parameters, interrupt, tabled_functions)?
+                    {
                         collector.accept(execution_context, batch, &storage_counters);
                         batches += 1;
                     }

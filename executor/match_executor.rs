@@ -9,7 +9,7 @@ use std::sync::Arc;
 use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use ir::pipeline::QueryContext;
 use lending_iterator::{AsLendingIterator, LendingIterator, adaptors::FlatMap};
 use resource::profile::QueryProfile;
@@ -60,7 +60,8 @@ impl MatchExecutor {
         interrupt: ExecutionInterrupt,
     ) -> PatternIterator<Snapshot> {
         PatternIterator::new(
-            AsLendingIterator::new(BatchIterator::new(self, execution_context, query_context, interrupt)).flat_map(FixedBatchRowIterator::new),
+            AsLendingIterator::new(BatchIterator::new(self, execution_context, query_context, interrupt))
+                .flat_map(FixedBatchRowIterator::new),
         )
     }
 

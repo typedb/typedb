@@ -18,9 +18,11 @@ use concept::{
     },
 };
 use encoding::value::value::Value;
-use ir::pattern::constraint::{Isa, IsaKind};
+use ir::{
+    pattern::constraint::{Isa, IsaKind},
+    pipeline::ParameterRegistry,
+};
 use itertools::Itertools;
-use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;

@@ -5,15 +5,14 @@
  */
 
 use std::{collections::HashMap, fmt, iter};
-use typeql::parser::Rule::query;
+
 use answer::variable_value::VariableValue;
 use compiler::{
     ExecutorVariable, VariablePosition,
     executable::match_::instructions::{Inputs, IsInstruction},
 };
 use concept::error::ConceptReadError;
-use ir::pattern::constraint::Is;
-use ir::pipeline::ParameterRegistry;
+use ir::{pattern::constraint::Is, pipeline::ParameterRegistry};
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;

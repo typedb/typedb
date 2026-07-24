@@ -17,9 +17,8 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::{UnimplementedFeature, unimplemented_feature};
-use ir::pattern::expression::BuiltinConceptFunctionID;
+use ir::{pattern::expression::BuiltinConceptFunctionID, pipeline::ParameterRegistry};
 use itertools::Itertools;
-use ir::pipeline::{ParameterRegistry, QueryContext};
 use lending_iterator::{LendingIterator, Peekable};
 use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;

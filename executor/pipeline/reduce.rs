@@ -60,10 +60,11 @@ where
         // so we time the whole iterator drain as one batch and report the
         // count of input rows consumed.
         let measurement = step_profile.start_measurement();
-        let (rows, input_row_count) = match reduce_iterator(&execution_context, executable, input_iterator, &storage_counters) {
-            Ok(out) => out,
-            Err(err) => return Err((err, execution_context)),
-        };
+        let (rows, input_row_count) =
+            match reduce_iterator(&execution_context, executable, input_iterator, &storage_counters) {
+                Ok(out) => out,
+                Err(err) => return Err((err, execution_context)),
+            };
         measurement.end(&step_profile, 1, input_row_count);
         Ok((WrittenRowsIterator::new(rows), execution_context))
     }

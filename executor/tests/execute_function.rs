@@ -104,9 +104,7 @@ fn setup_common(schema: &str) -> Context {
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
-        .unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
@@ -120,7 +118,8 @@ fn run_read_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -160,11 +159,10 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(

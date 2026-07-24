@@ -9,11 +9,11 @@ use std::sync::Arc;
 use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use resource::profile::StageProfile;
 use storage::snapshot::ReadableSnapshot;
-use crate::pipeline::stage::ExecutionContext;
-use crate::read::pattern_executor::PatternExecutor;
+
+use crate::{pipeline::stage::ExecutionContext, read::pattern_executor::PatternExecutor};
 
 mod collecting_stage_executor;
 pub(super) mod control_instruction;

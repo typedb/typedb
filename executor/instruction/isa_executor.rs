@@ -19,13 +19,14 @@ use concept::{
     },
 };
 use encoding::value::value::Value;
-use ir::pattern::{
-    Vertex,
-    constraint::{Isa, IsaKind},
+use ir::{
+    pattern::{
+        Vertex,
+        constraint::{Isa, IsaKind},
+    },
+    pipeline::ParameterRegistry,
 };
 use itertools::Itertools;
-use typeql::parser::Rule::query;
-use ir::pipeline::ParameterRegistry;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -130,7 +131,13 @@ impl IsaExecutor {
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let instances_range = if let Vertex::Variable(thing_variable) = self.isa.thing() {
-                    self.checker.value_range_for(execution_context, parameters, Some(row), *thing_variable, storage_counters.clone())?
+                    self.checker.value_range_for(
+                        execution_context,
+                        parameters,
+                        Some(row),
+                        *thing_variable,
+                        storage_counters.clone(),
+                    )?
                 } else {
                     (Bound::Unbounded, Bound::Unbounded)
                 };

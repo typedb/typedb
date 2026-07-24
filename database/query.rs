@@ -5,13 +5,13 @@
  */
 use std::{sync::Arc, time::Instant};
 
-use compiler::{query_structure::PipelineStructure, VariablePosition};
+use compiler::{VariablePosition, query_structure::PipelineStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
+    ExecutionInterrupt,
     batch::Batch,
     document::ConceptDocument,
     pipeline::stage::{ExecutionContext, StageIterator},
-    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
@@ -23,7 +23,7 @@ use query::{
     query_manager::{ParsedPipeline, ParsedSchemaQuery, QueryManager},
 };
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use tracing::{event, Level};
+use tracing::{Level, event};
 
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},

@@ -10,8 +10,7 @@ use compiler::{annotation::function::FunctionParameterAnnotation, executable::pi
 use concept::thing::ThingAPI;
 use encoding::value::ValueEncodable;
 use error::needs_update_when_feature_is_implemented;
-use ir::pattern::variable_category::VariableOptionality;
-use ir::pipeline::QueryContext;
+use ir::{pattern::variable_category::VariableOptionality, pipeline::QueryContext};
 use lending_iterator::LendingIterator;
 use resource::profile::{StepProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -54,7 +53,10 @@ where
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        Ok((GivenStageIterator::new(execution_context.clone(), &query_context, self.executable, input_iterator), execution_context))
+        Ok((
+            GivenStageIterator::new(execution_context.clone(), &query_context, self.executable, input_iterator),
+            execution_context,
+        ))
     }
 }
 

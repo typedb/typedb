@@ -34,6 +34,7 @@ use ir::{
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
+
 use crate::{instruction::FilterFn, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 #[derive(Debug)]
@@ -153,8 +154,7 @@ impl<T> Checker<T> {
                 CheckInstruction::Is { lhs, rhs } => {
                     if *lhs == target_variable {
                         let rhs_as_vertex = CheckVertex::Variable(*rhs);
-                        let rhs_variable_value =
-                            get_vertex_value(&rhs_as_vertex, row.as_ref(), parameters);
+                        let rhs_variable_value = get_vertex_value(&rhs_as_vertex, row.as_ref(), parameters);
                         let rhs_value = Self::read_value(
                             execution_context.snapshot.as_ref(),
                             &execution_context.thing_manager,
@@ -167,8 +167,7 @@ impl<T> Checker<T> {
                         }
                     } else {
                         let lhs_as_vertex = CheckVertex::Variable(*lhs);
-                        let lhs_variable_value =
-                            get_vertex_value(&lhs_as_vertex, row.as_ref(), parameters);
+                        let lhs_variable_value = get_vertex_value(&lhs_as_vertex, row.as_ref(), parameters);
                         let lhs_value = Self::read_value(
                             execution_context.snapshot.as_ref(),
                             &execution_context.thing_manager,
@@ -234,12 +233,12 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         for check in &self.checks {
             let passes = match check {
-                CheckInstruction::Iid { var, iid } => self.filter_iid(execution_context, parameters, row, *var, &source, iid),
+                CheckInstruction::Iid { var, iid } => self.filter_iid(parameters, row, *var, &source, iid),
                 CheckInstruction::TypeList { type_var, types } => {
-                    self.filter_type_list(execution_context, parameters, row, *type_var, &source, types)
+                    self.filter_type_list(parameters, row, *type_var, &source, types)
                 }
                 CheckInstruction::ThingTypeList { thing_var, types } => {
-                    self.filter_thing_type_list(execution_context, parameters, row, *thing_var, &source, types)
+                    self.filter_thing_type_list(parameters, row, *thing_var, &source, types)
                 }
                 CheckInstruction::Sub { sub_kind, subtype, supertype } => {
                     self.filter_sub(execution_context, parameters, row, *sub_kind, &source, subtype, supertype)?
@@ -256,9 +255,15 @@ impl<T> Checker<T> {
                 CheckInstruction::Isa { isa_kind, type_, thing } => {
                     self.filter_isa(execution_context, parameters, row, &source, *isa_kind, type_, thing)?
                 }
-                CheckInstruction::Has { owner, attribute } => {
-                    self.filter_has(execution_context, parameters, row, &source, owner, attribute, storage_counters.clone())?
-                }
+                CheckInstruction::Has { owner, attribute } => self.filter_has(
+                    execution_context,
+                    parameters,
+                    row,
+                    &source,
+                    owner,
+                    attribute,
+                    storage_counters.clone(),
+                )?,
                 CheckInstruction::Links { relation, player, role } => self.filter_links(
                     execution_context,
                     parameters,
@@ -318,12 +323,12 @@ impl<T> Checker<T> {
 
         for check in &self.checks {
             let filter = match check {
-                CheckInstruction::Iid { var, iid } => self.filter_iid_fn(execution_context, parameters, row, *var, iid),
+                CheckInstruction::Iid { var, iid } => self.filter_iid_fn(parameters, row, *var, iid),
                 &CheckInstruction::TypeList { type_var, ref types } => {
-                    self.filter_type_list_fn(execution_context, parameters, row, type_var, types)
+                    self.filter_type_list_fn(parameters, row, type_var, types)
                 }
                 &CheckInstruction::ThingTypeList { thing_var, ref types } => {
-                    self.filter_thing_type_list_fn(execution_context,  parameters,row, thing_var, types)
+                    self.filter_thing_type_list_fn(parameters, row, thing_var, types)
                 }
                 &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
                     self.filter_sub_fn(execution_context, parameters, row, sub_kind, subtype, supertype)
@@ -343,9 +348,15 @@ impl<T> Checker<T> {
                 CheckInstruction::Has { owner, attribute } => {
                     self.filter_has_fn(execution_context, parameters, row, owner, attribute, storage_counters.clone())
                 }
-                CheckInstruction::Links { relation, player, role } => {
-                    self.filter_links_fn(execution_context, parameters, row, relation, player, role, storage_counters.clone())
-                }
+                CheckInstruction::Links { relation, player, role } => self.filter_links_fn(
+                    execution_context,
+                    parameters,
+                    row,
+                    relation,
+                    player,
+                    role,
+                    storage_counters.clone(),
+                ),
                 CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => self
                     .filter_indexed_relation_fn(
                         execution_context,
@@ -366,9 +377,15 @@ impl<T> Checker<T> {
                     // self.filter_not(execution_context,  parameters, row, check)
                 }
                 &CheckInstruction::Is { lhs, rhs } => self.filter_is_fn(row, lhs, rhs),
-                CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    self.filter_comparison_fn(execution_context,  parameters, row, lhs, rhs, *comparator, storage_counters.clone())
-                }
+                CheckInstruction::Comparison { lhs, rhs, comparator } => self.filter_comparison_fn(
+                    execution_context,
+                    parameters,
+                    row,
+                    lhs,
+                    rhs,
+                    *comparator,
+                    storage_counters.clone(),
+                ),
                 CheckInstruction::Unsatisfiable => Box::new(|_: &T| Ok(false)),
             };
             filters.push(filter);
@@ -387,7 +404,6 @@ impl<T> Checker<T> {
 
     fn filter_iid_fn(
         &self,
-        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         var: ExecutorVariable,
@@ -400,7 +416,6 @@ impl<T> Checker<T> {
 
     fn filter_iid(
         &self,
-        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         var: ExecutorVariable,
@@ -431,7 +446,6 @@ impl<T> Checker<T> {
 
     fn filter_type_list_fn(
         &self,
-        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         type_var: ExecutorVariable,
@@ -444,7 +458,6 @@ impl<T> Checker<T> {
 
     fn filter_type_list(
         &self,
-        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         type_var: ExecutorVariable,
@@ -460,7 +473,6 @@ impl<T> Checker<T> {
 
     fn filter_thing_type_list_fn(
         &self,
-        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         thing_var: ExecutorVariable,
@@ -473,7 +485,6 @@ impl<T> Checker<T> {
 
     fn filter_thing_type_list(
         &self,
-        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         thing_var: ExecutorVariable,
@@ -1165,9 +1176,7 @@ impl<T> Checker<T> {
         let rhs = match rhs {
             &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
             &CheckVertex::Variable(_) => unreachable!(),
-            CheckVertex::Parameter(param) => {
-                VariableValue::Value(parameters.value_unchecked(param).as_reference())
-            }
+            CheckVertex::Parameter(param) => VariableValue::Value(parameters.value_unchecked(param).as_reference()),
             CheckVertex::Type(_) => unreachable!(),
         };
         let rhs = match &rhs {

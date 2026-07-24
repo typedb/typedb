@@ -19,8 +19,8 @@ use concept::{
     type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::value::Value;
-use itertools::Itertools;
 use ir::pipeline::ParameterRegistry;
+use itertools::Itertools;
 use lending_iterator::kmerge::KMergeBy;
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};

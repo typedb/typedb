@@ -165,8 +165,8 @@ fn test_has_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default()); //, Arc::default());
-    let query_context = Arc::new(QueryContext::new(Arc::new(value_parameters), "".to_owned(), Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false)));
     let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator

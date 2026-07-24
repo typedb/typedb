@@ -14,10 +14,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
 use options::{TransactionOptions, byte_size::ByteSize};
-use query::{
-    given_rows::GivenRowsSimple,
-    query_manager::QueryContext,
-};
+use query::{given_rows::GivenRowsSimple, query_manager::QueryContext};
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
 
@@ -47,13 +44,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let mut inner_snapshot =
         Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
     query_manager
-        .execute_schema(
-            &mut inner_snapshot,
-            &type_manager,
-            &thing_manager,
-            &function_manager,
-            parsed,
-        )
+        .execute_schema(&mut inner_snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     let tx = TransactionSchema::from_parts(
         Arc::new(inner_snapshot),
@@ -86,8 +77,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         profile,
     } = tx;
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(data_str)).unwrap().into_pipeline();
-    let translated =
-        query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let write_pipeline = query_manager
         .prepare_write_pipeline(
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
@@ -149,9 +139,9 @@ fn setup() -> Arc<Database<WALClient>> {
 fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated =
-        query_manager.translate(parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
+    let parsed =
+        query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated = query_manager.translate(parsed, snapshot.as_ref(), function_manager, thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),

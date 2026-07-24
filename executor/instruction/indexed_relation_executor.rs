@@ -32,9 +32,9 @@ use encoding::graph::{
     thing::vertex_object::{ObjectID, ObjectVertex},
     type_::vertex::{TypeID, TypeVertexEncoding},
 };
-use itertools::Itertools;
 use ir::pipeline::ParameterRegistry;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use itertools::Itertools;
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;

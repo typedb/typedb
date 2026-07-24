@@ -8,21 +8,23 @@ use std::{
     hash::{DefaultHasher, Hasher},
     iter::empty,
     mem,
+    sync::Arc,
 };
-use std::sync::Arc;
+
 use answer::variable::Variable;
+use resource::profile::QueryProfile;
 use structural_equality::StructuralEquality;
 use typeql::{
     common::{Span, Spanned},
     query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage},
     type_::NamedTypeAny,
 };
-use resource::profile::QueryProfile;
+
 use crate::{
     RepresentationError,
     pattern::Pattern,
     pipeline::{
-        ParameterRegistry, VariableRegistry,
+        ParameterRegistry, QueryContext, VariableRegistry,
         block::Block,
         fetch::FetchObject,
         function::Function,
@@ -42,7 +44,6 @@ use crate::{
         writes::{translate_delete, translate_insert, translate_put, translate_update},
     },
 };
-use crate::pipeline::QueryContext;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -189,15 +190,10 @@ pub fn translate_pipeline(
         &query.stages,
     )?;
 
-    let query_context = QueryContext::new(
-        Arc::new(value_parameters),
-        source_query,
-        Arc::new(query_profile),
-    );
+    let query_context = QueryContext::new(Arc::new(value_parameters), source_query, Arc::new(query_profile));
 
     Ok(TranslatedPipeline::new(
         translation_context,
-        // value_parameters,
         translated_preamble,
         translated_given,
         translated_stages,

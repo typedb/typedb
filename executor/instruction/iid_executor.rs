@@ -13,8 +13,7 @@ use concept::{
     thing::{ThingAPI, attribute::Attribute, object::Object},
 };
 use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
-use ir::pattern::constraint::Iid;
-use ir::pipeline::ParameterRegistry;
+use ir::{pattern::constraint::Iid, pipeline::ParameterRegistry};
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;

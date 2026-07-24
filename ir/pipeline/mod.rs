@@ -15,12 +15,13 @@ use encoding::{
 };
 use error::typedb_error;
 use itertools::Itertools;
+use resource::profile::QueryProfile;
 use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
 use typeql::{
     common::Span,
     schema::definable::function::{ReturnStatement, Signature},
 };
-use resource::profile::QueryProfile;
+
 use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
@@ -404,15 +405,11 @@ pub struct QueryContext {
 
 impl QueryContext {
     pub fn new(parameters: Arc<ParameterRegistry>, source_query: Arc<String>, profile: Arc<QueryProfile>) -> Self {
-        Self { parameters, source_query, profile}
+        Self { parameters, source_query, profile }
     }
 
     pub fn clone_with_new_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
-        QueryContext {
-            parameters: parameters,
-            source_query: self.source_query.clone(),
-            profile: self.profile.clone()
-        }
+        QueryContext { parameters: parameters, source_query: self.source_query.clone(), profile: self.profile.clone() }
     }
 }
 

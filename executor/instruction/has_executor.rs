@@ -26,9 +26,9 @@ use concept::{
     type_::{TypeAPI, attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use itertools::Itertools;
 use ir::pipeline::ParameterRegistry;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use itertools::Itertools;
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;

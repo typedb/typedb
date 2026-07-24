@@ -5,7 +5,7 @@
  */
 
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
-use typeql::parser::Rule::query;
+
 use answer::{Concept, Thing, variable::Variable, variable_value::VariableValue};
 use compiler::{
     VariablePosition,
@@ -24,11 +24,9 @@ use concept::{
 };
 use encoding::value::label::Label;
 use error::{typedb_error, unimplemented_feature};
-use function::function_manager::FunctionManager;
-use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
-use ir::pipeline::QueryContext;
+use ir::{pattern::ParameterID, pipeline::QueryContext};
 use lending_iterator::LendingIterator;
-use resource::profile::{QueryProfile, StepProfile, StorageCounters};
+use resource::profile::{StepProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -75,10 +73,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         execution_context: ExecutionContext<Snapshot>,
         query_context: Arc<QueryContext>,
         interrupt: ExecutionInterrupt,
-    ) -> (impl Iterator<Item=Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>) {
-        // let ExecutionContext { snapshot, thing_manager, function_manager,
-        //     // parameters, profile
-        // } = context.clone();
+    ) -> (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>) {
         let executable = self.executable;
         let functions = self.functions;
         let stage_profile = query_context.profile.profile_stage(|| String::from("Fetch"), executable.executable_id);
@@ -92,17 +87,12 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
                         &cloned_context,
                         query_context.clone(),
                         &executable,
-                        // snapshot.clone(),
-                        // thing_manager.clone(),
-                        // function_manager.clone(),
-                        // parameters.clone(),
                         functions.clone(),
-                        // profile.clone(),
                         &step,
                         row.as_reference(),
                         interrupt.clone(),
                     )
-                        .map_err(|err| Box::new(PipelineExecutionError::FetchError { typedb_source: err })),
+                    .map_err(|err| Box::new(PipelineExecutionError::FetchError { typedb_source: err })),
                     Err(err) => Err(err.clone()),
                 }
             })
@@ -115,30 +105,13 @@ fn execute_fetch(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     query_context: Arc<QueryContext>,
     fetch: &ExecutableFetch,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
-    // parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     step: &StepProfile,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<ConceptDocument, FetchExecutionError> {
     let measurement = step.start_measurement();
-    let node = execute_object(
-        execution_context,
-        query_context,
-        &fetch.object_instruction,
-        // snapshot,
-        // thing_manager,
-        // function_manager,
-        // parameters,
-        functions,
-        // query_profile,
-        row,
-        interrupt,
-    )?;
+    let node = execute_object(execution_context, query_context, &fetch.object_instruction, functions, row, interrupt)?;
     measurement.end(step, 1, 1);
     Ok(ConceptDocument { root: node })
 }
@@ -147,12 +120,7 @@ fn execute_fetch_some(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     query_context: Arc<QueryContext>,
     fetch_some: &FetchSomeInstruction,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
-    // parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
@@ -164,40 +132,20 @@ fn execute_fetch_some(
         FetchSomeInstruction::SingleFunction(function, variable_positions) => execute_single_function(
             execution_context,
             &query_context,
-            // snapshot,
-            // thing_manager,
-            // function_manager,
-            // parameters,
             functions_registry,
-            // query_profile,
             row,
             interrupt,
             variable_positions,
             function,
         ),
         FetchSomeInstruction::Label(ty) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Type(*ty)))),
-        FetchSomeInstruction::Object(object) => execute_object(
-            execution_context,
-            query_context,
-            object,
-            // snapshot,
-            // thing_manager,
-            // function_manager,
-            // parameters,
-            functions_registry,
-            // query_profile,
-            row,
-            interrupt,
-        ),
+        FetchSomeInstruction::Object(object) => {
+            execute_object(execution_context, query_context, object, functions_registry, row, interrupt)
+        }
         FetchSomeInstruction::ListFunction(function, variable_positions) => execute_list_function(
             execution_context,
             &query_context,
-            // snapshot,
-            // thing_manager,
-            // function_manager,
-            // parameters,
             functions_registry,
-            // query_profile,
             row,
             interrupt,
             variable_positions,
@@ -206,12 +154,7 @@ fn execute_fetch_some(
         FetchSomeInstruction::ListSubFetch(subfetch) => execute_list_subfetch(
             execution_context,
             query_context.clone(),
-            // snapshot,
-            // thing_manager,
-            // function_manager,
-            // parameters,
             functions_registry,
-            // query_profile,
             row,
             interrupt,
             subfetch,
@@ -226,8 +169,6 @@ fn execute_fetch_some(
 }
 
 fn execute_single_attribute(
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     row: MaybeOwnedRow<'_>,
     position: &VariablePosition,
@@ -252,12 +193,7 @@ fn execute_single_attribute(
 fn execute_single_function(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     query_context: &QueryContext,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
-    // parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
     mut interrupt: ExecutionInterrupt,
     variable_positions: &HashMap<Variable, VariablePosition>,
@@ -266,12 +202,7 @@ fn execute_single_function(
     let mut pattern_executor = prepare_single_function_execution(
         execution_context,
         query_context,
-        // snapshot,
-        // thing_manager,
-        // function_manager,
-        // parameters,
         functions_registry.clone(),
-        // query_profile,
         variable_positions,
         row,
         function,
@@ -317,47 +248,28 @@ fn execute_object(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     query_context: Arc<QueryContext>,
     fetch_object: &FetchObjectInstruction,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
-    // parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
     match fetch_object {
         FetchObjectInstruction::Entries(entries) => {
-            let object = execute_object_entries(
-                execution_context,
-                query_context,
-                entries,
-                // snapshot,
-                // thing_manager,
-                // function_manager,
-                // parameters,
-                functions,
-                // query_profile,
-                row,
-                interrupt,
-            )?;
+            let object = execute_object_entries(execution_context, query_context, entries, functions, row, interrupt)?;
             Ok(DocumentNode::Map(object))
         }
-        FetchObjectInstruction::Attributes(position) => {
-            execute_object_attributes(*position, execution_context.snapshot.as_ref(), &execution_context.thing_manager, row)
-        }
+        FetchObjectInstruction::Attributes(position) => execute_object_attributes(
+            *position,
+            execution_context.snapshot.as_ref(),
+            &execution_context.thing_manager,
+            row,
+        ),
     }
 }
 
 fn execute_list_function(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     query_context: &QueryContext,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
-    // parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
     mut interrupt: ExecutionInterrupt,
     variable_positions: &HashMap<Variable, VariablePosition>,
@@ -366,12 +278,7 @@ fn execute_list_function(
     let mut pattern_executor = prepare_single_function_execution(
         execution_context,
         query_context,
-        // snapshot,
-        // thing_manager,
-        // function_manager,
-        // parameters,
         functions_registry.clone(),
-        // query_profile,
         variable_positions,
         row,
         function,
@@ -396,13 +303,8 @@ fn execute_list_function(
 
 fn execute_list_subfetch(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
     query_context: Arc<QueryContext>,
-    // parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
     executable_subfetch: &ExecutableFetchListSubFetch,
@@ -424,11 +326,9 @@ fn execute_list_subfetch(
         None,
         stages,
         Some(fetch.clone()),
-        // parameters,
         initial_batch,
-        // query_profile,
     )
-        .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;
+    .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;
 
     let (iterator, _context) = pipeline
         .into_documents_iterator(interrupt)
@@ -519,17 +419,24 @@ fn execute_attribute_single(
     execution_context: &ExecutionContext<impl ReadableSnapshot>,
     object: impl ObjectAPI,
     attribute_type: AttributeType,
-    // snapshot: &impl ReadableSnapshot,
-    // thing_manager: &ThingManager,
 ) -> Result<DocumentLeaf, FetchExecutionError> {
-    let iter = prepare_attribute_type_has_iterator(object, attribute_type, execution_context.snapshot.as_ref(), execution_context.thing_manager.as_ref())?;
+    let iter = prepare_attribute_type_has_iterator(
+        object,
+        attribute_type,
+        execution_context.snapshot.as_ref(),
+        execution_context.thing_manager.as_ref(),
+    )?;
 
     for result in iter {
         let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         let attribute = has.attribute();
         let suitable = attribute
             .type_()
-            .is_subtype_transitive_of_or_same(execution_context.snapshot.as_ref(), execution_context.thing_manager.type_manager(), attribute_type)
+            .is_subtype_transitive_of_or_same(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.type_manager(),
+                attribute_type,
+            )
             .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         if suitable {
             debug_assert!(count <= 1);
@@ -543,18 +450,25 @@ fn execute_attributes_list<Snapshot: ReadableSnapshot>(
     object: impl ObjectAPI,
     attribute_type: AttributeType,
     execution_context: &ExecutionContext<Snapshot>,
-    // snapshot: &Snapshot,
-    // thing_manager: &ThingManager,
 ) -> Result<DocumentList, FetchExecutionError> {
     let mut list = DocumentList::new();
-    let iter = prepare_attribute_type_has_iterator(object, attribute_type, execution_context.snapshot.as_ref(), execution_context.thing_manager.as_ref())?;
+    let iter = prepare_attribute_type_has_iterator(
+        object,
+        attribute_type,
+        execution_context.snapshot.as_ref(),
+        execution_context.thing_manager.as_ref(),
+    )?;
 
     for result in iter {
         let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         let attribute = has.attribute();
         let suitable = attribute
             .type_()
-            .is_subtype_transitive_of_or_same(execution_context.snapshot.as_ref(), execution_context.thing_manager.type_manager(), attribute_type)
+            .is_subtype_transitive_of_or_same(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.type_manager(),
+                attribute_type,
+            )
             .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         if suitable {
             for _ in 0..count {
@@ -572,7 +486,7 @@ fn prepare_attribute_type_has_iterator<'a, Snapshot: ReadableSnapshot>(
     attribute_type: AttributeType,
     snapshot: &'a Snapshot,
     thing_manager: &'a ThingManager,
-) -> Result<impl Iterator<Item=Result<(Has, u64), Box<ConceptReadError>>> + 'a, FetchExecutionError> {
+) -> Result<impl Iterator<Item = Result<(Has, u64), Box<ConceptReadError>>> + 'a, FetchExecutionError> {
     let subtypes = attribute_type
         .get_subtypes_transitive(snapshot, thing_manager.type_manager())
         .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
@@ -590,14 +504,9 @@ fn prepare_attribute_type_has_iterator<'a, Snapshot: ReadableSnapshot>(
 }
 
 fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
-    // snapshot: Arc<Snapshot>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
     execution_context: &ExecutionContext<Snapshot>,
     query_context: &QueryContext,
-    // parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     variable_positions: &HashMap<Variable, VariablePosition>,
     row: MaybeOwnedRow<'_>,
     function: &ExecutableFunction,
@@ -622,12 +531,7 @@ fn execute_object_entries(
     execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     query_context: Arc<QueryContext>,
     entries: &HashMap<ParameterID, FetchSomeInstruction>,
-    // snapshot: Arc<impl ReadableSnapshot + 'static>,
-    // thing_manager: &ThingManager,
-    // function_manager: Arc<FunctionManager>,
-    // parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
-    // query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentMap, FetchExecutionError> {
@@ -639,12 +543,7 @@ fn execute_object_entries(
                 execution_context,
                 query_context.clone(),
                 fetch_some,
-                // snapshot.clone(),
-                // thing_manager.clone(),
-                // function_manager.clone(),
-                // parameters.clone(),
                 functions.clone(),
-                // query_profile.clone(),
                 row.as_reference(),
                 interrupt.clone(),
             )?,

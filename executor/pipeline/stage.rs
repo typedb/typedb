@@ -7,9 +7,9 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use function::function_manager::FunctionManager;
-use ir::pipeline::{ParameterRegistry, QueryContext};
+use ir::pipeline::QueryContext;
 use lending_iterator::LendingIterator;
-use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::QueryProfile};
+use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -39,9 +39,6 @@ pub struct ExecutionContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
-    // pub parameters: Arc<ParameterRegistry>,
-    // pub profile: Arc<QueryProfile>,
-    // pub source_query: String,
 }
 
 impl<Snapshot> ExecutionContext<Snapshot> {
@@ -49,38 +46,9 @@ impl<Snapshot> ExecutionContext<Snapshot> {
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        // parameters: Arc<ParameterRegistry>,
     ) -> Self {
-        Self::new_with_profile(
-            snapshot,
-            thing_manager,
-            function_manager,
-            // parameters,
-            // Arc::new(QueryProfile::new(false)),
-        )
+        Self { snapshot, thing_manager, function_manager }
     }
-
-    pub fn new_with_profile(
-        snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager>,
-        function_manager: Arc<FunctionManager>,
-        // parameters: Arc<ParameterRegistry>,
-        // query_profile: Arc<QueryProfile>,
-    ) -> Self {
-        Self { snapshot, thing_manager, function_manager,
-            // parameters, profile: query_profile
-        }
-    }
-
-    // pub(crate) fn clone_with_replaced_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
-    //     Self {
-    //         snapshot: self.snapshot.clone(),
-    //         thing_manager: self.thing_manager.clone(),
-    //         function_manager: self.function_manager.clone(),
-    //         parameters,
-    //         profile: self.profile.clone(),
-    //     }
-    // }
 
     pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {
         &self.snapshot
@@ -97,25 +65,15 @@ impl<Snapshot> ExecutionContext<Snapshot> {
     pub(crate) fn function_manager(&self) -> &FunctionManager {
         &self.function_manager
     }
-
-    // pub(crate) fn parameters(&self) -> &ParameterRegistry {
-    //     &self.parameters
-    // }
 }
 
 impl<Snapshot> Clone for ExecutionContext<Snapshot> {
     fn clone(&self) -> Self {
-        let Self { snapshot, thing_manager,
-            // parameters,
-            function_manager,
-            // profile
-        } = self;
+        let Self { snapshot, thing_manager, function_manager } = self;
         Self {
             snapshot: snapshot.clone(),
             thing_manager: thing_manager.clone(),
             function_manager: function_manager.clone(),
-            // parameters: parameters.clone(),
-            // profile: profile.clone(),
         }
     }
 }
@@ -313,55 +271,68 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
     > {
         match self {
             WritePipelineStage::Given(stage) => {
-                let (iterator, context) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, context) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Given(Box::new(iterator)), context))
             }
             WritePipelineStage::Match(stage) => {
-                let (iterator, context) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, context) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Match(Box::new(iterator)), context))
             }
             WritePipelineStage::Insert(stage) => {
-                let (iterator, context) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, context) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Update(stage) => {
-                let (iterator, context) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, context) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Put(stage) => {
-                let (iterator, context) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, context) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Delete(stage) => {
-                let (iterator, context) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, context) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Sort(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Sort(iterator), snapshot))
             }
             WritePipelineStage::Distinct(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Distinct(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Limit(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Limit(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Offset(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Offset(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Select(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Select(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Require(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Require(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Reduce(stage) => {
-                let (iterator, snapshot) = stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
+                let (iterator, snapshot) =
+                    stage.into_iterator(input_iterator, execution_context, query_context, interrupt)?;
                 Ok((WriteStageIterator::Reduce(iterator), snapshot))
             }
         }

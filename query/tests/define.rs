@@ -29,8 +29,6 @@ fn basic() {
     entity person owns name;
     "#;
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
-        .unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }

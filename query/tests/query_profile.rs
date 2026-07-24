@@ -44,9 +44,7 @@ fn define_schema(
                     plays friendship:friend @card(0..);
     "#;
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed)
-        .unwrap();
+    query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
@@ -59,7 +57,8 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_string.to_string())).unwrap().into_pipeline();
+    let parsed =
+        query_manager.parse(QueryContext::new_profile_disabled(query_string.to_string())).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
@@ -185,8 +184,7 @@ fn query_profile_tree_structure() {
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let parsed = query_manager.parse(QueryContext::new_profile_enabled(query_str.to_string())).unwrap().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let translated =
-        query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+    let translated = query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot,

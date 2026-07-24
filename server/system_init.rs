@@ -9,13 +9,12 @@ use database::{
     Database,
     transaction::{CommitIntent, SchemaCommitIntent},
 };
-use query::query_manager::{ParsedSchemaQuery};
+use query::query_manager::ParsedSchemaQuery;
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
-    profile::TransactionProfile,
+    profile::{QueryProfile, TransactionProfile},
 };
-use resource::profile::QueryProfile;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, PasswordHash, User},

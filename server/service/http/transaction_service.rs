@@ -668,15 +668,9 @@ impl TransactionService {
         } else if is_write_pipeline(parsed.pipeline()) {
             self.run_write_query(responder, query_options, parsed, given_rows).await
         } else {
-            self.blocking_read_query_worker(
-                responder,
-                query_options,
-                parsed,
-                given_rows,
-                StorageCounters::DISABLED,
-            )
-            .await
-            .expect("Expected read query completion")
+            self.blocking_read_query_worker(responder, query_options, parsed, given_rows, StorageCounters::DISABLED)
+                .await
+                .expect("Expected read query completion")
         }
     }
 
@@ -967,17 +961,17 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
-                let translated = match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
-                {
-                    Ok(translated) => translated,
-                    Err(typedb_source) => {
-                        respond_else_return_break!(
-                            responder,
-                            TransactionServiceResponse::Err(TransactionServiceError::QueryFailed { typedb_source })
-                        );
-                        return Continue(());
-                    }
-                };
+                let translated =
+                    match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager) {
+                        Ok(translated) => translated,
+                        Err(typedb_source) => {
+                            respond_else_return_break!(
+                                responder,
+                                TransactionServiceResponse::Err(TransactionServiceError::QueryFailed { typedb_source })
+                            );
+                            return Continue(());
+                        }
+                    };
                 let pipeline_result = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
                     &type_manager,
@@ -1025,7 +1019,7 @@ impl TransactionService {
         read_metrics: &mut ReadQueryMetrics,
     ) -> ControlFlow<(), ()> {
         let query_context = pipeline.query_context();
-         if pipeline.has_fetch() {
+        if pipeline.has_fetch() {
             let (iterator, _context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_documents_iterator(interrupt.clone()),
                 responder,
@@ -1187,7 +1181,11 @@ impl TransactionService {
         }
     }
 
-    async fn run_analyse_query(&mut self, responder: TransactionResponder, parsed: ParsedPipeline) -> ControlFlow<(), ()> {
+    async fn run_analyse_query(
+        &mut self,
+        responder: TransactionResponder,
+        parsed: ParsedPipeline,
+    ) -> ControlFlow<(), ()> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
@@ -1197,23 +1195,19 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let source_query = parsed.source_query().to_owned();
-                let translated = match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager)
-                {
-                    Ok(translated) => translated,
-                    Err(typedb_source) => {
-                        respond_else_return_break!(
-                            responder,
-                            TransactionServiceResponse::Err(TransactionServiceError::QueryFailed { typedb_source })
-                        );
-                        return Continue(());
-                    }
-                };
-                let analyse_result = query_manager.analyse(
-                    snapshot.clone(),
-                    &type_manager,
-                    &function_manager,
-                    translated,
-                );
+                let translated =
+                    match query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager) {
+                        Ok(translated) => translated,
+                        Err(typedb_source) => {
+                            respond_else_return_break!(
+                                responder,
+                                TransactionServiceResponse::Err(TransactionServiceError::QueryFailed { typedb_source })
+                            );
+                            return Continue(());
+                        }
+                    };
+                let analyse_result =
+                    query_manager.analyse(snapshot.clone(), &type_manager, &function_manager, translated);
                 let analysed = unwrap_or_execute_else_respond_error_and_return_break!(
                     analyse_result,
                     responder,

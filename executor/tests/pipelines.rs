@@ -59,9 +59,7 @@ fn setup_common() -> Context {
     "#;
     let mut snapshot = storage.clone().open_snapshot_schema();
     let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
-        .unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     // reload to obtain latest vertex generators and statistics entries
@@ -75,11 +73,10 @@ fn test_insert() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -121,11 +118,10 @@ fn test_insert_insert() {
     insert
         (group: $org, member: $p) isa membership;
     "#;
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -163,11 +159,10 @@ fn test_match() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -189,7 +184,8 @@ fn test_match() {
 
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -212,7 +208,8 @@ fn test_match() {
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -245,11 +242,10 @@ fn test_match_match() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -274,7 +270,8 @@ fn test_match_match() {
         match $p isa person;
         match $p has age $a;
     ";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -297,7 +294,8 @@ fn test_match_match() {
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -325,11 +323,13 @@ fn test_match_delete_has() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
+    let parsed = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
+        .unwrap()
+        .into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -367,11 +367,13 @@ fn test_match_delete_has() {
         delete has $a of $p;
     "#;
 
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(delete_query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
+    let parsed = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+        .parse(QueryContext::new_profile_disabled(delete_query_str.to_string()))
+        .unwrap()
+        .into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -414,11 +416,10 @@ fn test_insert_match_insert() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -448,11 +449,10 @@ fn test_insert_match_insert() {
         (group: $org, member: $p) isa membership;
     "#;
 
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
-        .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -485,11 +485,13 @@ fn test_match_sort() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 1, has age 2, has age 3, has age 4;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
+    let parsed = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
+        .unwrap()
+        .into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -512,7 +514,8 @@ fn test_match_sort() {
 
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $age isa age; sort $age desc;";
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed =
+        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -558,11 +561,13 @@ fn test_select() {
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
+    let parsed = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
+        .unwrap()
+        .into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -586,7 +591,8 @@ fn test_select() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age;";
-        let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+        let parsed =
+            context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
             .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -610,7 +616,8 @@ fn test_select() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
-        let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+        let parsed =
+            context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
             .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -640,11 +647,13 @@ fn test_require() {
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
-    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(insert_query_str.to_string())).unwrap().into_pipeline();
-    let translated = context
+    let parsed = context
         .query_manager
-        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
-        .unwrap();
+        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
+        .unwrap()
+        .into_pipeline();
+    let translated =
+        context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -668,7 +677,8 @@ fn test_require() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; require $age;";
-        let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+        let parsed =
+            context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
         let translated = context
             .query_manager
             .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)

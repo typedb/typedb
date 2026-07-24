@@ -165,7 +165,9 @@ impl InstructionExecutor {
             Self::Owns(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
             Self::OwnsReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
             Self::Relates(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
-            Self::RelatesReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::RelatesReverse(executor) => {
+                executor.get_iterator(execution_context, parameters, row, storage_counters)
+            }
             Self::Plays(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
             Self::PlaysReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
             Self::Isa(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
@@ -174,7 +176,9 @@ impl InstructionExecutor {
             Self::HasReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
             Self::Links(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
             Self::LinksReverse(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
-            Self::IndexedRelation(executor) => executor.get_iterator(execution_context, parameters, row, storage_counters),
+            Self::IndexedRelation(executor) => {
+                executor.get_iterator(execution_context, parameters, row, storage_counters)
+            }
         }
     }
 

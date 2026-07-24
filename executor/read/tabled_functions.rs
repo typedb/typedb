@@ -48,13 +48,9 @@ impl TabledFunctions {
     ) -> Result<Arc<TabledFunctionState>, ReadExecutionError> {
         if !self.state.contains_key(call_key) {
             let function = &self.function_registry.get(&call_key.function_id).unwrap();
-            let executors = create_executors_for_function(
-                context,
-                &self.function_registry,
-                self.profile.clone(),
-                function,
-            )
-            .map_err(|source| ReadExecutionError::ConceptRead { typedb_source: source })?;
+            let executors =
+                create_executors_for_function(context, &self.function_registry, self.profile.clone(), function)
+                    .map_err(|source| ReadExecutionError::ConceptRead { typedb_source: source })?;
             let pattern_executor = PatternExecutor::new(function.executable_id, executors);
             let width = match &function.returns {
                 ExecutableReturn::Stream(v) | ExecutableReturn::Single(_, v) => v.len() as u32,

@@ -128,9 +128,9 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
 
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
-    let translated =
-        query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
+    let parsed =
+        query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,

@@ -60,7 +60,14 @@ where
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { executable, function_registry, .. } = self;
-        let result = into_iterator_impl(&mut execution_context, query_context, &mut interrupt, &executable, function_registry, input_iterator);
+        let result = into_iterator_impl(
+            &mut execution_context,
+            query_context,
+            &mut interrupt,
+            &executable,
+            function_registry,
+            input_iterator,
+        );
         match result {
             Ok(written_rows_iterator) => Ok((written_rows_iterator, execution_context)),
             Err(err) => Err((err, execution_context)),
@@ -91,8 +98,14 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
     while let Some(input_row_result) = previous_iterator.next() {
         let input_row = input_row_result?;
         let size_before = output_batch.len();
-        let mut match_iterator =
-            match_iterator_for_row(context, query_context.clone(), interrupt, executable, function_registry.clone(), input_row.clone())?;
+        let mut match_iterator = match_iterator_for_row(
+            context,
+            query_context.clone(),
+            interrupt,
+            executable,
+            function_registry.clone(),
+            input_row.clone(),
+        )?;
         match_iterator
             .try_for_each(|row_result| {
                 output_batch.append_row(row_result?);
@@ -134,9 +147,11 @@ fn match_iterator_for_row<Snapshot: ReadableSnapshot + 'static>(
         &query_context.profile,
     )
     .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }))?;
-    Ok(crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(
-        executor.into_iterator(execution_context.clone(), query_context, interrupt.clone()),
-    ))
+    Ok(crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(executor.into_iterator(
+        execution_context.clone(),
+        query_context,
+        interrupt.clone(),
+    )))
     .peekable())
 }
 

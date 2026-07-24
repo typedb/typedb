@@ -9,44 +9,31 @@ use std::{
     sync::Arc,
 };
 
-use crate::{
-    analyse::{AnalysedQuery, QueryStructureAnnotations},
-    define,
-    error::QueryError,
-    given_rows::GivenRows,
-    query_cache::QueryCache,
-    redefine, undefine,
-};
 use compiler::{
-    annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline_and_functions, CompiledPipeline, ExecutableStage, GivenExecutable},
+    VariablePosition,
+    annotation::pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
+    executable::pipeline::{CompiledPipeline, GivenExecutable, compile_pipeline_and_functions},
     query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
     transformation::transform::apply_transformations,
-    VariablePosition,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::pipeline::stage::ExecutionContext;
 use executor::{
     batch::Batch,
     pipeline::{
         pipeline::Pipeline,
-        stage::{ReadPipelineStage, StageAPI, WritePipelineStage},
+        stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
     },
 };
-use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
-use ir::pipeline::QueryContext;
+use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
     pattern::variable_category::VariableOptionality,
     pipeline::{
-        fetch::FetchObject, function::Function,
+        QueryContext, VariableRegistry,
+        fetch::FetchObject,
+        function::Function,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
-        ParameterRegistry,
-        VariableRegistry,
     },
-    translation::{
-        literal::FromTypeQLLiteral,
-        pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
-    },
+    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
@@ -57,37 +44,22 @@ use resource::{
     profile::QueryProfile,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typeql::query::{QueryStructure, SchemaQuery};
+
+use crate::{
+    analyse::{AnalysedQuery, QueryStructureAnnotations},
+    define,
+    error::QueryError,
+    given_rows::GivenRows,
+    query_cache::QueryCache,
+    redefine, undefine,
+};
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
 }
-//
-// #[derive(Debug)]
-// pub struct QueryContext {
-//     source_query: String,
-//     profile: Arc<QueryProfile>,
-// }
-//
-// impl QueryContext {
-//     pub fn new(source_query: String) -> Self {
-//         Self { source_query, profile: Arc::new(QueryProfile::new(tracing::enabled!(Level::TRACE))) }
-//     }
-//
-//     pub fn new_profile_disabled(source_query: String) -> Self {
-//         Self { source_query, profile: Arc::new(QueryProfile::new(false)) }
-//     }
-//
-//     pub fn new_profile_enabled(source_query: String) -> Self {
-//         Self { source_query, profile: Arc::new(QueryProfile::new(true)) }
-//     }
-//
-//     pub fn source_query(&self) -> &str {
-//         &self.source_query
-//     }
-// }
 
 #[derive(Debug)]
 pub enum ParsedQuery {
@@ -224,7 +196,7 @@ impl QueryManager {
         function_manager: &FunctionManager,
         parsed: ParsedSchemaQuery,
     ) -> Result<(), Box<QueryError>> {
-        let ParsedSchemaQuery {  query , source_query, query_profile, } = parsed;
+        let ParsedSchemaQuery { query, source_query, query_profile } = parsed;
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let result = match &query {
             SchemaQuery::Define(define) => {
@@ -239,7 +211,9 @@ impl QueryManager {
                     define,
                     step_profile.storage_counters(),
                 )
-                .map_err(|err| Box::new(QueryError::Define { source_query: source_query.to_string(), typedb_source: err }))
+                .map_err(|err| {
+                    Box::new(QueryError::Define { source_query: source_query.to_string(), typedb_source: err })
+                })
             }
             SchemaQuery::Redefine(redefine) => {
                 let stage_profile = query_profile.profile_stage(|| String::from("Redefine"), 0); // TODO executable id
@@ -355,7 +329,10 @@ impl QueryManager {
             given_batch,
         )
         .map_err(|typedb_source| {
-            Box::new(QueryError::Pipeline { source_query: query_context.source_query.as_ref().to_owned(), typedb_source })
+            Box::new(QueryError::Pipeline {
+                source_query: query_context.source_query.as_ref().to_owned(),
+                typedb_source,
+            })
         })?;
         Ok(pipeline)
     }
@@ -490,9 +467,11 @@ impl QueryManager {
         query_context.profile.compilation_profile().validation_finished();
 
         // 2: Annotate
-        let annotated_schema_functions =
-            function_manager.get_annotated_functions(snapshot.as_ref(), type_manager).map_err(|err| {
-                QueryError::FunctionDefinition { source_query: query_context.source_query.as_ref().to_owned(), typedb_source: *err }
+        let annotated_schema_functions = function_manager
+            .get_annotated_functions(snapshot.as_ref(), type_manager)
+            .map_err(|err| QueryError::FunctionDefinition {
+                source_query: query_context.source_query.as_ref().to_owned(),
+                typedb_source: *err,
             })?;
 
         let annotated_pipeline = annotate_preamble_and_pipeline(
@@ -506,7 +485,10 @@ impl QueryManager {
             (*arced_stages).clone(),
             (*arced_fetch).clone(),
         )
-        .map_err(|err| QueryError::Annotation { source_query: query_context.source_query.as_ref().to_owned(), typedb_source: err })?;
+        .map_err(|err| QueryError::Annotation {
+            source_query: query_context.source_query.as_ref().to_owned(),
+            typedb_source: err,
+        })?;
         query_context.profile.compilation_profile().annotation_finished();
 
         let query_structure = extract_query_structure_from(
@@ -580,7 +562,10 @@ fn annotate_and_compile_query(
     arced_fetch: Arc<Option<FetchObject>>,
 ) -> Result<CompiledPipeline, Box<QueryError>> {
     if let Err(typedb_source) = validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
-        return Err(Box::new(QueryError::FunctionDefinition { source_query: query_context.source_query.as_ref().to_owned(), typedb_source }));
+        return Err(Box::new(QueryError::FunctionDefinition {
+            source_query: query_context.source_query.as_ref().to_owned(),
+            typedb_source,
+        }));
     }
     query_context.profile.compilation_profile().validation_finished();
 

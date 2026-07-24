@@ -12,10 +12,10 @@ use database::{
 };
 use diagnostics::metrics::LoadKind;
 use options::TransactionOptions;
+use query::query_manager::QueryManager;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
 use tokio::task::spawn_blocking;
-use query::query_manager::QueryManager;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

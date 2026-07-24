@@ -136,10 +136,10 @@ pub mod query_util {
         given_rows::GivenRowsSimple,
         query_manager::{ParsedPipeline, QueryManager},
     };
+    use resource::profile::QueryProfile;
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
-    use compiler::executable::insert::TypeSource;
-    use resource::profile::QueryProfile;
+
     use crate::util::answer_util::collect_answer;
 
     pub fn execute_read_pipeline(
@@ -147,7 +147,8 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
-        let parsed = ParsedPipeline::new(Arc::new(pipeline), Arc::new(source_query.to_owned()), QueryProfile::new(false));
+        let parsed =
+            ParsedPipeline::new(Arc::new(pipeline), Arc::new(source_query.to_owned()), QueryProfile::new(false));
         let translated =
             match tx.query_manager.translate(parsed, tx.snapshot.as_ref(), &tx.function_manager, &tx.thing_manager) {
                 Ok(translated) => translated,
@@ -201,7 +202,8 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
-        let parsed = ParsedPipeline::new(Arc::new(pipeline), Arc::new(source_query.to_owned()), QueryProfile::new(false));
+        let parsed =
+            ParsedPipeline::new(Arc::new(pipeline), Arc::new(source_query.to_owned()), QueryProfile::new(false));
         let translated = match query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager) {
             Ok(translated) => translated,
             Err(err) => return (Err(err), Arc::new(snapshot)),
