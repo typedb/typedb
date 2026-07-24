@@ -324,7 +324,7 @@ impl ThingManager {
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_long_encoding(), snapshot, storage_counters),
+            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_short_encoding(), snapshot, storage_counters),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
@@ -339,7 +339,7 @@ impl ThingManager {
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_short_encoding(), snapshot, storage_counters),
+            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_long_encoding(), snapshot, storage_counters),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
