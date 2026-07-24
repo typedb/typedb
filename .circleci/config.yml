@@ -607,12 +607,12 @@ workflows:
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
@@ -622,17 +622,17 @@ workflows:
       - deploy-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
 
       - deploy-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
 
       - deploy-docker-snapshot-multiarch:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
@@ -640,17 +640,17 @@ workflows:
       - deploy-snapshot-apt-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
 
       - deploy-snapshot-apt-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
 
       - deploy-snapshot-brew:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - test-deploy-snapshot-mac-arm64
             - test-deploy-snapshot-mac-x86_64
@@ -658,49 +658,49 @@ workflows:
       - test-distribution-apt-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-snapshot-apt-x86_64
 
       - test-distribution-apt-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-snapshot-apt-arm64
 
       - test-distribution-brew-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-snapshot-brew
 
       - test-distribution-brew-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-snapshot-brew
 
       - test-distribution-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-docker-snapshot-multiarch
 
       - test-distribution-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - deploy-docker-snapshot-multiarch
 
       - sync-to-typedb-benchmark:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, distribution-tests-fix-paths--test ]
           requires:
             - test-deploy-snapshot-linux-x86_64
 
