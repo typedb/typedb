@@ -120,7 +120,7 @@ impl VariableModes {
 
 impl fmt::Display for VariableModes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
+        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).chunk_by(|(_, value)| *value) {
             write!(f, "{key}s=")?;
             for (var, _) in group {
                 write!(f, "{}, ", var)?;
@@ -137,7 +137,7 @@ pub struct VarMappedVariableModes {
 
 impl fmt::Display for VarMappedVariableModes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
+        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).chunk_by(|(_, value)| *value) {
             write!(f, "{key}s=")?;
             for (var, _) in group {
                 write!(f, "{}, ", var)?;

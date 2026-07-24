@@ -7,7 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    iter::{Map, once},
+    iter::{self, Map, once},
     ops::RangeBounds,
     sync::Arc,
 };
@@ -324,7 +324,7 @@ impl ThingManager {
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(true), snapshot, storage_counters),
+            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_short_encoding(), snapshot, storage_counters),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
@@ -339,7 +339,7 @@ impl ThingManager {
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(false), snapshot, storage_counters),
+            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_long_encoding(), snapshot, storage_counters),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
@@ -1797,7 +1797,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let cardinality_change_tracker =
-            CardinalityChangeTracker::build(snapshot, self.type_manager(), &self, storage_counters.clone())
+            CardinalityChangeTracker::build(snapshot, self.type_manager(), self, storage_counters.clone())
                 .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
 
         self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
@@ -2065,12 +2065,22 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for (key, _write) in snapshot
-            .iterate_writes_range(&KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
-            .filter(|(_, write)| matches!(write, Write::Delete))
+        let deleted_reverse_has = iter::chain(
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                ThingEdgeHasReverse::prefix_key_short(),
+                ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+            )),
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                ThingEdgeHasReverse::prefix_key_long(),
+                ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+            )),
+        )
+        .filter(|(_, write)| matches!(write, Write::Delete));
+        for attribute_vertex in deleted_reverse_has
+            .map(|(key, _)| ThingEdgeHasReverse::decode(Bytes::Reference(key.byte_array())).from())
+            .dedup()
         {
-            let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
-            let attribute = Attribute::new(edge.to());
+            let attribute = Attribute::new(attribute_vertex);
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if attribute.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
                 continue;
@@ -2081,26 +2091,18 @@ impl ThingManager {
         }
 
         // link together long and short attributes
-        for (key, _value) in snapshot
-            .iterate_writes_range(&KeyRange::new_within(
-                StorageKey::new(
-                    AttributeVertex::keyspace_for_is_short(true),
-                    Bytes::inline(Prefix::VertexAttribute.prefix_id().to_bytes(), 1),
-                ),
+        let new_attributes = iter::chain(
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                AttributeVertex::prefix_key_short(),
                 Prefix::VertexAttribute.fixed_width_keys(),
-            ))
-            .chain(snapshot.iterate_writes_range(&KeyRange::new_within(
-                StorageKey::new(
-                    AttributeVertex::keyspace_for_is_short(false),
-                    Bytes::inline(Prefix::VertexAttribute.prefix_id().to_bytes(), 1),
-                ),
+            )),
+            snapshot.iterate_writes_range(&KeyRange::new_within(
+                AttributeVertex::prefix_key_long(),
                 Prefix::VertexAttribute.fixed_width_keys(),
-            )))
-            .filter_map(|(key, write)| match write {
-                Write::Put { value, .. } => Some((key, value)),
-                _ => None,
-            })
-        {
+            )),
+        )
+        .filter(|(_, write)| matches!(write, Write::Put { .. }));
+        for (key, _write) in new_attributes {
             let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone())? {
@@ -2167,7 +2169,7 @@ impl ThingManager {
                 snapshot,
                 self,
                 *object,
-                &modified_owns,
+                modified_owns,
                 &mut errors,
                 storage_counters.clone(),
             );
@@ -2179,7 +2181,7 @@ impl ThingManager {
                 snapshot,
                 self,
                 *object,
-                &modified_plays,
+                modified_plays,
                 &mut errors,
                 storage_counters.clone(),
             );
@@ -2191,7 +2193,7 @@ impl ThingManager {
                 snapshot,
                 self,
                 *relation,
-                &modified_relates,
+                modified_relates,
                 &mut errors,
                 storage_counters.clone(),
             );
@@ -2223,7 +2225,7 @@ impl ThingManager {
             self.update_relation_index_on_schema_commit(
                 snapshot,
                 *relation,
-                &modified_relates,
+                modified_relates,
                 qualifies_for_relation_index,
                 storage_counters.clone(),
             )?;
@@ -2263,8 +2265,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for role_type in affected_role_types {
-            let mut it = relation.get_players_by_role(snapshot, &self, *role_type, storage_counters.clone());
-            while let Some(player) = it.next() {
+            for player in relation.get_players_by_role(snapshot, self, *role_type, storage_counters.clone()) {
                 let (player, count) =
                     player.map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
                 if qualifies_for_relation_index {
