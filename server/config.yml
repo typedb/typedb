@@ -27,6 +27,8 @@ storage:
     rocksdb:
         cache-size: 1gb
         write-buffers-limit: 512mb
+    compaction:
+        strategy: eager
 
 logging:
     directory: "logs"
