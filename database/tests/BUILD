@@ -28,6 +28,22 @@ rust_test(
 )
 
 rust_test(
+    name = "test_import",
+    srcs = glob([
+        "import.rs",
+    ]),
+    deps = [
+        "//common/logger",
+        "//common/options",
+        "//database",
+        "//diagnostics",
+        "//util/test:test_utils",
+
+        "@crates//:tracing",
+    ]
+)
+
+rust_test(
     name = "test_transaction",
     srcs = glob([
         "transaction.rs",
@@ -100,6 +116,7 @@ rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_database",
+        ":test_import",
         ":test_transaction",
         ":test_statistics_synchronization",
         ":test_transaction_isolation",

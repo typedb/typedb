@@ -56,8 +56,6 @@ pub trait UserOperator: Debug + Send + Sync {
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
-    fn manager(&self) -> Result<Arc<UserManager>, ArcServerStateError>;
-
     fn is_initialised(&self) -> bool;
 }
 
@@ -231,10 +229,6 @@ impl UserOperator for LocalUserOperator {
 
     async fn token_get_owner(&self, token: &str) -> Option<String> {
         self.token_manager.get_valid_token_owner(token).await
-    }
-
-    fn manager(&self) -> Result<Arc<UserManager>, ArcServerStateError> {
-        self.get_user_manager().map_err(arc_server_state_err)
     }
 
     fn is_initialised(&self) -> bool {

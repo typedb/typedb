@@ -10,6 +10,7 @@
 pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
 pub mod database;
+pub mod database_import_manager;
 pub mod database_manager;
 pub mod migration;
 pub mod query;

@@ -12,7 +12,7 @@ pub mod user_operator;
 use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use concurrency::{IntervalRunner, TokioTaskSpawner};
-use database::database_manager::DatabaseManager;
+use database::database_manager::{DatabaseManager, ImportRecovery};
 use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
 use tokio::{net::lookup_host, sync::watch::Receiver};
@@ -65,6 +65,7 @@ impl ServerState {
         config: Config,
         server_id: String,
         deployment_id: Option<String>,
+        import_recovery: ImportRecovery,
         shutdown_receiver: Receiver<()>,
         background_task_spawner: TokioTaskSpawner,
     ) -> Result<ServerStateBuilder, ServerOpenError> {
@@ -91,6 +92,7 @@ impl ServerState {
             diagnostics_manager.clone(),
             config.storage.rocksdb.cache_size,
             config.storage.rocksdb.write_buffers_limit,
+            import_recovery,
         )
         .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let database_diagnostics_updater = IntervalRunner::new(

@@ -15,6 +15,9 @@ features = {}
 
 [dev-dependencies]
 
+	[dev-dependencies.tokio]
+		workspace = true
+
 	[dev-dependencies.test_utils]
 		workspace = true
 
@@ -25,9 +28,6 @@ features = {}
 		workspace = true
 
 [dependencies]
-
-	[dependencies.tokio]
-		workspace = true
 
 	[dependencies.tracing]
 		workspace = true
@@ -106,6 +106,10 @@ features = {}
 [[test]]
 	path = "tests/transaction.rs"
 	name = "test_transaction"
+
+[[test]]
+	path = "tests/import.rs"
+	name = "test_import"
 
 [[test]]
 	path = "tests/statistics_synchronization.rs"

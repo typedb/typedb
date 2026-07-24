@@ -449,7 +449,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
         let service = DatabaseImportService::new(
-            self.server_state.databases().manager(),
+            self.server_state.clone(),
             self.server_state.diagnostics_manager(),
             request_stream,
             response_sender,
@@ -547,7 +547,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(database_name.clone()),
             ActionKind::DatabaseExport,
             || async {
-                match self.server_state.databases().manager().database(&database_name) {
+                match self.server_state.databases().get(&database_name).await.map_err(|err| err.into_status())? {
                     None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }.into_status()),
                     Some(database) => {
                         let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);

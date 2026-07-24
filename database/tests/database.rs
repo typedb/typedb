@@ -35,6 +35,7 @@ fn prepare_for_writes_iterates_every_loaded_database() {
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
         ByteSize::mb(64),
+        database::database_manager::ImportRecovery::Discard,
     )
     .expect("DatabaseManager::new");
     for name in ["alpha", "beta", "gamma"] {

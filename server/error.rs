@@ -116,6 +116,11 @@ typedb_error! {
         DatabaseCommitRecordExistsFailed(20, "Commit record check failed.", typedb_source: DatabaseOpenError),
         NotSupportedByDistribution(21, "Not supported by this distribution: {description}", description: String),
         TransactionOpenFailed(22, "Failed to open transaction.", typedb_source: TransactionError),
+        DatabaseImportPrepareFailed(23, "Unable to prepare database import.", typedb_source: DatabaseCreateError),
+        DatabaseImportFinaliseFailed(24, "Unable to finalise database import.", typedb_source: DatabaseCreateError),
+        DatabaseImportCancelFailed(25, "Unable to cancel database import.", typedb_source: DatabaseDeleteError),
+        DatabaseImportTargetStale(26, "The import staging database of '{name}' is stale here.", name: String),
+        ConcurrentImportLimitReached(27, "Too many concurrent imports (limit {limit}). Retry later.", limit: usize),
     }
 }
 
@@ -154,7 +159,12 @@ impl ServerStateError for LocalServerStateError {
             | Self::DatabaseCannotBeCreated { .. }
             | Self::DatabaseCannotBeDeleted { .. }
             | Self::DatabaseExport { .. }
-            | Self::DatabaseImport { .. } => InvalidRequest,
+            | Self::DatabaseImport { .. }
+            | Self::DatabaseImportPrepareFailed { .. }
+            | Self::DatabaseImportFinaliseFailed { .. }
+            | Self::DatabaseImportCancelFailed { .. }
+            | Self::DatabaseImportTargetStale { .. } => InvalidRequest,
+            Self::ConcurrentImportLimitReached { .. } => Unavailable,
         }
     }
 }
