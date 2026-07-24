@@ -893,6 +893,7 @@ impl TransactionService {
                     &thing_manager,
                     &pipeline,
                     &source_query,
+                    None,
                 )
             })
             .await

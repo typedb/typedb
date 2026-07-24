@@ -3,17 +3,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use criterion::{BatchSize, BenchmarkGroup, measurement::Measurement};
 use database::{Database, transaction::TransactionWrite};
-use itertools::repeat_n;
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
+use resource::profile::{QueryProfile, TransactionProfile};
 use storage::durability_client::WALClient;
 
 use crate::{
-    Config, Context, commit,
+    Config, Context, QueryAnswer, commit,
     datagen::RandomDataGen,
     execute_write_query_in,
     utils::{CountResults, unpack_result},
@@ -21,6 +24,7 @@ use crate::{
 
 pub trait SimpleBenchmark {
     type IterInput;
+    type IterOutput;
 
     /// Create given_rows if needed
     fn name(&self) -> &'_ str;
@@ -43,10 +47,15 @@ pub trait SimpleBenchmark {
     fn prepare_iter(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::IterInput;
 
     /// The actual iteration which gets timed over and over again.
-    fn run_iter(&self, context: &Context, database: Arc<Database<WALClient>>, input: Self::IterInput);
+    fn run_iter(
+        &self,
+        context: &Context,
+        database: Arc<Database<WALClient>>,
+        input: Self::IterInput,
+    ) -> Self::IterOutput;
 
     /// Prepares & runs the iters. Abstracts away criterion so we don't make mistakes in the setup.
-    fn run_benchmark<M: Measurement>(&self, group: &mut BenchmarkGroup<M>) {
+    fn run_with_criterion<M: Measurement>(&self, group: &mut BenchmarkGroup<M>) {
         let mut context = self.init_context();
         self.before_all(&mut context);
         group.bench_function(self.name(), |b| {
@@ -62,22 +71,35 @@ pub trait SimpleBenchmark {
             drop(database);
         });
     }
+
+    /// Prepares & runs the iters. Abstracts away criterion so we don't make mistakes in the setup.
+    fn run_simple(&self) -> Self::IterOutput {
+        let mut context = self.init_context();
+        self.before_all(&mut context);
+        let database = self.create_database(&mut context);
+        self.prepare_database(&mut context, database.clone());
+        let input = self.prepare_iter(&context, database.clone());
+        let query_result = self.run_iter(&context, database.clone(), input);
+        drop(database);
+        query_result
+    }
 }
 
 pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
-pub type PrepareIterFn<T> = Box<dyn Fn(Arc<Database<WALClient>>) -> T>;
-pub type BenchmarkedFn<T> = Box<dyn Fn(Arc<Database<WALClient>>, T)>;
+pub type PrepareIterFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
+pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 
-pub struct TypeDBMicroBenchmark<T> {
+pub struct TypeDBMicroBenchmark<IN, OUT> {
     pub name: &'static str,
     pub schema: &'static str,
     pub preload_data_fn: Option<PreloadDataFn>,
-    pub prepare_iter_fn: PrepareIterFn<T>,
-    pub benchmark_fn: BenchmarkedFn<T>,
+    pub prepare_iter_fn: PrepareIterFn<IN>,
+    pub benchmark_fn: BenchmarkedFn<IN, OUT>,
 }
 
-impl<T> SimpleBenchmark for TypeDBMicroBenchmark<T> {
-    type IterInput = T;
+impl<IN, OUT> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT> {
+    type IterInput = IN;
+    type IterOutput = OUT;
 
     fn name(&self) -> &'_ str {
         self.name
@@ -94,9 +116,31 @@ impl<T> SimpleBenchmark for TypeDBMicroBenchmark<T> {
         (self.prepare_iter_fn)(database)
     }
 
-    fn run_iter(&self, _context: &Context, database: Arc<Database<WALClient>>, input: Self::IterInput) {
+    fn run_iter(
+        &self,
+        _context: &Context,
+        database: Arc<Database<WALClient>>,
+        input: Self::IterInput,
+    ) -> Self::IterOutput {
         (self.benchmark_fn)(database, input)
     }
+}
+
+pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
+    // Just to ensure the reported time is just the benchmark_fn
+    TypeDBMicroBenchmark {
+        name: "sanity_check",
+        schema: "define entity person;",
+        preload_data_fn: Some(Box::new(|_| std::thread::sleep(Duration::from_millis(40)))),
+        prepare_iter_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
+        benchmark_fn: Box::new(|_, _| std::thread::sleep(Duration::from_millis(10))),
+    }
+}
+
+// Util return
+pub struct TxQueryProfile {
+    tx_profile: Option<TransactionProfile>,
+    query_profile: Arc<QueryProfile>,
 }
 
 // Initial data
@@ -134,13 +178,14 @@ pub fn given_rows_with(
 }
 
 // queries
-pub fn query_in_write_tx(query: &str) -> BenchmarkedFn<Option<GivenRowsSimple>> {
+pub fn query_in_write_tx(query: &str) -> BenchmarkedFn<Option<GivenRowsSimple>, TxQueryProfile> {
     let query_owned = query.to_owned();
     Box::new(move |database: Arc<Database<WALClient>>, given_rows: Option<GivenRowsSimple>| {
         let tx = TransactionWrite::open(database, TransactionOptions::default()).unwrap();
-        let (result, tx) =
-            unpack_result(execute_write_query_in::<_, CountResults>(tx, query_owned.as_str(), given_rows));
-        result.unwrap();
-        commit(tx).unwrap();
+        let (query_result, tx) =
+            unpack_result(execute_write_query_in::<_, CountResults>(tx, query_owned.as_str(), given_rows, true));
+        let QueryAnswer { profile: query_profile, answer: _ } = query_result.unwrap();
+        let tx_profile = commit(tx).unwrap();
+        TxQueryProfile { tx_profile: Some(tx_profile), query_profile }
     })
 }

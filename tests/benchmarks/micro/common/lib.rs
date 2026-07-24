@@ -114,6 +114,7 @@ pub fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView,
     tx: TX,
     query: &str,
     given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
 ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
     pipelines::execute_write_query_in::<_, AC>(tx, query, given_rows)
 }
