@@ -19,6 +19,7 @@ use concept::{
         ObjectTypeAPI, OwnerAPI, attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager,
     },
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -127,12 +128,13 @@ impl OwnsExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
         let filter_for_row: Box<OwnsFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -142,11 +144,11 @@ impl OwnsExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
+        let snapshot = &**execution_context.snapshot();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let owns: Vec<_> = self
                     .owner_attribute_types
                     .keys()
@@ -171,7 +173,7 @@ impl OwnsExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let owner = type_from_row_or_annotations(self.owns.owner(), row, self.owner_attribute_types.keys());
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let owns = self.get_owns_for_owner(snapshot, type_manager, owner)?;
 
                 let iterator = owns.into_iter().sorted_by_key(|(owner, attribute)| (*attribute, *owner)).map(Ok as _);

@@ -18,7 +18,11 @@ use executor::{
 use function::function_manager::FunctionManager;
 use itertools::Either;
 use lending_iterator::LendingIterator;
-use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryContext, QueryManager},
+};
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::TempDir;
@@ -99,9 +103,9 @@ fn setup_common(schema: &str) -> Context {
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -116,7 +120,11 @@ fn run_read_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let translated = context
+        .query_manager
+        .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
+        .unwrap();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -124,11 +132,11 @@ fn run_read_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            translated,
             None::<GivenRowsSimple>,
-            query,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -152,7 +160,11 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let query_as_pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let parsed = context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let translated = context
+        .query_manager
+        .translate(parsed, &snapshot, &context.function_manager, &context.thing_manager)
+        .unwrap();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -160,11 +172,11 @@ fn run_write_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query_as_pipeline,
+            translated,
             None::<GivenRowsSimple>,
-            query,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

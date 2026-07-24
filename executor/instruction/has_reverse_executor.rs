@@ -20,6 +20,7 @@ use concept::{
 };
 use encoding::value::value::Value;
 use itertools::Itertools;
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::kmerge::KMergeBy;
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
@@ -130,24 +131,26 @@ impl HasReverseExecutor {
 
     pub fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         if self.iterate_mode.is_unbound_inverted() && self.attribute_cache.get().is_none() {
             // one-off initialisation of the cache of constants as we require the Parameters
             let value_range = self.checker.value_range_for(
-                context,
+                execution_context,
+                parameters,
                 None,
                 self.has.attribute().as_variable().unwrap(),
                 storage_counters.clone(),
             )?;
             let mut cache = Vec::new();
             for type_ in self.attribute_owner_types.keys() {
-                let instances: Vec<Attribute> = context
+                let instances: Vec<Attribute> = execution_context
                     .thing_manager
                     .get_attributes_in_range(
-                        context.snapshot.as_ref(),
+                        execution_context.snapshot.as_ref(),
                         type_.as_attribute_type(),
                         &value_range,
                         storage_counters.clone(),
@@ -163,7 +166,7 @@ impl HasReverseExecutor {
         }
 
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
         let filter_for_row: Arc<HasFilterMapFn> = Arc::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -173,13 +176,14 @@ impl HasReverseExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let range = self.checker.value_range_for(
-                    context,
+                    execution_context,
+                    parameters,
                     Some(row.as_reference()),
                     self.has.attribute().as_variable().unwrap(),
                     storage_counters.clone(),

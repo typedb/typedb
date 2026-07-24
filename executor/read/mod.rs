@@ -12,7 +12,7 @@ use compiler::executable::{
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use resource::profile::StageProfile;
 use storage::snapshot::ReadableSnapshot;
-
+use crate::pipeline::stage::ExecutionContext;
 use crate::read::pattern_executor::PatternExecutor;
 
 mod collecting_stage_executor;
@@ -55,8 +55,7 @@ impl std::ops::Deref for ExecutorIndex {
 }
 
 pub(super) fn create_pattern_executor_for_conjunction(
-    snapshot: &Arc<impl ReadableSnapshot + 'static>,
-    thing_manager: &Arc<ThingManager>,
+    execution_context: &ExecutionContext<impl ReadableSnapshot>,
     function_registry: &ExecutableFunctionRegistry,
     conjunction_executable: &ConjunctionExecutable,
     profile: Arc<StageProfile>,
@@ -69,8 +68,7 @@ pub(super) fn create_pattern_executor_for_conjunction(
         )
     });
     let executors = step_executor::create_executors_for_conjunction(
-        snapshot,
-        thing_manager,
+        execution_context,
         function_registry,
         pattern_profile,
         conjunction_executable,

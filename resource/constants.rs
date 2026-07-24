@@ -114,6 +114,8 @@ pub mod database {
     // anything over 8.0 often does not plan frequently enough, as the data scales
     pub const QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION: f64 = 3.0;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
+    pub const QUERY_PARSE_CACHE_SIZE: u64 = 200;
+    pub const QUERY_TRANSLATION_CACHE_SIZE: u64 = 200;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_COUNT: u64 = 10_000;
     pub const STATISTICS_DURABLE_WRITE_SEQ_NUMBERS: usize = 1_000;
     pub const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(50);

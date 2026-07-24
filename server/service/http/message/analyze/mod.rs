@@ -78,7 +78,7 @@ pub fn encode_analyzed_query(
                 .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
         })
         .transpose()?;
-    Ok(AnalysedQueryResponse { source, given, query, preamble, fetch })
+    Ok(AnalysedQueryResponse { source: source.as_ref().to_owned(), given, query, preamble, fetch })
 }
 
 #[cfg(debug_assertions)]

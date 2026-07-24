@@ -33,8 +33,12 @@ use ir::{
     translation::{PipelineTranslationContext, match_::translate_match},
 };
 use itertools::Itertools;
+use ir::pipeline::QueryContext;
 use lending_iterator::LendingIterator;
-use query::{given_rows::GivenRowsSimple, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_manager::{QueryContext, QueryManager},
+};
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     MVCCStorage,
@@ -64,25 +68,26 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let query = typeql::parse_query(data).unwrap().into_structure().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(data.to_string())).unwrap().into_pipeline();
+    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             &type_manager,
             thing_manager.clone(),
             Arc::default(),
-            &query,
+            translated,
             None::<GivenRowsSimple>,
-            data,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));
@@ -156,12 +161,13 @@ fn test_has_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default()); //, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::new(value_parameters), "".to_owned(), Arc::default());
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -255,7 +261,7 @@ fn test_expression_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -342,7 +348,7 @@ fn test_links_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -436,7 +442,7 @@ fn test_links_intersection() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -521,7 +527,7 @@ fn test_negation_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -628,7 +634,7 @@ fn test_forall_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -720,7 +726,7 @@ fn test_named_var_select() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -812,7 +818,7 @@ fn test_disjunction_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -908,7 +914,7 @@ fn test_disjunction_planning_nested_negations() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
 
@@ -967,7 +973,7 @@ fn test_mismatched_input_types() {
             &thing_manager,
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
-            &QueryProfile::new(false),
+            &Arc::new(QueryProfile::new(false)),
         )
         .unwrap();
         let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());
@@ -1002,7 +1008,7 @@ fn test_mismatched_input_types() {
             &thing_manager,
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
-            &QueryProfile::new(false),
+            &Arc::new(QueryProfile::new(false)),
         )
         .unwrap();
         let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());

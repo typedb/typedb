@@ -9,7 +9,7 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
     sync::{
-        Arc, OnceLock, RwLock,
+        Arc, Mutex, MutexGuard, OnceLock, RwLock,
         atomic::{AtomicU64, Ordering},
     },
     time::{Duration, Instant},
@@ -434,22 +434,26 @@ impl CommitProfileData {
 
 #[derive(Debug)]
 pub struct QueryProfile {
-    compile_profile: CompileProfile,
+    compile_profile: Mutex<CompileProfile>,
     stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
 }
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { compile_profile: CompileProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
+        Self {
+            compile_profile: Mutex::new(CompileProfile::new(enabled)),
+            stage_profiles: RwLock::new(HashMap::new()),
+            enabled,
+        }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn compilation_profile(&mut self) -> &mut CompileProfile {
-        &mut self.compile_profile
+    pub fn compilation_profile(&self) -> MutexGuard<'_, CompileProfile> {
+        self.compile_profile.lock().unwrap()
     }
 
     pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
@@ -478,7 +482,7 @@ impl QueryProfile {
             .values()
             .map(|stage_profile| stage_profile.pattern_profile.get().map_or(0, |profile| profile.total_nanos()))
             .sum();
-        self.compile_profile.total_nanos() + stage_nanos
+        self.compilation_profile().total_nanos() + stage_nanos
     }
 }
 
@@ -493,7 +497,7 @@ impl IndentDisplay for QueryProfile {
         let total_micros = self.total_nanos() as f64 / 1000.0;
         write_indent(f, indent)?;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
-        self.compile_profile.indent_fmt(f, indent + 1)?;
+        self.compilation_profile().indent_fmt(f, indent + 1)?;
         let stage_profiles = self.stage_profiles.read().unwrap();
         for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
             write_indent(f, indent + 1)?;
@@ -517,6 +521,7 @@ impl CompileProfile {
             Self {
                 data: Some(CompileProfileData {
                     stage_start: Instant::now(), // irrelevant
+                    parsing: Duration::ZERO,
                     translation: Duration::ZERO,
                     validation: Duration::ZERO,
                     annotation: Duration::ZERO,
@@ -528,9 +533,16 @@ impl CompileProfile {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn set_stage_timer(&mut self) {
         if let Some(data) = &mut self.data {
             data.stage_start = Instant::now()
+        }
+    }
+
+    pub fn parsing_finished(&mut self) {
+        if let Some(data) = &mut self.data {
+            data.parsing = data.stage_start.elapsed();
+            data.stage_start = Instant::now();
         }
     }
 
@@ -565,7 +577,8 @@ impl CompileProfile {
     fn total_nanos(&self) -> u64 {
         match &self.data {
             None => 0,
-            Some(data) => (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as u64,
+            Some(data) => (data.parsing + data.translation + data.validation + data.annotation + data.compilation)
+                .as_nanos() as u64,
         }
     }
 }
@@ -577,6 +590,8 @@ impl IndentDisplay for CompileProfile {
             None => writeln!(f, "Compile[enabled=false]"),
             Some(data) => {
                 writeln!(f, "Compile[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "parsing micros: {}", data.parsing.as_nanos() as f64 / 1000.0)?;
                 write_indent(f, indent + 1)?;
                 writeln!(f, "translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
                 write_indent(f, indent + 1)?;
@@ -595,6 +610,7 @@ impl IndentDisplay for CompileProfile {
 #[derive(Debug)]
 struct CompileProfileData {
     stage_start: Instant,
+    parsing: Duration,
     translation: Duration,
     validation: Duration,
     annotation: Duration,

@@ -6,6 +6,7 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::executable::reduce::ReduceExecutable;
+use ir::pipeline::QueryContext;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -41,7 +42,8 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -49,7 +51,7 @@ where
     > {
         let Self { executable, .. } = self;
 
-        let stage_profile = context.profile.profile_stage(|| String::from("Reduce"), executable.executable_id);
+        let stage_profile = query_context.profile.profile_stage(|| String::from("Reduce"), executable.executable_id);
         let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Reduce pattern"));
         let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Reduce execution"));
         let storage_counters = step_profile.storage_counters();
@@ -58,12 +60,12 @@ where
         // so we time the whole iterator drain as one batch and report the
         // count of input rows consumed.
         let measurement = step_profile.start_measurement();
-        let (rows, input_row_count) = match reduce_iterator(&context, executable, input_iterator, &storage_counters) {
+        let (rows, input_row_count) = match reduce_iterator(&execution_context, executable, input_iterator, &storage_counters) {
             Ok(out) => out,
-            Err(err) => return Err((err, context)),
+            Err(err) => return Err((err, execution_context)),
         };
         measurement.end(&step_profile, 1, input_row_count);
-        Ok((WrittenRowsIterator::new(rows), context))
+        Ok((WrittenRowsIterator::new(rows), execution_context))
     }
 }
 

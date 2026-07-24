@@ -17,6 +17,7 @@ use concept::{
     error::ConceptReadError,
     type_::{relation_type::RelationType, role_type::RoleType, type_manager::TypeManager},
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -125,12 +126,13 @@ impl RelatesExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters);
         let filter_for_row: Box<RelatesFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -140,11 +142,11 @@ impl RelatesExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
+        let snapshot = &**execution_context.snapshot();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let relates: Vec<_> = self
                     .relation_role_types
                     .keys()
@@ -170,7 +172,7 @@ impl RelatesExecutor {
             BinaryIterateMode::BoundFrom => {
                 let relation =
                     type_from_row_or_annotations(self.relates.relation(), row, self.relation_role_types.keys());
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let relates = self.get_relates_for_relation(snapshot, type_manager, relation)?;
 
                 let iterator =

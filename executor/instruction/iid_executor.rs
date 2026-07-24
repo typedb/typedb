@@ -14,6 +14,7 @@ use concept::{
 };
 use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use ir::pattern::constraint::Iid;
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -87,12 +88,13 @@ impl IidExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
         let filter_for_row: Box<IidFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -102,11 +104,11 @@ impl IidExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
 
         let iid_parameter = self.iid.iid().as_parameter().unwrap();
-        let bytes = context.parameters().iid(iid_parameter).unwrap();
+        let bytes = parameters.iid(iid_parameter).unwrap();
 
         let instance = if let Some(object) = ObjectVertex::try_decode(bytes) {
             let object = Object::new(object);

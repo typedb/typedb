@@ -19,7 +19,7 @@ use compiler::{
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use function::function_manager::FunctionManager;
-use ir::pipeline::ParameterRegistry;
+use ir::pipeline::{ParameterRegistry, QueryContext};
 use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -54,7 +54,8 @@ pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>
     named_outputs: HashMap<String, VariablePosition>,
     pipeline_structure: Option<PipelineStructure>,
     fetch: Option<FetchStageExecutor<Snapshot>>,
-    context: ExecutionContext<Snapshot>,
+    execution_context: ExecutionContext<Snapshot>,
+    query_context: Arc<QueryContext>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals> Pipeline<Snapshot, Nonterminals>
@@ -69,14 +70,15 @@ where
         stages: Vec<Nonterminals>,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
     ) -> Self {
         let named_outputs = last_stage_output_positions
             .iter()
             .filter_map(|(variable, &position)| variable_names.get(variable).map(|name| (name.clone(), position)))
             .collect::<HashMap<_, _>>();
         let fetch = executable_fetch.map(|executable| FetchStageExecutor::new(executable, executable_functions));
-        Self { initial_iterator, named_outputs, stages, fetch, pipeline_structure, context }
+        Self { initial_iterator, named_outputs, stages, fetch, pipeline_structure, execution_context, query_context }
     }
 
     pub fn has_fetch(&self) -> bool {
@@ -93,31 +95,37 @@ where
     pub fn pipeline_structure(&self) -> Option<&PipelineStructure> {
         self.pipeline_structure.as_ref()
     }
+
+    pub fn query_context(&self) -> Arc<QueryContext> {
+        self.query_context.clone()
+    }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<Snapshot>> {
     pub fn build_read_pipeline(
-        snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager>,
-        function_manager: Arc<FunctionManager>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
+        // snapshot: Arc<Snapshot>,
+        // thing_manager: Arc<ThingManager>,
+        // function_manager: Arc<FunctionManager>,
         variable_names: &HashMap<Variable, String>,
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_given: Option<Arc<GivenExecutable>>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
-        parameters: Arc<ParameterRegistry>,
         given_batch: Batch,
-        query_profile: Arc<QueryProfile>,
+        // parameters: Arc<ParameterRegistry>,
+        // query_profile: Arc<QueryProfile>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new_with_profile(
-            snapshot,
-            thing_manager,
-            function_manager,
-            parameters.clone(),
-            query_profile,
-        );
+        // let execution_context = ExecutionContext::new_with_profile(
+        //     snapshot,
+        //     thing_manager,
+        //     function_manager,
+        //     // parameters.clone(),
+        //     // query_profile,
+        // );
 
         let initial_iterator = InitialStage::new(given_batch);
         let initial_iterator = ReadStageIterator::Initial(Box::new(initial_iterator.into_iterator()));
@@ -179,13 +187,15 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         }
         Ok(Pipeline::build_with_fetch(
             variable_names,
-            pipeline_structure.map(|qs| qs.with_parameters(parameters, &variable_names)),
+            // TODO: this shouldn't clone fresh parameters?
+            pipeline_structure.map(|qs| qs.with_parameters(query_context.parameters.clone(), &variable_names)),
             executable_functions.clone(),
             initial_iterator,
             stages,
             output_variable_positions,
             executable_fetch,
-            context,
+            execution_context,
+            query_context,
         ))
     }
 
@@ -197,8 +207,8 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self.fetch {
-            None => Self::run_stages(self.initial_iterator, self.stages, self.context, execution_interrupt),
-            Some(_) => Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), self.context)),
+            None => Self::run_stages(self.initial_iterator, self.stages, self.execution_context, self.query_context, execution_interrupt),
+            Some(_) => Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), self.execution_context)),
         }
     }
 
@@ -210,13 +220,15 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self.fetch {
-            None => Err((Box::new(PipelineExecutionError::RowsUsedAsFetch {}), self.context)),
+            None => Err((Box::new(PipelineExecutionError::RowsUsedAsFetch {}), self.execution_context)),
             Some(fetch_executor) => {
-                let (rows_iterator, context) =
-                    Self::run_stages(self.initial_iterator, self.stages, self.context, execution_interrupt.clone())?;
+                let query_context = self.query_context;
+                let (rows_iterator, execution_context) =
+                    Self::run_stages(self.initial_iterator, self.stages, self.execution_context, query_context.clone(), execution_interrupt.clone())?;
                 Ok(fetch_executor.into_iterator::<ReadPipelineStage<Snapshot>>(
                     rows_iterator,
-                    context,
+                    execution_context,
+                    query_context,
                     execution_interrupt,
                 ))
             }
@@ -226,17 +238,18 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
     fn run_stages(
         initial_iterator: ReadStageIterator<Snapshot>,
         stages: Vec<ReadPipelineStage<Snapshot>>,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         execution_interrupt: ExecutionInterrupt,
     ) -> Result<
         (ReadStageIterator<Snapshot>, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let mut current_iterator = initial_iterator;
-        let mut context = context;
+        let mut context = execution_context;
         for stage in stages {
             let (next_iterator, next_context) =
-                stage.into_iterator(current_iterator, context, execution_interrupt.clone())?;
+                stage.into_iterator(current_iterator, context, query_context.clone(), execution_interrupt.clone())?;
             current_iterator = next_iterator;
             context = next_context;
         }
@@ -246,27 +259,26 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
 
 impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage<Snapshot>> {
     pub fn build_write_pipeline(
-        snapshot: Snapshot,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         variable_names: &HashMap<Variable, String>,
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
-        thing_manager: Arc<ThingManager>,
-        function_manager: Arc<FunctionManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_given: Option<Arc<GivenExecutable>>,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
-        parameters: Arc<ParameterRegistry>,
         given_batch: Batch,
-        query_profile: Arc<QueryProfile>,
+        // parameters: Arc<ParameterRegistry>,
+        // query_profile: Arc<QueryProfile>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new_with_profile(
-            Arc::new(snapshot),
-            thing_manager,
-            function_manager,
-            parameters.clone(),
-            query_profile,
-        );
+        // let context = ExecutionContext::new_with_profile(
+        //     Arc::new(snapshot),
+        //     thing_manager,
+        //     function_manager,
+        //     parameters.clone(),
+        //     query_profile,
+        // );
 
         let initial_iterator = WriteStageIterator::Initial(Box::new(InitialIterator::new(given_batch)));
         let mut stages = if let Some(given) = executable_given {
@@ -331,30 +343,33 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         }
         Pipeline::build_with_fetch(
             variable_names,
-            pipeline_structure.map(|qs| qs.with_parameters(parameters, &variable_names)),
+            // TODO: this shouldn't clone
+            pipeline_structure.map(|qs| qs.with_parameters(query_context.parameters.clone(), &variable_names)),
             executable_functions.clone(),
             initial_iterator,
             stages,
             output_variable_positions,
             executable_fetch,
-            context,
+            execution_context,
+            query_context,
         )
     }
 
     fn run_stages(
         initial_iterator: WriteStageIterator<Snapshot>,
         stages: Vec<WritePipelineStage<Snapshot>>,
-        context: ExecutionContext<Snapshot>,
+        execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         execution_interrupt: ExecutionInterrupt,
     ) -> Result<
         (WriteStageIterator<Snapshot>, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let mut current_iterator = initial_iterator;
-        let mut context = context;
+        let mut context = execution_context;
         for stage in stages {
             let (next_iterator, next_context) =
-                stage.into_iterator(current_iterator, context, execution_interrupt.clone())?;
+                stage.into_iterator(current_iterator, context, query_context.clone(), execution_interrupt.clone())?;
             current_iterator = next_iterator;
             context = next_context;
         }
@@ -369,8 +384,8 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self.fetch {
-            None => Self::run_stages(self.initial_iterator, self.stages, self.context, execution_interrupt),
-            Some(_) => Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), self.context)),
+            None => Self::run_stages(self.initial_iterator, self.stages, self.execution_context, self.query_context, execution_interrupt),
+            Some(_) => Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), self.execution_context)),
         }
     }
 
@@ -382,13 +397,15 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self.fetch {
-            None => Err((Box::new(PipelineExecutionError::RowsUsedAsFetch {}), self.context)),
+            None => Err((Box::new(PipelineExecutionError::RowsUsedAsFetch {}), self.execution_context)),
             Some(fetch_executor) => {
-                let (rows_iterator, context) =
-                    Self::run_stages(self.initial_iterator, self.stages, self.context, execution_interrupt.clone())?;
+                let query_context = self.query_context;
+                let (rows_iterator, execution_context) =
+                    Self::run_stages(self.initial_iterator, self.stages, self.execution_context, query_context.clone(), execution_interrupt.clone())?;
                 Ok(fetch_executor.into_iterator::<WritePipelineStage<Snapshot>>(
                     rows_iterator,
-                    context,
+                    execution_context,
+                    query_context,
                     execution_interrupt,
                 ))
             }

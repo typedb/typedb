@@ -131,10 +131,15 @@ pub mod query_util {
         pipeline::stage::{ExecutionContext, StageIterator},
     };
     use function::function_manager::FunctionManager;
-    use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
+    use query::{
+        error::QueryError,
+        given_rows::GivenRowsSimple,
+        query_manager::{ParsedPipeline, QueryManager},
+    };
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
-
+    use compiler::executable::insert::TypeSource;
+    use resource::profile::QueryProfile;
     use crate::util::answer_util::collect_answer;
 
     pub fn execute_read_pipeline(
@@ -142,22 +147,27 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
-        let prepared_pipeline = match tx.query_manager.prepare_read_pipeline(
+        let parsed = ParsedPipeline::new(Arc::new(pipeline), Arc::new(source_query.to_owned()), QueryProfile::new(false));
+        let translated =
+            match tx.query_manager.translate(parsed, tx.snapshot.as_ref(), &tx.function_manager, &tx.thing_manager) {
+                Ok(translated) => translated,
+                Err(err) => return (tx, Err(err)),
+            };
+        let executable_pipeline = match tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            &pipeline,
+            translated,
             None::<GivenRowsSimple>,
-            source_query,
         ) {
-            Ok(pipeline) => pipeline,
+            Ok(executable_pipeline) => executable_pipeline,
             Err(err) => return (tx, Err(err)),
         };
 
-        let named_outputs = prepared_pipeline.rows_positions().unwrap().clone();
+        let named_outputs = executable_pipeline.rows_positions().unwrap().clone();
 
-        let result_as_batch = match prepared_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
+        let result_as_batch = match executable_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
             Err((typedb_source, _)) => {
                 return (
@@ -191,23 +201,27 @@ pub mod query_util {
         pipeline: Pipeline,
         source_query: &str,
     ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
-        let prepared_pipeline = match query_manager.prepare_write_pipeline(
+        let parsed = ParsedPipeline::new(Arc::new(pipeline), Arc::new(source_query.to_owned()), QueryProfile::new(false));
+        let translated = match query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager) {
+            Ok(translated) => translated,
+            Err(err) => return (Err(err), Arc::new(snapshot)),
+        };
+        let executable_pipeline = match query_manager.prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            &pipeline,
+            translated,
             None::<GivenRowsSimple>,
-            source_query,
         ) {
-            Ok(pipeline) => pipeline,
+            Ok(executable_pipeline) => executable_pipeline,
             Err((snapshot, err)) => return (Err(err), Arc::new(snapshot)),
         };
 
-        let named_outputs = prepared_pipeline.rows_positions().unwrap().clone();
+        let named_outputs = executable_pipeline.rows_positions().unwrap().clone();
 
         let (result_as_batch, snapshot) =
-            match prepared_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
+            match executable_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),
                 Err((typedb_source, ExecutionContext { snapshot, .. })) => {
                     return (

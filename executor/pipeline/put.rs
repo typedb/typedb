@@ -9,6 +9,7 @@ use compiler::{
     VariablePosition,
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
 };
+use ir::pipeline::QueryContext;
 use resource::constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -51,23 +52,25 @@ where
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        mut context: ExecutionContext<Snapshot>,
+        mut execution_context: ExecutionContext<Snapshot>,
+        query_context: Arc<QueryContext>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { executable, function_registry, .. } = self;
-        let result = into_iterator_impl(&mut context, &mut interrupt, &executable, function_registry, input_iterator);
+        let result = into_iterator_impl(&mut execution_context, query_context, &mut interrupt, &executable, function_registry, input_iterator);
         match result {
-            Ok(written_rows_iterator) => Ok((written_rows_iterator, context)),
-            Err(err) => Err((err, context)),
+            Ok(written_rows_iterator) => Ok((written_rows_iterator, execution_context)),
+            Err(err) => Err((err, execution_context)),
         }
     }
 }
 
 fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
     context: &mut ExecutionContext<Snapshot>,
+    query_context: Arc<QueryContext>,
     interrupt: &mut ExecutionInterrupt,
     executable: &PutExecutable,
     function_registry: Arc<ExecutableFunctionRegistry>,
@@ -89,7 +92,7 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
         let input_row = input_row_result?;
         let size_before = output_batch.len();
         let mut match_iterator =
-            match_iterator_for_row(context, interrupt, executable, function_registry.clone(), input_row.clone())?;
+            match_iterator_for_row(context, query_context.clone(), interrupt, executable, function_registry.clone(), input_row.clone())?;
         match_iterator
             .try_for_each(|row_result| {
                 output_batch.append_row(row_result?);
@@ -110,13 +113,14 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
     drop(previous_iterator);
     debug_assert_eq!(output_batch.len(), must_insert.len());
     // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
-    perform_inserts(context, interrupt, executable, &mut output_batch, &must_insert)?;
+    perform_inserts(context, query_context.as_ref(), interrupt, executable, &mut output_batch, &must_insert)?;
 
     Ok(WrittenRowsIterator::new(output_batch))
 }
 
 fn match_iterator_for_row<Snapshot: ReadableSnapshot + 'static>(
-    context: &ExecutionContext<Snapshot>,
+    execution_context: &ExecutionContext<Snapshot>,
+    query_context: Arc<QueryContext>,
     interrupt: &ExecutionInterrupt,
     put_executable: &PutExecutable,
     function_registry: Arc<ExecutableFunctionRegistry>,
@@ -124,28 +128,28 @@ fn match_iterator_for_row<Snapshot: ReadableSnapshot + 'static>(
 ) -> Result<impl Iterator<Item = Result<MaybeOwnedRow<'static>, ReadExecutionError>>, Box<PipelineExecutionError>> {
     let executor = MatchExecutor::new(
         &put_executable.match_,
-        &context.snapshot,
-        &context.thing_manager,
+        execution_context,
         input_row,
         function_registry,
-        &context.profile,
+        &query_context.profile,
     )
     .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }))?;
     Ok(crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(
-        executor.into_iterator(context.clone(), interrupt.clone()),
+        executor.into_iterator(execution_context.clone(), query_context, interrupt.clone()),
     ))
     .peekable())
 }
 
 fn perform_inserts<Snapshot: WritableSnapshot>(
     context: &mut ExecutionContext<Snapshot>,
+    query_context: &QueryContext,
     interrupt: &mut ExecutionInterrupt,
     executable: &PutExecutable,
     output_batch: &mut Batch,
     must_insert: &[bool],
 ) -> Result<(), Box<PipelineExecutionError>> {
     let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
-    let stage_profile = context.profile.profile_stage(|| String::from("Put"), executable.executable_id as _);
+    let stage_profile = query_context.profile.profile_stage(|| String::from("Put"), executable.executable_id as _);
     let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Put pattern"));
     let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
         crate::pipeline::insert::build_step_profiles(&executable.insert, &pattern_profile);
@@ -157,7 +161,7 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
                 &executable.insert,
                 snapshot_mut,
                 &context.thing_manager,
-                &context.parameters,
+                &query_context.parameters,
                 &mut row,
                 &concept_profiles,
                 &connection_profiles,

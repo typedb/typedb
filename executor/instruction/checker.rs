@@ -34,7 +34,6 @@ use ir::{
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
-
 use crate::{instruction::FilterFn, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 #[derive(Debug)]
@@ -70,7 +69,8 @@ impl<T> Checker<T> {
 
     pub(crate) fn value_range_for(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: Option<MaybeOwnedRow<'_>>,
         target_variable: ExecutorVariable,
         storage_counters: StorageCounters,
@@ -104,10 +104,10 @@ impl<T> Checker<T> {
             match check {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     if lhs.as_variable() == Some(target_variable) {
-                        let rhs_variable_value = get_vertex_value(rhs, row.as_ref(), &context.parameters);
+                        let rhs_variable_value = get_vertex_value(rhs, row.as_ref(), parameters);
                         let rhs_value = Self::read_value(
-                            context.snapshot.as_ref(),
-                            &context.thing_manager,
+                            execution_context.snapshot.as_ref(),
+                            &execution_context.thing_manager,
                             &rhs_variable_value,
                             storage_counters.clone(),
                         )?;
@@ -128,10 +128,10 @@ impl<T> Checker<T> {
                         debug_assert!(
                             rhs.as_variable().expect("RHS of comparison must be a variable") == target_variable
                         );
-                        let lhs_variable_value = get_vertex_value(lhs, row.as_ref(), &context.parameters);
+                        let lhs_variable_value = get_vertex_value(lhs, row.as_ref(), parameters);
                         let lhs_value = Self::read_value(
-                            context.snapshot.as_ref(),
-                            &context.thing_manager,
+                            execution_context.snapshot.as_ref(),
+                            &execution_context.thing_manager,
                             &lhs_variable_value,
                             storage_counters.clone(),
                         )?;
@@ -153,10 +153,11 @@ impl<T> Checker<T> {
                 CheckInstruction::Is { lhs, rhs } => {
                     if *lhs == target_variable {
                         let rhs_as_vertex = CheckVertex::Variable(*rhs);
-                        let rhs_variable_value = get_vertex_value(&rhs_as_vertex, row.as_ref(), &context.parameters);
+                        let rhs_variable_value =
+                            get_vertex_value(&rhs_as_vertex, row.as_ref(), parameters);
                         let rhs_value = Self::read_value(
-                            context.snapshot.as_ref(),
-                            &context.thing_manager,
+                            execution_context.snapshot.as_ref(),
+                            &execution_context.thing_manager,
                             &rhs_variable_value,
                             storage_counters.clone(),
                         )?;
@@ -166,10 +167,11 @@ impl<T> Checker<T> {
                         }
                     } else {
                         let lhs_as_vertex = CheckVertex::Variable(*lhs);
-                        let lhs_variable_value = get_vertex_value(&lhs_as_vertex, row.as_ref(), &context.parameters);
+                        let lhs_variable_value =
+                            get_vertex_value(&lhs_as_vertex, row.as_ref(), parameters);
                         let lhs_value = Self::read_value(
-                            context.snapshot.as_ref(),
-                            &context.thing_manager,
+                            execution_context.snapshot.as_ref(),
+                            &execution_context.thing_manager,
                             &lhs_variable_value,
                             storage_counters.clone(),
                         )?;
@@ -210,11 +212,11 @@ impl<T> Checker<T> {
         &self,
         vertex: &CheckVertex<ExecutorVariable>,
         row: &MaybeOwnedRow<'_>,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
     ) -> Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>> {
         match vertex.as_variable().and_then(|v| self.extractors.get(&v)) {
             None => {
-                let value = get_vertex_value(vertex, Some(row), &context.parameters);
+                let value = get_vertex_value(vertex, Some(row), parameters);
                 let owned_value = value.into_owned();
                 Box::new(move |_| owned_value.clone())
             }
@@ -224,44 +226,53 @@ impl<T> Checker<T> {
 
     pub(crate) fn filter(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: T,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         for check in &self.checks {
             let passes = match check {
-                CheckInstruction::Iid { var, iid } => self.filter_iid(context, row, *var, &source, iid),
+                CheckInstruction::Iid { var, iid } => self.filter_iid(execution_context, parameters, row, *var, &source, iid),
                 CheckInstruction::TypeList { type_var, types } => {
-                    self.filter_type_list(context, row, *type_var, &source, types)
+                    self.filter_type_list(execution_context, parameters, row, *type_var, &source, types)
                 }
                 CheckInstruction::ThingTypeList { thing_var, types } => {
-                    self.filter_thing_type_list(context, row, *thing_var, &source, types)
+                    self.filter_thing_type_list(execution_context, parameters, row, *thing_var, &source, types)
                 }
                 CheckInstruction::Sub { sub_kind, subtype, supertype } => {
-                    self.filter_sub(context, row, *sub_kind, &source, subtype, supertype)?
+                    self.filter_sub(execution_context, parameters, row, *sub_kind, &source, subtype, supertype)?
                 }
                 CheckInstruction::Owns { owner, attribute } => {
-                    self.filter_owns(context, row, &source, owner, attribute)?
+                    self.filter_owns(execution_context, parameters, row, &source, owner, attribute)?
                 }
                 CheckInstruction::Relates { relation, role_type } => {
-                    self.filter_relates(context, row, &source, relation, role_type)?
+                    self.filter_relates(execution_context, parameters, row, &source, relation, role_type)?
                 }
                 CheckInstruction::Plays { player, role_type } => {
-                    self.filter_plays(context, row, &source, player, role_type)?
+                    self.filter_plays(execution_context, parameters, row, &source, player, role_type)?
                 }
                 CheckInstruction::Isa { isa_kind, type_, thing } => {
-                    self.filter_isa(context, row, &source, *isa_kind, type_, thing)?
+                    self.filter_isa(execution_context, parameters, row, &source, *isa_kind, type_, thing)?
                 }
                 CheckInstruction::Has { owner, attribute } => {
-                    self.filter_has(context, row, &source, owner, attribute, storage_counters.clone())?
+                    self.filter_has(execution_context, parameters, row, &source, owner, attribute, storage_counters.clone())?
                 }
-                CheckInstruction::Links { relation, player, role } => {
-                    self.filter_links(context, row, &source, relation, player, role, storage_counters.clone())?
-                }
+                CheckInstruction::Links { relation, player, role } => self.filter_links(
+                    execution_context,
+                    parameters,
+                    row,
+                    &source,
+                    relation,
+                    player,
+                    role,
+                    storage_counters.clone(),
+                )?,
                 CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => self
                     .filter_indexed_relation(
-                        context,
+                        execution_context,
+                        parameters,
                         row,
                         &source,
                         start_player,
@@ -275,9 +286,16 @@ impl<T> Checker<T> {
                 CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                     self.filter_links_dedup(row, &source, *role1, *player1, *role2, *player2)
                 }
-                CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    self.filter_comparison(context, row, &source, lhs, rhs, *comparator, storage_counters.clone())?
-                }
+                CheckInstruction::Comparison { lhs, rhs, comparator } => self.filter_comparison(
+                    execution_context,
+                    parameters,
+                    row,
+                    &source,
+                    lhs,
+                    rhs,
+                    *comparator,
+                    storage_counters.clone(),
+                )?,
                 CheckInstruction::NotNone { variables } => Self::filter_not_none(row, variables),
                 CheckInstruction::Unsatisfiable => false,
             };
@@ -290,7 +308,8 @@ impl<T> Checker<T> {
 
     pub(crate) fn filter_fn_for_row(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Box<FilterFn<T>> {
@@ -299,33 +318,38 @@ impl<T> Checker<T> {
 
         for check in &self.checks {
             let filter = match check {
-                CheckInstruction::Iid { var, iid } => self.filter_iid_fn(context, row, *var, iid),
+                CheckInstruction::Iid { var, iid } => self.filter_iid_fn(execution_context, parameters, row, *var, iid),
                 &CheckInstruction::TypeList { type_var, ref types } => {
-                    self.filter_type_list_fn(context, row, type_var, types)
+                    self.filter_type_list_fn(execution_context, parameters, row, type_var, types)
                 }
                 &CheckInstruction::ThingTypeList { thing_var, ref types } => {
-                    self.filter_thing_type_list_fn(context, row, thing_var, types)
+                    self.filter_thing_type_list_fn(execution_context,  parameters,row, thing_var, types)
                 }
                 &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
-                    self.filter_sub_fn(context, row, sub_kind, subtype, supertype)
+                    self.filter_sub_fn(execution_context, parameters, row, sub_kind, subtype, supertype)
                 }
-                CheckInstruction::Owns { owner, attribute } => self.filter_owns_fn(context, row, owner, attribute),
+                CheckInstruction::Owns { owner, attribute } => {
+                    self.filter_owns_fn(execution_context, parameters, row, owner, attribute)
+                }
                 CheckInstruction::Relates { relation, role_type } => {
-                    self.filter_relates_fn(context, row, relation, role_type)
+                    self.filter_relates_fn(execution_context, parameters, row, relation, role_type)
                 }
-                CheckInstruction::Plays { player, role_type } => self.filter_plays_fn(context, row, player, role_type),
+                CheckInstruction::Plays { player, role_type } => {
+                    self.filter_plays_fn(execution_context, parameters, row, player, role_type)
+                }
                 &CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
-                    self.filter_isa_fn(context, row, isa_kind, type_, thing)
+                    self.filter_isa_fn(execution_context, parameters, row, isa_kind, type_, thing)
                 }
                 CheckInstruction::Has { owner, attribute } => {
-                    self.filter_has_fn(context, row, owner, attribute, storage_counters.clone())
+                    self.filter_has_fn(execution_context, parameters, row, owner, attribute, storage_counters.clone())
                 }
                 CheckInstruction::Links { relation, player, role } => {
-                    self.filter_links_fn(context, row, relation, player, role, storage_counters.clone())
+                    self.filter_links_fn(execution_context, parameters, row, relation, player, role, storage_counters.clone())
                 }
                 CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => self
                     .filter_indexed_relation_fn(
-                        context,
+                        execution_context,
+                        parameters,
                         row,
                         start_player,
                         end_player,
@@ -339,11 +363,11 @@ impl<T> Checker<T> {
                 }
                 CheckInstruction::NotNone { variables } => {
                     todo!()
-                    // self.filter_not(context, row, check)
+                    // self.filter_not(execution_context,  parameters, row, check)
                 }
                 &CheckInstruction::Is { lhs, rhs } => self.filter_is_fn(row, lhs, rhs),
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    self.filter_comparison_fn(context, row, lhs, rhs, *comparator, storage_counters.clone())
+                    self.filter_comparison_fn(execution_context,  parameters, row, lhs, rhs, *comparator, storage_counters.clone())
                 }
                 CheckInstruction::Unsatisfiable => Box::new(|_: &T| Ok(false)),
             };
@@ -363,19 +387,21 @@ impl<T> Checker<T> {
 
     fn filter_iid_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         var: ExecutorVariable,
         iid: &ir::pattern::ParameterID,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let var = self.make_extractor(&CheckVertex::Variable(var), row, context);
-        let iid = context.parameters().iid(iid).unwrap().clone();
+        let var = self.make_extractor(&CheckVertex::Variable(var), row, parameters);
+        let iid = parameters.iid(iid).unwrap().clone();
         Box::new(move |value: &T| Ok(Self::check_iid(&iid, var(value))))
     }
 
     fn filter_iid(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         var: ExecutorVariable,
         source: &T,
@@ -383,9 +409,9 @@ impl<T> Checker<T> {
     ) -> bool {
         let extracted = match self.extractors.get(&var) {
             Some(function) => function(source),
-            None => get_vertex_value(&CheckVertex::Variable(var), Some(row), &context.parameters),
+            None => get_vertex_value(&CheckVertex::Variable(var), Some(row), parameters),
         };
-        let iid = context.parameters().iid(iid).unwrap();
+        let iid = parameters.iid(iid).unwrap();
         Self::check_iid(iid, extracted)
     }
 
@@ -405,19 +431,21 @@ impl<T> Checker<T> {
 
     fn filter_type_list_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         type_var: ExecutorVariable,
         types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let type_ = self.make_extractor(&CheckVertex::Variable(type_var), row, context);
+        let type_ = self.make_extractor(&CheckVertex::Variable(type_var), row, parameters);
         let types = types.clone();
         Box::new(move |value: &T| Ok(types.contains(&unwrap_or_result_false!(type_(value) => Type))))
     }
 
     fn filter_type_list(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         type_var: ExecutorVariable,
         source: &T,
@@ -425,26 +453,28 @@ impl<T> Checker<T> {
     ) -> bool {
         let extracted = match self.extractors.get(&type_var) {
             Some(function) => function(source),
-            None => get_vertex_value(&CheckVertex::Variable(type_var), Some(row), &context.parameters),
+            None => get_vertex_value(&CheckVertex::Variable(type_var), Some(row), parameters),
         };
         types.contains(&unwrap_or_return_false!(extracted => Type))
     }
 
     fn filter_thing_type_list_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         thing_var: ExecutorVariable,
         types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let thing = self.make_extractor(&CheckVertex::Variable(thing_var), row, context);
+        let thing = self.make_extractor(&CheckVertex::Variable(thing_var), row, parameters);
         let types = types.clone();
         Box::new(move |value: &T| Ok(types.contains(&unwrap_or_result_false!(thing(value) => Thing).type_())))
     }
 
     fn filter_thing_type_list(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         thing_var: ExecutorVariable,
         source: &T,
@@ -452,23 +482,24 @@ impl<T> Checker<T> {
     ) -> bool {
         let extracted = match self.extractors.get(&thing_var) {
             Some(function) => function(source),
-            None => get_vertex_value(&CheckVertex::Variable(thing_var), Some(row), &context.parameters),
+            None => get_vertex_value(&CheckVertex::Variable(thing_var), Some(row), parameters),
         };
         types.contains(&unwrap_or_return_false!(extracted => Thing).type_())
     }
 
     fn filter_sub_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         sub_kind: SubKind,
         subtype: &CheckVertex<ExecutorVariable>,
         supertype: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let subtype = self.make_extractor(subtype, row, context);
-        let supertype = self.make_extractor(supertype, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let subtype = self.make_extractor(subtype, row, parameters);
+        let supertype = self.make_extractor(supertype, row, parameters);
         Box::new(move |source: &T| {
             let subtype = unwrap_or_result_false!(subtype(source) => Type);
             let supertype = unwrap_or_result_false!(supertype(source) => Type);
@@ -478,7 +509,8 @@ impl<T> Checker<T> {
 
     fn filter_sub(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         sub_kind: SubKind,
         source: &T,
@@ -487,15 +519,15 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let subtype = match subtype.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(subtype, Some(row), &context.parameters),
+            None => get_vertex_value(subtype, Some(row), parameters),
         };
         let supertype = match supertype.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(supertype, Some(row), &context.parameters),
+            None => get_vertex_value(supertype, Some(row), parameters),
         };
         Self::check_sub(
-            context.snapshot.as_ref(),
-            context.thing_manager.as_ref(),
+            execution_context.snapshot.as_ref(),
+            execution_context.thing_manager.as_ref(),
             sub_kind,
             unwrap_or_result_false!(subtype => Type),
             unwrap_or_result_false!(supertype => Type),
@@ -517,15 +549,16 @@ impl<T> Checker<T> {
 
     fn filter_owns_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         owner: &CheckVertex<ExecutorVariable>,
         attribute: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let owner = self.make_extractor(owner, row, context);
-        let attribute = self.make_extractor(attribute, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let owner = self.make_extractor(owner, row, parameters);
+        let attribute = self.make_extractor(attribute, row, parameters);
         Box::new(move |value: &T| {
             let owner = unwrap_or_result_false!(owner(value) => Type).as_object_type();
             let attribute = unwrap_or_result_false!(attribute(value) => Type).as_attribute_type();
@@ -535,7 +568,8 @@ impl<T> Checker<T> {
 
     fn filter_owns(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         owner: &CheckVertex<ExecutorVariable>,
@@ -543,30 +577,35 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let owner = match owner.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(&function) => function(source),
-            None => get_vertex_value(owner, Some(row), &context.parameters),
+            None => get_vertex_value(owner, Some(row), parameters),
         };
         let attribute = match attribute.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(&function) => function(source),
-            None => get_vertex_value(attribute, Some(row), &context.parameters),
+            None => get_vertex_value(attribute, Some(row), parameters),
         };
         let owner = unwrap_or_result_false!(owner => Type).as_object_type();
         let attribute = unwrap_or_result_false!(attribute => Type).as_attribute_type();
         owner
-            .get_owns_attribute(context.snapshot.as_ref(), context.thing_manager.clone().type_manager(), attribute)
+            .get_owns_attribute(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.clone().type_manager(),
+                attribute,
+            )
             .map(|owns| owns.is_some())
     }
 
     fn filter_relates_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         relation: &CheckVertex<ExecutorVariable>,
         role_type: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let relation = self.make_extractor(relation, row, context);
-        let role_type = self.make_extractor(role_type, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let relation = self.make_extractor(relation, row, parameters);
+        let role_type = self.make_extractor(role_type, row, parameters);
         Box::new(move |value: &T| {
             let relation_type = unwrap_or_result_false!(relation(value) => Type).as_relation_type();
             let role_type = unwrap_or_result_false!(role_type(value) => Type).as_role_type();
@@ -578,7 +617,8 @@ impl<T> Checker<T> {
 
     fn filter_relates(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         relation: &CheckVertex<ExecutorVariable>,
@@ -586,30 +626,35 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let relation = match relation.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(relation, Some(row), &context.parameters),
+            None => get_vertex_value(relation, Some(row), parameters),
         };
         let role_type = match role_type.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(role_type, Some(row), &context.parameters),
+            None => get_vertex_value(role_type, Some(row), parameters),
         };
         let relation_type = unwrap_or_result_false!(relation => Type).as_relation_type();
         let role_type = unwrap_or_result_false!(role_type => Type).as_role_type();
         relation_type
-            .get_relates_role(context.snapshot.as_ref(), context.thing_manager.type_manager(), role_type)
+            .get_relates_role(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.type_manager(),
+                role_type,
+            )
             .map(|relates| relates.is_some())
     }
 
     fn filter_plays_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         player: &CheckVertex<ExecutorVariable>,
         role_type: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let player = self.make_extractor(player, row, context);
-        let role_type = self.make_extractor(role_type, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let player = self.make_extractor(player, row, parameters);
+        let role_type = self.make_extractor(role_type, row, parameters);
         Box::new({
             move |value: &T| {
                 let object_type = unwrap_or_result_false!(player(value) => Type).as_object_type();
@@ -623,7 +668,8 @@ impl<T> Checker<T> {
 
     fn filter_plays(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         player: &CheckVertex<ExecutorVariable>,
@@ -631,31 +677,36 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let player = match player.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(player, Some(row), &context.parameters),
+            None => get_vertex_value(player, Some(row), parameters),
         };
         let role_type = match role_type.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(&function) => function(source),
-            None => get_vertex_value(role_type, Some(row), &context.parameters),
+            None => get_vertex_value(role_type, Some(row), parameters),
         };
         let object_type = unwrap_or_result_false!(player => Type).as_object_type();
         let role_type = unwrap_or_result_false!(role_type => Type).as_role_type();
         object_type
-            .get_plays_role(context.snapshot.as_ref(), context.thing_manager.type_manager(), role_type)
+            .get_plays_role(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.type_manager(),
+                role_type,
+            )
             .map(|plays| plays.is_some())
     }
 
     fn filter_isa_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         isa_kind: IsaKind,
         type_: &CheckVertex<ExecutorVariable>,
         thing: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let thing = self.make_extractor(thing, row, context);
-        let type_ = self.make_extractor(type_, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let thing = self.make_extractor(thing, row, parameters);
+        let type_ = self.make_extractor(type_, row, parameters);
         Box::new({
             move |value: &T| {
                 let actual = unwrap_or_result_false!(thing(value) => Thing).type_();
@@ -671,7 +722,8 @@ impl<T> Checker<T> {
 
     fn filter_isa(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         isa_kind: IsaKind,
@@ -680,33 +732,38 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let thing = match thing.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(thing, Some(row), &context.parameters),
+            None => get_vertex_value(thing, Some(row), parameters),
         };
         let type_ = match type_.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(type_, Some(row), &context.parameters),
+            None => get_vertex_value(type_, Some(row), parameters),
         };
         let actual = unwrap_or_result_false!(thing => Thing).type_();
         let expected = unwrap_or_result_false!(type_ => Type);
         if isa_kind == IsaKind::Exact {
             Ok(actual == expected)
         } else {
-            actual.is_transitive_subtype_of(expected, context.snapshot.as_ref(), context.thing_manager.type_manager())
+            actual.is_transitive_subtype_of(
+                expected,
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.type_manager(),
+            )
         }
     }
 
     fn filter_has_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         owner: &CheckVertex<ExecutorVariable>,
         attribute: &CheckVertex<ExecutorVariable>,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let owner = self.make_extractor(owner, row, context);
-        let attribute = self.make_extractor(attribute, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let owner = self.make_extractor(owner, row, parameters);
+        let attribute = self.make_extractor(attribute, row, parameters);
         Box::new({
             move |value: &T| {
                 let owner = unwrap_or_result_false!(owner(value) => Thing).as_object();
@@ -719,7 +776,8 @@ impl<T> Checker<T> {
 
     fn filter_has(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         owner: &CheckVertex<ExecutorVariable>,
@@ -728,17 +786,17 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let owner = match owner.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(owner, Some(row), &context.parameters),
+            None => get_vertex_value(owner, Some(row), parameters),
         };
         let attribute = match attribute.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(attribute, Some(row), &context.parameters),
+            None => get_vertex_value(attribute, Some(row), parameters),
         };
         let owner = unwrap_or_result_false!(&owner => Thing).as_object();
         let attribute = unwrap_or_result_false!(&attribute => Thing).as_attribute();
         owner.has_attribute(
-            context.snapshot.as_ref(),
-            context.thing_manager.as_ref(),
+            execution_context.snapshot.as_ref(),
+            execution_context.thing_manager.as_ref(),
             attribute,
             storage_counters.clone(),
         )
@@ -746,18 +804,19 @@ impl<T> Checker<T> {
 
     fn filter_links_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         relation: &CheckVertex<ExecutorVariable>,
         player: &CheckVertex<ExecutorVariable>,
         role: &CheckVertex<ExecutorVariable>,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let relation = self.make_extractor(relation, row, context);
-        let player = self.make_extractor(player, row, context);
-        let role = self.make_extractor(role, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let relation = self.make_extractor(relation, row, parameters);
+        let player = self.make_extractor(player, row, parameters);
+        let role = self.make_extractor(role, row, parameters);
         Box::new({
             move |value: &T| {
                 let relation = unwrap_or_result_false!(relation(value) => Thing).as_relation();
@@ -770,7 +829,8 @@ impl<T> Checker<T> {
 
     fn filter_links(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         relation: &CheckVertex<ExecutorVariable>,
@@ -780,22 +840,22 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let relation = match relation.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(relation, Some(row), &context.parameters),
+            None => get_vertex_value(relation, Some(row), parameters),
         };
         let player = match player.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(player, Some(row), &context.parameters),
+            None => get_vertex_value(player, Some(row), parameters),
         };
         let role = match role.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(role, Some(row), &context.parameters),
+            None => get_vertex_value(role, Some(row), parameters),
         };
         let relation = unwrap_or_result_false!(relation => Thing).as_relation();
         let player = unwrap_or_result_false!(player => Thing).as_object();
         let role = unwrap_or_result_false!(role => Type).as_role_type();
         relation.has_role_player(
-            context.snapshot.as_ref(),
-            context.thing_manager.as_ref(),
+            execution_context.snapshot.as_ref(),
+            execution_context.thing_manager.as_ref(),
             player,
             role,
             storage_counters.clone(),
@@ -804,7 +864,8 @@ impl<T> Checker<T> {
 
     fn filter_indexed_relation_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         start_player: &CheckVertex<ExecutorVariable>,
         end_player: &CheckVertex<ExecutorVariable>,
@@ -813,13 +874,13 @@ impl<T> Checker<T> {
         end_role: &CheckVertex<ExecutorVariable>,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
-        let start_player_extractor = self.make_extractor(start_player, row, context);
-        let end_player_extractor = self.make_extractor(end_player, row, context);
-        let relation_extractor = self.make_extractor(relation, row, context);
-        let start_role_extractor = self.make_extractor(start_role, row, context);
-        let end_role_extractor = self.make_extractor(end_role, row, context);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
+        let start_player_extractor = self.make_extractor(start_player, row, parameters);
+        let end_player_extractor = self.make_extractor(end_player, row, parameters);
+        let relation_extractor = self.make_extractor(relation, row, parameters);
+        let start_role_extractor = self.make_extractor(start_role, row, parameters);
+        let end_role_extractor = self.make_extractor(end_role, row, parameters);
         Box::new({
             move |value: &T| {
                 let object = unwrap_or_result_false!(start_player_extractor(value) => Thing).as_object();
@@ -842,7 +903,8 @@ impl<T> Checker<T> {
 
     fn filter_indexed_relation(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         start_player: &CheckVertex<ExecutorVariable>,
@@ -854,23 +916,23 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let start_player_extractor = match start_player.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(start_player, Some(row), &context.parameters),
+            None => get_vertex_value(start_player, Some(row), parameters),
         };
         let end_player_extractor = match end_player.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(end_player, Some(row), &context.parameters),
+            None => get_vertex_value(end_player, Some(row), parameters),
         };
         let relation_extractor = match relation.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(relation, Some(row), &context.parameters),
+            None => get_vertex_value(relation, Some(row), parameters),
         };
         let start_role_extractor = match start_role.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(start_role, Some(row), &context.parameters),
+            None => get_vertex_value(start_role, Some(row), parameters),
         };
         let end_role_extractor = match end_role.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(end_role, Some(row), &context.parameters),
+            None => get_vertex_value(end_role, Some(row), parameters),
         };
         let object = unwrap_or_result_false!(start_player_extractor => Thing).as_object();
         let end_player = unwrap_or_result_false!(end_player_extractor => Thing).as_object();
@@ -878,8 +940,8 @@ impl<T> Checker<T> {
         let start_role = unwrap_or_result_false!(start_role_extractor => Type).as_role_type();
         let end_role = unwrap_or_result_false!(end_role_extractor => Type).as_role_type();
         object.has_indexed_relation_player(
-            context.snapshot.as_ref(),
-            context.thing_manager.as_ref(),
+            execution_context.snapshot.as_ref(),
+            execution_context.thing_manager.as_ref(),
             end_player,
             relation,
             start_role,
@@ -1045,17 +1107,18 @@ impl<T> Checker<T> {
 
     fn filter_comparison_fn(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         lhs: &CheckVertex<ExecutorVariable>,
         rhs: &CheckVertex<ExecutorVariable>,
         comparator: Comparator,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let lhs = self.make_extractor(lhs, row, context);
-        let rhs = self.make_extractor(rhs, row, context);
-        let snapshot = context.snapshot.clone();
-        let thing_manager = context.thing_manager.clone();
+        let lhs = self.make_extractor(lhs, row, parameters);
+        let rhs = self.make_extractor(rhs, row, parameters);
+        let snapshot = execution_context.snapshot.clone();
+        let thing_manager = execution_context.thing_manager.clone();
         Box::new(move |value: &T| {
             // NOTE: Empty <op> Empty never matches
             let lhs = match lhs(value) {
@@ -1086,7 +1149,8 @@ impl<T> Checker<T> {
 
     fn filter_comparison(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: &MaybeOwnedRow<'_>,
         source: &T,
         lhs: &CheckVertex<ExecutorVariable>,
@@ -1096,28 +1160,32 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         let lhs = match lhs.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(function) => function(source),
-            None => get_vertex_value(lhs, Some(row), &context.parameters),
+            None => get_vertex_value(lhs, Some(row), parameters),
         };
         let rhs = match rhs {
             &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
             &CheckVertex::Variable(_) => unreachable!(),
             CheckVertex::Parameter(param) => {
-                VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
+                VariableValue::Value(parameters.value_unchecked(param).as_reference())
             }
             CheckVertex::Type(_) => unreachable!(),
         };
         let rhs = match &rhs {
-            VariableValue::Thing(Thing::Attribute(attr)) => {
-                attr.get_value(context.snapshot.as_ref(), context.thing_manager.as_ref(), storage_counters.clone())?
-            }
+            VariableValue::Thing(Thing::Attribute(attr)) => attr.get_value(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.as_ref(),
+                storage_counters.clone(),
+            )?,
             VariableValue::Value(value) => value.as_reference(),
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
             VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
         };
         let lhs = match &lhs {
-            VariableValue::Thing(Thing::Attribute(attr)) => {
-                attr.get_value(context.snapshot.as_ref(), context.thing_manager.as_ref(), storage_counters.clone())?
-            }
+            VariableValue::Thing(Thing::Attribute(attr)) => attr.get_value(
+                execution_context.snapshot.as_ref(),
+                execution_context.thing_manager.as_ref(),
+                storage_counters.clone(),
+            )?,
             VariableValue::Value(value) => value.as_reference(),
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
             VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),

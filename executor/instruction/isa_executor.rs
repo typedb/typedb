@@ -24,6 +24,8 @@ use ir::pattern::{
     constraint::{Isa, IsaKind},
 };
 use itertools::Itertools;
+use typeql::parser::Rule::query;
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -112,22 +114,23 @@ impl IsaExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,
         });
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let instances_range = if let Vertex::Variable(thing_variable) = self.isa.thing() {
-                    self.checker.value_range_for(context, Some(row), *thing_variable, storage_counters.clone())?
+                    self.checker.value_range_for(execution_context, parameters, Some(row), *thing_variable, storage_counters.clone())?
                 } else {
                     (Bound::Unbounded, Bound::Unbounded)
                 };

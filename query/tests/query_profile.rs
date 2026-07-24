@@ -12,7 +12,11 @@ use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use query::{
+    given_rows::GivenRowsSimple,
+    query_cache::QueryCache,
+    query_manager::{QueryContext, QueryManager},
+};
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -39,9 +43,9 @@ fn define_schema(
                     owns nickname @card(0..1),
                     plays friendship:friend @card(0..);
     "#;
-    let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, schema_query, query_str)
+        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -55,18 +59,19 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let query = typeql::parse_query(query_string).unwrap().into_structure().into_pipeline();
+    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_string.to_string())).unwrap().into_pipeline();
+    let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
             function_manager,
-            &query,
+            translated,
             None::<GivenRowsSimple>,
-            query_string,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -177,19 +182,22 @@ fn query_profile_tree_structure() {
         offset 0;
         limit 10;
     "#;
-    let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
+    let parsed = query_manager.parse(QueryContext::new_profile_enabled(query_str.to_string())).unwrap().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new())))
+    let translated =
+        query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
+    let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot,
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            &query,
+            translated,
             None::<GivenRowsSimple>,
-            query_str,
         )
-        .unwrap();
+        .unwrap()
+        .into_pipeline();
 
     let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _: Vec<_> =

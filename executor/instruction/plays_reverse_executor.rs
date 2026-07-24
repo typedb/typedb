@@ -17,6 +17,7 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, role_type::RoleType},
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -119,12 +120,13 @@ impl PlaysReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters);
         let filter_for_row: Box<PlaysFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -134,11 +136,11 @@ impl PlaysReverseExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
+        let snapshot = &**execution_context.snapshot();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let plays: Vec<_> = self
                     .role_player_types
                     .keys()
@@ -170,7 +172,7 @@ impl PlaysReverseExecutor {
                 let role_type =
                     type_from_row_or_annotations(self.plays.role_type(), row, self.role_player_types.keys())
                         .as_role_type();
-                let type_manager = context.type_manager();
+                let type_manager = execution_context.type_manager();
                 let plays = role_type
                     .get_player_types(snapshot, type_manager)?
                     .to_owned()
