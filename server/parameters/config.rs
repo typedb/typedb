@@ -126,6 +126,8 @@ pub struct StorageConfig {
     pub data_directory: PathBuf,
     #[serde(default)]
     pub rocksdb: RocksDbConfig,
+    #[serde(default)]
+    pub compaction: CompactionConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -149,6 +151,15 @@ const fn default_rocksdb_cache_size() -> ByteSize {
 
 const fn default_rocksdb_write_buffers_limit() -> ByteSize {
     ByteSize::mb(512)
+}
+
+#[derive(Default, Clone, Debug, Deserialize)]
+#[serde(tag = "strategy")]
+#[serde(rename_all = "kebab-case")]
+pub enum CompactionConfig {
+    #[default]
+    Disabled,
+    Eager,
 }
 
 #[derive(Clone, Debug, Deserialize)]
