@@ -36,6 +36,7 @@ use resource::{
     constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
     profile::{CommitProfile, StorageCounters},
 };
+use rocksdb::WriteBatch;
 use tracing::trace;
 
 use crate::{
@@ -43,7 +44,7 @@ use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationManager, ValidatedCommit},
     iterator::MVCCRangeIterator,
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
@@ -81,6 +82,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
+    earliest_uncompacted: AtomicU64,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -117,6 +119,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            earliest_uncompacted: AtomicU64::new(0),
         })
     }
 
@@ -180,6 +183,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            earliest_uncompacted: AtomicU64::new(0),
         })
     }
 
@@ -388,8 +392,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
-        while let Some(entry) = iter.next() {
+        for entry in self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)? {
             let (_, iter_record) = entry?;
             if iter_record.snapshot_id() == snapshot_id && iter_record.open_sequence_number() == open_sequence_number {
                 return Ok(true);
@@ -580,6 +583,55 @@ impl<Durability> MVCCStorage<Durability> {
         Ok(())
     }
 
+    fn compaction_watermark(&self, limit: SequenceNumber) -> SequenceNumber {
+        let seq = SequenceNumber::min(limit, self.isolation_manager.watermark());
+        if let Some(earliest_reader) = self.isolation_manager.earliest_reader() {
+            SequenceNumber::min(seq, earliest_reader)
+        } else {
+            seq
+        }
+    }
+
+    pub fn compact<KS: KeyspaceSet>(&self, limit: SequenceNumber) -> Result<(), StorageCompactError> {
+        let watermark = self.compaction_watermark(limit);
+        if self.earliest_uncompacted.load(Ordering::Relaxed) >= watermark.number() {
+            return Ok(());
+        }
+
+        for ks in KS::iter() {
+            let keyspace = self.get_keyspace(ks.id());
+            let mut it = keyspace.iterate_range(
+                &IteratorPool::new(),
+                &KeyRange::new(
+                    RangeStart::Inclusive(Bytes::<0>::reference(&[])),
+                    key_range::RangeEnd::Unbounded,
+                    false,
+                ),
+                StorageCounters::DISABLED,
+            );
+            let mut batch = WriteBatch::default();
+            let mut last_seen = None;
+            while let Some(raw) = it.next() {
+                let (k, _) =
+                    raw.map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
+                let mvcc_key = MVCCKey::wrap_slice(k);
+
+                if mvcc_key.sequence_number() < watermark
+                    && (matches!(mvcc_key.operation(), StorageOperation::Delete)
+                        || last_seen.as_deref() == Some(mvcc_key.key()))
+                {
+                    batch.delete(k);
+                }
+                last_seen = Some(Bytes::<MVCC_KEY_INLINE_SIZE>::copy(mvcc_key.key()));
+            }
+            keyspace
+                .write(batch)
+                .map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
+        }
+        self.earliest_uncompacted.store(watermark.number(), Ordering::Relaxed);
+        Ok(())
+    }
+
     pub fn estimate_size_in_bytes(&self) -> Result<u64, StorageOpenError> {
         self.keyspaces.estimate_size_in_bytes().map_err(|source| StorageOpenError::Keyspace { source })
     }
@@ -617,6 +669,13 @@ typedb_error! {
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
         Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
+    }
+}
+
+typedb_error! {
+    pub StorageCompactError(component = "Storage commit", prefix = "STP") {
+        Internal(1, "Compaction in database '{name}' failed with internal error.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
+        Keyspace(2, "Compaction in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: KeyspaceError),
     }
 }
 

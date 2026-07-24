@@ -53,7 +53,7 @@ use storage::{
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
 };
-use tracing::{Level, debug, event, trace};
+use tracing::{Level, debug, error, event, trace};
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
@@ -602,6 +602,22 @@ fn make_update_statistics_fn(
             schema.write().unwrap().thing_statistics = new_statistics;
             debug!("Finished updating statistics for database {}", database_name.as_str());
         }
+    }
+}
+
+fn make_compact_fn(
+    database_name: String,
+    storage: Arc<MVCCStorage<WALClient>>,
+    schema: Arc<RwLock<Schema>>,
+) -> impl Fn() {
+    move || {
+        debug!("Running compaction for database {}", database_name);
+        let start = std::time::Instant::now();
+        if let Err(error) = storage.compact::<EncodingKeyspace>(schema.read().unwrap().thing_statistics.sequence_number)
+        {
+            error!("Compaction failed: {:?}", error);
+        }
+        debug!("Finished compaction for database {} in {:?}", database_name, start.elapsed());
     }
 }
 

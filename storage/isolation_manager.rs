@@ -232,6 +232,10 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
+    pub(crate) fn earliest_reader(&self) -> Option<SequenceNumber> {
+        self.timeline.earliest_reader()
+    }
+
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number);
     }
@@ -419,6 +423,15 @@ impl Timeline {
 
     fn watermark(&self) -> SequenceNumber {
         SequenceNumber::from(self.watermark.load(Ordering::SeqCst))
+    }
+
+    fn earliest_reader(&self) -> Option<SequenceNumber> {
+        for window in &*self.windows.read().unwrap() {
+            if window.readers.load(Ordering::Relaxed) > 0 {
+                return Some(window.start());
+            }
+        }
+        None
     }
 
     fn record_reader(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
