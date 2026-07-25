@@ -15,7 +15,7 @@ use encoding::{
 };
 use error::typedb_error;
 use storage::{
-    MVCCStorage, durability_client::DurabilityClient, keyspace::KeyspaceSet, sequence_number::SequenceNumber,
+    MVCCStorage, durability_client::DurabilityClient, sequence_number::SequenceNumber,
     snapshot::iterator::SnapshotIteratorError,
 };
 

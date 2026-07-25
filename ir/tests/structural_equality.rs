@@ -13,7 +13,6 @@ use ir::{
         pipeline::{TranslatedPipeline, translate_pipeline},
     },
 };
-use resource::profile::QueryProfile;
 use structural_equality::{StructuralEquality, is_structurally_equivalent};
 
 #[test]
@@ -148,7 +147,7 @@ fetch {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
         Arc::new(pipeline.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
@@ -187,7 +186,7 @@ fetch {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(structurally_equivalent_pipeline).unwrap().into_structure().into_pipeline(),
         Arc::new(structurally_equivalent_pipeline.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
 
@@ -195,9 +194,9 @@ fetch {
     assert!(equivalent_translated_stages.equals(&equivalent_translated_stages));
     assert!(equivalent_translated_fetch.equals(&equivalent_translated_fetch));
 
-    assert!(is_structurally_equivalent(&translated_preamble, &equivalent_translated_preamble));
-    assert!(is_structurally_equivalent(&translated_stages, &equivalent_translated_stages));
-    assert!(is_structurally_equivalent(&translated_fetch, &equivalent_translated_fetch));
+    assert!(is_structurally_equivalent(translated_preamble.as_ref(), &equivalent_translated_preamble));
+    assert!(is_structurally_equivalent(translated_stages.as_ref(), &equivalent_translated_stages));
+    assert!(is_structurally_equivalent(translated_fetch.as_ref(), &equivalent_translated_fetch));
 }
 
 #[test]
@@ -228,7 +227,7 @@ fetch {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
         Arc::new(pipeline.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
@@ -265,7 +264,7 @@ fetch {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(different).unwrap().into_structure().into_pipeline(),
         Arc::new(different.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
 
@@ -273,9 +272,9 @@ fetch {
     assert!(different_translated_stages.equals(&different_translated_stages));
     assert!(different_translated_fetch.equals(&different_translated_fetch));
 
-    assert!(!is_structurally_equivalent(&translated_preamble, &different_translated_preamble));
-    assert!(!is_structurally_equivalent(&translated_stages, &different_translated_stages));
-    assert!(!is_structurally_equivalent(&translated_fetch, &different_translated_fetch));
+    assert!(!is_structurally_equivalent(translated_preamble.as_ref(), &different_translated_preamble));
+    assert!(!is_structurally_equivalent(translated_stages.as_ref(), &different_translated_stages));
+    assert!(!is_structurally_equivalent(translated_fetch.as_ref(), &different_translated_fetch));
 }
 
 #[test]
@@ -285,7 +284,7 @@ fn test_anonymous_non_equivalence() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     assert!(translated_stages.equals(&translated_stages));
@@ -295,10 +294,10 @@ fn test_anonymous_non_equivalence() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(non_equivalent_query).unwrap().into_structure().into_pipeline(),
         Arc::new(non_equivalent_query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     assert!(different_translated_stages.equals(&different_translated_stages));
 
-    assert!(!is_structurally_equivalent(&translated_stages, &different_translated_stages));
+    assert!(!is_structurally_equivalent(translated_stages.as_ref(), &different_translated_stages));
 }

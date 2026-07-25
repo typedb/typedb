@@ -19,7 +19,6 @@ use ir::{
     },
     pipeline::{VariableRegistry, function_signature::FunctionID, reduce::AssignedReduction},
 };
-use itertools::Itertools;
 
 use crate::{
     VariablePosition,

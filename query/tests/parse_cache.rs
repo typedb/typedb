@@ -90,13 +90,13 @@ fn identical_query_string_hits_translation_cache() {
     let context = setup();
 
     // Cold: the translation cache has no entry for this string.
-    assert!(context.cache.get_translated(QUERY).is_none());
+    assert!(context.cache.get_translated(Arc::new(QUERY.to_owned()), Arc::default()).is_none());
 
     translate(&context);
 
     // Warm: the identical query string now resolves straight to translated IR.
     assert!(
-        context.cache.get_translated(QUERY).is_some(),
+        context.cache.get_translated(Arc::new(QUERY.to_owned()), Arc::default()).is_some(),
         "an identical query string should hit the translation cache"
     );
 }
@@ -107,11 +107,11 @@ fn schema_reset_invalidates_translation_but_keeps_parse_cache() {
 
     translate(&context);
     assert!(context.cache.get_parsed(QUERY).is_some());
-    assert!(context.cache.get_translated(QUERY).is_some());
+    assert!(context.cache.get_translated(Arc::new(QUERY.to_string()), Arc::default()).is_some());
 
     // A schema commit can change function resolution, so it flushes the translation cache. Parsing
     // is purely syntactic, so the parse cache must survive.
     context.cache.force_reset(&Statistics::new(SequenceNumber::MIN));
-    assert!(context.cache.get_translated(QUERY).is_none(), "a schema reset should invalidate the translation cache");
+    assert!(context.cache.get_translated(Arc::new(QUERY.to_string()), Arc::default()).is_none(), "a schema reset should invalidate the translation cache");
     assert!(context.cache.get_parsed(QUERY).is_some(), "a schema reset must not invalidate the parse cache");
 }

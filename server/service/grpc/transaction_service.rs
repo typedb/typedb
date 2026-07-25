@@ -1241,7 +1241,7 @@ impl TransactionService {
         read_metrics: &mut ReadQueryMetrics,
     ) {
         let encoding_profile: EncodingProfile;
-        let query_context = pipeline.query_context();
+        let query_context = pipeline.query_context().clone();
         if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);

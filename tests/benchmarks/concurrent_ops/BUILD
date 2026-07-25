@@ -14,6 +14,7 @@ rust_test(
         "//diagnostics",
         "//executor",
         "//query",
+        "//resource",
         "//storage",
 
         "//util/test:test_utils",

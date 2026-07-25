@@ -181,7 +181,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         Err((snapshot, err)) => return (snapshot, Err(err)),
     };
 
-    let query_context = pipeline.query_context();
+    let query_context = pipeline.query_context().clone();
     if pipeline.has_fetch() {
         let (iterator, snapshot) = match pipeline.into_documents_iterator(interrupt) {
             Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),

@@ -1018,7 +1018,7 @@ impl TransactionService {
         storage_counters: StorageCounters,
         read_metrics: &mut ReadQueryMetrics,
     ) -> ControlFlow<(), ()> {
-        let query_context = pipeline.query_context();
+        let query_context = pipeline.query_context().clone();
         if pipeline.has_fetch() {
             let (iterator, _context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_documents_iterator(interrupt.clone()),

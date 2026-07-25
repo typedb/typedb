@@ -6,12 +6,11 @@
 
 use std::{
     collections::HashMap,
-    hash::{Hash, Hasher},
     sync::Arc,
 };
 
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Serializer, ser::SerializeStruct};
+use serde::{Serialize, Serializer};
 use serde_json::{Map, Value, to_value};
 
 use crate::{

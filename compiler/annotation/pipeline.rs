@@ -30,7 +30,7 @@ use ir::{
         modifier::{Distinct, Limit, Offset, Require, Select, Sort},
         reduce::{AssignedReduction, Reduce, Reducer},
     },
-    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
+    translation::pipeline::{TranslatedGiven, TranslatedStage},
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
@@ -46,9 +46,8 @@ use crate::{
         },
         fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
-            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
-            get_annotations_from_labels_vec,
+            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
+            FunctionParameterAnnotation, annotate_preamble_functions, get_annotations_from_labels_vec,
         },
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
@@ -214,7 +213,7 @@ pub(crate) fn annotate_pipeline_stages(
             ctx,
             &mut running_annotations,
             running_constraint_annotations,
-            stage.clone(),
+            stage,
             pipeline_origin,
         )?;
 

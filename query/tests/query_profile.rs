@@ -192,7 +192,7 @@ fn query_profile_tree_structure() {
         )
         .unwrap();
 
-    let query_context = pipeline.query_context();
+    let query_context = pipeline.query_context().clone();
     let (iterator, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _: Vec<_> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).into_iter().collect();

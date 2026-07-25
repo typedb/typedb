@@ -7,7 +7,6 @@ use std::{marker::PhantomData, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{annotation::function::FunctionParameterAnnotation, executable::pipeline::GivenExecutable};
-use concept::thing::ThingAPI;
 use encoding::value::ValueEncodable;
 use error::needs_update_when_feature_is_implemented;
 use ir::{pattern::variable_category::VariableOptionality, pipeline::QueryContext};

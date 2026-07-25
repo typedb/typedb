@@ -28,27 +28,22 @@ use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIn
 use ir::{
     pattern::variable_category::VariableOptionality,
     pipeline::{
-        QueryContext, VariableRegistry,
-        fetch::FetchObject,
-        function::Function,
+        VariableRegistry,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     },
-    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage, create_query_context},
+    translation::pipeline::TranslatedPipeline,
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{
-        QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_PARSE_CACHE_HITS, QUERY_PARSE_CACHE_MISSES,
+        QUERY_EXECUTABLE_CACHE_HITS, QUERY_EXECUTABLE_CACHE_MISSES, QUERY_PARSE_CACHE_HITS, QUERY_PARSE_CACHE_MISSES,
         QUERY_TRANSLATION_CACHE_HITS, QUERY_TRANSLATION_CACHE_MISSES,
     },
     profile::QueryProfile,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{Level, event};
-use typeql::{
-    parser::Rule::var,
-    query::{QueryStructure, SchemaQuery},
-};
+use typeql::query::{QueryStructure, SchemaQuery};
 
 use crate::{
     analyse::{AnalysedQuery, QueryStructureAnnotations},
@@ -90,12 +85,12 @@ impl ParsedQuery {
 pub struct ParsedSchemaQuery {
     query: SchemaQuery,
     source_query: Arc<String>,
-    query_profile: QueryProfile,
+    query_profile: Arc<QueryProfile>,
 }
 
 impl ParsedSchemaQuery {
     pub fn new(query: SchemaQuery, source_query: Arc<String>, query_profile: QueryProfile) -> Self {
-        Self { query, source_query, query_profile }
+        Self { query, source_query, query_profile: Arc::new(query_profile) }
     }
 
     pub fn source_query(&self) -> &str {
@@ -185,7 +180,7 @@ impl QueryManager {
                     cache.may_insert_translated(
                         thing_manager.statistics().sequence_number,
                         &source_query,
-                        translated.clone(),
+                        &translated,
                     );
                 }
                 translated
@@ -265,7 +260,7 @@ impl QueryManager {
         pipeline.query_context.profile.compilation_profile().set_stage_timer();
         let executable_pipeline = match self.cache.as_ref().and_then(|cache| cache.get_executable(&pipeline)) {
             Some(executable_pipeline) => {
-                QUERY_CACHE_HITS.increment();
+                QUERY_EXECUTABLE_CACHE_HITS.increment();
                 executable_pipeline
             }
             None => {
@@ -280,7 +275,7 @@ impl QueryManager {
                     let seq = thing_manager.statistics().sequence_number;
                     cache.may_insert_executable(seq, &pipeline, executable_pipeline.clone())
                 }
-                QUERY_CACHE_MISSES.increment();
+                QUERY_EXECUTABLE_CACHE_MISSES.increment();
                 executable_pipeline
             }
         };
@@ -333,7 +328,7 @@ impl QueryManager {
 
         let executable_pipeline = match self.cache.as_ref().and_then(|cache| cache.get_executable(&pipeline)) {
             Some(executable_pipeline) => {
-                QUERY_CACHE_HITS.increment();
+                QUERY_EXECUTABLE_CACHE_HITS.increment();
                 executable_pipeline
             }
             None => {
@@ -353,7 +348,7 @@ impl QueryManager {
                                 executable_pipeline.clone(),
                             )
                         }
-                        QUERY_CACHE_MISSES.increment();
+                        QUERY_EXECUTABLE_CACHE_MISSES.increment();
                         executable_pipeline
                     }
                     Err(err) => {

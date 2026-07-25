@@ -15,16 +15,13 @@ use concept::{
 };
 use cucumber::gherkin::Step;
 use encoding::{
-    Prefixed,
     graph::{
         thing::{
-            ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::{ObjectID, ObjectVertex},
         },
         type_::vertex::TypeID,
     },
-    layout::prefix::Prefix,
     value::{ValueEncodable, label::Label, value_type::ValueType},
 };
 use executor::{
@@ -32,7 +29,6 @@ use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
 };
-use futures::StreamExt;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;

@@ -93,8 +93,8 @@ where
         self.pipeline_structure.as_ref()
     }
 
-    pub fn query_context(&self) -> Arc<QueryContext> {
-        self.query_context.clone()
+    pub fn query_context(&self) -> &QueryContext {
+        &self.query_context
     }
 }
 

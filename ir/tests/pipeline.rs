@@ -23,7 +23,6 @@ use ir::{
     },
     translation::{PipelineTranslationContext, pipeline::translate_pipeline},
 };
-use resource::profile::QueryProfile;
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
 // #[test]
 // fn build_modifiers() {
@@ -95,7 +94,7 @@ fn optional_writes() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -107,7 +106,7 @@ fn optional_writes() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -120,7 +119,7 @@ fn optional_writes() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -132,7 +131,7 @@ fn optional_writes() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -144,7 +143,7 @@ fn optional_writes() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 }
@@ -159,7 +158,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -171,7 +170,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -183,7 +182,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -195,7 +194,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -207,7 +206,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -219,7 +218,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 
@@ -231,7 +230,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
 }
@@ -248,7 +247,7 @@ fn nested_optional_blocks_in_write() {
             &HashMapFunctionSignatureIndex::empty(),
             &parsed.into_structure().into_pipeline(),
             Arc::new(query.to_string()),
-            QueryProfile::new(false),
+            Arc::default(),
         );
         assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
     }
@@ -261,7 +260,7 @@ fn nested_optional_blocks_in_write() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
 
@@ -273,7 +272,7 @@ fn nested_optional_blocks_in_write() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
 
@@ -285,7 +284,7 @@ fn nested_optional_blocks_in_write() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     );
     assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
 }

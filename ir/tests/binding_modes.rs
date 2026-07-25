@@ -19,7 +19,6 @@ use ir::{
     },
 };
 use itertools::Itertools;
-use resource::profile::QueryProfile;
 use typeql::query::stage::Stage;
 
 fn get_bound<'reg>(pattern: &impl Pattern, variable_registry: &'reg VariableRegistry) -> Vec<&'reg str> {
@@ -251,7 +250,7 @@ fn test_disjoint_disjunction_again() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap_err();
     assert!(match *translation_error {
@@ -308,7 +307,7 @@ fn test_negation_with_inputs() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
@@ -337,7 +336,7 @@ fn test_disjunction_with_inputs() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
@@ -382,7 +381,7 @@ fn test_optional_with_inputs() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
@@ -417,7 +416,7 @@ fn test_optional_skip_a_stage() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
@@ -456,7 +455,7 @@ fn test_nested_negation() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
@@ -489,7 +488,7 @@ fn test_nested_optional() {
         &empty_function_index,
         &parsed.into_pipeline(),
         Arc::new(query.to_string()),
-        QueryProfile::new(false),
+        Arc::default(),
     )
     .unwrap();
     let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
@@ -520,7 +519,7 @@ fn test_optional_return() {
         parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
     );
     let translated_pipeline =
-        translate_pipeline(&preamble_signatures, &parsed, Arc::new(query.to_string()), QueryProfile::new(false))
+        translate_pipeline(&preamble_signatures, &parsed, Arc::new(query.to_string()), Arc::default())
             .unwrap();
     let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();

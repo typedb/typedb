@@ -27,7 +27,6 @@ use crate::{
         function_call::FunctionCall,
         variable_category::{
             VariableCategory, VariableOptionality,
-            VariableOptionality::{Optional, Required},
         },
     },
     pipeline::{

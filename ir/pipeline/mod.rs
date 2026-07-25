@@ -407,10 +407,6 @@ impl QueryContext {
     pub fn new(parameters: Arc<ParameterRegistry>, source_query: Arc<String>, profile: Arc<QueryProfile>) -> Self {
         Self { parameters, source_query, profile }
     }
-
-    pub fn clone_with_new_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
-        QueryContext { parameters: parameters, source_query: self.source_query.clone(), profile: self.profile.clone() }
-    }
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]

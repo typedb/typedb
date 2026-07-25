@@ -190,7 +190,7 @@ pub fn translate_pipeline(
         &query.stages,
     )?;
 
-    let query_context = create_query_context(value_parameters, source_query, query_profile);
+    let query_context = QueryContext::new(Arc::new(value_parameters), source_query, query_profile);
 
     Ok(TranslatedPipeline::new(
         translation_context,
@@ -200,14 +200,6 @@ pub fn translate_pipeline(
         translated_fetch,
         query_context,
     ))
-}
-
-pub fn create_query_context(
-    parameter_registry: ParameterRegistry,
-    source_query: Arc<String>,
-    query_profile: Arc<QueryProfile>,
-) -> QueryContext {
-    QueryContext::new(Arc::new(parameter_registry), source_query, query_profile)
 }
 
 pub(crate) fn translate_pipeline_stages(

@@ -486,6 +486,12 @@ impl QueryProfile {
     }
 }
 
+impl Default for QueryProfile {
+    fn default() -> Self {
+        Self::new(false)
+    }
+}
+
 impl Display for QueryProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.indent_fmt(f, 0)
