@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::query_manager::{QueryContext, QueryManager};
+use query::query_manager::QueryManager;
 use resource::profile::CommitProfile;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -28,7 +28,7 @@ fn basic() {
     attribute name value string;
     entity person owns name;
     "#;
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }

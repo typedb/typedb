@@ -14,9 +14,9 @@ use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerato
 use function::function_manager::FunctionManager;
 use query::{
     query_cache::QueryCache,
-    query_manager::{ParsedQuery, ParsedSchemaQuery, QueryContext, QueryManager},
+    query_manager::{ParsedQuery, ParsedSchemaQuery, QueryManager},
 };
-use resource::profile::CommitProfile;
+use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
 };
@@ -54,7 +54,7 @@ fn setup() -> Context {
             &type_manager,
             &thing_manager,
             &function_manager,
-            ParsedSchemaQuery::new(QueryContext::new_profile_disabled(SCHEMA.to_string()), define),
+            ParsedSchemaQuery::new(define, Arc::new(SCHEMA.to_string()), QueryProfile::new(false)),
         )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -68,8 +68,7 @@ fn setup() -> Context {
 
 fn translate(context: &Context) {
     let snapshot = context.storage.clone().open_snapshot_read();
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(QUERY.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(QUERY.to_string()).unwrap().into_pipeline();
     context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
 }
 
@@ -80,10 +79,7 @@ fn identical_query_string_hits_parse_cache() {
     // Cold: the parse cache has no entry for this string.
     assert!(context.cache.get_parsed(QUERY).is_none());
 
-    assert!(matches!(
-        context.query_manager.parse(QueryContext::new_profile_disabled(QUERY.to_string())).unwrap(),
-        ParsedQuery::Pipeline(..)
-    ));
+    assert!(matches!(context.query_manager.parse(QUERY.to_string()).unwrap(), ParsedQuery::Pipeline(..)));
 
     // Warm: the identical query string now resolves straight from the parse cache.
     assert!(context.cache.get_parsed(QUERY).is_some(), "an identical query string should hit the parse cache");

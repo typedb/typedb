@@ -10,11 +10,11 @@ use std::{
 };
 
 use answer::Type;
-use compiler::executable::pipeline::CompiledPipeline;
+use compiler::executable::pipeline::ExecutablePipeline;
 use concept::thing::statistics::Statistics;
 use ir::{
-    pipeline::{fetch::FetchObject, function::Function},
-    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
+    pipeline::{ParameterRegistry, QueryContext, VariableRegistry, fetch::FetchObject, function::Function},
+    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage, create_query_context},
 };
 use moka::sync::{Cache, CacheBuilder};
 use resource::{
@@ -23,6 +23,7 @@ use resource::{
         QUERY_TRANSLATION_CACHE_SIZE,
     },
     perf_counters::QUERY_CACHE_FLUSH,
+    profile::QueryProfile,
 };
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
@@ -37,8 +38,8 @@ struct ValidityRequirements {
 #[derive(Debug)]
 pub struct QueryCache {
     parse_cache: Cache<String, Arc<Pipeline>>,
-    translate_cache: Cache<String, TranslatedPipeline>,
-    compile_cache: Cache<IRQuery, CompiledPipeline>,
+    translate_cache: Cache<String, (CachedTranslatedPipeline, ParameterRegistry)>,
+    compile_cache: Cache<CachedTranslatedPipeline, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
@@ -60,8 +61,16 @@ impl QueryCache {
         self.parse_cache.insert(source_query.to_owned(), pipeline);
     }
 
-    pub fn get_translated(&self, query: &str) -> Option<TranslatedPipeline> {
-        self.translate_cache.get(query)
+    pub fn get_translated(
+        &self,
+        source_query: Arc<String>,
+        query_profile: Arc<QueryProfile>,
+    ) -> Option<TranslatedPipeline> {
+        let cached = self.translate_cache.get(source_query.as_ref());
+        cached.map(|(cached_pipeline, parameters)| {
+            let query_context = create_query_context(parameters, source_query, query_profile);
+            cached_pipeline.into_translated_pipeline(query_context)
+        })
     }
 
     pub(crate) fn may_insert_translated(
@@ -75,36 +84,38 @@ impl QueryCache {
             .latest_schema_commit
             .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
         if may_insert {
-            self.translate_cache.insert(source_query.to_owned(), translated);
+            let cachable_translated = CachedTranslatedPipeline {
+                preamble: translated.translated_preamble,
+                given: translated.translated_given,
+                stages: translated.translated_stages,
+                fetch: translated.translated_fetch,
+                variable_registry: translated.variable_registry,
+            };
+            self.translate_cache.insert(
+                source_query.to_owned(),
+                (cachable_translated, translated.query_context.parameters.as_ref().clone()),
+            );
         }
         drop(read_lock);
     }
 
-    pub(crate) fn get_compiled(
-        &self,
-        preamble: Arc<Vec<Function>>,
-        given: Arc<Option<TranslatedGiven>>,
-        stages: Arc<Vec<TranslatedStage>>,
-        fetch: Arc<Option<FetchObject>>,
-    ) -> Option<CompiledPipeline> {
-        let key = IRQuery::new(preamble.clone(), given, stages, fetch);
+    pub(crate) fn get_executable(&self, pipeline: &TranslatedPipeline) -> Option<ExecutablePipeline> {
+        let key = CachedTranslatedPipeline::from(pipeline);
         self.compile_cache.get(&key).map(|mut found| {
-            let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
+            let replacement =
+                pipeline.translated_preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
             found.executable_functions.replace_preamble_parameters(replacement);
             found
         })
     }
 
-    pub(crate) fn may_insert_compiled(
+    pub(crate) fn may_insert_executable(
         &self,
         statistics_sequence_number: SequenceNumber,
-        preamble: Arc<Vec<Function>>,
-        given: Arc<Option<TranslatedGiven>>,
-        stages: Arc<Vec<TranslatedStage>>,
-        fetch: Arc<Option<FetchObject>>,
-        pipeline: CompiledPipeline,
+        translated_pipeline: &TranslatedPipeline,
+        pipeline: ExecutablePipeline,
     ) {
-        let key = IRQuery::new(preamble, given, stages, fetch);
+        let key = CachedTranslatedPipeline::from(translated_pipeline);
         let read_lock = self.validity_requirements.read().unwrap();
         let ValidityRequirements { latest_schema_commit, latest_statistics } = &*read_lock;
         let may_insert = latest_schema_commit
@@ -148,7 +159,7 @@ impl Default for QueryCache {
     }
 }
 
-fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &CompiledPipeline) -> bool {
+fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &ExecutablePipeline) -> bool {
     let mut total_increase = 1.0;
     let mut total_decrease = 1.0;
     for (&ty, &pop) in &pipeline.type_populations {
@@ -168,40 +179,65 @@ fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &Com
         || total_decrease >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
 }
 
-#[derive(Debug)]
-struct IRQuery {
+#[derive(Debug, Clone)]
+struct CachedTranslatedPipeline {
     preamble: Arc<Vec<Function>>,
     given: Arc<Option<TranslatedGiven>>,
     stages: Arc<Vec<TranslatedStage>>,
     fetch: Arc<Option<FetchObject>>,
+    variable_registry: VariableRegistry,
 }
 
-impl IRQuery {
+impl CachedTranslatedPipeline {
     fn new(
         preamble: Arc<Vec<Function>>,
         given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
+        variable_registry: VariableRegistry,
     ) -> Self {
-        Self { preamble: preamble, given, stages, fetch }
+        Self { preamble, given, stages, fetch, variable_registry }
+    }
+
+    fn into_translated_pipeline(self, query_context: QueryContext) -> TranslatedPipeline {
+        TranslatedPipeline {
+            translated_preamble: self.preamble,
+            translated_given: self.given,
+            translated_stages: self.stages,
+            translated_fetch: self.fetch,
+            variable_registry: self.variable_registry.clone(), // TODO: only clone, which is heavh!
+            query_context,
+        }
     }
 }
 
-impl Hash for IRQuery {
+impl From<&TranslatedPipeline> for CachedTranslatedPipeline {
+    fn from(pipeline: &TranslatedPipeline) -> Self {
+        Self {
+            preamble: pipeline.translated_preamble.clone(),
+            given: pipeline.translated_given.clone(),
+            stages: pipeline.translated_stages.clone(),
+            fetch: pipeline.translated_fetch.clone(),
+            variable_registry: pipeline.variable_registry.clone(),
+        }
+    }
+}
+
+impl Hash for CachedTranslatedPipeline {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.hash_into(state);
     }
 }
 
-impl PartialEq<Self> for IRQuery {
+impl PartialEq<Self> for CachedTranslatedPipeline {
     fn eq(&self, other: &Self) -> bool {
         self.equals(other)
     }
 }
 
-impl Eq for IRQuery {}
+impl Eq for CachedTranslatedPipeline {}
 
-impl StructuralEquality for IRQuery {
+impl StructuralEquality for CachedTranslatedPipeline {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.preamble.hash_into(&mut hasher);

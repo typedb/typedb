@@ -18,7 +18,6 @@ use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
-use query::query_manager::QueryContext;
 use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
@@ -204,7 +203,7 @@ fn execute_schema_transaction(
     let schema_define = format!("define\n{}", types_syntax);
     let parsed = transaction
         .query_manager
-        .parse(QueryContext::new_profile_disabled(schema_define.clone()))
+        .parse(schema_define.clone())
         .map_err(|err| err as Box<dyn TypeDBError>)?
         .into_schema();
     transaction

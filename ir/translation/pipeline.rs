@@ -47,10 +47,10 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
-    pub translated_preamble: Vec<Function>,
-    pub translated_given: Option<TranslatedGiven>,
-    pub translated_stages: Vec<TranslatedStage>,
-    pub translated_fetch: Option<FetchObject>,
+    pub translated_preamble: Arc<Vec<Function>>,
+    pub translated_given: Arc<Option<TranslatedGiven>>,
+    pub translated_stages: Arc<Vec<TranslatedStage>>,
+    pub translated_fetch: Arc<Option<FetchObject>>,
     pub variable_registry: VariableRegistry,
     pub query_context: QueryContext,
 }
@@ -65,10 +65,10 @@ impl TranslatedPipeline {
         query_context: QueryContext,
     ) -> Self {
         TranslatedPipeline {
-            translated_preamble,
-            translated_given,
-            translated_stages,
-            translated_fetch,
+            translated_preamble: Arc::new(translated_preamble),
+            translated_given: Arc::new(translated_given),
+            translated_stages: Arc::new(translated_stages),
+            translated_fetch: Arc::new(translated_fetch),
             variable_registry: translation_context.variable_registry,
             query_context,
         }
@@ -171,7 +171,7 @@ pub fn translate_pipeline(
     all_function_signatures: &impl FunctionSignatureIndex,
     query: &typeql::query::Pipeline,
     source_query: Arc<String>,
-    query_profile: QueryProfile,
+    query_profile: Arc<QueryProfile>,
 ) -> Result<TranslatedPipeline, Box<RepresentationError>> {
     // all_function_signatures contains the preambles already!
     let translated_preamble = query
@@ -190,7 +190,7 @@ pub fn translate_pipeline(
         &query.stages,
     )?;
 
-    let query_context = QueryContext::new(Arc::new(value_parameters), source_query, Arc::new(query_profile));
+    let query_context = create_query_context(value_parameters, source_query, query_profile);
 
     Ok(TranslatedPipeline::new(
         translation_context,
@@ -200,6 +200,14 @@ pub fn translate_pipeline(
         translated_fetch,
         query_context,
     ))
+}
+
+pub fn create_query_context(
+    parameter_registry: ParameterRegistry,
+    source_query: Arc<String>,
+    query_profile: Arc<QueryProfile>,
+) -> QueryContext {
+    QueryContext::new(Arc::new(parameter_registry), source_query, query_profile)
 }
 
 pub(crate) fn translate_pipeline_stages(

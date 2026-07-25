@@ -12,11 +12,7 @@ use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::{
-    given_rows::GivenRowsSimple,
-    query_cache::QueryCache,
-    query_manager::{QueryContext, QueryManager},
-};
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -43,7 +39,7 @@ fn define_schema(
                     owns nickname @card(0..1),
                     plays friendship:friend @card(0..);
     "#;
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -57,8 +53,7 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let parsed =
-        query_manager.parse(QueryContext::new_profile_disabled(query_string.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(query_string.to_string()).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
@@ -69,8 +64,8 @@ fn insert_data(
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -182,7 +177,8 @@ fn query_profile_tree_structure() {
         limit 10;
     "#;
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let parsed = query_manager.parse(QueryContext::new_profile_enabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed =
+        query_manager.parse_with_profile(query_str.to_string(), QueryProfile::new(true)).unwrap().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated = query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
@@ -194,18 +190,18 @@ fn query_profile_tree_structure() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
 
-    let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let query_context = pipeline.query_context();
+    let (iterator, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _: Vec<_> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).into_iter().collect();
 
-    assert!(context.profile.is_enabled(), "expected profile to be enabled under TRACE-level tracing");
+    assert!(query_context.profile.is_enabled(), "expected profile to be enabled under TRACE-level tracing");
 
-    let rendered = format!("{}", context.profile);
+    let rendered = format!("{}", query_context.profile);
 
-    let actual = QueryProfileShape::from_profile(&context.profile);
+    let actual = QueryProfileShape::from_profile(&query_context.profile);
 
     assert_eq!(actual.stages.len(), 2, "expected exactly 2 stages, got {:#?}\n{}", actual.stages, rendered);
 

@@ -46,7 +46,7 @@ use ir::{
         Vertex,
         constraint::{Comparator, IsaKind},
     },
-    pipeline::{ParameterRegistry, block::Block},
+    pipeline::{ParameterRegistry, QueryContext, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
@@ -426,18 +426,18 @@ fn traverse_index_from_unbound() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
+    let query_context =
+        Arc::new(QueryContext::new(value_parameters.clone(), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), value_parameters.clone());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
@@ -515,18 +515,18 @@ fn traverse_index_from_unbound() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context =
+        Arc::new(QueryContext::new(value_parameters, Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), value_parameters);
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
@@ -688,18 +688,18 @@ fn traverse_index_from_bound() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context =
+        Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context.clone(), ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
@@ -857,18 +857,18 @@ fn traverse_index_bound_role_type_filtered_correctly() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context =
+        Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context.clone(), ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))

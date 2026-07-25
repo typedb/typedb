@@ -10,11 +10,7 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
-use query::{
-    given_rows::GivenRowsSimple,
-    query_cache::QueryCache,
-    query_manager::{QueryContext, QueryManager},
-};
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -36,7 +32,7 @@ fn define_schema(
       relation friendship relates friend @card(0..);
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
@@ -50,8 +46,7 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let parsed =
-        query_manager.parse(QueryContext::new_profile_disabled(query_string.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(query_string.to_string()).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
@@ -62,8 +57,8 @@ fn insert_data(
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -129,8 +124,7 @@ fetch {
     "all attributes": { $x.* }
 };"#;
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let parsed =
-        query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let translated = query_manager.translate(parsed, snapshot.as_ref(), &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
@@ -142,8 +136,7 @@ fetch {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
 
     let (iterator, _) = pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 

@@ -18,8 +18,9 @@ use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::{
     given_rows::GivenRowsSimple,
-    query_manager::{ParsedPipeline, ParsedSchemaQuery, QueryContext},
+    query_manager::{ParsedPipeline, ParsedSchemaQuery},
 };
+use resource::profile::QueryProfile;
 use storage::{
     StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, snapshot::SnapshotError,
 };
@@ -45,7 +46,7 @@ fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
 fn commit_schema(database: Arc<Database<WALClient>>, schema: &str) {
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database, TransactionOptions::default()).unwrap();
-    let parsed = ParsedSchemaQuery::new(QueryContext::new_profile_disabled(schema.to_string()), schema_query);
+    let parsed = ParsedSchemaQuery::new(schema_query, Arc::new(schema.to_string()), QueryProfile::new(false));
     let (tx, result) = execute_schema_query(tx, parsed);
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
@@ -68,7 +69,7 @@ fn run_write(tx: TransactionWrite<WALClient>, query: &str) -> TransactionWrite<W
     let (tx, result) = execute_write_query_in_write(
         tx,
         QueryOptions::default_grpc(),
-        ParsedPipeline::new(QueryContext::new_profile_disabled(query.to_string()), Arc::new(pipeline)),
+        ParsedPipeline::new(Arc::new(pipeline), Arc::new(query.to_string()), QueryProfile::new(false)),
         None::<GivenRowsSimple>,
         ExecutionInterrupt::new_uninterruptible(),
     );

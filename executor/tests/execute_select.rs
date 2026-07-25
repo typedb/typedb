@@ -40,7 +40,7 @@ use executor::{
 };
 use ir::{
     pattern::constraint::IsaKind,
-    pipeline::{ParameterRegistry, block::Block},
+    pipeline::{ParameterRegistry, QueryContext, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
@@ -247,18 +247,17 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context.clone(), ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
@@ -340,18 +339,17 @@ fn unselected_named_vars_counted() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context.clone(), ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
@@ -453,18 +451,17 @@ fn cartesian_named_counted_checked() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context.clone(), ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))

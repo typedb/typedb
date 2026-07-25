@@ -40,7 +40,6 @@ use query::{
     analyse::AnalysedQuery,
     error::QueryError,
     given_rows::{GivenRowEntry, GivenRowsSimple},
-    query_manager::QueryContext,
 };
 use resource::profile::StorageCounters;
 use server::service::http::message::analyze::{
@@ -94,24 +93,21 @@ fn execute_read_query(
     source_query: &str,
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
-        let parsed =
-            tx.query_manager.parse(QueryContext::new_profile_disabled(source_query.to_string()))?.into_pipeline();
+        let parsed = tx.query_manager.parse(source_query.to_string())?.into_pipeline();
         let translated =
             tx.query_manager.translate(parsed, tx.snapshot.as_ref(), &tx.function_manager, &tx.thing_manager)?;
-        let pipeline = tx
-            .query_manager
-            .prepare_read_pipeline(
-                tx.snapshot.clone(),
-                &tx.type_manager,
-                tx.thing_manager.clone(),
-                tx.function_manager.clone(),
-                translated,
-                given_rows,
-            )?
-            .into_pipeline();
+        let pipeline = tx.query_manager.prepare_read_pipeline(
+            tx.snapshot.clone(),
+            &tx.type_manager,
+            tx.thing_manager.clone(),
+            tx.function_manager.clone(),
+            translated,
+            given_rows,
+        )?;
         if pipeline.has_fetch() {
+            let parameters = pipeline.query_context().parameters.clone();
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                Ok((iterator, ExecutionContext { parameters, .. })) => {
+                Ok((iterator, ExecutionContext { .. })) => {
                     let documents = iterator.try_collect().map_err(|err| QueryError::ReadPipelineExecution {
                         source_query: source_query.to_string(),
                         typedb_source: err,
@@ -162,7 +158,7 @@ fn execute_write_query(
                                            query_manager,
                                            _db,
                                            _opts| {
-        match query_manager.parse(QueryContext::new_profile_disabled(source_query.to_string())) {
+        match query_manager.parse(source_query.to_string()) {
             Err(error) => (Err(BehaviourTestExecutionError::Query(*error)), snapshot),
             Ok(parsed) => {
                 let parsed_pipeline = parsed.into_pipeline();
@@ -184,10 +180,10 @@ fn execute_write_query(
                                 (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot))
                             }
                             Ok(pipeline) => {
-                                let pipeline = pipeline.into_pipeline();
                                 if pipeline.has_fetch() {
+                                    let parameters = pipeline.query_context().parameters.clone();
                                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => (
+                                        Ok((iterator, ExecutionContext { snapshot, .. })) => (
                                             match iterator.collect() {
                                                 Ok(documents) => {
                                                     Ok(QueryAnswer::ConceptDocuments(documents, parameters))
@@ -264,7 +260,7 @@ fn execute_analyze(
     with_read_tx!(context, |tx| {
         let parsed = tx
             .query_manager
-            .parse(QueryContext::new_profile_disabled(source_query.to_string()))
+            .parse(source_query.to_string())
             .map_err(|source| BehaviourTestExecutionError::Query(*source))?
             .into_pipeline();
         let translated =
@@ -312,8 +308,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
 
     with_schema_tx!(context, |tx| {
-        let parsed =
-            tx.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_schema();
+        let parsed = tx.query_manager.parse(query.to_string()).unwrap().into_schema();
         let result = tx.query_manager.execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,

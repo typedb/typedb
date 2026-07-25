@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use ir::{
     pipeline::function_signature::HashMapFunctionSignatureIndex,
     translation::{
@@ -11,6 +13,7 @@ use ir::{
         pipeline::{TranslatedPipeline, translate_pipeline},
     },
 };
+use resource::profile::QueryProfile;
 use structural_equality::{StructuralEquality, is_structurally_equivalent};
 
 #[test]
@@ -144,6 +147,8 @@ fetch {
     let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
+        Arc::new(pipeline.to_string()),
+        QueryProfile::new(false),
     )
     .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
@@ -181,6 +186,8 @@ fetch {
     } = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(structurally_equivalent_pipeline).unwrap().into_structure().into_pipeline(),
+        Arc::new(structurally_equivalent_pipeline.to_string()),
+        QueryProfile::new(false),
     )
     .unwrap();
 
@@ -220,6 +227,8 @@ fetch {
     let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
+        Arc::new(pipeline.to_string()),
+        QueryProfile::new(false),
     )
     .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
@@ -255,6 +264,8 @@ fetch {
     } = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(different).unwrap().into_structure().into_pipeline(),
+        Arc::new(different.to_string()),
+        QueryProfile::new(false),
     )
     .unwrap();
 
@@ -273,6 +284,8 @@ fn test_anonymous_non_equivalence() {
     let TranslatedPipeline { translated_stages, .. } = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+        Arc::new(query.to_string()),
+        QueryProfile::new(false),
     )
     .unwrap();
     assert!(translated_stages.equals(&translated_stages));
@@ -281,6 +294,8 @@ fn test_anonymous_non_equivalence() {
     let TranslatedPipeline { translated_stages: different_translated_stages, .. } = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(non_equivalent_query).unwrap().into_structure().into_pipeline(),
+        Arc::new(non_equivalent_query.to_string()),
+        QueryProfile::new(false),
     )
     .unwrap();
     assert!(different_translated_stages.equals(&different_translated_stages));

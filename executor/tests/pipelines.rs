@@ -19,11 +19,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use query::{
-    given_rows::GivenRowsSimple,
-    query_cache::QueryCache,
-    query_manager::{QueryContext, QueryManager},
-};
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::{TempDir, assert_matches};
@@ -58,7 +54,7 @@ fn setup_common() -> Context {
         relation membership relates member, relates group;
     "#;
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
+    let parsed = query_manager.parse(schema.to_string()).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -73,8 +69,7 @@ fn test_insert() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -87,8 +82,8 @@ fn test_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -118,8 +113,7 @@ fn test_insert_insert() {
     insert
         (group: $org, member: $p) isa membership;
     "#;
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -132,8 +126,8 @@ fn test_insert_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -159,8 +153,7 @@ fn test_match() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -173,8 +166,8 @@ fn test_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
@@ -184,8 +177,7 @@ fn test_match() {
 
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -200,16 +192,14 @@ fn test_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -224,8 +214,7 @@ fn test_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
     let (iterator, ExecutionContext { .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
@@ -242,8 +231,7 @@ fn test_match_match() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -256,8 +244,8 @@ fn test_match_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
@@ -270,8 +258,7 @@ fn test_match_match() {
         match $p isa person;
         match $p has age $a;
     ";
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -286,16 +273,14 @@ fn test_match_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -310,8 +295,7 @@ fn test_match_match() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
     let (iterator, ExecutionContext { .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
@@ -323,11 +307,7 @@ fn test_match_delete_has() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
-    let parsed = context
-        .query_manager
-        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
-        .unwrap()
-        .into_pipeline();
+    let parsed = context.query_manager.parse(insert_query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -340,8 +320,8 @@ fn test_match_delete_has() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -367,11 +347,7 @@ fn test_match_delete_has() {
         delete has $a of $p;
     "#;
 
-    let parsed = context
-        .query_manager
-        .parse(QueryContext::new_profile_disabled(delete_query_str.to_string()))
-        .unwrap()
-        .into_pipeline();
+    let parsed = context.query_manager.parse(delete_query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -384,8 +360,8 @@ fn test_match_delete_has() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -416,8 +392,7 @@ fn test_insert_match_insert() {
        $q isa person, has age 20, has name 'Alice';
        $r isa person, has age 30, has name 'Harry';
    "#;
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -430,8 +405,8 @@ fn test_insert_match_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
@@ -449,8 +424,7 @@ fn test_insert_match_insert() {
         (group: $org, member: $p) isa membership;
     "#;
 
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -463,8 +437,8 @@ fn test_insert_match_insert() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -485,11 +459,7 @@ fn test_match_sort() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 1, has age 2, has age 3, has age 4;";
-    let parsed = context
-        .query_manager
-        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
-        .unwrap()
-        .into_pipeline();
+    let parsed = context.query_manager.parse(insert_query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -502,8 +472,8 @@ fn test_match_sort() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -514,8 +484,7 @@ fn test_match_sort() {
 
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $age isa age; sort $age desc;";
-    let parsed =
-        context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
     let translated = context
         .query_manager
         .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -530,8 +499,7 @@ fn test_match_sort() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .unwrap();
     let named_outputs = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -561,11 +529,7 @@ fn test_select() {
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
-    let parsed = context
-        .query_manager
-        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
-        .unwrap()
-        .into_pipeline();
+    let parsed = context.query_manager.parse(insert_query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -578,8 +542,8 @@ fn test_select() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -591,8 +555,7 @@ fn test_select() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age;";
-        let parsed =
-            context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+        let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
         let translated = context
             .query_manager
             .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -607,8 +570,7 @@ fn test_select() {
                 translated,
                 None::<GivenRowsSimple>,
             )
-            .unwrap()
-            .into_pipeline();
+            .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));
@@ -616,8 +578,7 @@ fn test_select() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
-        let parsed =
-            context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+        let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
         let translated = context
             .query_manager
             .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -632,8 +593,7 @@ fn test_select() {
                 translated,
                 None::<GivenRowsSimple>,
             )
-            .unwrap()
-            .into_pipeline();
+            .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(!named_outputs.contains_key("p"));
@@ -647,11 +607,7 @@ fn test_require() {
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
-    let parsed = context
-        .query_manager
-        .parse(QueryContext::new_profile_disabled(insert_query_str.to_string()))
-        .unwrap()
-        .into_pipeline();
+    let parsed = context.query_manager.parse(insert_query_str.to_string()).unwrap().into_pipeline();
     let translated =
         context.query_manager.translate(parsed, &snapshot, &context.function_manager, &context.thing_manager).unwrap();
     let pipeline = context
@@ -664,8 +620,8 @@ fn test_require() {
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -677,8 +633,7 @@ fn test_require() {
     {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; require $age;";
-        let parsed =
-            context.query_manager.parse(QueryContext::new_profile_disabled(query.to_string())).unwrap().into_pipeline();
+        let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
         let translated = context
             .query_manager
             .translate(parsed, snapshot.as_ref(), &context.function_manager, &context.thing_manager)
@@ -693,8 +648,7 @@ fn test_require() {
                 translated,
                 None::<GivenRowsSimple>,
             )
-            .unwrap()
-            .into_pipeline();
+            .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));

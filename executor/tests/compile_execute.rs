@@ -29,16 +29,12 @@ use executor::{
 use function::function_manager::FunctionManager;
 use ir::{
     pattern::Pattern,
-    pipeline::{ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
+    pipeline::{ParameterRegistry, QueryContext, function_signature::HashMapFunctionSignatureIndex},
     translation::{PipelineTranslationContext, match_::translate_match},
 };
 use itertools::Itertools;
-use ir::pipeline::QueryContext;
 use lending_iterator::LendingIterator;
-use query::{
-    given_rows::GivenRowsSimple,
-    query_manager::{QueryContext, QueryManager},
-};
+use query::{given_rows::GivenRowsSimple, query_manager::QueryManager};
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     MVCCStorage,
@@ -68,14 +64,12 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(schema.to_string())).unwrap().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed)
-        .unwrap();
+    let parsed = query_manager.parse(schema.to_string()).unwrap().into_schema();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let parsed = query_manager.parse(QueryContext::new_profile_disabled(data.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(data.to_string()).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
@@ -86,8 +80,8 @@ fn setup(
             translated,
             None::<GivenRowsSimple>,
         )
-        .unwrap()
-        .into_pipeline();
+        .map_err(|(_, err)| err)
+        .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));
@@ -155,18 +149,17 @@ fn test_has_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
-    let query_context = Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false)));
+    let query_context =
+        Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false))));
     let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -255,18 +248,18 @@ fn test_expression_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context =
+        Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -342,18 +335,17 @@ fn test_links_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -436,18 +428,17 @@ fn test_links_intersection() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -521,18 +512,17 @@ fn test_negation_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -628,18 +618,17 @@ fn test_forall_planning_traversal() {
     )
     .unwrap();
 
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -720,18 +709,17 @@ fn test_named_var_select() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -812,18 +800,17 @@ fn test_disjunction_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -908,18 +895,17 @@ fn test_disjunction_planning_nested_negations() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let executor = MatchExecutor::new(
         &conjunction_executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
@@ -967,17 +953,18 @@ fn test_mismatched_input_types() {
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
         let conjunction_executable =
             compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
         let executor = MatchExecutor::new(
             &conjunction_executable,
-            &snapshot,
-            &thing_manager,
+            &context,
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
             &Arc::new(QueryProfile::new(false)),
         )
         .unwrap();
-        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());
-        let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+        let query_context =
+            Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+        let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
         let rows = iterator
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
             .into_iter()
@@ -1002,17 +989,18 @@ fn test_mismatched_input_types() {
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
         let conjunction_executable =
             compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
         let executor = MatchExecutor::new(
             &conjunction_executable,
-            &snapshot,
-            &thing_manager,
+            &context,
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
             &Arc::new(QueryProfile::new(false)),
         )
         .unwrap();
-        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), Arc::default());
-        let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+        let query_context =
+            Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
+        let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
         let rows = iterator
             .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
             .into_iter()

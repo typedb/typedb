@@ -28,12 +28,7 @@ use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
-use query::{
-    error::QueryError,
-    given_rows::GivenRowsSimple,
-    query_cache::QueryCache,
-    query_manager::{QueryContext, QueryManager},
-};
+use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     MVCCStorage,
@@ -128,8 +123,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
 
-    let parsed =
-        query_manager.parse(QueryContext::new_profile_disabled(query_str.to_string())).unwrap().into_pipeline();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let translated = query_manager.translate(parsed, &snapshot, &function_manager, &thing_manager).unwrap();
     let pipeline = query_manager
         .prepare_write_pipeline(
@@ -140,8 +134,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             translated,
             None::<GivenRowsSimple>,
         )
-        .map_err(|(snapshot, err)| (err, snapshot))?
-        .into_pipeline();
+        .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
