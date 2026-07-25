@@ -4,7 +4,7 @@
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-exports_files(["script.tql", "verify.tql"])
+exports_files(["load.tql", "verify.tql"])
 
 checkstyle_test(
     name = "checkstyle",
