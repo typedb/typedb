@@ -89,6 +89,9 @@ features = {}
 	[dependencies.function]
 		workspace = true
 
+	[dependencies.options]
+		workspace = true
+
 	[dependencies.typeql]
 		workspace = true
 
@@ -111,18 +114,22 @@ features = {}
 	name = "test_pipeline_stages_limit"
 
 [[test]]
-	path = "tests/fetch.rs"
+	path = "tests/test_fetch.rs"
 	name = "test_fetch"
 
 [[test]]
-	path = "tests/unimplemented.rs"
+	path = "tests/test_unimplemented.rs"
 	name = "test_unimplemented"
 
 [[test]]
-	path = "tests/query_profile.rs"
+	path = "tests/test_query_profile.rs"
 	name = "test_query_profile"
 
 [[test]]
-	path = "tests/define.rs"
+	path = "tests/test_planner.rs"
+	name = "test_planner"
+
+[[test]]
+	path = "tests/test_define.rs"
 	name = "test_define"
 

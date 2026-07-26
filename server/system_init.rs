@@ -9,6 +9,7 @@ use database::{
     Database,
     transaction::{CommitIntent, SchemaCommitIntent},
 };
+use options::InternalQueryOptions;
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
@@ -86,9 +87,11 @@ pub fn get_system_database_schema_commit_intent(
                 })
                 .into_structure()
                 .into_schema();
-            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(|error| {
-                panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
-            });
+            query_mgr
+                .execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA, InternalQueryOptions::default())
+                .unwrap_or_else(|error| {
+                    panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
+                });
         });
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;

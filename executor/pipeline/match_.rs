@@ -34,6 +34,10 @@ impl<InputIterator> MatchStageExecutor<InputIterator> {
     pub fn new(executable: Arc<ConjunctionExecutable>, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
         Self { executable, function_registry, _input_iterator: PhantomData }
     }
+
+    pub fn executable(&self) -> &ConjunctionExecutable {
+        &self.executable
+    }
 }
 
 impl<Snapshot, InputIterator> StageAPI<Snapshot> for MatchStageExecutor<InputIterator>

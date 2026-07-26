@@ -40,7 +40,7 @@ use executor::{
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
-use options::QueryOptions;
+use options::{InternalQueryOptions, QueryOptions};
 use query::{
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows},
@@ -1256,6 +1256,7 @@ impl TransactionService {
                     &pipeline,
                     given_rows,
                     &source_query,
+                    InternalQueryOptions::default(),
                 );
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
                     Self::submit_read_response_with_metrics(

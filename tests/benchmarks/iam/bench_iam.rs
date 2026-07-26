@@ -13,7 +13,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
-use options::{TransactionOptions, byte_size::ByteSize};
+use options::{InternalQueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
@@ -51,6 +51,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &function_manager,
             schema_query,
             &schema_str,
+            InternalQueryOptions::default(),
         )
         .unwrap();
     let tx = TransactionSchema::from_parts(
@@ -93,6 +94,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             &data_query,
             None::<GivenRowsSimple>,
             &data_str,
+            InternalQueryOptions::default(),
         )
         .unwrap();
     let (_output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -155,6 +157,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             &query,
             None::<GivenRowsSimple>,
             query_str,
+            InternalQueryOptions::default(),
         )
         .unwrap();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

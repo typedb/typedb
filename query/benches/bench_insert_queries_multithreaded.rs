@@ -22,6 +22,7 @@ use concept::{
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use lending_iterator::LendingIterator;
+use options::InternalQueryOptions;
 use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
@@ -125,6 +126,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             &typeql_insert,
             None::<GivenRowsSimple>,
             query_str,
+            InternalQueryOptions::default(),
         )
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();

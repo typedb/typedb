@@ -865,6 +865,14 @@ impl StepProfile {
         if let Some(data) = self.data.as_ref() { data.storage.clone() } else { StorageCounters::DISABLED }
     }
 
+    pub fn rows(&self) -> Option<u64> {
+        self.data.as_ref().map(|data| data.rows.load(Ordering::SeqCst))
+    }
+
+    pub fn description(&self) -> Option<String> {
+        self.data.as_ref().map(|data| data.description.clone())
+    }
+
     pub fn total_nanos(&self) -> u64 {
         self.data.as_ref().map_or(0, |data| data.nanos.load(Ordering::SeqCst))
     }

@@ -171,6 +171,29 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
     }
 }
 
+/// Per-output cost for one side of a sort-merge join, modelled as a blend
+/// between lockstep advance and zipper-style catch-up seek.
+///
+/// In `find_intersection` (executor), each output is produced by one of two patterns:
+/// - **Lockstep**: after the previous intersection, this side's `advance_past` lands on
+///   an entry whose value matches the other side's peek.
+///   The storage cost is just the advance itself, captured as `expected = cost /
+///   io_ratio` (this absorbs any post-filter ignores the iterator walks past
+///   internally, e.g. owner-type rejects between intersections).
+/// - **Catch-up seek**: peeks disagree; the lagging side seeks.
+///
+/// `p_seek` is the per-side probability that the next intersection requires a catch-up
+/// seek.
+///
+/// In short, if we are in a dense intersection where every value is matched
+/// we end up never seeking (p_seek = 0), so we just pay the advancing cost
+/// If we have a low likelyhood of a match, we may also have to pay a full seek cost
+fn per_match_cost(cost: f64, io_ratio: f64, p_seek: f64) -> f64 {
+    let expected = cost / io_ratio;
+    let p_lockstep = 1.0 - p_seek;
+    p_lockstep * expected + p_seek * SEEK_ITERATOR_RELATIVE_COST
+}
+
 impl Cost {
     const MIN_IO_RATIO: f64 = 0.000000001;
     const IN_MEM_COST_SIMPLE: f64 = 0.02;
@@ -201,12 +224,29 @@ impl Cost {
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
         let io_ratio = f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO);
-        let num_seeks_each = f64::min(self.io_ratio, other.io_ratio); // FIXME detect when seeks can be replaced by advancing
-        let self_out_cost = self.cost / self.io_ratio; // if cost = Ci + Co * io, then cost / io ~ Co
-        let other_out_cost = other.cost / other.io_ratio;
+        let num_seeks_each = f64::min(self.io_ratio, other.io_ratio);
+
+        // `p_seek`: the fraction of this side's entries that aren't part
+        // of the join output. A side whose io_ratio exceeds the join size has mismatches
+        // — entries the other side doesn't have — and each match-search likely advances
+        // onto one, triggering a seek. A side perfectly covered by the join
+        // domain (io_ratio ≤ join_size) has p_seek = 0 and stays in lockstep.
+        let p_seek_self = ((self.io_ratio - join_size) / self.io_ratio).max(0.0);
+        let p_seek_other = ((other.io_ratio - join_size) / other.io_ratio).max(0.0);
+        let self_out_cost = per_match_cost(self.cost, self.io_ratio, p_seek_self);
+        let other_out_cost = per_match_cost(other.cost, other.io_ratio, p_seek_other);
         let cost_self = SEEK_ITERATOR_RELATIVE_COST + self_out_cost * num_seeks_each;
         let cost_other = SEEK_ITERATOR_RELATIVE_COST + other_out_cost * num_seeks_each;
-        Self { cost: cost_self + cost_other, io_ratio }
+
+        // Cartesian-fanout charge: when io_ratio > num_seeks_each, the merge produces
+        // (io_ratio - num_seeks_each) extra outputs per driver row beyond the primary
+        // matches. Each such output costs at least one ADVANCE on the bigger side
+        // (it advances while the smaller side stays put). num_seeks_each already
+        // pays per primary match, so we only need to charge the surplus.
+        let cartesian_extras = (io_ratio - num_seeks_each).max(0.0);
+        let cartesian_cost = cartesian_extras * ADVANCE_ITERATOR_RELATIVE_COST;
+
+        Self { cost: cost_self + cost_other + cartesian_cost, io_ratio }
     }
 
     pub(crate) fn combine_parallel(self, other: Self) -> Self {

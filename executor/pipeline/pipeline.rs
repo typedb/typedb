@@ -93,6 +93,18 @@ where
     pub fn pipeline_structure(&self) -> Option<&PipelineStructure> {
         self.pipeline_structure.as_ref()
     }
+
+    pub fn execution_context(&self) -> &ExecutionContext<Snapshot> {
+        &self.context
+    }
+
+    pub fn stages(&self) -> &[Nonterminals] {
+        &self.stages
+    }
+
+    pub fn named_outputs(&self) -> &HashMap<String, VariablePosition> {
+        &self.named_outputs
+    }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<Snapshot>> {
