@@ -339,6 +339,7 @@ jobs:
       - install-deps-brew:
           bazel-arch: arm64
       - run: |
+          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
           bazel run //:setup-mac-signing-keychain
           bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-installer-pkg -- snapshot
 
@@ -351,6 +352,7 @@ jobs:
       - install-deps-brew:
           bazel-arch: amd64
       - run: |
+          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
           bazel run //:setup-mac-signing-keychain
           bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-installer-pkg -- snapshot  
 
