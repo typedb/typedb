@@ -492,7 +492,7 @@ mac_pkg_installer(
     host_architecture = "arm64",
     version_file = ":VERSION",
 
-    keychain_name = "s",
+    keychain_name = "typedb-apple-signing-keychain",
     sign_binaries = [
         "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
     ],
