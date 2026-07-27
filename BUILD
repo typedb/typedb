@@ -469,6 +469,7 @@ mac_pkg_installer(
     identifier = "typedb",
     host_architecture = "x86_64",
     version_file = ":VERSION",
+    symlinks = ["/usr/local/bin/typedb:/usr/local/typedb/bin/typedb"],
 
     keychain_name = "typedb-apple-signing-keychain",
     sign_binaries = [
@@ -492,6 +493,7 @@ mac_pkg_installer(
     identifier = "typedb",
     host_architecture = "arm64",
     version_file = ":VERSION",
+    symlinks = ["/usr/local/bin/typedb:/usr/local/typedb/bin/typedb"],
 
     keychain_name = "typedb-apple-signing-keychain",
     sign_binaries = [
