@@ -340,7 +340,8 @@ jobs:
           bazel-arch: arm64
       - run: |
           ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
-          bazel run //:setup-mac-signing-keychain
+          bazel build --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:assemble-all-mac-arm64-zip
+          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
           bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-installer-pkg -- snapshot
 
   deploy-snapshot-signed-mac-x86_64:
@@ -353,7 +354,8 @@ jobs:
           bazel-arch: amd64
       - run: |
           ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
-          bazel run //:setup-mac-signing-keychain
+          bazel build --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:assemble-all-mac-x86_64-zip
+          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
           bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-installer-pkg -- snapshot  
 
   deploy-snapshot-apt-x86_64:
