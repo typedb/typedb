@@ -453,6 +453,7 @@ alias(
     name = "developer-id-certs",
     actual = "@vaticle_developer_id_combined//file",
 )
+
 keychain_setup(
     name = "setup-mac-signing-keychain",
     signing_identities = ":developer-id-certs",
@@ -525,6 +526,13 @@ deploy_artifact(
     target = ":assemble-all-mac-arm64-installer-pkg",
 )
 
+alias(
+    name = "deploy-mac-installer-pkg",
+    actual = select({
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : ":deploy-mac-arm64-installer-pkg",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : ":deploy-mac-x86_64-installer-pkg",
+    }),
+)
 
 # apt
 apt_depends = []

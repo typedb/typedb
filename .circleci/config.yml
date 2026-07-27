@@ -122,6 +122,30 @@ commands:
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --jobs=8 --define version=$(cat VERSION) //:deploy-apt --compilation_mode=opt --//server:mode=published -- release
 
+  deploy-snapshot-installer-mac:
+    steps:
+      - run: |
+          export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD 
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
+          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-installer-pkg -- snapshot  
+
+  deploy-release-installer-mac:
+    steps:
+      - run: |
+          export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD 
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --config=ci --compilation_mode=opt --define version=$(cat VERSION) //:setup-mac-signing-keychain
+          bazel run --config=ci --compilation_mode=opt --define version=$(cat VERSION) --//server:mode=published //:deploy-mac-installer-pkg -- release  
+
   deploy-docker-snapshot-for-arch:
     parameters:
       image-arch:
@@ -332,24 +356,15 @@ jobs:
           echo "$(git rev-parse HEAD)" > VERSION 
           bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-snapshot --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- snapshot
 
-  deploy-snapshot-signed-mac-arm64:
+  deploy-snapshot-installer-mac-arm64:
     executor: mac-arm64
     steps:
       - checkout
       - install-deps-brew:
           bazel-arch: arm64
-      - run: |
-          export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
-          export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD 
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
-          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel build --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:assemble-all-mac-arm64-zip
-          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
-          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-installer-pkg -- snapshot
+      - deploy-snapshot-installer-mac
 
-  deploy-snapshot-signed-mac-x86_64:
+  deploy-snapshot-installer-mac-x86_64:
     executor: mac-arm64
     steps:
       - macos/install-rosetta
@@ -357,16 +372,7 @@ jobs:
       - install-brew-rosetta
       - install-deps-brew:
           bazel-arch: amd64
-      - run: |
-          export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
-          export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD 
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
-          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel build --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:assemble-all-mac-x86_64-zip
-          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
-          bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-installer-pkg -- snapshot  
+      - deploy-snapshot-installer-mac
 
   deploy-snapshot-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -453,6 +459,24 @@ jobs:
           sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew-release --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
+
+  deploy-release-installer-mac-arm64:
+    executor: mac-arm64
+    steps:
+      - checkout
+      - install-deps-brew:
+          bazel-arch: arm64
+      - deploy-release-installer-mac
+
+  deploy-release-installer-mac-x86_64:
+    executor: mac-arm64
+    steps:
+      - macos/install-rosetta
+      - checkout
+      - install-brew-rosetta
+      - install-deps-brew:
+          bazel-arch: amd64
+      - deploy-release-installer-mac
 
   deploy-release-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -691,14 +715,14 @@ workflows:
             - test-deploy-snapshot-mac-arm64
             - test-deploy-snapshot-mac-x86_64
 
-      - deploy-snapshot-signed-mac-arm64:
+      - deploy-snapshot-installer-mac-arm64:
           filters:
             branches:
               only: [ master, mac-signing ]
           requires:
             - test-deploy-snapshot-mac-arm64
 
-      - deploy-snapshot-signed-mac-x86_64:
+      - deploy-snapshot-installer-mac-x86_64:
           filters:
             branches:
               only: [ master, mac-signing ]
@@ -787,6 +811,20 @@ workflows:
               only: [ release ]
           requires:
             - deploy-release-mac-arm64
+            - deploy-release-mac-x86_64
+
+      - deploy-release-installer-mac-arm64:
+          filters:
+            branches:
+              only: [ release ]
+          requires:
+            - deploy-release-mac-arm64
+
+      - deploy-release-installer-mac-x86_64:
+          filters:
+            branches:
+              only: [ release ]
+          requires:
             - deploy-release-mac-x86_64
 
       - deploy-release-apt-x86_64:
