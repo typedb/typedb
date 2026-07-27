@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{
-    fmt,
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
@@ -75,79 +74,9 @@ impl ImportCommitter for ImportServiceCommitter {
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportCommitError> {
         self.runtime.block_on(self.server_state.databases().import_data_commit(intent)).map_err(|err| err as _)
     }
-}
 
-struct ImportSession {
-    name: String,
-    server_state: Arc<ServerState>,
-    importer: Option<DatabaseImporter>,
-    completed: bool,
-}
-
-impl ImportSession {
-    async fn open(name: String, server_state: Arc<ServerState>) -> Result<Self, DatabaseImportServiceError> {
-        let database = server_state
-            .databases()
-            .import_prepare(&name)
-            .await
-            .map_err(|typedb_source| DatabaseImportServiceError::ServerState { typedb_source })?;
-        let committer =
-            Box::new(ImportServiceCommitter { server_state: server_state.clone(), runtime: Handle::current() });
-        let importer = DatabaseImporter::new(database, committer);
-        Ok(Self { name, server_state, importer: Some(importer), completed: false })
-    }
-
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn importer(&mut self) -> &mut DatabaseImporter {
-        self.importer.as_mut().expect("Expected a live importer in an incomplete import session")
-    }
-
-    fn total_item_count(&self) -> u64 {
-        self.importer.as_ref().map_or(0, |importer| importer.total_item_count())
-    }
-
-    fn release_importer(&mut self) {
-        self.importer = None;
-    }
-
-    fn complete(mut self) {
-        self.completed = true;
-    }
-}
-
-impl fmt::Debug for ImportSession {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ImportSession").field("name", &self.name).finish_non_exhaustive()
-    }
-}
-
-impl Drop for ImportSession {
-    fn drop(&mut self) {
-        if self.completed {
-            return;
-        }
-        self.importer = None;
-        let name = std::mem::take(&mut self.name);
-        let server_state = self.server_state.clone();
-        match Handle::try_current() {
-            Ok(handle) => {
-                handle.spawn(async move {
-                    if let Err(err) = server_state.databases().import_cancel(&name).await {
-                        event!(
-                            Level::WARN,
-                            "Failed to clean up abandoned import of '{name}': {}",
-                            err.format_code_and_description()
-                        );
-                    }
-                });
-            }
-            Err(_) => {
-                event!(Level::ERROR, "No runtime to clean up abandoned import of '{name}'.");
-            }
-        }
+    fn finalise(&self, name: &str) -> Result<(), ImportCommitError> {
+        self.runtime.block_on(self.server_state.databases().import_finalise(name)).map_err(|err| err as _)
     }
 }
 
@@ -159,7 +88,8 @@ pub struct DatabaseImportService {
     response_sender: ResponseSender,
     shutdown_receiver: watch::Receiver<()>,
 
-    session: Option<ImportSession>,
+    database_name: Option<String>,
+    importer: Option<DatabaseImporter>,
     is_done: bool,
     start: Option<Instant>,
 }
@@ -178,7 +108,8 @@ impl DatabaseImportService {
             request_stream,
             response_sender,
             shutdown_receiver,
-            session: None,
+            database_name: None,
+            importer: None,
             is_done: false,
             start: None,
         }
@@ -278,22 +209,27 @@ impl DatabaseImportService {
         schema: String,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         self.start = Some(Instant::now());
-        if let Some(session) = self.session.as_ref() {
-            return Err(DatabaseImportServiceError::DuplicateImport { name, old_name: session.name().to_string() });
+        if let Some(old_name) = self.database_name.as_ref() {
+            return Err(DatabaseImportServiceError::DuplicateImport { name, old_name: old_name.to_string() });
         }
 
-        let session = ImportSession::open(name, self.server_state.clone()).await?;
+        let committer =
+            Box::new(ImportServiceCommitter { server_state: self.server_state.clone(), runtime: Handle::current() });
+        let mut importer = self
+            .server_state
+            .databases()
+            .import_prepare(&name, committer)
+            .await
+            .map_err(|typedb_source| DatabaseImportServiceError::ServerState { typedb_source })?;
+        self.database_name = Some(name);
 
-        // The importer is synchronous: run it on a blocking thread, where its commits may legally
-        // block on the async operator.
-        let (session, result) = spawn_blocking(move || {
-            let mut session = session;
-            let result = session.importer().import_schema(schema);
-            (session, result)
+        let (importer, result) = spawn_blocking(move || {
+            let result = importer.import_schema(schema);
+            (importer, result)
         })
         .await
         .expect("Import schema task panicked");
-        self.session = Some(session);
+        self.importer = Some(importer);
         result.map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
         Ok(Continue(()))
     }
@@ -302,70 +238,56 @@ impl DatabaseImportService {
         &mut self,
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        let Some(session) = self.session.take() else {
+        let Some(mut importer) = self.importer.take() else {
             return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "data loading".to_string() });
         };
 
-        let (session, result) = spawn_blocking(move || {
-            let mut session = session;
+        let (importer, result) = spawn_blocking(move || {
             let result = (|| {
                 for item in items {
-                    Self::process_item(item, session.importer())?;
+                    Self::process_item(item, &mut importer)?;
 
-                    let total_items = session.importer().total_item_count();
+                    let total_items = importer.total_item_count();
                     if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
-                        let name = session.name();
+                        let name = importer.database_name();
                         event!(Level::DEBUG, "Processed {total_items} imported items of '{name}'...");
                     }
                 }
                 Ok(())
             })();
-            (session, result)
+            (importer, result)
         })
         .await
         .expect("Import items task panicked");
-        self.session = Some(session);
+        self.importer = Some(importer);
         result?;
         Ok(Continue(()))
     }
 
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        let Some(session) = self.session.take() else {
+        let Some(mut importer) = self.importer.take() else {
             return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "finalisation".to_string() });
         };
 
         event!(Level::DEBUG, "Finalising the imported database...");
-        let (mut session, result) = spawn_blocking(move || {
-            let mut session = session;
-            let result = session.importer().import_done();
-            (session, result)
+        let (importer, result) = spawn_blocking(move || {
+            let result = importer.import_done();
+            (importer, result)
         })
         .await
         .expect("Import done task panicked");
         if let Err(typedb_source) = result {
-            self.session = Some(session);
+            self.importer = Some(importer);
             return Err(DatabaseImportServiceError::DatabaseImport { typedb_source });
         }
 
-        let total_items = session.total_item_count();
-        session.release_importer();
-        match self.server_state.databases().import_finalise(session.name()).await {
-            Ok(()) => {
-                let duration_secs = self.start.unwrap_or(Instant::now()).elapsed().as_secs();
-                event!(
-                    Level::INFO,
-                    "Import to '{}' finished successfully. {total_items} items imported in {duration_secs} seconds.",
-                    session.name(),
-                );
-                session.complete();
-            }
-            Err(typedb_source) => {
-                // Reinstate the session: `do_close` then cancels it before the error response is
-                // sent, keeping cleanup synchronous (the session's spawned cancel is for panics only).
-                self.session = Some(session);
-                return Err(DatabaseImportServiceError::ServerState { typedb_source });
-            }
-        }
+        let total_items = importer.total_item_count();
+        let name = self.database_name.take().expect("Expected a database name for a finalised import");
+        let duration_secs = self.start.unwrap_or(Instant::now()).elapsed().as_secs();
+        event!(
+            Level::INFO,
+            "Import to '{name}' finished successfully. {total_items} items imported in {duration_secs} seconds.",
+        );
 
         Self::send_done(&self.response_sender).await;
         self.is_done = true;
@@ -373,24 +295,18 @@ impl DatabaseImportService {
     }
 
     async fn do_close(&mut self) {
-        if let Some(mut session) = self.session.take() {
-            debug_assert!(!self.is_done, "Expected no import session after a successful import");
+        self.importer = None;
+        if let Some(name) = self.database_name.take() {
+            debug_assert!(!self.is_done, "Expected no import state after a successful import");
             let duration_secs = self.start.unwrap_or(Instant::now()).elapsed().as_secs();
-            event!(
-                Level::INFO,
-                "Import to '{}' finished without completion after {duration_secs} seconds.",
-                session.name(),
-            );
-            session.release_importer();
-            if let Err(err) = self.server_state.databases().import_cancel(session.name()).await {
+            event!(Level::INFO, "Import to '{name}' finished without completion after {duration_secs} seconds.");
+            if let Err(err) = self.server_state.databases().import_cancel(&name).await {
                 event!(
                     Level::ERROR,
-                    "Failed to clean up unfinished import of '{}': {}",
-                    session.name(),
+                    "Failed to clean up unfinished import of '{name}': {}",
                     err.format_code_and_description()
                 );
             }
-            session.complete();
         }
     }
 

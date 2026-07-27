@@ -114,6 +114,10 @@ impl DatabaseManager {
         if !databases.contains_key(name) {
             let database = self.new_public_database(name)?;
             databases.insert(name.to_string(), Arc::new(database));
+            sync_directory(&self.data_directory).map_err(|source| DatabaseCreateError::DirectoryWrite {
+                name: name.to_string(),
+                source: Arc::new(source),
+            })?;
         }
         Ok(())
     }
@@ -144,6 +148,8 @@ impl DatabaseManager {
                 }
             },
         }
+        sync_directory(&self.data_directory)
+            .map_err(|source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) })?;
         self.imports
             .clear_stale(name)
             .map_err(|source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) })?;
@@ -165,6 +171,10 @@ impl DatabaseManager {
 
     pub fn import_database_names(&self) -> Vec<String> {
         self.imports.names()
+    }
+
+    pub fn import_directory(&self) -> &Path {
+        self.imports.directory()
     }
 
     /// Marks `name` stale: its import could not be fully applied here, so the name is refused

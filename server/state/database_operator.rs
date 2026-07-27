@@ -9,13 +9,13 @@ use std::{fmt::Debug, sync::Arc};
 use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
 use database::{
-    Database, DatabaseDeleteError, DatabaseOpenError,
-    database::DatabaseCreateError,
+    Database, DatabaseOpenError,
     database_manager::DatabaseManager,
+    migration::database_importer::{DatabaseImporter, ImportCommitter},
     transaction::{CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionRead},
 };
 use durability::DurabilitySequenceNumber;
-use resource::profile::CommitProfile;
+use resource::{constants::server::MAX_CONCURRENT_IMPORTS, profile::CommitProfile};
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     snapshot::snapshot_id::SnapshotId,
@@ -44,9 +44,14 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError>;
+    async fn spawn_import_service(&self, service: DatabaseImportService)
+    -> Result<JoinHandle<()>, ArcServerStateError>;
 
-    async fn import_prepare(&self, name: &str) -> Result<Arc<Database<WALClient>>, ArcServerStateError>;
+    async fn import_prepare(
+        &self,
+        name: &str,
+        committer: Box<dyn ImportCommitter>,
+    ) -> Result<DatabaseImporter, ArcServerStateError>;
 
     async fn import_schema_commit(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ArcServerStateError>;
 
@@ -84,8 +89,6 @@ pub trait DatabaseOperator: Debug + Send + Sync {
     async fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError>;
 }
 
-const MAX_CONCURRENT_IMPORTS: usize = 8;
-
 #[derive(Debug)]
 pub struct LocalDatabaseOperator {
     database_manager: Arc<DatabaseManager>,
@@ -100,34 +103,6 @@ impl LocalDatabaseOperator {
             background_task_spawner,
             import_permits: Arc::new(Semaphore::new(MAX_CONCURRENT_IMPORTS)),
         }
-    }
-
-    pub fn prepare_import_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
-        self.database_manager.prepare_imported_database(name)
-    }
-
-    pub fn get_import_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.import_database(name)
-    }
-
-    pub fn import_database_names(&self) -> Vec<String> {
-        self.database_manager.import_database_names()
-    }
-
-    pub fn mark_import_stale(&self, name: &str) {
-        self.database_manager.mark_import_stale(name)
-    }
-
-    pub fn is_import_stale(&self, name: &str) -> bool {
-        self.database_manager.is_import_stale(name)
-    }
-
-    pub fn finalise_import_database(&self, name: &str) -> Result<(), DatabaseCreateError> {
-        self.database_manager.finalise_imported_database(name)
-    }
-
-    pub fn cancel_import_database(&self, name: &str) -> Result<(), DatabaseDeleteError> {
-        self.database_manager.cancel_database_import(name)
     }
 }
 
@@ -205,7 +180,10 @@ impl DatabaseOperator for LocalDatabaseOperator {
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
     }
 
-    async fn import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError> {
+    async fn spawn_import_service(
+        &self,
+        service: DatabaseImportService,
+    ) -> Result<JoinHandle<()>, ArcServerStateError> {
         let permit = self.import_permits.clone().try_acquire_owned().map_err(|_| {
             arc_server_state_err(LocalServerStateError::ConcurrentImportLimitReached { limit: MAX_CONCURRENT_IMPORTS })
         })?;
@@ -215,10 +193,15 @@ impl DatabaseOperator for LocalDatabaseOperator {
         }))
     }
 
-    async fn import_prepare(&self, name: &str) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
-        self.prepare_import_database(name.to_string()).map_err(|typedb_source| {
+    async fn import_prepare(
+        &self,
+        name: &str,
+        committer: Box<dyn ImportCommitter>,
+    ) -> Result<DatabaseImporter, ArcServerStateError> {
+        let database = self.database_manager.prepare_imported_database(name.to_string()).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source })
-        })
+        })?;
+        Ok(DatabaseImporter::new(database, self.database_manager.import_directory().to_owned(), committer))
     }
 
     async fn import_schema_commit(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ArcServerStateError> {
@@ -230,13 +213,13 @@ impl DatabaseOperator for LocalDatabaseOperator {
     }
 
     async fn import_finalise(&self, name: &str) -> Result<(), ArcServerStateError> {
-        self.finalise_import_database(name).map_err(|typedb_source| {
+        self.database_manager.finalise_imported_database(name).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source })
         })
     }
 
     async fn import_cancel(&self, name: &str) -> Result<(), ArcServerStateError> {
-        self.cancel_import_database(name).map_err(|typedb_source| {
+        self.database_manager.cancel_database_import(name).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseImportCancelFailed { typedb_source })
         })
     }

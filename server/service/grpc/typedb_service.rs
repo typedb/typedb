@@ -460,7 +460,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             self.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::DatabasesImport,
-            || async { self.server_state.databases().import(service).await.map_err(|err| err.into_status()) },
+            || async {
+                self.server_state.databases().spawn_import_service(service).await.map_err(|err| err.into_status())
+            },
         )
         .await?;
 

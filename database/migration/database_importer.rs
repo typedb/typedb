@@ -63,6 +63,7 @@ use crate::{
 pub trait ImportCommitter: Send + Sync {
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportCommitError>;
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportCommitError>;
+    fn finalise(&self, name: &str) -> Result<(), ImportCommitError>;
 }
 
 pub type ImportCommitError = Arc<dyn TypeDBError + Send + Sync>;
@@ -313,11 +314,13 @@ impl DatabaseImporter {
 
     const COMMIT_BATCH_SIZE: u64 = 10_000;
 
-    pub fn new(database: Arc<Database<WALClient>>, committer: Box<dyn ImportCommitter>) -> Self {
+    pub fn new(
+        database: Arc<Database<WALClient>>,
+        import_directory: PathBuf,
+        committer: Box<dyn ImportCommitter>,
+    ) -> Self {
         let database_name = database.name().to_string();
-        let cache_directory =
-            database.path.parent().expect("Expected the imported database directory to have a parent").to_owned();
-        let data_info = DataInfo::new(&cache_directory, &database_name);
+        let data_info = DataInfo::new(&import_directory, &database_name);
         Self {
             committer,
             database_name,
@@ -427,7 +430,9 @@ impl DatabaseImporter {
         if self.database.take().is_none() {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         }
-        Ok(())
+        self.committer
+            .finalise(&self.database_name)
+            .map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
     }
 
     fn process_owned_attributes(
@@ -988,7 +993,6 @@ impl DatabaseImporter {
 
 impl Drop for DatabaseImporter {
     fn drop(&mut self) {
-        // The prepared database itself is cleaned up by the owner of the import lifecycle.
         if let Some(data_transaction) = self.data_transaction.take() {
             assert!(self.database.is_some(), "Unexpected open import transaction while the import is still not done");
             data_transaction.close();
@@ -1020,5 +1024,6 @@ typedb_error! {
         DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
         CacheError(25, "Error writing import data.", source: CacheError),
+        FinalisationFailed(26, "Import finalisation failed.", typedb_source: ImportCommitError),
     }
 }
