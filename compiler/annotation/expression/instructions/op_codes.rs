@@ -6,151 +6,102 @@
 
 use std::fmt;
 
-// TODO: Rewrite so we generate the dispatcher macro along with the enum. SEe https://cprohm.de/blog/rust-macros/
-#[derive(Debug, Clone)]
-pub enum ExpressionOpCode {
-    // Basics
-    LoadConstant,
-    LoadVariable,
-    ListConstructor,
-    ListIndex,
-    ListIndexRange,
+#[macro_export]
+macro_rules! for_each_opcode {
+    ($macro:ident) => {
+        $macro! {
+            LoadConstant
+            LoadVariable
+            ListConstructor
+            ListIndex
+            ListIndexRange
 
-    // Casts
-    // TODO: We can't cast arguments for functions of arity > 2. It may require rewriting compilation.
-    CastUnaryIntegerToDouble,
-    CastLeftIntegerToDouble,
-    CastRightIntegerToDouble,
-    CastUnaryIntegerToDecimal,
+            CastUnaryIntegerToDouble
+            CastLeftIntegerToDouble
+            CastRightIntegerToDouble
+            CastUnaryIntegerToDecimal
+            CastLeftIntegerToDecimal
+            CastRightIntegerToDecimal
+            CastUnaryDecimalToDouble
+            CastLeftDecimalToDouble
+            CastRightDecimalToDouble
 
-    CastLeftIntegerToDecimal,
-    CastRightIntegerToDecimal,
+            OpIntegerAddInteger
+            OpIntegerMultiplyInteger
+            OpIntegerSubtractInteger
+            OpIntegerDivideInteger
+            OpIntegerModuloInteger
+            OpIntegerPowerInteger
 
-    CastUnaryDecimalToDouble,
-    CastLeftDecimalToDouble,
-    CastRightDecimalToDouble,
+            OpDoubleAddDouble
+            OpDoubleSubtractDouble
+            OpDoubleMultiplyDouble
+            OpDoubleDivideDouble
+            OpDoubleModuloDouble
+            OpDoublePowerDouble
 
-    // Operators
-    OpIntegerAddInteger,
-    OpIntegerMultiplyInteger,
-    OpIntegerSubtractInteger,
-    OpIntegerDivideInteger,
-    OpIntegerModuloInteger,
-    OpIntegerPowerInteger,
+            OpDecimalAddDecimal
+            OpDecimalSubtractDecimal
+            OpDecimalMultiplyDecimal
 
-    OpDoubleAddDouble,
-    OpDoubleSubtractDouble,
-    OpDoubleMultiplyDouble,
-    OpDoubleDivideDouble,
-    OpDoubleModuloDouble,
-    OpDoublePowerDouble,
+            OpDateSubtractDate
 
-    OpDecimalAddDecimal,
-    OpDecimalSubtractDecimal,
-    OpDecimalMultiplyDecimal,
+            OpDateTimeAddDuration
+            OpDateTimeSubtractDuration
+            OpDateTimeSubtractDateTime
+            OpDateTimeSubtractDate
 
-    OpDateSubtractDate,
+            OpDateTimeTZAddDuration
+            OpDateTimeTZSubtractDuration
+            OpDateTimeTZSubtractDateTimeTZ
 
-    OpDateTimeAddDuration,
-    OpDateTimeSubtractDuration,
-    OpDateTimeSubtractDateTime,
-    OpDateTimeSubtractDate,
+            OpDurationAddDuration
+            OpDurationSubtractDuration
 
-    OpDateTimeTZAddDuration,
-    OpDateTimeTZSubtractDuration,
-    OpDateTimeTZSubtractDateTimeTZ,
+            OpStringAddString
 
-    OpDurationAddDuration,
-    OpDurationSubtractDuration,
+            MathAbsDouble
+            MathAbsDecimal
+            MathAbsInteger
 
-    OpStringAddString,
+            MathRemainderInteger
 
-    // BuiltIns, maybe by domain?
-    MathAbsDouble,
-    MathAbsDecimal,
-    MathAbsInteger,
+            MathRoundDouble
+            MathCeilDouble
+            MathFloorDouble
 
-    MathRemainderInteger,
+            MathRoundDecimal
+            MathCeilDecimal
+            MathFloorDecimal
 
-    MathRoundDouble,
-    MathCeilDouble,
-    MathFloorDouble,
+            MathMinIntegerInteger
+            MathMinDoubleDouble
+            MathMinDecimalDecimal
 
-    MathRoundDecimal,
-    MathCeilDecimal,
-    MathFloorDecimal,
+            MathMaxIntegerInteger
+            MathMaxDoubleDouble
+            MathMaxDecimalDecimal
 
-    MathMinIntegerInteger,
-    MathMinDoubleDouble,
-    MathMinDecimalDecimal,
-
-    MathMaxIntegerInteger,
-    MathMaxDoubleDouble,
-    MathMaxDecimalDecimal,
-
-    LenString,
-}
-
-impl fmt::Display for ExpressionOpCode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExpressionOpCode::LoadConstant => write!(f, "load-constant"),
-            ExpressionOpCode::LoadVariable => write!(f, "load-variable"),
-            ExpressionOpCode::ListConstructor => write!(f, "list-constructor"),
-            ExpressionOpCode::ListIndex => write!(f, "list-index"),
-            ExpressionOpCode::ListIndexRange => write!(f, "list-range"),
-            ExpressionOpCode::CastUnaryIntegerToDouble => write!(f, "cast-integer-to-double"),
-            ExpressionOpCode::CastLeftIntegerToDouble => write!(f, "cast-left-integer-to-double"),
-            ExpressionOpCode::CastRightIntegerToDouble => write!(f, "cast-right-integer-to-double"),
-            ExpressionOpCode::CastUnaryIntegerToDecimal => write!(f, "cast-integer-to-decimal"),
-            ExpressionOpCode::CastLeftIntegerToDecimal => write!(f, "cast-left-integer-to-decimal"),
-            ExpressionOpCode::CastRightIntegerToDecimal => write!(f, "cast-right-integer-to-decimal"),
-            ExpressionOpCode::CastUnaryDecimalToDouble => write!(f, "cast-decimal-to-double"),
-            ExpressionOpCode::CastLeftDecimalToDouble => write!(f, "cast-left-decimal-to-double"),
-            ExpressionOpCode::CastRightDecimalToDouble => write!(f, "cast-right-decimal-to-double"),
-            ExpressionOpCode::OpIntegerAddInteger => write!(f, "add-integer"),
-            ExpressionOpCode::OpIntegerMultiplyInteger => write!(f, "multiply-integer"),
-            ExpressionOpCode::OpIntegerSubtractInteger => write!(f, "subtract-integer"),
-            ExpressionOpCode::OpIntegerDivideInteger => write!(f, "divide-integer"),
-            ExpressionOpCode::OpIntegerModuloInteger => write!(f, "modulo-integer"),
-            ExpressionOpCode::OpIntegerPowerInteger => write!(f, "power-integer"),
-            ExpressionOpCode::OpDoubleAddDouble => write!(f, "add-double"),
-            ExpressionOpCode::OpDoubleSubtractDouble => write!(f, "subtract-double"),
-            ExpressionOpCode::OpDoubleMultiplyDouble => write!(f, "multiply-double"),
-            ExpressionOpCode::OpDoubleDivideDouble => write!(f, "divide-double"),
-            ExpressionOpCode::OpDoubleModuloDouble => write!(f, "modulo-double"),
-            ExpressionOpCode::OpDoublePowerDouble => write!(f, "power-double"),
-            ExpressionOpCode::OpDecimalAddDecimal => write!(f, "add-decimal"),
-            ExpressionOpCode::OpDecimalSubtractDecimal => write!(f, "subtract-decimal"),
-            ExpressionOpCode::OpDecimalMultiplyDecimal => write!(f, "multiply-decimal"),
-            ExpressionOpCode::OpDateSubtractDate => write!(f, "subtract-date"),
-            ExpressionOpCode::OpDateTimeAddDuration => write!(f, "add-datetime-duration"),
-            ExpressionOpCode::OpDateTimeSubtractDuration => write!(f, "subtract-datetime-duration"),
-            ExpressionOpCode::OpDateTimeSubtractDateTime => write!(f, "subtract-datetime-datetime"),
-            ExpressionOpCode::OpDateTimeSubtractDate => write!(f, "subtract-datetime-date"),
-            ExpressionOpCode::OpDateTimeTZAddDuration => write!(f, "add-datetime-tz-duration"),
-            ExpressionOpCode::OpDateTimeTZSubtractDuration => write!(f, "subtract-datetime-tz-duration"),
-            ExpressionOpCode::OpDateTimeTZSubtractDateTimeTZ => write!(f, "subtract-datetime-tz-datetime-tz"),
-            ExpressionOpCode::OpDurationAddDuration => write!(f, "add-duration-duration"),
-            ExpressionOpCode::OpDurationSubtractDuration => write!(f, "subtract-duration-duration"),
-            ExpressionOpCode::OpStringAddString => write!(f, "add-string"),
-            ExpressionOpCode::MathAbsDouble => write!(f, "abs-double"),
-            ExpressionOpCode::MathAbsDecimal => write!(f, "abs-decimal"),
-            ExpressionOpCode::MathAbsInteger => write!(f, "abs-integer"),
-            ExpressionOpCode::MathRemainderInteger => write!(f, "remainder-integer"),
-            ExpressionOpCode::MathRoundDouble => write!(f, "round-double"),
-            ExpressionOpCode::MathCeilDouble => write!(f, "ceil-double"),
-            ExpressionOpCode::MathFloorDouble => write!(f, "floor-double"),
-            ExpressionOpCode::MathRoundDecimal => write!(f, "round-decimal"),
-            ExpressionOpCode::MathCeilDecimal => write!(f, "ceil-decimal"),
-            ExpressionOpCode::MathFloorDecimal => write!(f, "floor-decimal"),
-            ExpressionOpCode::MathMinIntegerInteger => write!(f, "min-integer-integer"),
-            ExpressionOpCode::MathMinDoubleDouble => write!(f, "min-double-double"),
-            ExpressionOpCode::MathMinDecimalDecimal => write!(f, "min-decimal-decimal"),
-            ExpressionOpCode::MathMaxIntegerInteger => write!(f, "max-integer-integer"),
-            ExpressionOpCode::MathMaxDoubleDouble => write!(f, "max-double-double"),
-            ExpressionOpCode::MathMaxDecimalDecimal => write!(f, "max-decimal-decimal"),
-            ExpressionOpCode::LenString => write!(f, "len-string"),
+            LenString
         }
-    }
+    };
 }
+
+macro_rules! define_opcode_enum {
+    ($($name:ident)*) => {
+        #[derive(Debug, Clone)]
+        pub enum ExpressionOpCode {
+            $($name,)*
+        }
+
+        impl fmt::Display for ExpressionOpCode {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $(Self::$name => write!(f, stringify!($name)),)*
+                }
+            }
+        }
+    };
+}
+
+for_each_opcode!(define_opcode_enum);

@@ -23,7 +23,15 @@ use compiler::annotation::expression::{
             LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
-        operators,
+        operators::{
+            OpDateSubtractDate, OpDateTimeAddDuration, OpDateTimeSubtractDate, OpDateTimeSubtractDateTime,
+            OpDateTimeSubtractDuration, OpDateTimeTZAddDuration, OpDateTimeTZSubtractDateTimeTZ,
+            OpDateTimeTZSubtractDuration, OpDecimalAddDecimal, OpDecimalMultiplyDecimal, OpDecimalSubtractDecimal,
+            OpDoubleAddDouble, OpDoubleDivideDouble, OpDoubleModuloDouble, OpDoubleMultiplyDouble, OpDoublePowerDouble,
+            OpDoubleSubtractDouble, OpDurationAddDuration, OpDurationSubtractDuration, OpIntegerAddInteger,
+            OpIntegerDivideInteger, OpIntegerModuloInteger, OpIntegerMultiplyInteger, OpIntegerPowerInteger,
+            OpIntegerSubtractInteger, OpStringAddString,
+        },
         unary::{
             LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
             MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
@@ -165,88 +173,20 @@ pub fn evaluate_expression<ID: Hash + Eq>(
     Ok(state.stack.pop().unwrap())
 }
 
-fn evaluate_instruction(
-    op_code: &ExpressionOpCode,
-    state: &mut ExpressionExecutorState<'_>,
-) -> Result<(), ExpressionEvaluationError> {
-    match op_code {
-        ExpressionOpCode::LoadConstant => LoadConstant::evaluate(state),
-        ExpressionOpCode::LoadVariable => LoadVariable::evaluate(state),
-        ExpressionOpCode::ListConstructor => ListConstructor::evaluate(state),
-        ExpressionOpCode::ListIndex => ListIndex::evaluate(state),
-        ExpressionOpCode::ListIndexRange => ListIndexRange::evaluate(state),
-
-        ExpressionOpCode::CastUnaryIntegerToDouble => CastUnaryIntegerToDouble::evaluate(state),
-        ExpressionOpCode::CastLeftIntegerToDouble => CastLeftIntegerToDouble::evaluate(state),
-        ExpressionOpCode::CastRightIntegerToDouble => CastRightIntegerToDouble::evaluate(state),
-
-        ExpressionOpCode::CastUnaryDecimalToDouble => CastUnaryDecimalToDouble::evaluate(state),
-        ExpressionOpCode::CastLeftDecimalToDouble => CastLeftDecimalToDouble::evaluate(state),
-        ExpressionOpCode::CastRightDecimalToDouble => CastRightDecimalToDouble::evaluate(state),
-
-        ExpressionOpCode::CastUnaryIntegerToDecimal => CastUnaryIntegerToDecimal::evaluate(state),
-        ExpressionOpCode::CastLeftIntegerToDecimal => CastLeftIntegerToDecimal::evaluate(state),
-        ExpressionOpCode::CastRightIntegerToDecimal => CastRightIntegerToDecimal::evaluate(state),
-
-        ExpressionOpCode::OpIntegerAddInteger => operators::OpIntegerAddInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerSubtractInteger => operators::OpIntegerSubtractInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerMultiplyInteger => operators::OpIntegerMultiplyInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerDivideInteger => operators::OpIntegerDivideInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerModuloInteger => operators::OpIntegerModuloInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerPowerInteger => operators::OpIntegerPowerInteger::evaluate(state),
-
-        ExpressionOpCode::OpDoubleAddDouble => operators::OpDoubleAddDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleSubtractDouble => operators::OpDoubleSubtractDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleMultiplyDouble => operators::OpDoubleMultiplyDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleDivideDouble => operators::OpDoubleDivideDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleModuloDouble => operators::OpDoubleModuloDouble::evaluate(state),
-        ExpressionOpCode::OpDoublePowerDouble => operators::OpDoublePowerDouble::evaluate(state),
-
-        ExpressionOpCode::OpDecimalAddDecimal => operators::OpDecimalAddDecimal::evaluate(state),
-        ExpressionOpCode::OpDecimalSubtractDecimal => operators::OpDecimalSubtractDecimal::evaluate(state),
-        ExpressionOpCode::OpDecimalMultiplyDecimal => operators::OpDecimalMultiplyDecimal::evaluate(state),
-
-        ExpressionOpCode::OpDateSubtractDate => operators::OpDateSubtractDate::evaluate(state),
-
-        ExpressionOpCode::OpDateTimeAddDuration => operators::OpDateTimeAddDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeSubtractDuration => operators::OpDateTimeSubtractDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeSubtractDateTime => operators::OpDateTimeSubtractDateTime::evaluate(state),
-        ExpressionOpCode::OpDateTimeSubtractDate => operators::OpDateTimeSubtractDate::evaluate(state),
-
-        ExpressionOpCode::OpDateTimeTZAddDuration => operators::OpDateTimeTZAddDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeTZSubtractDuration => operators::OpDateTimeTZSubtractDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeTZSubtractDateTimeTZ => operators::OpDateTimeTZSubtractDateTimeTZ::evaluate(state),
-
-        ExpressionOpCode::OpDurationAddDuration => operators::OpDurationAddDuration::evaluate(state),
-        ExpressionOpCode::OpDurationSubtractDuration => operators::OpDurationSubtractDuration::evaluate(state),
-
-        ExpressionOpCode::OpStringAddString => operators::OpStringAddString::evaluate(state),
-
-        ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
-        ExpressionOpCode::MathAbsDecimal => MathAbsDecimal::evaluate(state),
-        ExpressionOpCode::MathAbsInteger => MathAbsInteger::evaluate(state),
-
-        ExpressionOpCode::MathRemainderInteger => MathRemainderInteger::evaluate(state),
-
-        ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
-        ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
-        ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
-
-        ExpressionOpCode::MathRoundDecimal => MathRoundDecimal::evaluate(state),
-        ExpressionOpCode::MathCeilDecimal => MathCeilDecimal::evaluate(state),
-        ExpressionOpCode::MathFloorDecimal => MathFloorDecimal::evaluate(state),
-
-        ExpressionOpCode::MathMinIntegerInteger => MathMinIntegerInteger::evaluate(state),
-        ExpressionOpCode::MathMinDoubleDouble => MathMinDoubleDouble::evaluate(state),
-        ExpressionOpCode::MathMinDecimalDecimal => MathMinDecimalDecimal::evaluate(state),
-
-        ExpressionOpCode::MathMaxIntegerInteger => MathMaxIntegerInteger::evaluate(state),
-        ExpressionOpCode::MathMaxDoubleDouble => MathMaxDoubleDouble::evaluate(state),
-        ExpressionOpCode::MathMaxDecimalDecimal => MathMaxDecimalDecimal::evaluate(state),
-
-        ExpressionOpCode::LenString => LenString::evaluate(state),
-    }
+macro_rules! impl_evaluate_instruction {
+    ($($name:ident)*) => {
+        fn evaluate_instruction(
+            op_code: &ExpressionOpCode,
+            state: &mut ExpressionExecutorState<'_>,
+        ) -> Result<(), ExpressionEvaluationError> {
+            match op_code {
+                $(ExpressionOpCode::$name => $name::evaluate(state),)*
+            }
+        }
+    };
 }
+
+compiler::for_each_opcode!(impl_evaluate_instruction);
 
 pub trait ExpressionEvaluation {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
