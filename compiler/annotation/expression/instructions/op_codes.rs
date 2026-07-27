@@ -93,7 +93,11 @@ macro_rules! define_opcode_enum {
         pub enum ExpressionOpCode {
             $($name,)*
         }
+    };
+}
 
+macro_rules! define_opcode_fmt_display {
+    ($($name:ident)*) => {
         impl fmt::Display for ExpressionOpCode {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
@@ -105,3 +109,4 @@ macro_rules! define_opcode_enum {
 }
 
 for_each_opcode!(define_opcode_enum);
+for_each_opcode!(define_opcode_fmt_display);
