@@ -339,7 +339,11 @@ jobs:
       - install-deps-brew:
           bazel-arch: arm64
       - run: |
-          ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
+          export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD 
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel build --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:assemble-all-mac-arm64-zip
           bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
@@ -354,7 +358,11 @@ jobs:
       - install-deps-brew:
           bazel-arch: amd64
       - run: |
-          ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
+          export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD 
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel build --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:assemble-all-mac-x86_64-zip
           bazel run --config=ci --compilation_mode=opt --define version=$(git rev-parse HEAD) //:setup-mac-signing-keychain
