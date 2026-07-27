@@ -208,10 +208,10 @@ impl DatabaseImportService {
         name: String,
         schema: String,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        self.start = Some(Instant::now());
         if let Some(old_name) = self.database_name.as_ref() {
             return Err(DatabaseImportServiceError::DuplicateImport { name, old_name: old_name.to_string() });
         }
+        self.start = Some(Instant::now());
 
         let committer =
             Box::new(ImportServiceCommitter { server_state: self.server_state.clone(), runtime: Handle::current() });
@@ -228,7 +228,7 @@ impl DatabaseImportService {
             (importer, result)
         })
         .await
-        .expect("Import schema task panicked");
+        .map_err(|_| Self::import_task_failed("schema loading"))?;
         self.importer = Some(importer);
         result.map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
         Ok(Continue(()))
@@ -258,7 +258,7 @@ impl DatabaseImportService {
             (importer, result)
         })
         .await
-        .expect("Import items task panicked");
+        .map_err(|_| Self::import_task_failed("data loading"))?;
         self.importer = Some(importer);
         result?;
         Ok(Continue(()))
@@ -270,18 +270,14 @@ impl DatabaseImportService {
         };
 
         event!(Level::DEBUG, "Finalising the imported database...");
-        let (importer, result) = spawn_blocking(move || {
+        let (total_items, result) = spawn_blocking(move || {
             let result = importer.import_done();
-            (importer, result)
+            (importer.total_item_count(), result)
         })
         .await
-        .expect("Import done task panicked");
-        if let Err(typedb_source) = result {
-            self.importer = Some(importer);
-            return Err(DatabaseImportServiceError::DatabaseImport { typedb_source });
-        }
+        .map_err(|_| Self::import_task_failed("finalisation"))?;
+        result.map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
-        let total_items = importer.total_item_count();
         let name = self.database_name.take().expect("Expected a database name for a finalised import");
         let duration_secs = self.start.unwrap_or(Instant::now()).elapsed().as_secs();
         event!(
@@ -308,6 +304,11 @@ impl DatabaseImportService {
                 );
             }
         }
+    }
+
+    fn import_task_failed(phase: &str) -> DatabaseImportServiceError {
+        event!(Level::ERROR, "Import processing panicked during {phase}; the import will be cancelled.");
+        DatabaseImportServiceError::ImportTaskFailed { phase: phase.to_string() }
     }
 
     fn process_item(

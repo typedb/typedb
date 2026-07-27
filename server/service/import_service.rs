@@ -19,5 +19,6 @@ typedb_error! {
         AbsentAttributeValue(6, "Cannot process an attribute: value is absent."),
         AttributesOwningAttributes(7, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
         ServerState(8, "Import operation failed.", typedb_source: ArcServerStateError),
+        ImportTaskFailed(9, "Import processing unexpectedly failed during {phase}. The import is aborted and can be retried.", phase: String),
     }
 }
