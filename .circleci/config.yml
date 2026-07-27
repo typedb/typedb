@@ -667,12 +667,12 @@ workflows:
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master, mac-signing ]
+              only: [ master ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master, mac-signing ]
+              only: [ master ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
@@ -718,14 +718,14 @@ workflows:
       - deploy-snapshot-installer-mac-arm64:
           filters:
             branches:
-              only: [ master, mac-signing ]
+              only: [ master ]
           requires:
             - test-deploy-snapshot-mac-arm64
 
       - deploy-snapshot-installer-mac-x86_64:
           filters:
             branches:
-              only: [ master, mac-signing ]
+              only: [ master ]
           requires:
             - test-deploy-snapshot-mac-x86_64
 
