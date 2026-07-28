@@ -475,10 +475,10 @@ mac_pkg_installer(
     identifier = "typedb",
     host_architecture = "x86_64",
     enable_current_user_home = True,
-    install_location = "/.typedb/{IDENTIFIER}-{VERSION}",
+    install_location = "/.typedb/typedb-{VERSION}",
     version_file = ":VERSION",
     # These don't work because we install in the users home, but the script runs as root or something
-    symlinks = ["~/usr/local/typedb/typedb:~/usr/local/bin/typedb"],
+    # symlinks = ["~/usr/local/bin/typedb:~/.typedb/typedb-{VERSION}/typedb"],
 
     keychain_name = "typedb-apple-signing-keychain",
     sign_binaries = [
@@ -502,10 +502,10 @@ mac_pkg_installer(
     identifier = "typedb",
     host_architecture = "arm64",
     enable_current_user_home = True,
-    install_location = "/.typedb/{IDENTIFIER}-{VERSION}",
+    install_location = "/.typedb/typedb-{VERSION}",
     version_file = ":VERSION",
     # These don't work because we install in the users home, but the script runs as root or something
-    # symlinks = ["~/usr/local/typedb/typedb:~/usr/local/bin/typedb"],
+    # symlinks = ["~/usr/local/bin/typedb:~/.typedb/typedb-{VERSION}/typedb"],
 
     keychain_name = "typedb-apple-signing-keychain",
     sign_binaries = [
