@@ -456,8 +456,14 @@ alias(
 
 keychain_setup(
     name = "setup-mac-signing-keychain",
-    signing_identities = ":developer-id-certs",
     keychain_name = "typedb-apple-signing-keychain",
+
+    signing_identities = ":developer-id-certs",
+    signing_identities_password_env = "APPLE_SIGNING_IDENTITIES_PASSWORD",
+
+    partition_list = "apple-tool:,apple:,codesign:",
+    trusted_apps = ["/usr/bin/codesign", "/usr/bin/productsign"],
+
     # This is the app-specific one that looks like: xxxx-xxxx-xxxx-xxxx .
     passwords = ["bot@vaticle.com:APPLE_NOTARIZATION_PASSWORD"],
 )
@@ -472,7 +478,7 @@ mac_pkg_installer(
     install_location = "/.typedb/{IDENTIFIER}-{VERSION}",
     version_file = ":VERSION",
     # These don't work because we install in the users home, but the script runs as root or something
-    # symlinks = ["~/usr/local/typedb/typedb:~/usr/local/bin/typedb"],
+    symlinks = ["~/usr/local/typedb/typedb:~/usr/local/bin/typedb"],
 
     keychain_name = "typedb-apple-signing-keychain",
     sign_binaries = [
