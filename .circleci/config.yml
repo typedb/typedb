@@ -143,6 +143,7 @@ commands:
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --config=ci @typedb_dependencies//distribution/artifact:create-netrc
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          # If you see a `security` command timing out, the keychain may have timed out and locked. Consider prebuilding the zip.
           bazel run --config=ci --compilation_mode=opt --define version=$(cat VERSION) //:setup-mac-signing-keychain
           bazel run --config=ci --compilation_mode=opt --define version=$(cat VERSION) --//server:mode=published //:deploy-mac-installer-pkg -- release  
 
