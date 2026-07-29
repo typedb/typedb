@@ -5871,7 +5871,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?tag=3.12.0#5174b3af3557fb3ccb98d87249576831da83c586"
+source = "git+https://github.com/typedb/typeql?rev=9bd7d56a907e8bf60ac5a5a7ca609131bf1b24f3#9bd7d56a907e8bf60ac5a5a7ca609131bf1b24f3"
 dependencies = [
  "chrono",
  "itertools 0.14.0",
