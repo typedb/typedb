@@ -175,7 +175,7 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             let (returned_tx, result) = execute_write_query_in_write(
                 tx,
                 QueryOptions::default_grpc(),
-                pipeline,
+                Arc::new(pipeline),
                 None::<GivenRowsSimple>,
                 query_str,
                 ExecutionInterrupt::new_uninterruptible(),
@@ -210,7 +210,7 @@ fn execute_insert_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            pipeline,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -247,7 +247,7 @@ fn execute_update_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            pipeline,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
@@ -286,7 +286,7 @@ fn execute_relation_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            pipeline,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),

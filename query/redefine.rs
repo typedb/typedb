@@ -80,7 +80,7 @@ pub(crate) fn execute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     function_manager: &FunctionManager,
-    redefine: Redefine,
+    redefine: &Redefine,
     storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     if redefine.definables.is_empty() {

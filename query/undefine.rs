@@ -70,7 +70,7 @@ pub(crate) fn execute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     function_manager: &FunctionManager,
-    undefine: Undefine,
+    undefine: &Undefine,
 ) -> Result<(), UndefineError> {
     process_function_undefinitions(snapshot, function_manager, &undefine.undefinables)?;
     process_specialise_undefinitions(snapshot, type_manager, thing_manager, &undefine.undefinables)?;

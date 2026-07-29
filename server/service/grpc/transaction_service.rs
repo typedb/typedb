@@ -44,6 +44,8 @@ use options::QueryOptions;
 use query::{
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRowEntry, GivenRows},
+    query_cache::ParsedQuery,
+    query_manager::QueryManager,
 };
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -63,7 +65,7 @@ use typedb_protocol::{
     query::Type::{Read, Write},
     transaction::{Server as ProtocolServer, stream_signal::Req},
 };
-use typeql::{parse_query, query::SchemaQuery};
+use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
@@ -145,7 +147,8 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, Option<GivenRowsGrpc>, String)>,
+    query_manager: Option<Arc<QueryManager>>,
+    query_queue: VecDeque<(Uuid, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsGrpc>, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
@@ -180,6 +183,7 @@ impl TransactionService {
 
             is_open: false,
             transaction: None,
+            query_manager: None,
             query_queue: VecDeque::with_capacity(20),
             query_responders: HashMap::new(),
             running_write_query: None,
@@ -480,6 +484,7 @@ impl TransactionService {
             transaction.load_kind(),
             ClientEndpoint::Grpc,
         ));
+        self.query_manager = Some(transaction.query_manager());
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
@@ -741,25 +746,18 @@ impl TransactionService {
     async fn may_accept_from_queue(&mut self) {
         debug_assert!(self.running_write_query.is_none());
         // unblock requests until the first write request, which we begin executing if it exists
-        while let Some((req_id, queue_options, query_pipeline, given_rows, source_query)) = self.query_queue.pop_front()
-        {
-            match (queue_options, is_write_pipeline(&query_pipeline)) {
+        while let Some((req_id, queue_options, pipeline, given_rows, source_query)) = self.query_queue.pop_front() {
+            match (queue_options, is_write_pipeline(&pipeline)) {
                 (QueueOptions::Analyze, _) => {
                     debug_assert!(given_rows.is_none());
-                    self.run_analyse_query(req_id, query_pipeline, source_query).await;
+                    self.run_analyse_query(req_id, pipeline, source_query).await;
                 }
                 (QueueOptions::Query(query_options), true) => {
-                    self.run_write_query(req_id, query_options, query_pipeline, given_rows, source_query).await;
+                    self.run_write_query(req_id, query_options, pipeline, given_rows, source_query).await;
                     return;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    self.run_and_activate_read_transmitter(
-                        req_id,
-                        query_options,
-                        query_pipeline,
-                        given_rows,
-                        source_query,
-                    );
+                    self.run_and_activate_read_transmitter(req_id, query_options, pipeline, given_rows, source_query);
                 }
             }
         }
@@ -771,19 +769,18 @@ impl TransactionService {
         analyse_req: typedb_protocol::analyze::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         let query = analyse_req.query;
-        let parsed = match parse_query(&query) {
-            Ok(parsed) => parsed,
-            Err(err) => {
-                let response = ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
-                    typedb_source: err,
-                });
+        let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
+            Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
+            Ok(ParsedQuery::Schema(_)) => {
+                let response =
+                    ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::AnalyseQueryExpectsPipeline {});
                 return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
             }
-        };
-        let typeql::query::QueryStructure::Pipeline(pipeline) = parsed.into_structure() else {
-            let response =
-                ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::AnalyseQueryExpectsPipeline {});
-            return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
+            Err(typedb_source) => {
+                let response =
+                    ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::QueryFailed { typedb_source });
+                return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
+            }
         };
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
             self.query_queue.push_back((req_id, QueueOptions::Analyze, pipeline, None, query));
@@ -815,56 +812,31 @@ impl TransactionService {
         }
 
         let query = query_req.query;
-        let parsed = match parse_query(&query) {
-            Ok(parsed) => parsed,
+        let given_rows = query_req.given.map(GivenRowsGrpc);
+        let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
+            Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
+            Ok(ParsedQuery::Schema(schema_query)) => {
+                // schema queries are handled immediately so there is a query response or a fatal Status
+                let response = self.handle_query_schema(schema_query, query).await?;
+                return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+            }
             Err(typedb_source) => {
                 let response =
-                    ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed { typedb_source });
+                    ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryFailed { typedb_source });
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
             }
         };
-        match parsed.into_structure() {
-            typeql::query::QueryStructure::Schema(schema_query) => {
-                // schema queries are handled immediately so there is a query response or a fatal Status
-                let response = self.handle_query_schema(schema_query, query).await?;
-                Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
-            }
-            typeql::query::QueryStructure::Pipeline(pipeline) => {
-                let given_rows = query_req.given.map(GivenRowsGrpc);
-                #[allow(clippy::collapsible_else_if)]
-                if is_write_pipeline(&pipeline) {
-                    if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((
-                            req_id,
-                            QueueOptions::Query(query_options),
-                            pipeline,
-                            given_rows,
-                            query,
-                        ));
-                        // queued queries are not handled yet so there will be no query response yet
-                        Ok(Continue(()))
-                    } else {
-                        self.run_write_query(req_id, query_options, pipeline, given_rows, query).await;
-                        Ok(Continue(()))
-                    }
-                } else {
-                    if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((
-                            req_id,
-                            QueueOptions::Query(query_options),
-                            pipeline,
-                            given_rows,
-                            query,
-                        ));
-                        // queued queries are not handled yet so there will be no query response yet
-                        Ok(Continue(()))
-                    } else {
-                        self.run_and_activate_read_transmitter(req_id, query_options, pipeline, given_rows, query);
-                        // running read queries have no response on the main loop and will respond asynchronously
-                        Ok(Continue(()))
-                    }
-                }
-            }
+        if !self.query_queue.is_empty() || self.running_write_query.is_some() {
+            self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, given_rows, query));
+            // queued queries are not handled yet so there will be no query response yet
+            Ok(Continue(()))
+        } else if is_write_pipeline(&pipeline) {
+            self.run_write_query(req_id, query_options, pipeline, given_rows, query).await;
+            Ok(Continue(()))
+        } else {
+            self.run_and_activate_read_transmitter(req_id, query_options, pipeline, given_rows, query);
+            // running read queries have no response on the main loop and will respond asynchronously
+            Ok(Continue(()))
         }
     }
 
@@ -905,7 +877,7 @@ impl TransactionService {
         Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
     }
 
-    async fn run_analyse_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline, source_query: String) {
+    async fn run_analyse_query(&mut self, req_id: Uuid, pipeline: Arc<TypeQLPipeline>, source_query: String) {
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
@@ -917,14 +889,14 @@ impl TransactionService {
                 query_manager.analyse(
                     snapshot,
                     &type_manager,
-                    thing_manager,
                     &function_manager,
+                    &thing_manager,
                     &pipeline,
                     &source_query,
                 )
             })
             .await
-            .expect("Expected schema query execution finishing");
+            .expect("Expected analyse query execution finishing");
             let resp = match result {
                 Ok(analyzed) => {
                     match encode_analyzed_query(&*transaction.snapshot, &*transaction.type_manager, analyzed) {
@@ -942,7 +914,7 @@ impl TransactionService {
         &mut self,
         req_id: Uuid,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: Arc<TypeQLPipeline>,
         given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) {
@@ -988,7 +960,7 @@ impl TransactionService {
         &mut self,
         req_id: Uuid,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: Arc<TypeQLPipeline>,
         given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) {
@@ -1008,7 +980,7 @@ impl TransactionService {
     fn spawn_blocking_execute_write_query(
         &mut self,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: Arc<TypeQLPipeline>,
         given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) -> Result<JoinHandle<(Transaction, WriteQueryResult)>, TransactionServiceError> {
@@ -1230,7 +1202,7 @@ impl TransactionService {
         &self,
         sender: Sender<StreamQueryResponse>,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: Arc<TypeQLPipeline>,
         given_rows: Option<GivenRowsGrpc>,
         source_query: String,
     ) -> JoinHandle<()> {

@@ -48,12 +48,15 @@ use ir::{
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
-    perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
-    profile::{CompileProfile, QueryProfile},
+    perf_counters::{
+        QUERY_CACHE_HITS, QUERY_CACHE_MISSES, QUERY_PARSE_CACHE_HITS, QUERY_PARSE_CACHE_MISSES,
+        QUERY_TRANSLATION_CACHE_HITS, QUERY_TRANSLATION_CACHE_MISSES,
+    },
+    profile::{CompileIRProfile, QueryProfile},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{Level, event};
-use typeql::query::SchemaQuery;
+use typeql::query::{QueryStructure, SchemaQuery};
 
 use crate::{
     analyse::{
@@ -62,7 +65,7 @@ use crate::{
     define,
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRows},
-    query_cache::QueryCache,
+    query_cache::{ParsedQuery, QueryCache},
     redefine, undefine,
 };
 
@@ -76,18 +79,58 @@ impl QueryManager {
         Self { cache }
     }
 
+    pub fn parse(&self, query: &str) -> Result<ParsedQuery, Box<QueryError>> {
+        if let Some(pipeline) = self.cache.as_ref().and_then(|cache| cache.get_parsed(query)) {
+            QUERY_PARSE_CACHE_HITS.increment();
+            return Ok(ParsedQuery::Pipeline(pipeline));
+        }
+        let parsed = typeql::parse_query(query)
+            .map_err(|err| QueryError::ParseError { source_query: query.to_owned(), typedb_source: err })?;
+        match parsed.into_structure() {
+            QueryStructure::Schema(schema_query) => Ok(ParsedQuery::Schema(schema_query)),
+            QueryStructure::Pipeline(pipeline) => {
+                QUERY_PARSE_CACHE_MISSES.increment();
+                let pipeline = Arc::new(pipeline);
+                if let Some(cache) = self.cache.as_ref() {
+                    cache.insert_parsed(query, pipeline.clone());
+                }
+                Ok(ParsedQuery::Pipeline(pipeline))
+            }
+        }
+    }
+
+    fn translate(
+        &self,
+        query: &str,
+        pipeline: &typeql::query::Pipeline,
+        snapshot: &impl ReadableSnapshot,
+        function_manager: &FunctionManager,
+        thing_manager: &ThingManager,
+    ) -> Result<TranslatedPipeline, Box<QueryError>> {
+        if let Some(translated) = self.cache.as_ref().and_then(|cache| cache.get_translated(query)) {
+            QUERY_TRANSLATION_CACHE_HITS.increment();
+            return Ok(translated);
+        }
+        QUERY_TRANSLATION_CACHE_MISSES.increment();
+        let translated = translate_pipeline(snapshot, function_manager, pipeline, query)?;
+        if let Some(cache) = self.cache.as_ref() {
+            cache.may_insert_translated(thing_manager.statistics().sequence_number, query, translated.clone());
+        }
+        Ok(translated)
+    }
+
     pub fn execute_schema(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
-        query: SchemaQuery,
+        query: &SchemaQuery,
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let result = match query {
+        let result = match &query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
                 let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));
@@ -140,15 +183,15 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        query: &typeql::query::Pipeline,
+        pipeline: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
-        event!(Level::TRACE, "Running read query:\n{}", query);
+        event!(Level::TRACE, "Running read query:\n{}", source_query);
+        let pipeline = self.translate(source_query, pipeline, snapshot.as_ref(), &function_manager, &thing_manager)?;
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
-        // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -156,15 +199,14 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters: parameters,
-        } = translate_pipeline(snapshot.as_ref(), &function_manager, query, source_query)?;
-        compile_profile.translation_finished();
+        } = pipeline;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = Arc::new(translated_given);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
         let arced_parameters = Arc::new(parameters);
         let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
-            cache.get(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
+            cache.get_executable(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
         }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
@@ -187,7 +229,7 @@ impl QueryManager {
                 )?;
                 if let Some(cache) = self.cache.as_ref() {
                     let seq = thing_manager.statistics().sequence_number;
-                    cache.may_insert(
+                    cache.may_insert_executable(
                         seq,
                         arced_preamble,
                         arced_given,
@@ -237,15 +279,18 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
-        query: &typeql::query::Pipeline,
+        pipeline: &typeql::query::Pipeline,
         given_rows: Option<impl GivenRows>,
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
-        event!(Level::TRACE, "Running write query:\n{}", query);
+        event!(Level::TRACE, "Running write query:\n{}", source_query);
+        let pipeline = match self.translate(source_query, pipeline, &snapshot, &function_manager, &thing_manager) {
+            Ok(translated) => translated,
+            Err(err) => return Err((snapshot, err)),
+        };
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
-        // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -253,11 +298,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters,
-        } = match translate_pipeline(&snapshot, &function_manager, query, source_query) {
-            Ok(translated) => translated,
-            Err(err) => return Err((snapshot, err)),
-        };
-        compile_profile.translation_finished();
+        } = pipeline;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = Arc::new(translated_given);
         let arced_stages = Arc::new(translated_stages);
@@ -265,7 +306,7 @@ impl QueryManager {
         let arced_parameters = Arc::new(value_parameters);
 
         let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
-            cache.get(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
+            cache.get_executable(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
         }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
@@ -289,7 +330,7 @@ impl QueryManager {
                 match executable_pipeline_result {
                     Ok(executable_pipeline) => {
                         if let Some(cache) = self.cache.as_ref() {
-                            cache.may_insert(
+                            cache.may_insert_executable(
                                 thing_manager.statistics().sequence_number,
                                 arced_preamble,
                                 arced_given,
@@ -342,16 +383,16 @@ impl QueryManager {
         &self,
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
-        _thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        query: &typeql::query::Pipeline,
+        thing_manager: &ThingManager,
+        pipeline: &typeql::query::Pipeline,
         source_query: &str,
     ) -> Result<AnalysedQuery, Box<QueryError>> {
-        event!(Level::TRACE, "Running analyse query:\n{}", query);
+        event!(Level::TRACE, "Running analyse query:\n{}", source_query);
+        let pipeline = self.translate(source_query, pipeline, snapshot.as_ref(), function_manager, thing_manager)?;
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
         let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
-        // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
             translated_given,
@@ -359,8 +400,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters: parameters,
-        } = translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
-        compile_profile.translation_finished();
+        } = pipeline;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_given = translated_given.map(Arc::new);
         let arced_stages = Arc::new(translated_stages);
@@ -426,7 +466,7 @@ impl QueryManager {
     }
 }
 
-fn translate_pipeline<Snapshot: ReadableSnapshot>(
+pub fn translate_pipeline<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     function_manager: &FunctionManager,
     query: &typeql::query::Pipeline,
@@ -455,7 +495,7 @@ fn annotate_and_compile_query(
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
     function_manager: &FunctionManager,
-    compile_profile: &mut CompileProfile,
+    compile_profile: &mut CompileIRProfile,
     variable_registry: &mut VariableRegistry,
     arced_parameters: Arc<ParameterRegistry>,
     arced_preamble: Arc<Vec<Function>>,

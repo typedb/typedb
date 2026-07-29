@@ -20,7 +20,7 @@ use options::QueryOptions;
 use query::{error::QueryError, given_rows::GivenRows, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{Level, event};
-use typeql::query::SchemaQuery;
+use typeql::query::{Pipeline, SchemaQuery};
 
 use crate::{
     transaction::{TransactionSchema, TransactionWrite},
@@ -62,7 +62,7 @@ pub fn execute_schema_query(
                 &type_manager,
                 &thing_manager,
                 &function_manager,
-                query,
+                &query,
                 &source_query,
             )
         }
@@ -72,7 +72,7 @@ pub fn execute_schema_query(
 pub fn execute_write_query_in_schema(
     transaction: TransactionSchema<WALClient>,
     query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
+    query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
@@ -95,7 +95,7 @@ pub fn execute_write_query_in_schema(
         function_manager.clone(),
         &query_manager,
         query_options,
-        pipeline,
+        query_pipeline,
         given_rows,
         &source_query,
         interrupt,
@@ -118,7 +118,7 @@ pub fn execute_write_query_in_schema(
 pub fn execute_write_query_in_write(
     transaction: TransactionWrite<WALClient>,
     query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
+    query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
     source_query: String,
     interrupt: ExecutionInterrupt,
@@ -141,7 +141,7 @@ pub fn execute_write_query_in_write(
         function_manager.clone(),
         &query_manager,
         query_options,
-        pipeline,
+        query_pipeline,
         given_rows,
         &source_query,
         interrupt,
@@ -168,7 +168,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     function_manager: Arc<FunctionManager>,
     query_manager: &QueryManager,
     query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
+    query_pipeline: Arc<Pipeline>,
     given_rows: Option<impl GivenRows>,
     source_query: &str,
     interrupt: ExecutionInterrupt,
@@ -179,7 +179,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         type_manager,
         thing_manager,
         function_manager,
-        &pipeline,
+        &query_pipeline,
         given_rows,
         source_query,
     );

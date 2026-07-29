@@ -21,6 +21,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value_type::ValueType};
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
+use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
@@ -115,13 +116,14 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let function_manager: Arc<FunctionManager> = Arc::default();
 
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
-            Arc::default(),
+            function_manager,
             &typeql_insert,
             None::<GivenRowsSimple>,
             query_str,

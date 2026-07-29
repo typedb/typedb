@@ -14,15 +14,19 @@ use compiler::executable::pipeline::ExecutablePipeline;
 use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
-    translation::pipeline::{TranslatedGiven, TranslatedStage},
+    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
 };
 use moka::sync::{Cache, CacheBuilder};
 use resource::{
-    constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
+    constants::database::{
+        QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
+        QUERY_TRANSLATION_CACHE_SIZE,
+    },
     perf_counters::QUERY_CACHE_FLUSH,
 };
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
+use typeql::query::{Pipeline, SchemaQuery};
 
 #[derive(Debug)]
 struct ValidityRequirements {
@@ -32,19 +36,57 @@ struct ValidityRequirements {
 
 #[derive(Debug)]
 pub struct QueryCache {
-    cache: Cache<IRQuery, ExecutablePipeline>,
+    parse_cache: Cache<String, Arc<Pipeline>>,
+    translation_cache: Cache<String, TranslatedPipeline>,
+    executable_cache: Cache<IRQuery, ExecutablePipeline>,
     validity_requirements: RwLock<ValidityRequirements>,
+}
+
+#[derive(Debug)]
+pub enum ParsedQuery {
+    Schema(SchemaQuery),
+    Pipeline(Arc<Pipeline>),
 }
 
 impl QueryCache {
     pub fn new() -> Self {
-        let cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
+        let parse_cache = CacheBuilder::new(QUERY_PARSE_CACHE_SIZE).build();
+        let translation_cache = CacheBuilder::new(QUERY_TRANSLATION_CACHE_SIZE).build();
+        let executable_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
         let validity_requirements =
             RwLock::new(ValidityRequirements { latest_statistics: None, latest_schema_commit: None });
-        QueryCache { cache, validity_requirements }
+        QueryCache { parse_cache, translation_cache, executable_cache, validity_requirements }
     }
 
-    pub(crate) fn get(
+    pub fn get_parsed(&self, query: &str) -> Option<Arc<Pipeline>> {
+        self.parse_cache.get(query)
+    }
+
+    pub(crate) fn insert_parsed(&self, source_query: &str, pipeline: Arc<Pipeline>) {
+        self.parse_cache.insert(source_query.to_owned(), pipeline);
+    }
+
+    pub fn get_translated(&self, query: &str) -> Option<TranslatedPipeline> {
+        self.translation_cache.get(query)
+    }
+
+    pub(crate) fn may_insert_translated(
+        &self,
+        statistics_sequence_number: SequenceNumber,
+        source_query: &str,
+        translated: TranslatedPipeline,
+    ) {
+        let read_lock = self.validity_requirements.read().unwrap();
+        let may_insert = read_lock
+            .latest_schema_commit
+            .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
+        if may_insert {
+            self.translation_cache.insert(source_query.to_owned(), translated);
+        }
+        drop(read_lock);
+    }
+
+    pub(crate) fn get_executable(
         &self,
         preamble: Arc<Vec<Function>>,
         given: Arc<Option<TranslatedGiven>>,
@@ -52,14 +94,14 @@ impl QueryCache {
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
         let key = IRQuery::new(preamble.clone(), given, stages, fetch);
-        self.cache.get(&key).map(|mut found| {
+        self.executable_cache.get(&key).map(|mut found| {
             let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
             found.executable_functions.replace_preamble_parameters(replacement);
             found
         })
     }
 
-    pub(crate) fn may_insert(
+    pub(crate) fn may_insert_executable(
         &self,
         statistics_sequence_number: SequenceNumber,
         preamble: Arc<Vec<Function>>,
@@ -77,7 +119,7 @@ impl QueryCache {
                 .as_ref()
                 .map_or(true, |stats| !is_pipeline_type_populations_outdated(&stats, &pipeline));
         if may_insert {
-            self.cache.insert(key, pipeline);
+            self.executable_cache.insert(key, pipeline);
         }
         drop(read_lock);
     }
@@ -87,7 +129,7 @@ impl QueryCache {
         (*write_lock).latest_statistics = Some(new_statistics.clone());
         drop(write_lock);
         let _predicate_id = self
-            .cache
+            .executable_cache
             .invalidate_entries_if(move |_, pipeline| is_pipeline_type_populations_outdated(&*new_statistics, pipeline))
             .unwrap();
     }
@@ -96,7 +138,8 @@ impl QueryCache {
         let mut write_lock = self.validity_requirements.write().unwrap();
         (*write_lock).latest_schema_commit = Some(statistics.sequence_number);
         drop(write_lock);
-        self.cache.invalidate_all();
+        self.translation_cache.invalidate_all();
+        self.executable_cache.invalidate_all();
         QUERY_CACHE_FLUSH.increment();
     }
 }
