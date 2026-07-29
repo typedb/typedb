@@ -20,5 +20,6 @@ typedb_error! {
         AttributesOwningAttributes(7, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
         ServerState(8, "Import operation failed.", typedb_source: ArcServerStateError),
         ImportTaskFailed(9, "Import processing unexpectedly failed during {phase}. The import is aborted and can be retried.", phase: String),
+        ImportClosed(10, "The import was closed by the server. The import is aborted and can be retried."),
     }
 }

@@ -535,6 +535,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::export::Req>,
     ) -> Result<Response<Self::database_exportStream>, Status> {
+        let Accessor(accessor) = Accessor::from_extensions(&request.extensions())
+            .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let database_name = request
             .into_inner()
             .req
@@ -549,22 +551,19 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(database_name.clone()),
             ActionKind::DatabaseExport,
             || async {
-                match self.server_state.databases().get(&database_name).await.map_err(|err| err.into_status())? {
-                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }.into_status()),
-                    Some(database) => {
-                        let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
-                        let service = DatabaseExportService::new(
-                            self.server_state.distribution_info(),
-                            database,
-                            response_sender,
-                            self.server_state.shutdown_receiver(),
-                        );
-                        tokio::spawn(async move { service.export().await });
-                        let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
-                            ReceiverStream::new(response_receiver);
-                        Ok(Response::new(Box::pin(stream)))
-                    }
-                }
+                let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
+                let service = DatabaseExportService::new(
+                    self.server_state.distribution_info(),
+                    self.server_state.clone(),
+                    database_name,
+                    accessor,
+                    response_sender,
+                    self.server_state.shutdown_receiver(),
+                );
+                tokio::spawn(async move { service.export().await });
+                let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
+                    ReceiverStream::new(response_receiver);
+                Ok(Response::new(Box::pin(stream)))
             },
         )
         .await

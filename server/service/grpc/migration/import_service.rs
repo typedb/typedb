@@ -12,18 +12,17 @@ use std::{
     time::Instant,
 };
 
-use database::{
-    migration::database_importer::{DatabaseImporter, ImportCommitError, ImportCommitter},
-    transaction::{DataCommitIntent, SchemaCommitIntent},
-};
+use database::migration::database_importer::DatabaseImporter;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use encoding::value::label::Label;
 use error::TypeDBError;
 use itertools::Itertools;
-use storage::durability_client::WALClient;
 use tokio::{
-    runtime::Handle,
-    sync::{mpsc::Sender, watch},
+    sync::{
+        mpsc,
+        mpsc::{Receiver, Sender},
+        watch,
+    },
     task::spawn_blocking,
 };
 use tokio_stream::StreamExt;
@@ -61,25 +60,6 @@ const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
-struct ImportServiceCommitter {
-    server_state: Arc<ServerState>,
-    runtime: Handle,
-}
-
-impl ImportCommitter for ImportServiceCommitter {
-    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportCommitError> {
-        self.runtime.block_on(self.server_state.databases().import_schema_commit(intent)).map_err(|err| err as _)
-    }
-
-    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportCommitError> {
-        self.runtime.block_on(self.server_state.databases().import_data_commit(intent)).map_err(|err| err as _)
-    }
-
-    fn finalise(&self, name: &str) -> Result<(), ImportCommitError> {
-        self.runtime.block_on(self.server_state.databases().import_finalise(name)).map_err(|err| err as _)
-    }
-}
-
 #[derive(Debug)]
 pub struct DatabaseImportService {
     server_state: Arc<ServerState>,
@@ -90,6 +70,8 @@ pub struct DatabaseImportService {
 
     database_name: Option<String>,
     importer: Option<DatabaseImporter>,
+    close_sender: Sender<()>,
+    close_receiver: Receiver<()>,
     is_done: bool,
     start: Option<Instant>,
 }
@@ -102,6 +84,7 @@ impl DatabaseImportService {
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
+        let (close_sender, close_receiver) = mpsc::channel(1);
         Self {
             server_state,
             diagnostics_manager,
@@ -110,6 +93,8 @@ impl DatabaseImportService {
             shutdown_receiver,
             database_name: None,
             importer: None,
+            close_sender,
+            close_receiver,
             is_done: false,
             start: None,
         }
@@ -121,6 +106,16 @@ impl DatabaseImportService {
                 _ = self.shutdown_receiver.changed() => {
                     event!(Level::TRACE, "Shutdown signal received, closing database import service.");
                     self.do_close().await;
+                    return;
+                }
+                _ = self.close_receiver.recv() => {
+                    event!(Level::TRACE, "Import close signal received, closing database import service.");
+                    self.do_close().await;
+                    let status = LocalServerStateError::DatabaseImport {
+                        typedb_source: DatabaseImportServiceError::ImportClosed {},
+                    }
+                    .into_status();
+                    Self::send_error(&self.response_sender, status).await;
                     return;
                 }
                 next = self.request_stream.next() => {
@@ -213,12 +208,10 @@ impl DatabaseImportService {
         }
         self.start = Some(Instant::now());
 
-        let committer =
-            Box::new(ImportServiceCommitter { server_state: self.server_state.clone(), runtime: Handle::current() });
         let mut importer = self
             .server_state
             .databases()
-            .import_prepare(&name, committer)
+            .import_prepare(&name, self.close_sender.clone())
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ServerState { typedb_source })?;
         self.database_name = Some(name);
