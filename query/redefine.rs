@@ -87,10 +87,12 @@ pub(crate) fn execute(
         return Ok(());
     }
     let redefined_structs = process_struct_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
+    let renamed_roles = process_role_type_renamings(snapshot, type_manager, &redefine.definables)?;
+    let renamed_types = process_type_renamings(snapshot, type_manager, &redefine.definables)?;
     let redefined_types =
         process_type_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables, storage_counters)?;
     let redefined_functions = process_function_redefinitions(snapshot, function_manager, &redefine.definables)?;
-    if !redefined_structs && !redefined_types && !redefined_functions {
+    if !redefined_structs && !renamed_roles && !renamed_types && !redefined_types && !redefined_functions {
         Err(RedefineError::NothingRedefined {})
     } else {
         Ok(())
@@ -106,6 +108,66 @@ fn process_struct_redefinitions(
     let mut anything_redefined = false;
     filter_variants!(Definable::Struct : definables).try_for_each(|struct_| {
         redefine_struct_fields(snapshot, type_manager, thing_manager, &mut anything_redefined, struct_)
+    })?;
+    Ok(anything_redefined)
+}
+
+fn process_role_type_renamings(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    definables: &[Definable],
+) -> Result<bool, RedefineError> {
+    let mut anything_redefined = false;
+    filter_variants!(Definable::RoleTypeRename : definables).try_for_each(|declaration| {
+        let from = Label::build_scoped(
+            checked_identifier(&declaration.from.name.ident)?,
+            checked_identifier(&declaration.from.scope.ident)?,
+            declaration.from.scope.span(),
+        );
+        let to = Label::parse_from(checked_identifier(&declaration.to.ident)?, declaration.to.span());
+        let role_type = resolve_role_type(snapshot, type_manager, &from)
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
+
+        debug_assert!(to.scope.is_none());
+        role_type.set_name(snapshot, type_manager, to.name.as_str()).map_err(|typedb_source| {
+            RedefineError::TypeRenameError { from, to, source_span: declaration.span(), typedb_source }
+        })?;
+        anything_redefined = true;
+        Ok(())
+    })?;
+    Ok(anything_redefined)
+}
+
+fn process_type_renamings(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    definables: &[Definable],
+) -> Result<bool, RedefineError> {
+    let mut anything_redefined = false;
+    filter_variants!(Definable::TypeRename : definables).try_for_each(|declaration| {
+        let from = Label::parse_from(checked_identifier(&declaration.from.ident)?, declaration.from.span());
+        let to = Label::parse_from(checked_identifier(&declaration.to.ident)?, declaration.to.span());
+        let type_ = resolve_typeql_type(snapshot, type_manager, &from)
+            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
+
+        match type_ {
+            TypeEnum::Entity(entity_type) => entity_type.set_label(snapshot, type_manager, &to),
+            TypeEnum::Relation(relation_type) => relation_type.set_label(snapshot, type_manager, &to),
+            TypeEnum::Attribute(attribute_type) => attribute_type.set_label(snapshot, type_manager, &to),
+            TypeEnum::RoleType(_) => {
+                debug_assert!(false, "Should be unreachable with an unscoped role");
+                let source_span = to.source_span();
+                return Err(RedefineError::ThingTypeRenameResolvedToRole { label: from, source_span });
+            }
+        }
+        .map_err(|typedb_source| RedefineError::TypeRenameError {
+            from,
+            to,
+            source_span: declaration.span(),
+            typedb_source,
+        })?;
+        anything_redefined = true;
+        Ok(())
     })?;
     Ok(anything_redefined)
 }
@@ -1325,6 +1387,20 @@ typedb_error! {
             39,
             "The reserved keyword '{identifier}' cannot be used as an identifier.",
             identifier: typeql::Identifier,
+            source_span: Option<Span>,
+        ),
+        TypeRenameError(
+            40,
+            "Renaming the type '{from}' to '{to}' failed.",
+            from: Label,
+            to: Label,
+            source_span: Option<Span>,
+            typedb_source: Box<ConceptWriteError>,
+        ),
+        ThingTypeRenameResolvedToRole(
+            41,
+            "When resolving the type to rename, the unscoped label '{label}' resolved to a role-type.",
+            label: Label,
             source_span: Option<Span>,
         ),
     }
