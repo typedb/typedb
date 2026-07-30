@@ -7,7 +7,7 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@typedb_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 
 load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@typedb_bazel_distribution//common:rules.bzl", "package_version_vars")
+load("@typedb_bazel_distribution//common:rules.bzl", "keychain_setup", "mac_pkg_installer", "package_version_vars")
 load("@typedb_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
@@ -446,6 +446,109 @@ label_flag(
 label_flag(
     name = "checksum-mac-x86_64",
     build_setting_default = ":invalid-checksum",
+)
+
+# Signed mac installer
+alias(
+    name = "developer-id-certs",
+    actual = "@vaticle_developer_id_combined//file",
+    tags = ["manual"],
+)
+
+keychain_setup(
+    name = "setup-mac-signing-keychain",
+    keychain_name = "typedb-apple-signing-keychain",
+
+    signing_identities = ":developer-id-certs",
+    signing_identities_password_env = "APPLE_SIGNING_IDENTITIES_PASSWORD",
+
+    partition_list = "apple-tool:,apple:,codesign:",
+    trusted_apps = ["/usr/bin/codesign", "/usr/bin/productsign"],
+
+    # This is the app-specific one that looks like: xxxx-xxxx-xxxx-xxxx .
+    passwords = ["bot@vaticle.com:APPLE_NOTARIZATION_PASSWORD"],
+    tags = ["manual"],
+)
+
+mac_pkg_installer(
+    name = "assemble-all-mac-x86_64-installer-pkg",
+    src = ":assemble-all-mac-x86_64-zip",
+    pkg_name = "typedb-all-mac-x86_64-installer",
+    identifier = "typedb",
+    host_architecture = "x86_64",
+    enable_current_user_home = True,
+    install_location = "/.typedb/typedb-{VERSION}",
+    version_file = ":VERSION",
+    # These don't work because we install in the users home, but the script runs as root or something
+    # symlinks = ["~/usr/local/bin/typedb:~/.typedb/typedb-{VERSION}/typedb"],
+
+    keychain_name = "typedb-apple-signing-keychain",
+    sign_binaries = [
+        "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
+    ],
+    application_cert_subject = "Developer ID Application: Vaticle LTD (RHKH8FP9SX)",
+    installer_cert_subject = "Developer ID Installer: Vaticle LTD (RHKH8FP9SX)",
+
+    notarize = True,
+    apple_id = "bot@vaticle.com",
+    apple_team_id = "RHKH8FP9SX",
+
+    verbose = False, # True for debugging
+    target_compatible_with = constraint_mac_x86_64,
+)
+
+mac_pkg_installer(
+    name = "assemble-all-mac-arm64-installer-pkg",
+    src = ":assemble-all-mac-arm64-zip",
+    pkg_name = "typedb-all-mac-arm64-installer",
+    identifier = "typedb",
+    host_architecture = "arm64",
+    enable_current_user_home = True,
+    install_location = "/.typedb/typedb-{VERSION}",
+    version_file = ":VERSION",
+    # These don't work because we install in the users home, but the script runs as root or something
+    # symlinks = ["~/usr/local/bin/typedb:~/.typedb/typedb-{VERSION}/typedb"],
+
+    keychain_name = "typedb-apple-signing-keychain",
+    sign_binaries = [
+        "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
+    ],
+    application_cert_subject = "Developer ID Application: Vaticle LTD (RHKH8FP9SX)",
+    installer_cert_subject = "Developer ID Installer: Vaticle LTD (RHKH8FP9SX)",
+
+    notarize = True,
+    apple_id = "bot@vaticle.com",
+    apple_team_id = "RHKH8FP9SX",
+
+    verbose = True,
+    target_compatible_with = constraint_mac_arm64,
+)
+
+deploy_artifact(
+    name = "deploy-mac-x86_64-installer-pkg",
+    artifact_group = "typedb-all-mac-x86_64-installer",
+    artifact_name = "typedb-all-mac-x86_64-installer-{version}.pkg",
+    release = deployment["artifact"]["release"]["upload"],
+    snapshot = deployment["artifact"]["snapshot"]["upload"],
+    target = ":assemble-all-mac-x86_64-installer-pkg",
+)
+
+deploy_artifact(
+    name = "deploy-mac-arm64-installer-pkg",
+    artifact_group = "typedb-all-mac-arm64-installer",
+    artifact_name = "typedb-all-mac-arm64-installer-{version}.pkg",
+    release = deployment["artifact"]["release"]["upload"],
+    snapshot = deployment["artifact"]["snapshot"]["upload"],
+    target = ":assemble-all-mac-arm64-installer-pkg",
+)
+
+alias(
+    name = "deploy-mac-installer-pkg",
+    actual = select({
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : ":deploy-mac-arm64-installer-pkg",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : ":deploy-mac-x86_64-installer-pkg",
+    }),
+    tags = ["manual"],
 )
 
 # apt
