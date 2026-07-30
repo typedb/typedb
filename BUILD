@@ -546,6 +546,7 @@ alias(
         "@typedb_bazel_distribution//platform:is_mac_arm64" : ":deploy-mac-arm64-installer-pkg",
         "@typedb_bazel_distribution//platform:is_mac_x86_64" : ":deploy-mac-x86_64-installer-pkg",
     }),
+    tags = ["manual"],
 )
 
 # apt
