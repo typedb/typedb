@@ -467,6 +467,7 @@ keychain_setup(
 
     # This is the app-specific one that looks like: xxxx-xxxx-xxxx-xxxx .
     passwords = ["bot@vaticle.com:APPLE_NOTARIZATION_PASSWORD"],
+    tags = ["manual"],
 )
 
 mac_pkg_installer(
