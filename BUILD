@@ -452,6 +452,7 @@ label_flag(
 alias(
     name = "developer-id-certs",
     actual = "@vaticle_developer_id_combined//file",
+    tags = ["manual"],
 )
 
 keychain_setup(
