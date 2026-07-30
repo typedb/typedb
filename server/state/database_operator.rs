@@ -188,12 +188,12 @@ impl LocalDatabaseOperator {
         self.database_manager.prepare_imported_database(name)
     }
 
-    pub fn import_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.import_database(name)
+    pub fn imported_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+        self.database_manager.imported_database(name)
     }
 
-    pub fn import_database_names(&self) -> Vec<String> {
-        self.database_manager.import_database_names()
+    pub fn imported_database_names(&self) -> Vec<String> {
+        self.database_manager.imported_database_names()
     }
 
     pub fn mark_import_stale(&self, name: &str) {

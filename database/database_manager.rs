@@ -165,11 +165,11 @@ impl DatabaseManager {
         self.imports.create_staging(&name)
     }
 
-    pub fn import_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+    pub fn imported_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
         self.imports.get(name)
     }
 
-    pub fn import_database_names(&self) -> Vec<String> {
+    pub fn imported_database_names(&self) -> Vec<String> {
         self.imports.names()
     }
 

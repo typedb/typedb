@@ -138,7 +138,7 @@ fn discard_recovery_wipes_everything() {
         fs::write(import_path(&data_dir, "stray-file"), b"junk").unwrap();
     }
     let dbm = manager(&data_dir, ImportRecovery::Discard);
-    assert!(dbm.import_database_names().is_empty());
+    assert!(dbm.imported_database_names().is_empty());
     assert!(!dbm.is_import_stale("staging"));
     assert!(fs::read_dir(data_dir.as_ref().join("_import")).unwrap().next().is_none());
     dbm.put_database("staging").expect("create after discard");
@@ -156,7 +156,7 @@ fn resume_recovery_restores_staging_and_discards_junk() {
         fs::write(import_path(&data_dir, "stray-file"), b"junk").unwrap();
     }
     let dbm = manager(&data_dir, ImportRecovery::Resume);
-    assert_eq!(dbm.import_database_names(), vec!["healthy".to_string()]);
+    assert_eq!(dbm.imported_database_names(), vec!["healthy".to_string()]);
     assert!(!import_path(&data_dir, "_cache-junk").exists());
     assert!(!import_path(&data_dir, "corrupt").exists());
     assert!(!import_path(&data_dir, "stray-file").exists());
@@ -192,7 +192,7 @@ fn repeated_finalisation_of_a_published_database_discards_the_staging_copy() {
     copy_dir(&import_path(&data_dir, "typedb"), &data_dir.as_ref().join("typedb"));
     let dbm = manager(&data_dir, ImportRecovery::Resume);
     assert!(dbm.database("typedb").is_some());
-    assert_eq!(dbm.import_database_names(), vec!["typedb".to_string()]);
+    assert_eq!(dbm.imported_database_names(), vec!["typedb".to_string()]);
     assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::AlreadyExists { .. })));
     assert!(!import_path(&data_dir, "typedb").exists(), "the staging copy must be discarded");
     assert!(dbm.database("typedb").is_some(), "the published database must survive");
@@ -257,8 +257,8 @@ fn stale_mark_survives_resume_recovery_but_not_its_healing() {
         assert!(!dbm.is_import_stale("healthy"));
     }
     let dbm = manager(&data_dir, ImportRecovery::Resume);
-    assert!(dbm.import_database("healthy").is_some(), "unmarked staging must be recovered");
-    assert!(dbm.import_database("stale").is_none(), "stale staging must be discarded");
+    assert!(dbm.imported_database("healthy").is_some(), "unmarked staging must be recovered");
+    assert!(dbm.imported_database("stale").is_none(), "stale staging must be discarded");
     assert!(dbm.is_import_stale("stale"), "the mark must survive recovery");
     assert!(matches!(dbm.put_database("stale"), Err(DatabaseCreateError::ImportStale { .. })));
     drop(dbm.prepare_imported_database("stale".to_string()).expect("prepare heals the mark"));
@@ -293,14 +293,14 @@ fn staging_databases_are_hidden_until_finalised() {
     assert!(dbm.database("typedb").is_none());
     assert!(dbm.database_unrestricted("typedb").is_none());
     assert!(dbm.database_names().is_empty());
-    assert!(dbm.import_database("typedb").is_some());
+    assert!(dbm.imported_database("typedb").is_some());
 
     drop(staging);
     dbm.finalise_imported_database("typedb").expect("finalise");
     assert!(dbm.database("typedb").is_some());
     assert_eq!(dbm.database_names(), vec!["typedb".to_string()]);
-    assert!(dbm.import_database("typedb").is_none());
-    assert!(dbm.import_database_names().is_empty());
+    assert!(dbm.imported_database("typedb").is_none());
+    assert!(dbm.imported_database_names().is_empty());
 }
 
 #[test]
@@ -326,13 +326,13 @@ fn concurrent_imports_of_different_names_are_independent() {
     let staging_kept = dbm.prepare_imported_database("kept".to_string()).expect("prepare kept");
     drop(dbm.prepare_imported_database("published".to_string()).expect("prepare published"));
     drop(dbm.prepare_imported_database("cancelled".to_string()).expect("prepare cancelled"));
-    let mut names = dbm.import_database_names();
+    let mut names = dbm.imported_database_names();
     names.sort();
     assert_eq!(names, vec!["cancelled".to_string(), "kept".to_string(), "published".to_string()]);
 
     dbm.finalise_imported_database("published").expect("finalise");
     dbm.cancel_database_import("cancelled").expect("cancel");
-    assert_eq!(dbm.import_database_names(), vec!["kept".to_string()]);
+    assert_eq!(dbm.imported_database_names(), vec!["kept".to_string()]);
     assert!(dbm.database("published").is_some());
     drop(staging_kept);
     dbm.finalise_imported_database("kept").expect("finalise kept");
@@ -347,7 +347,7 @@ fn delete_ignores_in_progress_imports_and_published_imports_are_ordinary_databas
     // Deleting a name whose import is in progress touches nothing: the staging database is hidden.
     let staging = dbm.prepare_imported_database("typedb".to_string()).expect("prepare");
     assert!(dbm.delete_database("typedb").is_err());
-    assert!(dbm.import_database("typedb").is_some());
+    assert!(dbm.imported_database("typedb").is_some());
     drop(staging);
     dbm.finalise_imported_database("typedb").expect("finalise");
 
