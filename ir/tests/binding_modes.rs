@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use ir::{
     RepresentationError,
@@ -246,7 +246,9 @@ fn test_disjoint_disjunction_again() {
       match { $x isa person; } or { $x isa company; } or { $a isa name; };
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translation_error = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap_err();
+    let translation_error =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap_err();
     assert!(match *translation_error {
         RepresentationError::UnboundRequiredVariable { variable, .. } => {
             variable == "x"
@@ -297,7 +299,9 @@ fn test_negation_with_inputs() {
         not { $x has $y; };
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap();
     let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
         unreachable!();
     };
@@ -320,7 +324,9 @@ fn test_disjunction_with_inputs() {
         { $x has height 16; } or { $y has name "Alice"; };
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
     };
@@ -359,7 +365,9 @@ fn test_optional_with_inputs() {
         try { $x has $y;};
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
     };
@@ -388,7 +396,9 @@ fn test_optional_skip_a_stage() {
         try { $x has $y;};
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
     };
@@ -421,7 +431,9 @@ fn test_nested_negation() {
         };
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap();
     let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
     };
@@ -448,7 +460,9 @@ fn test_nested_optional() {
         };
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
-    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&empty_function_index, &parsed.into_pipeline(), Arc::new(query.to_string()), Arc::default())
+            .unwrap();
     let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
     };
@@ -476,7 +490,8 @@ fn test_optional_return() {
     let preamble_signatures = HashMapFunctionSignatureIndex::build(
         parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
     );
-    let translated_pipeline = translate_pipeline(&preamble_signatures, &parsed).unwrap();
+    let translated_pipeline =
+        translate_pipeline(&preamble_signatures, &parsed, Arc::new(query.to_string()), Arc::default()).unwrap();
     let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
     };

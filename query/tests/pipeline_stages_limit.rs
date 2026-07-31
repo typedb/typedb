@@ -8,11 +8,7 @@ use std::sync::Arc;
 
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
-use query::{
-    error::QueryError,
-    given_rows::GivenRowsSimple,
-    query_manager::{QueryManager, translate_pipeline},
-};
+use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
 use resource::{constants::query::MAX_PIPELINE_STAGES, profile::CommitProfile};
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -42,10 +38,8 @@ fn setup() -> (
 
     let schema = "define entity person;";
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, schema)
-        .unwrap();
+    let parsed = query_manager.parse(schema.to_string()).unwrap().into_schema();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -57,8 +51,8 @@ fn pipeline_at_limit_is_accepted() {
     let (_tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager) = setup();
 
     let query_str = build_pipeline_query(MAX_PIPELINE_STAGES);
-    let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-    assert_eq!(pipeline.stages.len(), MAX_PIPELINE_STAGES);
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
+    assert_eq!(parsed.pipeline().stages.len(), MAX_PIPELINE_STAGES);
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let result = query_manager.prepare_read_pipeline(
@@ -66,9 +60,8 @@ fn pipeline_at_limit_is_accepted() {
         &type_manager,
         thing_manager.clone(),
         function_manager,
-        &pipeline,
+        parsed,
         None::<GivenRowsSimple>,
-        &query_str,
     );
 
     assert!(result.is_ok());
@@ -76,15 +69,22 @@ fn pipeline_at_limit_is_accepted() {
 
 #[test]
 fn pipeline_over_limit_is_rejected() {
-    let (_tmp_dir, storage, _type_manager, _thing_manager, function_manager, _query_manager) = setup();
+    let (_tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager) = setup();
 
     let over = MAX_PIPELINE_STAGES + 1;
     let query_str = build_pipeline_query(over);
-    let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
-    assert_eq!(pipeline.stages.len(), over);
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
+    assert_eq!(parsed.pipeline().stages.len(), over);
 
-    let snapshot = storage.clone().open_snapshot_read();
-    let result = translate_pipeline(&snapshot, &function_manager, &pipeline, &query_str);
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let result = query_manager.prepare_read_pipeline(
+        snapshot,
+        &type_manager,
+        thing_manager,
+        function_manager,
+        parsed,
+        None::<GivenRowsSimple>,
+    );
     let err = match result {
         Ok(_) => panic!("query with too many stages should fail"),
         Err(err) => err,

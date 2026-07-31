@@ -12,6 +12,7 @@ rust_test(
     srcs =  ["pattern.rs"],
     deps = [
         "//ir:ir",
+        "//resource",
         "@typeql//rust:typeql",
     ],
 )
@@ -25,6 +26,7 @@ rust_test(
         "//common/bytes",
         "//encoding",
         "//ir:ir",
+        "//resource",
         "@typeql//rust:typeql",
     ],
 )
@@ -53,6 +55,7 @@ rust_test(
     srcs =  ["binding_modes.rs"],
     deps = [
         "//ir:ir",
+        "//resource:resource",
         "@typeql//rust:typeql",
 
         "@crates//:itertools",

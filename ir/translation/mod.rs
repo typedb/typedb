@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;

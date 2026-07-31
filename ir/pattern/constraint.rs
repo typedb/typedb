@@ -25,10 +25,7 @@ use crate::{
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::{
-            VariableCategory, VariableOptionality,
-            VariableOptionality::{Optional, Required},
-        },
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{
         ParameterRegistry, VariableRegistry, block::BlockBuilderContext, function_signature::FunctionSignature,

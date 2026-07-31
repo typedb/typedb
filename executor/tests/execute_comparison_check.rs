@@ -37,7 +37,7 @@ use executor::{
 };
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
-    pipeline::{ParameterRegistry, block::Block},
+    pipeline::{ParameterRegistry, QueryContext, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
@@ -179,18 +179,17 @@ fn attribute_equality() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let query_context = Arc::new(QueryContext::new(Arc::default(), Arc::default(), Arc::new(QueryProfile::new(false))));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
+        &Arc::new(QueryProfile::new(false)),
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context.clone(), ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()))).collect();

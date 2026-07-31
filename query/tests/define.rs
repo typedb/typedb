@@ -28,9 +28,7 @@ fn basic() {
     attribute name value string;
     entity person owns name;
     "#;
-    let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, query_str)
-        .unwrap();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_schema();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }

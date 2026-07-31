@@ -78,7 +78,6 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::TransactionFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::DataCommitFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::SchemaCommitFailed { .. } => StatusCode::BAD_REQUEST,
-                TransactionServiceError::QueryParseFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::SchemaQueryRequiresSchemaTransaction { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::SchemaQueryFailedAbortingTransaction { .. } => StatusCode::BAD_REQUEST,

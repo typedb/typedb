@@ -46,9 +46,8 @@ use crate::{
         },
         fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
-            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
-            get_annotations_from_labels_vec,
+            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
+            FunctionParameterAnnotation, annotate_preamble_functions, get_annotations_from_labels_vec,
         },
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
@@ -118,14 +117,18 @@ pub fn annotate_preamble_and_pipeline(
     schema_function_annotations: Arc<AnnotatedSchemaFunctions>,
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
-    translated_preamble: Vec<Function>,
-    translated_given: Option<TranslatedGiven>,
-    translated_stages: Vec<TranslatedStage>,
-    translated_fetch: Option<FetchObject>,
+    translated_preamble: Arc<Vec<Function>>,
+    translated_given: Arc<Option<TranslatedGiven>>,
+    translated_stages: Arc<Vec<TranslatedStage>>,
+    translated_fetch: Arc<Option<FetchObject>>,
 ) -> Result<AnnotatedPipeline, AnnotationError> {
-    let annotated_preamble =
-        annotate_preamble_functions(translated_preamble, snapshot, type_manager, schema_function_annotations.clone())
-            .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
+    let annotated_preamble = annotate_preamble_functions(
+        translated_preamble.as_ref().clone(),
+        snapshot,
+        type_manager,
+        schema_function_annotations.clone(),
+    )
+    .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
     let combined_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_annotations, &annotated_preamble);
     let mut ctx = PipelineAnnotationContext::new(
@@ -135,7 +138,7 @@ pub fn annotate_preamble_and_pipeline(
         variable_registry,
         parameters,
     );
-    let annotated_given = annotate_given_stage(&mut ctx, translated_given)?;
+    let annotated_given = annotate_given_stage(&mut ctx, translated_given.as_ref())?;
     let input_annotations = if let Some(given) = &annotated_given {
         RunningVariableAnnotations::from_iterator(
             given.variables.iter().copied().zip(given.expected_types.iter().cloned()),
@@ -143,16 +146,24 @@ pub fn annotate_preamble_and_pipeline(
     } else {
         RunningVariableAnnotations::empty()
     };
-    let (annotated_stages, output_annotations) =
-        annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations, None, PipelineOrigin::Query)?;
-    let annotated_fetch =
-        translated_fetch.map(|fetch| annotate_fetch(&mut ctx, fetch, &output_annotations)).transpose()?;
+    let (annotated_stages, output_annotations) = annotate_pipeline_stages(
+        &mut ctx,
+        translated_stages.as_ref().clone(),
+        input_annotations,
+        None,
+        PipelineOrigin::Query,
+    )?;
+    let annotated_fetch = translated_fetch
+        .as_ref()
+        .clone()
+        .map(|fetch| annotate_fetch(&mut ctx, fetch, &output_annotations))
+        .transpose()?;
     Ok(AnnotatedPipeline { annotated_given, annotated_stages, annotated_fetch, annotated_preamble })
 }
 
 fn annotate_given_stage(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
-    translated_given: Option<TranslatedGiven>,
+    translated_given: &Option<TranslatedGiven>,
 ) -> Result<Option<AnnotatedGiven>, AnnotationError> {
     let Some(TranslatedGiven { variables, labels, .. }) = translated_given else {
         return Ok(None);
@@ -174,7 +185,7 @@ fn annotate_given_stage(
             }
         })
         .collect();
-    Ok(Some(AnnotatedGiven { variables, expected_types, optionality }))
+    Ok(Some(AnnotatedGiven { variables: variables.clone(), expected_types, optionality }))
 }
 
 pub(crate) fn annotate_pipeline_stages(

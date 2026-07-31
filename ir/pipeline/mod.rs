@@ -15,6 +15,7 @@ use encoding::{
 };
 use error::typedb_error;
 use itertools::Itertools;
+use resource::profile::QueryProfile;
 use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
 use typeql::{
     common::Span,
@@ -393,6 +394,19 @@ pub enum VariableCategorySource {
     ArgumentOrGiven,
     Delete,
     Variable(Variable),
+}
+
+#[derive(Debug, Clone)]
+pub struct QueryContext {
+    pub parameters: Arc<ParameterRegistry>,
+    pub source_query: Arc<String>,
+    pub profile: Arc<QueryProfile>,
+}
+
+impl QueryContext {
+    pub fn new(parameters: Arc<ParameterRegistry>, source_query: Arc<String>, profile: Arc<QueryProfile>) -> Self {
+        Self { parameters, source_query, profile }
+    }
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
