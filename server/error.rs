@@ -6,7 +6,7 @@
 
 use std::{fmt::Debug, io, net::SocketAddr, sync::Arc};
 
-use concept::error::ConceptReadError;
+use concept::error::{ConceptReadError, ConceptWriteError};
 use database::{
     DatabaseDeleteError, DatabaseOpenError,
     database::DatabaseCreateError,
@@ -14,6 +14,7 @@ use database::{
 };
 use error::{TypeDBError, typedb_error};
 use ir::pipeline::FunctionReadError;
+use storage::{StorageCommitError, snapshot::SnapshotError};
 use tokio_rustls::rustls::{
     pki_types::pem::Error as RustlsCertError, server::VerifierBuilderError as RustlsVerifierError,
 };
@@ -41,8 +42,20 @@ pub enum ErrorResponseCategory {
     Internal,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErrorOrigin {
+    /// Determined by the request and the server's persisted state: any server in that state, given
+    /// that request, fails the same way.
+    Request,
+    /// This server's process, storage, or filesystem failed. Another server given the same request
+    /// and state might well have succeeded.
+    Server,
+}
+
 pub trait ServerStateError: TypeDBError + Send + Sync + Debug + 'static {
     fn error_response_category(&self) -> ErrorResponseCategory;
+
+    fn error_origin(&self) -> ErrorOrigin;
 }
 
 pub type ArcServerStateError = Arc<dyn ServerStateError>;
@@ -164,6 +177,168 @@ impl ServerStateError for LocalServerStateError {
             | Self::DatabaseImportCancelFailed { .. } => InvalidRequest,
             Self::ConcurrentImportLimitReached { .. } => Unavailable,
         }
+    }
+
+    fn error_origin(&self) -> ErrorOrigin {
+        use ErrorOrigin::{Request, Server};
+
+        use crate::authentication::AuthenticationError;
+
+        match self {
+            Self::Unimplemented { .. }
+            | Self::NotSupportedByDistribution { .. }
+            | Self::OperationNotPermitted { .. }
+            | Self::DatabaseNotFound { .. }
+            | Self::UserNotFound { .. } => Request,
+            Self::AuthenticationError { typedb_source } => match typedb_source {
+                AuthenticationError::InvalidCredential { .. }
+                | AuthenticationError::MissingToken { .. }
+                | AuthenticationError::InvalidToken { .. } => Request,
+                AuthenticationError::CorruptedAccessor { .. } => Server,
+            },
+            Self::UserCannotBeRetrieved { typedb_source } => user_get_origin(typedb_source),
+            Self::UserCannotBeCreated { typedb_source } => match typedb_source {
+                UserCreateError::IllegalUsername { .. }
+                | UserCreateError::UserAlreadyExist { .. }
+                | UserCreateError::IncompleteUserDetail { .. } => Request,
+                UserCreateError::GetFailed { typedb_source } => user_get_origin(typedb_source),
+                UserCreateError::Unexpected { .. } => Server,
+            },
+            Self::UserCannotBeUpdated { typedb_source } => match typedb_source {
+                UserUpdateError::UserDetailNotProvided { .. }
+                | UserUpdateError::IllegalUsername { .. }
+                | UserUpdateError::UserNotFound { .. } => Request,
+                UserUpdateError::GetFailed { typedb_source } => user_get_origin(typedb_source),
+                UserUpdateError::Unexpected { .. } => Server,
+            },
+            Self::UserCannotBeDeleted { typedb_source } => match typedb_source {
+                UserDeleteError::DefaultUserCannotBeDeleted { .. }
+                | UserDeleteError::IllegalUsername { .. }
+                | UserDeleteError::UserNotFound { .. } => Request,
+                UserDeleteError::GetFailed { typedb_source } => user_get_origin(typedb_source),
+                UserDeleteError::Unexpected { .. } => Server,
+            },
+            Self::DatabaseCannotBeCreated { typedb_source } => database_create_origin(typedb_source),
+            Self::DatabaseCannotBeDeleted { typedb_source } => database_delete_origin(typedb_source),
+            Self::DatabaseImportPrepareFailed { typedb_source } => database_create_origin(typedb_source),
+            Self::DatabaseImportFinaliseFailed { typedb_source } => database_create_origin(typedb_source),
+            Self::DatabaseImportCancelFailed { typedb_source } => database_delete_origin(typedb_source),
+            Self::DatabaseSchemaCommitFailed { typedb_source } => match typedb_source {
+                SchemaCommitError::ConceptWriteErrors { write_errors, .. } => {
+                    concept_writes_origin(write_errors.iter())
+                }
+                SchemaCommitError::ConceptWriteErrorsFirst { typedb_source, .. } => concept_write_origin(typedb_source),
+                SchemaCommitError::SnapshotError { typedb_source, .. } => snapshot_commit_origin(typedb_source),
+                SchemaCommitError::FunctionError { .. } => Request,
+                SchemaCommitError::TypeCacheUpdateError { .. } | SchemaCommitError::StatisticsError { .. } => Server,
+            },
+            Self::DatabaseDataCommitFailed { typedb_source } => match typedb_source {
+                DataCommitError::ConceptWriteErrors { write_errors, .. } => concept_writes_origin(write_errors.iter()),
+                DataCommitError::ConceptWriteErrorsFirst { typedb_source, .. } => concept_write_origin(typedb_source),
+                DataCommitError::SnapshotError { typedb_source, .. } => snapshot_commit_origin(typedb_source),
+                DataCommitError::SnapshotInUse { .. } => Server,
+            },
+            Self::DatabaseImport { typedb_source } => match typedb_source {
+                DatabaseImportServiceError::ConceptDecode { .. }
+                | DatabaseImportServiceError::DuplicateImport { .. }
+                | DatabaseImportServiceError::ImportDatabaseNotFound { .. }
+                | DatabaseImportServiceError::ImportEmptyItem { .. }
+                | DatabaseImportServiceError::AbsentAttributeValue { .. }
+                | DatabaseImportServiceError::AttributesOwningAttributes { .. } => Request,
+                DatabaseImportServiceError::ServerState { typedb_source } => typedb_source.error_origin(),
+                DatabaseImportServiceError::DatabaseImport { .. }
+                | DatabaseImportServiceError::ImportTaskFailed { .. }
+                | DatabaseImportServiceError::ImportClosed { .. } => Server,
+            },
+            Self::NotInitialised { .. }
+            | Self::FailedToOpenPrerequisiteTransaction { .. }
+            | Self::TransactionOpenFailed { .. }
+            | Self::ConceptReadError { .. }
+            | Self::FunctionReadError { .. }
+            | Self::DatabaseCommitRecordExistsFailed { .. }
+            | Self::DatabaseExport { .. }
+            | Self::ConcurrentImportLimitReached { .. } => Server,
+        }
+    }
+}
+
+fn user_get_origin(error: &UserGetError) -> ErrorOrigin {
+    match error {
+        UserGetError::IllegalUsername { .. } => ErrorOrigin::Request,
+        UserGetError::Unexpected { .. } => ErrorOrigin::Server,
+    }
+}
+
+fn database_create_origin(error: &DatabaseCreateError) -> ErrorOrigin {
+    match error {
+        DatabaseCreateError::InvalidName { .. }
+        | DatabaseCreateError::InternalDatabaseCreationProhibited { .. }
+        | DatabaseCreateError::AlreadyExists { .. }
+        | DatabaseCreateError::IsBeingImported { .. } => ErrorOrigin::Request,
+
+        DatabaseCreateError::DatabaseOpen { .. }
+        | DatabaseCreateError::WriteAccessDenied { .. }
+        | DatabaseCreateError::ReadAccessDenied { .. }
+        | DatabaseCreateError::AlreadyExistsAndCleanupBlocked { .. }
+        | DatabaseCreateError::IsNotBeingImported { .. }
+        | DatabaseCreateError::DirectoryWrite { .. }
+        | DatabaseCreateError::DatabaseMove { .. }
+        | DatabaseCreateError::ImportedDatabaseInUse { .. }
+        | DatabaseCreateError::ImportCleanupFailed { .. } => ErrorOrigin::Server,
+    }
+}
+
+fn database_delete_origin(error: &DatabaseDeleteError) -> ErrorOrigin {
+    match error {
+        DatabaseDeleteError::DoesNotExist { .. }
+        | DatabaseDeleteError::InternalDatabaseDeletionProhibited { .. }
+        | DatabaseDeleteError::DatabaseIsNotBeingImported { .. } => ErrorOrigin::Request,
+
+        // A live local handle is this server's own liveness problem: elsewhere the delete succeeds.
+        DatabaseDeleteError::InUse { .. }
+        | DatabaseDeleteError::StorageDelete { .. }
+        | DatabaseDeleteError::DirectoryDelete { .. }
+        | DatabaseDeleteError::WriteAccessDenied { .. } => ErrorOrigin::Server,
+    }
+}
+
+fn concept_writes_origin<'a>(errors: impl Iterator<Item = &'a ConceptWriteError>) -> ErrorOrigin {
+    match errors.map(concept_write_origin).all(|origin| origin == ErrorOrigin::Request) {
+        true => ErrorOrigin::Request,
+        false => ErrorOrigin::Server,
+    }
+}
+
+fn concept_write_origin(error: &ConceptWriteError) -> ErrorOrigin {
+    match error {
+        // Validation is a verdict computed from the schema and the data being written.
+        ConceptWriteError::SchemaValidation { .. } | ConceptWriteError::DataValidation { .. } => ErrorOrigin::Request,
+
+        // Reading or encoding failing while writing a record the client already built is ours.
+        ConceptWriteError::SnapshotGet { .. }
+        | ConceptWriteError::SnapshotIterate { .. }
+        | ConceptWriteError::ConceptRead { .. }
+        | ConceptWriteError::Encoding { .. }
+        | ConceptWriteError::Annotation { .. }
+        | ConceptWriteError::SetHasOrderedOwnsUnordered { .. }
+        | ConceptWriteError::SetHasUnorderedOwnsOrdered { .. }
+        | ConceptWriteError::UnsetHasOrderedOwnsUnordered { .. }
+        | ConceptWriteError::UnsetHasUnorderedOwnsOrdered { .. }
+        | ConceptWriteError::SetPlayersOrderedRoleUnordered { .. } => ErrorOrigin::Server,
+    }
+}
+
+fn snapshot_commit_origin(error: &SnapshotError) -> ErrorOrigin {
+    match error {
+        SnapshotError::Commit { typedb_source, .. } => match typedb_source {
+            // An isolation conflict is decided by the commits already in the replicated history.
+            StorageCommitError::Isolation { .. } => ErrorOrigin::Request,
+            StorageCommitError::Internal { .. }
+            | StorageCommitError::IO { .. }
+            | StorageCommitError::MVCCRead { .. }
+            | StorageCommitError::Keyspace { .. }
+            | StorageCommitError::Durability { .. } => ErrorOrigin::Server,
+        },
     }
 }
 

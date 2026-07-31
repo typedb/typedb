@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs, io,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
@@ -15,7 +15,7 @@ use cache::CACHE_DB_NAME_PREFIX;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use resource::internal_database_prefix;
 use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
-use tracing::{Level, debug, event, warn};
+use tracing::{Level, debug, event};
 
 use crate::{
     Database, DatabaseDeleteError, DatabaseOpenError,

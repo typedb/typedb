@@ -184,18 +184,6 @@ impl LocalDatabaseOperator {
         DatabaseImporter::new(database, self.database_manager.import_directory().to_owned(), committer)
     }
 
-    pub fn create_database(&self, name: &str) -> Result<(), DatabaseCreateError> {
-        self.database_manager.put_database(name)
-    }
-
-    pub fn create_database_unrestricted(&self, name: &str) -> Result<(), DatabaseCreateError> {
-        self.database_manager.put_database_unrestricted(name)
-    }
-
-    pub fn delete_database(&self, name: &str) -> Result<(), DatabaseDeleteError> {
-        self.database_manager.delete_database(name)
-    }
-
     pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
         self.database_manager.prepare_imported_database(name)
     }
