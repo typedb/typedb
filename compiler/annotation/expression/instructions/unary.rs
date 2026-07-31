@@ -21,14 +21,11 @@ pub trait UnaryExpression<'a, T1: NativeValueConvertible<'a>, R: NativeValueConv
     fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
 }
 
-pub struct Unary<'a, T1, R, F>
+pub struct Unary<'a, T1, R, F>(PhantomData<&'a (T1, R, F)>)
 where
     T1: NativeValueConvertible<'a>,
     R: NativeValueConvertible<'a>,
-    F: UnaryExpression<'a, T1, R>,
-{
-    phantom: PhantomData<&'a (T1, R, F)>,
-}
+    F: UnaryExpression<'a, T1, R>;
 
 impl<'a, T1, R, F> ExpressionInstruction for Unary<'a, T1, R, F>
 where

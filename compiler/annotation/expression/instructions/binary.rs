@@ -15,62 +15,39 @@ use crate::annotation::expression::{
     },
 };
 
-pub trait BinaryExpression<
-    'a,
-    T1: NativeValueConvertible<'a>,
-    T2: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
->
-{
+pub trait BinaryExpression<'a> {
+    type T1: NativeValueConvertible<'a>;
+    type T2: NativeValueConvertible<'a>;
+    type R: NativeValueConvertible<'a>;
     const OP_CODE: ExpressionOpCode;
-    fn evaluate(a1: T1, a2: T2) -> Result<R, ExpressionEvaluationError>;
+    fn evaluate(a1: Self::T1, a2: Self::T2) -> Result<Self::R, ExpressionEvaluationError>;
 }
 
-pub struct Binary<'a, T1, T2, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    T2: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: BinaryExpression<'a, T1, T2, R>,
-{
-    pub phantom: PhantomData<&'a (T1, T2, R, F)>,
-}
+pub struct Binary<'a, F: BinaryExpression<'a>>(PhantomData<&'a F>);
 
-impl<'a, T1, T2, R, F> ExpressionInstruction for Binary<'a, T1, T2, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    T2: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: BinaryExpression<'a, T1, T2, R>,
-{
+impl<'a, F: BinaryExpression<'a>> ExpressionInstruction for Binary<'a, F> {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
 }
 
-impl<'a, T1, T2, R, F> CompilableExpression for Binary<'a, T1, T2, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    T2: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: BinaryExpression<'a, T1, T2, R>,
-{
+impl<'a, F: BinaryExpression<'a>> CompilableExpression for Binary<'a, F> {
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a2 = builder.pop_type_single()?.category();
         let a1 = builder.pop_type_single()?.category();
-        if a1 != T1::VALUE_TYPE_CATEGORY {
+        if a1 != F::T1::VALUE_TYPE_CATEGORY {
             return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: F::OP_CODE,
-                expected: T1::VALUE_TYPE_CATEGORY,
+                expected: F::T1::VALUE_TYPE_CATEGORY,
                 actual: a1,
             }));
         }
-        if a2 != T2::VALUE_TYPE_CATEGORY {
+        if a2 != F::T2::VALUE_TYPE_CATEGORY {
             return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: F::OP_CODE,
-                expected: T2::VALUE_TYPE_CATEGORY,
+                expected: F::T2::VALUE_TYPE_CATEGORY,
                 actual: a2,
             }));
         }
-        builder.push_type_single(R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
+        builder.push_type_single(F::R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }
@@ -80,10 +57,13 @@ macro_rules! binary_instruction {
     ( $lt:lifetime $( $name:ident($a1:ident: $t1:ty, $a2:ident: $t2:ty) -> $r:ty $impl_code:block )* ) => {
         paste::paste!{
             $(
-            pub type $name<$lt> = Binary<$lt, $t1, $t2, $r, [<$name Impl>]>;
+            pub type $name<$lt> = Binary<$lt, [<$name Impl>]>;
             pub struct [<$name Impl>] {}
-            impl<$lt> BinaryExpression<$lt, $t1, $t2, $r> for [<$name Impl>] {
+            impl<$lt> BinaryExpression<$lt> for [<$name Impl>] {
                 const OP_CODE: ExpressionOpCode = ExpressionOpCode::$name;
+                type T1 = $t1;
+                type T2 = $t2;
+                type R = $r;
                 fn evaluate($a1: $t1, $a2: $t2) -> Result<$r, ExpressionEvaluationError> {
                     $impl_code
                 }

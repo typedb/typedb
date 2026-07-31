@@ -192,16 +192,10 @@ pub trait ExpressionEvaluation {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
 }
 
-impl<'a, T1, T2, R, F> ExpressionEvaluation for Binary<'a, T1, T2, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    T2: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: BinaryExpression<'a, T1, T2, R>,
-{
+impl<'a, F: BinaryExpression<'a>> ExpressionEvaluation for Binary<'a, F> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a2: T2 = T2::from_db_value(state.pop_value()).unwrap();
-        let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
+        let a2: F::T2 = F::T2::from_db_value(state.pop_value()).unwrap();
+        let a1: F::T1 = F::T1::from_db_value(state.pop_value()).unwrap();
         state.push_value(F::evaluate(a1, a2)?.to_db_value());
         Ok(())
     }

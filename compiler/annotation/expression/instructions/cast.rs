@@ -37,17 +37,15 @@ pub trait ImplicitCast<'a, From: NativeValueConvertible<'a>>: NativeValueConvert
     fn cast(from: From) -> Result<Self, ExpressionEvaluationError>;
 }
 
-pub struct CastUnary<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> {
-    phantom: PhantomData<&'a (From, To)>,
-}
+pub struct CastUnary<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>>(PhantomData<&'a (From, To)>);
 
-pub struct CastBinaryLeft<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> {
-    phantom: PhantomData<&'a (From, To)>,
-}
+pub struct CastBinaryLeft<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>>(
+    PhantomData<&'a (From, To)>,
+);
 
-pub struct CastBinaryRight<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> {
-    phantom: PhantomData<&'a (From, To)>,
-}
+pub struct CastBinaryRight<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>>(
+    PhantomData<&'a (From, To)>,
+);
 
 impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionInstruction
     for CastUnary<'a, From, To>
