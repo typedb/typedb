@@ -22,6 +22,7 @@ pub mod compiled_expression;
 pub mod expression_compiler;
 pub mod instructions;
 mod operation_resolution;
+mod builtin_resolution;
 
 typedb_error! {
     pub ExpressionCompileError(component = "Expression compilation", prefix = "CEX") {
@@ -120,4 +121,9 @@ typedb_error! {
         ),
         Representation(20, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
     }
+}
+
+#[macro_export]
+macro_rules! resolve_expr_with_paste {
+    ( $enm:ident( ) = * ) => {};
 }
