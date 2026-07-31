@@ -32,7 +32,7 @@ macro_rules! unary_builtin {
 
 macro_rules! unary_builtin_tt {
     ($fid:ident = $impl_prefix:ident [ $( $t1:ident, )* ]) => {
-        paste!(unary_builtin_impl! { $fid = $impl_prefix [ $( $t1 = [<$impl_prefix $t1>], )* ] } );
+        paste::paste!(unary_builtin_impl! { $fid = $impl_prefix [ $( $t1 = [<$impl_prefix $t1>], )* ] } );
     }
 }
 
@@ -66,7 +66,7 @@ macro_rules! binary_builtin {
 
 macro_rules! binary_builtin_tt {
     ($fid:ident:$same_args:literal = $impl_prefix:ident [ $( ($t1:ident, $t2:ident), )* ]) => {
-        paste!(binary_builtin_impl! { $fid:$same_args = $impl_prefix [ $( ($t1, $t2) = [<$impl_prefix $t1 $t2>], )* ] } );
+        paste::paste!(binary_builtin_impl! { $fid:$same_args = $impl_prefix [ $( ($t1, $t2) = [<$impl_prefix $t1 $t2>], )* ] } );
     }
 }
 
