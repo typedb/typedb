@@ -100,7 +100,7 @@ impl DatabaseImportManager {
                 })?,
                 Err(existing) => {
                     databases.insert(name.to_string(), existing);
-                    return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
+                    return Err(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() });
                 }
             }
         } else if self.exists(name) {

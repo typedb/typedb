@@ -79,8 +79,9 @@ fn prepare_replaces_unheld_leftover_but_rejects_held_staging() {
     let staging = dbm.prepare_imported_database("fresh".to_string()).expect("first prepare");
     assert!(matches!(
         dbm.prepare_imported_database("fresh".to_string()),
-        Err(DatabaseCreateError::IsBeingImported { .. })
+        Err(DatabaseCreateError::ImportedDatabaseInUse { .. })
     ));
+    assert!(matches!(dbm.put_database("fresh"), Err(DatabaseCreateError::IsBeingImported { .. })));
     drop(staging);
     dbm.prepare_imported_database("fresh".to_string()).expect("prepare must replace the unheld leftover");
 }

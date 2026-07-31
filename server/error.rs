@@ -13,6 +13,7 @@ use database::{
     transaction::{DataCommitError, SchemaCommitError, TransactionError},
 };
 use error::{TypeDBError, typedb_error};
+use function::FunctionError;
 use ir::pipeline::FunctionReadError;
 use storage::{StorageCommitError, snapshot::SnapshotError};
 use tokio_rustls::rustls::{
@@ -229,7 +230,18 @@ impl ServerStateError for LocalServerStateError {
                 }
                 SchemaCommitError::ConceptWriteErrorsFirst { typedb_source, .. } => concept_write_origin(typedb_source),
                 SchemaCommitError::SnapshotError { typedb_source, .. } => snapshot_commit_origin(typedb_source),
-                SchemaCommitError::FunctionError { .. } => Request,
+                SchemaCommitError::FunctionError { typedb_source } => match typedb_source {
+                    FunctionError::FunctionNotFound { .. }
+                    | FunctionError::AllFunctionsTypeCheckFailure { .. }
+                    | FunctionError::CommittedFunctionsTypeCheck { .. }
+                    | FunctionError::FunctionTranslation { .. }
+                    | FunctionError::FunctionAlreadyExists { .. }
+                    | FunctionError::CommittedFunctionParseError { .. }
+                    | FunctionError::StratificationViolation { .. } => Request,
+                    FunctionError::ConceptRead { .. }
+                    | FunctionError::CreateFunctionEncoding { .. }
+                    | FunctionError::FunctionRetrieval { .. } => Server,
+                },
                 SchemaCommitError::TypeCacheUpdateError { .. } | SchemaCommitError::StatisticsError { .. } => Server,
             },
             Self::DatabaseDataCommitFailed { typedb_source } => match typedb_source {
@@ -294,7 +306,6 @@ fn database_delete_origin(error: &DatabaseDeleteError) -> ErrorOrigin {
         | DatabaseDeleteError::InternalDatabaseDeletionProhibited { .. }
         | DatabaseDeleteError::DatabaseIsNotBeingImported { .. } => ErrorOrigin::Request,
 
-        // A live local handle is this server's own liveness problem: elsewhere the delete succeeds.
         DatabaseDeleteError::InUse { .. }
         | DatabaseDeleteError::StorageDelete { .. }
         | DatabaseDeleteError::DirectoryDelete { .. }
@@ -311,27 +322,25 @@ fn concept_writes_origin<'a>(errors: impl Iterator<Item = &'a ConceptWriteError>
 
 fn concept_write_origin(error: &ConceptWriteError) -> ErrorOrigin {
     match error {
-        // Validation is a verdict computed from the schema and the data being written.
-        ConceptWriteError::SchemaValidation { .. } | ConceptWriteError::DataValidation { .. } => ErrorOrigin::Request,
-
-        // Reading or encoding failing while writing a record the client already built is ours.
-        ConceptWriteError::SnapshotGet { .. }
-        | ConceptWriteError::SnapshotIterate { .. }
-        | ConceptWriteError::ConceptRead { .. }
-        | ConceptWriteError::Encoding { .. }
+        ConceptWriteError::SchemaValidation { .. }
+        | ConceptWriteError::DataValidation { .. }
         | ConceptWriteError::Annotation { .. }
         | ConceptWriteError::SetHasOrderedOwnsUnordered { .. }
         | ConceptWriteError::SetHasUnorderedOwnsOrdered { .. }
         | ConceptWriteError::UnsetHasOrderedOwnsUnordered { .. }
         | ConceptWriteError::UnsetHasUnorderedOwnsOrdered { .. }
-        | ConceptWriteError::SetPlayersOrderedRoleUnordered { .. } => ErrorOrigin::Server,
+        | ConceptWriteError::SetPlayersOrderedRoleUnordered { .. } => ErrorOrigin::Request,
+
+        ConceptWriteError::SnapshotGet { .. }
+        | ConceptWriteError::SnapshotIterate { .. }
+        | ConceptWriteError::ConceptRead { .. }
+        | ConceptWriteError::Encoding { .. } => ErrorOrigin::Server,
     }
 }
 
 fn snapshot_commit_origin(error: &SnapshotError) -> ErrorOrigin {
     match error {
         SnapshotError::Commit { typedb_source, .. } => match typedb_source {
-            // An isolation conflict is decided by the commits already in the replicated history.
             StorageCommitError::Isolation { .. } => ErrorOrigin::Request,
             StorageCommitError::Internal { .. }
             | StorageCommitError::IO { .. }
