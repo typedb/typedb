@@ -16,9 +16,6 @@ use crate::annotation::expression::{
 };
 
 // Declarations
-pub struct LoadVariable {}
-pub struct LoadConstant {}
-
 pub type CastUnaryIntegerToDouble<'a> = CastUnary<'a, i64, f64>;
 pub type CastLeftIntegerToDouble<'a> = CastBinaryLeft<'a, i64, f64>;
 pub type CastRightIntegerToDouble<'a> = CastBinaryRight<'a, i64, f64>;
@@ -33,16 +30,6 @@ pub type CastRightIntegerToDecimal<'a> = CastBinaryRight<'a, i64, Decimal>;
 
 // Impls
 
-// Load
-impl ExpressionInstruction for LoadVariable {
-    const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadVariable;
-}
-
-impl ExpressionInstruction for LoadConstant {
-    const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadConstant;
-}
-
-// Casts
 pub trait ImplicitCast<'a, From: NativeValueConvertible<'a>>: NativeValueConvertible<'a> {
     const CAST_UNARY_OPCODE: ExpressionOpCode;
     const CAST_LEFT_OPCODE: ExpressionOpCode;
