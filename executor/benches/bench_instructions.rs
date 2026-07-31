@@ -248,7 +248,7 @@ fn build_has_ir(multi_attribute_type: bool) -> (Block, BenchVars, PipelineTransl
 
 fn build_has_unbound_executor(
     storage: &Arc<MVCCStorage<WALClient>>,
-) -> (HasExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
+) -> (HasExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>, ParameterRegistry) {
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
     let (entry, vars, mut translation_context, value_parameters) = build_has_ir(false);
 
@@ -271,14 +271,14 @@ fn build_has_unbound_executor(
     // sort_by = person → BinaryIterateMode::Unbound
     let executor =
         HasExecutor::new(has_instruction, vars.variable_modes, vars.person, &snapshot, &thing_manager).unwrap();
-    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default(), Arc::default());
-    (executor, context)
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    (executor, context, value_parameters)
 }
 
 fn build_has_reverse_unbound_executor(
     storage: &Arc<MVCCStorage<WALClient>>,
     multi_attribute_type: bool,
-) -> (HasReverseExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
+) -> (HasReverseExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>, ParameterRegistry) {
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
     let (entry, vars, mut translation_context, value_parameters) = build_has_ir(multi_attribute_type);
 
@@ -308,8 +308,8 @@ fn build_has_reverse_unbound_executor(
         &thing_manager,
     )
     .unwrap();
-    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default(), Arc::default());
-    (executor, context)
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    (executor, context, value_parameters)
 }
 
 struct LinksBenchVars {
@@ -352,7 +352,7 @@ fn build_links_ir() -> (Block, LinksBenchVars, PipelineTranslationContext, Param
 
 fn build_links_unbound_executor(
     storage: &Arc<MVCCStorage<WALClient>>,
-) -> (LinksExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
+) -> (LinksExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>, ParameterRegistry) {
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
     let (entry, vars, mut translation_context, value_parameters) = build_links_ir();
 
@@ -374,8 +374,8 @@ fn build_links_unbound_executor(
     let links_instruction = LinksInstruction::new(links, Inputs::None([]), &entry_annotations).map(&vars.mapping);
     let executor =
         LinksExecutor::new(links_instruction, vars.variable_modes, vars.membership, &snapshot, &thing_manager).unwrap();
-    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default(), Arc::default());
-    (executor, context)
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    (executor, context, value_parameters)
 }
 
 fn assert_count(mut iter: TupleIterator, expected_count: usize) {
@@ -403,10 +403,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     setup_has_data(&storage);
     setup_links_data(&storage);
 
-    let (has_exec, has_ctx) = build_has_unbound_executor(&storage);
-    let (has_reverse_single_exec, has_reverse_single_ctx) = build_has_reverse_unbound_executor(&storage, false);
-    let (has_reverse_multi_exec, has_reverse_multi_ctx) = build_has_reverse_unbound_executor(&storage, true);
-    let (links_exec, links_ctx) = build_links_unbound_executor(&storage);
+    let (has_exec, has_ctx, has_params) = build_has_unbound_executor(&storage);
+    let (has_reverse_single_exec, has_reverse_single_ctx, has_reverse_single_params) =
+        build_has_reverse_unbound_executor(&storage, false);
+    let (has_reverse_multi_exec, has_reverse_multi_ctx, has_reverse_multi_params) =
+        build_has_reverse_unbound_executor(&storage, true);
+    let (links_exec, links_ctx, links_params) = build_links_unbound_executor(&storage);
     let count_single = NUM_PERSONS * AGES_PER_PERSON;
     let count_multi = NUM_PERSONS * (AGES_PER_PERSON + NAMES_PER_PERSON);
     let count_links = NUM_MEMBERSHIPS * 2;
@@ -415,7 +417,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("single_type", |b| {
         b.iter(|| {
-            let iter = has_exec.get_iterator(&has_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
+            let iter = has_exec
+                .get_iterator(&has_ctx, &has_params, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
+                .unwrap();
             assert_count(iter, count_single);
         })
     });
@@ -426,7 +430,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("single_type", |b| {
         b.iter(|| {
             let iter = has_reverse_single_exec
-                .get_iterator(&has_reverse_single_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
+                .get_iterator(
+                    &has_reverse_single_ctx,
+                    &has_reverse_single_params,
+                    MaybeOwnedRow::empty(),
+                    StorageCounters::DISABLED,
+                )
                 .unwrap();
             assert_count(iter, count_single);
         })
@@ -434,7 +443,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("multi_type", |b| {
         b.iter(|| {
             let iter = has_reverse_multi_exec
-                .get_iterator(&has_reverse_multi_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
+                .get_iterator(
+                    &has_reverse_multi_ctx,
+                    &has_reverse_multi_params,
+                    MaybeOwnedRow::empty(),
+                    StorageCounters::DISABLED,
+                )
                 .unwrap();
             assert_count(iter, count_multi);
         })
@@ -445,7 +459,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("single_type", |b| {
         b.iter(|| {
-            let iter = links_exec.get_iterator(&links_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
+            let iter = links_exec
+                .get_iterator(&links_ctx, &links_params, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
+                .unwrap();
             assert_count(iter, count_links);
         })
     });

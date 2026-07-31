@@ -51,7 +51,7 @@ use ir::{
         Vertex,
         constraint::{Comparator, IsaKind},
     },
-    pipeline::{ParameterRegistry, block::Block},
+    pipeline::{ParameterRegistry, QueryContext, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
@@ -444,7 +444,7 @@ fn execute_steps(
     storage: Arc<MVCCStorage<WALClient>>,
     thing_manager: Arc<ThingManager>,
     value_parameters: Arc<ParameterRegistry>,
-    profile: &QueryProfile,
+    profile: &Arc<QueryProfile>,
 ) -> Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> {
     let executable = ConjunctionExecutable::new(
         next_executable_id(),
@@ -456,18 +456,17 @@ fn execute_steps(
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
+    let query_context = Arc::new(QueryContext::new(value_parameters, Arc::default(), profile.clone()));
     let executor = MatchExecutor::new(
         &executable,
-        &snapshot,
-        &thing_manager,
+        &context,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
         profile,
     )
     .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default(), value_parameters.clone());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let iterator = executor.into_iterator(context, query_context, ExecutionInterrupt::new_uninterruptible());
 
     iterator
         .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
@@ -551,7 +550,7 @@ fn value_int_equality_isa_reads() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
 
@@ -646,7 +645,7 @@ fn value_int_equality_has_reverse_reads() {
         2,
     ))];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
 
@@ -753,7 +752,7 @@ fn value_int_equality_has_bound_owner() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
 
@@ -873,7 +872,7 @@ fn value_int_inequality_has_bound_owner() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
     assert_eq!(rows.len(), 2);
@@ -977,7 +976,7 @@ fn value_inline_string_equality_has_bound_owner() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
 
@@ -1084,7 +1083,7 @@ fn value_hashed_string_equality_has_bound_owner() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
 
@@ -1208,7 +1207,7 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
     assert_eq!(rows.len(), 2);
@@ -1344,7 +1343,7 @@ fn intersection_seeks() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
     for row in rows.iter() {
@@ -1536,7 +1535,7 @@ fn intersections_seeks_with_extra_values() {
         )),
     ];
 
-    let query_profile = QueryProfile::new(true);
+    let query_profile = Arc::new(QueryProfile::new(true));
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
     for row in rows.iter() {

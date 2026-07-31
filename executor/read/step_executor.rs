@@ -18,7 +18,7 @@ use compiler::{
         pipeline::ExecutableStage,
     },
 };
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use error::UnimplementedFeature;
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
@@ -28,6 +28,7 @@ use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
     batch::FixedBatch,
+    pipeline::stage::ExecutionContext,
     read::{
         collecting_stage_executor::CollectingStageExecutor,
         immediate_executor::{BuiltinCallExecutor, ImmediateExecutor},
@@ -150,8 +151,7 @@ impl ReshapeForReturnExecutor {
 }
 
 pub(crate) fn create_executors_for_conjunction(
-    snapshot: &Arc<impl ReadableSnapshot + 'static>,
-    thing_manager: &Arc<ThingManager>,
+    execution_context: &ExecutionContext<impl ReadableSnapshot>,
     function_registry: &ExecutableFunctionRegistry,
     pattern_profile: Arc<PatternProfile>,
     conjunction_executable: &ConjunctionExecutable,
@@ -163,7 +163,12 @@ pub(crate) fn create_executors_for_conjunction(
                 let step_profile = pattern_profile.extend_or_get_step(index, || {
                     format!("{}", inner.make_var_mapped(conjunction_executable.variable_reverse_map()))
                 });
-                let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager, step_profile)?;
+                let step = ImmediateExecutor::new_intersection(
+                    inner,
+                    execution_context.snapshot.as_ref(),
+                    &execution_context.thing_manager,
+                    step_profile,
+                )?;
                 steps.push(step.into());
             }
             ExecutionStep::UnsortedJoin(inner) => {
@@ -186,8 +191,7 @@ pub(crate) fn create_executors_for_conjunction(
             ExecutionStep::Negation(negation_step) => {
                 let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || "Negation".to_string());
                 let inner = create_executors_for_conjunction(
-                    snapshot,
-                    thing_manager,
+                    execution_context,
                     function_registry,
                     subpattern_profile,
                     &negation_step.negation,
@@ -223,8 +227,7 @@ pub(crate) fn create_executors_for_conjunction(
                     } else {
                         let subquery_profile = pattern_profile.extend_or_get_subquery(index, || "FnCall".to_string());
                         let inner_executors = create_executors_for_function(
-                            snapshot,
-                            thing_manager,
+                            execution_context,
                             function_registry,
                             subquery_profile,
                             function,
@@ -248,8 +251,7 @@ pub(crate) fn create_executors_for_conjunction(
                             format!("Branch {} [id: {}]", branch_index, branch_executable.executable_id())
                         });
                         let executors = create_executors_for_conjunction(
-                            snapshot,
-                            thing_manager,
+                            execution_context,
                             function_registry,
                             branch_profile,
                             branch_executable,
@@ -274,8 +276,7 @@ pub(crate) fn create_executors_for_conjunction(
             ExecutionStep::Optional(step) => {
                 let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || "Optional".to_string());
                 let inner = create_executors_for_conjunction(
-                    snapshot,
-                    thing_manager,
+                    execution_context,
                     function_registry,
                     subpattern_profile,
                     &step.optional,
@@ -295,16 +296,14 @@ pub(crate) fn create_executors_for_conjunction(
 }
 
 pub(crate) fn create_executors_for_function(
-    snapshot: &Arc<impl ReadableSnapshot + 'static>,
-    thing_manager: &Arc<ThingManager>,
+    execution_context: &ExecutionContext<impl ReadableSnapshot>,
     function_registry: &ExecutableFunctionRegistry,
     query_profile: Arc<QueryProfile>,
     executable_function: &ExecutableFunction,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let executable_stages = &executable_function.executable_stages;
     let mut steps = create_executors_for_function_pipeline_stages(
-        snapshot,
-        thing_manager,
+        execution_context,
         function_registry,
         &query_profile,
         executable_stages,
@@ -333,6 +332,7 @@ pub(crate) fn create_executors_for_function(
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(executable_function.executable_id, steps),
                 executable.clone(),
+                &query_profile,
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
@@ -341,8 +341,7 @@ pub(crate) fn create_executors_for_function(
 
 // TODO: Turn this recursion into iteration to prevent stack overflows of really long functions
 pub(super) fn create_executors_for_function_pipeline_stages(
-    snapshot: &Arc<impl ReadableSnapshot + 'static>,
-    thing_manager: &Arc<ThingManager>,
+    execution_context: &ExecutionContext<impl ReadableSnapshot>,
     function_registry: &ExecutableFunctionRegistry,
     query_profile: &QueryProfile,
     executable_stages: &[ExecutableStage],
@@ -350,8 +349,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let mut previous_stage_steps = if at_index > 0 {
         create_executors_for_function_pipeline_stages(
-            snapshot,
-            thing_manager,
+            execution_context,
             function_registry,
             query_profile,
             executable_stages,
@@ -373,8 +371,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
                 )
             });
             let mut executors = create_executors_for_conjunction(
-                snapshot,
-                thing_manager,
+                execution_context,
                 function_registry,
                 pattern_profile,
                 conjunction_executable,
@@ -418,6 +415,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             let step = CollectingStageExecutor::new_sort(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),
                 sort_executable,
+                query_profile,
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
@@ -425,6 +423,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),
                 reduce_stage_executable.reduce_rows_executable.clone(),
+                query_profile,
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }

@@ -44,10 +44,8 @@ fn setup_common(schema: &str) -> Context {
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
-    query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, schema)
-        .unwrap();
+    let parsed = query_manager.parse(schema.to_string()).unwrap().into_schema();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, parsed).unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
@@ -64,7 +62,7 @@ fn run_read_query(
     Either<Box<QueryError>, Box<PipelineExecutionError>>,
 > {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).map_err(Either::Left)?.into_pipeline();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -72,9 +70,8 @@ fn run_read_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &match_,
+            parsed,
             None::<GivenRowsSimple>,
-            query,
         )
         .map_err(|query_error| Either::Left(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -91,7 +88,7 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let query_as_pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let parsed = context.query_manager.parse(query.to_string()).unwrap().into_pipeline();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(
@@ -99,10 +96,10 @@ fn run_write_query(
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &query_as_pipeline,
+            parsed,
             None::<GivenRowsSimple>,
-            query,
         )
+        .map_err(|(_, err)| err)
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =

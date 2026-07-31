@@ -26,8 +26,12 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::given_rows::GivenRowsSimple;
+use query::{
+    given_rows::GivenRowsSimple,
+    query_manager::{ParsedPipeline, ParsedSchemaQuery},
+};
 use rand_core::RngCore;
+use resource::profile::QueryProfile;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
 use xoshiro::Xoshiro256Plus;
@@ -153,7 +157,8 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
 
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-    let (tx, result) = execute_schema_query(tx, schema_query, schema.to_string());
+    let parsed = ParsedSchemaQuery::new(schema_query, Arc::new(schema.to_string()), QueryProfile::new(false));
+    let (tx, result) = execute_schema_query(tx, parsed);
     result.unwrap();
     let (mut profile, intent) = tx.finalise();
     intent.unwrap().commit(profile.commit_profile()).unwrap();
@@ -175,9 +180,8 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             let (returned_tx, result) = execute_write_query_in_write(
                 tx,
                 QueryOptions::default_grpc(),
-                Arc::new(pipeline),
+                ParsedPipeline::new(Arc::new(pipeline), Arc::new(query_str), QueryProfile::new(false)),
                 None::<GivenRowsSimple>,
-                query_str,
                 ExecutionInterrupt::new_uninterruptible(),
             );
             result.unwrap();
@@ -210,9 +214,8 @@ fn execute_insert_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            Arc::new(pipeline),
+            ParsedPipeline::new(Arc::new(pipeline), Arc::new(query_str), QueryProfile::new(false)),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
@@ -247,9 +250,8 @@ fn execute_update_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            Arc::new(pipeline),
+            ParsedPipeline::new(Arc::new(pipeline), Arc::new(query_str), QueryProfile::new(false)),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
@@ -286,9 +288,8 @@ fn execute_relation_batch(
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            Arc::new(pipeline),
+            ParsedPipeline::new(Arc::new(pipeline), Arc::new(query_str), QueryProfile::new(false)),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();
@@ -308,16 +309,15 @@ fn execute_relation_batch(
 fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let parsed = query_manager.parse(query_str.to_string()).unwrap().into_pipeline();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            &query,
+            parsed,
             None::<GivenRowsSimple>,
-            query_str,
         )
         .unwrap();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

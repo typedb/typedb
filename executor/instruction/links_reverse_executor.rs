@@ -23,6 +23,7 @@ use concept::{
     },
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::kmerge::KMergeBy;
 use primitive::Bounds;
@@ -160,12 +161,13 @@ impl LinksReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
 
         let existing_role = may_get_role(self.links.role_type().as_variable().unwrap(), row.as_reference());
         let filter_for_row: Arc<LinksFilterMapFn> = Arc::new(move |item| match filter(&item) {
@@ -181,8 +183,8 @@ impl LinksReverseExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
 
         match self.iterate_mode {
             LinksIterateMode::Unbound => {

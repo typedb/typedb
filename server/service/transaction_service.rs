@@ -101,7 +101,6 @@ typedb_error! {
         TransactionFailed(4, "Transaction failed.", typedb_source: TransactionError),
         DataCommitFailed(5, "Data transaction commit failed.", typedb_source: ArcServerStateError),
         SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: ArcServerStateError),
-        QueryParseFailed(7, "Query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
         SchemaQueryFailedAbortingTransaction(10, "Aborting transaction due to failed schema query.", typedb_source: Box<QueryError>),
@@ -134,7 +133,6 @@ impl TransactionServiceError {
             | TransactionServiceError::CannotCommitReadTransaction { .. }
             | TransactionServiceError::CannotRollbackReadTransaction { .. }
             | TransactionServiceError::TransactionFailed { .. }
-            | TransactionServiceError::QueryParseFailed { .. }
             | TransactionServiceError::SchemaQueryRequiresSchemaTransaction { .. }
             | TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction { .. }
             | TransactionServiceError::SchemaQueryFailedAbortingTransaction { .. }

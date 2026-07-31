@@ -32,6 +32,7 @@ use encoding::graph::{
     thing::vertex_object::{ObjectID, ObjectVertex},
     type_::vertex::{TypeID, TypeVertexEncoding},
 };
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
@@ -238,12 +239,13 @@ impl IndexedRelationExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
 
         let (relation, start_role, end_role) = self.may_get_relation_and_roles(row.as_reference());
 
@@ -261,8 +263,8 @@ impl IndexedRelationExecutor {
             Err(_) => Some(item),
         });
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
 
         match self.iterate_mode {
             IndexedRelationIterateMode::Unbound => {

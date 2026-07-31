@@ -12,7 +12,7 @@ use compiler::{
     executable::match_::instructions::{Inputs, IsInstruction},
 };
 use concept::error::ConceptReadError;
-use ir::pattern::constraint::Is;
+use ir::{pattern::constraint::Is, pipeline::ParameterRegistry};
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -84,11 +84,12 @@ impl IsExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters);
         let filter_for_row: Box<IsFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,
