@@ -134,12 +134,7 @@ impl DatabaseManager {
         let mut databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
         let db = databases.remove(name);
         match db {
-            None => {
-                self.imports
-                    .clear_stale(name)
-                    .map_err(|source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) })?;
-                return Err(DatabaseDeleteError::DoesNotExist {});
-            }
+            None => return Err(DatabaseDeleteError::DoesNotExist {}),
             Some(db) => match Arc::try_unwrap(db) {
                 Ok(unwrapped) => unwrapped.delete()?,
                 Err(arc) => {
@@ -149,9 +144,6 @@ impl DatabaseManager {
             },
         }
         sync_directory(&self.data_directory)
-            .map_err(|source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) })?;
-        self.imports
-            .clear_stale(name)
             .map_err(|source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) })?;
         Ok(())
     }
@@ -175,16 +167,6 @@ impl DatabaseManager {
 
     pub fn import_directory(&self) -> &Path {
         self.imports.directory()
-    }
-
-    /// Marks `name` stale: its import could not be fully applied here, so the name is refused
-    /// until a prepare, cancel, or delete of it succeeds.
-    pub fn mark_import_stale(&self, name: &str) {
-        self.imports.mark_stale(name)
-    }
-
-    pub fn is_import_stale(&self, name: &str) -> bool {
-        self.imports.is_stale(name)
     }
 
     pub fn finalise_imported_database(&self, name: &str) -> Result<(), DatabaseCreateError> {
@@ -220,6 +202,9 @@ impl DatabaseManager {
     }
 
     pub fn cancel_database_import(&self, name: &str) -> Result<(), DatabaseDeleteError> {
+        if Self::validate_user_database_name(name).is_err() {
+            return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name: name.to_string() });
+        }
         let _databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
         self.imports.delete_staging(name)
     }

@@ -7,6 +7,7 @@
 use std::{fs, path::Path, sync::Arc};
 
 use database::{
+    DatabaseDeleteError,
     database::DatabaseCreateError,
     database_manager::{DatabaseManager, ImportRecovery},
 };
@@ -100,6 +101,24 @@ fn prepare_rejects_existing_database_and_invalid_names() {
 }
 
 #[test]
+fn cancel_of_an_invalid_name_touches_nothing() {
+    init_logging();
+    let data_dir = create_tmp_dir("import_cancel_invalid_names");
+    let dbm = manager(&data_dir, ImportRecovery::Discard);
+
+    dbm.prepare_imported_database("staged".to_string()).expect("prepare");
+    for name in [".", "..", "../escaped", "_internal", "not a name"] {
+        assert!(matches!(
+            dbm.cancel_database_import(name),
+            Err(DatabaseDeleteError::DatabaseIsNotBeingImported { .. })
+        ));
+    }
+    assert!(dbm.import_directory().is_dir());
+    assert!(dbm.imported_database("staged").is_some());
+    dbm.cancel_database_import("staged").expect("cancel");
+}
+
+#[test]
 fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
     init_logging();
     let data_dir = create_tmp_dir("import_leftovers");
@@ -133,13 +152,11 @@ fn discard_recovery_wipes_everything() {
     {
         let dbm = manager(&data_dir, ImportRecovery::Resume);
         drop(dbm.prepare_imported_database("staging".to_string()).expect("prepare"));
-        dbm.mark_import_stale("staging");
         fs::create_dir_all(import_path(&data_dir, "_cache-junk")).unwrap();
         fs::write(import_path(&data_dir, "stray-file"), b"junk").unwrap();
     }
     let dbm = manager(&data_dir, ImportRecovery::Discard);
     assert!(dbm.imported_database_names().is_empty());
-    assert!(!dbm.is_import_stale("staging"));
     assert!(fs::read_dir(data_dir.as_ref().join("_import")).unwrap().next().is_none());
     dbm.put_database("staging").expect("create after discard");
 }
@@ -196,91 +213,6 @@ fn repeated_finalisation_of_a_published_database_discards_the_staging_copy() {
     assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::AlreadyExists { .. })));
     assert!(!import_path(&data_dir, "typedb").exists(), "the staging copy must be discarded");
     assert!(dbm.database("typedb").is_some(), "the published database must survive");
-}
-
-#[test]
-fn stale_mark_quarantines_the_name_until_a_healing_operation() {
-    init_logging();
-    let data_dir = create_tmp_dir("import_stale");
-    let dbm = manager(&data_dir, ImportRecovery::Resume);
-    drop(dbm.prepare_imported_database("marked".to_string()).expect("prepare"));
-    dbm.mark_import_stale("marked");
-    assert!(dbm.is_import_stale("marked"));
-
-    // The in-memory mark is authoritative even if the marker file disappears.
-    fs::remove_file(data_dir.as_ref().join("_import").join("marked.stale")).unwrap();
-    assert!(dbm.is_import_stale("marked"));
-    assert!(matches!(dbm.put_database("marked"), Err(DatabaseCreateError::ImportStale { .. })));
-
-    // Each healing operation clears the mark: re-import...
-    drop(dbm.prepare_imported_database("marked".to_string()).expect("prepare clears the mark"));
-    assert!(!dbm.is_import_stale("marked"));
-    // ...cancel...
-    dbm.mark_import_stale("marked");
-    dbm.cancel_database_import("marked").expect("cancel");
-    assert!(!dbm.is_import_stale("marked"));
-    // ...and delete — including with nothing local to delete: the name being absent is exactly
-    // the end-state a delete demands, so the quarantine is resolved despite the DoesNotExist error.
-    dbm.mark_import_stale("marked");
-    assert!(dbm.delete_database("marked").is_err());
-    assert!(!dbm.is_import_stale("marked"));
-}
-
-#[test]
-fn failed_delete_does_not_clear_a_stale_mark() {
-    init_logging();
-    let data_dir = create_tmp_dir("import_stale_delete_in_use");
-    let dbm = manager(&data_dir, ImportRecovery::Resume);
-
-    dbm.put_database("typedb").expect("create");
-    let held = dbm.database("typedb").expect("get");
-    dbm.mark_import_stale("typedb");
-    // The database still exists and could not be deleted: nothing is resolved, the mark stays.
-    assert!(matches!(dbm.delete_database("typedb"), Err(database::DatabaseDeleteError::InUse {})));
-    assert!(dbm.is_import_stale("typedb"));
-
-    // Once the delete succeeds, the name is absent and the mark clears with it.
-    drop(held);
-    dbm.delete_database("typedb").expect("delete");
-    assert!(!dbm.is_import_stale("typedb"));
-}
-
-#[test]
-fn stale_mark_survives_resume_recovery_but_not_its_healing() {
-    init_logging();
-    let data_dir = create_tmp_dir("import_stale_recovery");
-    {
-        let dbm = manager(&data_dir, ImportRecovery::Resume);
-        drop(dbm.prepare_imported_database("healthy".to_string()).expect("prepare healthy"));
-        drop(dbm.prepare_imported_database("stale".to_string()).expect("prepare stale"));
-        dbm.mark_import_stale("stale");
-        assert!(!dbm.is_import_stale("healthy"));
-    }
-    let dbm = manager(&data_dir, ImportRecovery::Resume);
-    assert!(dbm.imported_database("healthy").is_some(), "unmarked staging must be recovered");
-    assert!(dbm.imported_database("stale").is_none(), "stale staging must be discarded");
-    assert!(dbm.is_import_stale("stale"), "the mark must survive recovery");
-    assert!(matches!(dbm.put_database("stale"), Err(DatabaseCreateError::ImportStale { .. })));
-    drop(dbm.prepare_imported_database("stale".to_string()).expect("prepare heals the mark"));
-    assert!(!dbm.is_import_stale("stale"));
-}
-
-#[test]
-fn orphaned_stale_marker_file_still_quarantines_after_recovery() {
-    init_logging();
-    let data_dir = create_tmp_dir("import_stale_orphan_marker");
-    {
-        let dbm = manager(&data_dir, ImportRecovery::Resume);
-        drop(dbm.prepare_imported_database("seed".to_string()).expect("prepare seed"));
-        dbm.mark_import_stale("gone");
-    }
-    let dbm = manager(&data_dir, ImportRecovery::Resume);
-    assert!(dbm.is_import_stale("gone"));
-    assert!(matches!(dbm.put_database("gone"), Err(DatabaseCreateError::ImportStale { .. })));
-    // Delete heals it even though nothing exists locally under the name.
-    assert!(dbm.delete_database("gone").is_err());
-    assert!(!dbm.is_import_stale("gone"));
-    dbm.put_database("gone").expect("create after healing");
 }
 
 #[test]
@@ -359,14 +291,4 @@ fn delete_ignores_in_progress_imports_and_published_imports_are_ordinary_databas
     drop(dbm.prepare_imported_database("typedb".to_string()).expect("reimport"));
     dbm.finalise_imported_database("typedb").expect("finalise again");
     assert!(dbm.database("typedb").is_some());
-}
-
-#[test]
-fn names_colliding_with_stale_markers_are_rejected() {
-    init_logging();
-    let data_dir = create_tmp_dir("import_marker_collision");
-    let dbm = manager(&data_dir, ImportRecovery::Resume);
-    // Database names cannot contain dots, so a name can never alias another name's marker file.
-    assert!(dbm.prepare_imported_database("typedb.stale".to_string()).is_err());
-    assert!(dbm.put_database("typedb.stale").is_err());
 }

@@ -642,7 +642,6 @@ typedb_error! {
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
         ImportedDatabaseInUse(12, "Cannot finalise imported database '{name}' since it is still in use.", name: String),
         ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
-        ImportStale(14, "Cannot create database '{name}': its import did not complete. Delete or re-import it.", name: String),
     }
 }
 
