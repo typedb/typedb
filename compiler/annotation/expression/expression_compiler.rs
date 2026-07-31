@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use typeql::common::Span;
+use std::{collections::HashMap, marker::PhantomData};
+
 use answer::variable::Variable;
 use encoding::value::{
     ValueEncodable,
@@ -23,21 +22,18 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
+use typeql::common::Span;
 
-use crate::annotation::expression::{ExpressionCompileError, compiled_expression::{ExecutableExpression, ExpressionValueType}, instructions::{
-    CompilableExpression, ExpressionInstruction,
-    binary::{
-        MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
-        MathMinDoubleDouble, MathMinIntegerInteger,
+use crate::annotation::expression::{
+    ExpressionCompileError, builtin_resolution,
+    compiled_expression::{ExecutableExpression, ExpressionValueType},
+    instructions::{
+        ExpressionInstruction, list_operations,
+        load::{LoadConstant, LoadVariable},
+        op_codes::ExpressionOpCode,
     },
-    list_operations,
-    load::{LoadConstant, LoadVariable},
-    op_codes::ExpressionOpCode,
-    unary::{
-        LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-        MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
-    },
-}, operation_resolution, builtin_resolution};
+    operation_resolution,
+};
 
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
@@ -202,117 +198,27 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn compile_value_builtin(&mut self, builtin: &BuiltinValueFunctionCall) -> Result<(), Box<ExpressionCompileError>> {
         match builtin.function_id() {
             BuiltinValueFunctionID::Abs => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                match self.peek_type_single()?.category() {
-                    ValueTypeCategory::Integer => MathAbsInteger::validate_and_append(self)?,
-                    ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => MathAbsDecimal::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: self.peek_type_single()?.category(),
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                UnaryValueFunctionResolverImpl::<builtin_resolution::Abs>::resolve_validate_append(builtin, self)
             }
             BuiltinValueFunctionID::Ceil => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                match self.peek_type_single()?.category() {
-                    ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => MathCeilDecimal::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: self.peek_type_single()?.category(),
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                UnaryValueFunctionResolverImpl::<builtin_resolution::Ceil>::resolve_validate_append(builtin, self)
             }
             BuiltinValueFunctionID::Floor => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                match self.peek_type_single()?.category() {
-                    ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => MathFloorDecimal::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: self.peek_type_single()?.category(),
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                UnaryValueFunctionResolverImpl::<builtin_resolution::Floor>::resolve_validate_append(builtin, self)
             }
             BuiltinValueFunctionID::Round => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                match self.peek_type_single()?.category() {
-                    ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => MathRoundDecimal::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: self.peek_type_single()?.category(),
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                UnaryValueFunctionResolverImpl::<builtin_resolution::Round>::resolve_validate_append(builtin, self)
             }
             BuiltinValueFunctionID::Min => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                let arg_1_category = self.peek_type_single()?.category();
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[1]))?;
-                let arg_2_category = self.peek_type_single()?.category();
-                // Both arguments must have the same type category
-                if arg_1_category != arg_2_category {
-                    return Err(Box::new(ExpressionCompileError::UnsupportedDifferentArgumentForBuiltin {
-                        function: builtin.function_id(),
-                        arg_1_category,
-                        arg_2_category,
-                        source_span: builtin.source_span(),
-                    }));
-                }
-                match arg_1_category {
-                    ValueTypeCategory::Integer => MathMinIntegerInteger::validate_and_append(self)?,
-                    ValueTypeCategory::Double => MathMinDoubleDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => MathMinDecimalDecimal::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: arg_1_category,
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                BinaryValueFunctionResolverImpl::<builtin_resolution::Min>::resolve_validate_append(builtin, self)
             }
             BuiltinValueFunctionID::Max => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                let arg_1_category = self.peek_type_single()?.category();
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[1]))?;
-                let arg_2_category = self.peek_type_single()?.category();
-                // Both arguments must have the same type category
-                if arg_1_category != arg_2_category {
-                    return Err(Box::new(ExpressionCompileError::UnsupportedDifferentArgumentForBuiltin {
-                        function: builtin.function_id(),
-                        arg_1_category,
-                        arg_2_category,
-                        source_span: builtin.source_span(),
-                    }));
-                }
-                match arg_1_category {
-                    ValueTypeCategory::Integer => MathMaxIntegerInteger::validate_and_append(self)?,
-                    ValueTypeCategory::Double => MathMaxDoubleDouble::validate_and_append(self)?,
-                    ValueTypeCategory::Decimal => MathMaxDecimalDecimal::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: arg_1_category,
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                BinaryValueFunctionResolverImpl::<builtin_resolution::Max>::resolve_validate_append(builtin, self)
             }
             BuiltinValueFunctionID::Len => {
-                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
-                match self.peek_type_single()?.category() {
-                    ValueTypeCategory::String => LenString::validate_and_append(self)?,
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
-                        function: builtin.function_id(),
-                        category: self.peek_type_single()?.category(),
-                        source_span: builtin.source_span(),
-                    })?,
-                }
+                UnaryValueFunctionResolverImpl::<builtin_resolution::Len>::resolve_validate_append(builtin, self)
             }
         }
-        Ok(())
     }
 
     fn pop_type(&mut self) -> Result<ExpressionValueType, Box<ExpressionCompileError>> {
@@ -380,26 +286,41 @@ impl<'this> ExpressionCompilationContext<'this> {
 pub trait BuiltinValueFunctionResolver {
     const ID: BuiltinValueFunctionID;
 
-    fn resolve_validate_append(builtin: &BuiltinValueFunctionCall, builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>>;
+    fn resolve_validate_append(
+        builtin: &BuiltinValueFunctionCall,
+        builder: &mut ExpressionCompilationContext<'_>,
+    ) -> Result<(), Box<ExpressionCompileError>>;
 }
 
 pub(super) trait UnaryValueFunctionResolver {
     const UNARY_ID: BuiltinValueFunctionID;
-    fn resolve_validate_append_unary(t1: ValueTypeCategory, builder: &mut ExpressionCompilationContext<'_>, source_span: Option<Span>) -> Result<(), Box<ExpressionCompileError>>;
+    fn resolve_validate_append_unary(
+        t1: ValueTypeCategory,
+        builder: &mut ExpressionCompilationContext<'_>,
+        source_span: Option<Span>,
+    ) -> Result<(), Box<ExpressionCompileError>>;
 }
 
 pub(super) trait BinaryValueFunctionResolver {
     const BINARY_ID: BuiltinValueFunctionID;
     const ARGS_MUST_HAVE_SAME_CATEGORIES: bool;
-    fn resolve_validate_append_binary(t1: ValueTypeCategory, t2: ValueTypeCategory, builder: &mut ExpressionCompilationContext<'_>, source_span: Option<Span>) -> Result<(), Box<ExpressionCompileError>>;
+    fn resolve_validate_append_binary(
+        t1: ValueTypeCategory,
+        t2: ValueTypeCategory,
+        builder: &mut ExpressionCompilationContext<'_>,
+        source_span: Option<Span>,
+    ) -> Result<(), Box<ExpressionCompileError>>;
 }
 
 struct UnaryValueFunctionResolverImpl<T: UnaryValueFunctionResolver>(PhantomData<T>);
 impl<T: UnaryValueFunctionResolver> BuiltinValueFunctionResolver for UnaryValueFunctionResolverImpl<T> {
     const ID: BuiltinValueFunctionID = T::UNARY_ID;
 
-    fn resolve_validate_append(builtin: &BuiltinValueFunctionCall, builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
-        debug_assert!(T::UNARY_ID == builtin.function_id() && builtin.argument_expression_ids().len() == 1 );
+    fn resolve_validate_append(
+        builtin: &BuiltinValueFunctionCall,
+        builder: &mut ExpressionCompilationContext<'_>,
+    ) -> Result<(), Box<ExpressionCompileError>> {
+        debug_assert!(T::UNARY_ID == builtin.function_id() && builtin.argument_expression_ids().len() == 1);
         needs_update_when_feature_is_implemented!(Lists); // If functions accept list
         builder.compile_recursive(builder.expression_tree.get(builtin.argument_expression_ids()[0]))?;
         let t1 = builder.peek_type_single()?.category();
@@ -411,7 +332,10 @@ struct BinaryValueFunctionResolverImpl<T: BinaryValueFunctionResolver>(PhantomDa
 impl<T: BinaryValueFunctionResolver> BuiltinValueFunctionResolver for BinaryValueFunctionResolverImpl<T> {
     const ID: BuiltinValueFunctionID = T::BINARY_ID;
 
-    fn resolve_validate_append(builtin: &BuiltinValueFunctionCall, builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
+    fn resolve_validate_append(
+        builtin: &BuiltinValueFunctionCall,
+        builder: &mut ExpressionCompilationContext<'_>,
+    ) -> Result<(), Box<ExpressionCompileError>> {
         debug_assert!(T::BINARY_ID == builtin.function_id() && builtin.argument_expression_ids().len() == 2);
         needs_update_when_feature_is_implemented!(Lists); // If functions accept list
         builder.compile_recursive(builder.expression_tree.get(builtin.argument_expression_ids()[0]))?;

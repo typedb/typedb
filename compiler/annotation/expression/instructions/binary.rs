@@ -53,10 +53,6 @@ where
     R: NativeValueConvertible<'a>,
     F: BinaryExpression<'a, T1, T2, R>,
 {
-    fn return_value_category(&self) -> Option<ValueTypeCategory> {
-        Some(R::VALUE_TYPE_CATEGORY)
-    }
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a2 = builder.pop_type_single()?.category();
         let a1 = builder.pop_type_single()?.category();

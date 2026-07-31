@@ -3,36 +3,36 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use paste::paste;
-
-use typeql::common::Span;
 use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::expression::BuiltinValueFunctionID;
-use crate::annotation::expression::expression_compiler::{ExpressionCompilationContext, BinaryValueFunctionResolver, UnaryValueFunctionResolver};
-use crate::annotation::expression::ExpressionCompileError;
-use crate::annotation::expression::instructions::CompilableExpression;
+use paste::paste;
+use typeql::common::Span;
 
-use crate::annotation::expression::instructions::{
-    binary::{
-        MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
-        MathMinDoubleDouble, MathMinIntegerInteger,
+use crate::annotation::expression::{
+    ExpressionCompileError,
+    expression_compiler::{BinaryValueFunctionResolver, ExpressionCompilationContext, UnaryValueFunctionResolver},
+    instructions::{
+        CompilableExpression,
+        binary::{
+            MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
+            MathMinDoubleDouble, MathMinIntegerInteger,
+        },
+        unary::{
+            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
+            MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
+        },
     },
-    unary::{
-        LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-        MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
-    }
 };
 
-
 macro_rules! unary_builtin {
-    ( $( $fid:ident = $impl_id:ident $types:tt )* ) => {
-        $( unary_builtin_tt! { $fid = $impl_id $types  } )*
+    ( $( $fid:ident = $impl_prefix:ident $types:tt )* ) => {
+        $( unary_builtin_tt! { $fid = $impl_prefix $types  } )*
     }
 }
 
 macro_rules! unary_builtin_tt {
-    ($fid:ident = $impl_id:ident [ $( $t1:ident, )* ]) => {
-        paste!(unary_builtin_impl! { $fid = $impl_id [ $( $t1 = [<$impl_id $t1>], )* ] } );
+    ($fid:ident = $impl_prefix:ident [ $( $t1:ident, )* ]) => {
+        paste!(unary_builtin_impl! { $fid = $impl_prefix [ $( $t1 = [<$impl_prefix $t1>], )* ] } );
     }
 }
 
@@ -59,21 +59,21 @@ impl UnaryValueFunctionResolver for $fid {
 }
 
 macro_rules! binary_builtin {
-    ( $( $fid:ident:$same_args:literal = $impl_id:ident $types:tt )* ) => {
-        $( binary_builtin_tt! { $fid:$same_args = $impl_id $types  } )*
+    ( $( $fid:ident:$same_args:literal = $impl_prefix:ident $types:tt )* ) => {
+        $( binary_builtin_tt! { $fid:$same_args = $impl_prefix $types  } )*
     }
 }
 
 macro_rules! binary_builtin_tt {
-    ($fid:ident:$same_args:literal = $impl_id:ident [ $( ($t1:ident, $t2:ident), )* ]) => {
-        paste!(binary_builtin_impl! { $fid:$same_args = $impl_id [ $( ($t1, $t2) = [<$impl_id $t1 $t2>], )* ] } );
+    ($fid:ident:$same_args:literal = $impl_prefix:ident [ $( ($t1:ident, $t2:ident), )* ]) => {
+        paste!(binary_builtin_impl! { $fid:$same_args = $impl_prefix [ $( ($t1, $t2) = [<$impl_prefix $t1 $t2>], )* ] } );
     }
 }
 
 macro_rules! binary_builtin_impl {
-    ($fid:ident:$same_args:literal = $impl_id:ident [ $( ($t1:ident, $t2: ident) = $variant_impl:ident, )* ]) => {
-struct $impl_id; // TODO: See if I can use a struct with a const BuiltinValueFunctionID
-impl BinaryValueFunctionResolver for $impl_id {
+    ($fid:ident:$same_args:literal = $impl_prefix:ident [ $( ($t1:ident, $t2: ident) = $variant_impl:ident, )* ]) => {
+pub(super) struct $fid; // TODO: See if I can use a struct with a const BuiltinValueFunctionID
+impl BinaryValueFunctionResolver for $fid {
     const BINARY_ID: BuiltinValueFunctionID = BuiltinValueFunctionID::$fid;
     const ARGS_MUST_HAVE_SAME_CATEGORIES: bool = $same_args;
     fn resolve_validate_append_binary(t1: ValueTypeCategory, t2: ValueTypeCategory, builder: &mut ExpressionCompilationContext<'_>, source_span: Option<Span>) -> Result<(), Box<ExpressionCompileError>> {

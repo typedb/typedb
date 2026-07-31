@@ -45,10 +45,6 @@ where
     R: NativeValueConvertible<'a>,
     F: UnaryExpression<'a, T1, R>,
 {
-    fn return_value_category(&self) -> Option<ValueTypeCategory> {
-        Some(R::VALUE_TYPE_CATEGORY)
-    }
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a1 = builder.pop_type_single()?.category();
         if a1 != T1::VALUE_TYPE_CATEGORY {

@@ -58,10 +58,6 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
 impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> CompilableExpression
     for CastUnary<'a, From, To>
 {
-    fn return_value_category(&self) -> Option<ValueTypeCategory> {
-        Some(To::VALUE_TYPE_CATEGORY)
-    }
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let value_before = builder.pop_type_single()?.category();
         if value_before != From::VALUE_TYPE_CATEGORY {
@@ -87,10 +83,6 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
 impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> CompilableExpression
     for CastBinaryLeft<'a, From, To>
 {
-    fn return_value_category(&self) -> Option<ValueTypeCategory> {
-        Some(To::VALUE_TYPE_CATEGORY)
-    }
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let right = builder.pop_type_single()?;
         let left_before = builder.pop_type_single()?.category();
@@ -118,10 +110,6 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
 impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> CompilableExpression
     for CastBinaryRight<'a, From, To>
 {
-    fn return_value_category(&self) -> Option<ValueTypeCategory> {
-        Some(To::VALUE_TYPE_CATEGORY)
-    }
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let right_before = builder.pop_type_single()?.category();
         if right_before != From::VALUE_TYPE_CATEGORY {

@@ -25,8 +25,6 @@ pub trait ExpressionInstruction: Sized {
 }
 
 pub trait CompilableExpression: ExpressionInstruction {
-    fn return_value_category(&self) -> Option<ValueTypeCategory>;
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>>;
 }
 
