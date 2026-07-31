@@ -16,12 +16,11 @@ use ir::{
         ParameterID,
         expression::{
             BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
-            ListIndexRange, Operation, Operator,
+            ListIndexRange, Operation,
         },
     },
     pipeline::ParameterRegistry,
 };
-use typeql::common::Span;
 
 use crate::annotation::expression::{
     ExpressionCompileError,
@@ -32,19 +31,15 @@ use crate::annotation::expression::{
             MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
             MathMinDoubleDouble, MathMinIntegerInteger,
         },
-        cast::{
-            CastLeftDecimalToDouble, CastLeftIntegerToDecimal, CastLeftIntegerToDouble, CastRightDecimalToDouble,
-            CastRightIntegerToDecimal, CastRightIntegerToDouble,
-        },
         list_operations,
         load::{LoadConstant, LoadVariable},
         op_codes::ExpressionOpCode,
-        operators,
         unary::{
             LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
             MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
         },
     },
+    operation_resolution,
 };
 
 pub struct ExpressionCompilationContext<'this> {
@@ -202,335 +197,9 @@ impl<'this> ExpressionCompilationContext<'this> {
         let operator = operation.operator();
         self.compile_recursive(self.expression_tree.get(operation.left_expression_id()))?;
         let left_category = self.peek_type_single()?.category();
-        let right_expression = self.expression_tree.get(operation.right_expression_id());
-        match left_category {
-            ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::Integer => self.compile_op_integer(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::Double => self.compile_op_double(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::Decimal => self.compile_op_decimal(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::Date => self.compile_op_date(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::DateTime => {
-                self.compile_op_datetime(operator, right_expression, operation.source_span())
-            }
-            ValueTypeCategory::DateTimeTZ => {
-                self.compile_op_datetime_tz(operator, right_expression, operation.source_span())
-            }
-            ValueTypeCategory::Duration => {
-                self.compile_op_duration(operator, right_expression, operation.source_span())
-            }
-            ValueTypeCategory::String => self.compile_op_string(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::Struct => self.compile_op_struct(operator, right_expression, operation.source_span()),
-        }
-    }
-
-    fn compile_op_boolean(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
+        self.compile_recursive(self.expression_tree.get(operation.right_expression_id()))?;
         let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::Boolean,
-            right_category,
-            source_span,
-        }))
-    }
-
-    fn compile_op_integer(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match right_category {
-            ValueTypeCategory::Integer => {
-                self.compile_op_integer_integer(op)?;
-            }
-            ValueTypeCategory::Double => {
-                CastLeftIntegerToDouble::validate_and_append(self)?;
-                self.compile_op_double_double(op)?;
-            }
-            ValueTypeCategory::Decimal => match op {
-                Operator::Add => {
-                    CastLeftIntegerToDecimal::validate_and_append(self)?;
-                    operators::OpDecimalAddDecimal::validate_and_append(self)?;
-                }
-                Operator::Subtract => {
-                    CastLeftIntegerToDecimal::validate_and_append(self)?;
-                    operators::OpDecimalSubtractDecimal::validate_and_append(self)?;
-                }
-                Operator::Multiply => {
-                    CastLeftIntegerToDecimal::validate_and_append(self)?;
-                    operators::OpDecimalMultiplyDecimal::validate_and_append(self)?;
-                }
-                other_op => {
-                    CastLeftIntegerToDouble::validate_and_append(self)?;
-                    CastRightDecimalToDouble::validate_and_append(self)?;
-                    self.compile_op_double_double(other_op)?;
-                }
-            },
-            _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::Integer,
-                right_category,
-                source_span,
-            })?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_double(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match right_category {
-            ValueTypeCategory::Integer => {
-                // The right needs to be cast
-                CastRightIntegerToDouble::validate_and_append(self)?;
-                self.compile_op_double_double(op)?;
-            }
-            ValueTypeCategory::Decimal => {
-                // The right needs to be cast
-                CastRightDecimalToDouble::validate_and_append(self)?;
-                self.compile_op_double_double(op)?;
-            }
-            ValueTypeCategory::Double => {
-                self.compile_op_double_double(op)?;
-            }
-            _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::Double,
-                right_category,
-                source_span,
-            })?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_decimal(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match right_category {
-            ValueTypeCategory::Integer => match op {
-                Operator::Add => {
-                    CastRightIntegerToDecimal::validate_and_append(self)?;
-                    operators::OpDecimalAddDecimal::validate_and_append(self)?;
-                }
-                Operator::Subtract => {
-                    CastRightIntegerToDecimal::validate_and_append(self)?;
-                    operators::OpDecimalSubtractDecimal::validate_and_append(self)?;
-                }
-                Operator::Multiply => {
-                    CastRightIntegerToDecimal::validate_and_append(self)?;
-                    operators::OpDecimalMultiplyDecimal::validate_and_append(self)?;
-                }
-                other_op => {
-                    CastLeftDecimalToDouble::validate_and_append(self)?;
-                    CastRightIntegerToDouble::validate_and_append(self)?;
-                    self.compile_op_double_double(other_op)?;
-                }
-            },
-            ValueTypeCategory::Double => {
-                CastLeftDecimalToDouble::validate_and_append(self)?;
-                self.compile_op_double_double(op)?;
-            }
-            ValueTypeCategory::Decimal => match op {
-                Operator::Add => operators::OpDecimalAddDecimal::validate_and_append(self)?,
-                Operator::Subtract => operators::OpDecimalSubtractDecimal::validate_and_append(self)?,
-                Operator::Multiply => operators::OpDecimalMultiplyDecimal::validate_and_append(self)?,
-                other_op => {
-                    CastLeftDecimalToDouble::validate_and_append(self)?;
-                    CastRightDecimalToDouble::validate_and_append(self)?;
-                    self.compile_op_double_double(other_op)?;
-                }
-            },
-            _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::Decimal,
-                right_category,
-                source_span,
-            })?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_string(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match (op, right_category) {
-            (Operator::Add, ValueTypeCategory::String) => operators::OpStringAddString::validate_and_append(self)?,
-            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::String,
-                right_category,
-                source_span,
-            }))?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_date(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match (op, right_category) {
-            (Operator::Subtract, ValueTypeCategory::Date) => operators::OpDateSubtractDate::validate_and_append(self)?,
-            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::Date,
-                right_category,
-                source_span,
-            }))?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_datetime(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match (op, right_category) {
-            (Operator::Subtract, ValueTypeCategory::Date) => {
-                operators::OpDateTimeSubtractDate::validate_and_append(self)?
-            }
-            (Operator::Subtract, ValueTypeCategory::DateTime) => {
-                operators::OpDateTimeSubtractDateTime::validate_and_append(self)?
-            }
-            (Operator::Add, ValueTypeCategory::Duration) => {
-                operators::OpDateTimeAddDuration::validate_and_append(self)?
-            }
-            (Operator::Subtract, ValueTypeCategory::Duration) => {
-                operators::OpDateTimeSubtractDuration::validate_and_append(self)?
-            }
-            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::DateTime,
-                right_category,
-                source_span,
-            }))?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_datetime_tz(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match (op, right_category) {
-            (Operator::Subtract, ValueTypeCategory::DateTimeTZ) => {
-                operators::OpDateTimeTZSubtractDateTimeTZ::validate_and_append(self)?
-            }
-            (Operator::Add, ValueTypeCategory::Duration) => {
-                operators::OpDateTimeTZAddDuration::validate_and_append(self)?
-            }
-            (Operator::Subtract, ValueTypeCategory::Duration) => {
-                operators::OpDateTimeTZSubtractDuration::validate_and_append(self)?
-            }
-            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::DateTimeTZ,
-                right_category,
-                source_span,
-            }))?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_duration(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        match (op, right_category) {
-            (Operator::Add, ValueTypeCategory::Duration) => {
-                operators::OpDurationAddDuration::validate_and_append(self)?
-            }
-            (Operator::Subtract, ValueTypeCategory::Duration) => {
-                operators::OpDurationSubtractDuration::validate_and_append(self)?
-            }
-            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-                op,
-                left_category: ValueTypeCategory::Duration,
-                right_category,
-                source_span,
-            }))?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_struct(
-        &mut self,
-        op: Operator,
-        right: &Expression<Variable>,
-        source_span: Option<Span>,
-    ) -> Result<(), Box<ExpressionCompileError>> {
-        self.compile_recursive(right)?;
-        let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::Struct,
-            right_category,
-            source_span,
-        }))
-    }
-
-    // Ops with Left, Right resolved
-    fn compile_op_integer_integer(&mut self, op: Operator) -> Result<(), Box<ExpressionCompileError>> {
-        match op {
-            Operator::Add => operators::OpIntegerAddInteger::validate_and_append(self)?,
-            Operator::Subtract => operators::OpIntegerSubtractInteger::validate_and_append(self)?,
-            Operator::Multiply => operators::OpIntegerMultiplyInteger::validate_and_append(self)?,
-            Operator::Divide => operators::OpIntegerDivideInteger::validate_and_append(self)?,
-            Operator::Modulo => operators::OpIntegerModuloInteger::validate_and_append(self)?,
-            Operator::Power => operators::OpIntegerPowerInteger::validate_and_append(self)?,
-        }
-        Ok(())
-    }
-
-    fn compile_op_double_double(&mut self, op: Operator) -> Result<(), Box<ExpressionCompileError>> {
-        match op {
-            Operator::Add => operators::OpDoubleAddDouble::validate_and_append(self)?,
-            Operator::Subtract => operators::OpDoubleSubtractDouble::validate_and_append(self)?,
-            Operator::Multiply => operators::OpDoubleMultiplyDouble::validate_and_append(self)?,
-            Operator::Divide => operators::OpDoubleDivideDouble::validate_and_append(self)?,
-            Operator::Modulo => operators::OpDoubleModuloDouble::validate_and_append(self)?,
-            Operator::Power => operators::OpDoublePowerDouble::validate_and_append(self)?,
-        }
-        Ok(())
+        operation_resolution::resolve_op(self, operator, left_category, right_category, operation.source_span())
     }
 
     fn compile_value_builtin(&mut self, builtin: &BuiltinValueFunctionCall) -> Result<(), Box<ExpressionCompileError>> {

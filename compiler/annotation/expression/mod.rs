@@ -21,6 +21,7 @@ pub mod block_compiler;
 pub mod compiled_expression;
 pub mod expression_compiler;
 pub mod instructions;
+mod operation_resolution;
 
 typedb_error! {
     pub ExpressionCompileError(component = "Expression compilation", prefix = "CEX") {
