@@ -48,7 +48,7 @@ impl UnaryValueFunctionResolver for $fid {
             other => {
                 Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                     function: Self::UNARY_ID,
-                    category: t1,
+                    category: other,
                     source_span: source_span,
                 }))
             }
@@ -79,10 +79,10 @@ impl BinaryValueFunctionResolver for $fid {
     fn resolve_validate_append_binary(t1: ValueTypeCategory, t2: ValueTypeCategory, builder: &mut ExpressionCompilationContext<'_>, source_span: Option<Span>) -> Result<(), Box<ExpressionCompileError>> {
         match (t1, t2) {
             $ ( (ValueTypeCategory::$t1, ValueTypeCategory::$t2)  => $variant_impl::validate_and_append(builder), )*
-            other => {
+            (other, _) => {
                 Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                     function: Self::BINARY_ID,
-                    category: t1, // TODO: If we ever have functions that take two different categories
+                    category: other, // TODO: If we ever have functions that take two different categories
                     source_span: source_span,
                 }))
             }
