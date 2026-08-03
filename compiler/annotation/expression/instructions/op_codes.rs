@@ -10,85 +10,85 @@ use std::fmt;
 macro_rules! for_each_opcode {
     ($macro:ident) => {
         $macro! {
-            LoadConstant
-            LoadVariable
-            ListConstructor
-            ListIndex
-            ListIndexRange
+            LoadConstant,
+            LoadVariable,
+            ListConstructor,
+            ListIndex,
+            ListIndexRange,
 
-            CastUnaryIntegerToDouble
-            CastLeftIntegerToDouble
-            CastRightIntegerToDouble
-            CastUnaryIntegerToDecimal
-            CastLeftIntegerToDecimal
-            CastRightIntegerToDecimal
-            CastUnaryDecimalToDouble
-            CastLeftDecimalToDouble
-            CastRightDecimalToDouble
+            CastUnaryIntegerToDouble,
+            CastLeftIntegerToDouble,
+            CastRightIntegerToDouble,
+            CastUnaryIntegerToDecimal,
+            CastLeftIntegerToDecimal,
+            CastRightIntegerToDecimal,
+            CastUnaryDecimalToDouble,
+            CastLeftDecimalToDouble,
+            CastRightDecimalToDouble,
 
-            OpIntegerAddInteger
-            OpIntegerMultiplyInteger
-            OpIntegerSubtractInteger
-            OpIntegerDivideInteger
-            OpIntegerModuloInteger
-            OpIntegerPowerInteger
+            OpIntegerAddInteger,
+            OpIntegerMultiplyInteger,
+            OpIntegerSubtractInteger,
+            OpIntegerDivideInteger,
+            OpIntegerModuloInteger,
+            OpIntegerPowerInteger,
 
-            OpDoubleAddDouble
-            OpDoubleSubtractDouble
-            OpDoubleMultiplyDouble
-            OpDoubleDivideDouble
-            OpDoubleModuloDouble
-            OpDoublePowerDouble
+            OpDoubleAddDouble,
+            OpDoubleSubtractDouble,
+            OpDoubleMultiplyDouble,
+            OpDoubleDivideDouble,
+            OpDoubleModuloDouble,
+            OpDoublePowerDouble,
 
-            OpDecimalAddDecimal
-            OpDecimalSubtractDecimal
-            OpDecimalMultiplyDecimal
+            OpDecimalAddDecimal,
+            OpDecimalSubtractDecimal,
+            OpDecimalMultiplyDecimal,
 
-            OpDateSubtractDate
+            OpDateSubtractDate,
 
-            OpDateTimeAddDuration
-            OpDateTimeSubtractDuration
-            OpDateTimeSubtractDateTime
-            OpDateTimeSubtractDate
+            OpDateTimeAddDuration,
+            OpDateTimeSubtractDuration,
+            OpDateTimeSubtractDateTime,
+            OpDateTimeSubtractDate,
 
-            OpDateTimeTZAddDuration
-            OpDateTimeTZSubtractDuration
-            OpDateTimeTZSubtractDateTimeTZ
+            OpDateTimeTZAddDuration,
+            OpDateTimeTZSubtractDuration,
+            OpDateTimeTZSubtractDateTimeTZ,
 
-            OpDurationAddDuration
-            OpDurationSubtractDuration
+            OpDurationAddDuration,
+            OpDurationSubtractDuration,
 
-            OpStringAddString
+            OpStringAddString,
 
-            MathAbsDouble
-            MathAbsDecimal
-            MathAbsInteger
+            MathAbsDouble,
+            MathAbsDecimal,
+            MathAbsInteger,
 
-            MathRemainderInteger
+            MathRemainderInteger,
 
-            MathRoundDouble
-            MathCeilDouble
-            MathFloorDouble
+            MathRoundDouble,
+            MathCeilDouble,
+            MathFloorDouble,
 
-            MathRoundDecimal
-            MathCeilDecimal
-            MathFloorDecimal
+            MathRoundDecimal,
+            MathCeilDecimal,
+            MathFloorDecimal,
 
-            MathMinIntegerInteger
-            MathMinDoubleDouble
-            MathMinDecimalDecimal
+            MathMinIntegerInteger,
+            MathMinDoubleDouble,
+            MathMinDecimalDecimal,
 
-            MathMaxIntegerInteger
-            MathMaxDoubleDouble
-            MathMaxDecimalDecimal
+            MathMaxIntegerInteger,
+            MathMaxDoubleDouble,
+            MathMaxDecimalDecimal,
 
-            LenString
+            LenString,
         }
     };
 }
 
 macro_rules! define_opcode_enum {
-    ($($name:ident)*) => {
+    ($($name:ident,)*) => {
         #[derive(Debug, Clone)]
         pub enum ExpressionOpCode {
             $($name,)*
@@ -97,7 +97,7 @@ macro_rules! define_opcode_enum {
 }
 
 macro_rules! define_opcode_fmt_display {
-    ($($name:ident)*) => {
+    ($($name:ident,)*) => {
         impl fmt::Display for ExpressionOpCode {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {

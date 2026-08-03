@@ -174,7 +174,7 @@ pub fn evaluate_expression<ID: Hash + Eq>(
 }
 
 macro_rules! impl_evaluate_instruction {
-    ($($name:ident)*) => {
+    ($($name:ident,)*) => {
         fn evaluate_instruction(
             op_code: &ExpressionOpCode,
             state: &mut ExpressionExecutorState<'_>,
@@ -298,14 +298,9 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
     }
 }
 
-impl<'a, T1, R, F> ExpressionEvaluation for Unary<'a, T1, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: UnaryExpression<'a, T1, R>,
-{
+impl<'a, F: UnaryExpression<'a>> ExpressionEvaluation for Unary<'a, F> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
+        let a1: F::T1 = F::T1::from_db_value(state.pop_value()).unwrap();
         state.push_value(F::evaluate(a1)?.to_db_value());
         Ok(())
     }
