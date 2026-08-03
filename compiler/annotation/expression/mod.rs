@@ -122,8 +122,3 @@ typedb_error! {
         Representation(20, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
     }
 }
-
-#[macro_export]
-macro_rules! resolve_expr_with_paste {
-    ( $enm:ident( ) = * ) => {};
-}
