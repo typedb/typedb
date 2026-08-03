@@ -81,7 +81,7 @@ impl ValueType {
             ValueTypeCategory::Duration => Self::Duration,
             ValueTypeCategory::String => Self::String,
             ValueTypeCategory::Struct => {
-                let definition_key = DefinitionKey::new(Bytes::Array(ByteArray::copy(&tail)));
+                let definition_key = DefinitionKey::decode(Bytes::Array(ByteArray::copy(&tail)));
                 Self::Struct(definition_key)
             }
         }

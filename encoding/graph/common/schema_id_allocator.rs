@@ -140,11 +140,11 @@ impl SchemaID for DefinitionKey {
 
     fn object_from_id(prefix: Prefix, id: u64) -> Self {
         debug_assert!((Self::MIN_ID..=Self::MAX_ID).contains(&id));
-        DefinitionKey::build(prefix, DefinitionID::build(id as DefinitionIDUInt))
+        DefinitionKey::new(prefix, DefinitionID::new(id as DefinitionIDUInt))
     }
 
     fn id_from_key(key: StorageKey<'_, BUFFER_KEY_INLINE>) -> u64 {
-        DefinitionKey::new(Bytes::reference(key.bytes())).definition_id().as_uint() as u64
+        DefinitionKey::decode(Bytes::reference(key.bytes())).definition_id().as_uint() as u64
     }
 
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError {

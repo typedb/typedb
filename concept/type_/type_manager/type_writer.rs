@@ -42,7 +42,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         struct_definition: StructDefinition,
     ) {
         let index_key = NameToStructDefinitionIndex::build(struct_definition.name.as_str());
-        snapshot.put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes()));
+        snapshot.put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(&definition_key.bytes()));
         snapshot.insert_val(
             definition_key.into_storage_key().into_owned_array(),
             struct_definition.into_bytes().unwrap().into_array(),

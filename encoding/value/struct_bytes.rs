@@ -130,9 +130,8 @@ fn append_length_as_vle(len: usize, buf: &mut Vec<u8>) -> Result<(), EncodingErr
 
 // Decode
 fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<StructValue<'static>, EncodingError> {
-    let definition_id_u16 =
-        DefinitionID::build(u16::from_be_bytes(read_bytes_increment_offset::<{ DefinitionID::LENGTH }>(offset, buf)?));
-    let definition_key = DefinitionKey::build(StructDefinition::PREFIX, definition_id_u16);
+    let definition_id = DefinitionID::decode(read_bytes_increment_offset::<{ DefinitionID::LENGTH }>(offset, buf)?);
+    let definition_key = DefinitionKey::new(StructDefinition::PREFIX, definition_id);
     let n_fields = read_vle_increment_offset(offset, buf)?;
     let mut fields: HashMap<StructFieldIDUInt, Value<'static>> = HashMap::new();
     for _ in 0..n_fields {
