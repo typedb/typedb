@@ -132,10 +132,12 @@ fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
     drop(staging);
     dbm.cancel_database_import("blocked").expect("cancel");
 
-    // An unregistered on-disk leftover (torn creation, failed removal) is healed by each operation.
+    // An unregistered on-disk leftover is the trace of an import this server could not reopen.
+    // Under Resume it keeps the name reserved for create — only the import operations that decide
+    // the name's fate (a fresh prepare, a cancel) replace or remove it.
     fs::create_dir_all(import_path(&data_dir, "created-over")).unwrap();
-    dbm.put_database("created-over").expect("create must replace the dead leftover");
-    assert!(!import_path(&data_dir, "created-over").exists());
+    assert!(matches!(dbm.put_database("created-over"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(import_path(&data_dir, "created-over").exists());
 
     fs::create_dir_all(import_path(&data_dir, "prepared-over")).unwrap();
     drop(dbm.prepare_imported_database("prepared-over".to_string()).expect("prepare must replace the leftover"));
@@ -144,6 +146,20 @@ fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
     fs::create_dir_all(import_path(&data_dir, "cancelled-over")).unwrap();
     assert!(dbm.cancel_database_import("cancelled-over").is_err());
     assert!(!import_path(&data_dir, "cancelled-over").exists(), "cancel must remove the dead leftover");
+    dbm.put_database("cancelled-over").expect("create after the cancel released the name");
+}
+
+#[test]
+fn discard_mode_leftovers_are_healed_by_create() {
+    init_logging();
+    let data_dir = create_tmp_dir("import_leftovers_discard");
+    let dbm = manager(&data_dir, ImportRecovery::Discard);
+
+    // A standalone server has no peers to stay consistent with: a dead leftover is junk and
+    // creation replaces it.
+    fs::create_dir_all(import_path(&data_dir, "created-over")).unwrap();
+    dbm.put_database("created-over").expect("create must replace the dead leftover");
+    assert!(!import_path(&data_dir, "created-over").exists());
 }
 
 #[test]
@@ -176,9 +192,18 @@ fn resume_recovery_restores_staging_and_discards_junk() {
     let dbm = manager(&data_dir, ImportRecovery::Resume);
     assert_eq!(dbm.imported_database_names(), vec!["healthy".to_string()]);
     assert!(!import_path(&data_dir, "_cache-junk").exists());
-    assert!(!import_path(&data_dir, "corrupt").exists());
     assert!(!import_path(&data_dir, "stray-file").exists());
-    dbm.put_database("corrupt").expect("create over a discarded corrupt staging");
+
+    // The unopenable staging is kept: it reserves the name against creation — surviving further
+    // restarts — until a cancel or a fresh prepare of the import concludes it.
+    assert!(import_path(&data_dir, "corrupt").exists());
+    assert!(matches!(dbm.put_database("corrupt"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    drop(dbm);
+    let dbm = manager(&data_dir, ImportRecovery::Resume);
+    assert!(matches!(dbm.put_database("corrupt"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(dbm.cancel_database_import("corrupt").is_err());
+    assert!(!import_path(&data_dir, "corrupt").exists());
+    dbm.put_database("corrupt").expect("create after the cancel released the name");
 }
 
 #[test]

@@ -165,6 +165,10 @@ impl DatabaseManager {
         self.imports.names()
     }
 
+    pub fn is_lost_import(&self, name: &str) -> bool {
+        self.imports.is_lost(name)
+    }
+
     pub fn import_directory(&self) -> &Path {
         self.imports.directory()
     }

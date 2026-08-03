@@ -26,6 +26,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct DatabaseImportManager {
     directory: PathBuf,
+    recovery: ImportRecovery,
     databases: RwLock<HashMap<String, Arc<Database<WALClient>>>>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
@@ -64,7 +65,13 @@ impl DatabaseImportManager {
             }
             ImportRecovery::Resume => Self::recover_directory(&directory, &diagnostics_manager, &rocks_resources)?,
         };
-        Ok(Self { directory, databases: RwLock::new(recovered.databases), diagnostics_manager, rocks_resources })
+        Ok(Self {
+            directory,
+            recovery,
+            databases: RwLock::new(recovered.databases),
+            diagnostics_manager,
+            rocks_resources,
+        })
     }
 
     pub(crate) fn get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
@@ -75,15 +82,31 @@ impl DatabaseImportManager {
         self.databases.read().unwrap().keys().cloned().collect()
     }
 
+    pub(crate) fn is_lost(&self, name: &str) -> bool {
+        !self.databases.read().unwrap().contains_key(name) && self.exists(name)
+    }
+
     pub(crate) fn ensure_available(&self, name: &str) -> Result<(), DatabaseCreateError> {
         if self.databases.read().map_err(|_| DatabaseCreateError::ReadAccessDenied {})?.contains_key(name) {
             return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
         }
         if self.exists(name) {
-            let map_fs_err =
-                |source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) };
-            fs::remove_dir_all(self.directory.join(name)).map_err(map_fs_err)?;
-            self.sync().map_err(map_fs_err)?;
+            match self.recovery {
+                // Under `Resume`, an unregistered directory is the trace of an unconcluded import
+                // this server could not reopen — other servers may hold it live, so the name must
+                // be rejected exactly as they reject it. Cancel or a fresh prepare clears it.
+                ImportRecovery::Resume => {
+                    return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
+                }
+                ImportRecovery::Discard => {
+                    let map_fs_err = |source| DatabaseCreateError::DirectoryWrite {
+                        name: name.to_string(),
+                        source: Arc::new(source),
+                    };
+                    fs::remove_dir_all(self.directory.join(name)).map_err(map_fs_err)?;
+                    self.sync().map_err(map_fs_err)?;
+                }
+            }
         }
         Ok(())
     }
@@ -212,9 +235,9 @@ impl DatabaseImportManager {
                 Err(typedb_source) => {
                     event!(
                         Level::WARN,
-                        "Import database '{name}' could not be reopened after restart; discarding it: {typedb_source:?}"
+                        "Import database '{name}' could not be reopened after restart. The name stays \
+                         reserved until the import is cancelled or prepared again: {typedb_source:?}"
                     );
-                    Self::remove_entry_best_effort(&entry_path);
                 }
             }
         }
