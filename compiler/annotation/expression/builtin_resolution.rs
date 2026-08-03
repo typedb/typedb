@@ -48,7 +48,7 @@ impl UnaryValueFunctionResolver for $fid {
             other => {
                 Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                     function: Self::UNARY_ID,
-                    category: t1, // TODO: Add arg2
+                    category: t1,
                     source_span: source_span,
                 }))
             }
@@ -82,7 +82,7 @@ impl BinaryValueFunctionResolver for $fid {
             other => {
                 Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                     function: Self::BINARY_ID,
-                    category: t1, // TODO: Add arg2
+                    category: t1, // TODO: If we ever have functions that take two different categories
                     source_span: source_span,
                 }))
             }
