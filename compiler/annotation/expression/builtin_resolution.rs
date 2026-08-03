@@ -38,7 +38,7 @@ macro_rules! unary_builtin_tt {
 
 macro_rules! unary_builtin_impl {
     ($fid:ident = $impl_prefix:ident [ $( $t1:ident = $variant_impl:ident, )* ]) => {
-pub(super) struct $fid; // TODO: See if I can use a struct with a const BuiltinValueFunctionID
+pub(super) struct $fid;
 impl UnaryValueFunctionResolver for $fid {
     const UNARY_ID: BuiltinValueFunctionID = BuiltinValueFunctionID::$fid;
 
@@ -72,7 +72,7 @@ macro_rules! binary_builtin_tt {
 
 macro_rules! binary_builtin_impl {
     ($fid:ident:$same_args:literal = $impl_prefix:ident [ $( ($t1:ident, $t2: ident) = $variant_impl:ident, )* ]) => {
-pub(super) struct $fid; // TODO: See if I can use a struct with a const BuiltinValueFunctionID
+pub(super) struct $fid;
 impl BinaryValueFunctionResolver for $fid {
     const BINARY_ID: BuiltinValueFunctionID = BuiltinValueFunctionID::$fid;
     const ARGS_MUST_HAVE_SAME_CATEGORIES: bool = $same_args;
