@@ -284,11 +284,11 @@ pub mod test {
             (Value::String(Cow::Owned(String::from_utf8(vec![b'X'; 512]).unwrap())), Value::Integer(0xf00d)), // Bigger than 256 characters
         ];
         for (string_value, integer_value) in test_values {
-            let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
+            let nested_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));
             let nested_fields = HashMap::from([(0, string_value), (1, integer_value)]);
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
-            let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
+            let struct_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));
             let struct_fields = HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct.clone())))]);
             let struct_value = StructValue::new(struct_key, struct_fields);
 

@@ -660,7 +660,7 @@ pub mod tests {
         "];
         let expected_name = "cat_names";
 
-        let expected_function_id = DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0));
+        let expected_function_id = DefinitionKey::new(Prefix::DefinitionFunction, DefinitionID::new(0));
         let expected_signature = FunctionSignature::new(
             FunctionID::Schema(expected_function_id.clone()),
             vec![VariableCategory::Object],
