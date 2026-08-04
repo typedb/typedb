@@ -675,8 +675,8 @@ impl UnaryConstraint for RoleName<Variable> {
         let role_types_opt = context.type_manager.get_roles_by_name(context.snapshot, self.name())?;
         if let Some(role_types) = role_types_opt {
             let mut annotations = BTreeSet::new();
-            for role_type in &*role_types {
-                annotations.insert(TypeAnnotation::RoleType(*role_type));
+            for &role_type in &*role_types {
+                annotations.insert(role_type.into());
                 if !context.is_write_stage() {
                     annotations
                         .extend_into_ref(&role_type.get_subtypes_transitive(context.snapshot, context.type_manager)?);
@@ -721,7 +721,7 @@ impl UnaryConstraint for Value<Variable> {
                 attribute_type.get_value_type_without_source(context.snapshot, context.type_manager)?;
             if let Some(attribute_value_type) = attribute_value_type_opt {
                 if pattern_value_type == attribute_value_type {
-                    annotations.insert(TypeAnnotation::Attribute(attribute_type));
+                    annotations.insert(attribute_type.into());
                 }
             }
         }
@@ -1008,22 +1008,22 @@ impl BinaryConstraint for Sub<Variable> {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
                     if let Some(supertype) = attribute.get_supertype(context.snapshot, context.type_manager)? {
-                        collector.insert(TypeAnnotation::Attribute(supertype));
+                        collector.insert(supertype.into());
                     }
                 }
                 TypeAnnotation::Entity(entity) => {
                     if let Some(supertype) = entity.get_supertype(context.snapshot, context.type_manager)? {
-                        collector.insert(TypeAnnotation::Entity(supertype));
+                        collector.insert(supertype.into());
                     }
                 }
                 TypeAnnotation::Relation(relation) => {
                     if let Some(supertype) = relation.get_supertype(context.snapshot, context.type_manager)? {
-                        collector.insert(TypeAnnotation::Relation(supertype));
+                        collector.insert(supertype.into());
                     }
                 }
                 TypeAnnotation::RoleType(role_type) => {
                     if let Some(supertype) = role_type.get_supertype(context.snapshot, context.type_manager)? {
-                        collector.insert(TypeAnnotation::RoleType(supertype));
+                        collector.insert(supertype.into());
                     }
                 }
             }
@@ -1136,7 +1136,7 @@ impl BinaryConstraint for Comparison<Variable> {
                         .get_value_type_without_source(context.snapshot, context.type_manager)?
                     {
                         if comparable_types.contains(&subvaluetype.category()) {
-                            right_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type()));
+                            right_annotations.insert(subattr.as_attribute_type().into());
                         }
                     }
                 }
@@ -1170,13 +1170,13 @@ impl BinaryConstraint for Comparison<Variable> {
             };
             if let Some(value_type) = right_value_type {
                 let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
-                for subattr in allowed_left_types {
+                for &subattr in allowed_left_types {
                     if let Some(subvaluetype) = subattr
                         .as_attribute_type()
                         .get_value_type_without_source(context.snapshot, context.type_manager)?
                     {
                         if comparable_types.contains(&subvaluetype.category()) {
-                            left_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type()));
+                            left_annotations.insert(subattr.into());
                         }
                     }
                 }
@@ -1317,7 +1317,7 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
             let is_write_stage_and_relates_is_abstract = context.is_write_stage()
                 && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, relates.role())?;
             if !is_write_stage_and_relates_is_abstract {
-                collector.insert(TypeAnnotation::RoleType(relates.role()));
+                collector.insert(relates.role().into());
             }
         }
         Ok(())
@@ -1333,11 +1333,11 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
             // It can't be another type => Do nothing and let type-inference clean it up
             return Ok(());
         };
-        for (relation, _) in role.get_relation_types(context.snapshot, context.type_manager)?.iter() {
+        for (&relation, _) in role.get_relation_types(context.snapshot, context.type_manager)?.iter() {
             let is_write_stage_and_relates_is_abstract = context.is_write_stage()
                 && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, *role)?;
             if !is_write_stage_and_relates_is_abstract {
-                collector.insert(TypeAnnotation::Relation(*relation));
+                collector.insert(relation.into());
             }
         }
         Ok(())
