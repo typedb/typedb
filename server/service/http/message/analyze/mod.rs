@@ -169,7 +169,7 @@ pub mod bdd {
         }
         macro_rules! impl_functor_for_multi {
             (|$self:ident, $context:ident| [ $( $type_name:ident => $block:block )* ]) => {
-                $ (functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
+                $( functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
             };
         }
 

@@ -42,9 +42,13 @@ pub(super) struct $fid;
 impl UnaryValueFunctionResolver for $fid {
     const UNARY_ID: BuiltinValueFunctionID = BuiltinValueFunctionID::$fid;
 
-    fn resolve_validate_append_unary(t1: ValueTypeCategory, builder: &mut ExpressionCompilationContext<'_>, source_span: Option<Span>) -> Result<(), Box<ExpressionCompileError>> {
+    fn resolve_validate_append_unary(
+        t1: ValueTypeCategory,
+        builder: &mut ExpressionCompilationContext<'_>,
+        source_span: Option<Span>
+    ) -> Result<(), Box<ExpressionCompileError>> {
         match t1 {
-            $ ( ValueTypeCategory::$t1 => $variant_impl::validate_and_append(builder), )*
+            $( ValueTypeCategory::$t1 => $variant_impl::validate_and_append(builder), )*
             other => {
                 Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                     function: Self::UNARY_ID,
@@ -66,7 +70,9 @@ macro_rules! binary_builtin {
 
 macro_rules! binary_builtin_tt {
     ($fid:ident:$same_args:literal = $impl_prefix:ident [ $( ($t1:ident, $t2:ident), )* ]) => {
-        paste::paste!(binary_builtin_impl! { $fid:$same_args = $impl_prefix [ $( ($t1, $t2) = [<$impl_prefix $t1 $t2>], )* ] } );
+        paste::paste! {
+            binary_builtin_impl! { $fid:$same_args = $impl_prefix [ $( ($t1, $t2) = [<$impl_prefix $t1 $t2>], )* ] }
+        };
     }
 }
 
@@ -76,9 +82,14 @@ pub(super) struct $fid;
 impl BinaryValueFunctionResolver for $fid {
     const BINARY_ID: BuiltinValueFunctionID = BuiltinValueFunctionID::$fid;
     const ARGS_MUST_HAVE_SAME_CATEGORIES: bool = $same_args;
-    fn resolve_validate_append_binary(t1: ValueTypeCategory, t2: ValueTypeCategory, builder: &mut ExpressionCompilationContext<'_>, source_span: Option<Span>) -> Result<(), Box<ExpressionCompileError>> {
+    fn resolve_validate_append_binary(
+        t1: ValueTypeCategory,
+        t2: ValueTypeCategory,
+        builder: &mut ExpressionCompilationContext<'_>,
+        source_span: Option<Span>
+    ) -> Result<(), Box<ExpressionCompileError>> {
         match (t1, t2) {
-            $ ( (ValueTypeCategory::$t1, ValueTypeCategory::$t2)  => $variant_impl::validate_and_append(builder), )*
+            $( (ValueTypeCategory::$t1, ValueTypeCategory::$t2)  => $variant_impl::validate_and_append(builder), )*
             (other, _) => {
                 Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                     function: Self::BINARY_ID,

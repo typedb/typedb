@@ -6,8 +6,8 @@
 
 use crate::annotation::expression::instructions::{ExpressionInstruction, op_codes::ExpressionOpCode};
 
-pub struct LoadVariable {}
-pub struct LoadConstant {}
+pub struct LoadVariable;
+pub struct LoadConstant;
 
 impl ExpressionInstruction for LoadVariable {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadVariable;

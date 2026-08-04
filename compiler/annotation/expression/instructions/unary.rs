@@ -23,23 +23,23 @@ pub trait UnaryExpression<'a> {
     fn evaluate(a1: Self::T1) -> Result<Self::R, ExpressionEvaluationError>;
 }
 
-pub struct Unary<'a, F: UnaryExpression<'a>>(PhantomData<&'a F>);
+pub struct Unary<'a, E: UnaryExpression<'a>>(PhantomData<&'a E>);
 
-impl<'a, F: UnaryExpression<'a>> ExpressionInstruction for Unary<'a, F> {
-    const OP_CODE: ExpressionOpCode = F::OP_CODE;
+impl<'a, E: UnaryExpression<'a>> ExpressionInstruction for Unary<'a, E> {
+    const OP_CODE: ExpressionOpCode = E::OP_CODE;
 }
 
-impl<'a, F: UnaryExpression<'a>> CompilableExpression for Unary<'a, F> {
+impl<'a, E: UnaryExpression<'a>> CompilableExpression for Unary<'a, E> {
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a1 = builder.pop_type_single()?.category();
-        if a1 != F::T1::VALUE_TYPE_CATEGORY {
+        if a1 != E::T1::VALUE_TYPE_CATEGORY {
             Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
-                op_code: F::OP_CODE,
-                expected: F::T1::VALUE_TYPE_CATEGORY,
+                op_code: E::OP_CODE,
+                expected: E::T1::VALUE_TYPE_CATEGORY,
                 actual: a1,
             }))?;
         }
-        builder.push_type_single(F::R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
+        builder.push_type_single(E::R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }

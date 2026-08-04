@@ -95,18 +95,17 @@ macro_rules! define_opcode_enum {
         }
     };
 }
+for_each_opcode!(define_opcode_enum);
 
-macro_rules! define_opcode_fmt_display {
-    ($($name:ident,)*) => {
-        impl fmt::Display for ExpressionOpCode {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for ExpressionOpCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        macro_rules! opcode_fmt_display {
+            ($($name:ident,)*) => {
                 match self {
                     $(Self::$name => write!(f, stringify!($name)),)*
                 }
             }
         }
-    };
+        for_each_opcode!(opcode_fmt_display)
+    }
 }
-
-for_each_opcode!(define_opcode_enum);
-for_each_opcode!(define_opcode_fmt_display);

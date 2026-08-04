@@ -38,6 +38,7 @@ use compiler::annotation::expression::{
         },
     },
 };
+use compiler::for_each_opcode;
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use resource::profile::StorageCounters;
@@ -173,30 +174,30 @@ pub fn evaluate_expression<ID: Hash + Eq>(
     Ok(state.stack.pop().unwrap())
 }
 
-macro_rules! impl_evaluate_instruction {
-    ($($name:ident,)*) => {
-        fn evaluate_instruction(
-            op_code: &ExpressionOpCode,
-            state: &mut ExpressionExecutorState<'_>,
-        ) -> Result<(), ExpressionEvaluationError> {
+fn evaluate_instruction(
+    op_code: &ExpressionOpCode,
+    state: &mut ExpressionExecutorState<'_>,
+) -> Result<(), ExpressionEvaluationError> {
+    macro_rules! impl_evaluate_instruction {
+        ($($name:ident,)*) => {
             match op_code {
                 $(ExpressionOpCode::$name => $name::evaluate(state),)*
             }
         }
-    };
+    }
+    for_each_opcode!(impl_evaluate_instruction)
 }
 
-compiler::for_each_opcode!(impl_evaluate_instruction);
 
 pub trait ExpressionEvaluation {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
 }
 
-impl<'a, F: BinaryExpression<'a>> ExpressionEvaluation for Binary<'a, F> {
+impl<'a, E: BinaryExpression<'a>> ExpressionEvaluation for Binary<'a, E> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a2: F::T2 = F::T2::from_db_value(state.pop_value()).unwrap();
-        let a1: F::T1 = F::T1::from_db_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1, a2)?.to_db_value());
+        let a2: E::T2 = E::T2::from_db_value(state.pop_value()).unwrap();
+        let a1: E::T1 = E::T1::from_db_value(state.pop_value()).unwrap();
+        state.push_value(E::evaluate(a1, a2)?.to_db_value());
         Ok(())
     }
 }
@@ -298,10 +299,10 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
     }
 }
 
-impl<'a, F: UnaryExpression<'a>> ExpressionEvaluation for Unary<'a, F> {
+impl<'a, E: UnaryExpression<'a>> ExpressionEvaluation for Unary<'a, E> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a1: F::T1 = F::T1::from_db_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1)?.to_db_value());
+        let a1: E::T1 = E::T1::from_db_value(state.pop_value()).unwrap();
+        state.push_value(E::evaluate(a1)?.to_db_value());
         Ok(())
     }
 }

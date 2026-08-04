@@ -23,31 +23,31 @@ pub trait BinaryExpression<'a> {
     fn evaluate(a1: Self::T1, a2: Self::T2) -> Result<Self::R, ExpressionEvaluationError>;
 }
 
-pub struct Binary<'a, F: BinaryExpression<'a>>(PhantomData<&'a F>);
+pub struct Binary<'a, E: BinaryExpression<'a>>(PhantomData<&'a E>);
 
-impl<'a, F: BinaryExpression<'a>> ExpressionInstruction for Binary<'a, F> {
-    const OP_CODE: ExpressionOpCode = F::OP_CODE;
+impl<'a, E: BinaryExpression<'a>> ExpressionInstruction for Binary<'a, E> {
+    const OP_CODE: ExpressionOpCode = E::OP_CODE;
 }
 
-impl<'a, F: BinaryExpression<'a>> CompilableExpression for Binary<'a, F> {
+impl<'a, E: BinaryExpression<'a>> CompilableExpression for Binary<'a, E> {
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a2 = builder.pop_type_single()?.category();
         let a1 = builder.pop_type_single()?.category();
-        if a1 != F::T1::VALUE_TYPE_CATEGORY {
+        if a1 != E::T1::VALUE_TYPE_CATEGORY {
             return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
-                op_code: F::OP_CODE,
-                expected: F::T1::VALUE_TYPE_CATEGORY,
+                op_code: E::OP_CODE,
+                expected: E::T1::VALUE_TYPE_CATEGORY,
                 actual: a1,
             }));
         }
-        if a2 != F::T2::VALUE_TYPE_CATEGORY {
+        if a2 != E::T2::VALUE_TYPE_CATEGORY {
             return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
-                op_code: F::OP_CODE,
-                expected: F::T2::VALUE_TYPE_CATEGORY,
+                op_code: E::OP_CODE,
+                expected: E::T2::VALUE_TYPE_CATEGORY,
                 actual: a2,
             }));
         }
-        builder.push_type_single(F::R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
+        builder.push_type_single(E::R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }
