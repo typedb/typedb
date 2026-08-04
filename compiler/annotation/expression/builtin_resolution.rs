@@ -5,7 +5,6 @@
  */
 use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::expression::BuiltinValueFunctionID;
-use paste::paste;
 use typeql::common::Span;
 
 use crate::annotation::expression::{
@@ -72,7 +71,7 @@ macro_rules! binary_builtin_tt {
     ($fid:ident:$same_args:literal = $impl_prefix:ident [ $( ($t1:ident, $t2:ident), )* ]) => {
         paste::paste! {
             binary_builtin_impl! { $fid:$same_args = $impl_prefix [ $( ($t1, $t2) = [<$impl_prefix $t1 $t2>], )* ] }
-        };
+        }
     }
 }
 
