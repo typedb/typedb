@@ -31,6 +31,9 @@ rust_library(
         "@crates//:chrono",
         "@crates//:serde"
     ],
+    proc_macro_deps = [
+        "@crates//:paste",
+    ],
 )
 
 rust_test(

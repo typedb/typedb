@@ -7,28 +7,39 @@
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use answer::{Thing, variable_value::VariableValue};
-use compiler::annotation::expression::{
-    compiled_expression::ExecutableExpression,
-    instructions::{
-        ExpressionEvaluationError,
-        binary::{
-            Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
-            MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
-        },
-        list_operations::{ListConstructor, ListIndex, ListIndexRange},
-        load_cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
-            CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDecimal, CastRightIntegerToDouble,
-            CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDecimal, CastUnaryIntegerToDouble, ImplicitCast,
-            LoadConstant, LoadVariable,
-        },
-        op_codes::ExpressionOpCode,
-        operators,
-        unary::{
-            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-            MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
+use compiler::{
+    annotation::expression::{
+        compiled_expression::ExecutableExpression,
+        instructions::{
+            ExpressionEvaluationError,
+            binary::{
+                Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
+                MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
+            },
+            cast::{
+                CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
+                CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDecimal, CastRightIntegerToDouble,
+                CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDecimal, CastUnaryIntegerToDouble, ImplicitCast,
+            },
+            list_operations::{ListConstructor, ListIndex, ListIndexRange},
+            load::{LoadConstant, LoadVariable},
+            op_codes::ExpressionOpCode,
+            operators::{
+                OpDateSubtractDate, OpDateTimeAddDuration, OpDateTimeSubtractDate, OpDateTimeSubtractDateTime,
+                OpDateTimeSubtractDuration, OpDateTimeTZAddDuration, OpDateTimeTZSubtractDateTimeTZ,
+                OpDateTimeTZSubtractDuration, OpDecimalAddDecimal, OpDecimalMultiplyDecimal, OpDecimalSubtractDecimal,
+                OpDoubleAddDouble, OpDoubleDivideDouble, OpDoubleModuloDouble, OpDoubleMultiplyDouble,
+                OpDoublePowerDouble, OpDoubleSubtractDouble, OpDurationAddDuration, OpDurationSubtractDuration,
+                OpIntegerAddInteger, OpIntegerDivideInteger, OpIntegerModuloInteger, OpIntegerMultiplyInteger,
+                OpIntegerPowerInteger, OpIntegerSubtractInteger, OpStringAddString,
+            },
+            unary::{
+                LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
+                MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
+            },
         },
     },
+    for_each_opcode,
 };
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
@@ -169,100 +180,25 @@ fn evaluate_instruction(
     op_code: &ExpressionOpCode,
     state: &mut ExpressionExecutorState<'_>,
 ) -> Result<(), ExpressionEvaluationError> {
-    match op_code {
-        ExpressionOpCode::LoadConstant => LoadConstant::evaluate(state),
-        ExpressionOpCode::LoadVariable => LoadVariable::evaluate(state),
-        ExpressionOpCode::ListConstructor => ListConstructor::evaluate(state),
-        ExpressionOpCode::ListIndex => ListIndex::evaluate(state),
-        ExpressionOpCode::ListIndexRange => ListIndexRange::evaluate(state),
-
-        ExpressionOpCode::CastUnaryIntegerToDouble => CastUnaryIntegerToDouble::evaluate(state),
-        ExpressionOpCode::CastLeftIntegerToDouble => CastLeftIntegerToDouble::evaluate(state),
-        ExpressionOpCode::CastRightIntegerToDouble => CastRightIntegerToDouble::evaluate(state),
-
-        ExpressionOpCode::CastUnaryDecimalToDouble => CastUnaryDecimalToDouble::evaluate(state),
-        ExpressionOpCode::CastLeftDecimalToDouble => CastLeftDecimalToDouble::evaluate(state),
-        ExpressionOpCode::CastRightDecimalToDouble => CastRightDecimalToDouble::evaluate(state),
-
-        ExpressionOpCode::CastUnaryIntegerToDecimal => CastUnaryIntegerToDecimal::evaluate(state),
-        ExpressionOpCode::CastLeftIntegerToDecimal => CastLeftIntegerToDecimal::evaluate(state),
-        ExpressionOpCode::CastRightIntegerToDecimal => CastRightIntegerToDecimal::evaluate(state),
-
-        ExpressionOpCode::OpIntegerAddInteger => operators::OpIntegerAddInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerSubtractInteger => operators::OpIntegerSubtractInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerMultiplyInteger => operators::OpIntegerMultiplyInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerDivideInteger => operators::OpIntegerDivideInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerModuloInteger => operators::OpIntegerModuloInteger::evaluate(state),
-        ExpressionOpCode::OpIntegerPowerInteger => operators::OpIntegerPowerInteger::evaluate(state),
-
-        ExpressionOpCode::OpDoubleAddDouble => operators::OpDoubleAddDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleSubtractDouble => operators::OpDoubleSubtractDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleMultiplyDouble => operators::OpDoubleMultiplyDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleDivideDouble => operators::OpDoubleDivideDouble::evaluate(state),
-        ExpressionOpCode::OpDoubleModuloDouble => operators::OpDoubleModuloDouble::evaluate(state),
-        ExpressionOpCode::OpDoublePowerDouble => operators::OpDoublePowerDouble::evaluate(state),
-
-        ExpressionOpCode::OpDecimalAddDecimal => operators::OpDecimalAddDecimal::evaluate(state),
-        ExpressionOpCode::OpDecimalSubtractDecimal => operators::OpDecimalSubtractDecimal::evaluate(state),
-        ExpressionOpCode::OpDecimalMultiplyDecimal => operators::OpDecimalMultiplyDecimal::evaluate(state),
-
-        ExpressionOpCode::OpDateSubtractDate => operators::OpDateSubtractDate::evaluate(state),
-
-        ExpressionOpCode::OpDateTimeAddDuration => operators::OpDateTimeAddDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeSubtractDuration => operators::OpDateTimeSubtractDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeSubtractDateTime => operators::OpDateTimeSubtractDateTime::evaluate(state),
-        ExpressionOpCode::OpDateTimeSubtractDate => operators::OpDateTimeSubtractDate::evaluate(state),
-
-        ExpressionOpCode::OpDateTimeTZAddDuration => operators::OpDateTimeTZAddDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeTZSubtractDuration => operators::OpDateTimeTZSubtractDuration::evaluate(state),
-        ExpressionOpCode::OpDateTimeTZSubtractDateTimeTZ => operators::OpDateTimeTZSubtractDateTimeTZ::evaluate(state),
-
-        ExpressionOpCode::OpDurationAddDuration => operators::OpDurationAddDuration::evaluate(state),
-        ExpressionOpCode::OpDurationSubtractDuration => operators::OpDurationSubtractDuration::evaluate(state),
-
-        ExpressionOpCode::OpStringAddString => operators::OpStringAddString::evaluate(state),
-
-        ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
-        ExpressionOpCode::MathAbsDecimal => MathAbsDecimal::evaluate(state),
-        ExpressionOpCode::MathAbsInteger => MathAbsInteger::evaluate(state),
-
-        ExpressionOpCode::MathRemainderInteger => MathRemainderInteger::evaluate(state),
-
-        ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
-        ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
-        ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
-
-        ExpressionOpCode::MathRoundDecimal => MathRoundDecimal::evaluate(state),
-        ExpressionOpCode::MathCeilDecimal => MathCeilDecimal::evaluate(state),
-        ExpressionOpCode::MathFloorDecimal => MathFloorDecimal::evaluate(state),
-
-        ExpressionOpCode::MathMinIntegerInteger => MathMinIntegerInteger::evaluate(state),
-        ExpressionOpCode::MathMinDoubleDouble => MathMinDoubleDouble::evaluate(state),
-        ExpressionOpCode::MathMinDecimalDecimal => MathMinDecimalDecimal::evaluate(state),
-
-        ExpressionOpCode::MathMaxIntegerInteger => MathMaxIntegerInteger::evaluate(state),
-        ExpressionOpCode::MathMaxDoubleDouble => MathMaxDoubleDouble::evaluate(state),
-        ExpressionOpCode::MathMaxDecimalDecimal => MathMaxDecimalDecimal::evaluate(state),
-
-        ExpressionOpCode::LenString => LenString::evaluate(state),
+    macro_rules! impl_evaluate_instruction {
+        ($($name:ident,)*) => {
+            match op_code {
+                $(ExpressionOpCode::$name => $name::evaluate(state),)*
+            }
+        }
     }
+    for_each_opcode!(impl_evaluate_instruction)
 }
 
 pub trait ExpressionEvaluation {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
 }
 
-impl<'a, T1, T2, R, F> ExpressionEvaluation for Binary<'a, T1, T2, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    T2: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: BinaryExpression<'a, T1, T2, R>,
-{
+impl<'a, E: BinaryExpression<'a>> ExpressionEvaluation for Binary<'a, E> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a2: T2 = T2::from_db_value(state.pop_value()).unwrap();
-        let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1, a2)?.to_db_value());
+        let a2: E::T2 = E::T2::from_db_value(state.pop_value()).unwrap();
+        let a1: E::T1 = E::T1::from_db_value(state.pop_value()).unwrap();
+        state.push_value(E::evaluate(a1, a2)?.to_db_value());
         Ok(())
     }
 }
@@ -364,15 +300,10 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
     }
 }
 
-impl<'a, T1, R, F> ExpressionEvaluation for Unary<'a, T1, R, F>
-where
-    T1: NativeValueConvertible<'a>,
-    R: NativeValueConvertible<'a>,
-    F: UnaryExpression<'a, T1, R>,
-{
+impl<'a, E: UnaryExpression<'a>> ExpressionEvaluation for Unary<'a, E> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
-        state.push_value(F::evaluate(a1)?.to_db_value());
+        let a1: E::T1 = E::T1::from_db_value(state.pop_value()).unwrap();
+        state.push_value(E::evaluate(a1)?.to_db_value());
         Ok(())
     }
 }

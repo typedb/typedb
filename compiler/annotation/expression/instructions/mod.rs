@@ -5,7 +5,7 @@
  */
 
 use concept::error::ConceptReadError;
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::value::NativeValueConvertible;
 use error::typedb_error;
 
 use crate::annotation::expression::{
@@ -13,8 +13,9 @@ use crate::annotation::expression::{
 };
 
 pub mod binary;
+pub mod cast;
 pub mod list_operations;
-pub mod load_cast;
+pub mod load;
 pub mod op_codes;
 pub mod operators;
 pub mod unary;
@@ -24,8 +25,6 @@ pub trait ExpressionInstruction: Sized {
 }
 
 pub trait CompilableExpression: ExpressionInstruction {
-    fn return_value_category(&self) -> Option<ValueTypeCategory>;
-
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>>;
 }
 

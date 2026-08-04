@@ -38,9 +38,6 @@ features = {}
 	[dependencies.tracing]
 		workspace = true
 
-	[dependencies.answer]
-		workspace = true
-
 	[dependencies.resource]
 		workspace = true
 
@@ -53,10 +50,10 @@ features = {}
 	[dependencies.ir]
 		workspace = true
 
-	[dependencies.typeql]
+	[dependencies.storage]
 		workspace = true
 
-	[dependencies.storage]
+	[dependencies.paste]
 		workspace = true
 
 	[dependencies.encoding]
@@ -65,10 +62,16 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
-	[dependencies.chrono]
+	[dependencies.itertools]
 		workspace = true
 
-	[dependencies.itertools]
+	[dependencies.answer]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.chrono]
 		workspace = true
 
 [[test]]

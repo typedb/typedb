@@ -21,25 +21,25 @@ use crate::annotation::expression::instructions::{
 };
 
 binary_instruction! { 'a
-    OpIntegerAddInteger = OpIntegerAddIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2), "add") }
-    OpIntegerSubtractInteger = OpIntegerSubtractIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2), "sub") }
-    OpIntegerMultiplyInteger = OpIntegerMultiplyIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2), "mul") }
-    OpIntegerDivideInteger = OpIntegerDivideIntegerImpl(a1: i64, a2: i64) -> f64 { checked_div(a1 as f64, a2 as f64) }
-    OpIntegerModuloInteger = OpIntegerModuloIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem_euclid(a1, a2)) }
-    OpIntegerPowerInteger = OpIntegerPowerIntegerImpl(a1: i64, a2: i64) -> f64 { Ok(f64::powf(a1 as f64, a2 as f64)) }
+    OpIntegerAddInteger(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2), "add") }
+    OpIntegerSubtractInteger(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2), "sub") }
+    OpIntegerMultiplyInteger(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2), "mul") }
+    OpIntegerDivideInteger(a1: i64, a2: i64) -> f64 { checked_div(a1 as f64, a2 as f64) }
+    OpIntegerModuloInteger(a1: i64, a2: i64) -> i64 { Ok(i64::rem_euclid(a1, a2)) }
+    OpIntegerPowerInteger(a1: i64, a2: i64) -> f64 { Ok(f64::powf(a1 as f64, a2 as f64)) }
 
-    OpDoubleAddDouble = OpDoubleAddDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(a1 + a2) }
-    OpDoubleSubtractDouble = OpDoubleSubtractDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(a1 - a2) }
-    OpDoubleMultiplyDouble = OpDoubleMultiplyDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(a1 * a2) }
-    OpDoubleDivideDouble = OpDoubleDivideDoubleImpl(a1: f64, a2: f64) -> f64 { checked_div(a1, a2) }
-    OpDoubleModuloDouble = OpDoubleModuloDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(f64::rem_euclid(a1, a2)) }
-    OpDoublePowerDouble = OpDoublePowerDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(f64::powf(a1, a2)) }
+    OpDoubleAddDouble(a1: f64, a2: f64) -> f64 { Ok(a1 + a2) }
+    OpDoubleSubtractDouble(a1: f64, a2: f64) -> f64 { Ok(a1 - a2) }
+    OpDoubleMultiplyDouble(a1: f64, a2: f64) -> f64 { Ok(a1 * a2) }
+    OpDoubleDivideDouble(a1: f64, a2: f64) -> f64 { checked_div(a1, a2) }
+    OpDoubleModuloDouble(a1: f64, a2: f64) -> f64 { Ok(f64::rem_euclid(a1, a2)) }
+    OpDoublePowerDouble(a1: f64, a2: f64) -> f64 { Ok(f64::powf(a1, a2)) }
 
-    OpDecimalAddDecimal = OpDecimalAddDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok( a1 + a2) }
-    OpDecimalSubtractDecimal = OpDecimalSubtractDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 - a2) }
-    OpDecimalMultiplyDecimal = OpDecimalMultiplyDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 * a2) }
+    OpDecimalAddDecimal(a1: Decimal, a2: Decimal) -> Decimal { Ok( a1 + a2) }
+    OpDecimalSubtractDecimal(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 - a2) }
+    OpDecimalMultiplyDecimal(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 * a2) }
 
-    OpDateSubtractDate = OpDateSubtractDateImpl(a1: NaiveDate, a2: NaiveDate) -> Duration {
+    OpDateSubtractDate(a1: NaiveDate, a2: NaiveDate) -> Duration {
         if a2 <= a1 {
             Ok(Duration::between_dates(a2, a1))
         } else {
@@ -47,20 +47,20 @@ binary_instruction! { 'a
         }
     }
 
-    OpDateTimeAddDuration = OpDateTimeAddDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
+    OpDateTimeAddDuration(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
         check_operation(DateTimeExt::checked_add(a1, a2), "add")
     }
-    OpDateTimeSubtractDuration = OpDateTimeSubtractDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
+    OpDateTimeSubtractDuration(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
         check_operation(DateTimeExt::checked_sub(a1, a2), "sub")
     }
-    OpDateTimeSubtractDateTime = OpDateTimeSubtractDateTimeImpl(a1: NaiveDateTime, a2: NaiveDateTime) -> Duration {
+    OpDateTimeSubtractDateTime(a1: NaiveDateTime, a2: NaiveDateTime) -> Duration {
         if a2 <= a1 {
             Ok(Duration::between_datetimes(a2, a1))
         } else {
             Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
         }
     }
-    OpDateTimeSubtractDate = OpDateTimeSubtractDateImpl(a1: NaiveDateTime, a2: NaiveDate) -> Duration {
+    OpDateTimeSubtractDate(a1: NaiveDateTime, a2: NaiveDate) -> Duration {
         let a2 = NaiveDateTime::from(a2);
         if a2 <= a1 {
             Ok(Duration::between_datetimes(a2, a1))
@@ -69,13 +69,13 @@ binary_instruction! { 'a
         }
     }
 
-    OpDateTimeTZAddDuration = OpDateTimeTZAddDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
+    OpDateTimeTZAddDuration(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
         check_operation(DateTimeExt::checked_add(a1, a2), "add")
     }
-    OpDateTimeTZSubtractDuration = OpDateTimeTZSubtractDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
+    OpDateTimeTZSubtractDuration(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
         check_operation(DateTimeExt::checked_sub(a1, a2), "sub")
     }
-    OpDateTimeTZSubtractDateTimeTZ = OpDateTimeTZSubtractDateTimeTZImpl(a1: DateTime<TimeZone>, a2: DateTime<TimeZone>) -> Duration {
+    OpDateTimeTZSubtractDateTimeTZ(a1: DateTime<TimeZone>, a2: DateTime<TimeZone>) -> Duration {
         if a2 <= a1 {
             Ok(Duration::between_datetimes_tz(a2, a1))
         } else {
@@ -83,15 +83,15 @@ binary_instruction! { 'a
         }
     }
 
-    OpDurationAddDuration = OpDurationAddDurationImpl(a1: Duration, a2: Duration) -> Duration {
+    OpDurationAddDuration(a1: Duration, a2: Duration) -> Duration {
         check_operation(Duration::checked_add(a1, a2), "add")
     }
 
-    OpDurationSubtractDuration = OpDurationSubtractDurationImpl(a1: Duration, a2: Duration) -> Duration {
+    OpDurationSubtractDuration(a1: Duration, a2: Duration) -> Duration {
         check_operation(Duration::checked_sub(a1, a2), "sub")
     }
 
-    OpStringAddString = OpStringAddStringImpl(a1: Cow<'a, str>, a2: Cow<'a, str>) -> Cow<'a, str> { Ok(Cow::Owned(format!("{a1}{a2}"))) }
+    OpStringAddString(a1: Cow<'a, str>, a2: Cow<'a, str>) -> Cow<'a, str> { Ok(Cow::Owned(format!("{a1}{a2}"))) }
 }
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
