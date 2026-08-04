@@ -38,7 +38,7 @@ use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     inference::{
-        VertexAnnotations,
+        SetMappedOperations, VertexAnnotations,
         match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
@@ -135,13 +135,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         while some_vertex_was_directly_annotated {
             let mut changed = true;
             while changed {
-                changed = self
-                    .propagate_vertex_annotations(graph)
-                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                changed = self.propagate_vertex_annotations(graph)?;
             }
-            some_vertex_was_directly_annotated = self
-                .annotate_some_unannotated_vertex(graph)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+            some_vertex_was_directly_annotated = self.annotate_some_unannotated_vertex(graph)?;
         }
 
         // Prune abstract types from type annotations of thing variables
@@ -150,8 +146,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
 
         // Seed edges in root & disjunctions
-        self.seed_edges(graph, self.stage_type)
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })
+        self.seed_edges(graph, self.stage_type)?;
+        Ok(())
     }
 
     fn build_recursive<'conj>(&self, conjunction: &'conj Conjunction) -> TypeInferenceGraph<'conj> {
@@ -220,8 +216,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
         // This leads to better error messages
         for c in graph.conjunction.constraints().iter().filter(|c| matches!(c, Constraint::Isa(_))) {
-            self.try_propagating_vertex_annotation(c, vertices)
-                .map_err(|typedb_source| TypeInferenceError::ConceptRead { typedb_source })?;
+            self.try_propagating_vertex_annotation(c, vertices)?;
         }
         for c in graph.conjunction.constraints().iter().filter_map(|c| c.as_comparison()) {
             c.apply(self, vertices)?;
@@ -238,8 +233,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Vertex::Variable(_) => unreachable!("variable in fixed vertices"),
                 Vertex::Label(label) => {
                     if !graph.vertices.contains_key(vertex) {
-                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)?;
                         if let Some(annotation) = annotation_opt {
                             graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
                         } else {
@@ -252,8 +246,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                         #[cfg(debug_assertions)]
                         {
                             let annotation_opt =
-                                get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                                get_type_annotation_from_label(self.snapshot, self.type_manager, label)?;
                             debug_assert_ne!(annotation_opt, None);
                             debug_assert_eq!(graph.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
                         }
@@ -332,17 +325,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | VariableCategory::Attribute => (true, false),
             VariableCategory::AttributeOrValue => unreachable!("Insufficiently bound variable!"),
         };
-        let mut annotations = BTreeSet::new();
+        let mut annotations: BTreeSet<TypeAnnotation> = BTreeSet::new();
 
         let snapshot = self.snapshot;
         let type_manager = self.type_manager;
         if include_thing_types {
-            annotations.extend(type_manager.get_entity_types(snapshot)?.into_iter().map(TypeAnnotation::Entity));
-            annotations.extend(type_manager.get_relation_types(snapshot)?.into_iter().map(TypeAnnotation::Relation));
-            annotations.extend(type_manager.get_attribute_types(snapshot)?.into_iter().map(TypeAnnotation::Attribute));
+            annotations.extend_mapped(type_manager.get_entity_types(snapshot)?);
+            annotations.extend_mapped(type_manager.get_relation_types(snapshot)?);
+            annotations.extend_mapped(type_manager.get_attribute_types(snapshot)?);
         }
         if include_role_types {
-            annotations.extend(type_manager.get_role_types(snapshot)?.into_iter().map(TypeAnnotation::RoleType));
+            annotations.extend_mapped(type_manager.get_role_types(snapshot)?);
         }
         Ok(annotations)
     }
@@ -550,8 +543,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 continue;
             };
             if self.variable_registry.get_variable_category(*id).is_some_and(|cat| cat.is_category_thing()) {
-                TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))
-                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))?;
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
@@ -574,8 +566,7 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
     type_manager: &TypeManager,
     label_value: &encoding::value::label::Label,
 ) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
-    let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
-        .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+    let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)?;
     let Some(type_) = type_opt else {
         return Err(TypeInferenceError::LabelNotResolved {
             name: label_value.scoped_name().to_string(),
@@ -583,30 +574,18 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
         });
     };
     let mut types: BTreeSet<Type> = match &type_ {
-        TypeAnnotation::Entity(type_) => type_
-            .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-            .iter()
-            .map(|t| TypeAnnotation::Entity(*t))
-            .collect(),
-        TypeAnnotation::Relation(type_) => type_
-            .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-            .iter()
-            .map(|t| TypeAnnotation::Relation(*t))
-            .collect(),
-        TypeAnnotation::Attribute(type_) => type_
-            .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-            .iter()
-            .map(|t| TypeAnnotation::Attribute(*t))
-            .collect(),
-        TypeAnnotation::RoleType(type_) => type_
-            .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-            .iter()
-            .map(|t| TypeAnnotation::RoleType(*t))
-            .collect(),
+        TypeAnnotation::Entity(type_) => {
+            BTreeSet::from_mapped_ref(&type_.get_subtypes_transitive(snapshot, type_manager)?)
+        }
+        TypeAnnotation::Relation(type_) => {
+            BTreeSet::from_mapped_ref(&type_.get_subtypes_transitive(snapshot, type_manager)?)
+        }
+        TypeAnnotation::Attribute(type_) => {
+            BTreeSet::from_mapped_ref(&type_.get_subtypes_transitive(snapshot, type_manager)?)
+        }
+        TypeAnnotation::RoleType(type_) => {
+            BTreeSet::from_mapped_ref(&type_.get_subtypes_transitive(snapshot, type_manager)?)
+        }
     };
     types.insert(type_);
     Ok(types)
@@ -621,30 +600,10 @@ impl UnaryConstraint for Kind<Variable> {
         use encoding::graph::type_::Kind as EncodingKind;
         let type_manager = &context.type_manager;
         let annotations = match self.kind() {
-            EncodingKind::Entity => type_manager
-                .get_entity_types(context.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-                .iter()
-                .map(|t| TypeAnnotation::Entity(*t))
-                .collect(),
-            EncodingKind::Relation => type_manager
-                .get_relation_types(context.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-                .iter()
-                .map(|t| TypeAnnotation::Relation(*t))
-                .collect(),
-            EncodingKind::Attribute => type_manager
-                .get_attribute_types(context.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-                .iter()
-                .map(|t| TypeAnnotation::Attribute(*t))
-                .collect(),
-            EncodingKind::Role => type_manager
-                .get_role_types(context.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-                .iter()
-                .map(|t| TypeAnnotation::RoleType(*t))
-                .collect(),
+            EncodingKind::Entity => BTreeSet::from_mapped(type_manager.get_entity_types(context.snapshot)?),
+            EncodingKind::Relation => BTreeSet::from_mapped(type_manager.get_relation_types(context.snapshot)?),
+            EncodingKind::Attribute => BTreeSet::from_mapped(type_manager.get_attribute_types(context.snapshot)?),
+            EncodingKind::Role => BTreeSet::from_mapped(type_manager.get_role_types(context.snapshot)?),
         };
         graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
         Ok(())
@@ -676,18 +635,13 @@ impl UnaryConstraint for RoleName<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let role_types_opt = context
-            .type_manager
-            .get_roles_by_name(context.snapshot, self.name())
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+        let role_types_opt = context.type_manager.get_roles_by_name(context.snapshot, self.name())?;
         if let Some(role_types) = role_types_opt {
             let mut annotations = BTreeSet::new();
             for role_type in &*role_types {
                 annotations.insert(TypeAnnotation::RoleType(*role_type));
                 if !context.is_write_stage() {
-                    let subtypes = role_type
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)
-                        .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                    let subtypes = role_type.get_subtypes_transitive(context.snapshot, context.type_manager)?;
                     annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(*subtype)));
                 }
             }
@@ -724,14 +678,10 @@ impl UnaryConstraint for Value<Variable> {
         }?;
 
         let mut annotations = BTreeSet::new();
-        let attribute_types = context
-            .type_manager
-            .get_attribute_types(context.snapshot)
-            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+        let attribute_types = context.type_manager.get_attribute_types(context.snapshot)?;
         for attribute_type in attribute_types {
-            let attribute_value_type_opt = attribute_type
-                .get_value_type_without_source(context.snapshot, context.type_manager)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+            let attribute_value_type_opt =
+                attribute_type.get_value_type_without_source(context.snapshot, context.type_manager)?;
             if let Some(attribute_value_type) = attribute_value_type_opt {
                 if pattern_value_type == attribute_value_type {
                     annotations.insert(TypeAnnotation::Attribute(attribute_type));
@@ -780,8 +730,7 @@ impl UnaryConstraint for Comparison<Variable> {
         let attributes_lazy = LazyCell::new(|| {
             Ok(context
                 .type_manager
-                .get_attribute_types(context.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
+                .get_attribute_types(context.snapshot)?
                 .iter()
                 .map(|t| TypeAnnotation::Attribute(*t))
                 .collect())
@@ -884,9 +833,8 @@ impl BinaryConstraint for Has<Variable> {
             TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
-        collector.extend(
-            (owner.get_owns(context.snapshot, context.type_manager)?.iter())
-                .map(|owns| TypeAnnotation::Attribute(owns.attribute())),
+        collector.extend_mapped(
+            (owner.get_owns(context.snapshot, context.type_manager)?.iter()).map(|owns| owns.attribute()),
         );
         Ok(())
     }
@@ -901,10 +849,7 @@ impl BinaryConstraint for Has<Variable> {
             TypeAnnotation::Attribute(attribute) => attribute,
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
-        collector.extend(
-            (attribute.get_owner_types(context.snapshot, context.type_manager)?.keys())
-                .map(|owner| TypeAnnotation::from(*owner)),
-        );
+        collector.extend_mapped(attribute.get_owner_types(context.snapshot, context.type_manager)?.keys().cloned());
         Ok(())
     }
 }
@@ -952,16 +897,7 @@ impl BinaryConstraint for Owns<Variable> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        attribute
-            .get_owner_types(context.snapshot, context.type_manager)?
-            .keys()
-            .map(|owner| match owner {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
-            })
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend_mapped_ref(attribute.get_owner_types(context.snapshot, context.type_manager)?.keys());
         Ok(())
     }
 }
@@ -983,33 +919,12 @@ impl BinaryConstraint for Isa<Variable> {
     ) -> Result<(), Box<ConceptReadError>> {
         if !context.is_write_stage() && self.isa_kind() == IsaKind::Subtype {
             match left_type {
-                TypeAnnotation::Attribute(attribute) => {
-                    attribute
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Entity(entity) => {
-                    entity
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Entity(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Relation(relation) => {
-                    relation
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Relation(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::Attribute(attribute) => collector
+                    .extend_mapped_ref(&attribute.get_supertypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Entity(entity) => collector
+                    .extend_mapped_ref(&entity.get_supertypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Relation(relation) => collector
+                    .extend_mapped_ref(&relation.get_supertypes_transitive(context.snapshot, context.type_manager)?),
                 TypeAnnotation::RoleType(_) => {
                     // Add nothing to the collector -> it'll get pruned
                 }
@@ -1027,33 +942,12 @@ impl BinaryConstraint for Isa<Variable> {
     ) -> Result<(), Box<ConceptReadError>> {
         if !context.is_write_stage() && self.isa_kind() == IsaKind::Subtype {
             match right_type {
-                TypeAnnotation::Attribute(attribute) => {
-                    attribute
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Entity(entity) => {
-                    entity
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Entity(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Relation(relation) => {
-                    relation
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Relation(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::Attribute(attribute) => collector
+                    .extend_mapped_ref(&attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Entity(entity) => collector
+                    .extend_mapped_ref(&entity.get_subtypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Relation(relation) => collector
+                    .extend_mapped_ref(&relation.get_subtypes_transitive(context.snapshot, context.type_manager)?),
                 TypeAnnotation::RoleType(_) => {
                     // Add nothing to the collector -> it'll get pruned
                 }
@@ -1081,42 +975,14 @@ impl BinaryConstraint for Sub<Variable> {
     ) -> Result<(), Box<ConceptReadError>> {
         if self.sub_kind() == SubKind::Subtype {
             match left_type {
-                TypeAnnotation::Attribute(attribute) => {
-                    attribute
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|supertype| TypeAnnotation::Attribute(*supertype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Entity(entity) => {
-                    entity
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|supertype| TypeAnnotation::Entity(*supertype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Relation(relation) => {
-                    relation
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Relation(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_supertypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|supertype| TypeAnnotation::RoleType(*supertype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::Attribute(attribute) => collector
+                    .extend_mapped_ref(&attribute.get_supertypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Entity(entity) => collector
+                    .extend_mapped_ref(&entity.get_supertypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Relation(relation) => collector
+                    .extend_mapped_ref(&relation.get_supertypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::RoleType(role_type) => collector
+                    .extend_mapped_ref(&role_type.get_supertypes_transitive(context.snapshot, context.type_manager)?),
             }
             collector.insert(*left_type);
         } else {
@@ -1154,81 +1020,29 @@ impl BinaryConstraint for Sub<Variable> {
     ) -> Result<(), Box<ConceptReadError>> {
         if self.sub_kind() == SubKind::Subtype {
             match right_type {
-                TypeAnnotation::Attribute(attribute) => {
-                    attribute
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Entity(entity) => {
-                    entity
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Entity(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::Relation(relation) => {
-                    relation
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Relation(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
-                TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_subtypes_transitive(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
-                }
+                TypeAnnotation::Attribute(attribute) => collector
+                    .extend_mapped_ref(&attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Entity(entity) => collector
+                    .extend_mapped_ref(&entity.get_subtypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::Relation(relation) => collector
+                    .extend_mapped_ref(&relation.get_subtypes_transitive(context.snapshot, context.type_manager)?),
+                TypeAnnotation::RoleType(role_type) => collector
+                    .extend_mapped_ref(&role_type.get_subtypes_transitive(context.snapshot, context.type_manager)?),
             }
             collector.insert(*right_type);
         } else {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
-                    attribute
-                        .get_subtypes(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
+                    collector.extend_mapped_ref(&attribute.get_subtypes(context.snapshot, context.type_manager)?)
                 }
                 TypeAnnotation::Entity(entity) => {
-                    entity
-                        .get_subtypes(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Entity(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
+                    collector.extend_mapped_ref(&entity.get_subtypes(context.snapshot, context.type_manager)?);
                 }
                 TypeAnnotation::Relation(relation) => {
-                    relation
-                        .get_subtypes(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::Relation(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
+                    collector.extend_mapped_ref(&relation.get_subtypes(context.snapshot, context.type_manager)?)
                 }
                 TypeAnnotation::RoleType(role_type) => {
-                    role_type
-                        .get_subtypes(context.snapshot, context.type_manager)?
-                        .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(*subtype))
-                        .for_each(|subtype| {
-                            collector.insert(subtype);
-                        });
+                    collector.extend_mapped_ref(&role_type.get_subtypes(context.snapshot, context.type_manager)?)
                 }
             }
         }
@@ -1404,13 +1218,12 @@ impl BinaryConstraint for PlayerRoleEdge<'_> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        player
-            .get_plays(context.snapshot, context.type_manager)?
-            .iter()
-            .map(|plays| TypeAnnotation::RoleType(plays.role()))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend_mapped(
+            player
+                .get_plays(context.snapshot, context.type_manager)?
+                .iter()
+                .map(|plays| TypeAnnotation::RoleType(plays.role())),
+        );
         Ok(())
     }
 
@@ -1426,16 +1239,7 @@ impl BinaryConstraint for PlayerRoleEdge<'_> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        role_type
-            .get_player_types(context.snapshot, context.type_manager)?
-            .keys()
-            .map(|player| match player {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
-            })
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend_mapped_ref(role_type.get_player_types(context.snapshot, context.type_manager)?.keys());
         Ok(())
     }
 }
@@ -1462,13 +1266,8 @@ impl BinaryConstraint for Plays<Variable> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        player
-            .get_plays(context.snapshot, context.type_manager)?
-            .iter()
-            .map(|plays| TypeAnnotation::RoleType(plays.role()))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector
+            .extend_mapped(player.get_plays(context.snapshot, context.type_manager)?.iter().map(|plays| plays.role()));
         Ok(())
     }
 
@@ -1484,16 +1283,7 @@ impl BinaryConstraint for Plays<Variable> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        role_type
-            .get_player_types(context.snapshot, context.type_manager)?
-            .keys()
-            .map(|player| match player {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
-            })
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend_mapped_ref(role_type.get_player_types(context.snapshot, context.type_manager)?.keys());
         Ok(())
     }
 }
@@ -1573,13 +1363,9 @@ impl BinaryConstraint for Relates<Variable> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        relation
-            .get_relates(context.snapshot, context.type_manager)?
-            .iter()
-            .map(|relates| TypeAnnotation::RoleType(relates.role()))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend_mapped(
+            relation.get_relates(context.snapshot, context.type_manager)?.iter().map(|relates| relates.role()),
+        );
         Ok(())
     }
 
@@ -1595,13 +1381,7 @@ impl BinaryConstraint for Relates<Variable> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        role_type
-            .get_relation_types(context.snapshot, context.type_manager)?
-            .keys()
-            .map(|relation_type| TypeAnnotation::Relation(*relation_type))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend_mapped_ref(role_type.get_relation_types(context.snapshot, context.type_manager)?.keys());
         Ok(())
     }
 }
