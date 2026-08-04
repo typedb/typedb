@@ -102,8 +102,7 @@ fn infer_types_in_negations_and_optionals_then_flatten<'conj>(
     }
     let (flattened_graph, disjunctions) = graph.flatten_graph();
     disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction.into_iter()).try_for_each(|nested| {
-        infer_types_in_negations_and_optionals_then_flatten(ctx, nested, type_inference_mode, flattened_graphs)?;
-        Ok(())
+        infer_types_in_negations_and_optionals_then_flatten(ctx, nested, type_inference_mode, flattened_graphs)
     })?;
     flattened_graphs.insert(flattened_graph.conjunction.scope_id(), flattened_graph);
     Ok(())
