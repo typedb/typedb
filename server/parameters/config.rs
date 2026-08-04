@@ -127,7 +127,7 @@ pub struct StorageConfig {
     #[serde(default)]
     pub rocksdb: RocksDbConfig,
     #[serde(default)]
-    pub compaction: CompactionConfig,
+    pub cleanup: CleanupConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -156,7 +156,7 @@ const fn default_rocksdb_write_buffers_limit() -> ByteSize {
 #[derive(Default, Clone, Debug, Deserialize)]
 #[serde(tag = "strategy")]
 #[serde(rename_all = "kebab-case")]
-pub enum CompactionConfig {
+pub enum CleanupConfig {
     #[default]
     Disabled,
     Eager,
