@@ -7,38 +7,40 @@
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use answer::{Thing, variable_value::VariableValue};
-use compiler::annotation::expression::{
-    compiled_expression::ExecutableExpression,
-    instructions::{
-        ExpressionEvaluationError,
-        binary::{
-            Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
-            MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
-        },
-        cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
-            CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDecimal, CastRightIntegerToDouble,
-            CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDecimal, CastUnaryIntegerToDouble, ImplicitCast,
-        },
-        list_operations::{ListConstructor, ListIndex, ListIndexRange},
-        load::{LoadConstant, LoadVariable},
-        op_codes::ExpressionOpCode,
-        operators::{
-            OpDateSubtractDate, OpDateTimeAddDuration, OpDateTimeSubtractDate, OpDateTimeSubtractDateTime,
-            OpDateTimeSubtractDuration, OpDateTimeTZAddDuration, OpDateTimeTZSubtractDateTimeTZ,
-            OpDateTimeTZSubtractDuration, OpDecimalAddDecimal, OpDecimalMultiplyDecimal, OpDecimalSubtractDecimal,
-            OpDoubleAddDouble, OpDoubleDivideDouble, OpDoubleModuloDouble, OpDoubleMultiplyDouble, OpDoublePowerDouble,
-            OpDoubleSubtractDouble, OpDurationAddDuration, OpDurationSubtractDuration, OpIntegerAddInteger,
-            OpIntegerDivideInteger, OpIntegerModuloInteger, OpIntegerMultiplyInteger, OpIntegerPowerInteger,
-            OpIntegerSubtractInteger, OpStringAddString,
-        },
-        unary::{
-            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-            MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
+use compiler::{
+    annotation::expression::{
+        compiled_expression::ExecutableExpression,
+        instructions::{
+            ExpressionEvaluationError,
+            binary::{
+                Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
+                MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
+            },
+            cast::{
+                CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
+                CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDecimal, CastRightIntegerToDouble,
+                CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDecimal, CastUnaryIntegerToDouble, ImplicitCast,
+            },
+            list_operations::{ListConstructor, ListIndex, ListIndexRange},
+            load::{LoadConstant, LoadVariable},
+            op_codes::ExpressionOpCode,
+            operators::{
+                OpDateSubtractDate, OpDateTimeAddDuration, OpDateTimeSubtractDate, OpDateTimeSubtractDateTime,
+                OpDateTimeSubtractDuration, OpDateTimeTZAddDuration, OpDateTimeTZSubtractDateTimeTZ,
+                OpDateTimeTZSubtractDuration, OpDecimalAddDecimal, OpDecimalMultiplyDecimal, OpDecimalSubtractDecimal,
+                OpDoubleAddDouble, OpDoubleDivideDouble, OpDoubleModuloDouble, OpDoubleMultiplyDouble,
+                OpDoublePowerDouble, OpDoubleSubtractDouble, OpDurationAddDuration, OpDurationSubtractDuration,
+                OpIntegerAddInteger, OpIntegerDivideInteger, OpIntegerModuloInteger, OpIntegerMultiplyInteger,
+                OpIntegerPowerInteger, OpIntegerSubtractInteger, OpStringAddString,
+            },
+            unary::{
+                LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
+                MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
+            },
         },
     },
+    for_each_opcode,
 };
-use compiler::for_each_opcode;
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use resource::profile::StorageCounters;
@@ -187,7 +189,6 @@ fn evaluate_instruction(
     }
     for_each_opcode!(impl_evaluate_instruction)
 }
-
 
 pub trait ExpressionEvaluation {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
