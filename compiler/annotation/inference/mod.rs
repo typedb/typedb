@@ -133,3 +133,28 @@ impl<T: Ord> FromIteratorMappedOperations<T> for BTreeSet<T> {}
 impl<T: Ord> ExtendMappedOperations<T> for BTreeSet<T> {}
 impl<T> FromIteratorMappedOperations<T> for Vec<T> {}
 impl<T> ExtendMappedOperations<T> for Vec<T> {}
+
+pub(crate) trait RetainAndContainExt<T> {
+    fn contains_ext(&self, item: &T) -> bool;
+    fn retain_intersection<S: RetainAndContainExt<T>>(&mut self, other: &S);
+}
+
+impl<K: Ord, V> RetainAndContainExt<K> for BTreeMap<K, V> {
+    fn contains_ext(&self, item: &K) -> bool {
+        self.contains_key(item)
+    }
+
+    fn retain_intersection<S: RetainAndContainExt<K>>(&mut self, other: &S) {
+        self.retain(|x, _| other.contains_ext(x))
+    }
+}
+
+impl<K: Ord> RetainAndContainExt<K> for BTreeSet<K> {
+    fn contains_ext(&self, item: &K) -> bool {
+        self.contains(item)
+    }
+
+    fn retain_intersection<S: RetainAndContainExt<K>>(&mut self, other: &S) {
+        self.retain(|x| other.contains_ext(x))
+    }
+}
