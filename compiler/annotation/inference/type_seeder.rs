@@ -38,7 +38,7 @@ use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     inference::{
-        SetMappedOperations, VertexAnnotations,
+        ExtendMappedOperations, FromIteratorMappedOperations, VertexAnnotations,
         match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
