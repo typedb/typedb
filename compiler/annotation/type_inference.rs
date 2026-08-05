@@ -124,7 +124,7 @@ pub mod tests {
         let (with_no_cache, with_local_cache, _with_schema_cache) = [
             FunctionID::Preamble(0),
             FunctionID::Preamble(0),
-            FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
+            FunctionID::Schema(DefinitionKey::new(Prefix::DefinitionFunction, DefinitionID::new(0))),
         ]
         .iter()
         .map(|function_id| {

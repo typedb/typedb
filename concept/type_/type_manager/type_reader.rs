@@ -109,7 +109,7 @@ impl TypeReader {
         let bytes = snapshot
             .get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED)
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
-        Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
+        Ok(bytes.map(|value| DefinitionKey::decode(Bytes::Array(value))))
     }
 
     pub(crate) fn get_struct_definition(
@@ -137,7 +137,7 @@ impl TypeReader {
                 StorageCounters::DISABLED,
             )
             .collect_cloned_hashmap(|key, value| {
-                (DefinitionKey::new(Bytes::Array(key.bytes().into())), StructDefinition::from_bytes(value))
+                (DefinitionKey::decode(Bytes::Array(key.bytes().into())), StructDefinition::from_bytes(value))
             })
             .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))
     }

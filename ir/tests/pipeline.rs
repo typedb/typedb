@@ -65,7 +65,7 @@ fn build_with_functions() {
         (VariableCategory::Value, VariableOptionality::Optional),
     ];
     let function_signature = FunctionSignature::new(
-        FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionStruct, DefinitionID::build(1000))),
+        FunctionID::Schema(DefinitionKey::new(Prefix::DefinitionStruct, DefinitionID::new(1000))),
         function_argument_categories,
         function_return_categories,
         false,

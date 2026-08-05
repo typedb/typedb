@@ -45,7 +45,7 @@ fn define_struct<Snapshot: WritableSnapshot>(
 fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<DefinitionKey> {
     let index_key = NameToStructDefinitionIndex::build(name.as_str());
     let bytes = snapshot.get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED).unwrap();
-    bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
+    bytes.map(|value| DefinitionKey::decode(Bytes::Array(value)))
 }
 
 fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey) -> StructDefinition {

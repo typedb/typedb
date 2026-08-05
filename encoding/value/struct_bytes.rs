@@ -130,9 +130,8 @@ fn append_length_as_vle(len: usize, buf: &mut Vec<u8>) -> Result<(), EncodingErr
 
 // Decode
 fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<StructValue<'static>, EncodingError> {
-    let definition_id_u16 =
-        DefinitionID::build(u16::from_be_bytes(read_bytes_increment_offset::<{ DefinitionID::LENGTH }>(offset, buf)?));
-    let definition_key = DefinitionKey::build(StructDefinition::PREFIX, definition_id_u16);
+    let definition_id = DefinitionID::decode(read_bytes_increment_offset::<{ DefinitionID::LENGTH }>(offset, buf)?);
+    let definition_key = DefinitionKey::new(StructDefinition::PREFIX, definition_id);
     let n_fields = read_vle_increment_offset(offset, buf)?;
     let mut fields: HashMap<StructFieldIDUInt, Value<'static>> = HashMap::new();
     for _ in 0..n_fields {
@@ -285,11 +284,11 @@ pub mod test {
             (Value::String(Cow::Owned(String::from_utf8(vec![b'X'; 512]).unwrap())), Value::Integer(0xf00d)), // Bigger than 256 characters
         ];
         for (string_value, integer_value) in test_values {
-            let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
+            let nested_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));
             let nested_fields = HashMap::from([(0, string_value), (1, integer_value)]);
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
-            let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
+            let struct_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));
             let struct_fields = HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct.clone())))]);
             let struct_value = StructValue::new(struct_key, struct_fields);
 

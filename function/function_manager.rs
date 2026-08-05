@@ -146,7 +146,7 @@ impl FunctionManager {
         for (function, definition) in zip(functions.iter(), definitions) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
-            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
+            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(&definition_key.bytes()));
             snapshot.put_val(
                 definition_key.clone().into_storage_key().into_owned_array(),
                 FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
@@ -220,7 +220,7 @@ impl FunctionManager {
         for (function, definition) in zip(functions.iter(), [definition].iter()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
-            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
+            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(&definition_key.bytes()));
             snapshot.put_val(
                 definition_key.clone().into_storage_key().into_owned_array(),
                 FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
@@ -354,7 +354,7 @@ impl FunctionReader {
             )
             .collect_cloned_vec(|key, value| {
                 SchemaFunction::build(
-                    DefinitionKey::new(Bytes::Reference(key.bytes()).into_owned()),
+                    DefinitionKey::decode(Bytes::Reference(key.bytes()).into_owned()),
                     FunctionDefinition::new(Bytes::Reference(value).into_owned()),
                 )
                 .unwrap()
@@ -370,7 +370,7 @@ impl FunctionReader {
         let bytes_opt = snapshot
             .get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED)
             .map_err(|source| FunctionReadError::FunctionRetrieval { source })?;
-        Ok(bytes_opt.map(|bytes| DefinitionKey::new(Bytes::Array(bytes))))
+        Ok(bytes_opt.map(|bytes| DefinitionKey::decode(Bytes::Array(bytes))))
     }
 
     pub(crate) fn get_function(
@@ -660,7 +660,7 @@ pub mod tests {
         "];
         let expected_name = "cat_names";
 
-        let expected_function_id = DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0));
+        let expected_function_id = DefinitionKey::new(Prefix::DefinitionFunction, DefinitionID::new(0));
         let expected_signature = FunctionSignature::new(
             FunctionID::Schema(expected_function_id.clone()),
             vec![VariableCategory::Object],

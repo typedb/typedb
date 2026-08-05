@@ -276,7 +276,7 @@ impl FunctionProperty {
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let function_id = DefinitionKey::new(bytes.clone().into_range(Self::range_function_id()));
+        let function_id = DefinitionKey::decode(bytes.clone().into_range(Self::range_function_id()));
         let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
         let suffix = ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]);
         Self { function_id, infix, suffix }

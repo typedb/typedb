@@ -6,7 +6,7 @@
 
 use std::{fmt, ops::Range};
 
-use bytes::{Bytes, byte_array::ByteArray};
+use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
@@ -21,7 +21,8 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DefinitionKey {
-    bytes: ByteArray<BUFFER_KEY_INLINE>,
+    prefix: Prefix,
+    definition_id: DefinitionID,
 }
 
 impl DefinitionKey {
@@ -33,20 +34,20 @@ impl DefinitionKey {
     pub(crate) const RANGE_DEFINITION_ID: Range<usize> =
         Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + DefinitionID::LENGTH;
 
-    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(prefix: Prefix, definition_id: DefinitionID) -> Self {
+        Self { prefix, definition_id }
+    }
+
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        Self { bytes: ByteArray::copy(&bytes) }
+        Self {
+            prefix: Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])).unwrap(),
+            definition_id: DefinitionID::decode(bytes[Self::RANGE_DEFINITION_ID].try_into().unwrap()),
+        }
     }
 
     pub fn definition_id(&self) -> DefinitionID {
-        DefinitionID::new(self.bytes[Self::RANGE_DEFINITION_ID].try_into().unwrap())
-    }
-
-    pub fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH);
-        array[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
-        array[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
-        Self { bytes: array }
+        self.definition_id
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { DefinitionKey::LENGTH_PREFIX }> {
@@ -57,14 +58,17 @@ impl DefinitionKey {
         )
     }
 
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        let mut array = [0; 3];
+        array[Self::INDEX_PREFIX] = self.prefix.prefix_id().byte;
+        array[Self::RANGE_DEFINITION_ID].copy_from_slice(&self.definition_id.bytes());
+        array
     }
 }
 
 impl AsBytes<BUFFER_KEY_INLINE> for DefinitionKey {
     fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
-        Bytes::Array(self.bytes)
+        Bytes::Array(ByteArray::copy(&self.bytes()))
     }
 }
 
@@ -78,38 +82,33 @@ impl Prefixed<BUFFER_KEY_INLINE> for DefinitionKey {}
 
 impl fmt::Display for DefinitionKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // we'll just arbitrarily write it out as an u64 in Big Endian
-        debug_assert!(self.bytes.len() < (u64::BITS / 8) as usize);
-        let mut bytes = [0u8; (u64::BITS / 8) as usize];
-        bytes[0..self.bytes.len()].copy_from_slice(&self.bytes);
-        let as_u64 = u64::from_be_bytes(bytes);
-        write!(f, "{}", as_u64)
+        write!(f, "{:?}", &HexBytesFormatter::borrowed(&self.bytes()))
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DefinitionID {
-    bytes: [u8; DefinitionID::LENGTH],
+    id: u16,
 }
 
 impl DefinitionID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<DefinitionIDUInt>();
 
-    pub fn new(bytes: [u8; DefinitionID::LENGTH]) -> DefinitionID {
-        DefinitionID { bytes }
+    pub fn decode(bytes: [u8; Self::LENGTH]) -> DefinitionID {
+        DefinitionID { id: DefinitionIDUInt::from_be_bytes(bytes) }
     }
 
-    pub fn build(id: DefinitionIDUInt) -> Self {
+    pub fn new(id: DefinitionIDUInt) -> Self {
         debug_assert_eq!(std::mem::size_of_val(&id), DefinitionID::LENGTH);
-        DefinitionID { bytes: id.to_be_bytes() }
+        DefinitionID { id }
     }
 
     pub fn as_uint(&self) -> DefinitionIDUInt {
-        DefinitionIDUInt::from_be_bytes(self.bytes)
+        self.id
     }
 
     pub fn bytes(&self) -> [u8; DefinitionID::LENGTH] {
-        self.bytes
+        self.id.to_be_bytes()
     }
 }
 
@@ -118,7 +117,7 @@ impl Serialize for DefinitionKey {
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(&self.bytes)
+        serializer.serialize_bytes(&self.bytes())
     }
 }
 
@@ -139,7 +138,7 @@ impl<'de> Deserialize<'de> for DefinitionKey {
             where
                 E: Error,
             {
-                Ok(DefinitionKey { bytes: ByteArray::copy(v) })
+                Ok(DefinitionKey::decode(Bytes::Reference(v)))
             }
         }
 
