@@ -15,67 +15,6 @@ use ir::pattern::Vertex;
 pub mod match_inference;
 pub mod type_seeder;
 
-pub(crate) trait SetMappedOperations {
-    type Item;
-
-    fn from_into<FROM>(iter: impl IntoIterator<Item = FROM>) -> Self
-    where
-        Self::Item: From<FROM>;
-
-    fn from_into_ref<'a, FROM>(iter: impl IntoIterator<Item = &'a FROM>) -> Self
-    where
-        FROM: Copy + 'a,
-        Self::Item: From<FROM>;
-
-    fn extend_into<FROM>(&mut self, iter: impl IntoIterator<Item = FROM>)
-    where
-        Self::Item: From<FROM>;
-
-    fn extend_into_ref<'a, FROM>(&mut self, iter: impl IntoIterator<Item = &'a FROM>)
-    where
-        FROM: Copy + 'a,
-        Self::Item: From<FROM>;
-
-    // fn extend_mapped_ref_into<'a, FROM, TO>(&mut self, iter: impl IntoIterator<Item = &'a FROM>, f: impl Fn(&'a FROM) -> TO)
-    // where
-    //     FROM: Copy + 'a,
-    //     Self::Item: From<TO>;
-}
-
-impl<T: Ord> SetMappedOperations for BTreeSet<T> {
-    type Item = T;
-
-    fn from_into<FROM>(iter: impl IntoIterator<Item = FROM>) -> Self
-    where
-        Self::Item: From<FROM>,
-    {
-        BTreeSet::from_iter(iter.into_iter().map(From::from))
-    }
-
-    fn from_into_ref<'a, FROM>(iter: impl IntoIterator<Item = &'a FROM>) -> Self
-    where
-        FROM: Copy + 'a,
-        Self::Item: From<FROM>,
-    {
-        BTreeSet::from_iter(iter.into_iter().cloned().map(From::from))
-    }
-
-    fn extend_into<FROM>(&mut self, iter: impl IntoIterator<Item = FROM>)
-    where
-        Self::Item: From<FROM>,
-    {
-        self.extend(iter.into_iter().map(From::from))
-    }
-
-    fn extend_into_ref<'a, FROM>(&mut self, iter: impl IntoIterator<Item = &'a FROM>)
-    where
-        FROM: Copy + 'a,
-        Self::Item: From<FROM>,
-    {
-        self.extend(iter.into_iter().cloned().map(From::from))
-    }
-}
-
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
     annotations: BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
@@ -142,5 +81,66 @@ where
 {
     fn from(t: T) -> Self {
         Self { annotations: t.into() }
+    }
+}
+
+pub(crate) trait SetMappedOperations {
+    type Item;
+
+    fn from_into<FROM>(iter: impl IntoIterator<Item = FROM>) -> Self
+    where
+        Self::Item: From<FROM>;
+
+    fn from_into_ref<'a, FROM>(iter: impl IntoIterator<Item = &'a FROM>) -> Self
+    where
+        FROM: Copy + 'a,
+        Self::Item: From<FROM>;
+
+    fn extend_into<FROM>(&mut self, iter: impl IntoIterator<Item = FROM>)
+    where
+        Self::Item: From<FROM>;
+
+    fn extend_into_ref<'a, FROM>(&mut self, iter: impl IntoIterator<Item = &'a FROM>)
+    where
+        FROM: Copy + 'a,
+        Self::Item: From<FROM>;
+
+    // fn extend_mapped_ref_into<'a, FROM, TO>(&mut self, iter: impl IntoIterator<Item = &'a FROM>, f: impl Fn(&'a FROM) -> TO)
+    // where
+    //     FROM: Copy + 'a,
+    //     Self::Item: From<TO>;
+}
+
+impl<T: Ord> SetMappedOperations for BTreeSet<T> {
+    type Item = T;
+
+    fn from_into<FROM>(iter: impl IntoIterator<Item = FROM>) -> Self
+    where
+        Self::Item: From<FROM>,
+    {
+        BTreeSet::from_iter(iter.into_iter().map(From::from))
+    }
+
+    fn from_into_ref<'a, FROM>(iter: impl IntoIterator<Item = &'a FROM>) -> Self
+    where
+        FROM: Copy + 'a,
+        Self::Item: From<FROM>,
+    {
+        BTreeSet::from_iter(iter.into_iter().cloned().map(From::from))
+    }
+
+    fn extend_into<FROM>(&mut self, iter: impl IntoIterator<Item = FROM>)
+    where
+        Self::Item: From<FROM>,
+    {
+        self.extend(iter.into_iter().map(From::from))
+    }
+
+    fn extend_into_ref<'a, FROM>(&mut self, iter: impl IntoIterator<Item = &'a FROM>)
+    where
+        FROM: Copy + 'a,
+        Self::Item: From<FROM>,
+    {
+        self.extend(iter.into_iter().cloned().map(From::from))
     }
 }
