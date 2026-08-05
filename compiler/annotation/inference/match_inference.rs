@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     PipelineAnnotationContext, TypeInferenceError,
-    inference::{VertexAnnotations, type_seeder::TypeGraphSeedingContext},
+    inference::{RetainAndContainExt, VertexAnnotations, type_seeder::TypeGraphSeedingContext},
     pipeline::RunningVariableAnnotations,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
@@ -345,13 +345,13 @@ impl<'this> TypeInferenceEdge<'this> {
         {
             let left_vertex_annotations = vertices.get_mut(&self.left).unwrap();
             let size_before = left_vertex_annotations.len();
-            left_vertex_annotations.retain(|k| self.left_to_right.contains_key(k));
+            left_vertex_annotations.retain_intersection(&self.left_to_right);
             is_modified = is_modified || size_before != left_vertex_annotations.len();
         };
         {
             let right_vertex_annotations = vertices.get_mut(&self.right).unwrap();
             let size_before = right_vertex_annotations.len();
-            right_vertex_annotations.retain(|k| self.right_to_left.contains_key(k));
+            right_vertex_annotations.retain_intersection(&self.right_to_left);
             is_modified = is_modified || size_before != right_vertex_annotations.len();
         };
         is_modified
@@ -364,14 +364,14 @@ impl<'this> TypeInferenceEdge<'this> {
             left_to_right.iter().filter(|(left_type, _)| !left_vertex_annotations.contains(*left_type)).for_each(
                 |(left_type, right_keys)| Self::remove_type_from_values_of(left_type, right_keys, right_to_left),
             );
-            left_to_right.retain(|left_type, _| left_vertex_annotations.contains(left_type));
+            left_to_right.retain_intersection(left_vertex_annotations);
         };
         {
             let right_vertex_annotations = vertices.get(&self.right).unwrap();
             right_to_left.iter().filter(|(right_type, _)| !right_vertex_annotations.contains(*right_type)).for_each(
                 |(right_type, left_keys)| Self::remove_type_from_values_of(right_type, left_keys, left_to_right),
             );
-            right_to_left.retain(|left_type, _| right_vertex_annotations.contains(left_type));
+            right_to_left.retain_intersection(right_vertex_annotations);
         };
     }
 }
@@ -389,7 +389,7 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
             let TypeInferenceGraph { conjunction, vertices: nested_vertices, .. } = nested_graph;
             for vertex in Self::branch_variables_affected_by_parent(disjunction_pattern, conjunction) {
                 debug_assert!(parent_vertices.contains_key(&vertex) && nested_vertices.contains_key(&vertex));
-                nested_vertices.get_mut(&vertex).unwrap().retain(|type_| parent_vertices[&vertex].contains(type_))
+                nested_vertices.get_mut(&vertex).unwrap().retain_intersection(parent_vertices[&vertex])
             }
             nested_graph.prune_constraints_from_vertices();
         }
