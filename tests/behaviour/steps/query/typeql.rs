@@ -93,12 +93,13 @@ fn execute_read_query(
     source_query: &str,
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
+        let parsed_pipeline = query.into_structure().into_pipeline();
         let pipeline = tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            &query.into_structure().into_pipeline(),
+            &parsed_pipeline,
             given_rows,
             source_query,
         )?;
@@ -155,12 +156,13 @@ fn execute_write_query(
                                            query_manager,
                                            _db,
                                            _opts| {
+        let parsed_pipeline = query.into_structure().into_pipeline();
         let pipeline_result = query_manager.prepare_write_pipeline(
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
             &type_manager,
             thing_manager.clone(),
             function_manager.clone(),
-            &query.into_structure().into_pipeline(),
+            &parsed_pipeline,
             given_rows,
             source_query,
         );
@@ -229,13 +231,14 @@ fn execute_analyze(
     source_query: &str,
 ) -> Result<AnalysedQuery, BehaviourTestExecutionError> {
     with_read_tx!(context, |tx| {
+        let parsed_pipeline = query.into_structure().into_pipeline();
         tx.query_manager
             .analyse(
                 tx.snapshot.clone(),
                 &tx.type_manager,
-                tx.thing_manager.clone(),
                 &tx.function_manager,
-                &query.into_structure().into_pipeline(),
+                &tx.thing_manager,
+                &parsed_pipeline,
                 source_query,
             )
             .map_err(|source| BehaviourTestExecutionError::Query(*source))
@@ -282,7 +285,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             &tx.type_manager,
             &tx.thing_manager,
             &tx.function_manager,
-            typeql_schema,
+            &typeql_schema,
             query,
         );
         if let Either::Right(_err) = may_error.check_logic(result) {

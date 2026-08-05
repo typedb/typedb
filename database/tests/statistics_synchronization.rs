@@ -102,7 +102,7 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            pipeline,
+            Arc::new(pipeline),
             None::<GivenRowsSimple>,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),

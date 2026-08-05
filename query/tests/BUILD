@@ -65,6 +65,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_query_cache",
+    crate_root = "query_cache.rs",
+    srcs = ["query_cache.rs"],
+    deps = deps,
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [

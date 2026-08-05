@@ -64,7 +64,7 @@ fn run_write(tx: TransactionWrite<WALClient>, query: &str) -> TransactionWrite<W
     let (tx, result) = execute_write_query_in_write(
         tx,
         QueryOptions::default_grpc(),
-        pipeline,
+        Arc::new(pipeline),
         None::<GivenRowsSimple>,
         query.to_string(),
         ExecutionInterrupt::new_uninterruptible(),

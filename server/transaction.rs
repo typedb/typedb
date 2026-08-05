@@ -12,6 +12,7 @@ use database::{
 };
 use diagnostics::metrics::LoadKind;
 use options::TransactionOptions;
+use query::query_manager::QueryManager;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
 use tokio::task::spawn_blocking;
@@ -69,6 +70,10 @@ impl Transaction {
 
     pub fn database_name(&self) -> Arc<str> {
         with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
+    }
+
+    pub fn query_manager(&self) -> Arc<QueryManager> {
+        with_readable_transaction!(self, |transaction| { transaction.query_manager.clone() })
     }
 
     pub fn close(self) {
