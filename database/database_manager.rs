@@ -6,12 +6,13 @@
 
 use std::{
     collections::HashMap,
-    fs, io,
+    fs,
     path::{Path, PathBuf},
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 use diagnostics::diagnostics_manager::DiagnosticsManager;
+pub(crate) use durability::sync_directory;
 use options::byte_size::ByteSize;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
@@ -290,10 +291,6 @@ impl DatabaseManager {
         }
         Ok(())
     }
-}
-
-pub(crate) fn sync_directory(directory: &Path) -> io::Result<()> {
-    fs::File::open(directory)?.sync_all()
 }
 
 pub(crate) fn file_name_lossy(path: &Path) -> String {
