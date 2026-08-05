@@ -38,7 +38,7 @@ use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     inference::{
-        ExtendMappedOperations, FromIteratorMappedOperations, VertexAnnotations,
+        ExtendMappedOperations, FromIteratorMappedOperations, RetainAndContainExt, VertexAnnotations,
         match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
@@ -800,7 +800,7 @@ trait BinaryConstraint {
         for left_type in left_types {
             let mut right_annotations = BTreeSet::new();
             self.annotate_left_to_right_for_type(context, left_type, &mut right_annotations)?;
-            right_annotations.retain(|type_| allowed_right_types.contains(type_));
+            right_annotations.retain_intersection(allowed_right_types);
             context.may_assert_no_abstract(self.right(), &right_annotations);
             if !right_annotations.is_empty() {
                 left_to_right.insert(*left_type, right_annotations);
@@ -821,7 +821,7 @@ trait BinaryConstraint {
         for right_type in right_types {
             let mut left_annotations = BTreeSet::new();
             self.annotate_right_to_left_for_type(context, right_type, &mut left_annotations)?;
-            left_annotations.retain(|type_| allowed_left_types.contains(type_));
+            left_annotations.retain_intersection(allowed_left_types);
             context.may_assert_no_abstract(self.left(), &left_annotations);
             if !left_annotations.is_empty() {
                 right_to_left.insert(*right_type, left_annotations);
