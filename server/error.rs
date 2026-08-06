@@ -255,12 +255,14 @@ impl ServerStateError for LocalServerStateError {
                     TypeCacheCreateError::SnapshotIterate { .. } => System,
                 },
                 SchemaCommitError::StatisticsError { .. } => System,
+                SchemaCommitError::DurabilityError { .. } => System,
             },
             Self::DatabaseDataCommitFailed { typedb_source } => match typedb_source {
                 DataCommitError::ConceptWriteErrors { write_errors, .. } => concept_writes_origin(write_errors.iter()),
                 DataCommitError::ConceptWriteErrorsFirst { typedb_source, .. } => concept_write_origin(typedb_source),
                 DataCommitError::SnapshotError { typedb_source, .. } => snapshot_commit_origin(typedb_source),
                 DataCommitError::SnapshotInUse { .. } => Internal,
+                DataCommitError::DurabilityError { .. } => System,
             },
             Self::DatabaseImport { typedb_source } => match typedb_source {
                 DatabaseImportServiceError::ConceptDecode { .. }

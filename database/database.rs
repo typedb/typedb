@@ -5,9 +5,9 @@
  */
 
 use std::{
-    collections::VecDeque,
+    collections::{BTreeMap, VecDeque},
     ffi::OsString,
-    fmt, fs, io,
+    fmt, fs, io, mem,
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, MutexGuard, RwLock, TryLockError,
@@ -17,7 +17,10 @@ use std::{
 };
 
 use concept::{
-    thing::statistics::{Statistics, StatisticsError},
+    thing::{
+        cleanup::CleanupRecord,
+        statistics::{Statistics, StatisticsError},
+    },
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -43,8 +46,10 @@ use encoding::{
 use error::typedb_error;
 use fail_point::{UNFINISHED_CHECKPOINT, fail_point};
 use function::{FunctionError, function_cache::FunctionCache};
+use itertools::Itertools;
+use options::DatabaseCleanupStrategy;
 use query::query_cache::QueryCache;
-use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
+use resource::constants::database::{CHECKPOINT_INTERVAL, CLEANUP_WAKEUP_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
@@ -89,9 +94,12 @@ pub struct Database<D> {
 
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
+    pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
+    _cleanup_worker: IntervalRunner,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -247,10 +255,10 @@ impl<D: DurabilityClient> Database<D> {
         &self,
         open_sequence_number: DurabilitySequenceNumber,
         snapshot_id: SnapshotId,
-    ) -> Result<bool, DatabaseOpenError> {
+    ) -> Result<bool, Box<DatabaseOpenError>> {
         self.storage
             .commit_record_exists(open_sequence_number, snapshot_id)
-            .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })
+            .map_err(|typedb_source| Box::new(DatabaseOpenError::DurabilityClientRead { typedb_source }))
     }
 }
 
@@ -259,7 +267,8 @@ impl Database<WALClient> {
         path: &Path,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-    ) -> Result<Database<WALClient>, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<Database<WALClient>, Box<DatabaseOpenError>> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
@@ -267,9 +276,9 @@ impl Database<WALClient> {
         let wal_metrics = diagnostics_manager.wal_metrics(name, DatabaseManager::is_internal_database(name));
 
         if path.exists() {
-            Self::load(path, name, wal_metrics, rocks_resources)
+            Self::load(path, name, wal_metrics, rocks_resources, cleanup_strategy)
         } else {
-            Self::create(path, name, wal_metrics, rocks_resources)
+            Self::create(path, name, wal_metrics, rocks_resources, cleanup_strategy)
         }
     }
 
@@ -278,7 +287,8 @@ impl Database<WALClient> {
         name: impl AsRef<str>,
         wal_metrics: FsyncMetrics,
         rocks_resources: &RocksResources,
-    ) -> Result<Database<WALClient>, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<Database<WALClient>, Box<DatabaseOpenError>> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
         };
@@ -290,6 +300,7 @@ impl Database<WALClient> {
         let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
+        wal_client.register_record_type::<CleanupRecord>();
 
         let storage = Arc::new(
             MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
@@ -326,7 +337,12 @@ impl Database<WALClient> {
             schema_txn_lock.clone(),
             query_cache.clone(),
         );
+
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
+
+        let _cleanup_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>::default();
+        let cleanup_fn =
+            make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), _cleanup_queue.clone(), cleanup_strategy);
 
         Ok(Database::<WALClient> {
             name: Arc::<str>::from(name),
@@ -337,9 +353,11 @@ impl Database<WALClient> {
             thing_vertex_generator,
             schema,
             query_cache,
+            _cleanup_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
+            _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
         })
     }
 
@@ -348,7 +366,8 @@ impl Database<WALClient> {
         name: impl AsRef<str>,
         wal_metrics: FsyncMetrics,
         rocks_resources: &RocksResources,
-    ) -> Result<Database<WALClient>, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<Database<WALClient>, Box<DatabaseOpenError>> {
         use DatabaseOpenError::{
             CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
             StorageOpen, TypeCacheInitialise, WALOpen,
@@ -366,15 +385,16 @@ impl Database<WALClient> {
         let wal = match WAL::load(path, wal_metrics) {
             Ok(wal) => wal,
             Err(DurabilityServiceError::WAL { source: WALError::LoadDirectoryMissing { .. } }) => {
-                return Err(NotADatabase { name: name.to_owned() });
+                return Err(Box::new(NotADatabase { name: name.to_owned() }));
             }
-            Err(source) => return Err(WALOpen { source }),
+            Err(source) => return Err(Box::new(WALOpen { source })),
         };
 
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
+        wal_client.register_record_type::<CleanupRecord>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
@@ -428,9 +448,12 @@ impl Database<WALClient> {
 
         let checkpoint_sequence_number = match checkpoint {
             None => SequenceNumber::MIN,
-            Some(checkpoint) => checkpoint
-                .read_sequence_number()
-                .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?,
+            Some(checkpoint) => {
+                checkpoint
+                    .read_metadata()
+                    .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?
+                    .watermark
+            }
         };
 
         let query_cache = Arc::new(QueryCache::new());
@@ -444,6 +467,16 @@ impl Database<WALClient> {
         let checkpoint_fn =
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
+        let _cleanup_queue = Arc::new(RwLock::new(
+            storage
+                .durability()
+                .iter_type_from(storage.earliest_uncleaned())
+                .and_then(Itertools::try_collect)
+                .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?,
+        ));
+        let cleanup_fn =
+            make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), _cleanup_queue.clone(), cleanup_strategy);
+
         let database = Database::<WALClient> {
             name: Arc::<str>::from(name),
             path: path.to_owned(),
@@ -453,6 +486,7 @@ impl Database<WALClient> {
             thing_vertex_generator,
             schema,
             query_cache,
+            _cleanup_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
@@ -460,6 +494,7 @@ impl Database<WALClient> {
                 CHECKPOINT_INTERVAL,
                 CHECKPOINT_INTERVAL,
             ),
+            _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
         };
 
         if checkpoint_sequence_number < wal_last_sequence_number {
@@ -480,6 +515,7 @@ impl Database<WALClient> {
         trace!("Deleting database '{}'.", &self.name);
         drop(self._statistics_updater);
         drop(self._checkpointer);
+        drop(self._cleanup_worker);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
         drop(Arc::into_inner(self.query_cache).expect("Cannot get exclusive ownership of inner of Arc<QueryCache>."));
         drop(
@@ -503,7 +539,7 @@ impl Database<WALClient> {
         Ok(())
     }
 
-    pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
+    pub fn reset(&mut self) -> Result<(), Box<DatabaseResetError>> {
         use DatabaseResetError::CorruptionPartialResetStorageInUse;
 
         self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64)
@@ -511,21 +547,21 @@ impl Database<WALClient> {
         let mut locked_schema = self.schema.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
-            None => return Err(DatabaseResetError::StorageInUse {}),
+            None => return Err(Box::new(DatabaseResetError::StorageInUse {})),
             Some(storage) => {
                 storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { typedb_source: err })?
             }
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
-            None => return Err(CorruptionPartialResetKeyGeneratorInUse {}),
+            None => return Err(Box::new(CorruptionPartialResetKeyGeneratorInUse {})),
             Some(definition_key_generator) => definition_key_generator.reset(),
         }
         match Arc::get_mut(&mut self.type_vertex_generator) {
-            None => return Err(CorruptionPartialResetTypeVertexGeneratorInUse {}),
+            None => return Err(Box::new(CorruptionPartialResetTypeVertexGeneratorInUse {})),
             Some(type_vertex_generator) => type_vertex_generator.reset(),
         }
         match Arc::get_mut(&mut self.thing_vertex_generator) {
-            None => return Err(CorruptionPartialResetThingVertexGeneratorInUse {}),
+            None => return Err(Box::new(CorruptionPartialResetThingVertexGeneratorInUse {})),
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
 
@@ -605,19 +641,48 @@ fn make_update_statistics_fn(
     }
 }
 
-fn make_compact_fn(
+fn make_cleanup_fn(
     database_name: String,
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
+    cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+    cleanup_strategy: DatabaseCleanupStrategy,
 ) -> impl Fn() {
-    move || {
-        debug!("Running compaction for database {}", database_name);
-        let start = std::time::Instant::now();
-        if let Err(error) = storage.compact::<EncodingKeyspace>(schema.read().unwrap().thing_statistics.sequence_number)
-        {
-            error!("Compaction failed: {:?}", error);
-        }
-        debug!("Finished compaction for database {} in {:?}", database_name, start.elapsed());
+    fn make_disabled_cleanup_fn() -> Box<dyn Fn() + Send + Sync> {
+        Box::new(|| ())
+    }
+
+    fn make_eager_cleanup_fn(
+        database_name: String,
+        storage: Arc<MVCCStorage<WALClient>>,
+        schema: Arc<RwLock<Schema>>,
+        cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+    ) -> Box<dyn Fn() + Send + Sync> {
+        Box::new(move || {
+            debug!("Running compaction for database {}", database_name);
+            let start = std::time::Instant::now();
+            let statistics_watermark = schema.read().unwrap().thing_statistics.sequence_number;
+            let earliest_possible_reader = storage.earliest_possible_reader();
+            let watermark = SequenceNumber::min(statistics_watermark, earliest_possible_reader);
+
+            let range = {
+                let mut queue = cleanup_queue.write().unwrap();
+                let tail_including_watermark = queue.split_off(&watermark);
+                mem::replace(&mut *queue, tail_including_watermark)
+            };
+
+            let ranges = range.into_values().fold(CleanupRecord::default(), CleanupRecord::merge);
+
+            if let Err(error) = storage.cleanup_dead_keys::<EncodingKeyspace>(watermark, ranges) {
+                error!("Compaction failed: {:?}", error);
+            }
+            debug!("Finished compaction for database {} in {:?}", database_name, start.elapsed());
+        })
+    }
+
+    match cleanup_strategy {
+        DatabaseCleanupStrategy::Disabled => make_disabled_cleanup_fn(),
+        DatabaseCleanupStrategy::Eager => make_eager_cleanup_fn(database_name, storage, schema, cleanup_queue),
     }
 }
 

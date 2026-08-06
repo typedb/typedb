@@ -68,6 +68,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
 };
+use tracing::debug;
 
 use crate::{
     ConceptStatus,
@@ -76,6 +77,7 @@ use crate::{
     thing::{
         ThingAPI,
         attribute::{Attribute, AttributeIterator},
+        cleanup::CleanupRecord,
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         has::Has,
@@ -1795,7 +1797,7 @@ impl ThingManager {
         &self,
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
-    ) -> Result<(), Vec<ConceptWriteError>> {
+    ) -> Result<CleanupRecord, Vec<ConceptWriteError>> {
         let cardinality_change_tracker =
             CardinalityChangeTracker::build(snapshot, self.type_manager(), self, storage_counters.clone())
                 .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
@@ -1817,15 +1819,18 @@ impl ThingManager {
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
-        match self.create_commit_locks(snapshot) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
-        }
+        self.create_commit_locks(snapshot)
+            .map_err(|error| vec![ConceptWriteError::ConceptRead { typedb_source: error }])
     }
 
-    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
+    fn create_commit_locks(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+    ) -> Result<CleanupRecord, Box<ConceptReadError>> {
+        let mut cleanup_record = CleanupRecord::new();
+
         // TODO: Should not collect here (iterate_writes() already copies)
-        for (key, _write) in snapshot.iterate_writes().collect_vec() {
+        for (key, write) in snapshot.iterate_writes().collect_vec() {
             if ThingEdgeHas::is_has(&key) {
                 let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
                 let object = Object::new(has.from());
@@ -1843,9 +1848,68 @@ impl ThingManager {
                 self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
                 self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
             }
+
+            if let Write::Delete = write {
+                if let Some(object) = ObjectVertex::try_decode(key.bytes()) {
+                    let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
+                    cleanup_record.insert(
+                        prefix.resize_to(),
+                        StorageKey::Array(key).resize_to(),
+                        ObjectVertex::FIXED_WIDTH_ENCODING,
+                    );
+                } else if let Some(attr) = AttributeVertex::try_decode(key.bytes()) {
+                    let prefix = AttributeVertex::build_prefix_type(attr.prefix(), attr.type_id_(), attr.keyspace());
+                    cleanup_record.insert(
+                        prefix.resize_to(),
+                        StorageKey::Array(key).resize_to(),
+                        AttributeVertex::FIXED_WIDTH_ENCODING,
+                    );
+                } else if let Some(has) = ThingEdgeHas::try_decode(key.bytes()) {
+                    let prefix = ThingEdgeHas::prefix_from_type_parts(has.from().prefix(), has.from().type_id_());
+                    cleanup_record.insert(
+                        prefix.resize_to(),
+                        StorageKey::Array(key).resize_to(),
+                        ThingEdgeHas::FIXED_WIDTH_ENCODING,
+                    );
+                } else if let Some(reverse_has) = ThingEdgeHasReverse::try_decode(key.bytes()) {
+                    let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
+                        reverse_has.from().value_type_category(),
+                        reverse_has.from().type_id_(),
+                    );
+                    cleanup_record.insert(
+                        prefix.resize_to(),
+                        StorageKey::Array(key).resize_to(),
+                        ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+                    );
+                } else if let Some(links) = ThingEdgeLinks::try_decode(key.bytes()) {
+                    let prefix = if links.is_reverse() {
+                        ThingEdgeLinks::prefix_reverse_from_player_type(links.from().prefix(), links.from().type_id_())
+                    } else {
+                        ThingEdgeLinks::prefix_from_relation_type(links.from().type_id_())
+                    };
+                    cleanup_record.insert(
+                        prefix.resize_to(),
+                        StorageKey::Array(key).resize_to(),
+                        ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+                    );
+                } else if let Some(links_index) = ThingEdgeIndexedRelation::try_decode(key.bytes()) {
+                    let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
+                        links_index.relation_type_id(),
+                        links_index.from().prefix(),
+                        links_index.from().type_id_(),
+                    );
+                    cleanup_record.insert(
+                        prefix.resize_to(),
+                        StorageKey::Array(key).resize_to(),
+                        ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
+                    );
+                } else {
+                    debug!("Unhandled delete when constructing compaction record!")
+                }
+            }
         }
 
-        Ok(())
+        Ok(cleanup_record)
     }
 
     fn add_exclusive_lock_for_unique_constraint(

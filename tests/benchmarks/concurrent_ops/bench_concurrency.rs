@@ -25,7 +25,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
-use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{DatabaseCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
@@ -147,6 +147,7 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
         ByteSize::mb(64),
         ByteSize::mb(64),
         ImportOwnership::Exclusive,
+        DatabaseCleanupStrategy::Disabled,
     )
     .unwrap();
     dbm.put_database(DB_NAME).unwrap();

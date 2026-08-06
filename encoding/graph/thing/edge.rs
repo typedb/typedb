@@ -67,6 +67,15 @@ impl ThingEdgeHas {
         Self { owner, attribute }
     }
 
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes[Self::INDEX_PREFIX] != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+        let owner = ObjectVertex::try_decode(bytes.get(Self::range_from())?)?;
+        let attribute = AttributeVertex::try_decode(bytes.get(Self::range_from().end..)?)?;
+        Some(Self { owner, attribute })
+    }
+
     pub fn prefix_from_type(type_: TypeVertex) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
@@ -236,10 +245,28 @@ impl ThingEdgeHasReverse {
                 bytes[Self::INDEX_FROM_VALUE_PREFIX]
             ]));
         debug_assert_eq!(bytes.len() - attribute_len, 1 + ObjectVertex::LENGTH);
-        let len = bytes.len();
-        let attribute = AttributeVertex::decode(&bytes[1..attribute_len + 1]);
-        let owner = ObjectVertex::decode(&bytes[attribute_len + 1..len]);
+        let attribute = AttributeVertex::decode(&bytes[1..][..attribute_len]);
+        let owner = ObjectVertex::decode(&bytes[attribute_len + 1..]);
         Self { owner, attribute }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if *bytes.get(Self::INDEX_PREFIX)? != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+
+        let attribute_len = AttributeVertex::RANGE_TYPE_ID.end
+            + AttributeID::value_type_encoding_length(ValueTypeCategory::from_bytes([
+                *bytes.get(Self::INDEX_FROM_VALUE_PREFIX)?
+            ]));
+
+        if bytes.len() - attribute_len != 1 + ObjectVertex::LENGTH {
+            return None;
+        }
+
+        let attribute = AttributeVertex::try_decode(bytes.get(1..)?.get(..attribute_len)?)?;
+        let owner = ObjectVertex::try_decode(bytes.get(attribute_len + 1..)?)?;
+        Some(Self { owner, attribute })
     }
 
     pub fn prefix_from_prefix_short(
@@ -508,20 +535,27 @@ impl ThingEdgeLinks {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
+        let from = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+        let to = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
+        let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
         match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])).expect("Unrecognized prefix byte") {
-            Self::PREFIX => {
-                let relation = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
-                let player = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
-                let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
-                Self { relation, player, role_id, is_reverse: false }
-            }
-            Self::PREFIX_REVERSE => {
-                let player = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
-                let relation = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
-                let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
-                Self { relation, player, role_id, is_reverse: true }
-            }
+            Self::PREFIX => Self { relation: from, player: to, role_id, is_reverse: false },
+            Self::PREFIX_REVERSE => Self { relation: to, player: from, role_id, is_reverse: true },
             _ => panic!(),
+        }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let from = ObjectVertex::try_decode(bytes.get(Self::RANGE_FROM)?)?;
+        let to = ObjectVertex::try_decode(bytes.get(Self::RANGE_TO)?)?;
+        let role_id = TypeID::try_decode(bytes.get(Self::RANGE_ROLE_ID)?)?;
+        match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX]))? {
+            Self::PREFIX => Some(Self { relation: from, player: to, role_id, is_reverse: false }),
+            Self::PREFIX_REVERSE => Some(Self { relation: to, player: from, role_id, is_reverse: true }),
+            _ => None,
         }
     }
 
@@ -599,7 +633,7 @@ impl ThingEdgeLinks {
     pub fn prefix_reverse_from_player_type(
         player_type_prefix: Prefix,
         player_type_id: TypeID,
-    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX_REVERSE.prefix_id().byte;
         ObjectVertex::write_prefix_type(
@@ -842,6 +876,29 @@ impl ThingEdgeIndexedRelation {
         Self::new_from_relation_parts(player_from, player_to, relation_type_id, relation_id, role_id_from, role_id_to)
     }
 
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if *bytes.get(Self::INDEX_PREFIX)? != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+
+        let player_from = ObjectVertex::try_decode(bytes.get(Self::RANGE_START)?)?;
+        let player_to = ObjectVertex::try_decode(bytes.get(Self::RANGE_END)?)?;
+        let role_id_from = TypeID::try_decode(bytes.get(Self::RANGE_START_ROLE_TYPE_ID)?)?;
+        let role_id_to = TypeID::try_decode(bytes.get(Self::RANGE_END_ROLE_TYPE_ID)?)?;
+
+        let relation_type_id = TypeID::try_decode(bytes.get(Self::RANGE_RELATION_TYPE_ID)?)?;
+        let relation_id = ObjectID::try_decode(bytes.get(Self::RANGE_RELATION_ID)?)?;
+
+        Some(Self::new_from_relation_parts(
+            player_from,
+            player_to,
+            relation_type_id,
+            relation_id,
+            role_id_from,
+            role_id_to,
+        ))
+    }
+
     pub fn prefix_relation_type(
         relation_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID }> {
@@ -862,6 +919,17 @@ impl ThingEdgeIndexedRelation {
         let start_type_id = start_instance_type.type_id_();
         ObjectVertex::write_prefix_type(&mut bytes[Self::RANGE_START_TYPE], start_type_prefix, start_type_id);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_relation_type_start_type_parts(
+        relation_id: TypeID,
+        start_instance_type_prefix: Prefix,
+        start_instance_type_id: TypeID,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE }> {
+        Self::prefix_relation_type_start_type(
+            relation_id,
+            TypeVertex::new(start_instance_type_prefix.prefix_id(), start_instance_type_id),
+        )
     }
 
     pub fn prefix_start(

@@ -11,7 +11,7 @@ use std::{
 
 use concept::{
     error::ConceptWriteError,
-    thing::{statistics::StatisticsError, thing_manager::ThingManager},
+    thing::{cleanup::CleanupRecord, statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -24,8 +24,7 @@ use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
 use storage::{
-    durability_client::DurabilityClient,
-    record::CommitRecord,
+    durability_client::{DurabilityClient, DurabilityClientError},
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
         WriteSnapshot, snapshot_id::SnapshotId,
@@ -98,7 +97,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
     }
 
     pub fn snapshot(&self) -> &ReadSnapshot<D> {
-        &*self.snapshot
+        &self.snapshot
     }
 
     pub fn close(self) {
@@ -188,14 +187,17 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             Ok(snapshot) => snapshot,
         };
 
-        if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
-            // TODO: send all the errors, not just the first,
-            // when we can print the stacktraces of multiple errors, not just a single one
-            let error = errs.into_iter().next().unwrap();
-            return (profile, Err(DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
+        let cleanup_ranges = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+            Ok(compaction) => compaction,
+            Err(errs) => {
+                // TODO: send all the errors, not just the first,
+                // when we can print the stacktraces of multiple errors, not just a single one
+                let error = errs.into_iter().next().unwrap();
+                return (profile, Err(DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
+            }
         };
         commit_profile.things_finalised();
-        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
+        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot, cleanup_ranges }))
     }
 
     pub fn rollback(&mut self) {
@@ -296,13 +298,14 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
         commit_profile.types_validated();
 
-        if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
-            // TODO: send all the errors, not just the first,
-            // when we can print the stacktraces of multiple errors, not just a single one
-            return (
-                profile,
-                Err(ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }),
-            );
+        let cleanup_ranges = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+            Ok(compaction) => compaction,
+            Err(errs) => {
+                // TODO: send all the errors, not just the first,
+                // when we can print the stacktraces of multiple errors, not just a single one
+                let error = errs.into_iter().next().unwrap();
+                return (profile, Err(ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
+            }
         };
         commit_profile.things_finalised();
         drop(self.thing_manager);
@@ -314,7 +317,10 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         commit_profile.functions_finalised();
 
         let _type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
-        (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
+        (
+            profile,
+            Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot, cleanup_ranges }),
+        )
     }
 
     pub fn rollback(&mut self) {
@@ -388,23 +394,12 @@ macro_rules! with_transaction_parts {
 pub struct DataCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     write_snapshot: WriteSnapshot<D>,
+    cleanup_ranges: CleanupRecord,
 }
 
 impl<D: DurabilityClient> DataCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot }
-    }
-
-    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
-        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot)
-    }
-
-    pub fn into_commit_record(
-        self,
-    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
-        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
-        (self.database_drop_guard, reader_guard, commit_record)
+    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>, cleanup_ranges: CleanupRecord) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_ranges }
     }
 }
 
@@ -420,33 +415,32 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        self.write_snapshot
-            .commit(commit_profile)
-            .map(|_| ())
-            .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source })
+        let sequence_number = match self.write_snapshot.commit(commit_profile) {
+            Ok(sequence_number) => sequence_number,
+            Err(typedb_source) => return Err(DataCommitError::SnapshotError { typedb_source }),
+        };
+        if let Some(sequence_number) = sequence_number {
+            let database = &self.database_drop_guard;
+            database
+                .storage
+                .durability()
+                .unsequenced_write(&self.cleanup_ranges)
+                .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_ranges);
+        }
+        Ok(())
     }
 }
 
 pub struct SchemaCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     schema_snapshot: SchemaSnapshot<D>,
+    cleanup_ranges: CleanupRecord,
 }
 
 impl<D: DurabilityClient> SchemaCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot }
-    }
-
-    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
-        let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot)
-    }
-
-    pub fn into_commit_record(
-        self,
-    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
-        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
-        (self.database_drop_guard, reader_guard, commit_record)
+    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>, cleanup_ranges: CleanupRecord) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_ranges }
     }
 }
 
@@ -489,6 +483,13 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         };
 
         if let Some(sequence_number) = sequence_number {
+            database
+                .storage
+                .durability()
+                .unsequenced_write(&self.cleanup_ranges)
+                .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_ranges);
+
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
                 Ok(type_cache) => type_cache,
@@ -573,6 +574,7 @@ typedb_error! {
         ConceptWriteErrors(2, "Data commit error.", write_errors: Vec<ConceptWriteError>),
         ConceptWriteErrorsFirst(3, "Data commit error.", typedb_source: Box<ConceptWriteError>),
         SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
+        DurabilityError(5, "Durability error.", typedb_source: DurabilityClientError),
     }
 }
 
@@ -585,6 +587,7 @@ typedb_error! {
         StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
         FunctionError(5, "Function error.", typedb_source: FunctionError),
         SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
+        DurabilityError(7, "Durability error.", typedb_source: DurabilityClientError),
     }
 }
 

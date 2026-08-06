@@ -242,8 +242,10 @@ impl Statistics {
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
         storage: &MVCCStorage<D>,
     ) -> Result<i64, MVCCReadError> {
+        type CleanupFn = Box<dyn FnOnce(&mut Statistics)>;
+
         let mut total_delta = 0;
-        let mut deferred_type_cleanups: Vec<Box<dyn FnOnce(&mut Self)>> = Vec::new();
+        let mut deferred_type_cleanups: Vec<CleanupFn> = Vec::new();
 
         for (key, write) in writes.operations.iterate_writes() {
             let delta =
@@ -1004,37 +1006,37 @@ mod serialise {
         map.into_iter().map(|(type_, value)| (type_.into_object_type(), value)).collect()
     }
 
+    impl<'de> Deserialize<'de> for Field {
+        fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            struct FieldVisitor;
+
+            impl Visitor<'_> for FieldVisitor {
+                type Value = Field;
+
+                fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    formatter.write_str("Unrecognised field")
+                }
+
+                fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                where
+                    E: de::Error,
+                {
+                    Field::from(value).ok_or_else(|| de::Error::unknown_field(value, &Field::NAMES))
+                }
+            }
+
+            deserializer.deserialize_identifier(FieldVisitor)
+        }
+    }
+
     impl<'de> Deserialize<'de> for Statistics {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,
         {
-            impl<'de> Deserialize<'de> for Field {
-                fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                where
-                    D: Deserializer<'de>,
-                {
-                    struct FieldVisitor;
-
-                    impl Visitor<'_> for FieldVisitor {
-                        type Value = Field;
-
-                        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                            formatter.write_str("Unrecognised field")
-                        }
-
-                        fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                        where
-                            E: de::Error,
-                        {
-                            Field::from(value).ok_or_else(|| de::Error::unknown_field(value, &Field::NAMES))
-                        }
-                    }
-
-                    deserializer.deserialize_identifier(FieldVisitor)
-                }
-            }
-
             struct StatisticsVisitor;
 
             impl<'de> Visitor<'de> for StatisticsVisitor {

@@ -108,7 +108,7 @@ pub type TypeIDUInt = u16;
 impl TypeID {
     pub const MIN: Self = Self::new(TypeIDUInt::MIN);
     pub const MAX: Self = Self::new(TypeIDUInt::MAX);
-    pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
+    pub(crate) const LENGTH: usize = size_of::<TypeIDUInt>();
 
     pub const fn new(id: TypeIDUInt) -> Self {
         Self { value: id }
@@ -116,6 +116,10 @@ impl TypeID {
 
     pub fn decode(bytes: [u8; TypeID::LENGTH]) -> TypeID {
         TypeID { value: TypeIDUInt::from_be_bytes(bytes) }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<TypeID> {
+        Some(TypeID { value: TypeIDUInt::from_be_bytes(bytes.try_into().ok()?) })
     }
 
     pub fn as_u16(&self) -> u16 {

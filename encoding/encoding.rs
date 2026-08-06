@@ -6,6 +6,7 @@
 
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
+#![allow(clippy::collapsible_if, reason = "false positive central")]
 
 use std::ffi::c_int;
 

@@ -238,7 +238,6 @@ pub(crate) fn range_start_as_bound<const INLINE: usize>(
 ) -> Bound<Bytes<'_, INLINE>> {
     match range_start {
         RangeStart::Inclusive(bytes) => Bound::Included(bytes),
-        RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
         RangeStart::ExcludePrefix(bytes) => {
             let mut cloned = bytes.clone().into_array();
             cloned.increment().unwrap();

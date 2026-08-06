@@ -95,7 +95,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError>;
+    async fn prepare_for_writes(&self) -> Result<(), Box<DatabaseOpenError>>;
 }
 
 #[derive(Debug)]
@@ -143,7 +143,7 @@ impl DatabaseImportHandler for LocalDatabaseImportHandler {
         let name = staged_database.name().to_owned();
         drop(staged_database);
         database_manager.finalise_imported_database(&name).map_err(|typedb_source| {
-            Arc::new(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source }) as _
+            Arc::new(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source: *typedb_source }) as _
         })
     }
 }
@@ -209,7 +209,7 @@ impl LocalDatabaseOperator {
 
     pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
         self.database_manager.prepare_imported_database(name).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source })
+            arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source: *typedb_source })
         })
     }
 
@@ -227,12 +227,14 @@ impl LocalDatabaseOperator {
 
     pub fn finalise_imported_database(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager.finalise_imported_database(name).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source })
+            arc_server_state_err(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source: *typedb_source })
         })
     }
 }
 
-pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, LocalServerStateError> {
+pub fn get_database_schema<D: DurabilityClient>(
+    database: Arc<Database<D>>,
+) -> Result<String, Box<LocalServerStateError>> {
     let transaction = TransactionRead::open(database, options::TransactionOptions::default())
         .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
     let schema = get_transaction_schema(&transaction)
@@ -242,7 +244,7 @@ pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> R
 
 pub fn get_database_type_schema<D: DurabilityClient>(
     database: Arc<Database<D>>,
-) -> Result<String, LocalServerStateError> {
+) -> Result<String, Box<LocalServerStateError>> {
     let transaction = TransactionRead::open(database, options::TransactionOptions::default())
         .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
     let type_schema = get_transaction_type_schema(&transaction)
@@ -252,20 +254,20 @@ pub fn get_database_type_schema<D: DurabilityClient>(
 
 pub fn get_functions_syntax<D: DurabilityClient>(
     transaction: &TransactionRead<D>,
-) -> Result<String, LocalServerStateError> {
+) -> Result<String, Box<LocalServerStateError>> {
     transaction
         .function_manager
         .get_functions_syntax(transaction.snapshot())
-        .map_err(|typedb_source| LocalServerStateError::FunctionReadError { typedb_source })
+        .map_err(|typedb_source| Box::new(LocalServerStateError::FunctionReadError { typedb_source }))
 }
 
 pub fn get_types_syntax<D: DurabilityClient>(
     transaction: &TransactionRead<D>,
-) -> Result<String, LocalServerStateError> {
+) -> Result<String, Box<LocalServerStateError>> {
     transaction
         .type_manager
         .get_types_syntax(transaction.snapshot())
-        .map_err(|typedb_source| LocalServerStateError::ConceptReadError { typedb_source })
+        .map_err(|typedb_source| Box::new(LocalServerStateError::ConceptReadError { typedb_source }))
 }
 
 #[async_trait]
@@ -289,13 +291,13 @@ impl DatabaseOperator for LocalDatabaseOperator {
     async fn create(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database(name)
-            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
+            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: *err }))
     }
 
     async fn create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database_unrestricted(name)
-            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
+            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: *err }))
     }
 
     async fn spawn_import_service(
@@ -336,7 +338,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
 
     async fn schema(&self, name: &str) -> Result<String, ArcServerStateError> {
         match self.database_manager.database(name) {
-            Some(db) => get_database_schema(db),
+            Some(db) => get_database_schema(db).map_err(|boxed| *boxed),
             None => Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() }),
         }
         .map_err(arc_server_state_err)
@@ -347,7 +349,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
             None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() })),
             Some(database) => match get_database_type_schema(database) {
                 Ok(type_schema) => Ok(type_schema),
-                Err(err) => Err(Arc::new(err)),
+                Err(err) => Err(Arc::new(*err)),
             },
         }
     }
@@ -393,8 +395,8 @@ impl DatabaseOperator for LocalDatabaseOperator {
         let Some(database) = self.get_unrestricted(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
-        database.commit_record_exists(open_sequence_number, snapshot_id).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseCommitRecordExistsFailed { typedb_source })
+        database.commit_record_exists(open_sequence_number, snapshot_id).map_err(|err| {
+            arc_server_state_err(LocalServerStateError::DatabaseCommitRecordExistsFailed { typedb_source: *err })
         })
     }
 
@@ -404,7 +406,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))
     }
 
-    async fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError> {
+    async fn prepare_for_writes(&self) -> Result<(), Box<DatabaseOpenError>> {
         let database_manager = self.database_manager.clone();
         tokio::task::spawn_blocking(move || database_manager.prepare_for_writes())
             .await

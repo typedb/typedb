@@ -13,7 +13,7 @@ use std::{
 use cache::CACHE_DB_NAME_PREFIX;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 pub(crate) use durability::sync_directory;
-use options::byte_size::ByteSize;
+use options::{DatabaseCleanupStrategy, byte_size::ByteSize};
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
 use tracing::{Level, debug, event, warn};
@@ -42,6 +42,7 @@ pub struct DatabaseManager {
     database_registry: DatabaseRegistry,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
+    cleanup_strategy: DatabaseCleanupStrategy,
 }
 
 impl DatabaseManager {
@@ -53,7 +54,8 @@ impl DatabaseManager {
         rocksdb_cache_size: ByteSize,
         rocksdb_write_buffers_limit: ByteSize,
         import_ownership: ImportOwnership,
-    ) -> Result<Arc<Self>, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<Arc<Self>, Box<DatabaseOpenError>> {
         let data_directory = data_directory.as_ref().to_owned();
         let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
         let rocks_resources = Arc::new(RocksResources::new(rocksdb_cache_size, rocksdb_write_buffers_limit));
@@ -62,6 +64,7 @@ impl DatabaseManager {
             &import_directory,
             &diagnostics_manager,
             &rocks_resources,
+            cleanup_strategy.clone(),
         )?;
         let staged_databases = Self::initialise_staged_databases(
             &import_directory,
@@ -69,6 +72,7 @@ impl DatabaseManager {
             &served_databases,
             &diagnostics_manager,
             &rocks_resources,
+            cleanup_strategy.clone(),
         )?;
         let database_registry = DatabaseRegistry::new(served_databases, staged_databases);
 
@@ -79,15 +83,17 @@ impl DatabaseManager {
             database_registry,
             diagnostics_manager,
             rocks_resources,
+            cleanup_strategy,
         }))
     }
 
     fn initialise_served_databases(
-        data_directory: &PathBuf,
+        data_directory: &Path,
         import_directory: &Path,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-    ) -> Result<DatabasesMap, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<DatabasesMap, Box<DatabaseOpenError>> {
         let mut databases = DatabasesMap::new();
 
         for entry_path in directory_entries(data_directory)? {
@@ -106,9 +112,14 @@ impl DatabaseManager {
                 continue;
             }
 
-            let database = match Database::<WALClient>::open(&entry_path, diagnostics_manager, rocks_resources) {
+            let database = match Database::<WALClient>::open(
+                &entry_path,
+                diagnostics_manager,
+                rocks_resources,
+                cleanup_strategy.clone(),
+            ) {
                 Ok(database) => database,
-                Err(DatabaseOpenError::NotADatabase { .. }) => {
+                Err(err) if matches!(*err, DatabaseOpenError::NotADatabase { .. }) => {
                     warn!("{entry_path:?} is not a database, skipping");
                     continue;
                 }
@@ -122,24 +133,29 @@ impl DatabaseManager {
     }
 
     fn initialise_staged_databases(
-        import_directory: &PathBuf,
+        import_directory: &Path,
         import_ownership: ImportOwnership,
         served_databases: &DatabasesMap,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-    ) -> Result<DatabasesMap, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<DatabasesMap, Box<DatabaseOpenError>> {
         match import_ownership {
             ImportOwnership::Exclusive => {
                 Self::cleanup_import_directory(import_directory)?;
                 Ok(DatabasesMap::new())
             }
-            ImportOwnership::Shared => {
-                Self::recover_staged_databases(import_directory, served_databases, diagnostics_manager, rocks_resources)
-            }
+            ImportOwnership::Shared => Self::recover_staged_databases(
+                import_directory,
+                served_databases,
+                diagnostics_manager,
+                rocks_resources,
+                cleanup_strategy,
+            ),
         }
     }
 
-    fn cleanup_import_directory(directory: &PathBuf) -> Result<(), DatabaseOpenError> {
+    fn cleanup_import_directory(directory: &Path) -> Result<(), Box<DatabaseOpenError>> {
         if !directory.exists() {
             return Ok(());
         }
@@ -173,11 +189,12 @@ impl DatabaseManager {
     }
 
     fn recover_staged_databases(
-        directory: &PathBuf,
+        directory: &Path,
         served_databases: &DatabasesMap,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-    ) -> Result<DatabasesMap, DatabaseOpenError> {
+        cleanup_strategy: DatabaseCleanupStrategy,
+    ) -> Result<DatabasesMap, Box<DatabaseOpenError>> {
         let mut recovered = DatabasesMap::new();
         if !directory.exists() {
             return Ok(recovered);
@@ -193,7 +210,12 @@ impl DatabaseManager {
                 Self::remove_import_leftover_best_effort(&entry_path);
                 continue;
             }
-            match Database::<WALClient>::open(&entry_path, diagnostics_manager, rocks_resources) {
+            match Database::<WALClient>::open(
+                &entry_path,
+                diagnostics_manager,
+                rocks_resources,
+                cleanup_strategy.clone(),
+            ) {
                 Ok(database) => {
                     event!(Level::INFO, "Recovered in-progress import of database '{name}' after restart.");
                     recovered.insert(database.name().to_owned(), Arc::new(database));
@@ -221,12 +243,12 @@ impl DatabaseManager {
         }
     }
 
-    pub fn put_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
+    pub fn put_database(&self, name: impl AsRef<str>) -> Result<(), Box<DatabaseCreateError>> {
         Self::validate_user_database_name(name.as_ref())?;
         self.put_database_unrestricted(name)
     }
 
-    pub fn put_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
+    pub fn put_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), Box<DatabaseCreateError>> {
         let name = name.as_ref();
         let mut databases = self.database_registry.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         self.ensure_not_staged(&databases.staged, name)?;
@@ -284,7 +306,7 @@ impl DatabaseManager {
             .collect()
     }
 
-    pub fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError> {
+    pub fn prepare_for_writes(&self) -> Result<(), Box<DatabaseOpenError>> {
         for (name, database) in self.database_registry.read().served.iter() {
             database
                 .prepare_for_writes()
@@ -293,11 +315,14 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
+    pub fn prepare_imported_database(
+        &self,
+        name: String,
+    ) -> Result<Arc<Database<WALClient>>, Box<DatabaseCreateError>> {
         Self::validate_user_database_name(&name)?;
         let mut databases = self.database_registry.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if self.exists_served(&databases.served, &name) {
-            return Err(DatabaseCreateError::AlreadyExists { name });
+            return Err(Box::new(DatabaseCreateError::AlreadyExists { name }));
         }
         self.evict_staged_leftover(&mut databases.staged, &name)?;
 
@@ -309,19 +334,19 @@ impl DatabaseManager {
         Ok(database)
     }
 
-    pub fn finalise_imported_database(&self, name: &str) -> Result<(), DatabaseCreateError> {
+    pub fn finalise_imported_database(&self, name: &str) -> Result<(), Box<DatabaseCreateError>> {
         let mut databases = self.database_registry.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         let database = match Self::take_database(&mut databases.staged, name) {
             Ok(Some(database)) => database,
-            Ok(None) => return Err(DatabaseCreateError::IsNotBeingImported { name: name.to_string() }),
-            Err(_) => return Err(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() }),
+            Ok(None) => return Err(Box::new(DatabaseCreateError::IsNotBeingImported { name: name.to_string() })),
+            Err(_) => return Err(Box::new(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() })),
         };
         if self.exists_served(&databases.served, name) {
             database.delete().map_err(|typedb_source| DatabaseCreateError::AlreadyExistsAndCleanupBlocked {
                 name: name.to_string(),
                 typedb_source,
             })?;
-            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+            return Err(Box::new(DatabaseCreateError::AlreadyExists { name: name.to_string() }));
         }
         self.serve_staged_database(&mut databases, name, database)
     }
@@ -387,9 +412,14 @@ impl DatabaseManager {
         }
     }
 
-    fn open_served_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.served_database_path(name), &self.diagnostics_manager, &self.rocks_resources)
-            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+    fn open_served_database(&self, name: &str) -> Result<Database<WALClient>, Box<DatabaseCreateError>> {
+        Database::<WALClient>::open(
+            &self.served_database_path(name),
+            &self.diagnostics_manager,
+            &self.rocks_resources,
+            self.cleanup_strategy.clone(),
+        )
+        .map_err(|typedb_source| Box::new(DatabaseCreateError::DatabaseOpen { typedb_source: *typedb_source }))
     }
 
     fn exists_served(&self, served: &DatabasesMap, name: &str) -> bool {
@@ -407,7 +437,7 @@ impl DatabaseManager {
         databases: &mut Databases,
         name: &str,
         database: Database<WALClient>,
-    ) -> Result<(), DatabaseCreateError> {
+    ) -> Result<(), Box<DatabaseCreateError>> {
         let staged_path = database.path.clone();
         drop(database);
         self.move_directory_to_data(name, &staged_path)?;
@@ -420,49 +450,55 @@ impl DatabaseManager {
         Ok(())
     }
 
-    fn move_directory_to_data(&self, name: &str, directory: &Path) -> Result<(), DatabaseCreateError> {
+    fn move_directory_to_data(&self, name: &str, directory: &Path) -> Result<(), Box<DatabaseCreateError>> {
         let directory_name =
             directory.file_name().ok_or_else(|| DatabaseCreateError::DatabaseMove { name: name.to_string() })?;
 
         let target_path = self.data_directory.join(directory_name);
-        fs::rename(directory, &target_path)
-            .map_err(|source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
+        fs::rename(directory, &target_path).map_err(|source| {
+            Box::new(DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
+        })
     }
 
-    fn ensure_not_staged(&self, staged: &DatabasesMap, name: &str) -> Result<(), DatabaseCreateError> {
+    fn ensure_not_staged(&self, staged: &DatabasesMap, name: &str) -> Result<(), Box<DatabaseCreateError>> {
         if staged.contains_key(name) {
-            return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
+            return Err(Box::new(DatabaseCreateError::IsBeingImported { name: name.to_string() }));
         }
         if !self.staged_database_exists(name) {
             return Ok(());
         }
         match self.import_ownership {
-            ImportOwnership::Shared => Err(DatabaseCreateError::IsBeingImported { name: name.to_string() }),
+            ImportOwnership::Shared => Err(Box::new(DatabaseCreateError::IsBeingImported { name: name.to_string() })),
             ImportOwnership::Exclusive => self.remove_staged_directory(name).map_err(|source| {
-                DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) }
+                Box::new(DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
             }),
         }
     }
 
-    fn evict_staged_leftover(&self, staged: &mut DatabasesMap, name: &str) -> Result<(), DatabaseCreateError> {
+    fn evict_staged_leftover(&self, staged: &mut DatabasesMap, name: &str) -> Result<(), Box<DatabaseCreateError>> {
         match Self::take_database(staged, name) {
-            Ok(Some(leftover)) => leftover.delete().map_err(|typedb_source| DatabaseCreateError::ImportCleanupFailed {
-                name: name.to_string(),
-                typedb_source,
+            Ok(Some(leftover)) => leftover.delete().map_err(|typedb_source| {
+                Box::new(DatabaseCreateError::ImportCleanupFailed { name: name.to_string(), typedb_source })
             }),
-            Ok(None) if self.staged_database_exists(name) => {
-                fs::remove_dir_all(self.staged_database_path(name)).map_err(|source| {
-                    DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) }
-                })
-            }
+            Ok(None) if self.staged_database_exists(name) => fs::remove_dir_all(self.staged_database_path(name))
+                .map_err(|source| {
+                    Box::new({
+                        DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) }
+                    })
+                }),
             Ok(None) => Ok(()),
-            Err(_) => Err(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() }),
+            Err(_) => Err(Box::new(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() })),
         }
     }
 
-    fn open_staged_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.staged_database_path(name), &self.diagnostics_manager, &self.rocks_resources)
-            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+    fn open_staged_database(&self, name: &str) -> Result<Database<WALClient>, Box<DatabaseCreateError>> {
+        Database::<WALClient>::open(
+            &self.staged_database_path(name),
+            &self.diagnostics_manager,
+            &self.rocks_resources,
+            self.cleanup_strategy.clone(),
+        )
+        .map_err(|typedb_source| Box::new(DatabaseCreateError::DatabaseOpen { typedb_source: *typedb_source }))
     }
 
     fn served_database_path(&self, name: &str) -> PathBuf {
@@ -490,16 +526,16 @@ impl DatabaseManager {
         sync_directory(&self.import_directory)
     }
 
-    fn validate_user_database_name(name: &str) -> Result<(), DatabaseCreateError> {
+    fn validate_user_database_name(name: &str) -> Result<(), Box<DatabaseCreateError>> {
         if Self::is_internal_database(name) {
-            return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
+            return Err(Box::new(DatabaseCreateError::InternalDatabaseCreationProhibited {}));
         }
         Self::validate_database_name(name)
     }
 
-    fn validate_database_name(name: &str) -> Result<(), DatabaseCreateError> {
+    fn validate_database_name(name: &str) -> Result<(), Box<DatabaseCreateError>> {
         if !typeql::common::identifier::is_valid_label(name) {
-            return Err(DatabaseCreateError::InvalidName { name: name.to_string() });
+            return Err(Box::new(DatabaseCreateError::InvalidName { name: name.to_string() }));
         }
         Ok(())
     }
@@ -509,16 +545,15 @@ pub(crate) fn file_name_lossy(path: &Path) -> String {
     path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
 }
 
-pub(crate) fn directory_entries(directory: &Path) -> Result<Vec<PathBuf>, DatabaseOpenError> {
+pub(crate) fn directory_entries(directory: &Path) -> Result<Vec<PathBuf>, Box<DatabaseOpenError>> {
     let entries = fs::read_dir(directory).map_err(|error| DatabaseOpenError::DirectoryRead {
         name: file_name_lossy(directory),
         source: Arc::new(error),
     })?;
     entries
         .map(|entry| {
-            entry.map(|entry| entry.path()).map_err(|error| DatabaseOpenError::DirectoryRead {
-                name: file_name_lossy(directory),
-                source: Arc::new(error),
+            entry.map(|entry| entry.path()).map_err(|error| {
+                Box::new(DatabaseOpenError::DirectoryRead { name: file_name_lossy(directory), source: Arc::new(error) })
             })
         })
         .collect()

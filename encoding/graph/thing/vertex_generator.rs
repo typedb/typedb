@@ -131,6 +131,7 @@ impl ThingVertexGenerator {
                 }
             }
         }
+
         for type_id in relation_types {
             let mut max_object_id =
                 ObjectVertex::build_relation(TypeID::new(type_id), ObjectID::new(u64::MAX)).to_bytes().into_array();
@@ -149,6 +150,7 @@ impl ThingVertexGenerator {
                 }
             }
         }
+
         Ok(())
     }
 

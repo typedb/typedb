@@ -12,7 +12,7 @@ use std::{
     time::Duration,
 };
 
-use options::byte_size::ByteSize;
+use options::{DatabaseCleanupStrategy, byte_size::ByteSize};
 use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
@@ -160,6 +160,15 @@ pub enum CleanupConfig {
     #[default]
     Disabled,
     Eager,
+}
+
+impl From<CleanupConfig> for DatabaseCleanupStrategy {
+    fn from(value: CleanupConfig) -> Self {
+        match value {
+            CleanupConfig::Disabled => Self::Disabled,
+            CleanupConfig::Eager => Self::Eager,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]

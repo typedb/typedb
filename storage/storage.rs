@@ -9,6 +9,8 @@
 #![allow(clippy::module_inception)]
 
 use std::{
+    collections::BTreeMap,
+    convert::identity,
     error::Error,
     fs, io,
     path::{Path, PathBuf},
@@ -33,7 +35,10 @@ use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::{
-    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    constants::{
+        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+        storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS,
+    },
     profile::{CommitProfile, StorageCounters},
 };
 use rocksdb::WriteBatch;
@@ -44,7 +49,7 @@ use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationManager, ValidatedCommit},
     iterator::MVCCRangeIterator,
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
@@ -82,7 +87,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
-    earliest_uncompacted: AtomicU64,
+    earliest_uncleaned: AtomicU64,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -119,7 +124,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            earliest_uncompacted: AtomicU64::new(0),
+            earliest_uncleaned: AtomicU64::new(0),
         })
     }
 
@@ -149,16 +154,15 @@ impl<Durability> MVCCStorage<Durability> {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
         Self::register_durability_record_types(&mut durability_client);
-        let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
+        let (keyspaces, next_sequence_number, earliest_uncleaned) = if let Some(checkpoint) = checkpoint {
             checkpoint
                 .recover_storage::<KS, _>(name, &storage_dir, &durability_client, rocks_resources)
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
-            match fs::remove_dir_all(&storage_dir) {
-                Err(err) if err.kind() != io::ErrorKind::NotFound => {
-                    return Err(StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) });
-                }
-                _ => (),
+            if let Err(err) = fs::remove_dir_all(&storage_dir)
+                && err.kind() != io::ErrorKind::NotFound
+            {
+                return Err(StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) });
             }
             fail_point!(STORAGE_MISSING_STORAGE_DIR);
             fs::create_dir_all(&storage_dir)
@@ -172,7 +176,7 @@ impl<Durability> MVCCStorage<Durability> {
             apply_recovered(name, commits, &durability_client, &keyspaces)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
-            (keyspaces, next_sequence_number)
+            (keyspaces, next_sequence_number, SequenceNumber::MIN)
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
@@ -183,7 +187,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            earliest_uncompacted: AtomicU64::new(0),
+            earliest_uncleaned: AtomicU64::new(earliest_uncleaned.number()),
         })
     }
 
@@ -418,7 +422,11 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
-        checkpoint.add_storage(&self.keyspaces, self.snapshot_watermark())
+        checkpoint.add_storage(
+            &self.keyspaces,
+            self.snapshot_watermark(),
+            SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed)),
+        )
     }
 
     pub fn delete_storage(self) -> Result<(), StorageDeleteError>
@@ -583,40 +591,51 @@ impl<Durability> MVCCStorage<Durability> {
         Ok(())
     }
 
-    fn compaction_watermark(&self, limit: SequenceNumber) -> SequenceNumber {
-        let seq = SequenceNumber::min(limit, self.isolation_manager.watermark());
+    pub fn earliest_possible_reader(&self) -> SequenceNumber {
+        let watermark = self.isolation_manager.watermark();
         if let Some(earliest_reader) = self.isolation_manager.earliest_reader() {
-            SequenceNumber::min(seq, earliest_reader)
+            SequenceNumber::min(watermark, earliest_reader)
         } else {
-            seq
+            watermark
         }
     }
 
-    pub fn compact<KS: KeyspaceSet>(&self, limit: SequenceNumber) -> Result<(), StorageCompactError> {
-        let watermark = self.compaction_watermark(limit);
-        if self.earliest_uncompacted.load(Ordering::Relaxed) >= watermark.number() {
+    pub fn earliest_uncleaned(&self) -> SequenceNumber {
+        SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed))
+    }
+
+    pub fn cleanup_dead_keys<KS: KeyspaceSet>(
+        &self,
+        cleanup_until: SequenceNumber,
+        ranges: impl IntoIterator<
+            Item = (StorageKey<'static, BUFFER_KEY_INLINE>, KeyRange<StorageKey<'static, BUFFER_KEY_INLINE>>),
+        >,
+    ) -> Result<(), StorageCompactError> {
+        if self.earliest_uncleaned.load(Ordering::Relaxed) >= cleanup_until.number() {
             return Ok(());
         }
 
-        for ks in KS::iter() {
-            let keyspace = self.get_keyspace(ks.id());
-            let mut it = keyspace.iterate_range(
+        let mut batches = BTreeMap::from_iter(KS::iter().map(|keyspace| (keyspace.id(), WriteBatch::default())));
+
+        for (prefix, range) in ranges {
+            let keyspace_id = prefix.keyspace_id();
+            let batch = batches.get_mut(&keyspace_id).unwrap_or_else(|| {
+                panic!("Keyspace ID {keyspace_id} not found in write batches during cleanup! Keyspace mismatch?")
+            });
+
+            let mut it = self.get_keyspace(keyspace_id).iterate_range(
                 &IteratorPool::new(),
-                &KeyRange::new(
-                    RangeStart::Inclusive(Bytes::<0>::reference(&[])),
-                    key_range::RangeEnd::Unbounded,
-                    false,
-                ),
+                &range.map(StorageKey::as_bytes, identity),
                 StorageCounters::DISABLED,
             );
-            let mut batch = WriteBatch::default();
+
             let mut last_seen = None;
             while let Some(raw) = it.next() {
                 let (k, _) =
                     raw.map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
                 let mvcc_key = MVCCKey::wrap_slice(k);
 
-                if mvcc_key.sequence_number() < watermark
+                if mvcc_key.sequence_number() < cleanup_until
                     && (matches!(mvcc_key.operation(), StorageOperation::Delete)
                         || last_seen.as_deref() == Some(mvcc_key.key()))
                 {
@@ -624,11 +643,15 @@ impl<Durability> MVCCStorage<Durability> {
                 }
                 last_seen = Some(Bytes::<MVCC_KEY_INLINE_SIZE>::copy(mvcc_key.key()));
             }
-            keyspace
+        }
+
+        for (keyspace_id, batch) in batches {
+            self.get_keyspace(keyspace_id)
                 .write(batch)
                 .map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
         }
-        self.earliest_uncompacted.store(watermark.number(), Ordering::Relaxed);
+
+        self.earliest_uncleaned.store(cleanup_until.number(), Ordering::Relaxed);
         Ok(())
     }
 

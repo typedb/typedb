@@ -12,13 +12,20 @@ use database::{
     database_manager::{DatabaseManager, ImportOwnership},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::byte_size::ByteSize;
+use options::{DatabaseCleanupStrategy, byte_size::ByteSize};
 use test_utils::{TempDir, create_tmp_dir, init_logging};
 
 fn manager(data_dir: &TempDir, import_ownership: ImportOwnership) -> Arc<DatabaseManager> {
     let diagnostics = Arc::new(DiagnosticsManager::new_disabled());
-    DatabaseManager::new(data_dir.as_ref(), diagnostics, ByteSize::mb(64), ByteSize::mb(64), import_ownership)
-        .expect("DatabaseManager::new")
+    DatabaseManager::new(
+        data_dir.as_ref(),
+        diagnostics,
+        ByteSize::mb(64),
+        ByteSize::mb(64),
+        import_ownership,
+        DatabaseCleanupStrategy::Disabled,
+    )
+    .expect("DatabaseManager::new")
 }
 
 fn import_path(data_dir: &TempDir, name: &str) -> std::path::PathBuf {
@@ -45,12 +52,18 @@ fn import_lifecycle_publishes_and_is_idempotent() {
     let dbm = manager(&data_dir, ImportOwnership::Shared);
 
     let staging = dbm.prepare_imported_database("typedb".to_string()).expect("prepare");
-    assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::ImportedDatabaseInUse { .. })));
+    assert!(matches!(
+        *dbm.finalise_imported_database("typedb").unwrap_err(),
+        DatabaseCreateError::ImportedDatabaseInUse { .. }
+    ));
     drop(staging);
     dbm.finalise_imported_database("typedb").expect("finalise");
     assert!(dbm.database("typedb").is_some());
     assert!(!import_path(&data_dir, "typedb").exists());
-    assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::IsNotBeingImported { .. })));
+    assert!(matches!(
+        *dbm.finalise_imported_database("typedb").unwrap_err(),
+        DatabaseCreateError::IsNotBeingImported { .. }
+    ));
 }
 
 #[test]
@@ -78,10 +91,10 @@ fn prepare_replaces_unheld_leftover_but_rejects_held_staging() {
 
     let staging = dbm.prepare_imported_database("fresh".to_string()).expect("first prepare");
     assert!(matches!(
-        dbm.prepare_imported_database("fresh".to_string()),
-        Err(DatabaseCreateError::ImportedDatabaseInUse { .. })
+        *dbm.prepare_imported_database("fresh".to_string()).unwrap_err(),
+        DatabaseCreateError::ImportedDatabaseInUse { .. }
     ));
-    assert!(matches!(dbm.put_database("fresh"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(matches!(*dbm.put_database("fresh").unwrap_err(), DatabaseCreateError::IsBeingImported { .. }));
     drop(staging);
     dbm.prepare_imported_database("fresh".to_string()).expect("prepare must replace the unheld leftover");
 }
@@ -94,8 +107,8 @@ fn prepare_rejects_existing_database_and_invalid_names() {
 
     dbm.put_database("existing").expect("create");
     assert!(matches!(
-        dbm.prepare_imported_database("existing".to_string()),
-        Err(DatabaseCreateError::AlreadyExists { .. })
+        *dbm.prepare_imported_database("existing".to_string()).unwrap_err(),
+        DatabaseCreateError::AlreadyExists { .. }
     ));
     assert!(dbm.prepare_imported_database("_internal".to_string()).is_err());
     assert!(dbm.prepare_imported_database("not a name".to_string()).is_err());
@@ -128,7 +141,7 @@ fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
 
     // A live (registered) import blocks creation.
     let staging = dbm.prepare_imported_database("blocked".to_string()).expect("prepare");
-    assert!(matches!(dbm.put_database("blocked"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(matches!(*dbm.put_database("blocked").unwrap_err(), DatabaseCreateError::IsBeingImported { .. }));
     drop(staging);
     dbm.discard_imported_database("blocked").expect("cancel");
 
@@ -136,7 +149,7 @@ fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
     // Under Resume it keeps the name reserved for create — only the import operations that decide
     // the name's fate (a fresh prepare, a cancel) replace or remove it.
     fs::create_dir_all(import_path(&data_dir, "created-over")).unwrap();
-    assert!(matches!(dbm.put_database("created-over"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(matches!(*dbm.put_database("created-over").unwrap_err(), DatabaseCreateError::IsBeingImported { .. }));
     assert!(import_path(&data_dir, "created-over").exists());
 
     fs::create_dir_all(import_path(&data_dir, "prepared-over")).unwrap();
@@ -197,10 +210,10 @@ fn resume_recovery_restores_staging_and_discards_junk() {
     // The unopenable staging is kept: it reserves the name against creation — surviving further
     // restarts — until a cancel or a fresh prepare of the import concludes it.
     assert!(import_path(&data_dir, "corrupt").exists());
-    assert!(matches!(dbm.put_database("corrupt"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(matches!(*dbm.put_database("corrupt").unwrap_err(), DatabaseCreateError::IsBeingImported { .. }));
     drop(dbm);
     let dbm = manager(&data_dir, ImportOwnership::Shared);
-    assert!(matches!(dbm.put_database("corrupt"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(matches!(*dbm.put_database("corrupt").unwrap_err(), DatabaseCreateError::IsBeingImported { .. }));
     assert!(dbm.discard_imported_database("corrupt").is_err());
     assert!(!import_path(&data_dir, "corrupt").exists());
     dbm.put_database("corrupt").expect("create after the cancel released the name");
@@ -237,7 +250,10 @@ fn staged_leftover_of_a_published_database_is_discarded_on_recovery() {
     assert!(dbm.database("typedb").is_some(), "the published database must survive");
     assert_eq!(dbm.imported_database_names(), Vec::<String>::new());
     assert!(!import_path(&data_dir, "typedb").exists(), "the staging copy must be discarded on recovery");
-    assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::IsNotBeingImported { .. })));
+    assert!(matches!(
+        *dbm.finalise_imported_database("typedb").unwrap_err(),
+        DatabaseCreateError::IsNotBeingImported { .. }
+    ));
     dbm.put_database("typedb").expect("a served database with a healed leftover is an ordinary database");
     assert!(dbm.database("typedb").is_some());
 }
@@ -273,7 +289,7 @@ fn recovered_staging_still_hides_and_blocks_its_name() {
     let dbm = manager(&data_dir, ImportOwnership::Shared);
     assert!(dbm.database("typedb").is_none());
     assert!(dbm.database_names().is_empty());
-    assert!(matches!(dbm.put_database("typedb"), Err(DatabaseCreateError::IsBeingImported { .. })));
+    assert!(matches!(*dbm.put_database("typedb").unwrap_err(), DatabaseCreateError::IsBeingImported { .. }));
 }
 
 #[test]

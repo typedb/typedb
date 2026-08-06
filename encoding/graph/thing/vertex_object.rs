@@ -159,6 +159,10 @@ impl ObjectID {
         ObjectID { value: u64::from_be_bytes(bytes) }
     }
 
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        Some(ObjectID { value: u64::from_be_bytes(bytes.try_into().ok()?) })
+    }
+
     pub fn to_bytes(self) -> [u8; ObjectID::LENGTH] {
         self.value.to_be_bytes()
     }

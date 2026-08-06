@@ -124,6 +124,8 @@ pub mod database {
     pub const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(50);
     pub const CHECKPOINT_INTERVAL: Duration = Duration::from_secs(60);
 
+    pub const CLEANUP_WAKEUP_INTERVAL: Duration = Duration::from_secs(60);
+
     #[macro_export]
     macro_rules! internal_database_prefix {
         () => {

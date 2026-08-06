@@ -9,11 +9,14 @@ use std::{
     fmt,
     fs::{self, File},
     io::{self, Read, Write},
+    num::ParseIntError,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::Arc,
 };
 
 use chrono::{DateTime, Utc};
+use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use fail_point::{
     CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_CLEANUP_PARTIAL_FAIL, CHECKPOINT_DIR_CREATE_FAIL, CHECKPOINT_FILE_EMPTY,
@@ -33,6 +36,83 @@ use crate::{
 const CHECKPOINT_DIR_NAME: &str = "checkpoint";
 const STORAGE_METADATA_FILE_NAME: &str = "STORAGE_METADATA";
 const TEMP_FILE_EXTENSION: &str = "tmp";
+
+#[derive(Debug)]
+pub struct StorageMetadata {
+    pub watermark: SequenceNumber,
+    pub cleanup_sequence_number: Option<SequenceNumber>,
+}
+
+impl FromStr for StorageMetadata {
+    type Err = StorageMetadataParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.contains('=') {
+            // fallback to the legacy single number format
+            return Ok(Self { watermark: DurabilitySequenceNumber::new(s.parse()?), cleanup_sequence_number: None });
+        }
+
+        let mut sequence_number = None;
+        let mut cleanup_sequence_number = None;
+        for line in s.lines() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            let (key, value) =
+                line.split_once('=').ok_or(StorageMetadataParseError::InvalidFormat { line: line.to_owned() })?;
+            let key = key.trim();
+            let value = value.trim();
+            match key {
+                "watermark" => sequence_number = Some(DurabilitySequenceNumber::new(value.parse()?)),
+                "cleanup" => cleanup_sequence_number = Some(DurabilitySequenceNumber::new(value.parse()?)),
+                _ => (), // ignore any extra fields
+            }
+        }
+        let sequence_number =
+            sequence_number.ok_or(StorageMetadataParseError::MissingField { field_name: "sequence_number" })?;
+        Ok(Self { watermark: sequence_number, cleanup_sequence_number })
+    }
+}
+
+impl fmt::Display for StorageMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "watermark={}", self.watermark.number())?;
+        if let Some(cleanup) = self.cleanup_sequence_number {
+            writeln!(f, "cleanup={}", cleanup.number())?;
+        }
+        Ok(())
+    }
+}
+
+pub enum StorageMetadataParseError {
+    InvalidFormat { line: String },
+    MissingField { field_name: &'static str },
+    ParseInt(ParseIntError),
+}
+
+impl fmt::Display for StorageMetadataParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidFormat { line } => {
+                write!(f, "Could not parse metadata line: {line:?}, expected 'key = value'.")
+            }
+            Self::MissingField { field_name } => write!(f, "Missing mandatory field '{field_name}' in the metadata."),
+            Self::ParseInt(parse_int_error) => write!(f, "Failed to parse integer: {parse_int_error}"),
+        }
+    }
+}
+
+impl fmt::Debug for StorageMetadataParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
+
+impl From<ParseIntError> for StorageMetadataParseError {
+    fn from(value: ParseIntError) -> Self {
+        Self::ParseInt(value)
+    }
+}
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
@@ -78,7 +158,7 @@ impl CheckpointReader {
         keyspaces_dir: &Path,
         durability_client: &Durability,
         rocks_resources: &RocksResources,
-    ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
+    ) -> Result<(Keyspaces, SequenceNumber, SequenceNumber), CheckpointLoadError> {
         use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
 
         for keyspace in KS::iter() {
@@ -94,32 +174,30 @@ impl CheckpointReader {
 
         trace!("Finished recovering keyspaces, recovering missing commits");
 
-        let checkpoint_sequence_number = self.read_sequence_number()?;
-        if checkpoint_sequence_number > durability_client.previous() {
+        let metadata = self.read_metadata()?;
+        if metadata.watermark > durability_client.previous() {
             panic!(
                 "The checkpoint is ahead of the durability service! The durability logs may have been corrupted. Aborting."
             );
         }
 
-        let recovery_start = checkpoint_sequence_number + 1;
+        let recovery_start = metadata.watermark + 1;
         let recovered_commits = load_commit_data_from(recovery_start, durability_client)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         trace!("Applying missing commits");
         apply_recovered(database_name, recovered_commits, durability_client, &keyspaces)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
-        Ok((keyspaces, next_sequence_number))
+        Ok((keyspaces, next_sequence_number, metadata.cleanup_sequence_number.unwrap_or(SequenceNumber::MIN)))
     }
 
-    pub fn read_sequence_number(&self) -> Result<SequenceNumber, CheckpointLoadError> {
+    pub fn read_metadata(&self) -> Result<StorageMetadata, CheckpointLoadError> {
         use CheckpointLoadError::MetadataRead;
 
         let metadata_file_path = self.directory.join(STORAGE_METADATA_FILE_NAME);
         let metadata = fs::read_to_string(metadata_file_path)
             .map_err(|error| MetadataRead { dir: self.directory.clone(), source: Arc::new(error) })?;
-        Ok(SequenceNumber::new(
-            metadata.parse().expect("Could not read METADATA file (could try to restore from previous checkpoint)"),
-        ))
+        Ok(metadata.parse().expect("Could not read METADATA file (could try to restore from previous checkpoint)"))
     }
 
     fn is_complete<KS: KeyspaceSet>(&self) -> io::Result<bool> {
@@ -239,7 +317,12 @@ impl CheckpointWriter {
         Ok(Self { checkpoint_directory, temporary_directory })
     }
 
-    pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
+    pub fn add_storage(
+        &self,
+        keyspaces: &Keyspaces,
+        watermark: SequenceNumber,
+        cleanup_sequence_number: SequenceNumber,
+    ) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{KeyspaceCheckpoint, MetadataWrite};
 
         keyspaces
@@ -249,8 +332,13 @@ impl CheckpointWriter {
         fail_point!(CHECKPOINT_METADATA_WRITE_FAIL);
 
         let metadata_file_path = self.temporary_directory.join(STORAGE_METADATA_FILE_NAME);
-        write_file(&metadata_file_path, watermark.number().to_string().as_bytes())
-            .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
+        write_file(
+            &metadata_file_path,
+            StorageMetadata { watermark, cleanup_sequence_number: Some(cleanup_sequence_number) }
+                .to_string()
+                .as_bytes(),
+        )
+        .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
 
         Ok(())
     }
