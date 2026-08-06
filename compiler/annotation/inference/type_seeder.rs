@@ -85,7 +85,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     pub(crate) fn create_graph<'graph>(
         &self,
-        upstream_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
+        upstream_annotations: &VertexAnnotations,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
         let mut graph = self.build_recursive(conjunction);
@@ -403,7 +403,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn try_propagating_vertex_annotation_impl(
         &self,
         inner: &impl BinaryConstraint,
-        vertices: &mut BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
+        vertices: &mut VertexAnnotations,
     ) -> Result<bool, Box<ConceptReadError>> {
         let (left, right) = (inner.left(), inner.right());
         let any_modified = match (vertices.get(left), vertices.get(right)) {
@@ -864,8 +864,9 @@ impl BinaryConstraint for Has<Variable> {
         let Some(owner) = left_type.try_as_object_type() else {
             return Ok(()); // It can't be another type => Do nothing and let type-inference clean it up
         };
-        collector
-            .extend_into((owner.get_owns(context.snapshot, context.type_manager)?.iter()).map(|owns| owns.attribute()));
+        collector.extend_mapped_ref(&owner.get_owns(context.snapshot, context.type_manager)?, |owns| {
+            TypeAnnotation::Attribute(owns.attribute())
+        });
         Ok(())
     }
 
@@ -902,8 +903,9 @@ impl BinaryConstraint for Owns<Variable> {
             // It can't be another type => Do nothing and let type-inference clean it up
             return Ok(());
         };
-        collector
-            .extend_into(owner.get_owns(context.snapshot, context.type_manager)?.iter().map(|owns| owns.attribute()));
+        collector.extend_mapped_ref(&owner.get_owns(context.snapshot, context.type_manager)?, |owns| {
+            TypeAnnotation::Attribute(owns.attribute())
+        });
         Ok(())
     }
 
@@ -1237,8 +1239,9 @@ impl BinaryConstraint for PlayerRoleEdge<'_> {
             // It can't be another type => Do nothing and let type-inference clean it up
             return Ok(());
         };
-        collector
-            .extend_into(player.get_plays(context.snapshot, context.type_manager)?.iter().map(|plays| plays.role()));
+        collector.extend_mapped_ref(&player.get_plays(context.snapshot, context.type_manager)?, |plays| {
+            TypeAnnotation::RoleType(plays.role())
+        });
         Ok(())
     }
 
@@ -1276,8 +1279,9 @@ impl BinaryConstraint for Plays<Variable> {
             // It can't be another type => Do nothing and let type-inference clean it up
             return Ok(());
         };
-        collector
-            .extend_into(player.get_plays(context.snapshot, context.type_manager)?.iter().map(|plays| plays.role()));
+        collector.extend_mapped_ref(&player.get_plays(context.snapshot, context.type_manager)?, |plays| {
+            TypeAnnotation::RoleType(plays.role())
+        });
         Ok(())
     }
 
@@ -1319,7 +1323,7 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
             let is_write_stage_and_relates_is_abstract = context.is_write_stage()
                 && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, relates.role())?;
             if !is_write_stage_and_relates_is_abstract {
-                collector.insert(relates.role().into());
+                collector.insert(TypeAnnotation::RoleType(relates.role()));
             }
         }
         Ok(())
@@ -1339,7 +1343,7 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
             let is_write_stage_and_relates_is_abstract = context.is_write_stage()
                 && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, *role)?;
             if !is_write_stage_and_relates_is_abstract {
-                collector.insert(relation.into());
+                collector.insert(TypeAnnotation::Relation(relation));
             }
         }
         Ok(())
@@ -1365,9 +1369,9 @@ impl BinaryConstraint for Relates<Variable> {
             // It can't be another type => Do nothing and let type-inference clean it up
             return Ok(());
         };
-        collector.extend_into(
-            relation.get_relates(context.snapshot, context.type_manager)?.iter().map(|relates| relates.role()),
-        );
+        collector.extend_mapped_ref(&relation.get_relates(context.snapshot, context.type_manager)?, |relates| {
+            TypeAnnotation::RoleType(relates.role())
+        });
         Ok(())
     }
 
@@ -1483,7 +1487,7 @@ pub mod tests {
             &translation_context.variable_registry,
             TypeInferenceMode::ConcreteSubtypesOnly,
         );
-        let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
+        let graph = context.create_graph(&VertexAnnotations::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
     }
 
@@ -1617,7 +1621,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 TypeInferenceMode::ConcreteSubtypesOnly,
             );
-            let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
+            let graph = context.create_graph(&VertexAnnotations::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
         }
@@ -1667,7 +1671,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 TypeInferenceMode::ConcreteSubtypesOnly,
             );
-            let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
+            let graph = context.create_graph(&VertexAnnotations::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
         }
