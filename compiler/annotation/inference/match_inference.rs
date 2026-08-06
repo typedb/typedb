@@ -325,15 +325,13 @@ impl<'this> TypeInferenceEdge<'this> {
         let mut is_modified = false;
         {
             let left_vertex_annotations = vertices.get_mut(&self.left).unwrap();
-            let size_before = left_vertex_annotations.len();
-            left_vertex_annotations.retain_intersection(&self.left_to_right);
-            is_modified = is_modified || size_before != left_vertex_annotations.len();
+            let pruned_any = left_vertex_annotations.retain_intersection(&self.left_to_right);
+            is_modified = is_modified || pruned_any;
         };
         {
             let right_vertex_annotations = vertices.get_mut(&self.right).unwrap();
-            let size_before = right_vertex_annotations.len();
-            right_vertex_annotations.retain_intersection(&self.right_to_left);
-            is_modified = is_modified || size_before != right_vertex_annotations.len();
+            let pruned_any = right_vertex_annotations.retain_intersection(&self.right_to_left);
+            is_modified = is_modified || pruned_any;
         };
         is_modified
     }
