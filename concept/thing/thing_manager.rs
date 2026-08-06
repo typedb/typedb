@@ -1865,7 +1865,7 @@ impl ThingManager {
                         AttributeVertex::FIXED_WIDTH_ENCODING,
                     );
                 } else if let Some(has) = ThingEdgeHas::try_decode(key.bytes()) {
-                    let prefix = ThingEdgeHas::prefix_from_type_parts(has.from().prefix(), has.from().type_id_());
+                    let prefix = ThingEdgeHas::prefix_from_type(Object::new(has.from()).type_().vertex());
                     cleanup_record.insert(
                         prefix.resize_to(),
                         StorageKey::Array(key).resize_to(),
@@ -1883,7 +1883,10 @@ impl ThingManager {
                     );
                 } else if let Some(links) = ThingEdgeLinks::try_decode(key.bytes()) {
                     let prefix = if links.is_reverse() {
-                        ThingEdgeLinks::prefix_reverse_from_player_type(links.from().prefix(), links.from().type_id_())
+                        ThingEdgeLinks::prefix_reverse_from_player_type(
+                            Object::new(links.from()).type_().vertex().prefix(),
+                            links.from().type_id_(),
+                        )
                     } else {
                         ThingEdgeLinks::prefix_from_relation_type(links.from().type_id_())
                     };
@@ -1895,7 +1898,7 @@ impl ThingManager {
                 } else if let Some(links_index) = ThingEdgeIndexedRelation::try_decode(key.bytes()) {
                     let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
                         links_index.relation_type_id(),
-                        links_index.from().prefix(),
+                        Object::new(links_index.from()).type_().vertex().prefix(),
                         links_index.from().type_id_(),
                     );
                     cleanup_record.insert(
