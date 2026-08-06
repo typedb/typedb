@@ -6,27 +6,21 @@
 
 #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
-use std::sync::Arc;
-
-use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
-use diagnostics::metrics::FsyncMetrics;
-use durability::wal::WAL;
-use itertools::Itertools;
+use bytes::Bytes;
 use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
 use resource::{
-    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    constants::snapshot::BUFFER_KEY_INLINE,
     profile::{CommitProfile, StorageCounters},
 };
 use storage::{
-    StorageOpenError,
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{IteratorPool, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError},
-    snapshot::{CommittableSnapshot, PreloadedRangesSnapshot, ReadableSnapshot, WritableSnapshot},
+    key_range::{KeyRange, RangeStart},
+    key_value::{StorageKey, StorageKeyArray},
+    keyspace::IteratorPool,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
-use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
+use test_utils_storage::{create_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::{Keyspace, Keyspace2};
 
