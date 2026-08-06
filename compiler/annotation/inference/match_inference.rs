@@ -44,6 +44,7 @@ pub fn infer_types_for_block(
         .iter()
         .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
         .collect();
+    let input_annotations = VertexAnnotations { annotations: input_annotations };
     let root_graph = infer_types_impl(ctx, block.conjunction(), &input_annotations, type_inference_mode)?;
     let mut type_annotations_by_scope = HashMap::new();
     root_graph.into_type_annotations_by_scope(&mut type_annotations_by_scope);
@@ -53,7 +54,7 @@ pub fn infer_types_for_block(
 fn infer_types_impl<'conj>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &'conj Conjunction,
-    input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
+    input_annotations: &VertexAnnotations,
     type_inference_mode: TypeInferenceMode,
 ) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
     let graph = compute_type_inference_graph(ctx, conjunction, input_annotations, type_inference_mode)?;
@@ -137,7 +138,7 @@ fn all_vertex_annotations_available(
 pub(crate) fn compute_type_inference_graph<'graph>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &'graph Conjunction,
-    input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
+    input_annotations: &VertexAnnotations,
     type_inference_mode: TypeInferenceMode,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut graph = TypeGraphSeedingContext::new(
@@ -814,7 +815,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -882,7 +883,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -945,7 +946,7 @@ pub mod tests {
             let err = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap_err();
@@ -989,7 +990,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1079,7 +1080,7 @@ pub mod tests {
         let graph = compute_type_inference_graph(
             &mut pipeline_annotation_context,
             block.conjunction(),
-            &BTreeMap::new(),
+            &VertexAnnotations::new(),
             TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
@@ -1185,7 +1186,7 @@ pub mod tests {
         let graph = compute_type_inference_graph(
             &mut pipeline_annotation_context,
             block.conjunction(),
-            &BTreeMap::new(),
+            &VertexAnnotations::new(),
             TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
@@ -1272,7 +1273,7 @@ pub mod tests {
         let graph = compute_type_inference_graph(
             &mut pipeline_annotation_context,
             block.conjunction(),
-            &BTreeMap::new(),
+            &VertexAnnotations::new(),
             TypeInferenceMode::ConcreteSubtypesOnly,
         )
         .unwrap();
@@ -1386,7 +1387,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1456,7 +1457,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1524,7 +1525,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
-            .create_graph(&BTreeMap::new(), block.conjunction())
+            .create_graph(&VertexAnnotations::new(), block.conjunction())
             .unwrap();
             prune_types(&mut graph);
 
@@ -1577,7 +1578,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1656,7 +1657,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1723,7 +1724,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1785,7 +1786,7 @@ pub mod tests {
             let err = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap_err();
@@ -1826,7 +1827,7 @@ pub mod tests {
             let graph = compute_type_inference_graph(
                 &mut pipeline_annotation_context,
                 block.conjunction(),
-                &BTreeMap::new(),
+                &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
             .unwrap();
@@ -1915,7 +1916,7 @@ pub mod tests {
             &translation_context.variable_registry,
             TypeInferenceMode::ConcreteSubtypesOnly,
         );
-        let mut graph = seeder.create_graph(&BTreeMap::new(), conjunction).unwrap();
+        let mut graph = seeder.create_graph(&VertexAnnotations::new(), conjunction).unwrap();
         prune_types(&mut graph);
         if expected_graph != graph {
             // We need this because of non-determinism
