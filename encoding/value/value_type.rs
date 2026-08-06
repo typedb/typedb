@@ -21,7 +21,7 @@ use crate::{
 };
 
 // We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
-#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ValueType {
     Boolean,
     Integer,

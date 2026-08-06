@@ -25,7 +25,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     PipelineAnnotationContext, TypeInferenceError,
-    inference::{ConceptVertexTypes, RetainAndContainExt, VertexAnnotations, type_seeder::TypeGraphSeedingContext},
+    inference::{
+        ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, VertexAnnotations, VertexTypeAnnotations,
+        type_seeder::TypeGraphSeedingContext,
+    },
     pipeline::RunningVariableAnnotations,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
@@ -170,16 +173,18 @@ fn construct_error_message_for_unsatisfiable_edge(
         Vertex::Label(label) => label.scoped_name().as_str().to_string(),
         Vertex::Parameter(_) => unreachable!("Parameters can't be involved in TypeInferenceEdges"),
     };
-    let resolve_type_label = |type_: &answer::Type| {
-        type_
+    let resolve_type_label = |type_: TypeAnnotationSetEntry| match type_ {
+        TypeAnnotationSetEntry::Concept(type_) => type_
             .get_label(ctx.snapshot, ctx.type_manager)
             .map(|label| label.scoped_name().to_string())
-            .unwrap_or_else(|_| "(Error while resolving label)".to_owned())
+            .unwrap_or_else(|_| "(Error while resolving label)".to_owned()),
     };
     let left_variable = resolve_vertex(&edge.left);
     let right_variable = resolve_vertex(&edge.right);
-    let left_types = graph.vertices.annotations.get(&edge.left).unwrap().iter().map(resolve_type_label).join(", ");
-    let right_types = graph.vertices.annotations.get(&edge.right).unwrap().iter().map(resolve_type_label).join(", ");
+    let left_types =
+        graph.vertices.annotations.get(&edge.left).unwrap().iter_types().map(resolve_type_label).join(", ");
+    let right_types =
+        graph.vertices.annotations.get(&edge.right).unwrap().iter_types().map(resolve_type_label).join(", ");
     TypeInferenceError::DetectedUnsatisfiableEdge {
         left_variable,
         right_variable,
@@ -349,16 +354,19 @@ impl<'this> TypeInferenceEdge<'this> {
         let TypeInferenceEdge { left_to_right, right_to_left, .. } = self;
         {
             let left_vertex_annotations = vertices.get(&self.left).unwrap();
-            left_to_right.iter().filter(|(left_type, _)| !left_vertex_annotations.contains(*left_type)).for_each(
+            left_to_right.iter().filter(|(left_type, _)| !left_vertex_annotations.contains_type(*left_type)).for_each(
                 |(left_type, right_keys)| Self::remove_type_from_values_of(left_type, right_keys, right_to_left),
             );
             left_to_right.retain_intersection(left_vertex_annotations);
         };
         {
             let right_vertex_annotations = vertices.get(&self.right).unwrap();
-            right_to_left.iter().filter(|(right_type, _)| !right_vertex_annotations.contains(*right_type)).for_each(
-                |(right_type, left_keys)| Self::remove_type_from_values_of(right_type, left_keys, left_to_right),
-            );
+            right_to_left
+                .iter()
+                .filter(|(right_type, _)| !right_vertex_annotations.contains_type(*right_type))
+                .for_each(|(right_type, left_keys)| {
+                    Self::remove_type_from_values_of(right_type, left_keys, left_to_right)
+                });
             right_to_left.retain_intersection(right_vertex_annotations);
         };
     }
@@ -391,12 +399,12 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
 
         for (parent_vertex, parent_vertex_types) in parent_vertices {
             let size_before = parent_vertex_types.len();
-            parent_vertex_types.retain(|type_| {
+            parent_vertex_types.retain_types(|type_| {
                 self.disjunction.iter().any(|nested_graph| {
                     nested_graph
                         .vertices
                         .get(parent_vertex)
-                        .map(|nested_types| nested_types.contains(type_))
+                        .map(|nested_types| nested_types.contains_type(type_))
                         .unwrap_or(true)
                 })
             });
@@ -439,12 +447,14 @@ impl FlattenedTypeInferenceGraph<'_> {
             }
         });
 
-        let vertex_annotations = vertices
+        let concept_vertex_annotations = vertices
             .into_iter()
-            .map(|(variable, types)| (variable.into(), Arc::new(types)))
+            .filter_map(|(variable, types)| match types {
+                VertexTypeAnnotations::Concept(types) => Some((variable.into(), Arc::new(types.0))),
+            })
             .collect::<BTreeMap<_, _>>();
 
-        TypeAnnotations::new(vertex_annotations, constraint_annotations)
+        TypeAnnotations::new(concept_vertex_annotations, constraint_annotations)
     }
 }
 
