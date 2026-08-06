@@ -21,6 +21,10 @@ pub(crate) struct VertexAnnotations {
 }
 
 impl VertexAnnotations {
+    pub(crate) fn new() -> VertexAnnotations {
+        Self { annotations: BTreeMap::new() }
+    }
+
     pub(crate) fn add_or_intersect(
         &mut self,
         vertex: &Vertex<Variable>,
@@ -28,7 +32,7 @@ impl VertexAnnotations {
     ) -> bool {
         if let Some(existing_annotations) = self.get_mut(vertex) {
             let size_before = existing_annotations.len();
-            existing_annotations.retain(|x| new_annotations.contains(x));
+            existing_annotations.retain_intersection(&*new_annotations);
             existing_annotations.len() != size_before
         } else {
             self.insert(vertex.clone(), new_annotations.into_owned());
@@ -126,6 +130,17 @@ pub(crate) trait ExtendMappedOperations<T>: Extend<T> {
         T: From<FROM>,
     {
         self.extend_into(iter.into_iter().copied())
+    }
+
+    fn extend_mapped<FROM>(&mut self, iter: impl IntoIterator<Item = FROM>, f: impl Fn(FROM) -> T) {
+        self.extend(iter.into_iter().map(f))
+    }
+
+    fn extend_mapped_ref<'a, FROM>(&mut self, iter: impl IntoIterator<Item = &'a FROM>, f: impl Fn(FROM) -> T)
+    where
+        FROM: Copy + 'a,
+    {
+        self.extend_mapped(iter.into_iter().copied(), f)
     }
 }
 
