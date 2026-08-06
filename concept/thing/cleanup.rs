@@ -216,8 +216,8 @@ mod serialise {
                     let mut end = None;
                     let mut fixed_width = None;
 
-                    while let Some(key) = map.next_key()? {
-                        match key {
+                    while let Some(key) = map.next_key::<String>()? {
+                        match key.as_str() {
                             "start" => start = Some(map.next_value()?),
                             "end" => end = Some(map.next_value()?),
                             "fixed_width" => fixed_width = Some(map.next_value()?),
