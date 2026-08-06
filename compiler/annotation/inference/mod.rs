@@ -31,9 +31,7 @@ impl VertexAnnotations {
         new_annotations: Cow<'_, BTreeSet<TypeAnnotation>>,
     ) -> bool {
         if let Some(existing_annotations) = self.get_mut(vertex) {
-            let size_before = existing_annotations.len();
-            existing_annotations.retain_intersection(&*new_annotations);
-            existing_annotations.len() == size_before
+            existing_annotations.retain_intersection(&*new_annotations)
         } else {
             self.insert(vertex.clone(), new_annotations.into_owned());
             true
@@ -151,7 +149,7 @@ impl<T> ExtendMappedOperations<T> for Vec<T> {}
 
 pub(crate) trait RetainAndContainExt<T> {
     fn contains_ext(&self, item: &T) -> bool;
-    fn retain_intersection<S: RetainAndContainExt<T>>(&mut self, other: &S);
+    fn retain_intersection<S: RetainAndContainExt<T>>(&mut self, other: &S) -> bool;
 }
 
 impl<K: Ord, V> RetainAndContainExt<K> for BTreeMap<K, V> {
@@ -159,8 +157,10 @@ impl<K: Ord, V> RetainAndContainExt<K> for BTreeMap<K, V> {
         self.contains_key(item)
     }
 
-    fn retain_intersection<S: RetainAndContainExt<K>>(&mut self, other: &S) {
-        self.retain(|x, _| other.contains_ext(x))
+    fn retain_intersection<S: RetainAndContainExt<K>>(&mut self, other: &S) -> bool {
+        let size_before = self.len();
+        self.retain(|x, _| other.contains_ext(x));
+        self.len() != size_before
     }
 }
 
@@ -169,7 +169,9 @@ impl<K: Ord> RetainAndContainExt<K> for BTreeSet<K> {
         self.contains(item)
     }
 
-    fn retain_intersection<S: RetainAndContainExt<K>>(&mut self, other: &S) {
-        self.retain(|x| other.contains_ext(x))
+    fn retain_intersection<S: RetainAndContainExt<K>>(&mut self, other: &S) -> bool {
+        let size_before = self.len();
+        self.retain(|x| other.contains_ext(x));
+        self.len() != size_before
     }
 }
