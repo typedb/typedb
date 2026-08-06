@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     PipelineAnnotationContext, TypeInferenceError,
-    inference::{RetainAndContainExt, VertexAnnotations, type_seeder::TypeGraphSeedingContext},
+    inference::{ConceptVertexTypes, RetainAndContainExt, VertexAnnotations, type_seeder::TypeGraphSeedingContext},
     pipeline::RunningVariableAnnotations,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
@@ -43,7 +43,7 @@ pub fn infer_types_for_block(
     let input_annotations = previous_stage_annotations
         .concepts
         .iter()
-        .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
+        .map(|(var, annotations)| (Vertex::Variable(*var), ConceptVertexTypes((**annotations).clone()).into()))
         .collect();
     let input_annotations = VertexAnnotations { annotations: input_annotations };
     infer_types_impl(ctx, block.conjunction(), &input_annotations, type_inference_mode, &mut flattened_graphs)?;
