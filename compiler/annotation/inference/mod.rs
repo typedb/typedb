@@ -15,9 +15,37 @@ use ir::pattern::Vertex;
 pub mod match_inference;
 pub mod type_seeder;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum VertexTypeAnnotations {
+    Concept(ConceptVertexTypes),
+}
+
+impl From<ConceptVertexTypes> for VertexTypeAnnotations {
+    fn from(value: ConceptVertexTypes) -> Self {
+        Self::Concept(value)
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct ConceptVertexTypes(BTreeSet<answer::Type>);
+
+impl Deref for ConceptVertexTypes {
+    type Target = BTreeSet<answer::Type>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ConceptVertexTypes {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
-    annotations: BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
+    annotations: BTreeMap<Vertex<Variable>, VertexTypeAnnotations>,
 }
 
 impl VertexAnnotations {
@@ -28,7 +56,7 @@ impl VertexAnnotations {
     pub(crate) fn add_or_intersect(
         &mut self,
         vertex: &Vertex<Variable>,
-        new_annotations: Cow<'_, BTreeSet<TypeAnnotation>>,
+        new_annotations: Cow<'_, VertexTypeAnnotations>,
     ) -> bool {
         if let Some(existing_annotations) = self.get_mut(vertex) {
             existing_annotations.retain_intersection(&*new_annotations)
@@ -40,7 +68,7 @@ impl VertexAnnotations {
 }
 
 impl Deref for VertexAnnotations {
-    type Target = BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>;
+    type Target = BTreeMap<Vertex<Variable>, VertexTypeAnnotations>;
 
     fn deref(&self) -> &Self::Target {
         &self.annotations
