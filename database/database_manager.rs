@@ -32,7 +32,6 @@ type DatabasesWriteLock<'a> = RwLockWriteGuard<'a, DatabasesMap>;
 pub struct DatabaseManager {
     data_directory: PathBuf,
     databases: Databases,
-    // Lock `databases` before any `imports` lock when both are needed.
     imports: DatabaseImportManager,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
@@ -187,7 +186,6 @@ impl DatabaseManager {
         let database_path = database.path.clone();
 
         if self.exists_public(&databases, name) {
-            // Imported database cannot exist together with a public database
             database.delete().map_err(|typedb_source| DatabaseCreateError::AlreadyExistsAndCleanupBlocked {
                 name: name.to_string(),
                 typedb_source,

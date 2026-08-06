@@ -147,9 +147,6 @@ impl DatabaseExportService {
         }
     }
 
-    // The service's single await point, at every stage boundary: all termination signals are
-    // observed here, including while the send is blocked on the client's pace — closing
-    // (`close_matching`) awaits this service's end, on the raft event thread in a cluster.
     async fn send_message(&mut self, message: ProtocolServer) -> Result<(), DatabaseExportError> {
         tokio::select! { biased;
             _ = self.shutdown_receiver.changed() => Err(DatabaseExportError::ShutdownInterrupt {}),
@@ -170,9 +167,6 @@ impl DatabaseExportService {
         );
     }
 
-    // The terminal message of an aborting export must never block the service on the client's pace
-    // (a blocked service would hold its registered transaction against closing): a full channel is
-    // drained by a detached task that owns only a sender clone.
     fn send_terminal_status(response_sender: &ResponseSender, status: Status) {
         match response_sender.try_send(Err(status)) {
             Ok(()) => (),
