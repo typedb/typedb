@@ -673,7 +673,7 @@ fn make_cleanup_fn(
 
             let ranges = range.into_values().fold(CleanupRecord::default(), CleanupRecord::merge);
 
-            if let Err(error) = storage.cleanup_dead_keys::<EncodingKeyspace>(watermark, ranges) {
+            if let Err(error) = storage.cleanup_dead_keys(watermark, ranges) {
                 error!("Compaction failed: {:?}", error);
             }
             debug!("Finished compaction for database {} in {:?}", database_name, start.elapsed());

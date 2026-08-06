@@ -604,7 +604,7 @@ impl<Durability> MVCCStorage<Durability> {
         SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed))
     }
 
-    pub fn cleanup_dead_keys<KS: KeyspaceSet>(
+    pub fn cleanup_dead_keys(
         &self,
         cleanup_until: SequenceNumber,
         ranges: impl IntoIterator<
@@ -615,7 +615,8 @@ impl<Durability> MVCCStorage<Durability> {
             return Ok(());
         }
 
-        let mut batches = BTreeMap::from_iter(KS::iter().map(|keyspace| (keyspace.id(), WriteBatch::default())));
+        let mut batches =
+            BTreeMap::from_iter(self.keyspaces.iter().map(|keyspace| (keyspace.id(), WriteBatch::default())));
 
         for (prefix, range) in ranges {
             let keyspace_id = prefix.keyspace_id();

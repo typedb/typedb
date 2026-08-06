@@ -116,6 +116,10 @@ impl Keyspaces {
         &self.keyspaces[keyspace_index.0 as usize]
     }
 
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &Keyspace> {
+        self.keyspaces.iter()
+    }
+
     pub(crate) fn write(&self, write_batches: WriteBatches) -> Result<(), KeyspaceError> {
         for (index, write_batch) in write_batches.into_iter() {
             debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
