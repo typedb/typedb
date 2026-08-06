@@ -5,6 +5,7 @@
  */
 
 #![deny(unused_must_use)]
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
