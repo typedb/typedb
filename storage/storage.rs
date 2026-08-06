@@ -635,10 +635,12 @@ impl<Durability> MVCCStorage<Durability> {
                     raw.map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
                 let mvcc_key = MVCCKey::wrap_slice(k);
 
-                if mvcc_key.sequence_number() < cleanup_until
-                    && (matches!(mvcc_key.operation(), StorageOperation::Delete)
-                        || last_seen.as_deref() == Some(mvcc_key.key()))
-                {
+                let overwritten =
+                    mvcc_key.sequence_number() < cleanup_until && last_seen.as_deref() == Some(mvcc_key.key());
+                let deleted = mvcc_key.sequence_number() <= cleanup_until
+                    && matches!(mvcc_key.operation(), StorageOperation::Delete);
+
+                if overwritten || deleted {
                     batch.delete(k);
                 }
                 last_seen = Some(Bytes::<MVCC_KEY_INLINE_SIZE>::copy(mvcc_key.key()));
