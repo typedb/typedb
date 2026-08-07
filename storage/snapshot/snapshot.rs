@@ -228,6 +228,7 @@ pub struct ReadSnapshot<D> {
     id: SnapshotId,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
+    reader_guard: ReaderDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
@@ -238,8 +239,15 @@ impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
 
 impl<D> ReadSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
-        ReadSnapshot { open_sequence_number, id: SnapshotId::new(), iterator_pool: IteratorPool::new(), storage }
+        ReadSnapshot {
+            open_sequence_number,
+            id: SnapshotId::new(),
+            iterator_pool: IteratorPool::new(),
+            storage,
+            reader_guard,
+        }
     }
 }
 
