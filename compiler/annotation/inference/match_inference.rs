@@ -311,15 +311,9 @@ impl<'this> TypeInferenceEdge<'this> {
                 .iter()
                 .all(|(u, vs)| vs.iter().all(|v| initial_left_to_right.get(v).unwrap().contains(u)))
         );
-        let left_to_right = initial_left_to_right.into_iter().map(|(k,v)| (k, v.0)).collect();
-        let right_to_left = initial_right_to_left.into_iter().map(|(k,v)| (k, v.0)).collect();
-        TypeInferenceEdge {
-            constraint,
-            left,
-            right,
-            left_to_right,
-            right_to_left,
-        }
+        let left_to_right = initial_left_to_right.into_iter().map(|(k, v)| (k, v.0)).collect();
+        let right_to_left = initial_right_to_left.into_iter().map(|(k, v)| (k, v.0)).collect();
+        TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left }
     }
 
     fn remove_type_from_values_of(

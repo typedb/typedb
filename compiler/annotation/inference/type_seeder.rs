@@ -498,7 +498,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     union = Some(branch_annotations.clone())
                 }
                 Ok::<(), TypeInferenceError>(())
-            });
+            })?;
             Ok(union)
         } else {
             Ok(None)
@@ -569,15 +569,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<TypeInferenceEdge<'conj>, TypeInferenceError> {
         let (left, right) = (inner.left().clone(), inner.right().clone());
         let Some(VertexTypeAnnotations::Concept(left_vertex_types)) = vertices.get(&left) else {
-            return Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() })
+            return Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() });
         };
         let Some(VertexTypeAnnotations::Concept(right_vertex_types)) = vertices.get(&right) else {
-            return Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() })
+            return Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() });
         };
-        let left_to_right =
-            inner.annotate_left_to_right(self, left_vertex_types, right_vertex_types)?;
-        let right_to_left =
-            inner.annotate_right_to_left(self, right_vertex_types, left_vertex_types)?;
+        let left_to_right = inner.annotate_left_to_right(self, left_vertex_types, right_vertex_types)?;
+        let right_to_left = inner.annotate_right_to_left(self, right_vertex_types, left_vertex_types)?;
         debug_assert!(left_to_right.values().all(|v| !v.is_empty()));
         debug_assert!(right_to_left.values().all(|v| !v.is_empty()));
         Ok(TypeInferenceEdge::build(constraint, left, right, left_to_right, right_to_left))
@@ -658,7 +656,8 @@ impl UnaryConstraint for Kind<Variable> {
             EncodingKind::Attribute => BTreeSet::from_into(type_manager.get_attribute_types(context.snapshot)?),
             EncodingKind::Role => BTreeSet::from_into(type_manager.get_role_types(context.snapshot)?),
         };
-        graph_vertices.add_or_intersect::<ConceptVertexTypes>(self.type_(), Cow::Owned(ConceptVertexTypes(annotations)));
+        graph_vertices
+            .add_or_intersect::<ConceptVertexTypes>(self.type_(), Cow::Owned(ConceptVertexTypes(annotations)));
         Ok(())
     }
 }
@@ -666,7 +665,7 @@ impl UnaryConstraint for Kind<Variable> {
 impl UnaryConstraint for Label<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        _seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        _context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let annotation_opt = graph_vertices.get(self.type_label());
@@ -760,13 +759,19 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                 zip(self.assigned(), annotated_function_signature.returns.iter())
             {
                 if let FunctionParameterAnnotation::Concept(types) = return_annotation {
-                    graph_vertices.add_or_intersect::<ConceptVertexTypes>(assigned_variable, Cow::Owned(ConceptVertexTypes(types.clone())));
+                    graph_vertices.add_or_intersect::<ConceptVertexTypes>(
+                        assigned_variable,
+                        Cow::Owned(ConceptVertexTypes(types.clone())),
+                    );
                 }
             }
             let args = self.function_call().argument_ids();
             for (arg_var, arg_annotations) in zip(args, &annotated_function_signature.arguments) {
                 if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
-                    graph_vertices.add_or_intersect::<ConceptVertexTypes>(&Vertex::Variable(arg_var), Cow::Owned(ConceptVertexTypes(types.clone())));
+                    graph_vertices.add_or_intersect::<ConceptVertexTypes>(
+                        &Vertex::Variable(arg_var),
+                        Cow::Owned(ConceptVertexTypes(types.clone())),
+                    );
                 }
             }
         }
@@ -1101,7 +1106,7 @@ impl BinaryConstraint for Is<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut ConceptVertexTypes,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -1111,7 +1116,7 @@ impl BinaryConstraint for Is<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut ConceptVertexTypes,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -1211,18 +1216,18 @@ impl BinaryConstraint for Comparison<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-        left_type: &TypeAnnotation,
-        collector: &mut ConceptVertexTypes,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        _left_type: &TypeAnnotation,
+        _collector: &mut ConceptVertexTypes,
     ) -> Result<(), Box<ConceptReadError>> {
         unreachable!()
     }
 
     fn annotate_right_to_left_for_type(
         &self,
-        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-        right_type: &TypeAnnotation,
-        collector: &mut ConceptVertexTypes,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        _left_type: &TypeAnnotation,
+        _collector: &mut ConceptVertexTypes,
     ) -> Result<(), Box<ConceptReadError>> {
         unreachable!()
     }
