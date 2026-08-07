@@ -611,6 +611,8 @@ impl<Durability> MVCCStorage<Durability> {
             Item = (StorageKey<'static, BUFFER_KEY_INLINE>, KeyRange<StorageKey<'static, BUFFER_KEY_INLINE>>),
         >,
     ) -> Result<(), StorageCompactError> {
+        let cleanup_until = SequenceNumber::min(cleanup_until, self.earliest_possible_reader());
+
         if self.earliest_uncleaned.load(Ordering::Relaxed) >= cleanup_until.number() {
             return Ok(());
         }
