@@ -589,11 +589,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
         for annotated_vertex in &mut graph.vertices {
-            let (Vertex::Variable(id), annotations) = annotated_vertex else {
+            let (Vertex::Variable(id), VertexTypeAnnotations::Concept(annotations)) = annotated_vertex else {
                 continue;
             };
             if self.variable_registry.get_variable_category(*id).is_some_and(|cat| cat.is_category_thing()) {
-                TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))?;
+                try_retain(annotations, |type_| self.is_not_abstract(type_))?;
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
@@ -1689,4 +1689,17 @@ pub mod tests {
             assert_eq!(expected_graph.edges, graph.edges);
         }
     }
+}
+
+fn try_retain<T: Ord + Copy, E>(set: &mut BTreeSet<T>, predicate: impl Fn(&T) -> Result<bool, E>) -> Result<(), E> {
+    let mut to_be_removed = Vec::new();
+    for item in set.iter() {
+        if !predicate(item)? {
+            to_be_removed.push(*item);
+        }
+    }
+    for annotation in to_be_removed.iter() {
+        set.remove(annotation);
+    }
+    Ok(())
 }
