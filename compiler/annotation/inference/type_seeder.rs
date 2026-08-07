@@ -617,6 +617,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         vertices: &VertexAnnotations,
     ) -> Result<TypeInferenceEdge<'conj>, TypeInferenceError> {
         let (left, right) = (inner.left().clone(), inner.right().clone());
+        compile_error!("COMPARISONS!");
         let Some(VertexTypeAnnotations::Concept(left_vertex_types)) = vertices.get(&left) else {
             return Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() });
         };

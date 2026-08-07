@@ -234,6 +234,10 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
     graph.prune_constraints_from_vertices()?; // We need this for expressions
     while graph.prune_vertices_from_constraints() {
+        // if !graph.expressions.is_empty() {
+        //     println!("VERTICES ARE: {:?}", graph.vertices);
+        //     println!("EXPRESSIONS ARE: {:?}", graph.expressions);
+        // }
         graph.prune_constraints_from_vertices()?;
     }
     Ok(())
@@ -526,6 +530,7 @@ impl<'this> TypeInferenceExpression<'this> {
     }
 
     fn exactly_one_value_type(&self, annotations: &VertexTypeAnnotations) -> Result<ExpressionValueType, ()> {
+        // eprintln!("EXACTLY_ONE? {:?}", annotations);
         match annotations {
             VertexTypeAnnotations::Concept(types) => filter_variants!(answer::Type::Attribute: types)
                 .map(|t| self.value_types_of_attributes[t])

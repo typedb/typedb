@@ -60,9 +60,11 @@ impl VertexTypeAnnotations {
             (Self::Concept(inner), Self::Concept(other)) => Ok(inner.extend(other)),
             (Self::Value(inner), Self::Value(other)) => Ok(inner.extend(other)),
             (Self::Concept(_), Self::Value(_)) => {
+                debug_assert!(false);
                 Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() })
             }
             (Self::Value(_), Self::Concept(_)) => {
+                debug_assert!(false);
                 Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "value".to_owned() })
             }
         }

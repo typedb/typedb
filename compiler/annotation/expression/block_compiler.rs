@@ -257,6 +257,7 @@ fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
         .iter()
         .exactly_one()
         .map_err(|_| {
+            debug_assert!(false, "This should have been reached earlier!")
             Box::new(ExpressionCompileError::VariableMultipleValueTypes {
                 variable: context.variable_name(&variable),
                 value_types: value_types.iter().join(", "),
