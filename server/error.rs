@@ -260,7 +260,8 @@ impl ServerStateError for LocalServerStateError {
                 DatabaseImportServiceError::ServerState { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { .. }
                 | DatabaseImportServiceError::ImportTaskFailed { .. }
-                | DatabaseImportServiceError::ImportClosed { .. } => Server,
+                | DatabaseImportServiceError::ImportClosed { .. }
+                | DatabaseImportServiceError::ShutdownInterrupt { .. } => Server,
             },
             Self::NotInitialised { .. }
             | Self::FailedToOpenPrerequisiteTransaction { .. }

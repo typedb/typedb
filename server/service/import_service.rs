@@ -21,5 +21,6 @@ typedb_error! {
         ServerState(8, "Import operation failed.", typedb_source: ArcServerStateError),
         ImportTaskFailed(9, "Import processing unexpectedly failed during {phase}. The import is aborted and can be retried.", phase: String),
         ImportClosed(10, "The import was closed by the server. The import is aborted and can be retried."),
+        ShutdownInterrupt(11, "The import was interrupted by server shutdown. The import is aborted and can be retried."),
     }
 }

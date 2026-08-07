@@ -8,7 +8,10 @@ use std::{
     collections::{HashMap, HashSet},
     marker::PhantomData,
     path::PathBuf,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering as AtomicOrdering},
+    },
     time::Duration,
 };
 
@@ -299,6 +302,7 @@ pub struct DatabaseImporter {
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_item_count: u64,
     total_item_count: u64,
+    interrupt: Arc<AtomicBool>,
 }
 
 impl std::fmt::Debug for DatabaseImporter {
@@ -330,6 +334,18 @@ impl DatabaseImporter {
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
+            interrupt: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub fn get_interrupt(&self) -> Arc<AtomicBool> {
+        self.interrupt.clone()
+    }
+
+    fn check_interrupt(&self) -> Result<(), DatabaseImportError> {
+        match self.interrupt.load(AtomicOrdering::Relaxed) {
+            true => Err(DatabaseImportError::Interrupted {}),
+            false => Ok(()),
         }
     }
 
@@ -419,12 +435,15 @@ impl DatabaseImporter {
     }
 
     pub fn import_done(&mut self) -> Result<(), DatabaseImportError> {
+        self.check_interrupt()?;
         if let Some(data_transaction) = self.data_transaction.take() {
             self.commit_write_transaction(data_transaction)
                 .map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })?;
         }
 
+        self.check_interrupt()?;
         self.validate_imported_data()?;
+        self.check_interrupt()?;
         self.restore_relaxed_schema()?;
 
         if self.database.take().is_none() {
@@ -1025,5 +1044,6 @@ typedb_error! {
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
         CacheError(25, "Error writing import data.", source: CacheError),
         FinalisationFailed(26, "Import finalisation failed.", typedb_source: ImportCommitError),
+        Interrupted(27, "The import was interrupted by a close request or server shutdown before completion. The import is aborted and can be retried."),
     }
 }
