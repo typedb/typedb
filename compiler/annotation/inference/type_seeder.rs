@@ -139,6 +139,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         self.seed_vertex_annotations_from_type_and_called_function_signatures(graph)?;
 
         self.annotate_all_unannotated_value_vertices(graph)?;
+
         let mut some_concept_vertex_was_directly_annotated = true;
         while some_concept_vertex_was_directly_annotated {
             let mut changed = true;
@@ -271,6 +272,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
             self.annotate_all_unannotated_value_vertices(nested_graph)?;
+        }
+        for nested in &mut graph.nested_disjunctions {
+            self.reconcile_nested_disjunction(nested, &mut graph.vertices)?;
         }
         Ok(())
     }
