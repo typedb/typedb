@@ -10,6 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use encoding::value::value_type::ValueType;
 // use encoding::value::value_type::ValueType;
 use ir::pattern::Vertex;
 
@@ -21,6 +22,7 @@ pub mod type_seeder;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum VertexTypeAnnotations {
     Concept(ConceptVertexTypes),
+    Value(ValueVertexTypes),
 }
 
 impl VertexTypeAnnotations {
@@ -31,26 +33,35 @@ impl VertexTypeAnnotations {
     fn len(&self) -> usize {
         match self {
             VertexTypeAnnotations::Concept(type_set) => type_set.len(),
+            VertexTypeAnnotations::Value(type_set) => type_set.len(),
         }
     }
 
     fn is_empty(&self) -> bool {
         match self {
             VertexTypeAnnotations::Concept(type_set) => type_set.is_empty(),
+            VertexTypeAnnotations::Value(type_set) => type_set.is_empty(),
         }
     }
 
     pub(crate) fn retain_types(&mut self, f: impl Fn(&TypeAnnotationSetEntry) -> bool) {
         match self {
             VertexTypeAnnotations::Concept(type_set) => type_set.retain(|t| f(&((*t).into()))),
+            VertexTypeAnnotations::Value(type_set) => type_set.retain(|t| f(&((*t).into()))),
         }
     }
 
     pub(crate) fn extend_to_union(&mut self, other: &Self) -> Result<(), TypeInferenceError> {
         match (self, other) {
-            (Self::Concept(inner), Self::Concept(other)) => inner.extend(other),
+            (Self::Concept(inner), Self::Concept(other)) => Ok(inner.extend(other)),
+            (Self::Value(inner), Self::Value(other)) => Ok(inner.extend(other)),
+            (Self::Concept(_), Self::Value(_)) => {
+                Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() })
+            }
+            (Self::Value(_), Self::Concept(_)) => {
+                Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "value".to_owned() })
+            }
         }
-        Ok(())
     }
 }
 
@@ -62,12 +73,6 @@ impl From<ConceptVertexTypes> for VertexTypeAnnotations {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(super) struct ConceptVertexTypes(BTreeSet<answer::Type>);
-//
-// impl FromIterator<answer::Type> for ConceptVertexTypes {
-//     fn from_iter<T: IntoIterator<Item=TypeAnnotation>>(iter: T) -> Self {
-//         Self(BTreeSet::from_iter(iter))
-//     }
-// }
 
 impl Deref for ConceptVertexTypes {
     type Target = BTreeSet<answer::Type>;
@@ -92,6 +97,37 @@ impl From<BTreeSet<answer::Type>> for ConceptVertexTypes {
 impl<'a> IntoIterator for &'a ConceptVertexTypes {
     type Item = <&'a BTreeSet<answer::Type> as IntoIterator>::Item;
     type IntoIter = <&'a BTreeSet<answer::Type> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub(super) struct ValueVertexTypes(BTreeSet<ValueType>);
+
+impl Deref for ValueVertexTypes {
+    type Target = BTreeSet<ValueType>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ValueVertexTypes {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl From<BTreeSet<ValueType>> for ValueVertexTypes {
+    fn from(value: BTreeSet<ValueType>) -> Self {
+        Self(value)
+    }
+}
+
+impl<'a> IntoIterator for &'a ValueVertexTypes {
+    type Item = <&'a BTreeSet<ValueType> as IntoIterator>::Item;
+    type IntoIter = <&'a BTreeSet<ValueType> as IntoIterator>::IntoIter;
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
     }
@@ -232,12 +268,18 @@ impl<T> ExtendMappedOperations<T> for Vec<T> {}
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum TypeAnnotationSetEntry {
     Concept(answer::Type),
-    // Value(ValueType),
+    Value(ValueType),
 }
 
 impl From<answer::Type> for TypeAnnotationSetEntry {
     fn from(value: answer::Type) -> Self {
         Self::Concept(value)
+    }
+}
+
+impl From<ValueType> for TypeAnnotationSetEntry {
+    fn from(value: ValueType) -> Self {
+        Self::Value(value)
     }
 }
 
@@ -255,18 +297,21 @@ impl TypeAnnotationSetTrait for VertexTypeAnnotations {
     fn contains_type<T: Into<TypeAnnotationSetEntry> + Copy>(&self, type_: &T) -> bool {
         match self {
             VertexTypeAnnotations::Concept(type_set) => type_set.contains_type(type_),
+            VertexTypeAnnotations::Value(type_set) => type_set.contains_type(type_),
         }
     }
 
-    fn iter_types(&self) -> impl Iterator<Item = TypeAnnotationSetEntry> {
+    fn iter_types(&self) -> Box<dyn Iterator<Item = TypeAnnotationSetEntry> + '_> {
         match self {
-            VertexTypeAnnotations::Concept(type_set) => type_set.iter_types(),
+            VertexTypeAnnotations::Concept(type_set) => Box::new(type_set.iter_types()),
+            VertexTypeAnnotations::Value(type_set) => Box::new(type_set.iter_types()),
         }
     }
 
     fn retain_intersection<OTHER: TypeAnnotationSetTrait>(&mut self, other: &OTHER) -> bool {
         match self {
             VertexTypeAnnotations::Concept(type_set) => type_set.retain_intersection(other),
+            VertexTypeAnnotations::Value(type_set) => type_set.retain_intersection(other),
         }
     }
 }
@@ -277,12 +322,33 @@ impl TypeAnnotationSetTrait for ConceptVertexTypes {
     fn contains_type<T: Into<TypeAnnotationSetEntry> + Copy>(&self, type_: &T) -> bool {
         match (*type_).into() {
             TypeAnnotationSetEntry::Concept(type_) => self.contains(&type_),
-            // TypeAnnotationSetEntry::Value(_) => false,
+            TypeAnnotationSetEntry::Value(_) => false,
         }
     }
 
     fn iter_types(&self) -> impl Iterator<Item = TypeAnnotationSetEntry> {
         self.iter().map(|t| TypeAnnotationSetEntry::Concept(*t))
+    }
+
+    fn retain_intersection<OTHER: TypeAnnotationSetTrait>(&mut self, other: &OTHER) -> bool {
+        let size_before = self.len();
+        self.retain(|type_| other.contains_type(type_));
+        self.len() != size_before
+    }
+}
+
+impl TypeAnnotationSetTrait for ValueVertexTypes {
+    type NativeItem = ValueType;
+
+    fn contains_type<T: Into<TypeAnnotationSetEntry> + Copy>(&self, type_: &T) -> bool {
+        match (*type_).into() {
+            TypeAnnotationSetEntry::Concept(_) => false,
+            TypeAnnotationSetEntry::Value(type_) => self.contains(&type_),
+        }
+    }
+
+    fn iter_types(&self) -> impl Iterator<Item = TypeAnnotationSetEntry> {
+        self.iter().map(|t| TypeAnnotationSetEntry::Value(*t))
     }
 
     fn retain_intersection<OTHER: TypeAnnotationSetTrait>(&mut self, other: &OTHER) -> bool {
@@ -298,7 +364,7 @@ impl TypeAnnotationSetTrait for BTreeMap<answer::Type, BTreeSet<answer::Type>> {
     fn contains_type<T: Into<TypeAnnotationSetEntry> + Copy>(&self, type_: &T) -> bool {
         match (*type_).into() {
             TypeAnnotationSetEntry::Concept(type_) => self.contains_key(&type_),
-            // TypeAnnotationSetEntry::Value(_) => false,
+            TypeAnnotationSetEntry::Value(_) => false,
         }
     }
 

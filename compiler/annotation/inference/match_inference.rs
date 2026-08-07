@@ -178,6 +178,7 @@ fn construct_error_message_for_unsatisfiable_edge(
             .get_label(ctx.snapshot, ctx.type_manager)
             .map(|label| label.scoped_name().to_string())
             .unwrap_or_else(|_| "(Error while resolving label)".to_owned()),
+        TypeAnnotationSetEntry::Value(type_) => type_.category().name().to_owned(),
     };
     let left_variable = resolve_vertex(&edge.left);
     let right_variable = resolve_vertex(&edge.right);
@@ -447,6 +448,7 @@ impl FlattenedTypeInferenceGraph<'_> {
             .into_iter()
             .filter_map(|(variable, types)| match types {
                 VertexTypeAnnotations::Concept(types) => Some((variable.into(), Arc::new(types.0))),
+                VertexTypeAnnotations::Value(_) => None,
             })
             .collect::<BTreeMap<_, _>>();
 

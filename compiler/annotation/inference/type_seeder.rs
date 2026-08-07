@@ -410,8 +410,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<bool, Box<ConceptReadError>> {
         let (left, right) = (inner.left(), inner.right());
         let any_modified = match (vertices.get(left), vertices.get(right)) {
-            (None, None) => false,
-            (Some(_), Some(_)) => false,
             (Some(VertexTypeAnnotations::Concept(left_types)), None) => {
                 let mut right_types = ConceptVertexTypes(BTreeSet::new());
                 left_types
@@ -428,6 +426,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 vertices.insert(left.clone(), VertexTypeAnnotations::Concept(left_types.into()));
                 true
             }
+            (None, None)
+            | (Some(_), Some(_))
+            | (None, Some(VertexTypeAnnotations::Value(_)))
+            | (Some(VertexTypeAnnotations::Value(_)), None) => false,
         };
         Ok(any_modified)
     }
@@ -514,6 +516,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         #[cfg(debug_assertions)]
         graph.vertices.iter().for_each(|(variable, types)| match types {
             VertexTypeAnnotations::Concept(types) => self.may_assert_no_abstract(variable, types),
+            VertexTypeAnnotations::Value(_) => (),
         });
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
