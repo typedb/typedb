@@ -294,8 +294,8 @@ impl<'this> TypeInferenceEdge<'this> {
         constraint: &'this Constraint<Variable>,
         left: Vertex<Variable>,
         right: Vertex<Variable>,
-        initial_left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-        initial_right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
+        initial_left_to_right: BTreeMap<TypeAnnotation, ConceptVertexTypes>,
+        initial_right_to_left: BTreeMap<TypeAnnotation, ConceptVertexTypes>,
     ) -> TypeInferenceEdge<'this> {
         // The left_to_right & right_to_left sets must be consistent with each other. i.e.
         //   They must contain the same set of edges.
@@ -311,12 +311,14 @@ impl<'this> TypeInferenceEdge<'this> {
                 .iter()
                 .all(|(u, vs)| vs.iter().all(|v| initial_left_to_right.get(v).unwrap().contains(u)))
         );
+        let left_to_right = initial_left_to_right.into_iter().map(|(k,v)| (k, v.0)).collect();
+        let right_to_left = initial_right_to_left.into_iter().map(|(k,v)| (k, v.0)).collect();
         TypeInferenceEdge {
             constraint,
             left,
             right,
-            left_to_right: initial_left_to_right,
-            right_to_left: initial_right_to_left,
+            left_to_right,
+            right_to_left,
         }
     }
 
