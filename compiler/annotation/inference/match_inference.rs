@@ -232,6 +232,7 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
 }
 
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+    graph.prune_constraints_from_vertices()?; // We need this for expressions
     while graph.prune_vertices_from_constraints() {
         graph.prune_constraints_from_vertices()?;
     }
@@ -490,16 +491,19 @@ pub(crate) struct TypeInferenceExpression<'this> {
 
 impl<'this> TypeInferenceExpression<'this> {
     fn prune_vertices_from_self(&self, vertices: &mut VertexAnnotations) -> bool {
-        let assigned_vertex_annotations = vertices.get_mut(&self.assigned).unwrap();
-        let size_before = assigned_vertex_annotations.len();
         if let Some(compiled) = &self.compiled_expression {
+            let assigned_vertex_annotations = vertices.get_mut(&self.assigned).unwrap();
+            let size_before = assigned_vertex_annotations.len();
             let return_type = match compiled.return_type() {
                 ExpressionValueType::Single(value_type) => *value_type,
                 ExpressionValueType::List(_) => unimplemented_feature!(Lists),
             };
-            assigned_vertex_annotations.retain_types(|type_| *type_ == return_type.into())
+            assigned_vertex_annotations.retain_types(|type_| *type_ == return_type.into());
+            size_before != assigned_vertex_annotations.len()
+        } else {
+            false
         }
-        size_before != assigned_vertex_annotations.len()
+
     }
 
     fn prune_self_from_vertices(&mut self, vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {

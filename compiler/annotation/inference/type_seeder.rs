@@ -665,7 +665,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         Ok(TypeInferenceExpression {
             expression,
             assigned: expression.left().clone(),
-            args: expression.ids_assigned().map(|v| Vertex::Variable(v)).collect(),
+            args: expression.expression_ids().map(|v| Vertex::Variable(v)).collect(),
             compiled_expression: None,
             value_types_of_attributes,
         })
