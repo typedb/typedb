@@ -19,7 +19,7 @@ pub mod match_inference;
 pub mod type_seeder;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum VertexTypeAnnotations {
+pub enum VertexTypeAnnotations {
     Concept(ConceptVertexTypes),
 }
 
@@ -61,7 +61,7 @@ impl From<ConceptVertexTypes> for VertexTypeAnnotations {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-struct ConceptVertexTypes(BTreeSet<answer::Type>);
+pub(super) struct ConceptVertexTypes(BTreeSet<answer::Type>);
 //
 // impl FromIterator<answer::Type> for ConceptVertexTypes {
 //     fn from_iter<T: IntoIterator<Item=TypeAnnotation>>(iter: T) -> Self {
@@ -96,7 +96,6 @@ impl<'a> IntoIterator for &'a ConceptVertexTypes {
         self.0.iter()
     }
 }
-
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
@@ -279,9 +278,7 @@ impl TypeAnnotationSetTrait for VertexTypeAnnotations {
 
     fn contains_type<T: Into<TypeAnnotationSetEntry> + Copy>(&self, type_: &T) -> bool {
         match self {
-            VertexTypeAnnotations::Concept(type_set) => {
-                type_set.contains_type(type_)
-            }
+            VertexTypeAnnotations::Concept(type_set) => type_set.contains_type(type_),
         }
     }
 
