@@ -75,6 +75,18 @@ impl<ID: IrID> ExpressionTree<ID> {
         })
     }
 
+    pub fn parameter_ids(&self) -> impl Iterator<Item = ParameterID> + '_ {
+        self.preorder_tree.iter().filter_map(|expr| match expr {
+            Expression::Constant(parameter_id) => Some(parameter_id.clone()),
+            Expression::Variable(_)
+            | Expression::ListIndex(_)
+            | Expression::ListIndexRange(_)
+            | Expression::Operation(_)
+            | Expression::BuiltinValueFunctionCall(_)
+            | Expression::List(_) => None,
+        })
+    }
+
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionTree<T> {
         let preorder_tree = self
             .preorder_tree

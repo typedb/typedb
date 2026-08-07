@@ -11,7 +11,7 @@ use encoding::value::{
     ValueEncodable,
     value_type::{ValueType, ValueTypeCategory},
 };
-use error::needs_update_when_feature_is_implemented;
+use error::{needs_update_when_feature_is_implemented, unimplemented_feature};
 use ir::{
     pattern::{
         ParameterID,
@@ -38,7 +38,6 @@ use crate::annotation::expression::{
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
     variable_value_categories: &'this HashMap<Variable, ExpressionValueType>,
-    parameters: &'this ParameterRegistry,
     type_stack: Vec<ExpressionValueType>,
 
     instructions: Vec<ExpressionOpCode>,
@@ -50,12 +49,10 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn empty(
         expression_tree: &'this ExpressionTree<Variable>,
         variable_value_categories: &'this HashMap<Variable, ExpressionValueType>,
-        parameters: &'this ParameterRegistry,
     ) -> Self {
         ExpressionCompilationContext {
             expression_tree,
             variable_value_categories,
-            parameters,
             instructions: Vec::new(),
             variable_stack: Vec::new(),
             constant_stack: Vec::new(),
@@ -66,10 +63,9 @@ impl<'this> ExpressionCompilationContext<'this> {
     pub fn compile(
         expression_tree: &ExpressionTree<Variable>,
         variable_value_categories: &HashMap<Variable, ExpressionValueType>,
-        parameters: &ParameterRegistry,
     ) -> Result<ExecutableExpression<Variable>, Box<ExpressionCompileError>> {
         debug_assert!(expression_tree.argument_ids().all(|var| variable_value_categories.contains_key(&var)));
-        let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories, parameters);
+        let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories);
         builder.compile_recursive(expression_tree.get_root())?;
         let return_type = builder.pop_type()?;
         let ExpressionCompilationContext { instructions, variable_stack, constant_stack, .. } = builder;
@@ -90,8 +86,13 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_constant(&mut self, constant: &ParameterID) -> Result<(), Box<ExpressionCompileError>> {
         self.constant_stack.push(constant.clone());
-
-        self.push_type_single(self.parameters.value_unchecked(constant).value_type());
+        let ParameterID::Value(_, ir_value_type, _) = constant else {
+            unreachable!("Expected constant ParameterID to be ParameterID::Value");
+        };
+        let ir::pattern::ValueType::Builtin(value_type) = ir_value_type else {
+            unimplemented_feature!(Structs);
+        };
+        self.push_type_single(*value_type);
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())

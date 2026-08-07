@@ -204,11 +204,8 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
                 resolve_type_for_variable(context, conjunction, var, expression_assignments, assignment.source_span())
                     .map(|_| ())
             })?;
-            let compiled = ExpressionCompilationContext::compile(
-                assignment.expression(),
-                &context.variable_value_types,
-                context.parameters,
-            )?;
+            let compiled =
+                ExpressionCompilationContext::compile(assignment.expression(), &context.variable_value_types)?;
             return_types.insert(compiled.return_type.clone());
             context.compiled_expressions.insert((*assignment).clone(), compiled);
         }
