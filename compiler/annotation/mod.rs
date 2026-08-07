@@ -244,6 +244,11 @@ typedb_error!(
             constraint_type: String,
             source_span: Option<Span>,
         ),
+        ExpressionCompilation(
+            12,
+            "Expression compilation error.",
+            typedb_source: Box<ExpressionCompileError>,
+        ),
         InternalVertexTypesMismatch(
             254,
             "Expected vertex to have annotations of kind: {expected} but it wasn't.",

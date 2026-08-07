@@ -10,7 +10,8 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     iter::zip,
 };
-
+use std::collections::HashMap;
+use std::sync::Arc;
 use answer::{Type as TypeAnnotation, Type, variable::Variable};
 use concept::{
     error::ConceptReadError,
@@ -32,6 +33,9 @@ use ir::{
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
+use error::needs_update_when_feature_is_implemented;
+use ir::pattern::constraint::ExpressionBinding;
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -44,12 +48,14 @@ use crate::annotation::{
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
+use crate::annotation::inference::match_inference::TypeInferenceExpression;
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
     function_annotations: &'this dyn AnnotatedFunctionSignatures,
     variable_registry: &'this VariableRegistry,
+    parameters: &'this ParameterRegistry,
     stage_type: TypeInferenceMode,
 }
 
@@ -79,9 +85,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_manager: &'this TypeManager,
         function_annotations: &'this dyn AnnotatedFunctionSignatures,
         variable_registry: &'this VariableRegistry,
+        parameters: &'this ParameterRegistry,
         stage_type: TypeInferenceMode,
     ) -> Self {
-        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, stage_type }
+        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, parameters, stage_type }
     }
 
     pub(crate) fn create_graph<'graph>(
@@ -132,13 +139,15 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         // Seed vertices in root & disjunctions
         self.seed_vertex_annotations_from_type_and_called_function_signatures(graph)?;
 
-        let mut some_vertex_was_directly_annotated = true;
-        while some_vertex_was_directly_annotated {
+
+        self.annotate_all_unannotated_value_vertices(graph)?;
+        let mut some_concept_vertex_was_directly_annotated = true;
+        while some_concept_vertex_was_directly_annotated {
             let mut changed = true;
             while changed {
                 changed = self.propagate_vertex_annotations(graph)?;
             }
-            some_vertex_was_directly_annotated = self.annotate_some_unannotated_vertex(graph)?;
+            some_concept_vertex_was_directly_annotated = self.annotate_some_unannotated_concept_vertex(graph)?;
         }
 
         // Prune abstract types from type annotations of thing variables
@@ -148,6 +157,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Seed edges in root & disjunctions
         self.seed_edges(graph, self.stage_type)?;
+        self.seed_expressions(graph)?;
         Ok(())
     }
 
@@ -168,6 +178,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             conjunction,
             vertices: VertexAnnotations::default(),
             edges: Vec::new(),
+            expressions: Vec::new(),
             nested_disjunctions,
         }
     }
@@ -233,6 +244,33 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         Ok(())
     }
 
+    fn annotate_all_unannotated_value_vertices(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+        let all_value_types = VertexTypeAnnotations::value_from(BTreeSet::from_iter([
+            ValueType::Boolean,
+            ValueType::Integer,
+            ValueType::Double,
+            ValueType::Decimal,
+            ValueType::Date,
+            ValueType::DateTime,
+            ValueType::DateTimeTZ,
+            ValueType::Duration,
+            ValueType::String,
+        ]));
+        for expr in graph.conjunction.constraints().iter().filter_map(|c| c.as_expression_binding()) {
+            expr.ids_assigned().chain(expr.expression_ids()).filter(|id| {
+                let variable_category = self.variable_registry.get_variable_category(*id);
+                Some(VariableCategory::Value) == variable_category
+            }).for_each(|id| {
+                graph.vertices.annotations.entry(Vertex::Variable(id)).or_insert_with(|| all_value_types.clone());
+            })
+        }
+
+        for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
+            self.annotate_all_unannotated_value_vertices(nested_graph)?;
+        }
+        Ok(())
+    }
+
     fn annotate_fixed_vertices(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
         for vertex in self.fixed_vertices(graph.conjunction.constraints()) {
             match vertex {
@@ -280,7 +318,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         conjunction.constraints().iter().flat_map(|constraint| constraint.ids())
     }
 
-    fn annotate_some_unannotated_vertex(
+    fn annotate_some_unannotated_concept_vertex(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -307,7 +345,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let mut any = false;
             for disj in &mut graph.nested_disjunctions {
                 for nested_graph in &mut disj.disjunction {
-                    any |= self.annotate_some_unannotated_vertex(nested_graph)?;
+                    any |= self.annotate_some_unannotated_concept_vertex(nested_graph)?;
                 }
             }
             Ok(any)
@@ -582,6 +620,47 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         debug_assert!(left_to_right.values().all(|v| !v.is_empty()));
         debug_assert!(right_to_left.values().all(|v| !v.is_empty()));
         Ok(TypeInferenceEdge::build(constraint, left, right, left_to_right, right_to_left))
+    }
+
+    fn seed_expressions(
+        &self,
+        graph: &mut TypeInferenceGraph<'_>,
+    ) -> Result<(), TypeInferenceError> {
+        let expressions = graph.conjunction.constraints().iter().filter_map(Constraint::as_expression_binding);
+        for expr in expressions {
+            graph.expressions.push(self.seed_expression(&graph.vertices, expr)?);
+        }
+
+        Ok(())
+    }
+
+    fn seed_expression<'conj>(&self, vertices: &VertexAnnotations, expression: &'conj ExpressionBinding<Variable>) -> Result<TypeInferenceExpression<'conj>, TypeInferenceError> {
+        needs_update_when_feature_is_implemented!(error::UnimplementedFeature::Structs);
+        let attribute_argument_types = expression.expression_ids().filter_map(|arg| {
+            match vertices.get(&Vertex::Variable(arg)).expect("All vertices should be annotated by now") {
+                VertexTypeAnnotations::Concept(types) => Some(types),
+                VertexTypeAnnotations::Value(_) => None,
+            }
+        });
+        let attribute_types_flattened = attribute_argument_types
+            .flat_map(|concept_types| concept_types.iter())
+            .unique()
+            .filter_map(|type_| type_.is_attribute_type().then(|| type_.as_attribute_type()));
+
+        let mut value_types_of_attribute = BTreeMap::new();
+        for attribute_type in attribute_types_flattened {
+            if let Some(value_type) = attribute_type.get_value_type_without_source(self.snapshot, self.type_manager)? {
+                value_types_of_attribute.insert(attribute_type, value_type);
+            }
+        }
+        Ok(TypeInferenceExpression {
+            expression,
+            assigned: expression.left().clone(),
+            args: expression.ids_assigned().map(|v| Vertex::Variable(v)).collect(),
+            compiled_expression: None,
+            value_types_of_attributes,
+            parameters: self.parameters.clone(),
+        })
     }
 
     fn is_not_abstract(&self, type_: &TypeAnnotation) -> Result<bool, Box<ConceptReadError>> {

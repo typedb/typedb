@@ -457,6 +457,6 @@ macro_rules! ensure_unimplemented_unused {
 #[macro_export]
 macro_rules! needs_update_when_feature_is_implemented {
     // Nothing, we just need the compile error when the feature is deleted
-    ($feature:ident) => {};
-    ($feature:ident, $msg:literal) => {};
+    ($feature:path) => {};
+    ($feature:path, $msg:literal) => {};
 }

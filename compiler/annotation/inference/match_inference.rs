@@ -21,6 +21,10 @@ use ir::{
     },
 };
 use itertools::Itertools;
+use encoding::value::value_type::ValueType;
+use error::unimplemented_feature;
+use ir::pattern::constraint::ExpressionBinding;
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -35,6 +39,8 @@ use crate::annotation::{
     },
     type_inference::TypeInferenceMode,
 };
+use crate::annotation::expression::compiled_expression::{ExecutableExpression, ExpressionValueType};
+use crate::annotation::expression::expression_compiler::ExpressionCompilationContext;
 
 pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
@@ -151,6 +157,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
         ctx.type_manager,
         ctx.annotated_function_signatures,
         ctx.variable_registry,
+        ctx.parameters,
         type_inference_mode,
     )
     .create_graph(input_annotations, conjunction)?;
@@ -225,6 +232,7 @@ pub(crate) struct TypeInferenceGraph<'this> {
     pub(crate) conjunction: &'this Conjunction,
     pub(crate) vertices: VertexAnnotations,
     pub(crate) edges: Vec<TypeInferenceEdge<'this>>,
+    pub(crate) expressions: Vec<TypeInferenceExpression<'this>>,
     pub(crate) nested_disjunctions: Vec<NestedTypeInferenceGraphDisjunction<'this>>,
 }
 
@@ -232,7 +240,7 @@ impl<'this> TypeInferenceGraph<'this> {
     pub(crate) fn flatten_graph(
         self,
     ) -> (FlattenedTypeInferenceGraph<'this>, Vec<NestedTypeInferenceGraphDisjunction<'this>>) {
-        let Self { conjunction, vertices, edges, nested_disjunctions } = self;
+        let Self { conjunction, vertices, edges, nested_disjunctions, expressions: _ } = self;
         (FlattenedTypeInferenceGraph { conjunction, vertices, edges }, nested_disjunctions)
     }
 
@@ -408,6 +416,65 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
             is_modified |= size_before != parent_vertex_types.len();
         }
         is_modified
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct TypeInferenceExpression<'this> {
+    pub(crate) expression: &'this ExpressionBinding<Variable>,
+    pub(crate) assigned: Vertex<Variable>,
+    pub(crate) args: Vec<Vertex<Variable>>,
+    pub(crate) compiled_expression: Option<ExecutableExpression<Variable>>,
+    pub(crate) value_types_of_attributes: BTreeMap<answer::Type, ValueType>,
+    pub(crate) parameters: Arc<ParameterRegistry>,
+}
+
+impl<'this> TypeInferenceExpression<'this> {
+    fn prune_vertices_from_self(&self, vertices: &mut VertexAnnotations) -> bool {
+        let assigned_vertex_annotations = vertices.get_mut(&self.assigned).unwrap();
+        let size_before = assigned_vertex_annotations.len();
+        if let Some(compiled) = &self.compiled_expression {
+            let return_type = match compiled.return_type() {
+                ExpressionValueType::Single(value_type) => *value_type,
+                ExpressionValueType::List(_) => unimplemented_feature!(Lists),
+            };
+            assigned_vertex_annotations.retain_types(|type_| {
+                *type_ == return_type.into()
+            })
+        }
+        size_before == assigned_vertex_annotations.len()
+    }
+
+    fn prune_self_from_vertices(&mut self, vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {
+        if self.compiled_expression.is_some() {
+            return Ok(());
+        }
+
+        let value_types_result = self.args.iter().map(|arg| {
+            self.exactly_one_value_type(&vertices[arg]).map(|type_| {
+                (arg.as_variable().unwrap(), type_)
+            })
+        }).collect();
+        if let Ok(value_types) = value_types_result {
+            self.compiled_expression = Some(ExpressionCompilationContext::compile(
+                &self.expression.expression(),
+                &value_types,
+                &self.parameters,
+            ).map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })?
+        );
+        }
+        Ok(())
+    }
+
+    fn exactly_one_value_type(&self, annotations: &VertexTypeAnnotations) -> Result<ExpressionValueType, ()> {
+        match annotations {
+            VertexTypeAnnotations::Concept(types) => {
+                types.iter().map(|t| self.value_types_of_attributes[t]).unique().exactly_one().map_err(|_| ())
+            }
+            VertexTypeAnnotations::Value(types) => {
+                types.iter().copied().exactly_one().map_err(|_| ())
+            }
+        }.map(ExpressionValueType::Single)
     }
 }
 

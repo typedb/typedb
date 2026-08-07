@@ -30,6 +30,10 @@ impl VertexTypeAnnotations {
         Self::Concept(ConceptVertexTypes(BTreeSet::from_iter(iter)))
     }
 
+    fn value_from(iter: impl IntoIterator<Item = ValueType>) -> Self {
+        Self::Value(ValueVertexTypes(BTreeSet::from_iter(iter)))
+    }
+
     fn len(&self) -> usize {
         match self {
             VertexTypeAnnotations::Concept(type_set) => type_set.len(),
@@ -265,7 +269,7 @@ impl<T: Ord> ExtendMappedOperations<T> for BTreeSet<T> {}
 impl<T> FromIteratorMappedOperations<T> for Vec<T> {}
 impl<T> ExtendMappedOperations<T> for Vec<T> {}
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TypeAnnotationSetEntry {
     Concept(answer::Type),
     Value(ValueType),
