@@ -25,7 +25,7 @@ use ir::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionID,
     },
-    translation::tokens::translate_value_type,
+    translation::tokens::{resolve_vector_value_type, translate_value_type},
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
@@ -530,6 +530,14 @@ pub(super) fn get_annotations_from_labels(
         NamedType::BuiltinValueType(value_type) => {
             // TODO: This may be list
             let value = translate_value_type(&value_type.token);
+            Ok(FunctionParameterAnnotation::Value(value))
+        }
+        NamedType::Vector(vector_type) => {
+            let value = resolve_vector_value_type(vector_type).map_err(|err| TypeInferenceError::VectorLengthInvalid {
+                length: err.length,
+                max: err.max,
+                source_span: vector_type.span(),
+            })?;
             Ok(FunctionParameterAnnotation::Value(value))
         }
     }

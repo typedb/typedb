@@ -222,8 +222,8 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
+			rev = "82361cf09b2dcbf0836c4a5bc312ffbd4b26eade"
 			git = "https://github.com/typedb/typeql"
-			tag = "3.12.0"
 			default-features = false
 
 		[workspace.dependencies.cache]
@@ -493,8 +493,8 @@ features = {}
 
 		[workspace.dependencies.typedb-protocol]
 			features = []
+			rev = "0373c1ae106b1f68e80edb06c1b7375075fe62e2"
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.12.0"
 			default-features = false
 
 		[workspace.dependencies.resource]
@@ -586,6 +586,9 @@ features = {}
 			features = ["default", "use_alloc", "use_std"]
 			version = "0.14.0"
 			default-features = false
+
+		[workspace.dependencies.simsimd]
+			version = "6.5.16"
 
 		[workspace.dependencies.jsonwebtoken]
 			features = ["default", "pem", "simple_asn1", "use_pem"]

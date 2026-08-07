@@ -250,6 +250,9 @@ fn named_type_any_to_category_and_optionality(
                 VariableCategory::Value
             }
         }
+        NamedType::Vector(_) => {
+            if is_list { VariableCategory::ValueList } else { VariableCategory::Value }
+        }
     };
     (category, optionality)
 }

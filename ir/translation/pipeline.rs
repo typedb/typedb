@@ -20,7 +20,7 @@ use typeql::{
 
 use crate::{
     RepresentationError,
-    pattern::Pattern,
+    pattern::{Pattern, constraint::Constraint},
     pipeline::{
         ParameterRegistry, VariableRegistry,
         block::Block,
@@ -209,7 +209,15 @@ pub(crate) fn translate_pipeline_stages(
     for (i, stage) in stages.iter().enumerate() {
         let translated = translate_stage(translation_context, value_parameters, all_function_signatures, stage)?;
         match translated {
-            TranslatedPipelinePart::Stage(stage) => translated_stages.push(stage),
+            TranslatedPipelinePart::Stage(stage) => {
+                let implicit_sort = vector_search_implicit_sort(&stage);
+                translated_stages.push(stage);
+                // A vector search's answer stream is ordered by similarity, descending: sort on the
+                // constraint's hidden similarity variable immediately after the match stage.
+                if let Some(sort) = implicit_sort {
+                    translated_stages.push(TranslatedStage::Sort(sort));
+                }
+            }
             TranslatedPipelinePart::Given(given) => {
                 if i != 0 {
                     return Err(Box::new(RepresentationError::NonInitialGiven { source_span: stage.span() }));
@@ -227,6 +235,22 @@ pub(crate) fn translate_pipeline_stages(
         }
     }
     Ok((translated_given, translated_stages, translated_fetch))
+}
+
+fn vector_search_implicit_sort(stage: &TranslatedStage) -> Option<Sort> {
+    let TranslatedStage::Match { block, source_span } = stage else { return None };
+    // ponytail: only top-level vector searches get the implicit ordering; inside a
+    // disjunction/negation the stream order is undefined anyway.
+    let similarity_variables: Vec<(Variable, bool)> = block
+        .conjunction()
+        .constraints()
+        .iter()
+        .filter_map(|constraint| match constraint {
+            Constraint::VectorSearch(search) => Some((search.similarity().as_variable().unwrap(), false)),
+            _ => None,
+        })
+        .collect();
+    if similarity_variables.is_empty() { None } else { Some(Sort::new(similarity_variables, *source_span)) }
 }
 
 fn translate_stage(

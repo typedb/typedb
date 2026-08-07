@@ -253,6 +253,9 @@ impl<T> Checker<T> {
                 CheckInstruction::Isa { isa_kind, type_, thing } => {
                     self.filter_isa(context, row, &source, *isa_kind, type_, thing)?
                 }
+                CheckInstruction::VectorSearch { attribute, query, threshold } => {
+                    self.filter_vector_search(context, row, &source, attribute, query, threshold, storage_counters.clone())?
+                }
                 CheckInstruction::Has { owner, attribute } => {
                     self.filter_has(context, row, &source, owner, attribute, storage_counters.clone())?
                 }
@@ -316,6 +319,9 @@ impl<T> Checker<T> {
                 CheckInstruction::Plays { player, role_type } => self.filter_plays_fn(context, row, player, role_type),
                 &CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
                     self.filter_isa_fn(context, row, isa_kind, type_, thing)
+                }
+                CheckInstruction::VectorSearch { attribute, query, threshold } => {
+                    self.filter_vector_search_fn(context, row, attribute, query, threshold, storage_counters.clone())
                 }
                 CheckInstruction::Has { owner, attribute } => {
                     self.filter_has_fn(context, row, owner, attribute, storage_counters.clone())
@@ -1081,6 +1087,61 @@ impl<T> Checker<T> {
             } else {
                 Ok(false)
             }
+        })
+    }
+
+    fn filter_vector_search(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        source: &T,
+        attribute: &CheckVertex<ExecutorVariable>,
+        query: &ir::pattern::ParameterID,
+        threshold: &ir::pattern::ParameterID,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        let attribute_value = match attribute.as_variable().and_then(|var| self.extractors.get(&var)) {
+            Some(function) => function(source),
+            None => get_vertex_value(attribute, Some(row), &context.parameters),
+        };
+        let (query_vector, threshold) =
+            crate::instruction::vector_search_executor::resolve_query_and_threshold(context, query.clone(), threshold.clone());
+        let value = match &attribute_value {
+            VariableValue::Thing(Thing::Attribute(attr)) => {
+                attr.get_value(context.snapshot.as_ref(), context.thing_manager.as_ref(), storage_counters)?
+            }
+            VariableValue::Value(value) => value.as_reference(),
+            _ => return Ok(false),
+        };
+        let Value::Vector(vector) = &value else { return Ok(false) };
+        Ok(crate::instruction::vector_search_executor::cosine_similarity(&query_vector, vector.as_ref()) >= threshold)
+    }
+
+    fn filter_vector_search_fn(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        attribute: &CheckVertex<ExecutorVariable>,
+        query: &ir::pattern::ParameterID,
+        threshold: &ir::pattern::ParameterID,
+        storage_counters: StorageCounters,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let extractor = self.make_extractor(attribute, row, context);
+        let (query_vector, threshold) =
+            crate::instruction::vector_search_executor::resolve_query_and_threshold(context, query.clone(), threshold.clone());
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        Box::new(move |source| {
+            let attribute_value = extractor(source);
+            let value = match &attribute_value {
+                VariableValue::Thing(Thing::Attribute(attr)) => {
+                    attr.get_value(snapshot.as_ref(), thing_manager.as_ref(), storage_counters.clone())?
+                }
+                VariableValue::Value(value) => value.as_reference(),
+                _ => return Ok(false),
+            };
+            let Value::Vector(vector) = &value else { return Ok(false) };
+            Ok(crate::instruction::vector_search_executor::cosine_similarity(&query_vector, vector.as_ref()) >= threshold)
         })
     }
 

@@ -147,6 +147,15 @@ pub(crate) fn resolve_value_type(
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ir::translation::tokens::translate_value_type(token))
         }
+        NamedType::Vector(vector_type) => {
+            ir::translation::tokens::resolve_vector_value_type(vector_type).map_err(|err| {
+                Box::new(SymbolResolutionError::VectorLengthInvalid {
+                    length: err.length,
+                    max: err.max,
+                    source_span: field_name.span(),
+                })
+            })
+        }
     }
 }
 
@@ -562,5 +571,6 @@ typedb_error! {
         UnexpectedConceptRead(15, "Unexpected concept read error.", typedb_source: Box<ConceptReadError>, source_span: Option<Span>),
         IllegalKeywordAsIdentifier(16, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier, source_span: Option<Span>),
         SubNotFound(17, "The type '{subtype_label}' does not subtype '{supertype_label}'.", subtype_label: Label, supertype_label: Label, source_span: Option<Span>),
+        VectorLengthInvalid(18, "The vector length '{length}' is invalid: it must be a positive integer no greater than {max}.", length: String, max: u16, source_span: Option<Span>),
     }
 }

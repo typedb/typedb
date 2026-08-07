@@ -240,6 +240,9 @@ fn translate_fetch_single(
             Expression::ListIndexRange(_) => {
                 Err(Box::new(FetchRepresentationError::Unimplemented { description: "list index range".to_string() }))
             }
+            Expression::Vector(_) => {
+                Err(Box::new(FetchRepresentationError::Unimplemented { description: "vector literals".to_string() }))
+            }
             Expression::Label(label) => Ok(FetchSome::Label(parse_label(label)?)),
             Expression::ScopedLabel(scoped_label) => Ok(FetchSome::Label(parse_scoped_label(scoped_label)?)),
         },

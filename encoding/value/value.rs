@@ -30,7 +30,8 @@ use crate::value::{
     struct_bytes::StructBytes,
     timezone::TimeZone,
     value_struct::StructValue,
-    value_type::{ValueType, ValueTypeCategory},
+    value_type::{ValueType, ValueTypeCategory, VectorPrecision, VectorTypeParameters},
+    vector_bytes::VectorBytes,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -45,6 +46,10 @@ pub enum Value<'a> {
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
+    // A fixed-length single-precision vector. Length/precision live on the value type; the value
+    // itself is just the element data. Deep storage encoding is not yet implemented (see the
+    // `todo!()`s in the encode paths below and in `AttributeID`).
+    Vector(Cow<'a, Vec<f32>>),
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
@@ -110,6 +115,12 @@ impl Hash for Value<'_> {
             Value::Duration(value) => Hash::hash(value, state),
             Value::String(value) => Hash::hash(value, state),
             Value::Struct(value) => Hash::hash(value, state),
+            // hash the raw bit patterns so it matches whatever the eventual storage encoding uses
+            Value::Vector(value) => {
+                for element in value.iter() {
+                    Hash::hash(&element.to_bits(), state);
+                }
+            }
         }
     }
 }
@@ -127,6 +138,7 @@ impl<'a> Value<'a> {
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
+            Value::Vector(ref vector) => Value::Vector(Cow::Borrowed(vector.as_ref())),
         }
     }
 
@@ -207,6 +219,13 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn unwrap_vector(self) -> Cow<'a, Vec<f32>> {
+        match self {
+            Self::Vector(vector) => vector,
+            _ => panic!("Cannot unwrap Vector if not a vector value."),
+        }
+    }
+
     pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),
@@ -219,6 +238,7 @@ impl<'a> Value<'a> {
             Self::Duration(duration) => Value::Duration(duration),
             Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
             Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
+            Self::Vector(vector) => Value::Vector(Cow::Owned(vector.into_owned())),
         }
     }
 
@@ -363,6 +383,10 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
+            Value::Vector(vector) => {
+                // The precision is fixed at float32 for now; the length is derived from the data.
+                ValueType::Vector(VectorTypeParameters::new(vector.len() as u16, VectorPrecision::Float32))
+            }
         }
     }
 
@@ -436,6 +460,13 @@ impl ValueEncodable for Value<'_> {
         }
     }
 
+    fn encode_vector<const INLINE_LENGTH: usize>(&self) -> VectorBytes<'_, INLINE_LENGTH> {
+        match self {
+            Value::Vector(vector) => VectorBytes::build(vector),
+            _ => panic!("Cannot encode non-Vector as VectorBytes"),
+        }
+    }
+
     fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH> {
         match self {
             Value::Boolean(_) => ByteArray::copy(&self.encode_boolean().bytes()),
@@ -448,6 +479,7 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
             Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes()),
             Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes()),
+            Value::Vector(_) => ByteArray::copy(self.encode_vector::<INLINE_LENGTH>().bytes()),
         }
     }
 }
@@ -478,6 +510,16 @@ impl fmt::Display for Value<'_> {
             }
             // TODO: this string will not have field names, only field IDs!
             Value::Struct(struct_) => write!(f, "{struct_}"),
+            Value::Vector(vector) => {
+                write!(f, "vector([")?;
+                for (i, element) in vector.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{element}")?;
+                }
+                write!(f, "], \"{}\")", VectorPrecision::Float32.name())
+            }
         }
     }
 }

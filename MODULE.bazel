@@ -106,12 +106,10 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
-#        "typedb_protocol+": "3a39f0b94fd7ea316ba5a4f74d44d5afc454cedf",
-#        "typeql+": "556db69efc01936442d0579e2ed7ef0f0d84d27e",
+        "typedb_protocol+": "0373c1ae106b1f68e80edb06c1b7375075fe62e2",
+        "typeql+": "82361cf09b2dcbf0836c4a5bc312ffbd4b26eade",
     },
     workspace_tag_dict = {
-        "typedb_protocol+": "3.12.0",
-        "typeql+": "3.12.0",
     },
 )
 
@@ -166,29 +164,32 @@ git_override(
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+# TODO(vector-search): repoint to master commit once the vector-search branch (adds simsimd) merges
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "a5c51254088f343fb8b6a9668eaf99b35503dad4",
+    commit = "f0e09d47c2d501d4e558594b19a3f72f37e1b6e9",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    tag = "3.12.0",
+    commit = "aafb485dccb171bb26f254758f9bb499f898e143",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
+# TODO(vector-search): repoint to master commit once the vector-search branch merges
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    tag = "3.12.0",
+    commit = "b0c691014e75f11446bc5cf5154fef61e45afbd6",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
+# TODO(vector-search): repoint to master commit once the vector-search branch merges
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "c07e412aaddfd0a07e0a8350a55f969ae8610925",
+    commit = "8ebfc2e47544b01c852c95a3dcc3e9dc4770d7be",
 )

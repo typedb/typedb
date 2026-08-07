@@ -209,6 +209,9 @@ impl QueryAnswer {
                 JSON::String(Cow::Owned(value.to_string()))
             }
             Value::Struct(_) => todo!("Structs are not implemented in fetch tests"),
+            Value::Vector(elements) => {
+                JSON::Array(elements.iter().map(|element| JSON::Number(*element as f64)).collect())
+            }
         }
     }
 

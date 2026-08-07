@@ -381,6 +381,7 @@ macro_rules! typedb_error {
 pub enum UnimplementedFeature {
     Lists,
     Structs,
+    VectorSearch,
 
     BuiltinFunction(String),
     LetInBuiltinCall,

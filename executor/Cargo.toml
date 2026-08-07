@@ -83,6 +83,9 @@ features = {}
 	[dependencies.regex]
 		workspace = true
 
+	[dependencies.simsimd]
+		workspace = true
+
 	[dependencies.smallvec]
 		workspace = true
 

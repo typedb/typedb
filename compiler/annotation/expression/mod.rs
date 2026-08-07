@@ -118,5 +118,23 @@ typedb_error! {
             source_span: Option<Span>,
         ),
         Representation(20, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
+        NonNumericVectorElement(
+            21,
+            "Elements of a vector literal must be numeric, but one was of type '{category}'.",
+            category: ValueTypeCategory,
+            source_span: Option<Span>,
+        ),
+        EmptyVectorConstructor(
+            22,
+            "A vector literal must contain at least one element.",
+            source_span: Option<Span>,
+        ),
+        VectorLengthExceedsMaximum(
+            23,
+            "A vector literal may contain at most {max} elements, but {length} were given.",
+            length: usize,
+            max: u16,
+            source_span: Option<Span>,
+        ),
     }
 }

@@ -28,6 +28,7 @@ use crate::{
         is_executor::IsIterator,
         isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
         isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
+        vector_search_executor::VectorSearchIterator,
         links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle},
         links_reverse_executor::{LinksReverseTupleIteratorMerged, LinksReverseTupleIteratorSingle},
         owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
@@ -212,6 +213,8 @@ pub enum TupleIterator {
     IsaReverseUnbounded(SortedTupleIterator<IsaReverseUnboundedSortedType>),
     IsaReverseBounded(SortedTupleIterator<IsaReverseBoundedSortedThing>),
 
+    VectorSearch(SortedTupleIterator<VectorSearchIterator>),
+
     HasSingle(SortedTupleIterator<HasTupleIteratorSingle>),
     HasMerged(SortedTupleIterator<HasTupleIteratorMerged>),
 
@@ -277,6 +280,7 @@ impl Display for TupleIterator {
             TupleIterator::IsaBounded(_) => write!(f, "IsaBounded iterator"),
             TupleIterator::IsaReverseUnbounded(_) => write!(f, "IsaReverseUnbounded iterator"),
             TupleIterator::IsaReverseBounded(_) => write!(f, "IsaReverseBounded iterator"),
+            TupleIterator::VectorSearch(_) => write!(f, "VectorSearch iterator"),
             TupleIterator::HasSingle(_) => write!(f, "HasSingle iterator"),
             TupleIterator::HasMerged(_) => write!(f, "HasMerged iterator"),
             TupleIterator::HasReverseSingle(_) => write!(f, "HasReverseSingle iterator"),

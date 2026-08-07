@@ -11,6 +11,7 @@ use std::{
 };
 
 use bytes::{Bytes, byte_array::ByteArray};
+use error::unimplemented_feature;
 use resource::constants::encoding::{AD_HOC_BYTES_INLINE, StructFieldIDUInt};
 
 use crate::{
@@ -100,6 +101,8 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes())
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
+            // TODO(vector-search): encode a vector-valued struct field once vector storage exists.
+            Value::Vector(_) => unimplemented_feature!(VectorSearch),
             | Value::Boolean(_)
             | Value::Integer(_)
             | Value::Double(_)
@@ -179,6 +182,8 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                 ))
             }
             ValueTypeCategory::Struct => Value::Struct(Cow::Owned(decode_struct_increment_offset(offset, buf)?)),
+            // TODO(vector-search): decode a vector-valued struct field once vector storage exists.
+            ValueTypeCategory::Vector => unimplemented_feature!(VectorSearch),
         };
         fields.insert(field_idx, value);
     }
