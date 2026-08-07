@@ -604,6 +604,19 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 }
 
+fn try_retain<T: Ord + Copy, E>(set: &mut BTreeSet<T>, predicate: impl Fn(&T) -> Result<bool, E>) -> Result<(), E> {
+    let mut to_be_removed = Vec::new();
+    for item in set.iter() {
+        if !predicate(item)? {
+            to_be_removed.push(*item);
+        }
+    }
+    for annotation in to_be_removed.iter() {
+        set.remove(annotation);
+    }
+    Ok(())
+}
+
 trait UnaryConstraint {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
@@ -1478,7 +1491,7 @@ pub mod tests {
         let constraints = conjunction.constraints();
         let expected_graph = TypeInferenceGraph {
             conjunction,
-            vertices: VertexAnnotations::from([
+            vertices: VertexAnnotations::from_iter([
                 (var_animal.into(), BTreeSet::from([type_cat])),
                 (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
                 (var_animal_type.into(), BTreeSet::from([type_cat])),
@@ -1592,7 +1605,7 @@ pub mod tests {
             let constraints = conjunction.constraints();
             let expected_graph = TypeInferenceGraph {
                 conjunction,
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (Vertex::Label(label_owner.clone()), types_x.clone()),
                     (var_x.into(), types_x),
                     (var_a.into(), types_a),
@@ -1673,7 +1686,7 @@ pub mod tests {
             let constraints = conjunction.constraints();
             let expected_graph = TypeInferenceGraph {
                 conjunction,
-                vertices: VertexAnnotations::from([(var_x.into(), types_x), (var_t.into(), types_t)]),
+                vertices: VertexAnnotations::from_iter([(var_x.into(), types_x), (var_t.into(), types_t)]),
                 edges: vec![expected_edge(
                     &constraints[0],
                     var_x.into(),
@@ -1697,17 +1710,4 @@ pub mod tests {
             assert_eq!(expected_graph.edges, graph.edges);
         }
     }
-}
-
-fn try_retain<T: Ord + Copy, E>(set: &mut BTreeSet<T>, predicate: impl Fn(&T) -> Result<bool, E>) -> Result<(), E> {
-    let mut to_be_removed = Vec::new();
-    for item in set.iter() {
-        if !predicate(item)? {
-            to_be_removed.push(*item);
-        }
-    }
-    for annotation in to_be_removed.iter() {
-        set.remove(annotation);
-    }
-    Ok(())
 }
