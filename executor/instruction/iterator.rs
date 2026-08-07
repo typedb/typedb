@@ -28,7 +28,6 @@ use crate::{
         is_executor::IsIterator,
         isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
         isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
-        vector_search_executor::VectorSearchIterator,
         links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle},
         links_reverse_executor::{LinksReverseTupleIteratorMerged, LinksReverseTupleIteratorSingle},
         owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
@@ -41,6 +40,7 @@ use crate::{
         sub_reverse_executor::{SubReverseBoundedSortedSub, SubReverseUnboundedSortedSuper},
         tuple::{Tuple, TupleIndex, TupleOrderingFn, TuplePositions, TupleResult},
         type_list_executor::TypeIterator,
+        vector_search_executor::VectorSearchIterator,
     },
     row::Row,
 };

@@ -198,9 +198,11 @@ pub(crate) fn encode_value_type(
             let name = type_manager.get_struct_definition(snapshot, struct_definition_key)?.name.clone();
             typedb_protocol::value_type::ValueType::Struct(typedb_protocol::value_type::Struct { name })
         }
-        ValueType::Vector(parameters) => typedb_protocol::value_type::ValueType::Vector(
-            typedb_protocol::value_type::Vector { dimension: parameters.length as u32 },
-        ),
+        ValueType::Vector(parameters) => {
+            typedb_protocol::value_type::ValueType::Vector(typedb_protocol::value_type::Vector {
+                dimension: parameters.length as u32,
+            })
+        }
     };
     Ok(typedb_protocol::ValueType { value_type: Some(value_type_message) })
 }
@@ -218,9 +220,7 @@ pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
         Value::Duration(duration) => ValueProto::Duration(encode_duration(duration)),
         Value::String(string) => ValueProto::String(string.to_string()),
         Value::Struct(_struct) => unimplemented_feature!(Structs),
-        Value::Vector(vector) => {
-            ValueProto::Vector(typedb_protocol::value::Vector { values: vector.into_owned() })
-        }
+        Value::Vector(vector) => ValueProto::Vector(typedb_protocol::value::Vector { values: vector.into_owned() }),
     };
     typedb_protocol::Value { value: Some(value_message) }
 }

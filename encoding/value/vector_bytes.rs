@@ -82,6 +82,9 @@ mod test {
         let vector_bytes: VectorBytes<'static, 64> = VectorBytes::build(&vector);
         assert_eq!(vector_bytes.length(), vector.len() * VectorBytes::<64>::ELEMENT_LENGTH);
         let decoded = vector_bytes.as_vector();
-        assert_eq!(decoded.iter().map(|f| f.to_bits()).collect::<Vec<_>>(), vector.iter().map(|f| f.to_bits()).collect::<Vec<_>>());
+        assert_eq!(
+            decoded.iter().map(|f| f.to_bits()).collect::<Vec<_>>(),
+            vector.iter().map(|f| f.to_bits()).collect::<Vec<_>>()
+        );
     }
 }

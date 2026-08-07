@@ -533,11 +533,12 @@ pub(super) fn get_annotations_from_labels(
             Ok(FunctionParameterAnnotation::Value(value))
         }
         NamedType::Vector(vector_type) => {
-            let value = resolve_vector_value_type(vector_type).map_err(|err| TypeInferenceError::VectorLengthInvalid {
-                length: err.length,
-                max: err.max,
-                source_span: vector_type.span(),
-            })?;
+            let value =
+                resolve_vector_value_type(vector_type).map_err(|err| TypeInferenceError::VectorLengthInvalid {
+                    length: err.length,
+                    max: err.max,
+                    source_span: vector_type.span(),
+                })?;
             Ok(FunctionParameterAnnotation::Value(value))
         }
     }

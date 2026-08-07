@@ -134,10 +134,11 @@ pub const MAX_VECTOR_LENGTH: u16 = u16::MAX;
 /// overflows the length field.
 pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<ValueType, VectorLengthError> {
     let raw_length = vector_type.length.value.as_str();
-    let length = raw_length.parse::<u16>().ok().filter(|length| *length > 0).ok_or_else(|| VectorLengthError {
-        length: raw_length.to_owned(),
-        max: MAX_VECTOR_LENGTH,
-    })?;
+    let length = raw_length
+        .parse::<u16>()
+        .ok()
+        .filter(|length| *length > 0)
+        .ok_or_else(|| VectorLengthError { length: raw_length.to_owned(), max: MAX_VECTOR_LENGTH })?;
     let precision = translate_vector_precision(vector_type.precision);
     Ok(ValueType::Vector(VectorTypeParameters::new(length, precision)))
 }

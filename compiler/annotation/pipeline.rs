@@ -274,9 +274,10 @@ fn annotate_stage(
             // A vector search binds its hidden similarity variable to a double.
             block.conjunction().constraints().iter().for_each(|constraint| {
                 if let Constraint::VectorSearch(search) = constraint {
-                    running_annotations
-                        .values
-                        .insert(search.similarity().as_variable().unwrap(), ExpressionValueType::Single(ValueType::Double));
+                    running_annotations.values.insert(
+                        search.similarity().as_variable().unwrap(),
+                        ExpressionValueType::Single(ValueType::Double),
+                    );
                 }
             });
             complete_block_annotations_with_value_types(

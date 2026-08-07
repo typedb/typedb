@@ -185,9 +185,7 @@ fn encode_migration_value(
         Value::Duration(duration) => ValueProto::Duration(encode_duration(duration)),
         Value::String(string) => ValueProto::String(string.to_string()),
         Value::Struct(_struct) => unimplemented_feature!(Structs),
-        Value::Vector(vector) => {
-            ValueProto::Vector(typedb_protocol::value::Vector { values: vector.into_owned() })
-        }
+        Value::Vector(vector) => ValueProto::Vector(typedb_protocol::value::Vector { values: vector.into_owned() }),
     };
     Ok(MigrationValue { value: Some(value_message) })
 }

@@ -326,13 +326,12 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     apply(var)
                 }
             }),
-            Self::VectorSearch(thing::VectorSearchInstruction { vector_search, inputs, .. }) => {
-                vector_search.ids_foreach(|var| {
+            Self::VectorSearch(thing::VectorSearchInstruction { vector_search, inputs, .. }) => vector_search
+                .ids_foreach(|var| {
                     if !inputs.contains(var) {
                         apply(var)
                     }
-                })
-            }
+                }),
             Self::Has(thing::HasInstruction { has, inputs, .. })
             | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var| {
                 if !inputs.contains(var) {

@@ -253,9 +253,15 @@ impl<T> Checker<T> {
                 CheckInstruction::Isa { isa_kind, type_, thing } => {
                     self.filter_isa(context, row, &source, *isa_kind, type_, thing)?
                 }
-                CheckInstruction::VectorSearch { attribute, query, threshold } => {
-                    self.filter_vector_search(context, row, &source, attribute, query, threshold, storage_counters.clone())?
-                }
+                CheckInstruction::VectorSearch { attribute, query, threshold } => self.filter_vector_search(
+                    context,
+                    row,
+                    &source,
+                    attribute,
+                    query,
+                    threshold,
+                    storage_counters.clone(),
+                )?,
                 CheckInstruction::Has { owner, attribute } => {
                     self.filter_has(context, row, &source, owner, attribute, storage_counters.clone())?
                 }
@@ -1104,8 +1110,11 @@ impl<T> Checker<T> {
             Some(function) => function(source),
             None => get_vertex_value(attribute, Some(row), &context.parameters),
         };
-        let (query_vector, threshold) =
-            crate::instruction::vector_search_executor::resolve_query_and_threshold(context, query.clone(), threshold.clone());
+        let (query_vector, threshold) = crate::instruction::vector_search_executor::resolve_query_and_threshold(
+            context,
+            query.clone(),
+            threshold.clone(),
+        );
         let value = match &attribute_value {
             VariableValue::Thing(Thing::Attribute(attr)) => {
                 attr.get_value(context.snapshot.as_ref(), context.thing_manager.as_ref(), storage_counters)?
@@ -1127,8 +1136,11 @@ impl<T> Checker<T> {
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let extractor = self.make_extractor(attribute, row, context);
-        let (query_vector, threshold) =
-            crate::instruction::vector_search_executor::resolve_query_and_threshold(context, query.clone(), threshold.clone());
+        let (query_vector, threshold) = crate::instruction::vector_search_executor::resolve_query_and_threshold(
+            context,
+            query.clone(),
+            threshold.clone(),
+        );
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
         Box::new(move |source| {
@@ -1141,7 +1153,8 @@ impl<T> Checker<T> {
                 _ => return Ok(false),
             };
             let Value::Vector(vector) = &value else { return Ok(false) };
-            Ok(crate::instruction::vector_search_executor::cosine_similarity(&query_vector, vector.as_ref()) >= threshold)
+            Ok(crate::instruction::vector_search_executor::cosine_similarity(&query_vector, vector.as_ref())
+                >= threshold)
         })
     }
 

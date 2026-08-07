@@ -64,7 +64,10 @@ pub(crate) type VectorSearchToTupleFn = fn(Result<VectorSearchItem, Box<ConceptR
 pub(crate) type VectorSearchIterator = NaiiveSeekable<
     AsLendingIterator<
         iter::Map<
-            iter::FilterMap<vec::IntoIter<Result<VectorSearchItem, Box<ConceptReadError>>>, Box<VectorSearchFilterMapFn>>,
+            iter::FilterMap<
+                vec::IntoIter<Result<VectorSearchItem, Box<ConceptReadError>>>,
+                Box<VectorSearchFilterMapFn>,
+            >,
             VectorSearchToTupleFn,
         >,
     >,
@@ -132,7 +135,8 @@ impl VectorSearchExecutor {
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
-        let (query, threshold) = resolve_query_and_threshold(context, self.vector_search.query(), self.vector_search.threshold());
+        let (query, threshold) =
+            resolve_query_and_threshold(context, self.vector_search.query(), self.vector_search.threshold());
 
         for type_ in self.types.iter() {
             let attribute_type = type_.as_attribute_type();
@@ -156,8 +160,7 @@ impl VectorSearchExecutor {
         if self.attribute_bound {
             // The attribute is already bound in the row: emit it (with its similarity) only if it
             // is of the searched type and passes the threshold.
-            let ExecutorVariable::RowPosition(position) = self.vector_search.attribute().as_variable().unwrap()
-            else {
+            let ExecutorVariable::RowPosition(position) = self.vector_search.attribute().as_variable().unwrap() else {
                 unreachable!("bound vector search attribute must have a row position")
             };
             if let VariableValue::Thing(Thing::Attribute(attribute)) = row.get(position) {
@@ -166,14 +169,12 @@ impl VectorSearchExecutor {
                     if let Value::Vector(vector) = &value {
                         let similarity = cosine_similarity(&query, vector.as_ref());
                         if similarity >= threshold {
-                            matching
-                                .push(Ok((VariableValue::Thing(Thing::Attribute(attribute.clone())), similarity)));
+                            matching.push(Ok((VariableValue::Thing(Thing::Attribute(attribute.clone())), similarity)));
                         }
                     }
                 }
             }
-            let as_tuples =
-                matching.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
+            let as_tuples = matching.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
             let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
             return Ok(TupleIterator::VectorSearch(SortedTupleIterator::new(
                 lending_tuples,
@@ -182,23 +183,17 @@ impl VectorSearchExecutor {
             )));
         }
         for type_ in self.types.iter() {
-            let mut iterator = thing_manager.get_attributes_in(
-                snapshot,
-                type_.as_attribute_type(),
-                storage_counters.clone(),
-            )?;
+            let mut iterator =
+                thing_manager.get_attributes_in(snapshot, type_.as_attribute_type(), storage_counters.clone())?;
             while let Some(result) = iterator.next() {
                 match result {
                     Ok(attribute) => {
-                        let value =
-                            attribute.get_value(snapshot, thing_manager, storage_counters.clone())?;
+                        let value = attribute.get_value(snapshot, thing_manager, storage_counters.clone())?;
                         if let Value::Vector(vector) = &value {
                             let similarity = cosine_similarity(&query, vector.as_ref());
                             if similarity >= threshold {
-                                matching.push(Ok((
-                                    VariableValue::Thing(Thing::Attribute(attribute.clone())),
-                                    similarity,
-                                )));
+                                matching
+                                    .push(Ok((VariableValue::Thing(Thing::Attribute(attribute.clone())), similarity)));
                             }
                         }
                     }
@@ -207,8 +202,7 @@ impl VectorSearchExecutor {
             }
         }
 
-        let as_tuples =
-            matching.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
+        let as_tuples = matching.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
         let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
         Ok(TupleIterator::VectorSearch(SortedTupleIterator::new(
             lending_tuples,

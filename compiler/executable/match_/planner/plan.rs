@@ -62,8 +62,7 @@ use crate::{
                     PlannerVertex, UnsatisfiableVertex,
                     constraint::{
                         ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
-                        VectorSearchPlanner,
-                        OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
+                        OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner, VectorSearchPlanner,
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 },
@@ -1741,11 +1740,8 @@ impl ConjunctionPlan<'_> {
             ConstraintVertex::VectorSearch(planner) => {
                 let search = planner.vector_search();
                 let attribute_var = search.attribute().as_variable().unwrap();
-                let instruction_inputs = if inputs.contains(&attribute_var) {
-                    Inputs::Single([attribute_var])
-                } else {
-                    Inputs::None([])
-                };
+                let instruction_inputs =
+                    if inputs.contains(&attribute_var) { Inputs::Single([attribute_var]) } else { Inputs::None([]) };
                 let instruction = ConstraintInstruction::VectorSearch(VectorSearchInstruction::new(
                     search.clone(),
                     instruction_inputs,

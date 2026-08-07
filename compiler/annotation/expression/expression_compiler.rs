@@ -195,10 +195,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
 
         // A vector is a single value, not a list: its length and precision are part of its type.
-        self.push_type_single(ValueType::Vector(VectorTypeParameters::new(
-            length,
-            vector_constructor.precision(),
-        )));
+        self.push_type_single(ValueType::Vector(VectorTypeParameters::new(length, vector_constructor.precision())));
         Ok(())
     }
 
