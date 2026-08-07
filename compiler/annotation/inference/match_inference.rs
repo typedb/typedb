@@ -899,6 +899,7 @@ pub mod tests {
                     ),
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
 
@@ -967,6 +968,7 @@ pub mod tests {
                     ),
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
@@ -1079,6 +1081,7 @@ pub mod tests {
                         vec![(type_cat, type_catname), (type_dog, type_dogname)],
                     ),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
             assert_eq!(expected_graph.edges, graph.edges);
@@ -1158,6 +1161,7 @@ pub mod tests {
                     b1_var_animal_type.into(),
                     vec![(type_cat, type_cat)],
                 )],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             },
             TypeInferenceGraph {
@@ -1173,6 +1177,7 @@ pub mod tests {
                     b2_var_animal_type.into(),
                     vec![(type_dog, type_dog)],
                 )],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             },
         ];
@@ -1199,6 +1204,7 @@ pub mod tests {
                     vec![(type_cat, type_catname), (type_dog, type_dogname)],
                 ),
             ],
+            expressions: Vec::new(),
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
                 disjunction: expected_nested_graphs,
                 shared_variables: BTreeSet::new(),
@@ -1258,6 +1264,7 @@ pub mod tests {
                 var_name.into(),
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
+            expressions: Vec::new(),
             nested_disjunctions: Vec::new(),
         };
 
@@ -1395,6 +1402,7 @@ pub mod tests {
                     vec![(type_is_feared, type_is_feared)],
                 ),
             ],
+            expressions: Vec::new(),
             nested_disjunctions: Vec::new(),
         };
 
@@ -1476,6 +1484,7 @@ pub mod tests {
                         vec![(type_cat, type_catname)],
                     ),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
 
@@ -1546,6 +1555,7 @@ pub mod tests {
                         vec![(type_cat, type_catname)],
                     ),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
@@ -1599,6 +1609,7 @@ pub mod tests {
                     expected_edge(&constraints[2], var_name.into(), var_name_type.into(), Vec::new()),
                     expected_edge(&constraints[4], var_animal_type.into(), var_name_type.into(), Vec::new()),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
@@ -1666,6 +1677,7 @@ pub mod tests {
                         vec![(type_cat, type_catname), (type_dog, type_dogname)],
                     ),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
 
@@ -1740,6 +1752,7 @@ pub mod tests {
                     ),
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
 
@@ -1807,6 +1820,7 @@ pub mod tests {
                     ),
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
@@ -1915,6 +1929,7 @@ pub mod tests {
                         vec![(type_cat, type_catname), (type_dog, type_dogname)],
                     ),
                 ],
+                expressions: Vec::new(),
                 nested_disjunctions: Vec::new(),
             };
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1959,6 +1974,7 @@ pub mod tests {
                 var_name.into(),
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
+            expressions: Vec::new(),
             nested_disjunctions: vec![],
         };
 

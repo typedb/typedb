@@ -1599,7 +1599,8 @@ pub mod tests {
                 ),
                 expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
             ],
-            nested_disjunctions: vec![],
+            expressions: Vec::new(),
+            nested_disjunctions: Vec::new(),
         };
 
         let snapshot = storage.clone().open_snapshot_write();
@@ -1733,7 +1734,8 @@ pub mod tests {
                         ],
                     ),
                 ],
-                nested_disjunctions: vec![],
+                expressions: Vec::new(),
+                nested_disjunctions: Vec::new(),
             };
 
             let snapshot = storage.clone().open_snapshot_write();
@@ -1783,7 +1785,8 @@ pub mod tests {
                     var_t.into(),
                     vec![(type_age, type_age), (type_catname, type_catname), (type_dogname, type_dogname)],
                 )],
-                nested_disjunctions: vec![],
+                expressions: Vec::new(),
+                nested_disjunctions: Vec::new(),
             };
 
             let snapshot = storage.clone().open_snapshot_write();
