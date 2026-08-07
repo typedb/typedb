@@ -43,14 +43,13 @@ use crate::annotation::{
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     inference::{
         ConceptVertexTypes, ExtendMappedOperations, FromIteratorMappedOperations, TypeAnnotationSetTrait,
-        VertexAnnotations, VertexTypeAnnotations,
+        ValueVertexTypes, VertexAnnotations, VertexTypeAnnotations,
         match_inference::{
             NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceExpression, TypeInferenceGraph,
         },
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
-use crate::annotation::inference::ValueVertexTypes;
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -128,7 +127,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        debug_assert!(parent_vertices.is_empty(), "TODO: Cleanup if this never fires. It's always passed an empty one for some reason");
+        debug_assert!(
+            parent_vertices.is_empty(),
+            "TODO: Cleanup if this never fires. It's always passed an empty one for some reason"
+        );
         let vars_in_pattern =
             graph.conjunction.visible_referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
         for (vertex, parent_annotations) in parent_vertices.iter() {
@@ -583,8 +585,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     // We don't use comparisons to propagate, but we still want to use it to prune.
                     // And we only prune concept types across edges for now.
                     if let (Some(VertexTypeAnnotations::Concept(_)), Some(VertexTypeAnnotations::Concept(_))) =
-                        (vertices.get(cmp.left()), vertices.get(cmp.right())) {
-                            edges.push(self.seed_edge(constraint, cmp, vertices)?)
+                        (vertices.get(cmp.left()), vertices.get(cmp.right()))
+                    {
+                        edges.push(self.seed_edge(constraint, cmp, vertices)?)
                     }
                 }
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
@@ -892,10 +895,10 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
             for (arg_var, arg_annotations) in zip(args, &annotated_function_signature.arguments) {
                 match arg_annotations {
                     FunctionParameterAnnotation::Concept(types) => {
-                      graph_vertices.add_or_intersect::<ConceptVertexTypes>(
-                          &Vertex::Variable(arg_var),
-                          Cow::Owned(ConceptVertexTypes(types.clone())),
-                      );
+                        graph_vertices.add_or_intersect::<ConceptVertexTypes>(
+                            &Vertex::Variable(arg_var),
+                            Cow::Owned(ConceptVertexTypes(types.clone())),
+                        );
                     }
                     FunctionParameterAnnotation::Value(value_type) => {
                         graph_vertices.add_or_intersect::<ValueVertexTypes>(

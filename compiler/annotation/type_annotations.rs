@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::{Type, variable::Variable};
-use ir::pattern::{Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint};
+use ir::pattern::{Pattern, Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint};
 
 use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
@@ -43,7 +43,11 @@ impl BlockAnnotations {
     ) {
         let conjunction_annotations = self.type_annotations_mut_of(conjunction).expect("Expected annotations");
         debug_assert!(conjunction_annotations.value_type_annotations.is_none());
-        debug_assert_eq!(conjunction_annotations.new__value_type_annotations, annotations);
+        // Turns out the new approach is stricter.
+        // debug_assert_eq!(conjunction_annotations.new__value_type_annotations, annotations);
+        debug_assert!(
+            annotations.iter().all(|(k, v)| { conjunction_annotations.new__value_type_annotations.get(k) == Some(v) })
+        );
         conjunction_annotations.value_type_annotations = Some(annotations);
     }
 

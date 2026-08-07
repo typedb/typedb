@@ -5,13 +5,13 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, btree_set::Iter},
     sync::Arc,
 };
-use std::collections::btree_set::Iter;
+
 use answer::{Type as TypeAnnotation, variable::Variable};
 use concept::type_::attribute_type::AttributeType;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::ValueType;
 use error::unimplemented_feature;
 use ir::{
     pattern::{
@@ -19,25 +19,26 @@ use ir::{
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
     },
     pipeline::{
         VariableRegistry,
         block::{Block, BlockContext},
     },
 };
-use itertools::{ExactlyOneError, Itertools};
-use ir::pattern::variable_category::VariableCategory;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::{
         PipelineAnnotationContext, TypeInferenceError,
         expression::{
+            ExpressionCompileError,
             compiled_expression::{ExecutableExpression, ExpressionValueType},
             expression_compiler::ExpressionCompilationContext,
         },
         inference::{
-            ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, VertexAnnotations,
+            ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, ValueVertexTypes, VertexAnnotations,
             VertexTypeAnnotations, type_seeder::TypeGraphSeedingContext,
         },
         pipeline::RunningVariableAnnotations,
@@ -48,7 +49,6 @@ use crate::{
     },
     filter_variants,
 };
-use crate::annotation::expression::ExpressionCompileError;
 
 pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
@@ -56,19 +56,32 @@ pub fn infer_types_for_block(
     block: &Block,
     type_inference_mode: TypeInferenceMode,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
-    let mut flattened_graphs = HashMap::new();
-    let input_annotations = previous_stage_annotations
-        .concepts
-        .iter()
-        .map(|(var, annotations)| (Vertex::Variable(*var), ConceptVertexTypes((**annotations).clone()).into()))
-        .collect();
+    let mut input_annotations: BTreeMap<Vertex<Variable>, VertexTypeAnnotations> = BTreeMap::new();
+    previous_stage_annotations.concepts.iter().for_each(|(var, annotations)| {
+        input_annotations
+            .insert(Vertex::Variable(*var), VertexTypeAnnotations::concept_from(annotations.iter().copied()));
+    });
+    previous_stage_annotations.values.iter().for_each(|(var, expression_value_type)| {
+        let ExpressionValueType::Single(value_type) = expression_value_type else {
+            unimplemented_feature!(Lists);
+        };
+        input_annotations.insert(Vertex::Variable(*var), VertexTypeAnnotations::value_from([*value_type]));
+    });
     let input_annotations = VertexAnnotations { annotations: input_annotations };
+
+    let mut flattened_graphs = HashMap::new();
     infer_types_impl(ctx, block.conjunction(), &input_annotations, type_inference_mode, &mut flattened_graphs)?;
 
     let type_annotations_by_scope = flattened_graphs
         .into_iter()
         .map(|(scope_id, flattened_graph)| {
-            Ok::<_,TypeInferenceError>((scope_id, flattened_graph.into_type_annotations()?))
+            debug_assert!(
+                flattened_graph
+                    .conjunction
+                    .visible_referenced_variables()
+                    .all(|v| flattened_graph.vertices.contains_key(&v.into()))
+            );
+            Ok::<_, TypeInferenceError>((scope_id, flattened_graph.into_type_annotations()?))
         })
         .collect::<Result<HashMap<_, _>, TypeInferenceError>>()?;
     debug_assert!(all_vertex_annotations_available(
@@ -234,10 +247,6 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
     graph.prune_constraints_from_vertices()?; // We need this for expressions
     while graph.prune_vertices_from_constraints() {
-        // if !graph.expressions.is_empty() {
-        //     println!("VERTICES ARE: {:?}", graph.vertices);
-        //     println!("EXPRESSIONS ARE: {:?}", graph.expressions);
-        // }
         graph.prune_constraints_from_vertices()?;
     }
     Ok(())
@@ -309,12 +318,8 @@ impl<'this> TypeInferenceGraph<'this> {
         Ok(())
     }
 
-    fn check_uniqueness_of_value_types(
-        &self,
-        variable_registry: &VariableRegistry,
-    ) -> Result<(), TypeInferenceError> {
-        self
-            .vertices
+    fn check_uniqueness_of_value_types(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+        self.vertices
             .annotations
             .iter()
             .filter_map(|(vertex, types)| Some((vertex.as_variable()?, types)))
@@ -322,27 +327,22 @@ impl<'this> TypeInferenceGraph<'this> {
                 let var_category = variable_registry.get_variable_category(var).unwrap();
                 match (var_category, types) {
                     (VariableCategory::Value, VertexTypeAnnotations::Value(value_types)) => {
-                        value_types.into_iter().exactly_one().map(|_|()).map_err(|_| {
-                            println!("VERTICES ARE: {:?}", self.vertices);
+                        value_types.into_iter().exactly_one().map(|_| ()).map_err(|_| {
                             let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
                             let value_types = value_types.into_iter().map(|t| t.category().name()).join(", ");
                             TypeInferenceError::ExpressionCompilation {
-                                typedb_source: Box::new(
-                                    ExpressionCompileError::VariableMultipleValueTypes {
-                                        variable,
-                                        value_types,
-                                        source_span: None, // TODO
-                                    }
-                                )
+                                typedb_source: Box::new(ExpressionCompileError::VariableMultipleValueTypes {
+                                    variable,
+                                    value_types,
+                                    source_span: None, // TODO
+                                }),
                             }
                         })
                     }
                     (VariableCategory::Value, _) | (_, VertexTypeAnnotations::Value(_)) => {
                         unreachable!("VariableCategory/VertexTypeAnnotations mismatch");
                     }
-                    (_, VertexTypeAnnotations::Concept(_)) => {
-                        Ok(())
-                    }
+                    (_, VertexTypeAnnotations::Concept(_)) => Ok(()),
                 }
             })?;
         self.nested_disjunctions
@@ -451,7 +451,7 @@ pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
 }
 
 impl NestedTypeInferenceGraphDisjunction<'_> {
-    fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) -> Result<(), TypeInferenceError>{
+    fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {
         for nested_graph in &mut self.disjunction {
             for (vertex, vertex_types) in &mut nested_graph.vertices {
                 if let Some(parent_vertex_types) = parent_vertices.get(vertex) {
@@ -509,7 +509,6 @@ impl<'this> TypeInferenceExpression<'this> {
         } else {
             false
         }
-
     }
 
     fn prune_self_from_vertices(&mut self, vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {
@@ -532,7 +531,6 @@ impl<'this> TypeInferenceExpression<'this> {
     }
 
     fn exactly_one_value_type(&self, annotations: &VertexTypeAnnotations) -> Result<ExpressionValueType, ()> {
-        // eprintln!("EXACTLY_ONE? {:?}", annotations);
         match annotations {
             VertexTypeAnnotations::Concept(types) => filter_variants!(answer::Type::Attribute: types)
                 .map(|t| self.value_types_of_attributes[t])
@@ -581,14 +579,14 @@ impl FlattenedTypeInferenceGraph<'_> {
         let mut concept_vertex_annotations = BTreeMap::new();
         let mut value_vertex_annotations = BTreeMap::new();
         vertices.into_iter().for_each(|(variable, types)| match types {
-                VertexTypeAnnotations::Concept(types) => {
-                    concept_vertex_annotations.insert(variable.into(), Arc::new(types.0));
-                },
-                VertexTypeAnnotations::Value(types) => {
-                    let unique_value_type = types.into_iter().exactly_one().expect("Uniqueness verified earlier");
-                    value_vertex_annotations.insert(variable.into(), ExpressionValueType::Single(*unique_value_type));
-                }
-            });
+            VertexTypeAnnotations::Concept(types) => {
+                concept_vertex_annotations.insert(variable.into(), Arc::new(types.0));
+            }
+            VertexTypeAnnotations::Value(types) => {
+                let unique_value_type = types.into_iter().exactly_one().expect("Uniqueness verified earlier");
+                value_vertex_annotations.insert(variable.into(), ExpressionValueType::Single(*unique_value_type));
+            }
+        });
         Ok(TypeAnnotations::new(concept_vertex_annotations, value_vertex_annotations, constraint_annotations))
     }
 }
