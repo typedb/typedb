@@ -123,3 +123,7 @@ features = {}
 	path = "tests/test_storage.rs"
 	name = "test_storage"
 
+[[test]]
+	path = "tests/test_cleanup.rs"
+	name = "test_cleanup"
+
