@@ -43,6 +43,7 @@ impl BlockAnnotations {
     ) {
         let conjunction_annotations = self.type_annotations_mut_of(conjunction).expect("Expected annotations");
         debug_assert!(conjunction_annotations.value_type_annotations.is_none());
+        debug_assert_eq!(conjunction_annotations.new__value_type_annotations, annotations);
         conjunction_annotations.value_type_annotations = Some(annotations);
     }
 
@@ -60,24 +61,16 @@ pub struct TypeAnnotations {
     vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     value_type_annotations: Option<BTreeMap<Vertex<Variable>, ExpressionValueType>>,
+    new__value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
 }
 
 impl TypeAnnotations {
     pub fn new(
-        variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
+        vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
+        new__value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { vertex: variables, constraints, value_type_annotations: None }
-    }
-
-    pub fn new_with_value_annotations(
-        variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
-        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-        value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
-    ) -> Self {
-        let mut this = Self::new(variables, constraints);
-        this.value_type_annotations = Some(value_type_annotations);
-        this
+        TypeAnnotations { vertex, constraints, new__value_type_annotations, value_type_annotations: None }
     }
 
     pub fn vertex_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
