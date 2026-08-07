@@ -175,6 +175,11 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.simsimd]
+			features = ["default"]
+			version = "6.5.16"
+			default-features = false
+
 		[workspace.dependencies.rpassword]
 			features = []
 			version = "7.5.3"
@@ -586,9 +591,6 @@ features = {}
 			features = ["default", "use_alloc", "use_std"]
 			version = "0.14.0"
 			default-features = false
-
-		[workspace.dependencies.simsimd]
-			version = "6.5.16"
 
 		[workspace.dependencies.jsonwebtoken]
 			features = ["default", "pem", "simple_asn1", "use_pem"]
