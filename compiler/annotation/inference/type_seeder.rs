@@ -579,8 +579,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Is(is) => edges.push(self.seed_edge(constraint, is, vertices)?),
                 Constraint::Comparison(cmp) => {
                     // We don't use comparisons to propagate, but we still want to use it to prune.
-                    if vertices.contains_key(cmp.right()) && vertices.contains_key(cmp.left()) {
-                        edges.push(self.seed_edge(constraint, cmp, vertices)?)
+                    // And we only prune concept types across edges for now.
+                    if let (Some(VertexTypeAnnotations::Concept(_)), Some(VertexTypeAnnotations::Concept(_))) =
+                        (vertices.get(cmp.left()), vertices.get(cmp.right())) {
+                            edges.push(self.seed_edge(constraint, cmp, vertices)?)
                     }
                 }
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
@@ -617,7 +619,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         vertices: &VertexAnnotations,
     ) -> Result<TypeInferenceEdge<'conj>, TypeInferenceError> {
         let (left, right) = (inner.left().clone(), inner.right().clone());
-        compile_error!("COMPARISONS!");
         let Some(VertexTypeAnnotations::Concept(left_vertex_types)) = vertices.get(&left) else {
             return Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() });
         };
