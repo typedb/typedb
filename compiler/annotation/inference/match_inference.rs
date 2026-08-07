@@ -510,6 +510,7 @@ pub mod tests {
                 annotate_named_function,
             },
             inference::{
+                VertexTypeAnnotations,
                 match_inference::{
                     NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
                     compute_type_inference_graph, infer_types_for_block, prune_types,
@@ -810,7 +811,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (var_name.into(), BTreeSet::from([type_catname])),
                     (var_animal_type.into(), BTreeSet::from([type_cat])),
@@ -878,7 +879,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (var_name.into(), BTreeSet::from([type_catname])),
                     (var_animal_type.into(), BTreeSet::from([type_animal])),
@@ -985,7 +986,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), types_a),
                     (var_name.into(), types_n),
                     (var_animal_type.into(), BTreeSet::from([type_animal])),
@@ -1081,7 +1082,7 @@ pub mod tests {
         let expected_nested_graphs = vec![
             TypeInferenceGraph {
                 conjunction: b1,
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (b1_var_animal_type.into(), BTreeSet::from([type_cat])),
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
@@ -1096,7 +1097,7 @@ pub mod tests {
             },
             TypeInferenceGraph {
                 conjunction: b2,
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_dog])),
                     (b2_var_animal_type.into(), BTreeSet::from([type_dog])),
                     (Vertex::Label(LABEL_DOG), BTreeSet::from([type_dog])),
@@ -1113,7 +1114,7 @@ pub mod tests {
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
-            vertices: VertexAnnotations::from([
+            vertices: VertexAnnotations::from_iter([
                 (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
                 (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
                 (var_name_type.into(), BTreeSet::from([type_name])),
@@ -1183,7 +1184,7 @@ pub mod tests {
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
-            vertices: VertexAnnotations::from([
+            vertices: VertexAnnotations::from_iter([
                 (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
                 (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
@@ -1270,7 +1271,7 @@ pub mod tests {
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
-            vertices: VertexAnnotations::from([
+            vertices: VertexAnnotations::from_iter([
                 (var_has_fear.into(), BTreeSet::from([type_cat])),
                 (var_is_feared.into(), BTreeSet::from([type_dog])),
                 (var_fears_type.into(), BTreeSet::from([type_fears])),
@@ -1384,7 +1385,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (var_name.into(), BTreeSet::from([type_catname])),
                     (var_animal_type.into(), BTreeSet::from([type_cat])),
@@ -1454,7 +1455,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (var_name.into(), BTreeSet::from([type_catname])),
                     (var_owner_type.into(), BTreeSet::from([type_cat])),
@@ -1521,7 +1522,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::new()),
                     (var_name.into(), BTreeSet::new()),
                     (var_animal_type.into(), BTreeSet::new()),
@@ -1575,7 +1576,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), types_a.clone()),
                     (var_name.into(), types_n.clone()),
                     (var_animal_type.into(), types_a.clone()),
@@ -1654,7 +1655,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (var_name.into(), BTreeSet::from([type_catname])),
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
@@ -1721,7 +1722,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), BTreeSet::from([type_cat])),
                     (var_name.into(), BTreeSet::from([type_catname])),
                     (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal])),
@@ -1824,7 +1825,7 @@ pub mod tests {
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: VertexAnnotations::from([
+                vertices: VertexAnnotations::from_iter([
                     (var_animal.into(), types_a),
                     (var_name.into(), types_n),
                     (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal])),
@@ -1884,7 +1885,7 @@ pub mod tests {
         let constraints = conjunction.constraints();
         let mut expected_graph = TypeInferenceGraph {
             conjunction,
-            vertices: VertexAnnotations::from([
+            vertices: VertexAnnotations::from_iter([
                 (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
                 (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
@@ -1910,7 +1911,12 @@ pub mod tests {
         prune_types(&mut graph);
         if expected_graph != graph {
             // We need this because of non-determinism
-            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
+            let Some(VertexTypeAnnotations::Concept(expected_animal_types)) =
+                expected_graph.vertices.get_mut(&var_animal.into())
+            else {
+                unreachable!()
+            };
+            expected_animal_types.insert(type_fears);
             assert_eq!(expected_graph, graph)
         }
     }
