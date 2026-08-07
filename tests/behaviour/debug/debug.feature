@@ -33,33 +33,30 @@ Feature: Debugging Space
       attribute limit-double @independent, value double;
       """
     Given transaction commits
-    Given connection open write transaction for database: typedb
-    Given typeql write query
-      """
-      insert
-      $x isa age 16;
-      """
+    Given connection open schema transaction for database: typedb
+    Given typeql schema query
+    """
+    define
+    fun four_or_five() -> { integer }:
+    match { let $x = 4; } or { let $x = 5; };
+    return { $x };
+
+    """
+#    Given typeql schema query
+#      """
+#      define
+#      fun names_helper($len: integer) -> { string }:
+#        match
+#          {
+#            $len > 1;
+#            let $a_ in names_helper($len - 1);
+#            let $a = "a" + $a_;
+#          } or {
+#            let $a = "a";
+#          };
+#        return { $a };
+#      fun names() -> { string }:
+#        match let $a in names_helper(20);
+#        return { $a };
+#      """
     Given transaction commits
-
-    Given connection open read transaction for database: typedb
-    When get answers of typeql read query
-      """
-      match
-        let $const = -10;
-      """
-    Then uniquely identify answer concepts
-      | const            |
-      |value:integer:-10 |
-
-    When get answers of typeql read query
-      """
-      match
-        $x isa age;
-        let $const = -10;
-        let $plus-negative = $x + -10;
-        let $minus-negative = $x - -10;
-      """
-    Then uniquely identify answer concepts
-      | x           | const             | plus-negative   | minus-negative   |
-      | attr:age:16 | value:integer:-10 | value:integer:6 | value:integer:26 |
-

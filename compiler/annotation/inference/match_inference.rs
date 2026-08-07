@@ -268,7 +268,7 @@ impl<'this> TypeInferenceGraph<'this> {
             expression.prune_self_from_vertices(&self.vertices)?;
         }
         for nested_graph in &mut self.nested_disjunctions {
-            nested_graph.prune_self_from_vertices(&self.vertices)
+            nested_graph.prune_self_from_vertices(&self.vertices)?;
         }
         Ok(())
     }
@@ -323,6 +323,7 @@ impl<'this> TypeInferenceGraph<'this> {
                 match (var_category, types) {
                     (VariableCategory::Value, VertexTypeAnnotations::Value(value_types)) => {
                         value_types.into_iter().exactly_one().map(|_|()).map_err(|_| {
+                            println!("VERTICES ARE: {:?}", self.vertices);
                             let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
                             let value_types = value_types.into_iter().map(|t| t.category().name()).join(", ");
                             TypeInferenceError::ExpressionCompilation {
@@ -450,15 +451,16 @@ pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
 }
 
 impl NestedTypeInferenceGraphDisjunction<'_> {
-    fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) {
+    fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) -> Result<(), TypeInferenceError>{
         for nested_graph in &mut self.disjunction {
             for (vertex, vertex_types) in &mut nested_graph.vertices {
                 if let Some(parent_vertex_types) = parent_vertices.get(vertex) {
                     vertex_types.retain_intersection(parent_vertex_types);
                 }
             }
-            nested_graph.prune_constraints_from_vertices();
+            nested_graph.prune_constraints_from_vertices()?;
         }
+        Ok(())
     }
 
     fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {

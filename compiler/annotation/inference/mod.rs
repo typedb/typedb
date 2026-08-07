@@ -77,6 +77,12 @@ impl From<ConceptVertexTypes> for VertexTypeAnnotations {
     }
 }
 
+impl From<ValueVertexTypes> for VertexTypeAnnotations {
+    fn from(value: ValueVertexTypes) -> Self {
+        Self::Value(value)
+    }
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(super) struct ConceptVertexTypes(BTreeSet<answer::Type>);
 

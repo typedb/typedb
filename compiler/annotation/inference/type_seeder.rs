@@ -50,6 +50,7 @@ use crate::annotation::{
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
+use crate::annotation::inference::ValueVertexTypes;
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -127,6 +128,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        debug_assert!(parent_vertices.is_empty(), "TODO: Cleanup if this never fires. It's always passed an empty one for some reason");
         let vars_in_pattern =
             graph.conjunction.visible_referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
         for (vertex, parent_annotations) in parent_vertices.iter() {
@@ -637,7 +639,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for expr in expressions {
             graph.expressions.push(self.seed_expression(&graph.vertices, expr)?);
         }
-
+        for disj in &mut graph.nested_disjunctions {
+            for nested_graph in &mut disj.disjunction {
+                self.seed_expressions(nested_graph)?;
+            }
+        }
         Ok(())
     }
 
@@ -863,20 +869,43 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
             for (assigned_variable, return_annotation) in
                 zip(self.assigned(), annotated_function_signature.returns.iter())
             {
-                if let FunctionParameterAnnotation::Concept(types) = return_annotation {
-                    graph_vertices.add_or_intersect::<ConceptVertexTypes>(
-                        assigned_variable,
-                        Cow::Owned(ConceptVertexTypes(types.clone())),
-                    );
+                match return_annotation {
+                    FunctionParameterAnnotation::Concept(types) => {
+                        graph_vertices.add_or_intersect::<ConceptVertexTypes>(
+                            assigned_variable,
+                            Cow::Owned(ConceptVertexTypes(types.clone())),
+                        );
+                    }
+                    FunctionParameterAnnotation::Value(value_type) => {
+                        graph_vertices.add_or_intersect::<ValueVertexTypes>(
+                            assigned_variable,
+                            Cow::Owned(ValueVertexTypes(BTreeSet::from([*value_type]))),
+                        );
+                    }
+                    FunctionParameterAnnotation::AnyConcept => {
+                        debug_assert!(false, "We can't return AnyConcept");
+                    }
                 }
             }
+            // TODO: Should we be pruning, or should we be error-ing?
             let args = self.function_call().argument_ids();
             for (arg_var, arg_annotations) in zip(args, &annotated_function_signature.arguments) {
-                if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
-                    graph_vertices.add_or_intersect::<ConceptVertexTypes>(
-                        &Vertex::Variable(arg_var),
-                        Cow::Owned(ConceptVertexTypes(types.clone())),
-                    );
+                match arg_annotations {
+                    FunctionParameterAnnotation::Concept(types) => {
+                      graph_vertices.add_or_intersect::<ConceptVertexTypes>(
+                          &Vertex::Variable(arg_var),
+                          Cow::Owned(ConceptVertexTypes(types.clone())),
+                      );
+                    }
+                    FunctionParameterAnnotation::Value(value_type) => {
+                        graph_vertices.add_or_intersect::<ValueVertexTypes>(
+                            &Vertex::Variable(arg_var),
+                            Cow::Owned(ValueVertexTypes(BTreeSet::from([*value_type]))),
+                        );
+                    }
+                    FunctionParameterAnnotation::AnyConcept => {
+                        // Let other constraints seed it
+                    }
                 }
             }
         }
