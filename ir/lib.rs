@@ -317,7 +317,7 @@ typedb_error! {
             55,
             "The conjunction cannot have a valid plan. The required input variables for the following constraints could not be satisfied:\n{unplannable_constraints}",
             unplannable_constraints: UnplannableConstraints,
-            span: Option<Span>, // of the conjunction
+            span: Option<Span>,
         ),
         InternalNotAValueBuiltin(
             100,

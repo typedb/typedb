@@ -8,6 +8,7 @@ use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::pattern::{
     BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
@@ -21,6 +22,7 @@ pub struct Optional {
     conjunction: Conjunction,
     branch_id: BranchID,
     pattern_variables: PatternVariables,
+    source_span: Option<Span>,
 }
 
 impl Optional {
@@ -34,6 +36,10 @@ impl Optional {
 
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
+    }
+
+    pub(crate) fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -65,20 +71,22 @@ impl fmt::Display for Optional {
 pub(crate) struct OptionalBuilder {
     conjunction: ConjunctionBuilder,
     branch_id: BranchID,
+    source_span: Option<Span>,
 }
 
 impl OptionalBuilder {
-    pub(crate) fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
+    pub(crate) fn new(scope_id: ScopeId, branch_id: BranchID, source_span: Option<Span>) -> Self {
         let conjunction = ConjunctionBuilder::new(scope_id);
-        Self { conjunction, branch_id }
+        Self { conjunction, branch_id, source_span }
     }
 
     pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let source_span = self.source_span;
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let branch_id = self.branch_id;
         let conjunction = self.conjunction.finish(&binding_modes);
-        let variable_requirements = PatternVariables::from(&binding_modes);
-        NestedPattern::Optional(Optional { branch_id, conjunction, pattern_variables: variable_requirements })
+        let pattern_variables = PatternVariables::from(&binding_modes);
+        NestedPattern::Optional(Optional { branch_id, conjunction, pattern_variables, source_span })
     }
 
     pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {

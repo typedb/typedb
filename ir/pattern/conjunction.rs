@@ -213,20 +213,20 @@ impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
         ConstraintsBuilder::new(self.context, &mut self.conjunction.constraints)
     }
 
-    pub fn add_disjunction(&mut self) -> DisjunctionBuilderWithContext<'_, 'reg> {
+    pub fn add_disjunction(&mut self, source_span: Option<Span>) -> DisjunctionBuilderWithContext<'_, 'reg> {
         let nested_scope_id = self.context.next_scope_id();
         self.conjunction
             .nested_patterns
-            .push(NestedPatternBuilder::Disjunction(DisjunctionBuilder::new(nested_scope_id)));
+            .push(NestedPatternBuilder::Disjunction(DisjunctionBuilder::new(nested_scope_id, source_span)));
         let NestedPatternBuilder::Disjunction(builder) = self.conjunction.nested_patterns.last_mut().unwrap() else {
             unreachable!();
         };
         DisjunctionBuilderWithContext::new(self.context, builder)
     }
 
-    pub fn add_negation(&mut self) -> ConjunctionBuilderWithContext<'_, 'reg> {
+    pub fn add_negation(&mut self, source_span: Option<Span>) -> ConjunctionBuilderWithContext<'_, 'reg> {
         let nested_scope_id = self.context.next_scope_id();
-        let negation = NegationBuilder::new(nested_scope_id);
+        let negation = NegationBuilder::new(nested_scope_id, source_span);
         self.conjunction.nested_patterns.push(NestedPatternBuilder::Negation(negation));
         let Some(NestedPatternBuilder::Negation(builder)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
@@ -239,8 +239,7 @@ impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<ConjunctionBuilderWithContext<'_, 'reg>, RepresentationError> {
         let nested_scope_id = self.context.next_scope_id();
-        let conjunction = ConjunctionBuilder::new(nested_scope_id);
-        let optional = OptionalBuilder::new(nested_scope_id, self.context.next_branch_id());
+        let optional = OptionalBuilder::new(nested_scope_id, self.context.next_branch_id(), source_span);
         self.conjunction.nested_patterns.push(NestedPatternBuilder::Optional(optional));
         let Some(NestedPatternBuilder::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()

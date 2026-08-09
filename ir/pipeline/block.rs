@@ -20,7 +20,6 @@ use crate::{
         BindingMode, BranchID, ContextualisedBindingMode, Pattern, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
-        disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
@@ -391,22 +390,26 @@ fn validate_is_plannable_impl<'conj>(
     if unplannable_constraints.constraints_and_requirements.is_empty() {
         Ok(bound_variables)
     } else {
-        let span = None; // TODO: conjunction.span()
-        Err(Box::new(RepresentationError::UnplannableConjunction { span, unplannable_constraints }))
+        let earliest_span = unplannable_constraints
+            .constraints_and_requirements
+            .iter()
+            .filter_map(|(_, _, span)| *span)
+            .reduce(|x, y| if x.begin_offset < y.begin_offset { x } else { y });
+        Err(Box::new(RepresentationError::UnplannableConjunction { span: earliest_span, unplannable_constraints }))
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct UnplannableConstraints {
-    constraints_and_requirements: Vec<(String, String)>,
+    constraints_and_requirements: Vec<(String, String, Option<Span>)>,
 }
 
 impl UnplannableConstraints {
     fn build<'conj>(
         bound_variables: &BTreeSet<Variable>,
         variable_registry: &VariableRegistry,
-        mut remaining_constraints: impl Iterator<Item = &'conj Constraint<Variable>>,
-        mut remaining_nested_patterns: impl Iterator<Item = &'conj NestedPattern>,
+        remaining_constraints: impl Iterator<Item = &'conj Constraint<Variable>>,
+        remaining_nested_patterns: impl Iterator<Item = &'conj NestedPattern>,
     ) -> Self {
         macro_rules! unsatisfied_vars {
             ($iter: expr) => {
@@ -419,7 +422,7 @@ impl UnplannableConstraints {
         let mut constraints_and_requirements = Vec::new();
         constraints_and_requirements.extend(remaining_constraints.map(|c| {
             let required_vars = c.binding_modes().filter_map(|(id, mode)| mode.is_require_prebound().then_some(id));
-            (c.name().to_owned(), unsatisfied_vars!(required_vars))
+            (c.name().to_owned(), unsatisfied_vars!(required_vars), c.source_span())
         }));
         constraints_and_requirements.extend(remaining_nested_patterns.map(|nested| {
             let (name, required_vars) = match nested {
@@ -427,7 +430,7 @@ impl UnplannableConstraints {
                 NestedPattern::Negation(negation) => ("Negation", unsatisfied_vars!(negation.required_inputs())),
                 NestedPattern::Optional(optional) => ("Optional", unsatisfied_vars!(optional.required_inputs())),
             };
-            (name.to_owned(), required_vars)
+            (name.to_owned(), required_vars, nested.source_span())
         }));
         Self { constraints_and_requirements }
     }
@@ -435,7 +438,7 @@ impl UnplannableConstraints {
 
 impl fmt::Display for UnplannableConstraints {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (name, required_vars) in &self.constraints_and_requirements {
+        for (name, required_vars, _span) in &self.constraints_and_requirements {
             writeln!(f, "- {name}: [{required_vars}]")?;
         }
         Ok(())
