@@ -391,7 +391,8 @@ fn validate_is_plannable_impl<'conj>(
     if unplannable_constraints.constraints_and_requirements.is_empty() {
         Ok(bound_variables)
     } else {
-        Err(Box::new(RepresentationError::UnplannableConjunction { unplannable_constraints }))
+        let span = None; // TODO: conjunction.span()
+        Err(Box::new(RepresentationError::UnplannableConjunction { span, unplannable_constraints }))
     }
 }
 

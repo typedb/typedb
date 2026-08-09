@@ -315,9 +315,9 @@ typedb_error! {
         ),
         UnplannableConjunction(
             55,
-            "An unplannable conjunction was detected. Planning could not satisfy the input variables for the constraints:\n{unplannable_constraints}",
+            "The conjunction cannot have a valid plan. The required input variables for the following constraints could not be satisfied:\n{unplannable_constraints}",
             unplannable_constraints: UnplannableConstraints,
-            // TODO: Add span of conjunction?
+            span: Option<Span>, // of the conjunction
         ),
         InternalNotAValueBuiltin(
             100,
