@@ -18,6 +18,7 @@ use crate::{
     pipeline::{FunctionReadError, FunctionRepresentationError},
     translation::fetch::FetchRepresentationError,
 };
+use crate::pipeline::block::UnplannableConstraints;
 
 pub mod pattern;
 pub mod pipeline;
@@ -312,6 +313,12 @@ typedb_error! {
             54,
             "Given clauses must be the first clause in a query pipeline.",
             source_span: Option<Span>,
+        ),
+        UnplannableConjunction(
+            55,
+            "An unplannable conjunction was detected. Planning could not satisfy the input variables for the constraints:\n{remaining_constraints}",
+            remaining_constraints: UnplannableConstraints,
+            // TODO: Add span of conjunction?
         ),
         InternalNotAValueBuiltin(
             100,

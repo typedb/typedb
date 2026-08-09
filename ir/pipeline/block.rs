@@ -4,13 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
-
 use crate::{
     RepresentationError,
     pattern::{
@@ -21,6 +20,9 @@ use crate::{
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
 };
+use crate::pattern::disjunction::Disjunction;
+use crate::pattern::nested_pattern::NestedPattern;
+use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -84,6 +86,9 @@ impl<'reg> BlockBuilder<'reg> {
             .variable_names_index
             .retain(|_, var| block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild));
         let conjunction = self.conjunction.finish(&ContextualisedBindingMode::for_block(block_binding_modes));
+
+        validate_is_plannable(&conjunction, &self.context.input_variables().collect(), &self.context.variable_registry)?;
+
         let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
     }
@@ -278,6 +283,106 @@ fn validate_optional_returns_recursive(
         Ok(())
     } else {
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+enum Plannable<'conj> {
+    Constraint(&'conj Constraint<Variable>),
+    Disjunction(&'conj Disjunction),
+}
+
+impl<'conj> Plannable<'conj> {
+    fn all_variables(&self) -> Box<dyn Iterator<Item=Variable>> {
+        match self {
+            Plannable::Disjunction(d) => Box::new(d.visible_referenced_variables()),
+            Plannable::Constraint(c) => Box::new(c.ids())
+        }
+    }
+
+    fn required_variables(&self) -> Box<dyn Iterator<Item=Variable>> {
+        match self {
+            Plannable::Disjunction(disjunction) => {
+                Box::new(disjunction.required_inputs())
+            }
+            Plannable::Constraint(c) => {
+                Box::new(c.binding_modes().filter_map(|(id, mode)| mode.is_require_prebound().then_some(id)))
+            }
+        }
+    }
+}
+
+fn validate_is_plannable(conjunction: &Conjunction, input_variables: &BTreeSet<Variable>, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
+    let bound_variables = validate_is_plannable_impl(conjunction, input_variables, variable_registry)?;
+    conjunction.nested_patterns().iter().try_for_each(|nested| {
+        match nested {
+             NestedPattern::Disjunction(disjunction) => {
+                 disjunction.conjunctions().iter().try_for_each(|inner| {
+                     validate_is_plannable(inner, &bound_variables, variable_registry)
+                 })
+             }
+            NestedPattern::Optional(inner) => {
+                validate_is_plannable(inner.conjunction(), &bound_variables, variable_registry)
+            }
+            NestedPattern::Negation(inner) => {
+                validate_is_plannable(inner.conjunction(), &bound_variables, variable_registry)
+            }
+        }
+    })?;
+    Ok(())
+}
+
+
+fn validate_is_plannable_impl(conjunction: &Conjunction, input_variables: &BTreeSet<Variable>, variable_registry: &VariableRegistry) -> Result<BTreeSet<Variable>, Box<RepresentationError>> {
+    let mut remaining = BTreeSet::new(); // Could be a LinkedList
+    remaining.extend(conjunction.constraints().iter().map(|c| Plannable::Constraint(c)));
+    remaining.extend(conjunction.nested_patterns().iter().filter_map(|nested| {
+        match nested {
+            NestedPattern::Disjunction(disjunction) => Some(Plannable::Disjunction(disjunction)),
+            NestedPattern::Negation(_) | NestedPattern::Optional(_) => None,
+        }
+    }));
+
+    let mut bound_variables = input_variables.clone();
+
+    let mut prev_remaining_len = remaining.len();
+    let mut plannables_tmp = Vec::with_capacity(remaining.len());
+    while !remaining.len() != 0 && prev_remaining_len != remaining.len() {
+        let enabled_plannables = remaining.iter().filter(|p| {
+            p.required_variables().all(|v| bound_variables.contains(&v))
+        });
+        plannables_tmp.clear();
+        plannables_tmp.extend(enabled_plannables);
+        bound_variables.extend(plannables_tmp.iter().flat_map(|c| c.all_variables()));
+        prev_remaining_len = remaining.len();
+        remaining.retain(|p| !plannables_tmp.contains(p));
+    }
+    if !remaining.is_empty() {
+        Ok(())
+    } else {
+        let remaining_constraints = UnplannableConstraints::from_remaining(remaining, bound_variables, variable_registry);
+        Err(Box::new(RepresentationError::UnplannableConjunction { remaining_constraints }))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UnplannableConstraints {
+    constraints_and_requirements: Vec<(String, String)>,
+}
+
+impl UnplannableConstraints {
+    fn from_remaining(remaining: Vec<Plannable<'_>>, bound_variables: &BTreeSet<Variable>, variable_registry: &VariableRegistry) -> Self {
+        let constraints_and_requirements = remaining.iter().map(|c| {
+            let required_vars = c.required_inputs().map(|v| {
+                variable_registry.get_variable_name_or_unnamed(v)
+            }).join(", ");
+            let name = match c {
+                Plannable::Constraint(c) => c.name().to_owned(),
+                Plannable::Disjunction(d) => "[Disjunction]".to_owned(),
+            };
+            (name, required_vars)
+        }).collect();
+        Self { constraints_and_requirements }
     }
 }
 
