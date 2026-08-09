@@ -297,18 +297,24 @@ fn validate_is_plannable(
     input_variables: &BTreeSet<Variable>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
-    let bound_variables = validate_is_plannable_impl(conjunction, input_variables, variable_registry)?;
-    // TODO: BUG: You can't do disjunctions with all the bound variables because that contains all variables from the disjunction itself.
+    validate_is_plannable_impl(conjunction, input_variables, variable_registry)?;
+    // Note: Passing ONLY required inputs may be too strict if we change behaviour in future.
+    // Then just push this recursive check alongside the shallow check in the _impl method.
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-        NestedPattern::Disjunction(disjunction) => disjunction
-            .conjunctions()
-            .iter()
-            .try_for_each(|inner| validate_is_plannable(inner, &bound_variables, variable_registry)),
+        NestedPattern::Disjunction(disjunction) => {
+            let inner_inputs = disjunction.required_inputs().collect();
+            disjunction
+                .conjunctions()
+                .iter()
+                .try_for_each(|inner| validate_is_plannable(inner, &inner_inputs, variable_registry))
+        }
         NestedPattern::Optional(inner) => {
-            validate_is_plannable(inner.conjunction(), &bound_variables, variable_registry)
+            let inner_inputs = inner.required_inputs().collect();
+            validate_is_plannable(inner.conjunction(), &inner_inputs, variable_registry)
         }
         NestedPattern::Negation(inner) => {
-            validate_is_plannable(inner.conjunction(), &bound_variables, variable_registry)
+            let inner_inputs = inner.required_inputs().collect();
+            validate_is_plannable(inner.conjunction(), &inner_inputs, variable_registry)
         }
     })?;
     Ok(())
@@ -318,7 +324,7 @@ fn validate_is_plannable_impl<'conj>(
     conjunction: &'conj Conjunction,
     input_variables: &BTreeSet<Variable>,
     variable_registry: &VariableRegistry,
-) -> Result<BTreeSet<Variable>, Box<RepresentationError>> {
+) -> Result<(), Box<RepresentationError>> {
     let constraint_at = |i: usize| &conjunction.constraints()[i];
 
     let disjunction_at = |i: usize| conjunction.nested_patterns()[i].as_disjunction().unwrap();
@@ -389,7 +395,7 @@ fn validate_is_plannable_impl<'conj>(
         remaining_nested_patterns,
     );
     if unplannable_constraints.constraints_and_requirements.is_empty() {
-        Ok(bound_variables)
+        Ok(())
     } else {
         let earliest_span = unplannable_constraints
             .constraints_and_requirements
