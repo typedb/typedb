@@ -363,16 +363,28 @@ fn validate_is_plannable_impl<'conj>(
 
         has_changed = !(enabled_constraint_indices.is_empty() && enabled_disjunction_indices.is_empty());
     }
-
-    if remaining_constraint_indices.is_empty() && remaining_disjunction_indices.is_empty() {
+    let remaining_constraints = remaining_constraint_indices.iter().map(|i| constraint_at(*i));
+    let remaining_nested_patterns = conjunction
+        .nested_patterns()
+        .iter()
+        .enumerate()
+        .filter(|(i, nested)| {
+            match nested {
+                NestedPattern::Disjunction(_) => remaining_disjunction_indices.contains(i), // In remaining_disjunction_indices,
+                NestedPattern::Optional(optional) => optional.required_inputs().all(|id| bound_variables.contains(&id)),
+                NestedPattern::Negation(negation) => negation.required_inputs().all(|id| bound_variables.contains(&id)),
+            }
+        })
+        .map(|(i, nested)| nested);
+    let unplannable_constraints = UnplannableConstraints::build(
+        &bound_variables,
+        variable_registry,
+        remaining_constraints,
+        remaining_nested_patterns,
+    );
+    if unplannable_constraints.constraints_and_requirements.is_empty() {
         Ok(bound_variables)
     } else {
-        let unplannable_constraints = UnplannableConstraints::build(
-            &bound_variables,
-            variable_registry,
-            remaining_constraint_indices.iter().map(|i| constraint_at(*i)),
-            remaining_disjunction_indices.iter().map(|i| disjunction_at(*i)),
-        );
         Err(Box::new(RepresentationError::UnplannableConjunction { unplannable_constraints }))
     }
 }
@@ -387,21 +399,28 @@ impl UnplannableConstraints {
         bound_variables: &BTreeSet<Variable>,
         variable_registry: &VariableRegistry,
         mut remaining_constraints: impl Iterator<Item = &'conj Constraint<Variable>>,
-        mut remaining_disjunctions: impl Iterator<Item = &'conj Disjunction>,
+        mut remaining_nested_patterns: impl Iterator<Item = &'conj NestedPattern>,
     ) -> Self {
+        macro_rules! unsatisfied_vars {
+            ($iter: expr) => {
+                $iter
+                    .filter(|id| !bound_variables.contains(id))
+                    .map(|id| variable_registry.get_variable_name_or_unnamed(id))
+                    .join(", ")
+            };
+        }
         let mut constraints_and_requirements = Vec::new();
         constraints_and_requirements.extend(remaining_constraints.map(|c| {
-            let required_vars = c
-                .binding_modes()
-                .filter(|(_, mode)| mode.is_require_prebound())
-                .map(|(id, _)| variable_registry.get_variable_name_or_unnamed(id))
-                .join(", ");
-            (c.name().to_owned(), required_vars)
+            let required_vars = c.binding_modes().filter_map(|(id, mode)| mode.is_require_prebound().then_some(id));
+            (c.name().to_owned(), unsatisfied_vars!(required_vars))
         }));
-        constraints_and_requirements.extend(remaining_disjunctions.map(|d| {
-            let required_vars =
-                d.required_inputs().map(|id| variable_registry.get_variable_name_or_unnamed(id)).join(", ");
-            ("Disjunction".to_owned(), required_vars)
+        constraints_and_requirements.extend(remaining_nested_patterns.map(|nested| {
+            let (name, required_vars) = match nested {
+                NestedPattern::Disjunction(disj) => ("Disjunction", unsatisfied_vars!(disj.required_inputs())),
+                NestedPattern::Negation(negation) => ("Negation", unsatisfied_vars!(negation.required_inputs())),
+                NestedPattern::Optional(optional) => ("Optional", unsatisfied_vars!(optional.required_inputs())),
+            };
+            (name.to_owned(), required_vars)
         }));
         Self { constraints_and_requirements }
     }
