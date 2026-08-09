@@ -370,9 +370,15 @@ fn validate_is_plannable_impl<'conj>(
         .enumerate()
         .filter(|(i, nested)| {
             match nested {
-                NestedPattern::Disjunction(_) => remaining_disjunction_indices.contains(i), // In remaining_disjunction_indices,
-                NestedPattern::Optional(optional) => optional.required_inputs().all(|id| bound_variables.contains(&id)),
-                NestedPattern::Negation(negation) => negation.required_inputs().all(|id| bound_variables.contains(&id)),
+                NestedPattern::Disjunction(_) => {
+                    remaining_disjunction_indices.contains(i) // In remaining_disjunction_indices,
+                }
+                NestedPattern::Optional(optional) => {
+                    optional.required_inputs().any(|id| !bound_variables.contains(&id))
+                }
+                NestedPattern::Negation(negation) => {
+                    negation.required_inputs().any(|id| !bound_variables.contains(&id))
+                }
             }
         })
         .map(|(i, nested)| nested);
