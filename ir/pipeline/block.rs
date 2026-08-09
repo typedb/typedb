@@ -298,6 +298,7 @@ fn validate_is_plannable(
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
     let bound_variables = validate_is_plannable_impl(conjunction, input_variables, variable_registry)?;
+    // TODO: BUG: You can't do disjunctions with all the bound variables because that contains all variables from the disjunction itself.
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
         NestedPattern::Disjunction(disjunction) => disjunction
             .conjunctions()
