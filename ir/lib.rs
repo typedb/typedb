@@ -15,10 +15,9 @@ use typeql::{common::Span, statement::InIterable, token, value::StringLiteral};
 
 use crate::{
     pattern::{expression::ExpressionRepresentationError, variable_category::VariableCategory},
-    pipeline::{FunctionReadError, FunctionRepresentationError},
+    pipeline::{FunctionReadError, FunctionRepresentationError, block::UnplannableConstraints},
     translation::fetch::FetchRepresentationError,
 };
-use crate::pipeline::block::UnplannableConstraints;
 
 pub mod pattern;
 pub mod pipeline;
@@ -316,8 +315,8 @@ typedb_error! {
         ),
         UnplannableConjunction(
             55,
-            "An unplannable conjunction was detected. Planning could not satisfy the input variables for the constraints:\n{remaining_constraints}",
-            remaining_constraints: UnplannableConstraints,
+            "An unplannable conjunction was detected. Planning could not satisfy the input variables for the constraints:\n{unplannable_constraints}",
+            unplannable_constraints: UnplannableConstraints,
             // TODO: Add span of conjunction?
         ),
         InternalNotAValueBuiltin(
