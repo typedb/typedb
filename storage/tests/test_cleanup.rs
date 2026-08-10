@@ -6,8 +6,6 @@
 
 #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
-use std::sync::Arc;
-
 use bytes::{Bytes, byte_array::ByteArray};
 use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
