@@ -50,7 +50,7 @@ use crate::{
             AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
             get_annotations_from_labels_vec,
         },
-        match_inference::infer_types_for_block,
+        inference::match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::{TypeInferenceMode, resolve_value_types},
         write_type_check::check_type_combinations_for_write,

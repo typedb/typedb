@@ -19,8 +19,9 @@ use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
-        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_block,
-        pipeline::RunningVariableAnnotations, type_inference::TypeInferenceMode,
+        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
+        inference::match_inference::infer_types_for_block, pipeline::RunningVariableAnnotations,
+        type_inference::TypeInferenceMode,
     },
     executable::match_::instructions::{
         Inputs, VariableMode, VariableModes,

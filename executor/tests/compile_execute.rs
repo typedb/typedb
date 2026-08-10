@@ -12,7 +12,7 @@ use std::{
 use compiler::{
     annotation::{
         PipelineAnnotationContext, expression::block_compiler::compile_expressions,
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
+        function::EmptyAnnotatedFunctionSignatures, inference::match_inference::infer_types_for_test_only,
     },
     executable::{
         function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,

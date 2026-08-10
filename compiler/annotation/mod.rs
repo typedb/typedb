@@ -24,11 +24,10 @@ use crate::annotation::{expression::compiled_expression::ExpressionValueType, fu
 pub mod expression;
 pub mod fetch;
 pub mod function;
-pub mod match_inference;
+pub mod inference;
 pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
-mod type_seeder;
 pub(crate) mod write_type_check;
 
 typedb_error!(
@@ -348,7 +347,7 @@ pub mod tests {
     use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
     use test_utils_storage::create_rocks_resources;
 
-    use crate::annotation::match_inference::{
+    use crate::annotation::inference::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
     };
 

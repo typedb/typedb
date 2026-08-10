@@ -16,7 +16,7 @@ use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
         PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
-        match_inference::infer_types_for_test_only, type_annotations::TypeAnnotations,
+        inference::match_inference::infer_types_for_test_only, type_annotations::TypeAnnotations,
     },
     executable::{
         function::ExecutableFunctionRegistry,

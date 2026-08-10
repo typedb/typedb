@@ -38,10 +38,10 @@ use crate::{
     PipelineOrigin,
     annotation::{
         AnnotationContext, FunctionAnnotationError, PipelineAnnotationContext, TypeInferenceError,
+        inference::type_seeder,
         pipeline::{
             AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages, resolve_reducer_by_value_type,
         },
-        type_seeder,
     },
     executable::reduce::ReduceInstruction,
 };
