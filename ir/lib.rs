@@ -258,7 +258,7 @@ typedb_error! {
         ),
         UnboundRequiredVariable(
             44,
-            "The variable '{variable}' is required to be bound to a value before it's used.",
+            "The variable '{variable}' must be bound to a value before it's used.",
             variable: String,
             source_span: Option<Span>,
             _all_spans: Vec<Span>,
@@ -315,7 +315,7 @@ typedb_error! {
         ),
         UnplannableConjunction(
             55,
-            "The conjunction cannot have a valid plan. The required input variables for the following constraints could not be satisfied:\n{unplannable_constraints}",
+            "The required input variables for the following constraints could not be satisfied (there may be a circular dependency):\n{unplannable_constraints}",
             unplannable_constraints: UnplannableConstraints,
             span: Option<Span>,
         ),
