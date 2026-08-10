@@ -8,6 +8,7 @@ use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::pattern::{
     BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
@@ -20,6 +21,7 @@ use crate::pattern::{
 pub struct Negation {
     conjunction: Conjunction,
     pattern_variables: PatternVariables,
+    source_span: Option<Span>,
 }
 
 impl Negation {
@@ -29,6 +31,10 @@ impl Negation {
 
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
+    }
+
+    pub(crate) fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -59,18 +65,20 @@ impl fmt::Display for Negation {
 #[derive(Debug)]
 pub(crate) struct NegationBuilder {
     conjunction: ConjunctionBuilder,
+    source_span: Option<Span>,
 }
 
 impl NegationBuilder {
-    pub(crate) fn new(scope_id: ScopeId) -> Self {
-        Self { conjunction: ConjunctionBuilder::new(scope_id) }
+    pub(crate) fn new(scope_id: ScopeId, source_span: Option<Span>) -> Self {
+        Self { conjunction: ConjunctionBuilder::new(scope_id), source_span }
     }
 
     pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let source_span = self.source_span;
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let conjunction = self.conjunction.finish(&binding_modes);
-        let variable_requirements = PatternVariables::from(&binding_modes);
-        NestedPattern::Negation(Negation { conjunction, pattern_variables: variable_requirements })
+        let pattern_variables = PatternVariables::from(&binding_modes);
+        NestedPattern::Negation(Negation { conjunction, pattern_variables, source_span })
     }
 
     pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {

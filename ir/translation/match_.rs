@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use typeql::common::Span;
 
 use crate::{
     RepresentationError,
@@ -47,7 +48,7 @@ fn add_disjunction(
     conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     disjunction: &typeql::pattern::Disjunction,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut disjunction_builder = conjunction.add_disjunction();
+    let mut disjunction_builder = conjunction.add_disjunction(disjunction.span);
     disjunction.branches.iter().try_for_each(|branch| {
         let mut conj = disjunction_builder.add_conjunction();
         add_patterns(function_index, &mut conj, branch)
@@ -60,7 +61,7 @@ fn add_negation(
     conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     negation: &typeql::pattern::Negation,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut negation_builder = conjunction.add_negation();
+    let mut negation_builder = conjunction.add_negation(negation.span);
     add_patterns(function_index, &mut negation_builder, &negation.patterns)
 }
 

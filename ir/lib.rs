@@ -15,7 +15,7 @@ use typeql::{common::Span, statement::InIterable, token, value::StringLiteral};
 
 use crate::{
     pattern::{expression::ExpressionRepresentationError, variable_category::VariableCategory},
-    pipeline::{FunctionReadError, FunctionRepresentationError},
+    pipeline::{FunctionReadError, FunctionRepresentationError, block::UnplannableConstraints},
     translation::fetch::FetchRepresentationError,
 };
 
@@ -258,7 +258,7 @@ typedb_error! {
         ),
         UnboundRequiredVariable(
             44,
-            "The variable '{variable}' is required to be bound to a value before it's used.",
+            "The variable '{variable}' must be bound to a value before it's used.",
             variable: String,
             source_span: Option<Span>,
             _all_spans: Vec<Span>,
@@ -312,6 +312,12 @@ typedb_error! {
             54,
             "Given clauses must be the first clause in a query pipeline.",
             source_span: Option<Span>,
+        ),
+        UnplannableConjunction(
+            55,
+            "The required input variables for the following constraints could not be satisfied (there may be a circular dependency):\n{unplannable_constraints}",
+            unplannable_constraints: UnplannableConstraints,
+            span: Option<Span>,
         ),
         InternalNotAValueBuiltin(
             100,

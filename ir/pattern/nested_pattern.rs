@@ -7,6 +7,7 @@
 use std::{fmt, mem};
 
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
 
@@ -36,6 +37,14 @@ impl NestedPattern {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
+        }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        match self {
+            NestedPattern::Disjunction(inner) => inner.source_span(),
+            NestedPattern::Negation(inner) => inner.source_span(),
+            NestedPattern::Optional(inner) => inner.source_span(),
         }
     }
 }

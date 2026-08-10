@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{BTreeSet, HashMap, HashSet},
+    fmt,
+};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -14,9 +17,10 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode, BranchID, ContextualisedBindingMode, ScopeId,
+        BindingMode, BranchID, ContextualisedBindingMode, Pattern, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
+        nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
@@ -84,6 +88,13 @@ impl<'reg> BlockBuilder<'reg> {
             .variable_names_index
             .retain(|_, var| block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild));
         let conjunction = self.conjunction.finish(&ContextualisedBindingMode::for_block(block_binding_modes));
+
+        validate_is_plannable(
+            &conjunction,
+            &self.context.input_variables().collect(),
+            &self.context.variable_registry,
+        )?;
+
         let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
     }
@@ -277,6 +288,165 @@ fn validate_optional_returns_recursive(
         // );
         Ok(())
     } else {
+        Ok(())
+    }
+}
+
+fn validate_is_plannable(
+    conjunction: &Conjunction,
+    input_variables: &BTreeSet<Variable>,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
+    validate_conjunction_has_valid_constraint_ordering(conjunction, input_variables, variable_registry)?;
+    // Note: Passing ONLY required inputs may be too strict if we change behaviour in future.
+    // Then just push this recursive check alongside the shallow check in the _impl method.
+    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
+        NestedPattern::Disjunction(disjunction) => {
+            let inner_inputs = disjunction.required_inputs().collect();
+            disjunction
+                .conjunctions()
+                .iter()
+                .try_for_each(|inner| validate_is_plannable(inner, &inner_inputs, variable_registry))
+        }
+        NestedPattern::Optional(inner) => {
+            let inner_inputs = inner.required_inputs().collect();
+            validate_is_plannable(inner.conjunction(), &inner_inputs, variable_registry)
+        }
+        NestedPattern::Negation(inner) => {
+            let inner_inputs = inner.required_inputs().collect();
+            validate_is_plannable(inner.conjunction(), &inner_inputs, variable_registry)
+        }
+    })?;
+    Ok(())
+}
+
+fn validate_conjunction_has_valid_constraint_ordering(
+    conjunction: &Conjunction,
+    input_variables: &BTreeSet<Variable>,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
+    let constraint_at = |i: usize| &conjunction.constraints()[i];
+
+    let disjunction_at = |i: usize| conjunction.nested_patterns()[i].as_disjunction().unwrap();
+
+    let mut remaining_constraint_indices: HashSet<usize> =
+        conjunction.constraints().iter().enumerate().map(|(i, _)| i).collect();
+    let mut remaining_disjunction_indices: HashSet<usize> =
+        conjunction.nested_patterns().iter().positions(|n| n.as_disjunction().is_some()).collect();
+
+    let mut bound_variables = input_variables.clone();
+
+    loop {
+        let enabled_constraint_indices = remaining_constraint_indices
+            .iter()
+            .copied()
+            .filter(|i| {
+                let mut required_vars =
+                    constraint_at(*i).binding_modes().filter_map(|(id, mode)| mode.is_require_prebound().then_some(id));
+                required_vars.all(|v| bound_variables.contains(&v))
+            })
+            .collect::<HashSet<usize>>();
+        let fresh_constraint_vars = enabled_constraint_indices.iter().flat_map(|i| constraint_at(*i).ids());
+
+        let enabled_disjunction_indices = remaining_disjunction_indices
+            .iter()
+            .copied()
+            .filter(|i| {
+                let mut required_vars = disjunction_at(*i).required_inputs();
+                required_vars.all(|v| bound_variables.contains(&v))
+            })
+            .collect::<HashSet<usize>>();
+        let fresh_disjunction_vars =
+            enabled_disjunction_indices.iter().flat_map(|i| disjunction_at(*i).visible_referenced_variables());
+
+        remaining_constraint_indices.retain(|i| !enabled_constraint_indices.contains(i));
+        remaining_disjunction_indices.retain(|i| !enabled_disjunction_indices.contains(i));
+
+        bound_variables.extend(fresh_constraint_vars);
+        bound_variables.extend(fresh_disjunction_vars);
+        if enabled_constraint_indices.is_empty() && enabled_disjunction_indices.is_empty() {
+            break;
+        }
+    }
+    let remaining_constraints = remaining_constraint_indices.iter().map(|i| constraint_at(*i));
+    let remaining_nested_patterns = conjunction
+        .nested_patterns()
+        .iter()
+        .enumerate()
+        .filter(|(i, nested)| {
+            match nested {
+                NestedPattern::Disjunction(_) => {
+                    remaining_disjunction_indices.contains(i) // In remaining_disjunction_indices,
+                }
+                NestedPattern::Optional(optional) => {
+                    optional.required_inputs().any(|id| !bound_variables.contains(&id))
+                }
+                NestedPattern::Negation(negation) => {
+                    negation.required_inputs().any(|id| !bound_variables.contains(&id))
+                }
+            }
+        })
+        .map(|(i, nested)| nested);
+    let unplannable_constraints = UnplannableConstraints::build(
+        &bound_variables,
+        variable_registry,
+        remaining_constraints,
+        remaining_nested_patterns,
+    );
+    if unplannable_constraints.constraints_and_requirements.is_empty() {
+        Ok(())
+    } else {
+        let earliest_span = unplannable_constraints
+            .constraints_and_requirements
+            .iter()
+            .filter_map(|(_, _, span)| *span)
+            .min_by_key(|span| span.begin_offset);
+        Err(Box::new(RepresentationError::UnplannableConjunction { span: earliest_span, unplannable_constraints }))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UnplannableConstraints {
+    constraints_and_requirements: Vec<(String, String, Option<Span>)>,
+}
+
+impl UnplannableConstraints {
+    fn build<'conj>(
+        bound_variables: &BTreeSet<Variable>,
+        variable_registry: &VariableRegistry,
+        remaining_constraints: impl Iterator<Item = &'conj Constraint<Variable>>,
+        remaining_nested_patterns: impl Iterator<Item = &'conj NestedPattern>,
+    ) -> Self {
+        macro_rules! unsatisfied_vars {
+            ($iter:expr) => {
+                $iter
+                    .filter(|id| !bound_variables.contains(id))
+                    .map(|id| variable_registry.get_variable_name_or_unnamed(id))
+                    .join(", ")
+            };
+        }
+        let mut constraints_and_requirements = Vec::new();
+        constraints_and_requirements.extend(remaining_constraints.map(|c| {
+            let required_vars = c.binding_modes().filter_map(|(id, mode)| mode.is_require_prebound().then_some(id));
+            (c.name().to_owned(), unsatisfied_vars!(required_vars), c.source_span())
+        }));
+        constraints_and_requirements.extend(remaining_nested_patterns.map(|nested| {
+            let (name, required_vars) = match nested {
+                NestedPattern::Disjunction(disj) => ("Disjunction", unsatisfied_vars!(disj.required_inputs())),
+                NestedPattern::Negation(negation) => ("Negation", unsatisfied_vars!(negation.required_inputs())),
+                NestedPattern::Optional(optional) => ("Optional", unsatisfied_vars!(optional.required_inputs())),
+            };
+            (name.to_owned(), required_vars, nested.source_span())
+        }));
+        Self { constraints_and_requirements }
+    }
+}
+
+impl fmt::Display for UnplannableConstraints {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (name, required_vars, _span) in &self.constraints_and_requirements {
+            writeln!(f, "- {name}: [{required_vars}]")?;
+        }
         Ok(())
     }
 }
