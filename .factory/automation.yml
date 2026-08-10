@@ -100,7 +100,8 @@ build:
         bazel test --config=ci $(bazel query 'kind(rust_test, //query/tests/...)') --test_output=streamed
         # TODO: Uncomment!
         # bazel test --config=ci $(bazel query 'kind(rust_test, //storage/tests/...)') --test_output=streamed
-        bazel test --config=ci //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
+        bazel test --config=ci //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation \
+            //storage/tests:test_storage //storage/tests:test_cleanup --test_output=streamed
 
         bazel test --config=ci --config=stress //database/tests:test_statistics_synchronization
 
