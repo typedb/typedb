@@ -58,7 +58,7 @@ use storage::{
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
 };
-use tracing::{Level, debug, error, event, trace};
+use tracing::{Level, debug, error, event, info, trace};
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
@@ -468,15 +468,13 @@ impl Database<WALClient> {
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let earliest_uncleaned = storage.earliest_uncleaned();
-        let mut cleanup_queue: BTreeMap<_, _> = storage
-            .durability()
-            .iter_type_from(earliest_uncleaned)
-            .and_then(Itertools::try_collect)
-            .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?;
-        if cleanup_queue.first_key_value().is_none_or(|(k, _)| k > &earliest_uncleaned) {
-            cleanup_queue.insert(earliest_uncleaned, CleanupRecord::everything::<EncodingKeyspace>());
-        }
-        let cleanup_queue = Arc::new(RwLock::new(cleanup_queue));
+        let cleanup_queue = Arc::new(RwLock::new(
+            storage
+                .durability()
+                .iter_type_from(earliest_uncleaned)
+                .and_then(Itertools::try_collect)
+                .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?,
+        ));
         let cleanup_fn =
             make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), cleanup_queue.clone(), cleanup_strategy);
 
@@ -662,7 +660,7 @@ fn make_cleanup_fn(
         cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
     ) -> Box<dyn Fn() + Send + Sync> {
         Box::new(move || {
-            debug!("Running compaction for database {}", database_name);
+            debug!("Running cleanup for database {}", database_name);
             let start = std::time::Instant::now();
             let statistics_watermark = schema.read().unwrap().thing_statistics.sequence_number;
             let earliest_possible_reader = storage.earliest_possible_reader();
@@ -674,12 +672,22 @@ fn make_cleanup_fn(
                 mem::replace(&mut *queue, tail_including_watermark)
             };
 
-            let ranges = range.into_values().fold(CleanupRecord::default(), CleanupRecord::merge);
+            let ranges = {
+                let contains_start = range.contains_key(&storage.earliest_uncleaned());
+                let contains_end = range.contains_key(&watermark.previous());
+                let all_consecutive = range.keys().tuple_windows().all(|(a, &b)| a.next() == b);
+                if contains_start && contains_end && all_consecutive {
+                    range.into_values().fold(CleanupRecord::default(), CleanupRecord::merge)
+                } else {
+                    info!("Missing delta records during cleanup; scanning database for dead keys.");
+                    CleanupRecord::everything::<EncodingKeyspace>()
+                }
+            };
 
             if let Err(error) = storage.cleanup_dead_keys(watermark, ranges) {
-                error!("Compaction failed: {:?}", error);
+                error!("Cleanup failed: {:?}", error);
             }
-            debug!("Finished compaction for database {} in {:?}", database_name, start.elapsed());
+            debug!("Finished cleanup for database {} in {:?}", database_name, start.elapsed());
         })
     }
 
