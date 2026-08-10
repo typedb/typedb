@@ -11,7 +11,7 @@ use compiler::{
     self, VariablePosition,
     annotation::{
         PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
-        match_inference::infer_types_for_test_only,
+        inference::match_inference::infer_types_for_test_only,
     },
 };
 use concept::{

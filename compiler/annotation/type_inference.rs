@@ -93,9 +93,12 @@ pub mod tests {
                 AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
                 annotate_named_function,
             },
-            match_inference::{
-                NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-                compute_type_inference_graph, infer_types_for_block, prune_types,
+            inference::{
+                match_inference::{
+                    NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+                    compute_type_inference_graph, infer_types_for_block, prune_types,
+                },
+                type_seeder::TypeGraphSeedingContext,
             },
             pipeline::{AnnotatedStage, RunningVariableAnnotations},
             tests::{
@@ -107,7 +110,6 @@ pub mod tests {
                 setup_storage,
             },
             type_inference::TypeInferenceMode,
-            type_seeder::TypeGraphSeedingContext,
         },
     };
 
@@ -1098,7 +1100,7 @@ pub mod tests {
             )
             .create_graph(&BTreeMap::new(), block.conjunction())
             .unwrap();
-            crate::annotation::match_inference::prune_types(&mut graph);
+            crate::annotation::inference::match_inference::prune_types(&mut graph);
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),

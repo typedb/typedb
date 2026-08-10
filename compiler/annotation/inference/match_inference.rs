@@ -27,12 +27,12 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     PipelineAnnotationContext, TypeInferenceError,
+    inference::type_seeder::TypeGraphSeedingContext,
     pipeline::RunningVariableAnnotations,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
     type_inference::TypeInferenceMode,
-    type_seeder::TypeGraphSeedingContext,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
