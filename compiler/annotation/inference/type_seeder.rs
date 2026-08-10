@@ -37,8 +37,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
-    inference::match_inference::{
-        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+    inference::{
+        VertexAnnotations,
+        match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
@@ -1663,7 +1664,8 @@ pub mod tests {
     use crate::annotation::{
         function::EmptyAnnotatedFunctionSignatures,
         inference::{
-            match_inference::{TypeInferenceGraph, VertexAnnotations},
+            VertexAnnotations,
+            match_inference::{TypeInferenceGraph, tests::expected_edge},
             type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
         },
         tests::{
@@ -1671,7 +1673,6 @@ pub mod tests {
             schema_consts::{LABEL_CAT, LABEL_NAME, setup_types},
             setup_storage,
         },
-        type_inference::tests::expected_edge,
     };
 
     #[test]
