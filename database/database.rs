@@ -340,9 +340,9 @@ impl Database<WALClient> {
 
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
 
-        let _cleanup_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>::default();
+        let cleanup_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>::default();
         let cleanup_fn =
-            make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), _cleanup_queue.clone(), cleanup_strategy);
+            make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), cleanup_queue.clone(), cleanup_strategy);
 
         Ok(Database::<WALClient> {
             name: Arc::<str>::from(name),
@@ -353,7 +353,7 @@ impl Database<WALClient> {
             thing_vertex_generator,
             schema,
             query_cache,
-            _cleanup_queue,
+            _cleanup_queue: cleanup_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
@@ -467,15 +467,18 @@ impl Database<WALClient> {
         let checkpoint_fn =
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
-        let _cleanup_queue = Arc::new(RwLock::new(
-            storage
-                .durability()
-                .iter_type_from(storage.earliest_uncleaned())
-                .and_then(Itertools::try_collect)
-                .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?,
-        ));
+        let earliest_uncleaned = storage.earliest_uncleaned();
+        let mut cleanup_queue: BTreeMap<_, _> = storage
+            .durability()
+            .iter_type_from(earliest_uncleaned)
+            .and_then(Itertools::try_collect)
+            .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?;
+        if cleanup_queue.first_key_value().is_none_or(|(k, _)| k > &earliest_uncleaned) {
+            cleanup_queue.insert(earliest_uncleaned, CleanupRecord::everything::<EncodingKeyspace>());
+        }
+        let cleanup_queue = Arc::new(RwLock::new(cleanup_queue));
         let cleanup_fn =
-            make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), _cleanup_queue.clone(), cleanup_strategy);
+            make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), cleanup_queue.clone(), cleanup_strategy);
 
         let database = Database::<WALClient> {
             name: Arc::<str>::from(name),
@@ -486,7 +489,7 @@ impl Database<WALClient> {
             thing_vertex_generator,
             schema,
             query_cache,
-            _cleanup_queue,
+            _cleanup_queue: cleanup_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(

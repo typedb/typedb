@@ -12,6 +12,7 @@ use std::{
     iter::Map,
 };
 
+use bytes::Bytes;
 use durability::DurabilityRecordType;
 use itertools::EitherOrBoth;
 use primitive::prefix::Prefix;
@@ -20,6 +21,7 @@ use storage::{
     durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKey,
+    keyspace::KeyspaceSet,
 };
 
 type Key = StorageKey<'static, BUFFER_KEY_INLINE>;
@@ -57,6 +59,17 @@ pub struct CleanupRecord {
 impl CleanupRecord {
     pub fn new() -> Self {
         Self { intervals: BTreeMap::new() }
+    }
+
+    pub fn everything<KS: KeyspaceSet>() -> Self {
+        Self {
+            intervals: KS::iter()
+                .map(|ks| {
+                    let empty_key = || Key::new(ks, Bytes::copy(&[]));
+                    (empty_key(), KeyRangeInclusive { start: empty_key(), end: empty_key(), fixed_width: false })
+                })
+                .collect(),
+        }
     }
 
     pub fn insert(&mut self, prefix: Key, key: Key, fixed_width_keys: bool) {
