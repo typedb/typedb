@@ -297,7 +297,7 @@ fn validate_is_plannable(
     input_variables: &BTreeSet<Variable>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
-    validate_is_plannable_impl(conjunction, input_variables, variable_registry)?;
+    validate_conjunction_has_valid_constraint_ordering(conjunction, input_variables, variable_registry)?;
     // Note: Passing ONLY required inputs may be too strict if we change behaviour in future.
     // Then just push this recursive check alongside the shallow check in the _impl method.
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
@@ -320,8 +320,8 @@ fn validate_is_plannable(
     Ok(())
 }
 
-fn validate_is_plannable_impl<'conj>(
-    conjunction: &'conj Conjunction,
+fn validate_conjunction_has_valid_constraint_ordering(
+    conjunction: &Conjunction,
     input_variables: &BTreeSet<Variable>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
@@ -332,14 +332,12 @@ fn validate_is_plannable_impl<'conj>(
     let mut remaining_constraint_indices: HashSet<usize> =
         conjunction.constraints().iter().enumerate().map(|(i, _)| i).collect();
     let mut remaining_disjunction_indices: HashSet<usize> =
-        conjunction.nested_patterns().iter().enumerate().filter_map(|(i, n)| n.as_disjunction().map(|_| i)).collect();
+        conjunction.nested_patterns().iter().positions(|n| n.as_disjunction().is_some()).collect();
 
     let mut bound_variables = input_variables.clone();
 
-    let mut has_changed = true;
-    while has_changed {
-        has_changed = false;
-        let mut enabled_constraint_indices = remaining_constraint_indices
+    loop {
+        let enabled_constraint_indices = remaining_constraint_indices
             .iter()
             .copied()
             .filter(|i| {
@@ -366,8 +364,9 @@ fn validate_is_plannable_impl<'conj>(
 
         bound_variables.extend(fresh_constraint_vars);
         bound_variables.extend(fresh_disjunction_vars);
-
-        has_changed = !(enabled_constraint_indices.is_empty() && enabled_disjunction_indices.is_empty());
+        if enabled_constraint_indices.is_empty() && enabled_disjunction_indices.is_empty() {
+            break;
+        }
     }
     let remaining_constraints = remaining_constraint_indices.iter().map(|i| constraint_at(*i));
     let remaining_nested_patterns = conjunction
@@ -401,7 +400,7 @@ fn validate_is_plannable_impl<'conj>(
             .constraints_and_requirements
             .iter()
             .filter_map(|(_, _, span)| *span)
-            .reduce(|x, y| if x.begin_offset < y.begin_offset { x } else { y });
+            .min_by_key(|span| span.begin_offset);
         Err(Box::new(RepresentationError::UnplannableConjunction { span: earliest_span, unplannable_constraints }))
     }
 }
@@ -419,7 +418,7 @@ impl UnplannableConstraints {
         remaining_nested_patterns: impl Iterator<Item = &'conj NestedPattern>,
     ) -> Self {
         macro_rules! unsatisfied_vars {
-            ($iter: expr) => {
+            ($iter:expr) => {
                 $iter
                     .filter(|id| !bound_variables.contains(id))
                     .map(|id| variable_registry.get_variable_name_or_unnamed(id))
