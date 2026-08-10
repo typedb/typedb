@@ -128,10 +128,10 @@ fn concurrent_reader_cleanup_test() {
 }
 
 fn get_key(
-    key_1: StorageKeyArray<BUFFER_KEY_INLINE>,
+    key: StorageKeyArray<BUFFER_KEY_INLINE>,
     snapshot: &ReadSnapshot<WALClient>,
 ) -> Option<ByteArray<BUFFER_KEY_INLINE>> {
-    snapshot.get::<BUFFER_KEY_INLINE>(StorageKey::Array(key_1).as_reference(), StorageCounters::DISABLED).unwrap()
+    snapshot.get::<BUFFER_KEY_INLINE>(StorageKey::Array(key).as_reference(), StorageCounters::DISABLED).unwrap()
 }
 
 fn count_keys(storage: &MVCCStorage<WALClient>) -> usize {
