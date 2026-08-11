@@ -228,6 +228,11 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
+       VariableCategoryValueAttributeMismatch(
+            35,
+            "The variable '{variable_name}' cannot be declared as both a 'Attribute' and as a 'Value'. Consider using '==' for a value-only comparison instead.",
+            variable_name: String,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",

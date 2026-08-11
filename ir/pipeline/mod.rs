@@ -271,17 +271,30 @@ impl VariableRegistry {
             Some((existing_category, existing_source)) => {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
-                    None => Err(Box::new(RepresentationError::VariableCategoryMismatch {
-                        variable_name: self
-                            .variable_names
-                            .get(&variable)
-                            .cloned()
-                            .unwrap_or_else(|| variable.to_string()),
-                        category_1: category,
-                        // category_1_source: source,
-                        category_2: *existing_category,
-                        // category_2_source: existing_source.clone(),
-                    })),
+                    None => {
+                        if (category == VariableCategory::Attribute && *existing_category == VariableCategory::Value)
+                            || (category == VariableCategory::Value
+                                && *existing_category == VariableCategory::Attribute)
+                        {
+                            Err(Box::new(RepresentationError::VariableCategoryValueAttributeMismatch {
+                                variable_name: self
+                                    .variable_names
+                                    .get(&variable)
+                                    .cloned()
+                                    .unwrap_or_else(|| variable.to_string()),
+                            }))
+                        } else {
+                            Err(Box::new(RepresentationError::VariableCategoryMismatch {
+                                variable_name: self
+                                    .variable_names
+                                    .get(&variable)
+                                    .cloned()
+                                    .unwrap_or_else(|| variable.to_string()),
+                                category_1: category,
+                                category_2: *existing_category,
+                            }))
+                        }
+                    }
                     Some(narrowed) => {
                         if narrowed == *existing_category {
                             Ok(())
