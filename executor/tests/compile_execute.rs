@@ -145,7 +145,6 @@ fn test_has_planning_traversal() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -226,17 +225,6 @@ fn test_expression_planning_traversal() {
     );
     let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
-    let compiled_expressions = compile_expressions(
-        &*snapshot,
-        &type_manager,
-        &block,
-        &mut translation_context.variable_registry,
-        &value_parameters,
-        &entry_annotations,
-        &mut BTreeMap::new(),
-    )
-    .unwrap();
-
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
@@ -244,7 +232,6 @@ fn test_expression_planning_traversal() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &compiled_expressions,
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -331,7 +318,6 @@ fn test_links_planning_traversal() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -425,7 +411,6 @@ fn test_links_intersection() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -510,7 +495,6 @@ fn test_negation_planning_traversal() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -616,7 +600,6 @@ fn test_forall_planning_traversal() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -709,7 +692,6 @@ fn test_named_var_select() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -801,7 +783,6 @@ fn test_disjunction_planning_traversal() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -897,7 +878,6 @@ fn test_disjunction_planning_nested_negations() {
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )
@@ -1058,7 +1038,6 @@ fn compile_query(
         block.conjunction().named_visible_referenced_variables().collect(),
         &entry_annotations,
         &translation_context.variable_registry,
-        &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
     )

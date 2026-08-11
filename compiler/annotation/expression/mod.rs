@@ -17,7 +17,6 @@ use typeql::common::Span;
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
-pub mod block_compiler;
 mod builtin_resolution;
 pub mod compiled_expression;
 pub mod expression_compiler;

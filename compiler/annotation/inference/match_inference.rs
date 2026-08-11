@@ -73,12 +73,12 @@ pub fn infer_types_for_block(
 
     let type_annotations_by_scope = flattened_graphs
         .into_iter()
-        .map(|(scope_id, flattened_graph)| {
+        .map(|(scope_id, mut flattened_graph)| {
             debug_assert!(
                 flattened_graph
                     .conjunction
                     .visible_referenced_variables()
-                    .all(|v| flattened_graph.vertices.contains_key(&v.into()))
+                    .all(|v| { flattened_graph.vertices.contains_key(&v.into()) })
             );
             Ok::<_, TypeInferenceError>((scope_id, flattened_graph.into_type_annotations()?))
         })
@@ -264,8 +264,8 @@ impl<'this> TypeInferenceGraph<'this> {
     pub(crate) fn flatten_graph(
         self,
     ) -> (FlattenedTypeInferenceGraph<'this>, Vec<NestedTypeInferenceGraphDisjunction<'this>>) {
-        let Self { conjunction, vertices, edges, nested_disjunctions, expressions: _ } = self;
-        (FlattenedTypeInferenceGraph { conjunction, vertices, edges }, nested_disjunctions)
+        let Self { conjunction, vertices, edges, nested_disjunctions, expressions } = self;
+        (FlattenedTypeInferenceGraph { conjunction, vertices, edges, expressions }, nested_disjunctions)
     }
 
     fn prune_constraints_from_vertices(&mut self) -> Result<(), TypeInferenceError> {
@@ -506,11 +506,12 @@ struct FlattenedTypeInferenceGraph<'this> {
     conjunction: &'this Conjunction,
     vertices: VertexAnnotations,
     edges: Vec<TypeInferenceEdge<'this>>,
+    expressions: Vec<TypeInferenceExpression<'this>>,
 }
 
 impl FlattenedTypeInferenceGraph<'_> {
     fn into_type_annotations(self) -> Result<TypeAnnotations, TypeInferenceError> {
-        let Self { vertices, edges, .. } = self;
+        let Self { vertices, edges, expressions, .. } = self;
         let mut constraint_annotations = HashMap::new();
         let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
@@ -545,7 +546,14 @@ impl FlattenedTypeInferenceGraph<'_> {
                 value_vertex_annotations.insert(variable.into(), ExpressionValueType::Single(*unique_value_type));
             }
         });
-        Ok(TypeAnnotations::new(concept_vertex_annotations, value_vertex_annotations, constraint_annotations))
+        let compiled_expressions =
+            expressions.into_iter().map(|expr| (expr.expression.clone(), expr.compiled_expression.unwrap())).collect();
+        Ok(TypeAnnotations::new(
+            concept_vertex_annotations,
+            value_vertex_annotations,
+            constraint_annotations,
+            compiled_expressions,
+        ))
     }
 }
 
