@@ -13,12 +13,12 @@ use answer::{Type as TypeAnnotation, variable::Variable};
 use concept::type_::attribute_type::AttributeType;
 use encoding::value::value_type::ValueType;
 use error::unimplemented_feature;
-use ir::pattern::disjunction::Disjunction;
 use ir::{
     pattern::{
         Pattern, Scope, ScopeId, Vertex,
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
+        disjunction::Disjunction,
         nested_pattern::NestedPattern,
     },
     pipeline::{
@@ -29,7 +29,6 @@ use ir::{
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::inference::validation::validate_inferred_types_are_valid;
 use crate::{
     annotation::{
         PipelineAnnotationContext, TypeInferenceError,
@@ -39,7 +38,7 @@ use crate::{
         },
         inference::{
             ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, VertexAnnotations,
-            VertexTypeAnnotations, type_seeder::TypeGraphSeedingContext,
+            VertexTypeAnnotations, type_seeder::TypeGraphSeedingContext, validation::validate_inferred_types_are_valid,
         },
         pipeline::RunningVariableAnnotations,
         type_annotations::{

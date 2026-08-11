@@ -416,7 +416,7 @@ fn complete_block_annotations_with_value_types(
         }
     }
 
-    block_annotations.set_value_types_of(conjunction, value_types_in_conjunction);
+    block_annotations.verify_value_types_against_old_inference(conjunction, value_types_in_conjunction);
 
     conjunction.nested_patterns().iter().try_for_each(|pattern| match pattern {
         NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().try_for_each(|c| {

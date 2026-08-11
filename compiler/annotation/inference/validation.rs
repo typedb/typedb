@@ -3,19 +3,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use crate::annotation::TypeInferenceError;
-use crate::annotation::expression::ExpressionCompileError;
-use crate::annotation::inference::match_inference::{
-    NestedTypeInferenceGraphDisjunction, TypeInferenceExpression, TypeInferenceGraph,
-};
-use crate::annotation::inference::{ValueVertexTypes, VertexAnnotations, VertexTypeAnnotations};
+use std::collections::HashMap;
+
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
-use ir::pattern::Vertex;
-use ir::pattern::variable_category::VariableCategory;
-use ir::pipeline::VariableRegistry;
+use ir::{
+    pattern::{Vertex, variable_category::VariableCategory},
+    pipeline::VariableRegistry,
+};
 use itertools::Itertools;
-use std::collections::HashMap;
+
+use crate::annotation::{
+    TypeInferenceError,
+    expression::ExpressionCompileError,
+    inference::{
+        ValueVertexTypes, VertexAnnotations, VertexTypeAnnotations,
+        match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceExpression, TypeInferenceGraph},
+    },
+};
 
 pub(super) fn validate_inferred_types_are_valid(
     graph: &TypeInferenceGraph<'_>,
