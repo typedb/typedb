@@ -412,7 +412,7 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
     }
 
     fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
-        debug_assert!(parent_vertices.keys().all(|vertex| {
+        debug_assert!(parent_vertices.keys().filter(|vertex| vertex.is_variable()).all(|vertex| {
             self.shared_vertex_annotations.contains_key(vertex)
                 == self.disjunction.iter().any(|branch| branch.vertices.contains_key(vertex))
         }));
