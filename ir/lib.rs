@@ -313,12 +313,21 @@ typedb_error! {
             "Given clauses must be the first clause in a query pipeline.",
             source_span: Option<Span>,
         ),
+
         UnplannableConjunction(
             55,
             "The required input variables for the following constraints could not be satisfied (there may be a circular dependency):\n{unplannable_constraints}",
             unplannable_constraints: UnplannableConstraints,
             span: Option<Span>,
         ),
+        MultipleAssignmentsForVariable(
+            56,
+            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
+            variable: String,
+            source_span: Option<Span>,
+            other_span: Option<Span>,
+        ),
+
         InternalNotAValueBuiltin(
             100,
             "Attempted to translate function '{token}' as a builtin value function.",
