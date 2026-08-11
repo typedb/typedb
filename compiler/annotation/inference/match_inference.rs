@@ -397,10 +397,16 @@ pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
 
 impl NestedTypeInferenceGraphDisjunction<'_> {
     fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {
+        for (shared_vertex, shared_vertex_types) in &mut self.shared_vertex_annotations {
+            debug_assert!(parent_vertices.contains_key(shared_vertex));
+            if let Some(parent_vertex_types) = parent_vertices.get(shared_vertex) {
+                shared_vertex_types.retain_intersection(parent_vertex_types);
+            }
+        }
         for nested_graph in &mut self.disjunction {
-            for (vertex, vertex_types) in &mut nested_graph.vertices {
-                if let Some(parent_vertex_types) = parent_vertices.get(vertex) {
-                    vertex_types.retain_intersection(parent_vertex_types);
+            for (shared_vertex, shared_vertex_types) in &self.shared_vertex_annotations {
+                if let Some(branch_vertex_types) = nested_graph.vertices.get_mut(shared_vertex) {
+                    branch_vertex_types.retain_intersection(shared_vertex_types);
                 }
             }
             nested_graph.prune_constraints_from_vertices()?;
@@ -409,23 +415,31 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
     }
 
     fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
+        debug_assert!(parent_vertices.keys().all(|vertex| {
+            self.shared_vertex_annotations.contains_key(vertex) ==
+                self.disjunction.iter().any(|branch| branch.vertices.contains_key(vertex))
+        }));
+
         let mut is_modified = false;
         for nested_graph in &mut self.disjunction {
             is_modified |= nested_graph.prune_vertices_from_constraints();
         }
-
-        for (parent_vertex, parent_vertex_types) in parent_vertices {
-            let size_before = parent_vertex_types.len();
-            parent_vertex_types.retain_types(|type_| {
+        for (shared_vertex, shared_vertex_types) in &mut self.shared_vertex_annotations {
+            let size_before = shared_vertex_types.len();
+            shared_vertex_types.retain_types(|type_| {
                 self.disjunction.iter().any(|nested_graph| {
                     nested_graph
                         .vertices
-                        .get(parent_vertex)
+                        .get(shared_vertex)
                         .map(|nested_types| nested_types.contains_type(type_))
                         .unwrap_or(true)
                 })
             });
-            is_modified |= size_before != parent_vertex_types.len();
+            debug_assert!(parent_vertices.contains_key(shared_vertex));
+            if let Some(parent_vertex_types) = parent_vertices.get_mut(shared_vertex) {
+                parent_vertex_types.retain_intersection(shared_vertex_types);
+            }
+            is_modified |= size_before != shared_vertex_types.len();
         }
         is_modified
     }
@@ -1215,6 +1229,7 @@ pub mod tests {
             ],
             expressions: Vec::new(),
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
+                disjunction_pattern: &disj,
                 disjunction: expected_nested_graphs,
                 shared_variables: BTreeSet::new(),
                 shared_vertex_annotations: VertexAnnotations::default(),
