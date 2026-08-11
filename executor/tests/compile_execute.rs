@@ -11,7 +11,7 @@ use std::{
 
 use compiler::{
     annotation::{
-        PipelineAnnotationContext, expression::block_compiler::compile_expressions,
+        PipelineAnnotationContext,
         function::EmptyAnnotatedFunctionSignatures, inference::match_inference::infer_types_for_test_only,
     },
     executable::{
