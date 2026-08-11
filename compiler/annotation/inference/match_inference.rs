@@ -13,6 +13,7 @@ use answer::{Type as TypeAnnotation, variable::Variable};
 use concept::type_::attribute_type::AttributeType;
 use encoding::value::value_type::ValueType;
 use error::unimplemented_feature;
+use ir::pattern::disjunction::Disjunction;
 use ir::{
     pattern::{
         Pattern, Scope, ScopeId, Vertex,
@@ -26,9 +27,9 @@ use ir::{
     },
 };
 use itertools::Itertools;
-use ir::pattern::disjunction::Disjunction;
 use storage::snapshot::ReadableSnapshot;
 
+use crate::annotation::inference::validation::validate_inferred_types_are_valid;
 use crate::{
     annotation::{
         PipelineAnnotationContext, TypeInferenceError,
@@ -48,7 +49,6 @@ use crate::{
     },
     filter_variants,
 };
-use crate::annotation::inference::validation::validate_inferred_types_are_valid;
 
 pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
@@ -416,8 +416,8 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
 
     fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
         debug_assert!(parent_vertices.keys().all(|vertex| {
-            self.shared_vertex_annotations.contains_key(vertex) ==
-                self.disjunction.iter().any(|branch| branch.vertices.contains_key(vertex))
+            self.shared_vertex_annotations.contains_key(vertex)
+                == self.disjunction.iter().any(|branch| branch.vertices.contains_key(vertex))
         }));
 
         let mut is_modified = false;
@@ -475,14 +475,19 @@ impl<'this> TypeInferenceExpression<'this> {
             return Ok(());
         }
 
-        let value_types_result = self.args.iter().map(|arg| {
-            match &vertices[arg] {
-                VertexTypeAnnotations::Concept(types) => {
-                    self.attribute_value_types(types).unique().exactly_one().map_err(|_| ())
-                },
-                VertexTypeAnnotations::Value(types) => types.iter().copied().exactly_one().map_err(|_| ())
-            }.map(|value_type| (arg.as_variable().unwrap(), ExpressionValueType::Single(value_type)))
-        }).collect();
+        let value_types_result = self
+            .args
+            .iter()
+            .map(|arg| {
+                match &vertices[arg] {
+                    VertexTypeAnnotations::Concept(types) => {
+                        self.attribute_value_types(types).unique().exactly_one().map_err(|_| ())
+                    }
+                    VertexTypeAnnotations::Value(types) => types.iter().copied().exactly_one().map_err(|_| ()),
+                }
+                .map(|value_type| (arg.as_variable().unwrap(), ExpressionValueType::Single(value_type)))
+            })
+            .collect();
         if let Ok(value_types) = value_types_result {
             self.compiled_expression = Some(
                 ExpressionCompilationContext::compile(&self.expression.expression(), &value_types)
@@ -492,10 +497,8 @@ impl<'this> TypeInferenceExpression<'this> {
         Ok(())
     }
 
-    pub(super) fn attribute_value_types(&self, vertex_types: &ConceptVertexTypes) -> impl Iterator<Item=ValueType> {
-        filter_variants!(answer::Type::Attribute: vertex_types)
-            .map(|t| self.value_types_of_attributes[t])
-            .unique()
+    pub(super) fn attribute_value_types(&self, vertex_types: &ConceptVertexTypes) -> impl Iterator<Item = ValueType> {
+        filter_variants!(answer::Type::Attribute: vertex_types).map(|t| self.value_types_of_attributes[t]).unique()
     }
 }
 
