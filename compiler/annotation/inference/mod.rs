@@ -18,6 +18,7 @@ use crate::annotation::TypeInferenceError;
 
 pub mod match_inference;
 pub mod type_seeder;
+mod validation;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum VertexTypeAnnotations {

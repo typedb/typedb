@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet, btree_set::Iter},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -19,7 +19,6 @@ use ir::{
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
     },
     pipeline::{
         VariableRegistry,
@@ -33,12 +32,11 @@ use crate::{
     annotation::{
         PipelineAnnotationContext, TypeInferenceError,
         expression::{
-            ExpressionCompileError,
             compiled_expression::{ExecutableExpression, ExpressionValueType},
             expression_compiler::ExpressionCompilationContext,
         },
         inference::{
-            ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, ValueVertexTypes, VertexAnnotations,
+            ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, VertexAnnotations,
             VertexTypeAnnotations, type_seeder::TypeGraphSeedingContext,
         },
         pipeline::RunningVariableAnnotations,
@@ -49,6 +47,7 @@ use crate::{
     },
     filter_variants,
 };
+use crate::annotation::inference::validation::validate_inferred_types_are_valid;
 
 pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
@@ -186,11 +185,10 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     pre_check_edges_for_trivial_unsatisfiability(&graph)
         .map_err(|(graph, edge)| construct_error_message_for_unsatisfiable_edge(ctx, graph, edge))?;
 
-    prune_types(&mut graph)?;
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    graph.check_thing_constraints_satisfiable(ctx.variable_registry)?;
-    graph.check_expressions_were_compiled(ctx.variable_registry)?;
-    graph.check_uniqueness_of_value_types(ctx.variable_registry)?;
+    prune_types(&mut graph)?;
+
+    validate_inferred_types_are_valid(&graph, ctx.variable_registry)?;
     Ok(graph)
 }
 
@@ -295,121 +293,6 @@ impl<'this> TypeInferenceGraph<'this> {
             is_modified |= nested_graph.prune_vertices_from_self(&mut self.vertices);
         }
         is_modified
-    }
-
-    fn check_thing_constraints_satisfiable(
-        &self,
-        variable_registry: &VariableRegistry,
-    ) -> Result<(), TypeInferenceError> {
-        let thing_variable_present = self
-            .vertices
-            .annotations
-            .iter()
-            .filter_map(|(var, _)| var.as_variable())
-            .any(|var| variable_registry.get_variable_category(var).unwrap().is_category_thing());
-
-        let any_vertex_empty = self.vertices.annotations.iter().any(|(_, types)| types.is_empty());
-        if any_vertex_empty && thing_variable_present {
-            return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
-        }
-        self.nested_disjunctions
-            .iter()
-            .flat_map(|d| d.disjunction.iter())
-            .try_for_each(|graph| graph.check_thing_constraints_satisfiable(variable_registry))?;
-        Ok(())
-    }
-
-    fn check_expressions_were_compiled(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
-        fn join_names(iter: impl Iterator<Item=ValueType>) -> String {
-            iter.map(|v| v.category().name()).join(", ")
-        }
-        fn collect_uncompiled_recursive<'graph, 'conj>(graph: &'graph TypeInferenceGraph<'conj>, expressions: &mut HashMap<Vertex<Variable>, Vec<(&'graph TypeInferenceExpression<'conj>, &'graph VertexAnnotations)>>) {
-            graph.expressions.iter().filter(|e| e.compiled_expression.is_none()).for_each(|e| {
-                expressions.entry(e.assigned.clone()).or_default().push((e, &graph.vertices))
-            });
-            graph.nested_disjunctions.iter().flat_map(|d| d.disjunction.iter()).for_each(|g| {
-                collect_uncompiled_recursive(g, expressions)
-            })
-        }
-        let mut uncompiled = HashMap::new();
-        collect_uncompiled_recursive(self, &mut uncompiled);
-        if uncompiled.is_empty() {
-            return Ok(())
-        }
-
-        let leaf_uncompiled = uncompiled.values().flat_map(|v| v.iter()).find(|(e, _)| {
-            e.args.iter().all(|v| !uncompiled.contains_key(v))
-        });
-        if let Some((expr, vertex_annotations)) = leaf_uncompiled {
-            let bad_arg_opt = expr.args.iter().find_map(|arg| {
-                let exactly_one_err = match &vertex_annotations[arg] {
-                    VertexTypeAnnotations::Concept(types) => {
-                        expr.attribute_value_types(types).unique().exactly_one().map_err(join_names)
-                    },
-                    VertexTypeAnnotations::Value(types) => {
-                        types.iter().copied().exactly_one().map_err(join_names)
-                    }
-                };
-                match exactly_one_err {
-                    Ok(_) => None,
-                    Err(types) => Some((arg, types)),
-                }
-            });
-            debug_assert!(bad_arg_opt.is_some(), "Should have been compiled if there isn't a bad arg");
-            if let Some((arg, value_types)) = bad_arg_opt {
-                let variable = variable_registry.get_variable_name_or_unnamed(arg.as_variable().unwrap()).to_owned();
-                let source_span = expr.expression.source_span();
-                return Err(TypeInferenceError::ExpressionCompilation {
-                    typedb_source: Box::new(ExpressionCompileError::VariableMultipleValueTypes {
-                        variable, value_types, source_span
-                    })
-                })
-            }
-        }
-        debug_assert!(false && leaf_uncompiled.is_some(), "Unreachable: we've already caught circular-dependencies");
-        let assigned_variables = uncompiled.keys().map(|v| {
-            variable_registry.get_variable_name_or_unnamed(v.as_variable().unwrap())
-        }).join(", ");
-        Err(TypeInferenceError::InternalUnresolvedExpressions { assigned_variables })
-    }
-
-    fn check_uniqueness_of_value_types(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
-        self.vertices
-            .annotations
-            .iter()
-            .filter_map(|(vertex, types)| Some((vertex.as_variable()?, types)))
-            .try_for_each(|(var, types)| {
-                let var_category = variable_registry.get_variable_category(var).unwrap();
-                match (var_category, types) {
-                    (VariableCategory::Value, VertexTypeAnnotations::Value(value_types)) => {
-                        value_types.into_iter().exactly_one().map(|_| ()).map_err(|_| {
-                            let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-                            let value_types = value_types.into_iter().map(|t| t.category().name()).join(", ");
-                            TypeInferenceError::ExpressionCompilation {
-                                typedb_source: Box::new(
-                                    ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
-                                        variable,
-                                        value_types,
-                                        source_span: None, // TODO
-                                    }
-                                ),
-                            }
-                        })
-                    }
-                    (VariableCategory::Value, _) => {
-                        Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "value".to_owned() })
-                    }
-                    (_, VertexTypeAnnotations::Value(_)) => {
-                        Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "(not value)".to_owned() })
-                    }
-                    (_, VertexTypeAnnotations::Concept(_)) => Ok(()),
-                }
-            })?;
-        self.nested_disjunctions
-            .iter()
-            .flat_map(|d| d.disjunction.iter())
-            .try_for_each(|graph| graph.check_uniqueness_of_value_types(variable_registry))?;
-        Ok(())
     }
 }
 
@@ -593,7 +476,7 @@ impl<'this> TypeInferenceExpression<'this> {
         Ok(())
     }
 
-    fn attribute_value_types(&self, vertex_types: &ConceptVertexTypes) -> impl Iterator<Item=ValueType> {
+    pub(super) fn attribute_value_types(&self, vertex_types: &ConceptVertexTypes) -> impl Iterator<Item=ValueType> {
         filter_variants!(answer::Type::Attribute: vertex_types)
             .map(|t| self.value_types_of_attributes[t])
             .unique()
