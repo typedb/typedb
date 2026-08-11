@@ -309,7 +309,7 @@ fn validate_expressions_assignments_are_unique_impl(
     assigned: &mut BTreeMap<Variable, Option<Span>>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
-    // TODO: Can we absorb this change if we introduce an "Assigned" variant?
+    // TODO: Can we absorb this change into BindingModes if we introduce an "Assigned" variant?
     fn add_or_error(
         variable_registry: &VariableRegistry,
         assigned: &mut BTreeMap<Variable, Option<Span>>,
@@ -321,7 +321,7 @@ fn validate_expressions_assignments_are_unique_impl(
         } else {
             Ok(())
         }
-    };
+    }
 
     conjunction
         .constraints()

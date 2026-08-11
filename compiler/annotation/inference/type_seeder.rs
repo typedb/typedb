@@ -16,14 +16,11 @@ use concept::{
     error::ConceptReadError,
     type_::{OwnerAPI, PlayerAPI, TypeAPI, type_manager::TypeManager},
 };
-use encoding::value::{
-    ValueEncodable,
-    value_type::{ValueType, ValueTypeCategory},
-};
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{
-        ParameterID, Pattern, Vertex,
+        Pattern, Vertex,
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links,
@@ -33,7 +30,7 @@ use ir::{
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
-    pipeline::{ParameterRegistry, VariableRegistry},
+    pipeline::VariableRegistry,
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;

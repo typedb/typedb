@@ -7,20 +7,14 @@
 use std::{collections::HashMap, marker::PhantomData};
 
 use answer::variable::Variable;
-use encoding::value::{
-    ValueEncodable,
-    value_type::{ValueType, ValueTypeCategory},
-};
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::{needs_update_when_feature_is_implemented, unimplemented_feature};
-use ir::{
-    pattern::{
-        ParameterID,
-        expression::{
-            BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
-            ListIndexRange, Operation,
-        },
+use ir::pattern::{
+    ParameterID,
+    expression::{
+        BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
+        ListIndexRange, Operation,
     },
-    pipeline::ParameterRegistry,
 };
 use typeql::common::Span;
 

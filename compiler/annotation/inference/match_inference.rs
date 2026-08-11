@@ -73,7 +73,7 @@ pub fn infer_types_for_block(
 
     let type_annotations_by_scope = flattened_graphs
         .into_iter()
-        .map(|(scope_id, mut flattened_graph)| {
+        .map(|(scope_id, flattened_graph)| {
             debug_assert!(
                 flattened_graph
                     .conjunction
@@ -261,9 +261,7 @@ pub(crate) struct TypeInferenceGraph<'this> {
 }
 
 impl<'this> TypeInferenceGraph<'this> {
-    pub(crate) fn flatten_graph(
-        self,
-    ) -> (FlattenedTypeInferenceGraph<'this>, Vec<NestedTypeInferenceGraphDisjunction<'this>>) {
+    fn flatten_graph(self) -> (FlattenedTypeInferenceGraph<'this>, Vec<NestedTypeInferenceGraphDisjunction<'this>>) {
         let Self { conjunction, vertices, edges, nested_disjunctions, expressions } = self;
         (FlattenedTypeInferenceGraph { conjunction, vertices, edges, expressions }, nested_disjunctions)
     }

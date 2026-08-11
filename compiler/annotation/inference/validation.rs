@@ -132,13 +132,7 @@ fn check_expressions_were_compiled(
         if let Some((arg, value_types)) = bad_arg_opt {
             let variable = variable_registry.get_variable_name_or_unnamed(arg.as_variable().unwrap()).to_owned();
             let source_span = expr.expression.source_span();
-            return Err(TypeInferenceError::ExpressionCompilation {
-                typedb_source: Box::new(ExpressionCompileError::VariableMultipleValueTypes {
-                    variable,
-                    value_types,
-                    source_span,
-                }),
-            });
+            return Err(TypeInferenceError::VariableMultipleValueTypes { variable, value_types, source_span });
         }
     }
     debug_assert!(false && leaf_uncompiled.is_some(), "Unreachable: we've already caught circular-dependencies");

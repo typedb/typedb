@@ -212,7 +212,7 @@ fn annotate_stage(
                 PipelineOrigin::Schema => TypeInferenceMode::IncludeAbstractSubtypes,
                 PipelineOrigin::Query => TypeInferenceMode::ConcreteSubtypesOnly,
             };
-            let mut block_annotations = infer_types_for_block(ctx, &running_annotations, &block, type_inference_mode)
+            let block_annotations = infer_types_for_block(ctx, &running_annotations, &block, type_inference_mode)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
             running_annotations.update_with(root_annotations);
@@ -251,7 +251,7 @@ fn annotate_stage(
 
         TranslatedStage::Put { block, source_span } => {
             debug_assert!(pipeline_origin == PipelineOrigin::Query);
-            let mut match_annotations =
+            let match_annotations =
                 infer_types_for_block(ctx, running_annotations, &block, TypeInferenceMode::ConcreteSubtypesOnly)
                     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let insert_annotations = annotate_write_stage(ctx, running_annotations, &block)?;
@@ -364,9 +364,8 @@ fn annotate_write_stage(
     running_annotations: &mut RunningVariableAnnotations,
     block: &Block,
 ) -> Result<BlockAnnotations, AnnotationError> {
-    let mut block_annotations =
-        infer_types_for_block(ctx, running_annotations, block, TypeInferenceMode::ExactAndExplicit)
-            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    let block_annotations = infer_types_for_block(ctx, running_annotations, block, TypeInferenceMode::ExactAndExplicit)
+        .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     let annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 
