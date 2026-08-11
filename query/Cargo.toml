@@ -123,6 +123,10 @@ features = {}
 	name = "test_query_profile"
 
 [[test]]
+	path = "tests/query_cache.rs"
+	name = "test_query_cache"
+
+[[test]]
 	path = "tests/define.rs"
 	name = "test_define"
 
