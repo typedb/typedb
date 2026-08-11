@@ -249,6 +249,11 @@ typedb_error!(
             "Expression compilation error.",
             typedb_source: Box<ExpressionCompileError>,
         ),
+        InternalUnresolvedExpressions(
+            13,
+            "Type-inference was unable to resolve types for the following assigned variables: [{assigned_variables}]",
+            assigned_variables: String,
+        ),
         InternalVertexTypesMismatch(
             254,
             "BUG! Expected vertex to have annotations of kind '{expected}' but it wasn't.",

@@ -189,6 +189,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     prune_types(&mut graph)?;
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     graph.check_thing_constraints_satisfiable(ctx.variable_registry)?;
+    graph.check_expressions_were_compiled(ctx.variable_registry)?;
     graph.check_uniqueness_of_value_types(ctx.variable_registry)?;
     Ok(graph)
 }
@@ -318,6 +319,60 @@ impl<'this> TypeInferenceGraph<'this> {
         Ok(())
     }
 
+    fn check_expressions_were_compiled(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+        fn join_names(iter: impl Iterator<Item=ValueType>) -> String {
+            iter.map(|v| v.category().name()).join(", ")
+        }
+        fn collect_uncompiled_recursive<'graph, 'conj>(graph: &'graph TypeInferenceGraph<'conj>, expressions: &mut HashMap<Vertex<Variable>, Vec<(&'graph TypeInferenceExpression<'conj>, &'graph VertexAnnotations)>>) {
+            graph.expressions.iter().filter(|e| e.compiled_expression.is_none()).for_each(|e| {
+                expressions.entry(e.assigned.clone()).or_default().push((e, &graph.vertices))
+            });
+            graph.nested_disjunctions.iter().flat_map(|d| d.disjunction.iter()).for_each(|g| {
+                collect_uncompiled_recursive(g, expressions)
+            })
+        }
+        let mut uncompiled = HashMap::new();
+        collect_uncompiled_recursive(self, &mut uncompiled);
+        if uncompiled.is_empty() {
+            return Ok(())
+        }
+
+        let leaf_uncompiled = uncompiled.values().flat_map(|v| v.iter()).find(|(e, _)| {
+            e.args.iter().all(|v| !uncompiled.contains_key(v))
+        });
+        if let Some((expr, vertex_annotations)) = leaf_uncompiled {
+            let bad_arg_opt = expr.args.iter().find_map(|arg| {
+                let exactly_one_err = match &vertex_annotations[arg] {
+                    VertexTypeAnnotations::Concept(types) => {
+                        expr.attribute_value_types(types).unique().exactly_one().map_err(join_names)
+                    },
+                    VertexTypeAnnotations::Value(types) => {
+                        types.iter().copied().exactly_one().map_err(join_names)
+                    }
+                };
+                match exactly_one_err {
+                    Ok(_) => None,
+                    Err(types) => Some((arg, types)),
+                }
+            });
+            debug_assert!(bad_arg_opt.is_some(), "Should have been compiled if there isn't a bad arg");
+            if let Some((arg, value_types)) = bad_arg_opt {
+                let variable = variable_registry.get_variable_name_or_unnamed(arg.as_variable().unwrap()).to_owned();
+                let source_span = expr.expression.source_span();
+                return Err(TypeInferenceError::ExpressionCompilation {
+                    typedb_source: Box::new(ExpressionCompileError::VariableMultipleValueTypes {
+                        variable, value_types, source_span
+                    })
+                })
+            }
+        }
+        debug_assert!(false && leaf_uncompiled.is_some(), "Unreachable: we've already caught circular-dependencies");
+        let assigned_variables = uncompiled.keys().map(|v| {
+            variable_registry.get_variable_name_or_unnamed(v.as_variable().unwrap())
+        }).join(", ");
+        Err(TypeInferenceError::InternalUnresolvedExpressions { assigned_variables })
+    }
+
     fn check_uniqueness_of_value_types(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
         self.vertices
             .annotations
@@ -331,16 +386,21 @@ impl<'this> TypeInferenceGraph<'this> {
                             let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
                             let value_types = value_types.into_iter().map(|t| t.category().name()).join(", ");
                             TypeInferenceError::ExpressionCompilation {
-                                typedb_source: Box::new(ExpressionCompileError::VariableMultipleValueTypes {
-                                    variable,
-                                    value_types,
-                                    source_span: None, // TODO
-                                }),
+                                typedb_source: Box::new(
+                                    ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
+                                        variable,
+                                        value_types,
+                                        source_span: None, // TODO
+                                    }
+                                ),
                             }
                         })
                     }
-                    (VariableCategory::Value, _) | (_, VertexTypeAnnotations::Value(_)) => {
-                        unreachable!("VariableCategory/VertexTypeAnnotations mismatch");
+                    (VariableCategory::Value, _) => {
+                        Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "value".to_owned() })
+                    }
+                    (_, VertexTypeAnnotations::Value(_)) => {
+                        Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "(not value)".to_owned() })
                     }
                     (_, VertexTypeAnnotations::Concept(_)) => Ok(()),
                 }
@@ -516,11 +576,14 @@ impl<'this> TypeInferenceExpression<'this> {
             return Ok(());
         }
 
-        let value_types_result = self
-            .args
-            .iter()
-            .map(|arg| self.exactly_one_value_type(&vertices[arg]).map(|type_| (arg.as_variable().unwrap(), type_)))
-            .collect();
+        let value_types_result = self.args.iter().map(|arg| {
+            match &vertices[arg] {
+                VertexTypeAnnotations::Concept(types) => {
+                    self.attribute_value_types(types).unique().exactly_one().map_err(|_| ())
+                },
+                VertexTypeAnnotations::Value(types) => types.iter().copied().exactly_one().map_err(|_| ())
+            }.map(|value_type| (arg.as_variable().unwrap(), ExpressionValueType::Single(value_type)))
+        }).collect();
         if let Ok(value_types) = value_types_result {
             self.compiled_expression = Some(
                 ExpressionCompilationContext::compile(&self.expression.expression(), &value_types)
@@ -530,16 +593,10 @@ impl<'this> TypeInferenceExpression<'this> {
         Ok(())
     }
 
-    fn exactly_one_value_type(&self, annotations: &VertexTypeAnnotations) -> Result<ExpressionValueType, ()> {
-        match annotations {
-            VertexTypeAnnotations::Concept(types) => filter_variants!(answer::Type::Attribute: types)
-                .map(|t| self.value_types_of_attributes[t])
-                .unique()
-                .exactly_one()
-                .map_err(|_| ()),
-            VertexTypeAnnotations::Value(types) => types.iter().copied().exactly_one().map_err(|_| ()),
-        }
-        .map(ExpressionValueType::Single)
+    fn attribute_value_types(&self, vertex_types: &ConceptVertexTypes) -> impl Iterator<Item=ValueType> {
+        filter_variants!(answer::Type::Attribute: vertex_types)
+            .map(|t| self.value_types_of_attributes[t])
+            .unique()
     }
 }
 
