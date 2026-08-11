@@ -26,6 +26,7 @@ use ir::{
     },
 };
 use itertools::Itertools;
+use ir::pattern::disjunction::Disjunction;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -388,6 +389,7 @@ impl<'this> TypeInferenceEdge<'this> {
 
 #[derive(Debug)]
 pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
+    pub(crate) disjunction_pattern: &'this Disjunction,
     pub(crate) disjunction: Vec<TypeInferenceGraph<'this>>,
     pub(crate) shared_variables: BTreeSet<Variable>,
     pub(crate) shared_vertex_annotations: VertexAnnotations,

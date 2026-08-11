@@ -10,16 +10,41 @@ use encoding::value::value_type::ValueType;
 use ir::pattern::variable_category::VariableCategory;
 use ir::pattern::Vertex;
 use ir::pipeline::VariableRegistry;
-use crate::annotation::inference::match_inference::{TypeInferenceExpression, TypeInferenceGraph};
+use crate::annotation::inference::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceExpression, TypeInferenceGraph};
 use crate::annotation::{TypeInferenceError};
 use crate::annotation::expression::ExpressionCompileError;
-use crate::annotation::inference::{VertexAnnotations, VertexTypeAnnotations};
+use crate::annotation::inference::{ValueVertexTypes, VertexAnnotations, VertexTypeAnnotations};
 
 pub(super) fn validate_inferred_types_are_valid(graph: &TypeInferenceGraph<'_>, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+    validate_category_alignment(graph, variable_registry)?; // Could be a debug_assert
     check_thing_constraints_satisfiable(graph, variable_registry)?;
     check_expressions_were_compiled(graph, variable_registry)?;
     check_uniqueness_of_value_types(graph, variable_registry)?;
     Ok(())
+}
+
+fn validate_category_alignment(graph: &TypeInferenceGraph<'_>, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+    graph.vertices.iter().try_for_each(|(vertex, types)| {
+        if let Vertex::Variable(var) = vertex {
+            let var_category = variable_registry.get_variable_category(*var).expect("Expected category");
+            match (var_category, types) {
+                (VariableCategory::Value, VertexTypeAnnotations::Value(_)) => Ok(()),
+                (VariableCategory::Value, VertexTypeAnnotations::Concept(_)) => {
+                    Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "value".to_owned() })
+                }
+                (other, VertexTypeAnnotations::Concept(_)) => {
+                    debug_assert!(other.is_category_thing() || other.is_category_type());
+                    Ok(())
+                }
+                (_other, VertexTypeAnnotations::Value(_)) => {
+                    Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "concept".to_owned() })
+                }
+            }
+
+        } else {
+            Ok(())
+        }
+    })
 }
 
 fn check_thing_constraints_satisfiable(
@@ -99,40 +124,60 @@ fn check_expressions_were_compiled(graph: &TypeInferenceGraph<'_>, variable_regi
 }
 
 fn check_uniqueness_of_value_types(graph: &TypeInferenceGraph<'_>, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
-    graph.vertices
-        .annotations
-        .iter()
-        .filter_map(|(vertex, types)| Some((vertex.as_variable()?, types)))
-        .try_for_each(|(var, types)| {
-            let var_category = variable_registry.get_variable_category(var).unwrap();
-            match (var_category, types) {
-                (VariableCategory::Value, VertexTypeAnnotations::Value(value_types)) => {
-                    value_types.into_iter().exactly_one().map(|_| ()).map_err(|_| {
-                        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-                        let value_types = value_types.into_iter().map(|t| t.category().name()).join(", ");
-                        TypeInferenceError::ExpressionCompilation {
-                            typedb_source: Box::new(
-                                ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
-                                    variable,
-                                    value_types,
-                                    source_span: None, // TODO
-                                }
-                            ),
-                        }
-                    })
-                }
-                (VariableCategory::Value, _) => {
-                    Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "value".to_owned() })
-                }
-                (_, VertexTypeAnnotations::Value(_)) => {
-                    Err(TypeInferenceError::InternalVertexTypesMismatch { expected: "(not value)".to_owned() })
-                }
-                (_, VertexTypeAnnotations::Concept(_)) => Ok(()),
-            }
-        })?;
-    graph.nested_disjunctions
-        .iter()
-        .flat_map(|d| d.disjunction.iter())
-        .try_for_each(|branch| check_uniqueness_of_value_types(branch, variable_registry))?;
+    // I think this can only happen at a disjunction, so we focus on validating those first.
+    graph.nested_disjunctions.iter().try_for_each(|disjunction| {
+        check_uniqueness_of_value_types_at_disjunctions(disjunction, variable_registry)
+            .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })
+    })?;
+
+    check_uniqueness_of_value_types_in_conjunction(graph, variable_registry)
+        .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })?;
+
     Ok(())
+}
+
+fn check_uniqueness_of_value_types_at_disjunctions(disjunction: &NestedTypeInferenceGraphDisjunction<'_>, variable_registry: &VariableRegistry) ->  Result<(), Box<ExpressionCompileError>> {
+    // We first recurse so we get the closest error span possible:
+    disjunction.disjunction.iter().flat_map(|d| d.nested_disjunctions.iter()).try_for_each(|nested| {
+        check_uniqueness_of_value_types_at_disjunctions(nested, variable_registry)
+    })?;
+    if let Some((variable, value_types)) = find_multiply_typed_value_vertex(&disjunction.shared_vertex_annotations) {
+        let variable = variable_registry.get_variable_name_or_unnamed(variable).to_owned();
+        let value_types = join_value_type_names(value_types.iter());
+        let source_span = disjunction.disjunction_pattern.source_span();
+        Err(Box::new(ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
+            variable, value_types, source_span,
+        }))
+    } else {
+        Ok(())
+    }
+}
+
+fn check_uniqueness_of_value_types_in_conjunction(graph: &TypeInferenceGraph<'_>, variable_registry: &VariableRegistry) -> Result<(), Box<ExpressionCompileError>> {
+    if let Some((variable, value_types)) = find_multiply_typed_value_vertex(&graph.vertices) {
+        let variable = variable_registry.get_variable_name_or_unnamed(variable).to_owned();
+        let value_types = join_value_type_names(value_types.iter());
+        let source_span = None; // Can't do much with a conjunction
+        Err(Box::new(ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
+            variable, value_types, source_span,
+        }))
+    } else {
+        graph.nested_disjunctions.iter().flat_map(|d| d.disjunction.iter()).try_for_each(|branch| {
+            check_uniqueness_of_value_types_in_conjunction(branch, variable_registry)
+        })
+    }
+}
+
+fn find_multiply_typed_value_vertex(vertex_annotations: &VertexAnnotations) -> Option<(Variable, &ValueVertexTypes)>{
+    vertex_annotations.iter().filter_map(|(vertex, types)| {
+        let variable = vertex.as_variable()?;
+        match types {
+            VertexTypeAnnotations::Value(value_types) => Some((variable, value_types)),
+            VertexTypeAnnotations::Concept(_) => None,
+        }
+    }).find(|(_, value_types)| value_types.len() > 1)
+}
+
+fn join_value_type_names<'a>(value_types: impl Iterator<Item=&'a ValueType>) -> String {
+    value_types.map(|value_type| value_type.category()).join(", ")
 }

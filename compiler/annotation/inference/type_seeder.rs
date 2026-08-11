@@ -193,6 +193,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         let nested_graphs = disjunction.conjunctions().iter().map(|conj| self.build_recursive(conj)).collect_vec();
         let shared_variables = disjunction.visible_referenced_variables().collect();
         NestedTypeInferenceGraphDisjunction {
+            disjunction_pattern: &disjunction,
             disjunction: nested_graphs,
             shared_variables,
             shared_vertex_annotations: VertexAnnotations::default(),
@@ -509,6 +510,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Update shared variables of the disjunction
         let NestedTypeInferenceGraphDisjunction {
+            disjunction_pattern: _,
             shared_vertex_annotations,
             disjunction: nested_graph_disjunction,
             shared_variables,
