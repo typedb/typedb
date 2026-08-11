@@ -1035,7 +1035,7 @@ pub mod tests {
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
         conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
-        let mut disj = conjunction.add_disjunction();
+        let mut disj = conjunction.add_disjunction(None);
 
         let mut branch1 = disj.add_conjunction();
         let b1_var_animal_type = branch1.constraints_mut().get_or_declare_variable("b1_animal_type", None).unwrap();
