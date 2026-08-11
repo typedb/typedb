@@ -230,7 +230,7 @@ typedb_error! {
         ),
        VariableCategoryValueAttributeMismatch(
             35,
-            "The variable '{variable_name}' cannot be declared as both a 'Attribute' and as a 'Value'. Consider using '==' for a value-only comparison instead.",
+            "The variable '{variable_name}' cannot be declared as both a 'Value' and as a 'Attribute'. Consider using '==' for a value-only comparison instead.",
             variable_name: String,
         ),
         UpdateVariableUnavailable(
