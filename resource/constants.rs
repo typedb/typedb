@@ -112,6 +112,7 @@ pub mod database {
 
     // anything lower than 2.0 will cause too much replanning
     // anything over 8.0 often does not plan frequently enough, as the data scales
+    pub const QUERY_PLAN_CACHE_FLUSH_STATIC_SMOOTH_THRESHOLD: u64 = 1000;
     pub const QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION: f64 = 3.0;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
     pub const QUERY_PARSE_CACHE_SIZE: u64 = 200;

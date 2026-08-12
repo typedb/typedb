@@ -19,8 +19,8 @@ use ir::{
 use moka::sync::{Cache, CacheBuilder};
 use resource::{
     constants::database::{
-        QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE,
-        QUERY_TRANSLATION_CACHE_SIZE,
+        QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION,
+        QUERY_PLAN_CACHE_FLUSH_STATIC_SMOOTH_THRESHOLD, QUERY_PLAN_CACHE_SIZE, QUERY_TRANSLATION_CACHE_SIZE,
     },
     perf_counters::QUERY_CACHE_FLUSH,
 };
@@ -160,14 +160,21 @@ fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &Exe
             Type::Attribute(ty) => statistics.attribute_counts.get(&ty).copied().unwrap_or_default(),
             Type::RoleType(ty) => statistics.role_counts.get(&ty).copied().unwrap_or_default(),
         };
+        let smoothing = smoothstep(type_count, 1, QUERY_PLAN_CACHE_FLUSH_STATIC_SMOOTH_THRESHOLD);
         match u64::max(type_count, 1) as f64 / u64::max(pop, 1) as f64 {
-            increase @ 1.0.. => total_increase *= increase,
-            decrease @ ..1.0 => total_decrease /= decrease,
+            increase @ 1.0.. => total_increase *= increase.powf(smoothing),
+            decrease @ ..1.0 => total_decrease /= decrease.powf(smoothing),
             _ => panic!("NaN?!"),
         }
     }
     total_increase >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
         || total_decrease >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
+}
+
+fn smoothstep(pop: u64, min: u64, max: u64) -> f64 {
+    debug_assert!(max > min);
+    let x = (pop.clamp(min, max) - min) as f64 / (max - min) as f64;
+    (3.0 - 2.0 * x) * x * x
 }
 
 #[derive(Debug)]
