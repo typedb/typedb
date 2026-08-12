@@ -486,10 +486,12 @@ impl<'this> TypeInferenceExpression<'this> {
             })
             .collect();
         if let Ok(value_types) = value_types_result {
-            self.compiled_expression = Some(
-                ExpressionCompilationContext::compile(&self.expression.expression(), &value_types)
-                    .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })?,
-            );
+            let compiled = ExpressionCompilationContext::compile(&self.expression.expression(), &value_types)
+                .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })?;
+            if let ExpressionValueType::List(_) = compiled.return_type() {
+                return Err(TypeInferenceError::ListTypesUnsupported {});
+            }
+            self.compiled_expression = Some(compiled);
         }
         Ok(())
     }
