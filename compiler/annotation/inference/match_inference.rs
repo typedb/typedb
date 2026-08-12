@@ -100,10 +100,12 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
             .into_iter()
             .map(|d| infer_types_in_negations_and_optionals_and_complete(ctx, d, type_inference_mode))
             .collect::<Result<Vec<_>, _>>()?;
-        nested_disjunction.disjunction_pattern.optionally_bound_in_pattern().for_each(|optional_var| {
+        nested_disjunction.disjunction_pattern.optionally_bound_in_pattern().try_for_each(|optional_var| {
             let optional_vertex = Vertex::Variable(optional_var);
-            let annotations = branches.iter().flat_map(|b| b.vertices[&optional_vertex].iter().copied()).collect();
+            let annotations = VertexAnnotations::try_union(branches.iter().map(|g| &vertices), &optional_vertex)?
+                .expect("Can't be None if there's atleast one branch");
             vertices.insert(optional_vertex, annotations);
+            Ok::<_, TypeInferenceError>(())
         });
         disjunctions.push(branches);
     }

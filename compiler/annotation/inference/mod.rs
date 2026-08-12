@@ -119,6 +119,23 @@ impl VertexAnnotations {
             true
         }
     }
+
+    pub(super) fn try_union<'a>(
+        mut sets_of_annotations: impl Iterator<Item = &'a VertexAnnotations>,
+        vertex: &Vertex<Variable>,
+    ) -> Result<Option<VertexTypeAnnotations>, TypeInferenceError> {
+        let mut union: Option<VertexTypeAnnotations> = None;
+        sets_of_annotations.try_for_each(|annotations| {
+            let branch_annotations = annotations.get(vertex).unwrap();
+            if let Some(inner) = &mut union {
+                inner.extend_to_union(branch_annotations)?;
+            } else {
+                union = Some(branch_annotations.clone())
+            }
+            Ok::<(), TypeInferenceError>(())
+        })?;
+        Ok(union)
+    }
 }
 
 impl Deref for VertexAnnotations {

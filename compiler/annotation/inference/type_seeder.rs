@@ -467,10 +467,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let vertex = Vertex::Variable(variable);
             #[allow(clippy::map_entry, reason = "false positive")]
             if !shared_vertex_annotations.contains_key(&vertex) {
-                if let Some(types_from_branches) =
-                    self.try_union_annotations_across_all_branches(nested_graph_disjunction, &vertex)?
-                {
-                    shared_vertex_annotations.insert(vertex, types_from_branches);
+                // You only update the parent if all the branches have. Else the parent variable remains untouched.
+                if nested_graph_disjunction.iter().all(|nested_graph| nested_graph.vertices.contains_key(&vertex)) {
+                    if let Some(types_from_branches) =
+                        VertexAnnotations::try_union(nested_graph_disjunction.iter().map(|b| &b.vertices), &vertex)?
+                    {
+                        shared_vertex_annotations.insert(vertex, types_from_branches);
+                    }
                 }
             }
         }
@@ -483,28 +486,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
         }
         Ok(something_changed)
-    }
-
-    fn try_union_annotations_across_all_branches(
-        &self,
-        disjunction: &[TypeInferenceGraph<'_>],
-        vertex: &Vertex<Variable>,
-    ) -> Result<Option<VertexTypeAnnotations>, TypeInferenceError> {
-        if disjunction.iter().all(|nested_graph| nested_graph.vertices.contains_key(vertex)) {
-            let mut union: Option<VertexTypeAnnotations> = None;
-            disjunction.iter().try_for_each(|nested_graph| {
-                let branch_annotations = nested_graph.vertices.get(vertex).unwrap();
-                if let Some(inner) = &mut union {
-                    inner.extend_to_union(branch_annotations)?;
-                } else {
-                    union = Some(branch_annotations.clone())
-                }
-                Ok::<(), TypeInferenceError>(())
-            })?;
-            Ok(union)
-        } else {
-            Ok(None)
-        }
     }
 
     // Phase 3: seed edges
