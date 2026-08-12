@@ -57,7 +57,8 @@ fn infer_types_impl<'conj>(
     type_inference_mode: TypeInferenceMode,
 ) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
     let graph = compute_type_inference_graph(ctx, conjunction, input_annotations, type_inference_mode)?;
-    infer_types_in_negations_and_optionals_and_complete(ctx, graph, type_inference_mode)
+    let full_graph = infer_types_in_negations_and_optionals_and_complete(ctx, graph, type_inference_mode)?;
+    Ok(full_graph)
 }
 
 fn infer_types_in_negations_and_optionals_and_complete<'conj>(
