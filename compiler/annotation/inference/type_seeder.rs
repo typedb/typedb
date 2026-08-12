@@ -442,8 +442,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for nested_graph in &mut nested.disjunction {
             let TypeInferenceGraph { conjunction: branch_pattern, vertices: nested_vertices, .. } = nested_graph;
             for vertex in NestedGraphDisj::branch_variables_affected_by_parent(&disjunction_pattern, &branch_pattern) {
-                debug_assert!(parent_vertices.get_mut(&vertex).is_some());
-                if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
+                if let Some(parent_annotations) = parent_vertices.get(&vertex) {
                     something_changed |= nested_vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
                 }
             }
@@ -456,12 +455,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Update parent from the shared variables
         for vertex in NestedGraphDisj::variables_affecting_parent(disjunction_pattern) {
-            let union = nested
-                .disjunction
-                .iter()
-                .flat_map(|nested_graph| nested_graph.vertices[&vertex].iter().copied())
-                .collect();
-            parent_vertices.add_or_intersect(&vertex, Cow::Owned(union));
+            // If they haven't been seeded yet (?), don't wrongly restrict the parent.
+            if nested.disjunction.iter().all(|branch| branch.vertices.contains_key(&vertex)) {
+                let union =
+                    nested.disjunction.iter().flat_map(|branch| branch.vertices[&vertex].iter().copied()).collect();
+                parent_vertices.add_or_intersect(&vertex, Cow::Owned(union));
+            }
         }
 
         Ok(something_changed)
