@@ -180,13 +180,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
         let nested_graphs = disjunction.conjunctions().iter().map(|conj| self.build_recursive(conj)).collect_vec();
-        let shared_variables = disjunction.visible_referenced_variables().collect();
-        NestedTypeInferenceGraphDisjunction {
-            disjunction_pattern: disjunction,
-            disjunction: nested_graphs,
-            shared_variables,
-            shared_vertex_annotations: VertexAnnotations::default(),
-        }
+        NestedTypeInferenceGraphDisjunction { disjunction_pattern: disjunction, disjunction: nested_graphs }
     }
 
     // Phase 1: Collect all type & function return annotations
@@ -441,50 +435,36 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         nested: &mut NestedTypeInferenceGraphDisjunction<'_>,
         parent_vertices: &mut VertexAnnotations,
     ) -> Result<bool, Box<ConceptReadError>> {
+        use NestedTypeInferenceGraphDisjunction as NestedGraphDisj;
         let mut something_changed = false;
-        // Apply annotations ot the parent on the nested
-        for &variable in nested.shared_variables.iter() {
-            let vertex = Vertex::Variable(variable);
-            if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
-                for nested_graph in &mut nested.disjunction {
-                    // Note: This adds a vertex annotation even if this branch does not reference the variable
-                    // This is needed to prevent one branch from narrowing the parent's annotations
-                    nested_graph.vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
+        // Apply annotations of the parent on the nested
+        let NestedGraphDisj { disjunction_pattern, disjunction: nested_graph_disjunction } = nested;
+        for nested_graph in &mut *nested_graph_disjunction {
+            let TypeInferenceGraph { conjunction: branch_pattern, vertices: nested_vertices, .. } = nested_graph;
+            for vertex in NestedGraphDisj::branch_variables_affected_by_parent(&disjunction_pattern, &branch_pattern) {
+                debug_assert!(parent_vertices.get_mut(&vertex).is_some());
+                if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
+                    something_changed |= nested_vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
                 }
             }
         }
 
         // Propagate it within the child & recursively into nested
-        for nested_graph in &mut nested.disjunction {
+        for nested_graph in &mut *nested_graph_disjunction {
             something_changed |= self.propagate_vertex_annotations(nested_graph)?;
         }
 
-        // Update shared variables of the disjunction
-        let NestedTypeInferenceGraphDisjunction {
-            disjunction_pattern: _,
-            shared_vertex_annotations,
-            disjunction: nested_graph_disjunction,
-            shared_variables,
-        } = nested;
-        for &variable in shared_variables.iter() {
-            let vertex = Vertex::Variable(variable);
+        // Update parent from the shared variables
+        for vertex in NestedGraphDisj::variables_affecting_parent(disjunction_pattern) {
+            // TODO: Can this #[allow(clippy::map_entry, reason = "false positive")] go?
             #[allow(clippy::map_entry, reason = "false positive")]
-            if !shared_vertex_annotations.contains_key(&vertex) {
-                if let Some(types_from_branches) =
-                    self.try_union_annotations_across_all_branches(nested_graph_disjunction, &vertex)
-                {
-                    shared_vertex_annotations.insert(vertex, types_from_branches);
-                }
+            if let Some(types_from_branches) =
+                self.try_union_annotations_across_all_branches(&nested_graph_disjunction, &vertex)
+            {
+                parent_vertices.add_or_intersect(&vertex, Cow::Owned(types_from_branches));
             }
         }
 
-        // Update parent from the shared variables
-        for (vertex, types) in shared_vertex_annotations.iter() {
-            if !parent_vertices.contains_key(vertex) {
-                parent_vertices.insert(vertex.clone(), types.clone());
-                something_changed = true;
-            }
-        }
         Ok(something_changed)
     }
 

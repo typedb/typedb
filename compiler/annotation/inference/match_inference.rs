@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -63,7 +63,7 @@ fn infer_types_impl<'conj>(
 
 fn infer_types_in_negations_and_optionals_and_complete<'conj>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
-    mut graph: TypeInferenceGraph<'conj>,
+    graph: TypeInferenceGraph<'conj>,
     type_inference_mode: TypeInferenceMode,
 ) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
     // Add the negations & optionals to TypeInferenceGraph to get FullTypeInferenceGraph.
@@ -375,42 +375,58 @@ impl<'this> TypeInferenceEdge<'this> {
 pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
     pub(crate) disjunction_pattern: &'this Disjunction,
     pub(crate) disjunction: Vec<TypeInferenceGraph<'this>>,
-    pub(crate) shared_variables: BTreeSet<Variable>,
-    pub(crate) shared_vertex_annotations: VertexAnnotations,
 }
 
 impl NestedTypeInferenceGraphDisjunction<'_> {
     fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) {
-        for nested_graph in &mut self.disjunction {
-            for (vertex, vertex_types) in &mut nested_graph.vertices {
-                if let Some(parent_vertex_types) = parent_vertices.get(vertex) {
-                    vertex_types.retain(|type_| parent_vertex_types.contains(type_))
-                }
+        let Self { disjunction, disjunction_pattern } = self;
+        for nested_graph in disjunction {
+            let TypeInferenceGraph { conjunction, vertices: nested_vertices, .. } = nested_graph;
+            for vertex in Self::branch_variables_affected_by_parent(disjunction_pattern, conjunction) {
+                debug_assert!(parent_vertices.contains_key(&vertex) && nested_vertices.contains_key(&vertex));
+                nested_vertices.get_mut(&vertex).unwrap().retain(|type_| parent_vertices[&vertex].contains(type_))
             }
             nested_graph.prune_constraints_from_vertices();
         }
     }
 
     fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
+        debug_assert!(Self::variables_affecting_parent(self.disjunction_pattern).all(|vertex| {
+            self.disjunction.iter().all(|branch| branch.vertices.contains_key(&vertex))
+                && parent_vertices.contains_key(&vertex)
+        }));
+
         let mut is_modified = false;
         for nested_graph in &mut self.disjunction {
             is_modified |= nested_graph.prune_vertices_from_constraints();
         }
 
-        for (parent_vertex, parent_vertex_types) in parent_vertices {
+        for vertex in Self::variables_affecting_parent(self.disjunction_pattern) {
+            let parent_vertex_types = parent_vertices.get_mut(&vertex).unwrap();
             let size_before = parent_vertex_types.len();
             parent_vertex_types.retain(|type_| {
                 self.disjunction.iter().any(|nested_graph| {
-                    nested_graph
-                        .vertices
-                        .get(parent_vertex)
-                        .map(|nested_types| nested_types.contains(type_))
-                        .unwrap_or(true)
+                    nested_graph.vertices.get(&vertex).map(|nested_types| nested_types.contains(type_)).unwrap_or(true)
                 })
             });
             is_modified |= size_before != parent_vertex_types.len();
         }
         is_modified
+    }
+
+    pub(crate) fn variables_affecting_parent(disjunction: &Disjunction) -> impl Iterator<Item = Vertex<Variable>> {
+        // Are those in every branch. But simpler:
+        disjunction.always_bound_by_pattern().map(Vertex::Variable)
+    }
+
+    pub(crate) fn branch_variables_affected_by_parent(
+        disjunction: &Disjunction,
+        branch: &Conjunction,
+    ) -> impl Iterator<Item = Vertex<Variable>> {
+        disjunction
+            .visible_referenced_variables()
+            .filter(|variable| branch.is_variable_visible_referenced(variable))
+            .map(Vertex::Variable)
     }
 }
 
@@ -1142,8 +1158,6 @@ pub mod tests {
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
                 disjunction_pattern: &disj,
                 disjunction: expected_nested_graphs,
-                shared_variables: BTreeSet::new(),
-                shared_vertex_annotations: VertexAnnotations::default(),
             }],
         };
 

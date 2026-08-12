@@ -72,18 +72,25 @@ pub trait Pattern {
         self.visible_referenced_variables().filter(Variable::is_named)
     }
 
+    fn is_variable_visible_referenced(&self, variable: &Variable) -> bool;
     // A referenced variable is "visible" if it's not local to some subpattern.
     // includes all variables from constraints and subpatterns. Does not include stage inputs if unused.
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
+    fn always_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+    fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_;
 }
 
 macro_rules! impl_pattern_from_pattern_variables {
     ($pattern:ty) => {
         impl Pattern for $pattern {
+            fn is_variable_visible_referenced(&self, variable: &Variable) -> bool {
+                self.pattern_variables.is_variable_visible_referenced(variable)
+            }
+
             fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
                 self.pattern_variables.visible_referenced_variables()
             }
@@ -92,8 +99,12 @@ macro_rules! impl_pattern_from_pattern_variables {
                 self.pattern_variables.required_inputs()
             }
 
-            fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-                self.pattern_variables.optionally_bound_in_pattern()
+            fn always_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.always_bound_by_pattern()
+            }
+
+            fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.optionally_bound_by_pattern()
             }
         }
     };
@@ -385,7 +396,7 @@ impl fmt::Display for ValueType {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum BindingMode {
+pub(crate) enum BindingMode {
     RequirePrebound,
     AlwaysBinding,
     LocallyBindingInChild,
@@ -395,19 +406,19 @@ pub enum BindingMode {
 }
 
 impl BindingMode {
-    pub fn is_require_prebound(&self) -> bool {
+    pub(crate) fn is_require_prebound(&self) -> bool {
         *self == BindingMode::RequirePrebound
     }
 
-    pub fn is_always_binding(&self) -> bool {
+    pub(crate) fn is_always_binding(&self) -> bool {
         *self == BindingMode::AlwaysBinding
     }
 
-    pub fn is_locally_binding_in_child(&self) -> bool {
+    pub(crate) fn is_locally_binding_in_child(&self) -> bool {
         *self == BindingMode::LocallyBindingInChild
     }
 
-    pub fn is_optionally_binding(&self) -> bool {
+    pub(crate) fn is_optionally_binding(&self) -> bool {
         *self == BindingMode::OptionallyBinding
     }
 }
@@ -505,6 +516,10 @@ impl PatternVariables {
         )
     }
 
+    pub(crate) fn is_variable_visible_referenced(&self, variable: &Variable) -> bool {
+        self.0.contains_key(variable)
+    }
+
     pub(crate) fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.keys().copied()
     }
@@ -513,7 +528,11 @@ impl PatternVariables {
         self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::RequiredInput).then_some(*v))
     }
 
-    pub(crate) fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub(crate) fn always_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::Binding).then_some(*v))
+    }
+
+    pub(crate) fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::OptionallyBinding).then_some(*v))
     }
 }
