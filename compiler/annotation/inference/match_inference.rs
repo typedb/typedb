@@ -1127,6 +1127,7 @@ pub mod tests {
                 ),
             ],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
+                disjunction_pattern: &disj,
                 disjunction: expected_nested_graphs,
                 shared_variables: BTreeSet::new(),
                 shared_vertex_annotations: VertexAnnotations::default(),
