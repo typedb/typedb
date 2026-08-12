@@ -66,6 +66,8 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
     mut graph: TypeInferenceGraph<'conj>,
     type_inference_mode: TypeInferenceMode,
 ) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
+    // Add the negations & optionals to TypeInferenceGraph to get FullTypeInferenceGraph.
+    // Copy over the optional variable annotations from optionals & disjunctions.
     let TypeInferenceGraph { conjunction, mut vertices, edges, nested_disjunctions } = graph;
     let mut negations = Vec::new();
     let mut optionals = Vec::new();
