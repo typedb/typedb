@@ -329,6 +329,14 @@ fn validate_expressions_assignments_are_unique_impl(
         .filter_map(|constraint| constraint.as_expression_binding())
         .flat_map(|expr| expr.ids_assigned().map(|id| (id, expr.source_span())))
         .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
+
+    conjunction
+        .constraints()
+        .iter()
+        .filter_map(|constraint| constraint.as_function_call_binding())
+        .flat_map(|func_call| func_call.ids_assigned().map(|id| (id, func_call.source_span())))
+        .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
+
     for nested in conjunction.nested_patterns() {
         match nested {
             NestedPattern::Optional(optional) => {
