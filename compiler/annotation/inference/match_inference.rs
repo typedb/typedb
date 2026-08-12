@@ -12,7 +12,7 @@ use std::{
 use answer::{Type as TypeAnnotation, variable::Variable};
 use ir::{
     pattern::{
-        Pattern, Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint,
+        Pattern, Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint, disjunction::Disjunction,
         nested_pattern::NestedPattern,
     },
     pipeline::{
@@ -39,25 +39,14 @@ pub fn infer_types_for_block(
     block: &Block,
     type_inference_mode: TypeInferenceMode,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
-    let mut flattened_graphs = HashMap::new();
     let input_annotations = previous_stage_annotations
         .concepts
         .iter()
         .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
         .collect();
-    infer_types_impl(ctx, block.conjunction(), &input_annotations, type_inference_mode, &mut flattened_graphs)?;
-
-    let type_annotations_by_scope = flattened_graphs
-        .into_iter()
-        .map(|(scope_id, flattened_graph)| (scope_id, flattened_graph.into_type_annotations()))
-        .collect();
-    debug_assert!(all_vertex_annotations_available(
-        block.block_context(),
-        ctx.variable_registry,
-        block.conjunction(),
-        &type_annotations_by_scope
-    ));
-
+    let root_graph = infer_types_impl(ctx, block.conjunction(), &input_annotations, type_inference_mode)?;
+    let mut type_annotations_by_scope = HashMap::new();
+    root_graph.into_type_annotations_by_scope(&mut type_annotations_by_scope);
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
@@ -66,47 +55,52 @@ fn infer_types_impl<'conj>(
     conjunction: &'conj Conjunction,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
     type_inference_mode: TypeInferenceMode,
-    flattened_graphs: &mut HashMap<ScopeId, FlattenedTypeInferenceGraph<'conj>>,
-) -> Result<(), TypeInferenceError> {
+) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
     let graph = compute_type_inference_graph(ctx, conjunction, input_annotations, type_inference_mode)?;
-    infer_types_in_negations_and_optionals_then_flatten(ctx, graph, type_inference_mode, flattened_graphs)?;
-    Ok(())
+    infer_types_in_negations_and_optionals_and_complete(ctx, graph, type_inference_mode)
 }
 
-fn infer_types_in_negations_and_optionals_then_flatten<'conj>(
+fn infer_types_in_negations_and_optionals_and_complete<'conj>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     mut graph: TypeInferenceGraph<'conj>,
     type_inference_mode: TypeInferenceMode,
-    flattened_graphs: &mut HashMap<ScopeId, FlattenedTypeInferenceGraph<'conj>>,
-) -> Result<(), TypeInferenceError> {
-    for nested in graph.conjunction.nested_patterns() {
+) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
+    let TypeInferenceGraph { conjunction, mut vertices, edges, nested_disjunctions } = graph;
+    let mut negations = Vec::new();
+    let mut optionals = Vec::new();
+    for nested in conjunction.nested_patterns() {
         match nested {
             NestedPattern::Disjunction(_) => {} // Done above
             NestedPattern::Negation(negation) => {
-                infer_types_impl(ctx, negation.conjunction(), &graph.vertices, type_inference_mode, flattened_graphs)?;
+                // No variables can escape a negation => Nothing to update
+                negations.push(infer_types_impl(ctx, negation.conjunction(), &vertices, type_inference_mode)?);
             }
             NestedPattern::Optional(optional) => {
-                infer_types_impl(ctx, optional.conjunction(), &graph.vertices, type_inference_mode, flattened_graphs)?;
-                let optional_root_annotations =
-                    &flattened_graphs.get(&optional.conjunction().scope_id()).unwrap().vertices;
-                let required_inputs = optional.required_inputs().collect::<HashSet<_>>();
-                optional_root_annotations
-                    .iter()
-                    .filter(|(vertex, _)| vertex.as_variable().map_or(false, |v| !required_inputs.contains(&v)))
-                    .for_each(|(var, annotations)| {
-                        debug_assert!(!graph.vertices.annotations.contains_key(var));
-                        graph.vertices.annotations.insert(var.clone(), annotations.clone());
-                    });
+                let optional_graph = infer_types_impl(ctx, optional.conjunction(), &vertices, type_inference_mode)?;
+                optional.optionally_bound_in_pattern().for_each(|optional_var| {
+                    let optional_vertex = Vertex::Variable(optional_var);
+                    let annotations = optional_graph.vertices[&optional_vertex].clone();
+                    vertices.insert(optional_vertex, annotations);
+                });
+                optionals.push(optional_graph)
             }
         }
     }
-    let (flattened_graph, disjunctions) = graph.flatten_graph();
-    disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction.into_iter()).try_for_each(|nested| {
-        infer_types_in_negations_and_optionals_then_flatten(ctx, nested, type_inference_mode, flattened_graphs)?;
-        Ok(())
-    })?;
-    flattened_graphs.insert(flattened_graph.conjunction.scope_id(), flattened_graph);
-    Ok(())
+    let mut disjunctions = Vec::new();
+    for nested_disjunction in nested_disjunctions {
+        let branches = nested_disjunction
+            .disjunction
+            .into_iter()
+            .map(|d| infer_types_in_negations_and_optionals_and_complete(ctx, d, type_inference_mode))
+            .collect::<Result<Vec<_>, _>>()?;
+        nested_disjunction.disjunction_pattern.optionally_bound_in_pattern().for_each(|optional_var| {
+            let optional_vertex = Vertex::Variable(optional_var);
+            let annotations = branches.iter().flat_map(|b| b.vertices[&optional_vertex].iter().copied()).collect();
+            vertices.insert(optional_vertex, annotations);
+        });
+        disjunctions.push(branches);
+    }
+    Ok(FullTypeInferenceGraph { conjunction, vertices, edges, disjunctions, optionals, negations })
 }
 
 fn all_vertex_annotations_available(
@@ -223,13 +217,6 @@ pub(crate) struct TypeInferenceGraph<'this> {
 }
 
 impl<'this> TypeInferenceGraph<'this> {
-    pub(crate) fn flatten_graph(
-        self,
-    ) -> (FlattenedTypeInferenceGraph<'this>, Vec<NestedTypeInferenceGraphDisjunction<'this>>) {
-        let Self { conjunction, vertices, edges, nested_disjunctions } = self;
-        (FlattenedTypeInferenceGraph { conjunction, vertices, edges }, nested_disjunctions)
-    }
-
     fn prune_constraints_from_vertices(&mut self) {
         for edge in &mut self.edges {
             edge.prune_self_from_vertices(&self.vertices)
@@ -368,6 +355,7 @@ impl<'this> TypeInferenceEdge<'this> {
 
 #[derive(Debug)]
 pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
+    pub(crate) disjunction_pattern: &'this Disjunction,
     pub(crate) disjunction: Vec<TypeInferenceGraph<'this>>,
     pub(crate) shared_variables: BTreeSet<Variable>,
     pub(crate) shared_vertex_annotations: VertexAnnotations,
@@ -409,15 +397,29 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
 }
 
 #[derive(Debug)]
-struct FlattenedTypeInferenceGraph<'this> {
+struct FullTypeInferenceGraph<'this> {
     conjunction: &'this Conjunction,
     vertices: VertexAnnotations,
     edges: Vec<TypeInferenceEdge<'this>>,
+    disjunctions: Vec<Vec<FullTypeInferenceGraph<'this>>>,
+    optionals: Vec<FullTypeInferenceGraph<'this>>,
+    negations: Vec<FullTypeInferenceGraph<'this>>,
 }
 
-impl FlattenedTypeInferenceGraph<'_> {
-    fn into_type_annotations(self) -> TypeAnnotations {
-        let Self { vertices, edges, .. } = self;
+impl FullTypeInferenceGraph<'_> {
+    fn into_type_annotations_by_scope(self, by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
+        let Self { conjunction, vertices, edges, disjunctions, negations, optionals } = self;
+        let type_annotations = Self::build_type_annotations(vertices, edges);
+        by_scope.insert(conjunction.scope_id(), type_annotations);
+        let all_nested = disjunctions
+            .into_iter()
+            .flat_map(|disjunction| disjunction.into_iter())
+            .chain(negations.into_iter())
+            .chain(optionals.into_iter());
+        all_nested.for_each(|nested| nested.into_type_annotations_by_scope(by_scope));
+    }
+
+    fn build_type_annotations(vertices: VertexAnnotations, edges: Vec<TypeInferenceEdge<'_>>) -> TypeAnnotations {
         let mut constraint_annotations = HashMap::new();
         let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
@@ -445,7 +447,6 @@ impl FlattenedTypeInferenceGraph<'_> {
             .into_iter()
             .map(|(variable, types)| (variable.into(), Arc::new(types)))
             .collect::<BTreeMap<_, _>>();
-
         TypeAnnotations::new(vertex_annotations, constraint_annotations)
     }
 }
