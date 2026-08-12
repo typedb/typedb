@@ -438,8 +438,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         use NestedTypeInferenceGraphDisjunction as NestedGraphDisj;
         let mut something_changed = false;
         // Apply annotations of the parent on the nested
-        let NestedGraphDisj { disjunction_pattern, disjunction: nested_graph_disjunction } = nested;
-        for nested_graph in &mut *nested_graph_disjunction {
+        let disjunction_pattern = nested.disjunction_pattern;
+        for nested_graph in &mut nested.disjunction {
             let TypeInferenceGraph { conjunction: branch_pattern, vertices: nested_vertices, .. } = nested_graph;
             for vertex in NestedGraphDisj::branch_variables_affected_by_parent(&disjunction_pattern, &branch_pattern) {
                 debug_assert!(parent_vertices.get_mut(&vertex).is_some());
@@ -450,39 +450,21 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
 
         // Propagate it within the child & recursively into nested
-        for nested_graph in &mut *nested_graph_disjunction {
+        for nested_graph in &mut nested.disjunction {
             something_changed |= self.propagate_vertex_annotations(nested_graph)?;
         }
 
         // Update parent from the shared variables
         for vertex in NestedGraphDisj::variables_affecting_parent(disjunction_pattern) {
-            // TODO: Can this #[allow(clippy::map_entry, reason = "false positive")] go?
-            #[allow(clippy::map_entry, reason = "false positive")]
-            if let Some(types_from_branches) =
-                self.try_union_annotations_across_all_branches(&nested_graph_disjunction, &vertex)
-            {
-                parent_vertices.add_or_intersect(&vertex, Cow::Owned(types_from_branches));
-            }
+            let union = nested
+                .disjunction
+                .iter()
+                .flat_map(|nested_graph| nested_graph.vertices[&vertex].iter().copied())
+                .collect();
+            parent_vertices.add_or_intersect(&vertex, Cow::Owned(union));
         }
 
         Ok(something_changed)
-    }
-
-    fn try_union_annotations_across_all_branches(
-        &self,
-        disjunction: &[TypeInferenceGraph<'_>],
-        vertex: &Vertex<Variable>,
-    ) -> Option<BTreeSet<TypeAnnotation>> {
-        if disjunction.iter().all(|nested_graph| nested_graph.vertices.contains_key(vertex)) {
-            Some(
-                disjunction
-                    .iter()
-                    .flat_map(|nested_graph| nested_graph.vertices.get(vertex).unwrap().iter().cloned())
-                    .collect(),
-            )
-        } else {
-            None
-        }
     }
 
     // Phase 3: seed edges
