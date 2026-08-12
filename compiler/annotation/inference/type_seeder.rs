@@ -1663,7 +1663,7 @@ pub mod tests {
     use crate::annotation::{
         function::EmptyAnnotatedFunctionSignatures,
         inference::{
-            match_inference::{TypeInferenceGraph, VertexAnnotations},
+            match_inference::{TypeInferenceGraph, VertexAnnotations, tests::expected_edge},
             type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
         },
         tests::{
@@ -1671,7 +1671,6 @@ pub mod tests {
             schema_consts::{LABEL_CAT, LABEL_NAME, setup_types},
             setup_storage,
         },
-        type_inference::tests::expected_edge,
     };
 
     #[test]
