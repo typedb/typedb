@@ -13,7 +13,7 @@ use answer::{Type as TypeAnnotation, variable::Variable};
 use ir::{
     pattern::{
         Pattern, Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint, disjunction::Disjunction,
-        nested_pattern::NestedPattern,
+        nested_pattern::NestedPattern, variable_category::VariableCategory,
     },
     pipeline::{
         VariableRegistry,
@@ -82,6 +82,14 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
                 let optional_graph = infer_types_impl(ctx, optional.conjunction(), &vertices, type_inference_mode)?;
                 optional.optionally_bound_in_pattern().for_each(|optional_var| {
                     let optional_vertex = Vertex::Variable(optional_var);
+                    debug_assert!(
+                        optional_graph.vertices.contains_key(&optional_vertex)
+                            || ctx.variable_registry.get_variable_category(optional_var)
+                                == Some(VariableCategory::Value)
+                    );
+                    if ctx.variable_registry.get_variable_category(optional_var) == Some(VariableCategory::Value) {
+                        return;
+                    }
                     let annotations = optional_graph.vertices[&optional_vertex].clone();
                     vertices.insert(optional_vertex, annotations);
                 });
@@ -98,6 +106,13 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
             .collect::<Result<Vec<_>, _>>()?;
         nested_disjunction.disjunction_pattern.optionally_bound_in_pattern().for_each(|optional_var| {
             let optional_vertex = Vertex::Variable(optional_var);
+            debug_assert!(
+                branches.iter().all(|b| b.vertices.contains_key(&optional_vertex))
+                    || ctx.variable_registry.get_variable_category(optional_var) == Some(VariableCategory::Value)
+            );
+            if ctx.variable_registry.get_variable_category(optional_var) == Some(VariableCategory::Value) {
+                return;
+            }
             let annotations = branches.iter().flat_map(|b| b.vertices[&optional_vertex].iter().copied()).collect();
             vertices.insert(optional_vertex, annotations);
         });
