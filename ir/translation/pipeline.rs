@@ -11,7 +11,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::UnimplementedFeature;
 use structural_equality::StructuralEquality;
 use typeql::{
     common::{Span, Spanned},

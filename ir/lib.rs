@@ -344,8 +344,8 @@ typedb_error! {
             source_span: Option<Span>,
         ),
         UnimplementedExpressionsInWrite(
-            254,
-            "Expressions are not supported in write stages. Please move it to a preceding match stage.",
+            253,
+            "Expressions are currently not supported in write stages. Please move it to a preceding match stage.",
             source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(
