@@ -20,7 +20,12 @@ use typeql::{
 
 use crate::{
     RepresentationError,
-    pattern::Pattern,
+    pattern::{
+        Pattern,
+        conjunction::Conjunction,
+        constraint::{Constraint, ExpressionBinding},
+        nested_pattern::NestedPattern,
+    },
     pipeline::{
         ParameterRegistry, VariableRegistry,
         block::Block,
@@ -209,7 +214,29 @@ pub(crate) fn translate_pipeline_stages(
     for (i, stage) in stages.iter().enumerate() {
         let translated = translate_stage(translation_context, value_parameters, all_function_signatures, stage)?;
         match translated {
-            TranslatedPipelinePart::Stage(stage) => translated_stages.push(stage),
+            TranslatedPipelinePart::Stage(stage) => {
+                match &stage {
+                    TranslatedStage::Insert { block, .. }
+                    | TranslatedStage::Update { block, .. }
+                    | TranslatedStage::Put { block, .. }
+                    | TranslatedStage::Delete { block, .. } => {
+                        if let Some(e) = find_expressions_recursive(block.conjunction()) {
+                            return Err(Box::new(RepresentationError::UnimplementedExpressionsInWrite {
+                                source_span: e.source_span(),
+                            }));
+                        }
+                    }
+                    TranslatedStage::Match { .. }
+                    | TranslatedStage::Select(_)
+                    | TranslatedStage::Sort(_)
+                    | TranslatedStage::Offset(_)
+                    | TranslatedStage::Limit(_)
+                    | TranslatedStage::Require(_)
+                    | TranslatedStage::Reduce(_)
+                    | TranslatedStage::Distinct(_) => {}
+                }
+                translated_stages.push(stage)
+            }
             TranslatedPipelinePart::Given(given) => {
                 if i != 0 {
                     return Err(Box::new(RepresentationError::NonInitialGiven { source_span: stage.span() }));
@@ -328,4 +355,19 @@ enum TranslatedPipelinePart {
     Given(TranslatedGiven),
     Stage(TranslatedStage),
     Fetch(FetchObject),
+}
+
+fn find_expressions_recursive(conjunction: &Conjunction) -> Option<&ExpressionBinding<Variable>> {
+    if let Some(expr) = conjunction.constraints().iter().find_map(|c| match c {
+        Constraint::ExpressionBinding(expr) => Some(expr),
+        _ => None,
+    }) {
+        return Some(expr);
+    }
+
+    conjunction.nested_patterns().iter().find_map(|nested| match nested {
+        NestedPattern::Disjunction(d) => d.conjunctions().iter().find_map(|c| find_expressions_recursive(c)),
+        NestedPattern::Optional(o) => find_expressions_recursive(o.conjunction()),
+        NestedPattern::Negation(n) => find_expressions_recursive(n.conjunction()),
+    })
 }

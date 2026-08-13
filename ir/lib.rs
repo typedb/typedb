@@ -348,6 +348,11 @@ typedb_error! {
             offset: String,
             source_span: Option<Span>,
         ),
+        UnimplementedExpressionsInWrite(
+            253,
+            "Expressions are currently not supported in write stages. Please move it to a preceding match stage.",
+            source_span: Option<Span>,
+        ),
         UnimplementedLanguageFeature(
             254,
             "The language feature is not yet implemented: {feature}.",
