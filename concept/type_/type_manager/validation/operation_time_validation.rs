@@ -649,8 +649,8 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
             );
             debug_assert!(
                 constraints.iter().all(|constraint| match constraint.scope() {
-                    ConstraintScope::SingleInstanceOfType | ConstraintScope::SingleInstanceOfTypeOrSubtype => true,
-                    ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
+                    | ConstraintScope::SingleInstanceOfType | ConstraintScope::SingleInstanceOfTypeOrSubtype => true,
+                    | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
                     | ConstraintScope::AllInstancesOfTypeOrSubtypes => false,
                 }),
                 concat!(
@@ -939,7 +939,7 @@ impl OperationTimeValidation {
             ),
             (Some(_), None, None) => Ok(()),
             (Some(_), Some(_), None) => Ok(()),
-            (None, Some(old_value_type), Some(new_value_type))
+            | (None, Some(old_value_type), Some(new_value_type))
             | (Some(old_value_type), None, Some(new_value_type))
             | (Some(old_value_type), Some(_), Some(new_value_type)) => {
                 if old_value_type == new_value_type {
@@ -2522,7 +2522,7 @@ impl OperationTimeValidation {
                     Self::validate_values_arguments(values.clone(), value_type.clone())?
                 }
 
-                AttributeTypeAnnotation::Abstract(_)
+                | AttributeTypeAnnotation::Abstract(_)
                 | AttributeTypeAnnotation::Independent(_)
                 | AttributeTypeAnnotation::Doc(_)
                 | AttributeTypeAnnotation::Meta(_) => (),
@@ -2620,7 +2620,7 @@ impl OperationTimeValidation {
                     )?;
                     Self::validate_values_arguments(values.clone(), value_type.clone())?
                 }
-                OwnsAnnotation::Distinct(_)
+                | OwnsAnnotation::Distinct(_)
                 | OwnsAnnotation::Cardinality(_)
                 | OwnsAnnotation::Doc(_)
                 | OwnsAnnotation::Meta(_) => (),
@@ -3080,7 +3080,7 @@ impl OperationTimeValidation {
             ConstraintScope::SingleInstanceOfType => {
                 return Ok(constraint.source() == capability);
             }
-            ConstraintScope::SingleInstanceOfTypeOrSubtype
+            | ConstraintScope::SingleInstanceOfTypeOrSubtype
             | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
             | ConstraintScope::AllInstancesOfTypeOrSubtypes => (),
         }

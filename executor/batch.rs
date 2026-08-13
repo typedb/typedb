@@ -362,7 +362,7 @@ fn get_value<'a, T: ReadableSnapshot>(
             unreachable!("Should have been caught earlier")
         }
 
-        VariableValue::ThingList(_) => unimplemented_feature!(Lists),
-        VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+        | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
+        | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
     }
 }

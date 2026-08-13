@@ -26,16 +26,20 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct DatabaseImportManager {
     directory: PathBuf,
-    recovery: ImportRecovery,
+    import_ownership: ImportOwnership,
     databases: RwLock<HashMap<String, Arc<Database<WALClient>>>>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ImportRecovery {
-    Discard,
-    Resume,
+pub enum ImportOwnership {
+    /// This process is the only one importing: nobody else can be holding an unfinished import,
+    /// so it may discard and reclaim them freely.
+    Exclusive,
+    /// Other processes drive the same imports: an unfinished import may still be required, so this
+    /// process may neither discard nor reclaim them on its own.
+    Shared,
 }
 
 struct RecoveredImports {
@@ -53,21 +57,21 @@ impl DatabaseImportManager {
 
     pub(crate) fn new(
         data_directory: &Path,
-        recovery: ImportRecovery,
+        import_ownership: ImportOwnership,
         diagnostics_manager: Arc<DiagnosticsManager>,
         rocks_resources: Arc<RocksResources>,
     ) -> Result<Self, DatabaseOpenError> {
         let directory = data_directory.join(Self::DIRECTORY_NAME);
-        let recovered = match recovery {
-            ImportRecovery::Discard => {
+        let recovered = match import_ownership {
+            ImportOwnership::Exclusive => {
                 Self::cleanup_directory(&directory)?;
                 RecoveredImports::none()
             }
-            ImportRecovery::Resume => Self::recover_directory(&directory, &diagnostics_manager, &rocks_resources)?,
+            ImportOwnership::Shared => Self::recover_directory(&directory, &diagnostics_manager, &rocks_resources)?,
         };
         Ok(Self {
             directory,
-            recovery,
+            import_ownership,
             databases: RwLock::new(recovered.databases),
             diagnostics_manager,
             rocks_resources,
@@ -82,7 +86,7 @@ impl DatabaseImportManager {
         self.databases.read().unwrap().keys().cloned().collect()
     }
 
-    pub(crate) fn is_lost(&self, name: &str) -> bool {
+    pub(crate) fn is_abandoned(&self, name: &str) -> bool {
         !self.databases.read().unwrap().contains_key(name) && self.exists(name)
     }
 
@@ -90,15 +94,12 @@ impl DatabaseImportManager {
         if self.databases.read().map_err(|_| DatabaseCreateError::ReadAccessDenied {})?.contains_key(name) {
             return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
         }
-        if self.exists(name) {
-            match self.recovery {
-                // Under `Resume`, an unregistered directory is the trace of an unconcluded import
-                // this server could not reopen — other servers may hold it live, so the name must
-                // be rejected exactly as they reject it. Cancel or a fresh prepare clears it.
-                ImportRecovery::Resume => {
+        if self.is_abandoned(name) {
+            match self.import_ownership {
+                ImportOwnership::Shared => {
                     return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
                 }
-                ImportRecovery::Discard => {
+                ImportOwnership::Exclusive => {
                     let map_fs_err = |source| DatabaseCreateError::DirectoryWrite {
                         name: name.to_string(),
                         source: Arc::new(source),

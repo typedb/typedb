@@ -18,7 +18,7 @@ use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
 use tracing::{Level, debug, event, warn};
 
-pub use crate::database_import_manager::ImportRecovery;
+pub use crate::database_import_manager::ImportOwnership;
 use crate::{
     Database, DatabaseDeleteError, DatabaseOpenError, database::DatabaseCreateError,
     database_import_manager::DatabaseImportManager,
@@ -43,13 +43,13 @@ impl DatabaseManager {
         diagnostics_manager: Arc<DiagnosticsManager>,
         rocksdb_cache_size: ByteSize,
         rocksdb_write_buffers_limit: ByteSize,
-        import_recovery: ImportRecovery,
+        import_ownership: ImportOwnership,
     ) -> Result<Arc<Self>, DatabaseOpenError> {
         let data_directory = data_directory.as_ref().to_owned();
         let rocks_resources = Arc::new(RocksResources::new(rocksdb_cache_size, rocksdb_write_buffers_limit));
         let imports = DatabaseImportManager::new(
             &data_directory,
-            import_recovery,
+            import_ownership,
             diagnostics_manager.clone(),
             rocks_resources.clone(),
         )?;
@@ -165,8 +165,8 @@ impl DatabaseManager {
         self.imports.names()
     }
 
-    pub fn is_lost_import(&self, name: &str) -> bool {
-        self.imports.is_lost(name)
+    pub fn is_abandoned_import(&self, name: &str) -> bool {
+        self.imports.is_abandoned(name)
     }
 
     pub fn import_directory(&self) -> &Path {

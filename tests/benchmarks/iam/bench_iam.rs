@@ -8,7 +8,7 @@ use std::{fs::File, io::Read, path::Path, sync::Arc, time::Instant};
 
 use database::{
     Database,
-    database_manager::{DatabaseManager, ImportRecovery},
+    database_manager::{DatabaseManager, ImportOwnership},
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
@@ -118,7 +118,7 @@ fn setup() -> Arc<Database<WALClient>> {
             Arc::new(DiagnosticsManager::new_disabled()),
             ByteSize::mb(64),
             ByteSize::mb(64),
-            ImportRecovery::Discard,
+            ImportOwnership::Exclusive,
         )
         .unwrap();
         dbm.put_database(DB_NAME).unwrap();
@@ -136,7 +136,7 @@ fn setup() -> Arc<Database<WALClient>> {
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
         ByteSize::mb(64),
-        ImportRecovery::Discard,
+        ImportOwnership::Exclusive,
     )
     .unwrap();
     dbm.put_database(DB_NAME).unwrap();

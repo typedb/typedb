@@ -179,7 +179,7 @@ pub(crate) fn translate_function_block(
             .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     debug_assert!(_translated_given.is_none());
     let has_illegal_stages = stages.iter().any(|stage| match stage {
-        TranslatedStage::Insert { .. }
+        | TranslatedStage::Insert { .. }
         | TranslatedStage::Update { .. }
         | TranslatedStage::Put { .. }
         | TranslatedStage::Delete { .. } => true,

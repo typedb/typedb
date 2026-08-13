@@ -56,7 +56,7 @@ impl ValueType {
 
     pub fn keyable(&self) -> bool {
         match self {
-            ValueType::Boolean
+            | ValueType::Boolean
             | ValueType::Integer
             | ValueType::Decimal
             | ValueType::Date
@@ -65,7 +65,7 @@ impl ValueType {
             | ValueType::Duration
             | ValueType::String => true,
 
-            ValueType::Double | ValueType::Struct(_) => false,
+            | ValueType::Double | ValueType::Struct(_) => false,
         }
     }
 

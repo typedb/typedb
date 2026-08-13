@@ -44,7 +44,7 @@ fn create_database(databases_path: &TempDir) -> Arc<Database<WALClient>> {
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
         ByteSize::mb(64),
-        database::database_manager::ImportRecovery::Discard,
+        database::database_manager::ImportOwnership::Exclusive,
     )
     .expect("Expected database manager");
     database_manager.put_database(DB_NAME).expect("Expected database creation");

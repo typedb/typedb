@@ -18,8 +18,7 @@ use options::TransactionOptions;
 use resource::{constants::common::SECONDS_IN_DAY, distribution_info::DistributionInfo, profile::StorageCounters};
 use storage::durability_client::WALClient;
 use tokio::sync::{
-    mpsc,
-    mpsc::{Receiver, Sender, error::TrySendError},
+    mpsc::{self, Receiver, Sender, error::TrySendError},
     watch,
 };
 use tonic::Status;
@@ -93,7 +92,7 @@ impl DatabaseExportService {
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
-        let (close_sender, close_receiver) = mpsc::channel(1);
+        let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
         Self {
             distribution_info,
             server_state,

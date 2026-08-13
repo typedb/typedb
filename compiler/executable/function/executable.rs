@@ -133,8 +133,8 @@ fn compile_return_operation(
         AnnotatedFunctionReturn::Single { selector, variables, .. } => {
             Ok(ExecutableReturn::Single(selector, variables.iter().map(|var| variable_positions[var]).collect()))
         }
-        AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
-        AnnotatedFunctionReturn::ReduceReducer { instructions } => {
+        | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
+        | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
             let reductions = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
             Ok(ExecutableReturn::Reduce(Arc::new(ReduceRowsExecutable {
                 reductions,

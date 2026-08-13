@@ -11,7 +11,7 @@ use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
 
 use axum_server::{Handle, tls_rustls::RustlsConfig};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
-use database::database_manager::ImportRecovery;
+use database::database_manager::ImportOwnership;
 use futures::future::try_join_all;
 use rand::prelude::SliceRandom;
 use resource::{
@@ -133,7 +133,7 @@ impl ServerBuilder {
                     config.clone(),
                     server_id,
                     None,
-                    ImportRecovery::Discard,
+                    ImportOwnership::Exclusive,
                     shutdown_receiver.clone(),
                     background_tasks_tracker.get_spawner(),
                 )

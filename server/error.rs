@@ -46,10 +46,10 @@ pub enum ErrorResponseCategory {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorOrigin {
     /// Determined by the request and the server's persisted state: any server in that state, given
-    /// that request, fails the same way.
+    /// that request, fails the same way, so retrying cannot help.
     Request,
     /// This server's process, storage, or filesystem failed. Another server given the same request
-    /// and state might well have succeeded.
+    /// and state might well have succeeded, so retrying can help.
     Server,
 }
 
@@ -257,7 +257,7 @@ impl ServerStateError for LocalServerStateError {
                 | DatabaseImportServiceError::ImportEmptyItem { .. }
                 | DatabaseImportServiceError::AbsentAttributeValue { .. }
                 | DatabaseImportServiceError::AttributesOwningAttributes { .. } => Request,
-                DatabaseImportServiceError::ServerState { typedb_source } => typedb_source.error_origin(),
+                DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { .. }
                 | DatabaseImportServiceError::ImportTaskFailed { .. }
                 | DatabaseImportServiceError::ImportClosed { .. }

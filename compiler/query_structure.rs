@@ -137,7 +137,7 @@ pub fn extract_pipeline_structure_from(
             AnnotatedStage::Match { block, .. } => {
                 Some(block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>())
             }
-            AnnotatedStage::Insert { block, .. }
+            | AnnotatedStage::Insert { block, .. }
             | AnnotatedStage::Update { block, .. }
             | AnnotatedStage::Put { block, .. } => {
                 Some(block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>())
@@ -152,10 +152,10 @@ pub fn extract_pipeline_structure_from(
             AnnotatedStage::Select(select) => Some(select.variables.iter().cloned().collect::<Vec<_>>()),
             AnnotatedStage::Reduce(reduce, _) => Some(reduce.variables().collect::<Vec<_>>()),
             AnnotatedStage::Sort(_) => None,
-            AnnotatedStage::Offset(_) => None,
-            AnnotatedStage::Limit(_) => None,
-            AnnotatedStage::Require(_) => None,
-            AnnotatedStage::Distinct(_) => None,
+            | AnnotatedStage::Offset(_) => None,
+            | AnnotatedStage::Limit(_) => None,
+            | AnnotatedStage::Require(_) => None,
+            | AnnotatedStage::Distinct(_) => None,
         })
         .next()
         .unwrap_or_default();

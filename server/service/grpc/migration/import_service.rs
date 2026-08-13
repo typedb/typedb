@@ -89,7 +89,7 @@ impl DatabaseImportService {
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
-        let (close_sender, close_receiver) = mpsc::channel(1);
+        let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
         Self {
             server_state,
             diagnostics_manager,
@@ -235,7 +235,7 @@ impl DatabaseImportService {
             .databases()
             .import_prepare(&name, self.close_sender.clone())
             .await
-            .map_err(|typedb_source| DatabaseImportServiceError::ServerState { typedb_source })?;
+            .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
         self.database_name = Some(name);
         self.interrupt = Some(importer.get_interrupt());
 

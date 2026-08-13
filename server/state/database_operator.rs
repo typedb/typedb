@@ -196,8 +196,8 @@ impl LocalDatabaseOperator {
         self.database_manager.imported_database_names()
     }
 
-    pub fn is_lost_import(&self, name: &str) -> bool {
-        self.database_manager.is_lost_import(name)
+    pub fn is_abandoned_import(&self, name: &str) -> bool {
+        self.database_manager.is_abandoned_import(name)
     }
 
     pub fn finalise_imported_database(&self, name: &str) -> Result<(), DatabaseCreateError> {

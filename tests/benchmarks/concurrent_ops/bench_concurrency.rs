@@ -19,7 +19,7 @@ use std::{
 
 use database::{
     Database,
-    database_manager::{DatabaseManager, ImportRecovery},
+    database_manager::{DatabaseManager, ImportOwnership},
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
@@ -146,7 +146,7 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
         ByteSize::mb(64),
-        ImportRecovery::Discard,
+        ImportOwnership::Exclusive,
     )
     .unwrap();
     dbm.put_database(DB_NAME).unwrap();
