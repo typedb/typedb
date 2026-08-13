@@ -495,6 +495,7 @@ mac_pkg_installer(
 
     verbose = False, # True for debugging
     target_compatible_with = constraint_mac_x86_64,
+    tags = ["manual"],
 )
 
 mac_pkg_installer(
@@ -522,6 +523,7 @@ mac_pkg_installer(
 
     verbose = True,
     target_compatible_with = constraint_mac_arm64,
+    tags = ["manual"],
 )
 
 deploy_artifact(
@@ -531,6 +533,8 @@ deploy_artifact(
     release = deployment["artifact"]["release"]["upload"],
     snapshot = deployment["artifact"]["snapshot"]["upload"],
     target = ":assemble-all-mac-x86_64-installer-pkg",
+    target_compatible_with = constraint_mac_x86_64,
+    tags = ["manual"],
 )
 
 deploy_artifact(
@@ -540,6 +544,8 @@ deploy_artifact(
     release = deployment["artifact"]["release"]["upload"],
     snapshot = deployment["artifact"]["snapshot"]["upload"],
     target = ":assemble-all-mac-arm64-installer-pkg",
+    target_compatible_with = constraint_mac_arm64,
+    tags = ["manual"],
 )
 
 alias(
