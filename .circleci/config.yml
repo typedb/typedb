@@ -60,6 +60,13 @@ commands:
           amazon-linux-extras install java-openjdk11 docker python3.8 -y
           yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
 
+          if [ "<<parameters.bazel-arch>>" = "arm64" ]; then
+            # simsimd's C kernels need an SVE-capable compiler; AL2's default gcc 7.3 lacks arm_sve.h,
+            # which makes simsimd's build script silently produce no static lib (link fails with -lsimsimd)
+            yum install -y gcc10 gcc10-c++
+            echo 'export CC=gcc10-gcc CXX=gcc10-g++' >> $BASH_ENV
+          fi
+
           rm /usr/bin/python3
           ln -s /usr/bin/python3.8 /usr/bin/python3
           
