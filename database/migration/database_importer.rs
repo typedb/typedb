@@ -25,10 +25,8 @@ use concept::{
         thing_manager::ThingManager,
     },
     type_::{
-        Capability, Ordering, OwnerAPI, PlayerAPI,
-        annotation::{
-            AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey, HasAnnotationCategory,
-        },
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
         object_type::ObjectType,
@@ -68,7 +66,7 @@ use crate::{
     with_transaction_parts,
 };
 
-macro_rules! is_specializing_with_only_cardinality_specializations_fn {
+macro_rules! is_specializing_fn {
     (
         $fn_name:ident,
         $capability_ty:ty,
@@ -84,24 +82,13 @@ macro_rules! is_specializing_with_only_cardinality_specializations_fn {
             let cardinalities = object_type
                 .$get_cardinality_method(snapshot, type_manager, interface_type)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+            // If this capability is affected by multiple cardinality constraints from the same interface type, then
+            // the object type has multiple ownerships of this interface type: some inherited and one declared (specializing)
             let same_interface_type_count = cardinalities
                 .into_iter()
                 .filter(|constraint| constraint.source().interface() == interface_type)
                 .count();
-
-            // If this capability is affected by multiple cardinality constraints from the same interface type, then
-            // the object type has multiple ownerships of this interface type: some inherited and one declared (specializing)
-            if same_interface_type_count > 1 {
-                let non_cardinality_count = capability
-                    .get_annotations_declared(snapshot, type_manager)
-                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                    .into_iter()
-                    .filter(|annotation| !annotation.has_category(&AnnotationCategory::Cardinality))
-                    .count();
-                Ok(non_cardinality_count == 0)
-            } else {
-                Ok(false)
-            }
+            Ok(same_interface_type_count > 1)
         }
     };
 }
@@ -131,6 +118,7 @@ macro_rules! for_item_in_write_transaction {
 #[derive(Debug)]
 struct SchemaInfo {
     temporarily_independent_attribute_types: HashSet<AttributeType>,
+    temporarily_non_independent_attribute_types: HashSet<AttributeType>,
     temporarily_independent_relation_types: HashSet<RelationType>,
     original_keys: HashSet<Owns>,
     original_cardinalities_owns: HashMap<Owns, Option<AnnotationCardinality>>,
@@ -144,6 +132,7 @@ impl SchemaInfo {
     fn new() -> Self {
         Self {
             temporarily_independent_attribute_types: HashSet::new(),
+            temporarily_non_independent_attribute_types: HashSet::new(),
             temporarily_independent_relation_types: HashSet::new(),
             original_keys: HashSet::new(),
             original_cardinalities_owns: HashMap::new(),
@@ -599,7 +588,7 @@ impl DatabaseImporter {
             TransactionSchema,
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
-                self.restore_independent_attribute_types(&mut inner_snapshot, &type_manager)?;
+                self.restore_independent_attribute_types(&mut inner_snapshot, &type_manager, &thing_manager)?;
                 self.restore_independent_relation_types(&mut inner_snapshot, &type_manager)?;
                 self.restore_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
@@ -610,6 +599,10 @@ impl DatabaseImporter {
             .map_err(|typedb_source| DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source })
     }
 
+    // The @independent constraint is inherited by all subtypes, and a subtype cannot redeclare
+    // an inherited constraint. To make every attribute type independent, the annotation is
+    // declared on root types only, and existing subtype declarations are temporarily undeclared
+    // so they do not become redundant
     fn make_attribute_types_independent(
         &mut self,
         snapshot: &mut impl WritableSnapshot,
@@ -620,15 +613,25 @@ impl DatabaseImporter {
             .get_attribute_types(snapshot)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
         for attribute_type in attribute_types {
-            if !attribute_type
-                .is_independent(snapshot, type_manager)
+            let is_root = attribute_type
+                .get_supertype(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-            {
-                let annotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
+                .is_none();
+            let annotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
+            let is_declared_independent = attribute_type
+                .get_annotations_declared(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .contains(&annotation);
+            if is_root && !is_declared_independent {
                 attribute_type
                     .set_annotation(snapshot, type_manager, thing_manager, annotation, StorageCounters::DISABLED)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
                 self.schema_info.temporarily_independent_attribute_types.insert(attribute_type);
+            } else if !is_root && is_declared_independent {
+                attribute_type
+                    .unset_annotation(snapshot, type_manager, AnnotationCategory::Independent)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                self.schema_info.temporarily_non_independent_attribute_types.insert(attribute_type);
             }
         }
         Ok(())
@@ -666,7 +669,7 @@ impl DatabaseImporter {
                 .get_owns_declared(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
             for owns in all_owns.iter() {
-                if Self::is_specializing_owns_with_only_cardinality_specializations(snapshot, type_manager, *owns)? {
+                if Self::is_specializing_owns(snapshot, type_manager, *owns)? {
                     let ordering = owns
                         .get_ordering(snapshot, type_manager)
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
@@ -721,7 +724,7 @@ impl DatabaseImporter {
                 .get_plays_declared(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
             for plays in all_plays.iter() {
-                if Self::is_specializing_plays_with_only_cardinality_specializations(snapshot, type_manager, *plays)? {
+                if Self::is_specializing_plays(snapshot, type_manager, *plays)? {
                     let annotations = plays
                         .get_annotations_declared(snapshot, type_manager)
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
@@ -811,26 +814,25 @@ impl DatabaseImporter {
         Ok(())
     }
 
-    is_specializing_with_only_cardinality_specializations_fn!(
-        is_specializing_owns_with_only_cardinality_specializations,
-        Owns,
-        get_owned_attribute_type_constraints_cardinality
-    );
+    is_specializing_fn!(is_specializing_owns, Owns, get_owned_attribute_type_constraints_cardinality);
 
-    is_specializing_with_only_cardinality_specializations_fn!(
-        is_specializing_plays_with_only_cardinality_specializations,
-        Plays,
-        get_played_role_type_constraints_cardinality
-    );
+    is_specializing_fn!(is_specializing_plays, Plays, get_played_role_type_constraints_cardinality);
 
     fn restore_independent_attribute_types(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
+        thing_manager: &ThingManager,
     ) -> Result<(), DatabaseImportError> {
         for attribute_type in &self.schema_info.temporarily_independent_attribute_types {
             attribute_type
                 .unset_annotation(snapshot, type_manager, AnnotationCategory::Independent)
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+        }
+        for attribute_type in &self.schema_info.temporarily_non_independent_attribute_types {
+            let annotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
+            attribute_type
+                .set_annotation(snapshot, type_manager, thing_manager, annotation, StorageCounters::DISABLED)
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
         Ok(())
