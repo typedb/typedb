@@ -246,6 +246,10 @@ impl DatabaseImportManager {
     }
 
     fn remove_entry_best_effort(entry_path: &Path) {
+        // Best effort: `is_dir` returns false when the entry's metadata cannot be read at all, so
+        // such an entry takes the file branch, which removes it if it is a broken symlink and
+        // otherwise fails for the same reason its metadata did. Failures here are logged and the
+        // leftover is left for the next startup to retry
         let result = if entry_path.is_dir() { fs::remove_dir_all(entry_path) } else { fs::remove_file(entry_path) };
         if let Err(error) = result {
             debug!("Could not remove import leftover {entry_path:?}: {error}");

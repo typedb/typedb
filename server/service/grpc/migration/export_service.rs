@@ -119,10 +119,9 @@ impl DatabaseExportService {
 
         let header = encode_header_item(self.distribution_info.version.to_string(), self.database_name.clone());
         let mut items = unwrap_else_send_error_and_return!(self, ExportItems::new(&transaction, header));
-        loop {
-            let batch =
-                unwrap_else_send_error_and_return!(self, items.next_batch(Self::ITEM_BATCH_SIZE, &mut self.checksums));
-            let Some(batch) = batch else { break };
+        while let Some(batch) =
+            unwrap_else_send_error_and_return!(self, items.next_batch(Self::ITEM_BATCH_SIZE, &mut self.checksums))
+        {
             self.count_items(batch.len() as u64);
             unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
         }
