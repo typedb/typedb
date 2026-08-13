@@ -221,9 +221,9 @@ pub(crate) fn translate_pipeline_stages(
                     | TranslatedStage::Update { block, .. }
                     | TranslatedStage::Put { block, .. }
                     | TranslatedStage::Delete { block, .. } => {
-                        if find_expressions_recursive(block.conjunction()).is_some() {
-                            return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                                feature: UnimplementedFeature::ExpressionInWrites,
+                        if let Some(e) = find_expressions_recursive(block.conjunction()) {
+                            return Err(Box::new(RepresentationError::UnimplementedExpressionsInWrite {
+                                source_span: e.source_span(),
                             }));
                         }
                     }
