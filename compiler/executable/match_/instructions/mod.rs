@@ -256,7 +256,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
         match self {
             Self::Iid(_) => (),
             Self::TypeList(_) => (),
-            | Self::Is(IsInstruction { inputs, .. })
+            Self::Is(IsInstruction { inputs, .. })
             | Self::Sub(type_::SubInstruction { inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
             | Self::Owns(type_::OwnsInstruction { inputs, .. })
@@ -273,7 +273,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::LinksReverse(thing::LinksReverseInstruction { inputs, .. }) => {
                 inputs.iter().cloned().for_each(apply)
             }
-            | Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
+            Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
                 inputs.iter().cloned().for_each(apply)
             }
         }

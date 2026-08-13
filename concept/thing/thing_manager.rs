@@ -440,7 +440,7 @@ impl ThingManager {
         }
 
         let attribute = match value_type {
-            | ValueType::Boolean
+            ValueType::Boolean
             | ValueType::Integer
             | ValueType::Double
             | ValueType::Decimal

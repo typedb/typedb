@@ -146,14 +146,14 @@ impl TypeQLMayError {
     pub fn as_may_error_parsing(&self) -> MayError {
         match self {
             TypeQLMayError::Parsing => MayError::True(None),
-            | TypeQLMayError::False | TypeQLMayError::Logic(_) => MayError::False,
+            TypeQLMayError::False | TypeQLMayError::Logic(_) => MayError::False,
         }
     }
 
     pub fn as_may_error_logic(&self) -> MayError {
         match self {
             TypeQLMayError::Logic(message) => MayError::True(message.clone()),
-            | TypeQLMayError::False | TypeQLMayError::Parsing => MayError::False,
+            TypeQLMayError::False | TypeQLMayError::Parsing => MayError::False,
         }
     }
 
