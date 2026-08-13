@@ -8410,7 +8410,7 @@
     },
     "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
       "general": {
-        "bzlTransitiveDigest": "j3hx3mUtu6z2mFVqzO+QxuHlrl18RFJ+k2KdWIGo83o=",
+        "bzlTransitiveDigest": "Kb5QWQrUc0s27j+2UawgVDIuZeaZUkqrRVUHDu0Ao8s=",
         "usagesDigest": "IwxuSmZZ4PgoYNVioUdK3Gd/b2GVlohqGdv8E+JFtBk=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
