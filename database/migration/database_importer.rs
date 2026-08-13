@@ -118,7 +118,7 @@ macro_rules! for_item_in_write_transaction {
 #[derive(Debug)]
 struct SchemaInfo {
     temporarily_independent_attribute_types: HashSet<AttributeType>,
-    temporarily_undeclared_independent_attribute_types: HashSet<AttributeType>,
+    temporarily_non_independent_attribute_types: HashSet<AttributeType>,
     temporarily_independent_relation_types: HashSet<RelationType>,
     original_keys: HashSet<Owns>,
     original_cardinalities_owns: HashMap<Owns, Option<AnnotationCardinality>>,
@@ -132,7 +132,7 @@ impl SchemaInfo {
     fn new() -> Self {
         Self {
             temporarily_independent_attribute_types: HashSet::new(),
-            temporarily_undeclared_independent_attribute_types: HashSet::new(),
+            temporarily_non_independent_attribute_types: HashSet::new(),
             temporarily_independent_relation_types: HashSet::new(),
             original_keys: HashSet::new(),
             original_cardinalities_owns: HashMap::new(),
@@ -631,7 +631,7 @@ impl DatabaseImporter {
                 attribute_type
                     .unset_annotation(snapshot, type_manager, AnnotationCategory::Independent)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.schema_info.temporarily_undeclared_independent_attribute_types.insert(attribute_type);
+                self.schema_info.temporarily_non_independent_attribute_types.insert(attribute_type);
             }
         }
         Ok(())
@@ -829,7 +829,7 @@ impl DatabaseImporter {
                 .unset_annotation(snapshot, type_manager, AnnotationCategory::Independent)
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
-        for attribute_type in &self.schema_info.temporarily_undeclared_independent_attribute_types {
+        for attribute_type in &self.schema_info.temporarily_non_independent_attribute_types {
             let annotation = AttributeTypeAnnotation::Independent(AnnotationIndependent);
             attribute_type
                 .set_annotation(snapshot, type_manager, thing_manager, annotation, StorageCounters::DISABLED)
