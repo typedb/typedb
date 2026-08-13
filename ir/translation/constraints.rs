@@ -544,7 +544,7 @@ fn add_typeql_iterable_binding(
         typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: UnimplementedFeature::Lists }))
         }
-        typeql::Expression::Variable(_)
+        | typeql::Expression::Variable(_)
         | typeql::Expression::ListIndex(_)
         | typeql::Expression::Value(_)
         | typeql::Expression::Operation(_)

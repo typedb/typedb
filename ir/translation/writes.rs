@@ -110,7 +110,7 @@ pub fn translate_put(
     let block = builder.finish()?;
     for constraint in block.conjunction().constraints() {
         match constraint {
-            crate::pattern::constraint::Constraint::RoleName(_)
+            | crate::pattern::constraint::Constraint::RoleName(_)
             | crate::pattern::constraint::Constraint::Isa(_)
             | crate::pattern::constraint::Constraint::Links(_)
             | crate::pattern::constraint::Constraint::Has(_)

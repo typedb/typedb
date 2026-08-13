@@ -100,7 +100,7 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes())
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
-            Value::Boolean(_)
+            | Value::Boolean(_)
             | Value::Integer(_)
             | Value::Double(_)
             | Value::Decimal(_)

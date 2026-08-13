@@ -1059,7 +1059,7 @@ impl BuiltinCallExecutor {
             BuiltinConceptFunctionID::GetFunMeta => execute!(get_fun_meta),
             BuiltinConceptFunctionID::GetFunAllMeta => execute!(get_fun_all_meta),
 
-            BuiltinConceptFunctionID::GetStructDoc
+            | BuiltinConceptFunctionID::GetStructDoc
             | BuiltinConceptFunctionID::GetStructMeta
             | BuiltinConceptFunctionID::GetStructAllMeta
             | BuiltinConceptFunctionID::GetStructFieldDoc
