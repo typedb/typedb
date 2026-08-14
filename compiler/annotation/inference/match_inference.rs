@@ -1094,7 +1094,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let snapshot = storage.clone().open_snapshot_write();
-            let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1104,7 +1105,7 @@ pub mod tests {
                 &VertexAnnotations::new(),
                 TypeInferenceMode::ConcreteSubtypesOnly,
             )
-                .unwrap();
+            .unwrap();
 
             let conjunction = block.conjunction();
             let disj = conjunction.nested_patterns()[0].as_disjunction().unwrap();
