@@ -56,17 +56,17 @@ fn import_lifecycle_publishes_and_is_idempotent() {
 #[test]
 fn cancelled_import_frees_the_name_for_create_and_reimport() {
     init_logging();
-    let data_dir = create_tmp_dir("import_cancel");
+    let data_dir = create_tmp_dir("import_discard");
     let dbm = manager(&data_dir, ImportOwnership::Shared);
 
     let staging = dbm.prepare_imported_database("typedb".to_string()).expect("prepare");
-    assert!(dbm.cancel_database_import("typedb").is_err());
+    assert!(dbm.discard_imported_database("typedb").is_err());
     drop(staging);
-    dbm.cancel_database_import("typedb").expect("cancel");
+    dbm.discard_imported_database("typedb").expect("cancel");
     assert!(!import_path(&data_dir, "typedb").exists());
 
     drop(dbm.prepare_imported_database("typedb".to_string()).expect("reimport after cancel"));
-    dbm.cancel_database_import("typedb").expect("cancel again");
+    dbm.discard_imported_database("typedb").expect("cancel again");
     dbm.put_database("typedb").expect("create after cancel");
 }
 
@@ -104,19 +104,19 @@ fn prepare_rejects_existing_database_and_invalid_names() {
 #[test]
 fn cancel_of_an_invalid_name_touches_nothing() {
     init_logging();
-    let data_dir = create_tmp_dir("import_cancel_invalid_names");
+    let data_dir = create_tmp_dir("import_discard_invalid_names");
     let dbm = manager(&data_dir, ImportOwnership::Exclusive);
 
     dbm.prepare_imported_database("staged".to_string()).expect("prepare");
     for name in [".", "..", "../escaped", "_internal", "not a name"] {
         assert!(matches!(
-            dbm.cancel_database_import(name),
+            dbm.discard_imported_database(name),
             Err(DatabaseDeleteError::DatabaseIsNotBeingImported { .. })
         ));
     }
     assert!(dbm.import_directory().is_dir());
     assert!(dbm.imported_database("staged").is_some());
-    dbm.cancel_database_import("staged").expect("cancel");
+    dbm.discard_imported_database("staged").expect("cancel");
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
     let staging = dbm.prepare_imported_database("blocked".to_string()).expect("prepare");
     assert!(matches!(dbm.put_database("blocked"), Err(DatabaseCreateError::IsBeingImported { .. })));
     drop(staging);
-    dbm.cancel_database_import("blocked").expect("cancel");
+    dbm.discard_imported_database("blocked").expect("cancel");
 
     // An unregistered on-disk leftover is the trace of an import this server could not reopen.
     // Under Resume it keeps the name reserved for create — only the import operations that decide
@@ -141,10 +141,10 @@ fn dead_leftovers_are_replaced_by_create_prepare_and_cancel() {
 
     fs::create_dir_all(import_path(&data_dir, "prepared-over")).unwrap();
     drop(dbm.prepare_imported_database("prepared-over".to_string()).expect("prepare must replace the leftover"));
-    dbm.cancel_database_import("prepared-over").expect("cancel");
+    dbm.discard_imported_database("prepared-over").expect("cancel");
 
     fs::create_dir_all(import_path(&data_dir, "cancelled-over")).unwrap();
-    assert!(dbm.cancel_database_import("cancelled-over").is_err());
+    assert!(dbm.discard_imported_database("cancelled-over").is_err());
     assert!(!import_path(&data_dir, "cancelled-over").exists(), "cancel must remove the dead leftover");
     dbm.put_database("cancelled-over").expect("create after the cancel released the name");
 }
@@ -201,7 +201,7 @@ fn resume_recovery_restores_staging_and_discards_junk() {
     drop(dbm);
     let dbm = manager(&data_dir, ImportOwnership::Shared);
     assert!(matches!(dbm.put_database("corrupt"), Err(DatabaseCreateError::IsBeingImported { .. })));
-    assert!(dbm.cancel_database_import("corrupt").is_err());
+    assert!(dbm.discard_imported_database("corrupt").is_err());
     assert!(!import_path(&data_dir, "corrupt").exists());
     dbm.put_database("corrupt").expect("create after the cancel released the name");
 }
@@ -218,7 +218,7 @@ fn recovered_staging_can_be_finalised_or_cancelled() {
     let dbm = manager(&data_dir, ImportOwnership::Shared);
     dbm.finalise_imported_database("published").expect("finalise recovered staging");
     assert!(dbm.database("published").is_some());
-    dbm.cancel_database_import("dropped").expect("cancel recovered staging");
+    dbm.discard_imported_database("dropped").expect("cancel recovered staging");
     assert!(!import_path(&data_dir, "dropped").exists());
 }
 
@@ -289,7 +289,7 @@ fn concurrent_imports_of_different_names_are_independent() {
     assert_eq!(names, vec!["cancelled".to_string(), "kept".to_string(), "published".to_string()]);
 
     dbm.finalise_imported_database("published").expect("finalise");
-    dbm.cancel_database_import("cancelled").expect("cancel");
+    dbm.discard_imported_database("cancelled").expect("cancel");
     assert_eq!(dbm.imported_database_names(), vec!["kept".to_string()]);
     assert!(dbm.database("published").is_some());
     drop(staging_kept);

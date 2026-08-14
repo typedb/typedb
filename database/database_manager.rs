@@ -204,7 +204,7 @@ impl DatabaseManager {
         }
     }
 
-    pub fn cancel_database_import(&self, name: &str) -> Result<(), DatabaseDeleteError> {
+    pub fn discard_imported_database(&self, name: &str) -> Result<(), DatabaseDeleteError> {
         if Self::validate_user_database_name(name).is_err() {
             return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name: name.to_string() });
         }

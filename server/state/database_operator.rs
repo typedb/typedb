@@ -62,7 +62,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         interrupt: ExecutionInterrupt,
     ) -> Result<DatabaseImporter, ArcServerStateError>;
 
-    async fn import_cancel(&self, name: &str) -> Result<(), ArcServerStateError>;
+    async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn schema(&self, name: &str) -> Result<String, ArcServerStateError>;
 
@@ -203,12 +203,10 @@ impl LocalDatabaseOperator {
         self.database_manager.is_abandoned_import(name)
     }
 
-    pub fn finalise_imported_database(&self, name: &str) -> Result<(), DatabaseCreateError> {
-        self.database_manager.finalise_imported_database(name)
-    }
-
-    pub fn cancel_database_import(&self, name: &str) -> Result<(), DatabaseDeleteError> {
-        self.database_manager.cancel_database_import(name)
+    pub fn import_finalise(&self, name: &str) -> Result<(), ArcServerStateError> {
+        self.database_manager.finalise_imported_database(name).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source })
+        })
     }
 }
 
@@ -308,10 +306,13 @@ impl DatabaseOperator for LocalDatabaseOperator {
         Ok(self.new_importer(database, self.import_committer(), interrupt))
     }
 
-    async fn import_cancel(&self, name: &str) -> Result<(), ArcServerStateError> {
-        self.cancel_database_import(name).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseImportCancelFailed { typedb_source })
-        })
+    async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError> {
+        match self.database_manager.discard_imported_database(name) {
+            Ok(()) | Err(DatabaseDeleteError::DatabaseIsNotBeingImported { .. }) => Ok(()),
+            Err(typedb_source) => {
+                Err(arc_server_state_err(LocalServerStateError::DatabaseImportDiscardFailed { typedb_source }))
+            }
+        }
     }
 
     async fn schema(&self, name: &str) -> Result<String, ArcServerStateError> {

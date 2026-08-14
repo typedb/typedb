@@ -132,7 +132,7 @@ typedb_error! {
         TransactionOpenFailed(22, "Failed to open transaction.", typedb_source: TransactionError),
         DatabaseImportPrepareFailed(23, "Unable to prepare database import.", typedb_source: DatabaseCreateError),
         DatabaseImportFinaliseFailed(24, "Unable to finalise database import.", typedb_source: DatabaseCreateError),
-        DatabaseImportCancelFailed(25, "Unable to cancel database import.", typedb_source: DatabaseDeleteError),
+        DatabaseImportDiscardFailed(25, "Unable to discard database import.", typedb_source: DatabaseDeleteError),
         ConcurrentImportLimitReached(27, "Too many concurrent imports (limit {limit}). Retry later.", limit: usize),
     }
 }
@@ -175,7 +175,7 @@ impl ServerStateError for LocalServerStateError {
             | Self::DatabaseImport { .. }
             | Self::DatabaseImportPrepareFailed { .. }
             | Self::DatabaseImportFinaliseFailed { .. }
-            | Self::DatabaseImportCancelFailed { .. } => InvalidRequest,
+            | Self::DatabaseImportDiscardFailed { .. } => InvalidRequest,
             Self::ConcurrentImportLimitReached { .. } => Unavailable,
         }
     }
@@ -223,7 +223,7 @@ impl ServerStateError for LocalServerStateError {
             Self::DatabaseCannotBeDeleted { typedb_source } => database_delete_origin(typedb_source),
             Self::DatabaseImportPrepareFailed { typedb_source } => database_create_origin(typedb_source),
             Self::DatabaseImportFinaliseFailed { typedb_source } => database_create_origin(typedb_source),
-            Self::DatabaseImportCancelFailed { typedb_source } => database_delete_origin(typedb_source),
+            Self::DatabaseImportDiscardFailed { typedb_source } => database_delete_origin(typedb_source),
             Self::DatabaseSchemaCommitFailed { typedb_source } => match typedb_source {
                 SchemaCommitError::ConceptWriteErrors { write_errors, .. } => {
                     concept_writes_origin(write_errors.iter())

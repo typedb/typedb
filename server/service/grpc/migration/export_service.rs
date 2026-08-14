@@ -23,7 +23,10 @@ use tokio::sync::{
 };
 use tonic::Status;
 use tracing::{Level, event};
-use typedb_protocol::{database::export::Server as ProtocolServer, migration::Item as MigrationItemProto};
+use typedb_protocol::{
+    database::export::Server as ProtocolServer,
+    migration::{Item as MigrationItemProto, item::Item as MigrationItem},
+};
 
 use crate::{
     error::LocalServerStateError,
@@ -122,7 +125,7 @@ impl DatabaseExportService {
         while let Some(batch) =
             unwrap_else_send_error_and_return!(self, items.next_batch(Self::ITEM_BATCH_SIZE, &mut self.checksums))
         {
-            self.count_items(batch.len() as u64);
+            self.count_items(&batch);
             unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
         }
 
@@ -137,9 +140,20 @@ impl DatabaseExportService {
         );
     }
 
-    fn count_items(&mut self, batch_len: u64) {
+    fn count_items(&mut self, batch: &[MigrationItemProto]) {
+        let concepts = batch
+            .iter()
+            .filter(|item| {
+                matches!(
+                    item.item,
+                    Some(MigrationItem::Entity(_))
+                        | Some(MigrationItem::Relation(_))
+                        | Some(MigrationItem::Attribute(_))
+                )
+            })
+            .count() as u64;
         let previous_intervals = self.total_item_count / ITEMS_LOG_INTERVAL;
-        self.total_item_count += batch_len;
+        self.total_item_count += concepts;
         if self.total_item_count / ITEMS_LOG_INTERVAL > previous_intervals {
             event!(Level::DEBUG, "Processed {} exported items of '{}'...", self.total_item_count, self.database_name);
         }

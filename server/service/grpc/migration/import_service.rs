@@ -337,7 +337,7 @@ impl DatabaseImportService {
         let ActiveImport { name, importer, .. } = active;
         drop(importer);
         event!(Level::INFO, "Import to '{name}' finished without completion after {duration_secs} seconds.");
-        if let Err(err) = self.server_state.databases().import_cancel(&name).await {
+        if let Err(err) = self.server_state.databases().import_discard(&name).await {
             event!(
                 Level::ERROR,
                 "Failed to clean up unfinished import of '{name}': {}",
