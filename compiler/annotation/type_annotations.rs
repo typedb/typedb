@@ -10,9 +10,13 @@ use std::{
 };
 
 use answer::{Type, variable::Variable};
-use ir::pattern::{Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint};
+use ir::pattern::{
+    Scope, ScopeId, Vertex,
+    conjunction::Conjunction,
+    constraint::{Constraint, ExpressionBinding},
+};
 
-use crate::annotation::expression::compiled_expression::ExpressionValueType;
+use crate::annotation::expression::compiled_expression::{ExecutableExpression, ExpressionValueType};
 
 #[derive(Debug, Clone)]
 pub struct BlockAnnotations {
@@ -36,16 +40,6 @@ impl BlockAnnotations {
         self.scope_annotations.get_mut(&conjunction.scope_id())
     }
 
-    pub(crate) fn set_value_types_of(
-        &mut self,
-        conjunction: &Conjunction,
-        annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
-    ) {
-        let conjunction_annotations = self.type_annotations_mut_of(conjunction).expect("Expected annotations");
-        debug_assert!(conjunction_annotations.value_type_annotations.is_none());
-        conjunction_annotations.value_type_annotations = Some(annotations);
-    }
-
     pub(crate) fn into_parts(self) -> HashMap<ScopeId, TypeAnnotations> {
         self.scope_annotations
     }
@@ -55,29 +49,22 @@ impl BlockAnnotations {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct TypeAnnotations {
     vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    value_type_annotations: Option<BTreeMap<Vertex<Variable>, ExpressionValueType>>,
+    value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
+    compiled_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
 }
 
 impl TypeAnnotations {
     pub fn new(
-        variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
-        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    ) -> Self {
-        TypeAnnotations { vertex: variables, constraints, value_type_annotations: None }
-    }
-
-    pub fn new_with_value_annotations(
-        variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
-        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+        vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
         value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
+        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+        compiled_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     ) -> Self {
-        let mut this = Self::new(variables, constraints);
-        this.value_type_annotations = Some(value_type_annotations);
-        this
+        TypeAnnotations { vertex, constraints, value_type_annotations, compiled_expressions }
     }
 
     pub fn vertex_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
@@ -93,18 +80,15 @@ impl TypeAnnotations {
     }
 
     pub fn value_annotations(&self) -> &BTreeMap<Vertex<Variable>, ExpressionValueType> {
-        self.value_type_annotations.as_ref().expect("Expected value annotations")
+        &self.value_type_annotations
     }
 
-    pub(crate) fn value_type_annotations_mut(
-        &mut self,
-    ) -> Option<&mut BTreeMap<Vertex<Variable>, ExpressionValueType>> {
-        self.value_type_annotations.as_mut()
+    pub(crate) fn value_type_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, ExpressionValueType> {
+        &mut self.value_type_annotations
     }
 
     pub fn value_type_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&ExpressionValueType> {
-        debug_assert!(self.value_type_annotations.is_some());
-        self.value_type_annotations.as_ref().and_then(|annotations| annotations.get(vertex))
+        self.value_type_annotations.get(vertex)
     }
 
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
@@ -118,6 +102,10 @@ impl TypeAnnotations {
     // TODO: Just accept a reference.
     pub fn constraint_annotations_of(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
         self.constraints.get(&constraint)
+    }
+
+    pub(crate) fn compiled_expressions(&self) -> &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>> {
+        &self.compiled_expressions
     }
 }
 

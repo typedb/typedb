@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     fmt,
 };
 
@@ -89,12 +89,9 @@ impl<'reg> BlockBuilder<'reg> {
             .retain(|_, var| block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild));
         let conjunction = self.conjunction.finish(&ContextualisedBindingMode::for_block(block_binding_modes));
 
-        validate_is_plannable(
-            &conjunction,
-            &self.context.input_variables().collect(),
-            &self.context.variable_registry,
-        )?;
-
+        let input_variables = self.context.input_variables().collect();
+        validate_is_plannable(&conjunction, &input_variables, &self.context.variable_registry)?;
+        validate_expressions_assignments_are_unique(&conjunction, &input_variables, &self.context.variable_registry)?;
         let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
     }
@@ -290,6 +287,79 @@ fn validate_optional_returns_recursive(
     } else {
         Ok(())
     }
+}
+
+fn validate_expressions_assignments_are_unique(
+    conjunction: &Conjunction,
+    input_variables: &BTreeSet<Variable>,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
+    let mut assigned_in_block = BTreeMap::new();
+    validate_expressions_assignments_are_unique_impl(conjunction, &mut assigned_in_block, variable_registry)?;
+
+    if let Some((&variable, &source_span)) = assigned_in_block.iter().find(|(var, _)| input_variables.contains(var)) {
+        let variable = variable_registry.get_variable_name_or_unnamed(variable).to_owned();
+        Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }))
+    } else {
+        Ok(())
+    }
+}
+fn validate_expressions_assignments_are_unique_impl(
+    conjunction: &Conjunction,
+    assigned: &mut BTreeMap<Variable, Option<Span>>,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
+    // TODO: Can we absorb this change into BindingModes if we introduce an "Assigned" variant?
+    fn add_or_error(
+        variable_registry: &VariableRegistry,
+        assigned: &mut BTreeMap<Variable, Option<Span>>,
+        (id, source_span): (Variable, Option<Span>),
+    ) -> Result<(), Box<RepresentationError>> {
+        if let Some(other_span) = assigned.insert(id, source_span) {
+            let variable = variable_registry.get_variable_name_or_unnamed(id).to_owned();
+            Err(Box::new(RepresentationError::MultipleAssignmentsForVariable { variable, source_span, other_span }))
+        } else {
+            Ok(())
+        }
+    }
+
+    conjunction
+        .constraints()
+        .iter()
+        .filter_map(|constraint| constraint.as_expression_binding())
+        .flat_map(|expr| expr.ids_assigned().map(|id| (id, expr.source_span())))
+        .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
+
+    conjunction
+        .constraints()
+        .iter()
+        .filter_map(|constraint| constraint.as_function_call_binding())
+        .flat_map(|func_call| func_call.ids_assigned().map(|id| (id, func_call.source_span())))
+        .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
+
+    for nested in conjunction.nested_patterns() {
+        match nested {
+            NestedPattern::Optional(optional) => {
+                validate_expressions_assignments_are_unique_impl(optional.conjunction(), assigned, variable_registry)?;
+            }
+            NestedPattern::Negation(negation) => {
+                validate_expressions_assignments_are_unique_impl(negation.conjunction(), assigned, variable_registry)?;
+            }
+            NestedPattern::Disjunction(disjunction) => {
+                let mut disjunction_assigned = BTreeMap::new();
+                disjunction.conjunctions().iter().try_for_each(|branch| {
+                    let mut branch_assigned = BTreeMap::new();
+                    validate_expressions_assignments_are_unique_impl(branch, &mut branch_assigned, variable_registry)?;
+                    disjunction_assigned.extend(branch_assigned);
+                    Ok::<_, Box<RepresentationError>>(())
+                })?;
+                disjunction_assigned
+                    .into_iter()
+                    .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn validate_is_plannable(
