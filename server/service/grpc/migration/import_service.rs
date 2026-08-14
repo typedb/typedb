@@ -68,6 +68,24 @@ struct ActiveImport {
     importer: Option<DatabaseImporter>,
 }
 
+impl ActiveImport {
+    fn new(name: String, importer: DatabaseImporter) -> Self {
+        Self { name, started: Instant::now(), importer: Some(importer) }
+    }
+
+    fn take_importer(&mut self) -> Option<DatabaseImporter> {
+        self.importer.take()
+    }
+
+    fn restore_importer(&mut self, importer: DatabaseImporter) {
+        self.importer = Some(importer);
+    }
+
+    fn elapsed_secs(&self) -> u64 {
+        self.started.elapsed().as_secs()
+    }
+}
+
 #[derive(Debug)]
 pub struct DatabaseImportService {
     server_state: Arc<ServerState>,
@@ -137,6 +155,32 @@ impl DatabaseImportService {
                 }
             }
         }
+    }
+
+    async fn run_importer_step<T: Send + 'static>(
+        &mut self,
+        phase: &'static str,
+        step: impl FnOnce(&mut DatabaseImporter) -> T + Send + 'static,
+    ) -> Result<T, DatabaseImportServiceError> {
+        let mut importer = self.take_importer(phase)?;
+        let (importer, value) = self
+            .run_step(
+                spawn_blocking(move || {
+                    let value = step(&mut importer);
+                    (importer, value)
+                }),
+                phase,
+            )
+            .await?;
+        self.active.as_mut().expect("Expected the import to be recorded").restore_importer(importer);
+        Ok(value)
+    }
+
+    fn take_importer(&mut self, phase: &str) -> Result<DatabaseImporter, DatabaseImportServiceError> {
+        self.active
+            .as_mut()
+            .and_then(ActiveImport::take_importer)
+            .ok_or_else(|| DatabaseImportServiceError::ImportDatabaseNotFound { phase: phase.to_string() })
     }
 
     async fn run_step<T>(
@@ -221,7 +265,7 @@ impl DatabaseImportService {
             return Err(DatabaseImportServiceError::DuplicateImport { name, old_name: active.name.clone() });
         }
 
-        let mut importer = self
+        let importer = self
             .server_state
             .databases()
             .import_prepare(
@@ -231,19 +275,11 @@ impl DatabaseImportService {
             )
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
-        self.active = Some(ActiveImport { name, started: Instant::now(), importer: None });
+        self.active = Some(ActiveImport::new(name, importer));
 
-        let (importer, result) = self
-            .run_step(
-                spawn_blocking(move || {
-                    let result = importer.import_schema(schema);
-                    (importer, result)
-                }),
-                "schema loading",
-            )
-            .await?;
-        self.active.as_mut().expect("Expected the import to be recorded").importer = Some(importer);
-        result.map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
+        self.run_importer_step("schema loading", move |importer| importer.import_schema(schema))
+            .await?
+            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
         Ok(Continue(()))
     }
 
@@ -251,39 +287,24 @@ impl DatabaseImportService {
         &mut self,
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        let Some(mut importer) = self.active.as_mut().and_then(|active| active.importer.take()) else {
-            return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "data loading".to_string() });
-        };
+        self.run_importer_step("data loading", move |importer| {
+            for item in items {
+                Self::process_item(item, importer)?;
 
-        let (importer, result) = self
-            .run_step(
-                spawn_blocking(move || {
-                    let result = (|| {
-                        for item in items {
-                            Self::process_item(item, &mut importer)?;
-
-                            let total_items = importer.total_item_count();
-                            if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
-                                let name = importer.database_name();
-                                event!(Level::DEBUG, "Processed {total_items} imported items of '{name}'...");
-                            }
-                        }
-                        Ok(())
-                    })();
-                    (importer, result)
-                }),
-                "data loading",
-            )
-            .await?;
-        self.active.as_mut().expect("Expected the import to be recorded").importer = Some(importer);
-        result?;
+                let total_items = importer.total_item_count();
+                if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
+                    let name = importer.database_name();
+                    event!(Level::DEBUG, "Processed {total_items} imported items of '{name}'...");
+                }
+            }
+            Ok(())
+        })
+        .await??;
         Ok(Continue(()))
     }
 
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        let Some(importer) = self.active.as_mut().and_then(|active| active.importer.take()) else {
-            return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "finalisation".to_string() });
-        };
+        let importer = self.take_importer("finalisation")?;
 
         event!(Level::DEBUG, "Finalising the imported database...");
         let (total_items, result) = self
@@ -298,11 +319,11 @@ impl DatabaseImportService {
         result.map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
         let active = self.active.take().expect("Expected the import to be recorded");
-        let duration_secs = active.started.elapsed().as_secs();
         event!(
             Level::INFO,
-            "Import to '{}' finished successfully. {total_items} items imported in {duration_secs} seconds.",
+            "Import to '{}' finished successfully. {total_items} items imported in {} seconds.",
             active.name,
+            active.elapsed_secs(),
         );
         Self::send_done(&self.response_sender).await;
         Ok(Break(()))
@@ -312,9 +333,9 @@ impl DatabaseImportService {
         let Some(active) = self.active.take() else {
             return;
         };
-        let ActiveImport { name, started, importer } = active;
+        let duration_secs = active.elapsed_secs();
+        let ActiveImport { name, importer, .. } = active;
         drop(importer);
-        let duration_secs = started.elapsed().as_secs();
         event!(Level::INFO, "Import to '{name}' finished without completion after {duration_secs} seconds.");
         if let Err(err) = self.server_state.databases().import_cancel(&name).await {
             event!(
