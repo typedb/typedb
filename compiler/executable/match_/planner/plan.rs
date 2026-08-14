@@ -88,7 +88,6 @@ pub(crate) fn plan_conjunction<'a>(
     stage_input_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a BlockAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
     call_cost_provider: &'a impl FunctionCallCostProvider,
 ) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
@@ -98,7 +97,6 @@ pub(crate) fn plan_conjunction<'a>(
         stage_input_positions,
         type_annotations,
         variable_registry,
-        expressions,
         statistics,
         call_cost_provider,
     )?
@@ -111,7 +109,6 @@ fn make_builder<'a>(
     stage_inputs: &HashMap<Variable, VariablePosition>,
     block_annotations: &'a BlockAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
 ) -> Result<ConjunctionPlanBuilder<'a>, QueryPlanningError> {
@@ -133,7 +130,6 @@ fn make_builder<'a>(
                                 stage_inputs,
                                 block_annotations,
                                 variable_registry,
-                                expressions,
                                 statistics,
                                 call_cost_provider,
                             )
@@ -150,7 +146,6 @@ fn make_builder<'a>(
                     stage_inputs,
                     block_annotations,
                     variable_registry,
-                    expressions,
                     statistics,
                     call_cost_provider,
                 )?
@@ -172,7 +167,6 @@ fn make_builder<'a>(
                         stage_inputs,
                         block_annotations,
                         variable_registry,
-                        expressions,
                         statistics,
                         call_cost_provider,
                     )?
@@ -193,7 +187,7 @@ fn make_builder<'a>(
         chain!(conjunction.visible_referenced_variables(), optional_variables),
         variable_registry,
     );
-    plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
+    plan_builder.register_constraints(conjunction, conjunction_annotations.compiled_expressions(), call_cost_provider);
     plan_builder.register_negations(negation_subplans);
     plan_builder.register_disjunctions(disjunction_planners);
     plan_builder.register_optionals(optional_subplans);
