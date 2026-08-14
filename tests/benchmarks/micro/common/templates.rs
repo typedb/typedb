@@ -56,7 +56,11 @@ pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
 pub type PrepareIterFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 
-pub struct TypeDBMicroBenchmark<IN, OUT> {
+pub trait SimpleReport {
+    fn report(reports: &[Self]);
+}
+
+pub struct TypeDBMicroBenchmark<IN, OUT: SimpleReport> {
     pub name: &'static str,
     pub schema: &'static str,
     pub preload_data_fn: Option<PreloadDataFn>,
