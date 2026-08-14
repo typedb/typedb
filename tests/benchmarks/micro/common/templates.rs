@@ -110,6 +110,15 @@ pub struct TxQueryProfile {
     pub query_profile: Arc<QueryProfile>,
 }
 
+pub struct MultiQueryTxProfile {
+    pub tx_profile: TransactionProfile,
+    pub query_profiles: Vec<Arc<QueryProfile>>,
+}
+
+pub struct MultiTxMultiQueryProfile {
+    pub profiles: Vec<MultiQueryTxProfile>,
+}
+
 // Initial data
 pub fn no_initial_data() -> Option<PreloadDataFn> {
     None
