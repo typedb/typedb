@@ -434,9 +434,10 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
         disjunction: &Disjunction,
         branch: &Conjunction,
     ) -> impl Iterator<Item = Vertex<Variable>> {
+        // Must exclude OptionallyBinding
         disjunction
-            .visible_referenced_variables()
-            .filter(|variable| branch.is_variable_visible_referenced(variable))
+            .always_bound_by_pattern()
+            .chain(disjunction.required_inputs().filter(|variable| branch.is_variable_visible_referenced(variable)))
             .map(Vertex::Variable)
     }
 }
