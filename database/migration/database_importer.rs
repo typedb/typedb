@@ -8,10 +8,7 @@ use std::{
     collections::{HashMap, HashSet},
     marker::PhantomData,
     path::PathBuf,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering as AtomicOrdering},
-    },
+    sync::Arc,
     time::Duration,
 };
 
@@ -43,6 +40,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value};
 use error::{TypeDBError, typedb_error};
+use executor::ExecutionInterrupt;
 use options::TransactionOptions;
 use query::error::QueryError;
 use resource::{
@@ -302,7 +300,7 @@ pub struct DatabaseImporter {
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_item_count: u64,
     total_item_count: u64,
-    interrupt: Arc<AtomicBool>,
+    interrupt: ExecutionInterrupt,
 }
 
 impl std::fmt::Debug for DatabaseImporter {
@@ -322,6 +320,7 @@ impl DatabaseImporter {
         database: Arc<Database<WALClient>>,
         import_directory: PathBuf,
         committer: Arc<dyn ImportCommitter>,
+        interrupt: ExecutionInterrupt,
     ) -> Self {
         let database_name = database.name().to_string();
         let data_info = DataInfo::new(&import_directory, &database_name);
@@ -334,18 +333,14 @@ impl DatabaseImporter {
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
-            interrupt: Arc::new(AtomicBool::new(false)),
+            interrupt,
         }
     }
 
-    pub fn get_interrupt(&self) -> Arc<AtomicBool> {
-        self.interrupt.clone()
-    }
-
-    fn check_interrupt(&self) -> Result<(), DatabaseImportError> {
-        match self.interrupt.load(AtomicOrdering::Relaxed) {
-            true => Err(DatabaseImportError::Interrupted {}),
-            false => Ok(()),
+    fn check_interrupt(&mut self) -> Result<(), DatabaseImportError> {
+        match self.interrupt.check() {
+            Some(_) => Err(DatabaseImportError::Interrupted {}),
+            None => Ok(()),
         }
     }
 
@@ -434,7 +429,7 @@ impl DatabaseImporter {
         self.data_info.record_expected_checksums(checksums)
     }
 
-    pub fn import_done(&mut self) -> Result<(), DatabaseImportError> {
+    pub fn import_done(mut self) -> Result<(), DatabaseImportError> {
         self.check_interrupt()?;
         if let Some(data_transaction) = self.data_transaction.take() {
             self.commit_write_transaction(data_transaction)

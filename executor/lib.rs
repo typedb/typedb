@@ -59,6 +59,7 @@ pub enum InterruptType {
     TransactionRolledback,
     WriteQueryExecution,
     SchemaQueryExecution,
+    DatabaseImportAborted,
 }
 
 impl fmt::Display for InterruptType {
@@ -69,6 +70,7 @@ impl fmt::Display for InterruptType {
             InterruptType::TransactionRolledback => write!(f, "transaction rollback"),
             InterruptType::WriteQueryExecution => write!(f, "write query"),
             InterruptType::SchemaQueryExecution => write!(f, "schema query"),
+            InterruptType::DatabaseImportAborted => write!(f, "database import abort"),
         }
     }
 }

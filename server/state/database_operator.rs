@@ -16,6 +16,7 @@ use database::{
     transaction::{CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionRead},
 };
 use durability::DurabilitySequenceNumber;
+use executor::ExecutionInterrupt;
 use futures::future::join_all;
 use resource::{constants::server::MAX_CONCURRENT_IMPORTS, profile::CommitProfile};
 use storage::{
@@ -58,6 +59,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         &self,
         name: &str,
         close_sender: Sender<()>,
+        interrupt: ExecutionInterrupt,
     ) -> Result<DatabaseImporter, ArcServerStateError>;
 
     async fn import_cancel(&self, name: &str) -> Result<(), ArcServerStateError>;
@@ -180,8 +182,9 @@ impl LocalDatabaseOperator {
         &self,
         database: Arc<Database<WALClient>>,
         committer: Arc<dyn ImportCommitter>,
+        interrupt: ExecutionInterrupt,
     ) -> DatabaseImporter {
-        DatabaseImporter::new(database, self.database_manager.import_directory().to_owned(), committer)
+        DatabaseImporter::new(database, self.database_manager.import_directory().to_owned(), committer, interrupt)
     }
 
     pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
@@ -296,12 +299,13 @@ impl DatabaseOperator for LocalDatabaseOperator {
         &self,
         name: &str,
         close_sender: Sender<()>,
+        interrupt: ExecutionInterrupt,
     ) -> Result<DatabaseImporter, ArcServerStateError> {
         let map_err =
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;
         let database = self.prepare_imported_database(name.to_string()).map_err(map_err)?;
-        Ok(self.new_importer(database, self.import_committer()))
+        Ok(self.new_importer(database, self.import_committer(), interrupt))
     }
 
     async fn import_cancel(&self, name: &str) -> Result<(), ArcServerStateError> {
