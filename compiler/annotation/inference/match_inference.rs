@@ -388,7 +388,7 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
             let TypeInferenceGraph { conjunction, vertices: nested_vertices, .. } = nested_graph;
             for vertex in Self::branch_variables_affected_by_parent(disjunction_pattern, conjunction) {
                 debug_assert!(parent_vertices.contains_key(&vertex) && nested_vertices.contains_key(&vertex));
-                nested_vertices.get_mut(&vertex).unwrap().retain_intersection(&parent_vertices[&vertex])
+                nested_vertices.get_mut(&vertex).unwrap().retain_intersection(&parent_vertices[&vertex]);
             }
             nested_graph.prune_constraints_from_vertices();
         }
