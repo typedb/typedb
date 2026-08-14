@@ -68,7 +68,7 @@ impl SimpleRunner {
 
 impl BenchmarkRunner for SimpleRunner {
     fn new_group(&mut self, name: &str) -> impl BenchmarkRunnerGroup {
-        SimpleRunnerGroup { name: name.to_owned() }
+        SimpleRunnerGroup { name: name.to_owned(), runner: self }
     }
 
     fn summary(&mut self) {
@@ -76,12 +76,20 @@ impl BenchmarkRunner for SimpleRunner {
     }
 }
 
-pub struct SimpleRunnerGroup {
+pub struct SimpleRunnerGroup<'runner> {
     name: String,
+    runner: &'runner SimpleRunner,
 }
 
-impl BenchmarkRunnerGroup for SimpleRunnerGroup {
+impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
     fn run_benchmark<T: SimpleBenchmark>(&mut self, b: T) -> Vec<T::IterOutput> {
+        let combined_name = format!("{}::{}", &self.name, b.name());
+        if combined_name.contains(&self.runner.filter) {
+            println!("[.] SimpleRunner: Running benchmark {}", combined_name);
+        } else {
+            // println!("[x] SimpleRunner: SKIPPING benchmark {}", combined_name);
+            return vec![];
+        }
         let mut context = b.init_context();
         b.before_all(&mut context);
         let database = b.create_database(&mut context);

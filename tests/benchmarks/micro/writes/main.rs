@@ -14,12 +14,14 @@ use lib_benchmark::{
 use query::given_rows::GivenRowsSimple;
 
 mod simple_inserts;
+mod heavy_inserts;
 
 pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
 
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.new_group("sanity_check").run_benchmark(sanity_check());
     simple_inserts::run_all(&mut runner);
+    heavy_inserts::run_all(&mut runner);
     runner.summary();
 }
 

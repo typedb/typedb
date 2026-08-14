@@ -18,11 +18,13 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(ownerships_thousand_names_long());
 }
 
-const SCHEMA: &'static str = r#"
+pub(crate) const SCHEMA: &'static str = r#"
 define
     attribute name, value string;
     entity person, owns name;
 "#;
+
+const N_ROWS: usize = 100_000;
 
 fn entities_one() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
@@ -39,7 +41,7 @@ fn entities_thousand() -> TransactionInsertBenchmark {
         name: "simple_inserts__entities_thousand",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: n_empty_given_rows(1000),
+        prepare_iter_fn: n_empty_given_rows(N_ROWS),
         benchmark_fn: query_in_write_tx("given ; insert $x isa person;"),
     }
 }
@@ -49,7 +51,7 @@ fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
         name: "simple_inserts__ownerships_thousand_short_names",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: given_rows_with(1000, vec!["name".to_owned()], |rng| vec![rng.entry_string(5)]),
+        prepare_iter_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(5)]),
         benchmark_fn: query_in_write_tx("given $name: string; insert $x isa person, has name == $name;"),
     }
 }
@@ -59,7 +61,7 @@ fn ownerships_thousand_names_long() -> TransactionInsertBenchmark {
         name: "simple_inserts__ownerships_thousand_long_names",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: given_rows_with(1000, vec!["name".to_owned()], |rng| vec![rng.entry_string(50)]),
+        prepare_iter_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(50)]),
         benchmark_fn: query_in_write_tx("given $name: string; insert $x isa person, has name == $name;"),
     }
 }
