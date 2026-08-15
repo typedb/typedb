@@ -51,8 +51,6 @@ pub trait DurabilityService {
     fn truncate_from(&self, sequence_number: DurabilitySequenceNumber) -> Result<(), DurabilityServiceError>;
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError>;
-
-    fn reset(&mut self) -> Result<(), DurabilityServiceError>;
 }
 
 pub type DurabilityRecordType = u8;

@@ -31,7 +31,6 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
-    initial_sequence_number: SequenceNumber,
     timeline: Timeline,
 }
 
@@ -43,10 +42,7 @@ impl fmt::Display for IsolationManager {
 
 impl IsolationManager {
     pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
-        IsolationManager {
-            initial_sequence_number: next_sequence_number,
-            timeline: Timeline::new(next_sequence_number),
-        }
+        IsolationManager { timeline: Timeline::new(next_sequence_number) }
     }
 
     pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
@@ -230,10 +226,6 @@ impl IsolationManager {
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
         self.timeline.watermark()
-    }
-
-    pub fn reset(&mut self) {
-        self.timeline = Timeline::new(self.initial_sequence_number);
     }
 }
 

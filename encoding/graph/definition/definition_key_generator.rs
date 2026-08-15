@@ -41,10 +41,6 @@ impl DefinitionKeyGenerator {
         Ok(definition_key)
     }
 
-    pub fn reset(&mut self) {
-        self.next_struct.reset()
-    }
-
     pub fn create_function<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,

@@ -566,20 +566,6 @@ impl<Durability> MVCCStorage<Durability> {
         )
     }
 
-    pub fn reset(&mut self) -> Result<(), StorageResetError>
-    where
-        Durability: DurabilityClient,
-    {
-        self.isolation_manager.reset();
-        self.keyspaces
-            .reset()
-            .map_err(|err| StorageResetError::KeyspaceError { name: self.name.clone(), source: err })?;
-        self.durability_client
-            .reset()
-            .map_err(|err| StorageResetError::Durability { name: self.name.clone(), typedb_source: err })?;
-        Ok(())
-    }
-
     pub fn estimate_size_in_bytes(&self) -> Result<u64, StorageOpenError> {
         self.keyspaces.estimate_size_in_bytes().map_err(|source| StorageOpenError::Keyspace { source })
     }
@@ -625,13 +611,6 @@ typedb_error! {
         DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<str>, typedb_source: DurabilityClientError),
         KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<str>, errors: Vec<KeyspaceDeleteError>),
         DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<str>, source: Arc<io::Error>),
-    }
-}
-
-typedb_error! {
-    pub StorageResetError(component = "Storage reset", prefix = "STR") {
-        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<str>, source: KeyspaceError),
-        Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<str>, typedb_source: DurabilityClientError),
     }
 }
 

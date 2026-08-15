@@ -24,7 +24,7 @@ use test_utils::{TempDir, init_logging};
 
 const DB_NAME: &str = "isolation-test";
 
-fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
+fn create_database() -> (TempDir, Arc<Database<WALClient>>) {
     init_logging();
     let tmp_dir = test_utils::create_tmp_storage_dir();
     let dbm = DatabaseManager::new(
@@ -104,7 +104,7 @@ fn get_isolation_conflict(err: &DataCommitError) -> &IsolationConflict {
 
 #[test]
 fn concurrent_inserts_of_new_entity_and_relation_both_succeed() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -124,7 +124,7 @@ fn concurrent_inserts_of_new_entity_and_relation_both_succeed() {
 
 #[test]
 fn concurrent_deletes_of_identical_entity_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(database.clone(), "define entity person, owns id @key; attribute id, value integer;");
     commit_write_query(database.clone(), r#"insert $p isa person, has id 1;"#);
 
@@ -139,7 +139,7 @@ fn concurrent_deletes_of_identical_entity_one_fails() {
 
 #[test]
 fn concurrent_deletes_of_identical_relation_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -173,7 +173,7 @@ fn concurrent_deletes_of_identical_relation_one_fails() {
 
 #[test]
 fn concurrent_has_writes_with_owns_cardinality_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -200,7 +200,7 @@ fn concurrent_has_deletes_violating_owns_cardinality_lower_bound_one_fails() {
     // with two names. Two concurrent has-deletes from different snapshots, each removing one of
     // them, would drop the owner to 0 names if both committed - falling below the lower bound.
     // The cardinality commit lock must serialise them and reject one.
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -228,7 +228,7 @@ fn concurrent_has_writes_with_bounded_owns_cardinality_always_contend_even_when_
     // transaction validates against its own snapshot and would otherwise both pass through and
     // commit a sum that violates the bound. So both writes contend on the same lock and one is
     // rejected as an isolation conflict, even though the resulting state would be valid.
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -250,7 +250,7 @@ fn concurrent_has_writes_with_bounded_owns_cardinality_always_contend_even_when_
 
 #[test]
 fn concurrent_has_writes_to_different_owners_with_bounded_cardinality_both_succeed() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -282,7 +282,7 @@ fn concurrent_has_writes_violating_inherited_owns_cardinality_one_fails() {
     // type's instance must still serialise on the (instance, owns) commit lock - the constraint
     // is sourced from the parent owns and the lock-key composition uses the constraint's source
     // attribute type, so subtypes inherit both the constraint and the lock identity.
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -305,7 +305,7 @@ fn concurrent_has_writes_violating_inherited_owns_cardinality_one_fails() {
 
 #[test]
 fn concurrent_has_writes_with_unlimited_cardinality_both_succeed() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -331,7 +331,7 @@ fn concurrent_has_writes_with_unlimited_cardinality_both_succeed() {
 
 #[test]
 fn concurrent_has_writes_violating_unique_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -364,7 +364,7 @@ fn concurrent_has_writes_violating_inherited_unique_across_subtypes_one_fails() 
     // The unique commit lock is keyed by `unique_constraint.source().owner().vertex()` and
     // `source().attribute().vertex()` - both resolve to the parent's owns - so the lock key is
     // identical regardless of which subtype the runtime instance has. One transaction must fail.
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -398,7 +398,7 @@ fn concurrent_has_writes_violating_inherited_unique_across_subtypes_one_fails() 
 
 #[test]
 fn concurrent_has_writes_violating_inline_key_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -419,7 +419,7 @@ fn concurrent_has_writes_violating_inline_key_one_fails() {
 #[test]
 fn concurrent_has_writes_violating_hashed_string_key_one_fails() {
     // String @key with a value longer than the inline threshold (16 bytes)
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -450,7 +450,7 @@ fn concurrent_has_writes_violating_inherited_key_across_subtypes_one_fails() {
     // Two concurrent inserts each create a different subtype (student, teacher) but with the
     // same key value. The conflict is on the parent type's interpretation of (type + key value):
     // the unique commit lock keyed by the source Owns serialises them and rejects one.
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -478,7 +478,7 @@ fn concurrent_has_writes_violating_inherited_key_across_subtypes_one_fails() {
 fn concurrent_player_links_with_bounded_relates_cardinality_one_fails() {
     // The padding player is needed so `cleanup_relations` doesn't auto-delete an empty
     // friendship at setup-commit time
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -515,7 +515,7 @@ fn concurrent_player_links_with_bounded_relates_cardinality_one_fails() {
 
 #[test]
 fn concurrent_player_links_with_bounded_plays_cardinality_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -553,7 +553,7 @@ fn concurrent_player_links_with_bounded_plays_cardinality_one_fails() {
 
 #[test]
 fn concurrent_player_links_via_super_and_specialised_sub_role_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -581,7 +581,7 @@ fn concurrent_player_links_via_super_and_specialised_sub_role_one_fails() {
 
 #[test]
 fn concurrent_has_write_and_owner_delete_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -603,7 +603,7 @@ fn concurrent_has_write_and_owner_delete_one_fails() {
 
 #[test]
 fn concurrent_has_write_and_attribute_delete_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -632,7 +632,7 @@ fn concurrent_has_write_and_attribute_delete_one_fails() {
 // TODO: We in the past used to have this be allowed? Slightly more lax - not a large difference
 #[test]
 fn concurrent_has_insert_new_attribute_deleting_attribute() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -660,7 +660,7 @@ fn concurrent_has_insert_new_attribute_deleting_attribute() {
 
 #[test]
 fn concurrent_player_link_and_relation_delete_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -693,7 +693,7 @@ fn concurrent_player_link_and_relation_delete_one_fails() {
 
 #[test]
 fn concurrent_player_link_and_player_delete_one_fails() {
-    let (_tmp, database) = create_reset_database();
+    let (_tmp, database) = create_database();
     commit_schema(
         database.clone(),
         r#"define

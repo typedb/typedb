@@ -220,11 +220,6 @@ impl DurabilityService for WAL {
             .unwrap();
         files.delete()
     }
-
-    fn reset(&mut self) -> Result<(), DurabilityServiceError> {
-        self.next_sequence_number.store(DurabilitySequenceNumber::MIN.next().number(), Ordering::SeqCst);
-        self.files.write().unwrap().reset()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -397,16 +392,6 @@ impl Files {
     fn delete(self) -> Result<(), DurabilityServiceError> {
         drop(self.files);
         fs::remove_dir_all(&self.directory).map_err(|source| source.into())
-    }
-
-    fn reset(&mut self) -> Result<(), DurabilityServiceError> {
-        fs::remove_dir_all(&self.directory)?;
-        fs::create_dir(&self.directory)?;
-        self.files.clear();
-        let (files, writer) = Self::init_files_writer(&self.directory)?;
-        self.files = files;
-        self.writer = writer;
-        Ok(())
     }
 }
 

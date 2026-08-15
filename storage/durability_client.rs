@@ -98,8 +98,6 @@ pub trait DurabilityClient {
     fn truncate_from(&self, sequence_number: SequenceNumber) -> Result<(), DurabilityClientError>;
 
     fn delete_durability(self) -> Result<(), DurabilityClientError>;
-
-    fn reset(&mut self) -> Result<(), DurabilityClientError>;
 }
 
 #[derive(Debug)]
@@ -209,10 +207,6 @@ impl DurabilityClient for WALClient {
 
     fn delete_durability(self) -> Result<(), DurabilityClientError> {
         self.wal.delete_durability().map_err(|err| DurabilityClientError::ServiceError { source: err })
-    }
-
-    fn reset(&mut self) -> Result<(), DurabilityClientError> {
-        self.wal.reset().map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 }
 
