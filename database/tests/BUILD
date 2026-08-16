@@ -38,6 +38,7 @@ rust_test(
         "//database",
         "//diagnostics",
         "//encoding",
+        "//resource",
         "//storage",
         "//util/test:test_utils",
 
@@ -58,6 +59,7 @@ rust_test(
         "//diagnostics",
         "//executor",
         "//query",
+        "//resource",
         "//storage",
         "//util/test:test_utils",
 
@@ -77,6 +79,7 @@ rust_test(
         "//encoding",
         "//executor",
         "//query",
+        "//resource",
         "//storage",
         "//util/test:test_utils",
 

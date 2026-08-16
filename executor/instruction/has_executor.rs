@@ -26,6 +26,7 @@ use concept::{
     type_::{TypeAPI, attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
@@ -171,12 +172,13 @@ impl HasExecutor {
 
     pub fn get_iterator(
         &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        execution_context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        parameters: &ParameterRegistry,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(execution_context, parameters, &row, storage_counters.clone());
         let filter_for_row: Arc<HasFilterMapFn> = Arc::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -186,14 +188,15 @@ impl HasExecutor {
             Err(_) => Some(item),
         });
         let value_range = self.checker.value_range_for(
-            context,
+            execution_context,
+            parameters,
             Some(row.as_reference()),
             self.has.attribute().as_variable().unwrap(),
             storage_counters.clone(),
         )?;
 
-        let snapshot = &**context.snapshot();
-        let thing_manager = context.thing_manager();
+        let snapshot = &**execution_context.snapshot();
+        let thing_manager = execution_context.thing_manager();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {

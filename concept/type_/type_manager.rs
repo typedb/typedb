@@ -29,7 +29,6 @@ use resource::{
     profile::StorageCounters,
 };
 use storage::{
-    durability_client::DurabilityClient,
     keyspace::KeyspaceSet,
     snapshot::{PreloadedRangesSnapshot, ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
 };

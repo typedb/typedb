@@ -14,10 +14,10 @@ use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerato
 use function::function_manager::FunctionManager;
 use query::{
     given_rows::GivenRowsSimple,
-    query_cache::{ParsedQuery, QueryCache},
-    query_manager::QueryManager,
+    query_cache::QueryCache,
+    query_manager::{ParsedQuery, ParsedSchemaQuery, QueryManager},
 };
-use resource::profile::CommitProfile;
+use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
 };
@@ -50,7 +50,13 @@ fn setup() -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     QueryManager::new(None)
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, SCHEMA)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            ParsedSchemaQuery::new(define, Arc::new(SCHEMA.to_string()), QueryProfile::new(false)),
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -63,9 +69,7 @@ fn setup() -> Context {
 
 fn prepare(context: &Context) {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let ParsedQuery::Pipeline(pipeline) = context.query_manager.parse(QUERY).unwrap() else {
-        panic!("expected a data pipeline");
-    };
+    let parsed = context.query_manager.parse(QUERY.to_string()).unwrap().into_pipeline();
     context
         .query_manager
         .prepare_read_pipeline(
@@ -73,9 +77,8 @@ fn prepare(context: &Context) {
             &context.type_manager,
             context.thing_manager.clone(),
             context.function_manager.clone(),
-            &pipeline,
+            parsed,
             None::<GivenRowsSimple>,
-            QUERY,
         )
         .unwrap();
 }
@@ -87,7 +90,7 @@ fn identical_query_string_hits_parse_cache() {
     // Cold: the parse cache has no entry for this string.
     assert!(context.cache.get_parsed(QUERY).is_none());
 
-    assert!(matches!(context.query_manager.parse(QUERY).unwrap(), ParsedQuery::Pipeline(_)));
+    assert!(matches!(context.query_manager.parse(QUERY.to_string()).unwrap(), ParsedQuery::Pipeline(..)));
 
     // Warm: the identical query string now resolves straight from the parse cache.
     assert!(context.cache.get_parsed(QUERY).is_some(), "an identical query string should hit the parse cache");
@@ -98,13 +101,13 @@ fn identical_query_string_hits_translation_cache() {
     let context = setup();
 
     // Cold: the translation cache has no entry for this string.
-    assert!(context.cache.get_translated(QUERY).is_none());
+    assert!(context.cache.get_translated(Arc::new(QUERY.to_owned()), Arc::default()).is_none());
 
     prepare(&context);
 
     // Warm: the identical query string now resolves straight to translated IR.
     assert!(
-        context.cache.get_translated(QUERY).is_some(),
+        context.cache.get_translated(Arc::new(QUERY.to_owned()), Arc::default()).is_some(),
         "an identical query string should hit the translation cache"
     );
 }
@@ -115,11 +118,14 @@ fn schema_reset_invalidates_translation_but_keeps_parse_cache() {
 
     prepare(&context);
     assert!(context.cache.get_parsed(QUERY).is_some());
-    assert!(context.cache.get_translated(QUERY).is_some());
+    assert!(context.cache.get_translated(Arc::new(QUERY.to_string()), Arc::default()).is_some());
 
     // A schema commit can change function resolution, so it flushes the translation cache. Parsing
     // is purely syntactic, so the parse cache must survive.
     context.cache.force_reset(&Statistics::new(SequenceNumber::MIN));
-    assert!(context.cache.get_translated(QUERY).is_none(), "a schema reset should invalidate the translation cache");
+    assert!(
+        context.cache.get_translated(Arc::new(QUERY.to_string()), Arc::default()).is_none(),
+        "a schema reset should invalidate the translation cache"
+    );
     assert!(context.cache.get_parsed(QUERY).is_some(), "a schema reset must not invalidate the parse cache");
 }

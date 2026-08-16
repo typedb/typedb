@@ -15,16 +15,13 @@ use concept::{
 };
 use cucumber::gherkin::Step;
 use encoding::{
-    Prefixed,
     graph::{
         thing::{
-            ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::{ObjectID, ObjectVertex},
         },
         type_::vertex::TypeID,
     },
-    layout::prefix::Prefix,
     value::{ValueEncodable, label::Label, value_type::ValueType},
 };
 use executor::{
@@ -32,7 +29,6 @@ use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
 };
-use futures::StreamExt;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
@@ -88,24 +84,24 @@ fn row_answers_to_string(rows: &[HashMap<String, VariableValue<'static>>]) -> St
 
 fn execute_read_query(
     context: &Context,
-    query: typeql::Query,
+    _query: typeql::Query,
     given_rows: Option<GivenRowsSimple>,
     source_query: &str,
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
-        let parsed_pipeline = query.into_structure().into_pipeline();
+        let parsed = tx.query_manager.parse(source_query.to_string())?.into_pipeline();
         let pipeline = tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             tx.function_manager.clone(),
-            &parsed_pipeline,
+            parsed,
             given_rows,
-            source_query,
         )?;
         if pipeline.has_fetch() {
+            let parameters = pipeline.query_context().parameters.clone();
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                Ok((iterator, ExecutionContext { parameters, .. })) => {
+                Ok((iterator, ExecutionContext { .. })) => {
                     let documents = iterator.try_collect().map_err(|err| QueryError::ReadPipelineExecution {
                         source_query: source_query.to_string(),
                         typedb_source: err,
@@ -141,7 +137,7 @@ fn execute_read_query(
 
 fn execute_write_query(
     context: &mut Context,
-    query: typeql::Query,
+    _query: typeql::Query,
     given_rows: Option<GivenRowsSimple>,
     source_query: &str,
 ) -> Result<QueryAnswer, BehaviourTestExecutionError> {
@@ -156,68 +152,78 @@ fn execute_write_query(
                                            query_manager,
                                            _db,
                                            _opts| {
-        let parsed_pipeline = query.into_structure().into_pipeline();
-        let pipeline_result = query_manager.prepare_write_pipeline(
-            Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
-            &type_manager,
-            thing_manager.clone(),
-            function_manager.clone(),
-            &parsed_pipeline,
-            given_rows,
-            source_query,
-        );
+        match query_manager.parse(source_query.to_string()) {
+            Err(error) => (Err(BehaviourTestExecutionError::Query(*error)), snapshot),
+            Ok(parsed) => {
+                let parsed_pipeline = parsed.into_pipeline();
+                let pipeline_result = query_manager.prepare_write_pipeline(
+                    Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
+                    &type_manager,
+                    thing_manager.clone(),
+                    function_manager.clone(),
+                    parsed_pipeline,
+                    given_rows,
+                );
 
-        match pipeline_result {
-            Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot)),
-            Ok(pipeline) => {
-                if pipeline.has_fetch() {
-                    match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => (
-                            match iterator.collect() {
-                                Ok(documents) => Ok(QueryAnswer::ConceptDocuments(documents, parameters)),
-                                Err(err) => {
+                match pipeline_result {
+                    Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot)),
+                    Ok(pipeline) => {
+                        if pipeline.has_fetch() {
+                            let parameters = pipeline.query_context().parameters.clone();
+                            match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                                Ok((iterator, ExecutionContext { snapshot, .. })) => (
+                                    match iterator.collect() {
+                                        Ok(documents) => Ok(QueryAnswer::ConceptDocuments(documents, parameters)),
+                                        Err(err) => Err(BehaviourTestExecutionError::Query(
+                                            QueryError::WritePipelineExecution {
+                                                source_query: source_query.to_string(),
+                                                typedb_source: err,
+                                            },
+                                        )),
+                                    },
+                                    snapshot,
+                                ),
+                                Err((err, ExecutionContext { snapshot, .. })) => (
                                     Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
                                         source_query: source_query.to_string(),
                                         typedb_source: err,
-                                    }))
-                                }
-                            },
-                            snapshot,
-                        ),
-                        Err((err, ExecutionContext { snapshot, .. })) => (
-                            Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
-                                source_query: source_query.to_string(),
-                                typedb_source: err,
-                            })),
-                            snapshot,
-                        ),
-                    }
-                } else {
-                    let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
-                    match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                        Ok((iterator, ExecutionContext { snapshot, .. })) => {
-                            let result_as_batch = iterator.collect_owned();
-                            match result_as_batch {
-                                Ok(batch) => (
-                                    Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
+                                    })),
                                     snapshot,
                                 ),
-                                Err(typedb_source) => (
-                                    Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
+                            }
+                        } else {
+                            let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
+                            match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                                Ok((iterator, ExecutionContext { snapshot, .. })) => {
+                                    let result_as_batch = iterator.collect_owned();
+                                    match result_as_batch {
+                                        Ok(batch) => (
+                                            Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(
+                                                batch,
+                                                named_outputs,
+                                            ))),
+                                            snapshot,
+                                        ),
+                                        Err(typedb_source) => (
+                                            Err(BehaviourTestExecutionError::Query(
+                                                QueryError::WritePipelineExecution {
+                                                    source_query: source_query.to_string(),
+                                                    typedb_source,
+                                                },
+                                            )),
+                                            snapshot,
+                                        ),
+                                    }
+                                }
+                                Err((err, ExecutionContext { snapshot, .. })) => (
+                                    Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecution {
                                         source_query: source_query.to_string(),
-                                        typedb_source,
+                                        typedb_source: err,
                                     })),
                                     snapshot,
                                 ),
                             }
                         }
-                        Err((err, ExecutionContext { snapshot, .. })) => (
-                            Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecution {
-                                source_query: source_query.to_string(),
-                                typedb_source: err,
-                            })),
-                            snapshot,
-                        ),
                     }
                 }
             }
@@ -227,20 +233,17 @@ fn execute_write_query(
 
 fn execute_analyze(
     context: &mut Context,
-    query: typeql::Query,
+    _query: typeql::Query,
     source_query: &str,
 ) -> Result<AnalysedQuery, BehaviourTestExecutionError> {
     with_read_tx!(context, |tx| {
-        let parsed_pipeline = query.into_structure().into_pipeline();
+        let parsed = tx
+            .query_manager
+            .parse(source_query.to_string())
+            .map_err(|source| BehaviourTestExecutionError::Query(*source))?
+            .into_pipeline();
         tx.query_manager
-            .analyse(
-                tx.snapshot.clone(),
-                &tx.type_manager,
-                &tx.function_manager,
-                &tx.thing_manager,
-                &parsed_pipeline,
-                source_query,
-            )
+            .analyse(tx.snapshot.clone(), &tx.type_manager, &tx.function_manager, &tx.thing_manager, parsed)
             .map_err(|source| BehaviourTestExecutionError::Query(*source))
     })
 }
@@ -270,7 +273,6 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
         return;
     }
-    let typeql_schema = parse_result.unwrap().into_structure().into_schema();
 
     if !matches!(context.transaction().expect("Expected an active transaction"), Schema(_)) {
         may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
@@ -280,13 +282,13 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
 
     with_schema_tx!(context, |tx| {
+        let parsed = tx.query_manager.parse(query.to_string()).unwrap().into_schema();
         let result = tx.query_manager.execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             &tx.function_manager,
-            &typeql_schema,
-            query,
+            parsed,
         );
         if let Either::Right(_err) = may_error.check_logic(result) {
             context.close_active_transaction();

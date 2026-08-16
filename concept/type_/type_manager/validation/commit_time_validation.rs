@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use encoding::graph::definition::r#struct::StructDefinition;
 use itertools::Itertools;
-use storage::{keyspace::KeyspaceSet, snapshot::ReadableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,

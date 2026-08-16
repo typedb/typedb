@@ -15,7 +15,11 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
-use query::given_rows::GivenRowsSimple;
+use query::{
+    given_rows::GivenRowsSimple,
+    query_manager::{ParsedPipeline, ParsedSchemaQuery},
+};
+use resource::profile::QueryProfile;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 
@@ -54,7 +58,8 @@ fn statistics_synchronization_under_concurrent_load() {
 
         let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-        let (tx, result) = execute_schema_query(tx, schema_query, SCHEMA.to_string());
+        let parsed = ParsedSchemaQuery::new(schema_query, Arc::new(SCHEMA.to_string()), QueryProfile::new(false));
+        let (tx, result) = execute_schema_query(tx, parsed);
         result.unwrap();
         let (mut profile, intent) = tx.finalise();
         intent.unwrap().commit(profile.commit_profile()).unwrap();
@@ -102,9 +107,8 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
             QueryOptions::default_grpc(),
-            Arc::new(pipeline),
+            ParsedPipeline::new(Arc::new(pipeline), Arc::new(query_str), QueryProfile::new(false)),
             None::<GivenRowsSimple>,
-            query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
         result.unwrap();

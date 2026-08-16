@@ -31,7 +31,7 @@ use executor::{
     write::WriteError,
 };
 use ir::{
-    pipeline::{ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
+    pipeline::{ParameterRegistry, QueryContext, function_signature::HashMapFunctionSignatureIndex},
     translation::PipelineTranslationContext,
 };
 use itertools::Itertools;
@@ -201,20 +201,14 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
 
     let snapshot = Arc::new(snapshot);
-    let initial = ShimStage::new(
-        input_rows,
-        ExecutionContext {
-            snapshot,
-            thing_manager,
-            function_manager: Arc::default(),
-            parameters: Arc::new(value_parameters),
-            profile: Arc::new(QueryProfile::new(false)),
-        },
-    );
+    let initial =
+        ShimStage::new(input_rows, ExecutionContext { snapshot, thing_manager, function_manager: Arc::default() });
+    let query_context =
+        Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false))));
     let (input_iter, context) = initial.into_iterator();
     let insert_executor: InsertStageExecutor<ShimIterator> = InsertStageExecutor::new(Arc::new(insert_plan));
     let (output_iter, context) = insert_executor
-        .into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible())
+        .into_iterator(input_iter, context, query_context, ExecutionInterrupt::new_uninterruptible())
         .map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source.clone(),
             _ => unreachable!(),
@@ -291,20 +285,14 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     .unwrap();
 
     let snapshot = Arc::new(snapshot);
-    let initial = ShimStage::new(
-        input_rows,
-        ExecutionContext {
-            snapshot,
-            thing_manager,
-            function_manager: Arc::default(),
-            parameters: Arc::new(value_parameters),
-            profile: Arc::new(QueryProfile::new(false)),
-        },
-    );
+    let initial =
+        ShimStage::new(input_rows, ExecutionContext { snapshot, thing_manager, function_manager: Arc::default() });
+    let query_context =
+        Arc::new(QueryContext::new(Arc::new(value_parameters), Arc::default(), Arc::new(QueryProfile::new(false))));
     let (input_iter, context) = initial.into_iterator();
     let delete_executor: DeleteStageExecutor<ShimIterator> = DeleteStageExecutor::new(Arc::new(delete_plan));
     let (output_iter, context) = delete_executor
-        .into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible())
+        .into_iterator(input_iter, context, query_context, ExecutionInterrupt::new_uninterruptible())
         .map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),

@@ -41,10 +41,10 @@ use concept::{
 use encoding::value::{label::Label, value::Value};
 use error::{TypeDBError, typedb_error};
 use options::TransactionOptions;
-use query::error::QueryError;
+use query::{error::QueryError, query_manager::ParsedSchemaQuery};
 use resource::{
     constants::{common::SECONDS_IN_DAY, snapshot::BUFFER_KEY_INLINE},
-    profile::StorageCounters,
+    profile::{QueryProfile, StorageCounters},
 };
 use storage::{
     durability_client::WALClient,
@@ -550,10 +550,10 @@ impl DatabaseImporter {
             typeql::query::QueryStructure::Schema(schema_query) => match &schema_query {
                 SchemaQuery::Define(_) => {
                     let transaction = Self::open_schema_transaction(self.database()?)?;
-                    let (transaction, query_result) =
-                        spawn_blocking(move || execute_schema_query(transaction, schema_query, schema))
-                            .await
-                            .expect("Expected schema query execution finishing");
+                    let parsed = ParsedSchemaQuery::new(schema_query, Arc::new(schema), QueryProfile::new(false));
+                    let (transaction, query_result) = spawn_blocking(move || execute_schema_query(transaction, parsed))
+                        .await
+                        .expect("Expected schema query execution finishing");
                     query_result.map_err(|typedb_source| DatabaseImportError::SchemaQueryFailed { typedb_source })?;
                     Self::commit_schema_transaction(transaction)
                         .await

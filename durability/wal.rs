@@ -754,7 +754,6 @@ impl Drop for FsyncThread {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
 
     use assert as assert_true;
     use diagnostics::metrics::FsyncMetrics;
