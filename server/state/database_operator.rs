@@ -12,8 +12,14 @@ use database::{
     Database, DatabaseDeleteError, DatabaseOpenError,
     database::DatabaseCreateError,
     database_manager::DatabaseManager,
-    migration::database_importer::{DatabaseImporter, ImportCommitError, ImportCommitter},
-    transaction::{CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionRead},
+    migration::{
+        database_import_handler::{DatabaseImportHandler, ImportHandlerError, StagedDatabase},
+        database_importer::DatabaseImporter,
+    },
+    transaction::{
+        CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionError, TransactionRead, TransactionSchema,
+        TransactionWrite,
+    },
 };
 use durability::DurabilitySequenceNumber;
 use executor::ExecutionInterrupt;
@@ -52,8 +58,6 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn spawn_import_service(&self, service: DatabaseImportService)
     -> Result<JoinHandle<()>, ArcServerStateError>;
-
-    fn import_committer(&self) -> Arc<dyn ImportCommitter>;
 
     async fn import_prepare(
         &self,
@@ -98,29 +102,44 @@ pub(crate) struct ImportInfo {
 }
 
 #[derive(Debug)]
-struct LocalImportCommitter {
+struct LocalDatabaseImportHandler {
     database_manager: Arc<DatabaseManager>,
+    staged_database: StagedDatabase,
 }
 
 fn import_commit<I: CommitIntent>(
     intent: I,
     map_err: impl FnOnce(I::Error) -> LocalServerStateError,
-) -> Result<(), ImportCommitError> {
+) -> Result<(), ImportHandlerError> {
     let mut commit_profile = CommitProfile::DISABLED;
     intent.commit(&mut commit_profile).map_err(|typedb_source| Arc::new(map_err(typedb_source)) as _)
 }
 
-impl ImportCommitter for LocalImportCommitter {
-    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportCommitError> {
+impl DatabaseImportHandler for LocalDatabaseImportHandler {
+    fn database_name(&self) -> &str {
+        self.staged_database.database_name()
+    }
+
+    fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError> {
+        self.staged_database.open_schema()
+    }
+
+    fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        self.staged_database.open_write()
+    }
+
+    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportHandlerError> {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source })
     }
 
-    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportCommitError> {
+    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportHandlerError> {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
     }
 
-    fn finalise(&self, name: &str) -> Result<(), ImportCommitError> {
-        self.database_manager.finalise_imported_database(name).map_err(|typedb_source| {
+    fn finalise(self: Box<Self>) -> Result<(), ImportHandlerError> {
+        let Self { database_manager, staged_database } = *self;
+        let name = staged_database.release();
+        database_manager.finalise_imported_database(&name).map_err(|typedb_source| {
             Arc::new(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source }) as _
         })
     }
@@ -131,14 +150,12 @@ pub struct LocalDatabaseOperator {
     database_manager: Arc<DatabaseManager>,
     background_task_spawner: TokioTaskSpawner,
     import_permits: Arc<Semaphore>,
-    import_committer: Arc<LocalImportCommitter>,
     active_imports: Arc<RwLock<HashMap<String, ImportInfo>>>,
 }
 
 impl LocalDatabaseOperator {
     pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
         Self {
-            import_committer: Arc::new(LocalImportCommitter { database_manager: database_manager.clone() }),
             database_manager,
             background_task_spawner,
             import_permits: Arc::new(Semaphore::new(MAX_CONCURRENT_IMPORTS)),
@@ -180,11 +197,10 @@ impl LocalDatabaseOperator {
 
     pub fn new_importer(
         &self,
-        database: Arc<Database<WALClient>>,
-        committer: Arc<dyn ImportCommitter>,
+        handler: Box<dyn DatabaseImportHandler>,
         interrupt: ExecutionInterrupt,
     ) -> DatabaseImporter {
-        DatabaseImporter::new(database, self.database_manager.import_directory().to_owned(), committer, interrupt)
+        DatabaseImporter::new(handler, self.database_manager.import_directory().to_owned(), interrupt)
     }
 
     pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
@@ -203,7 +219,7 @@ impl LocalDatabaseOperator {
         self.database_manager.is_abandoned_import(name)
     }
 
-    pub fn import_finalise(&self, name: &str) -> Result<(), ArcServerStateError> {
+    pub fn finalise_imported_database(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager.finalise_imported_database(name).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source })
         })
@@ -289,10 +305,6 @@ impl DatabaseOperator for LocalDatabaseOperator {
         }))
     }
 
-    fn import_committer(&self) -> Arc<dyn ImportCommitter> {
-        self.import_committer.clone()
-    }
-
     async fn import_prepare(
         &self,
         name: &str,
@@ -303,7 +315,11 @@ impl DatabaseOperator for LocalDatabaseOperator {
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;
         let database = self.prepare_imported_database(name.to_string()).map_err(map_err)?;
-        Ok(self.new_importer(database, self.import_committer(), interrupt))
+        let handler = LocalDatabaseImportHandler {
+            database_manager: self.database_manager.clone(),
+            staged_database: StagedDatabase::new(database),
+        };
+        Ok(self.new_importer(Box::new(handler), interrupt))
     }
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError> {

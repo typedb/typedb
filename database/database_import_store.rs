@@ -5,10 +5,9 @@
  */
 
 use std::{
-    collections::HashMap,
     fs, io,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
@@ -21,13 +20,14 @@ use crate::{
     Database, DatabaseDeleteError, DatabaseOpenError,
     database::DatabaseCreateError,
     database_manager::{directory_entries, file_name_lossy, sync_directory},
+    database_registry::DatabasesMap,
 };
 
+// TODO: Consider a better name.. We don't own the databases, so are we a store then?
 #[derive(Debug)]
-pub(crate) struct DatabaseImportManager {
+pub(crate) struct DatabaseImportStore {
     directory: PathBuf,
     import_ownership: ImportOwnership,
-    databases: RwLock<HashMap<String, Arc<Database<WALClient>>>>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
 }
@@ -42,17 +42,7 @@ pub enum ImportOwnership {
     Shared,
 }
 
-struct RecoveredImports {
-    databases: HashMap<String, Arc<Database<WALClient>>>,
-}
-
-impl RecoveredImports {
-    fn none() -> Self {
-        Self { databases: HashMap::new() }
-    }
-}
-
-impl DatabaseImportManager {
+impl DatabaseImportStore {
     const DIRECTORY_NAME: &'static str = concat!(internal_database_prefix!(), "import");
 
     pub(crate) fn new(
@@ -60,41 +50,27 @@ impl DatabaseImportManager {
         import_ownership: ImportOwnership,
         diagnostics_manager: Arc<DiagnosticsManager>,
         rocks_resources: Arc<RocksResources>,
-    ) -> Result<Self, DatabaseOpenError> {
+    ) -> Result<(Self, DatabasesMap), DatabaseOpenError> {
         let directory = data_directory.join(Self::DIRECTORY_NAME);
-        let recovered = match import_ownership {
+        let staged = match import_ownership {
             ImportOwnership::Exclusive => {
                 Self::cleanup_directory(&directory)?;
-                RecoveredImports::none()
+                DatabasesMap::new()
             }
             ImportOwnership::Shared => Self::recover_directory(&directory, &diagnostics_manager, &rocks_resources)?,
         };
-        Ok(Self {
-            directory,
-            import_ownership,
-            databases: RwLock::new(recovered.databases),
-            diagnostics_manager,
-            rocks_resources,
-        })
+        Ok((Self { directory, import_ownership, diagnostics_manager, rocks_resources }, staged))
     }
 
-    pub(crate) fn get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.databases.read().unwrap().get(name).cloned()
+    pub(crate) fn is_abandoned(&self, staged: &DatabasesMap, name: &str) -> bool {
+        !staged.contains_key(name) && self.exists(name)
     }
 
-    pub(crate) fn names(&self) -> Vec<String> {
-        self.databases.read().unwrap().keys().cloned().collect()
-    }
-
-    pub(crate) fn is_abandoned(&self, name: &str) -> bool {
-        !self.databases.read().unwrap().contains_key(name) && self.exists(name)
-    }
-
-    pub(crate) fn ensure_available(&self, name: &str) -> Result<(), DatabaseCreateError> {
-        if self.databases.read().map_err(|_| DatabaseCreateError::ReadAccessDenied {})?.contains_key(name) {
+    pub(crate) fn ensure_available(&self, staged: &DatabasesMap, name: &str) -> Result<(), DatabaseCreateError> {
+        if staged.contains_key(name) {
             return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
         }
-        if self.is_abandoned(name) {
+        if self.is_abandoned(staged, name) {
             match self.import_ownership {
                 ImportOwnership::Shared => {
                     return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
@@ -112,18 +88,21 @@ impl DatabaseImportManager {
         Ok(())
     }
 
-    pub(crate) fn create_staging(&self, name: &str) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
+    pub(crate) fn create(
+        &self,
+        staged: &mut DatabasesMap,
+        name: &str,
+    ) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
         let map_fs_err =
             |source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) };
         fs::create_dir_all(&self.directory).map_err(map_fs_err)?;
-        let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        if let Some(existing) = databases.remove(name) {
+        if let Some(existing) = staged.remove(name) {
             match Arc::try_unwrap(existing) {
                 Ok(existing) => existing.delete().map_err(|typedb_source| {
                     DatabaseCreateError::ImportCleanupFailed { name: name.to_string(), typedb_source }
                 })?,
                 Err(existing) => {
-                    databases.insert(name.to_string(), existing);
+                    staged.insert(name.to_string(), existing);
                     return Err(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() });
                 }
             }
@@ -135,28 +114,31 @@ impl DatabaseImportManager {
             Database::<WALClient>::open(&self.directory.join(name), &self.diagnostics_manager, &self.rocks_resources)
                 .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })?;
         let database = Arc::new(database);
-        databases.insert(name.to_string(), database.clone());
+        staged.insert(name.to_string(), database.clone());
         self.sync().map_err(map_fs_err)?;
         Ok(database)
     }
 
-    pub(crate) fn take_staging(&self, name: &str) -> Result<Option<Database<WALClient>>, DatabaseDeleteError> {
-        let mut databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
-        let Some(database) = databases.remove(name) else {
+    pub(crate) fn take(
+        &self,
+        staged: &mut DatabasesMap,
+        name: &str,
+    ) -> Result<Option<Database<WALClient>>, DatabaseDeleteError> {
+        let Some(database) = staged.remove(name) else {
             return Ok(None);
         };
         match Arc::try_unwrap(database) {
             Ok(database) => Ok(Some(database)),
             Err(database) => {
-                databases.insert(name.to_string(), database);
+                staged.insert(name.to_string(), database);
                 Err(DatabaseDeleteError::InUse {})
             }
         }
     }
 
-    pub(crate) fn delete_staging(&self, name: &str) -> Result<(), DatabaseDeleteError> {
+    pub(crate) fn delete(&self, staged: &mut DatabasesMap, name: &str) -> Result<(), DatabaseDeleteError> {
         let map_fs_err = |source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) };
-        let Some(database) = self.take_staging(name)? else {
+        let Some(database) = self.take(staged, name)? else {
             if self.exists(name) {
                 fs::remove_dir_all(self.directory.join(name)).map_err(map_fs_err)?;
                 self.sync().map_err(map_fs_err)?;
@@ -217,8 +199,8 @@ impl DatabaseImportManager {
         directory: &PathBuf,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-    ) -> Result<RecoveredImports, DatabaseOpenError> {
-        let mut recovered = RecoveredImports::none();
+    ) -> Result<DatabasesMap, DatabaseOpenError> {
+        let mut recovered = DatabasesMap::new();
         if !directory.exists() {
             return Ok(recovered);
         }
@@ -231,7 +213,7 @@ impl DatabaseImportManager {
             match Database::<WALClient>::open(&entry_path, diagnostics_manager, rocks_resources) {
                 Ok(database) => {
                     event!(Level::INFO, "Recovered in-progress import of database '{name}' after restart.");
-                    recovered.databases.insert(database.name().to_owned(), Arc::new(database));
+                    recovered.insert(database.name().to_owned(), Arc::new(database));
                 }
                 Err(typedb_source) => {
                     event!(

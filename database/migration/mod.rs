@@ -6,6 +6,7 @@
 
 use std::{fmt, fmt::Formatter};
 
+pub mod database_import_handler;
 pub mod database_importer;
 
 #[derive(Debug, PartialEq, Eq)]
