@@ -2829,6 +2829,7 @@ dependencies = [
  "criterion",
  "database",
  "diagnostics",
+ "encoding",
  "executor",
  "function",
  "itertools 0.14.0",
