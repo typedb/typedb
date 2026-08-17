@@ -279,7 +279,7 @@ impl AttributesInfo {
 }
 
 pub struct DatabaseImporter {
-    handler: Option<Box<dyn DatabaseImportHandler>>,
+    import_handler: Option<Box<dyn DatabaseImportHandler>>,
     database_name: String,
     schema_info: SchemaInfo,
     data_info: DataInfo,
@@ -299,14 +299,14 @@ impl DatabaseImporter {
     const COMMIT_BATCH_SIZE: u64 = 10_000;
 
     pub fn new(
-        handler: Box<dyn DatabaseImportHandler>,
+        import_handler: Box<dyn DatabaseImportHandler>,
         import_directory: PathBuf,
         interrupt: ExecutionInterrupt,
     ) -> Self {
-        let database_name = handler.database_name().to_owned();
+        let database_name = import_handler.database_name().to_owned();
         let data_info = DataInfo::new(&import_directory, &database_name);
         Self {
-            handler: Some(handler),
+            import_handler: Some(import_handler),
             database_name,
             schema_info: SchemaInfo::new(),
             data_info,
@@ -420,10 +420,10 @@ impl DatabaseImporter {
         self.check_interrupt()?;
         self.restore_relaxed_schema()?;
 
-        let Some(handler) = self.handler.take() else {
+        let Some(import_handler) = self.import_handler.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         };
-        handler.finalise().map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
+        import_handler.finalise().map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
     }
 
     fn process_owned_attributes(
@@ -943,14 +943,16 @@ impl DatabaseImporter {
         match self.data_transaction.take() {
             Some(transaction) => Ok(transaction),
             None => self
-                .handler()?
+                .import_handler()?
                 .open_write()
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
 
     fn open_schema_transaction(&self) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
-        self.handler()?.open_schema().map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
+        self.import_handler()?
+            .open_schema()
+            .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
     }
 
     fn commit_schema_transaction(
@@ -960,25 +962,28 @@ impl DatabaseImporter {
     ) -> Result<(), DatabaseImportError> {
         let (_, finalise_result) = transaction.finalise();
         let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
-        self.handler()?.commit_schema(intent).map_err(map_err)
+        self.import_handler()?.commit_schema(intent).map_err(map_err)
     }
 
     fn commit_write_transaction(&self, transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
         let map_err = |typedb_source| DatabaseImportError::DataCommitFailed { typedb_source };
         let (_, finalise_result) = transaction.finalise();
         let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
-        self.handler()?.commit_data(intent).map_err(map_err)
+        self.import_handler()?.commit_data(intent).map_err(map_err)
     }
 
-    fn handler(&self) -> Result<&dyn DatabaseImportHandler, DatabaseImportError> {
-        self.handler.as_deref().ok_or(DatabaseImportError::AccessAfterFinalisation {})
+    fn import_handler(&self) -> Result<&dyn DatabaseImportHandler, DatabaseImportError> {
+        self.import_handler.as_deref().ok_or(DatabaseImportError::AccessAfterFinalisation {})
     }
 }
 
 impl Drop for DatabaseImporter {
     fn drop(&mut self) {
         if let Some(data_transaction) = self.data_transaction.take() {
-            assert!(self.handler.is_some(), "Unexpected open import transaction while the import is still not done");
+            assert!(
+                self.import_handler.is_some(),
+                "Unexpected open import transaction while the import is still not done"
+            );
             data_transaction.close();
         }
     }

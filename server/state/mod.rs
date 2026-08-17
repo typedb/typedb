@@ -223,7 +223,11 @@ impl ServerState {
         diagnostics_manager: Arc<DiagnosticsManager>,
         database_manager: Arc<DatabaseManager>,
     ) {
-        diagnostics_manager.submit_database_metrics(database_manager.user_database_metrics());
+        let snapshots = database_manager
+            .map_user_databases(|database| (database.name_arc(), database.get_metrics()))
+            .into_iter()
+            .collect();
+        diagnostics_manager.submit_database_metrics(snapshots);
     }
 
     pub async fn resolve_address(address: &str) -> Result<SocketAddr, ServerOpenError> {

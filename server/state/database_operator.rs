@@ -13,7 +13,9 @@ use database::{
     database::DatabaseCreateError,
     database_manager::DatabaseManager,
     migration::{
-        database_import_handler::{DatabaseImportHandler, ImportHandlerError, StagedDatabase},
+        database_import_handler::{
+            DatabaseImportHandler, ImportHandlerError, open_import_schema_transaction, open_import_write_transaction,
+        },
         database_importer::DatabaseImporter,
     },
     transaction::{
@@ -104,7 +106,7 @@ pub(crate) struct ImportInfo {
 #[derive(Debug)]
 struct LocalDatabaseImportHandler {
     database_manager: Arc<DatabaseManager>,
-    staged_database: StagedDatabase,
+    staged_database: Arc<Database<WALClient>>,
 }
 
 fn import_commit<I: CommitIntent>(
@@ -117,15 +119,15 @@ fn import_commit<I: CommitIntent>(
 
 impl DatabaseImportHandler for LocalDatabaseImportHandler {
     fn database_name(&self) -> &str {
-        self.staged_database.database_name()
+        self.staged_database.name()
     }
 
     fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError> {
-        self.staged_database.open_schema()
+        open_import_schema_transaction(&self.staged_database)
     }
 
     fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        self.staged_database.open_write()
+        open_import_write_transaction(&self.staged_database)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportHandlerError> {
@@ -138,7 +140,8 @@ impl DatabaseImportHandler for LocalDatabaseImportHandler {
 
     fn finalise(self: Box<Self>) -> Result<(), ImportHandlerError> {
         let Self { database_manager, staged_database } = *self;
-        let name = staged_database.release();
+        let name = staged_database.name().to_owned();
+        drop(staged_database);
         database_manager.finalise_imported_database(&name).map_err(|typedb_source| {
             Arc::new(LocalServerStateError::DatabaseImportFinaliseFailed { typedb_source }) as _
         })
@@ -203,8 +206,10 @@ impl LocalDatabaseOperator {
         DatabaseImporter::new(handler, self.database_manager.import_directory().to_owned(), interrupt)
     }
 
-    pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
-        self.database_manager.prepare_imported_database(name)
+    pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
+        self.database_manager.prepare_imported_database(name).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source })
+        })
     }
 
     pub fn imported_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
@@ -314,11 +319,8 @@ impl DatabaseOperator for LocalDatabaseOperator {
         let map_err =
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;
-        let database = self.prepare_imported_database(name.to_string()).map_err(map_err)?;
-        let handler = LocalDatabaseImportHandler {
-            database_manager: self.database_manager.clone(),
-            staged_database: StagedDatabase::new(database),
-        };
+        let staged_database = self.prepare_imported_database(name.to_string())?;
+        let handler = LocalDatabaseImportHandler { database_manager: self.database_manager.clone(), staged_database };
         Ok(self.new_importer(Box::new(handler), interrupt))
     }
 

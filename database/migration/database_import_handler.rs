@@ -32,43 +32,26 @@ pub trait DatabaseImportHandler: Send + Sync {
 
 pub type ImportHandlerError = Arc<dyn TypeDBError + Send + Sync>;
 
-#[derive(Debug)]
-pub struct StagedDatabase {
-    database: Arc<Database<WALClient>>,
+const OPTIONS_PARALLEL: bool = true;
+const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
+const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
+
+pub fn open_import_schema_transaction(
+    database: &Arc<Database<WALClient>>,
+) -> Result<TransactionSchema<WALClient>, TransactionError> {
+    TransactionSchema::open(database.clone(), import_transaction_options())
 }
 
-impl StagedDatabase {
-    const OPTIONS_PARALLEL: bool = true;
-    const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
-    const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
+pub fn open_import_write_transaction(
+    database: &Arc<Database<WALClient>>,
+) -> Result<TransactionWrite<WALClient>, TransactionError> {
+    TransactionWrite::open(database.clone(), import_transaction_options())
+}
 
-    pub fn new(database: Arc<Database<WALClient>>) -> Self {
-        Self { database }
-    }
-
-    pub fn database_name(&self) -> &str {
-        self.database.name()
-    }
-
-    pub fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError> {
-        TransactionSchema::open(self.database.clone(), Self::transaction_options())
-    }
-
-    pub fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        TransactionWrite::open(self.database.clone(), Self::transaction_options())
-    }
-
-    pub fn release(self) -> String {
-        let name = self.database_name().to_owned();
-        drop(self.database);
-        name
-    }
-
-    fn transaction_options() -> TransactionOptions {
-        TransactionOptions {
-            parallel: Self::OPTIONS_PARALLEL,
-            schema_lock_acquire_timeout_millis: Self::OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
-            transaction_timeout_millis: Self::OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
-        }
+fn import_transaction_options() -> TransactionOptions {
+    TransactionOptions {
+        parallel: OPTIONS_PARALLEL,
+        schema_lock_acquire_timeout_millis: OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
+        transaction_timeout_millis: OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
     }
 }
