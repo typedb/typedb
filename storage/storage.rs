@@ -57,7 +57,7 @@ use crate::{
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
-        checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
+        checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter, StorageMetadata},
         commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     },
     sequence_number::SequenceNumber,
@@ -421,12 +421,15 @@ impl<Durability> MVCCStorage<Durability> {
         self.keyspaces.get(keyspace_id)
     }
 
-    pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
-        checkpoint.add_storage(
-            &self.keyspaces,
+    fn metadata(&self) -> StorageMetadata {
+        StorageMetadata::new(
             self.snapshot_watermark(),
             SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed)),
         )
+    }
+
+    pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
+        checkpoint.add_storage(&self.keyspaces, self.metadata())
     }
 
     pub fn delete_storage(self) -> Result<(), StorageDeleteError>

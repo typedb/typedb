@@ -37,10 +37,16 @@ const CHECKPOINT_DIR_NAME: &str = "checkpoint";
 const STORAGE_METADATA_FILE_NAME: &str = "STORAGE_METADATA";
 const TEMP_FILE_EXTENSION: &str = "tmp";
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct StorageMetadata {
     pub watermark: SequenceNumber,
-    pub cleanup_sequence_number: Option<SequenceNumber>,
+    cleanup_sequence_number: Option<SequenceNumber>,
+}
+
+impl StorageMetadata {
+    pub fn new(watermark: SequenceNumber, cleanup_sequence_number: SequenceNumber) -> Self {
+        Self { watermark, cleanup_sequence_number: Some(cleanup_sequence_number) }
+    }
 }
 
 impl FromStr for StorageMetadata {
@@ -317,12 +323,7 @@ impl CheckpointWriter {
         Ok(Self { checkpoint_directory, temporary_directory })
     }
 
-    pub fn add_storage(
-        &self,
-        keyspaces: &Keyspaces,
-        watermark: SequenceNumber,
-        cleanup_sequence_number: SequenceNumber,
-    ) -> Result<(), CheckpointCreateError> {
+    pub fn add_storage(&self, keyspaces: &Keyspaces, metadata: StorageMetadata) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{KeyspaceCheckpoint, MetadataWrite};
 
         keyspaces
@@ -332,13 +333,8 @@ impl CheckpointWriter {
         fail_point!(CHECKPOINT_METADATA_WRITE_FAIL);
 
         let metadata_file_path = self.temporary_directory.join(STORAGE_METADATA_FILE_NAME);
-        write_file(
-            &metadata_file_path,
-            StorageMetadata { watermark, cleanup_sequence_number: Some(cleanup_sequence_number) }
-                .to_string()
-                .as_bytes(),
-        )
-        .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
+        write_file(&metadata_file_path, metadata.to_string().as_bytes())
+            .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
 
         Ok(())
     }
