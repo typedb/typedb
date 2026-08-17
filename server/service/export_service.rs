@@ -9,7 +9,7 @@ use error::typedb_error;
 use ir::pipeline::FunctionReadError;
 use storage::durability_client::DurabilityClient;
 
-pub(crate) fn get_transaction_schema<D: DurabilityClient>(
+pub fn get_transaction_schema<D: DurabilityClient>(
     transaction: &TransactionRead<D>,
 ) -> Result<String, DatabaseExportError> {
     let types_syntax = get_types_syntax(transaction)?;

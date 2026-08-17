@@ -7,7 +7,6 @@ use std::fmt;
 
 pub(crate) mod export_service;
 pub(crate) mod import_service;
-pub(crate) mod item;
 
 #[derive(Debug, PartialEq, Eq)]
 struct Checksums {

@@ -340,10 +340,6 @@ impl Files {
             .get_mut()
             .sync_all()
             .map_err(|err| WALError::Sync { source: Arc::new(err) })?;
-        self.sync_directory_best_effort()
-    }
-
-    fn sync_directory_best_effort(&mut self) -> Result<(), DurabilityServiceError> {
         crate::sync_directory(&self.directory).map_err(|err| WALError::Sync { source: Arc::new(err) }.into())
     }
 

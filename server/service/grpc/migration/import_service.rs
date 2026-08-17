@@ -14,10 +14,8 @@ use std::{
 
 use database::migration::database_importer::DatabaseImporter;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
-use encoding::value::label::Label;
 use error::TypeDBError;
 use executor::{ExecutionInterrupt, InterruptType};
-use itertools::Itertools;
 use tokio::{
     sync::{
         broadcast,
@@ -31,15 +29,7 @@ use tonic::{Status, Streaming};
 use tracing::{Level, event};
 use typedb_protocol::{
     database_manager::import::{Client as ProtocolClient, Server as ProtocolServer},
-    migration::{
-        Item as MigrationItemProto,
-        item::{
-            Attribute as MigrationAttributeProto, Checksums as MigrationChecksumsProto, Entity as MigrationEntityProto,
-            Header as MigrationHeaderProto, OwnedAttribute as MigrationOwnedAttributeProto,
-            Relation as MigrationRelationProto,
-            relation::{Role as MigrationRoleProto, role::Player as MigrationRolePlayerProto},
-        },
-    },
+    migration::Item as MigrationItemProto,
 };
 
 use crate::{
@@ -48,10 +38,10 @@ use crate::{
         grpc::{
             diagnostics::run_with_diagnostics_async,
             error::{IntoGrpcStatus, ProtocolError},
-            migration::item::{decode_checksums, decode_migration_value},
             response_builders::database_manager::database_import_res_done,
         },
         import_service::DatabaseImportServiceError,
+        migration::item_apply::process_item,
     },
     state::ServerState,
 };
@@ -289,7 +279,7 @@ impl DatabaseImportService {
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         self.run_importer_step("data loading", move |importer| {
             for item in items {
-                Self::process_item(item, importer)?;
+                process_item(item, importer)?;
 
                 let total_items = importer.total_item_count();
                 if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
@@ -358,120 +348,6 @@ impl DatabaseImportService {
     fn import_task_failed(phase: &str) -> DatabaseImportServiceError {
         event!(Level::ERROR, "Import processing panicked during {phase}; the import will be cancelled.");
         DatabaseImportServiceError::ImportTaskFailed { phase: phase.to_string() }
-    }
-
-    fn process_item(
-        item_proto: MigrationItemProto,
-        database_importer: &mut DatabaseImporter,
-    ) -> Result<(), DatabaseImportServiceError> {
-        use typedb_protocol::migration::item;
-        let MigrationItemProto { item } = item_proto;
-        let Some(item) = item else {
-            return Err(DatabaseImportServiceError::ImportEmptyItem {});
-        };
-
-        match item {
-            item::Item::Attribute(attribute) => Self::process_attribute(attribute, database_importer),
-            item::Item::Entity(entity) => Self::process_entity(entity, database_importer),
-            item::Item::Relation(relation) => Self::process_relation(relation, database_importer),
-            item::Item::Header(header) => Self::process_header(database_importer, header),
-            item::Item::Checksums(checksums) => Self::process_checksums(database_importer, checksums),
-        }
-    }
-
-    fn process_attribute(
-        attribute_proto: MigrationAttributeProto,
-        database_importer: &mut DatabaseImporter,
-    ) -> Result<(), DatabaseImportServiceError> {
-        let MigrationAttributeProto { id, label: label_text, attributes, value } = attribute_proto;
-        if !attributes.is_empty() {
-            return Err(DatabaseImportServiceError::AttributesOwningAttributes {});
-        }
-        let label = Label::parse_from(&label_text, None);
-        let value = decode_migration_value(value.ok_or_else(|| DatabaseImportServiceError::AbsentAttributeValue {})?)
-            .map_err(|typedb_source| DatabaseImportServiceError::ConceptDecode { typedb_source })?;
-
-        database_importer
-            .import_attribute(id, label, value)
-            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })
-    }
-
-    fn process_entity(
-        entity_proto: MigrationEntityProto,
-        database_importer: &mut DatabaseImporter,
-    ) -> Result<(), DatabaseImportServiceError> {
-        let MigrationEntityProto { id, label: label_text, attributes } = entity_proto;
-        let label = Label::parse_from(&label_text, None);
-
-        database_importer
-            .import_entity(id, label, Self::convert_owned_attributes(attributes))
-            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })
-    }
-
-    fn process_relation(
-        relation_proto: MigrationRelationProto,
-        database_importer: &mut DatabaseImporter,
-    ) -> Result<(), DatabaseImportServiceError> {
-        let MigrationRelationProto { id, label: label_text, attributes, roles } = relation_proto;
-        let label = Label::parse_from(&label_text, None);
-
-        database_importer
-            .import_relation(
-                id,
-                label,
-                Self::convert_owned_attributes(attributes),
-                Self::convert_related_role_players(roles),
-            )
-            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })
-    }
-
-    fn process_header(
-        database_importer: &DatabaseImporter,
-        header_proto: MigrationHeaderProto,
-    ) -> Result<(), DatabaseImportServiceError> {
-        let MigrationHeaderProto { typedb_version: original_version, original_database } = header_proto;
-        let new_database = database_importer.database_name();
-        event!(Level::DEBUG, "Importing '{original_database}' from TypeDB {original_version} to '{new_database}'.");
-        Ok(())
-    }
-
-    fn process_checksums(
-        database_importer: &mut DatabaseImporter,
-        checksums_proto: MigrationChecksumsProto,
-    ) -> Result<(), DatabaseImportServiceError> {
-        database_importer
-            .record_expected_checksums(decode_checksums(checksums_proto))
-            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })
-    }
-
-    fn convert_owned_attributes(attributes: Vec<MigrationOwnedAttributeProto>) -> Vec<String> {
-        attributes
-            .into_iter()
-            .map(|proto| {
-                let MigrationOwnedAttributeProto { id } = proto;
-                id
-            })
-            .collect_vec()
-    }
-
-    fn convert_related_role_players(roles: Vec<MigrationRoleProto>) -> Vec<(Label, Vec<String>)> {
-        roles
-            .into_iter()
-            .map(|role_proto| {
-                let MigrationRoleProto { label: label_text, players } = role_proto;
-                let label = Label::parse_from(&label_text, None);
-                (
-                    label,
-                    players
-                        .into_iter()
-                        .map(|proto| {
-                            let MigrationRolePlayerProto { id } = proto;
-                            id
-                        })
-                        .collect_vec(),
-                )
-            })
-            .collect_vec()
     }
 
     async fn send_done(response_sender: &ResponseSender) {
