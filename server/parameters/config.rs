@@ -127,7 +127,7 @@ pub struct StorageConfig {
     #[serde(default)]
     pub rocksdb: RocksDbConfig,
     #[serde(default)]
-    pub cleanup: CleanupConfig,
+    pub cleanup: OptionEnabled<CleanupConfig>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -153,19 +153,43 @@ const fn default_rocksdb_write_buffers_limit() -> ByteSize {
     ByteSize::mb(512)
 }
 
-#[derive(Default, Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "enabled")]
+#[serde(rename_all = "kebab-case")]
+pub struct OptionEnabled<T> {
+    enabled: bool,
+    #[serde(flatten)]
+    #[serde(default = "None")]
+    inner: Option<T>,
+}
+
+impl<T> OptionEnabled<T> {
+    pub fn map<U>(self, f: fn(T) -> U) -> OptionEnabled<U> {
+        let Self { enabled, inner } = self;
+        OptionEnabled { enabled, inner: inner.map(f) }
+    }
+
+    pub fn unwrap_or(self, default: T) -> T {
+        self.inner.filter(|_| self.enabled).unwrap_or(default)
+    }
+}
+
+impl<T> Default for OptionEnabled<T> {
+    fn default() -> Self {
+        Self { enabled: false, inner: None }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "strategy")]
 #[serde(rename_all = "kebab-case")]
 pub enum CleanupConfig {
-    #[default]
-    Disabled,
     Eager,
 }
 
 impl From<CleanupConfig> for DatabaseCleanupStrategy {
     fn from(value: CleanupConfig) -> Self {
         match value {
-            CleanupConfig::Disabled => Self::Disabled,
             CleanupConfig::Eager => Self::Eager,
         }
     }

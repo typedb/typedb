@@ -28,7 +28,8 @@ storage:
         cache-size: 1gb
         write-buffers-limit: 512mb
     cleanup:
-        strategy: disabled
+        enabled: false
+        strategy: eager
 
 logging:
     directory: "logs"
