@@ -18,7 +18,6 @@ use concept::{
     },
 };
 use durability::DurabilitySequenceNumber;
-use encoding::{EncodingKeyspace, layout::prefix::Prefix};
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use options::TransactionOptions;
@@ -26,7 +25,6 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError},
-    keyspace::KeyspaceSet,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
         WriteSnapshot, snapshot_id::SnapshotId,
