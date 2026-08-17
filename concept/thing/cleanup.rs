@@ -24,12 +24,12 @@ use storage::{
     keyspace::KeyspaceSet,
 };
 
-type Key = StorageKey<'static, BUFFER_KEY_INLINE>;
+type CleanupRecordKey = StorageKey<'static, BUFFER_KEY_INLINE>;
 
 #[derive(Debug)]
 struct KeyRangeInclusive {
-    start: Key,
-    end: Key,
+    start: CleanupRecordKey,
+    end: CleanupRecordKey,
     fixed_width: bool,
 }
 
@@ -37,14 +37,14 @@ impl KeyRangeInclusive {
     fn merge(self, other: Self) -> Self {
         debug_assert_eq!(self.fixed_width, other.fixed_width);
         Self {
-            start: Key::min(self.start, other.start),
-            end: Key::max(self.end, other.end),
+            start: CleanupRecordKey::min(self.start, other.start),
+            end: CleanupRecordKey::max(self.end, other.end),
             fixed_width: self.fixed_width,
         }
     }
 }
 
-impl From<KeyRangeInclusive> for KeyRange<Key> {
+impl From<KeyRangeInclusive> for KeyRange<CleanupRecordKey> {
     fn from(value: KeyRangeInclusive) -> Self {
         let KeyRangeInclusive { start, end, fixed_width } = value;
         Self::new(RangeStart::Inclusive(start), RangeEnd::EndPrefixInclusive(end), fixed_width)
@@ -53,7 +53,7 @@ impl From<KeyRangeInclusive> for KeyRange<Key> {
 
 #[derive(Debug, Default)]
 pub struct CleanupRecord {
-    intervals: BTreeMap<Key, KeyRangeInclusive>,
+    intervals: BTreeMap<CleanupRecordKey, KeyRangeInclusive>,
 }
 
 impl CleanupRecord {
@@ -65,14 +65,14 @@ impl CleanupRecord {
         Self {
             intervals: KS::iter()
                 .map(|ks| {
-                    let empty_key = || Key::new(ks, Bytes::copy(&[]));
+                    let empty_key = || CleanupRecordKey::new(ks, Bytes::copy(&[]));
                     (empty_key(), KeyRangeInclusive { start: empty_key(), end: empty_key(), fixed_width: false })
                 })
                 .collect(),
         }
     }
 
-    pub fn insert(&mut self, prefix: Key, key: Key, fixed_width_keys: bool) {
+    pub fn insert(&mut self, prefix: CleanupRecordKey, key: CleanupRecordKey, fixed_width_keys: bool) {
         debug_assert!(key.starts_with(&prefix));
         match self.intervals.entry(prefix) {
             Entry::Vacant(vacant_entry) => {
@@ -90,21 +90,23 @@ impl CleanupRecord {
     }
 
     pub fn merge(a: Self, b: Self) -> Self {
-        let intervals = itertools::merge_join_by(a.intervals, b.intervals, |(apfx, _), (bpfx, _)| Key::cmp(apfx, bpfx))
-            .map(|x| match x {
-                EitherOrBoth::Left(kv) | EitherOrBoth::Right(kv) => kv,
-                EitherOrBoth::Both((pfx, range_a), (_pfx, range_b)) => {
-                    debug_assert_eq!(pfx, _pfx);
-                    (pfx, range_a.merge(range_b))
-                }
-            })
-            .collect();
+        let intervals = itertools::merge_join_by(a.intervals, b.intervals, |(apfx, _), (bpfx, _)| {
+            CleanupRecordKey::cmp(apfx, bpfx)
+        })
+        .map(|x| match x {
+            EitherOrBoth::Left(kv) | EitherOrBoth::Right(kv) => kv,
+            EitherOrBoth::Both((pfx, range_a), (_pfx, range_b)) => {
+                debug_assert_eq!(pfx, _pfx);
+                (pfx, range_a.merge(range_b))
+            }
+        })
+        .collect();
         Self { intervals }
     }
 }
 
 impl IntoIterator for CleanupRecord {
-    type Item = (Key, KeyRange<Key>);
+    type Item = (CleanupRecordKey, KeyRange<CleanupRecordKey>);
 
     type IntoIter = IntoIter;
 
@@ -114,11 +116,14 @@ impl IntoIterator for CleanupRecord {
 }
 
 pub struct IntoIter(
-    Map<btree_map::IntoIter<Key, KeyRangeInclusive>, fn((Key, KeyRangeInclusive)) -> (Key, KeyRange<Key>)>,
+    Map<
+        btree_map::IntoIter<CleanupRecordKey, KeyRangeInclusive>,
+        fn((CleanupRecordKey, KeyRangeInclusive)) -> (CleanupRecordKey, KeyRange<CleanupRecordKey>),
+    >,
 );
 
 impl Iterator for IntoIter {
-    type Item = (Key, KeyRange<Key>);
+    type Item = (CleanupRecordKey, KeyRange<CleanupRecordKey>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -149,7 +154,7 @@ mod serialise {
         ser::SerializeMap,
     };
 
-    use super::{CleanupRecord, Key, KeyRangeInclusive};
+    use super::{CleanupRecord, CleanupRecordKey, KeyRangeInclusive};
 
     impl Serialize for CleanupRecord {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -172,7 +177,7 @@ mod serialise {
             struct KeyRangeMapVisitor;
 
             impl<'de> Visitor<'de> for KeyRangeMapVisitor {
-                type Value = BTreeMap<Key, KeyRangeInclusive>;
+                type Value = BTreeMap<CleanupRecordKey, KeyRangeInclusive>;
 
                 fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                     formatter.write_str(type_name::<Self>())
@@ -184,7 +189,7 @@ mod serialise {
                 {
                     let mut intervals = BTreeMap::new();
                     while let Some((prefix, range)) = map.next_entry()? {
-                        intervals.insert(Key::Array(prefix), range);
+                        intervals.insert(CleanupRecordKey::Array(prefix), range);
                     }
                     Ok(intervals)
                 }
@@ -239,8 +244,8 @@ mod serialise {
                     }
 
                     Ok(KeyRangeInclusive {
-                        start: Key::Array(start.ok_or_else(|| de::Error::missing_field("start"))?),
-                        end: Key::Array(end.ok_or_else(|| de::Error::missing_field("end"))?),
+                        start: CleanupRecordKey::Array(start.ok_or_else(|| de::Error::missing_field("start"))?),
+                        end: CleanupRecordKey::Array(end.ok_or_else(|| de::Error::missing_field("end"))?),
                         fixed_width: fixed_width.ok_or_else(|| de::Error::missing_field("fixed_width"))?,
                     })
                 }
