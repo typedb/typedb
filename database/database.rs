@@ -649,8 +649,12 @@ fn make_cleanup_fn(
     cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
     cleanup_strategy: DatabaseCleanupStrategy,
 ) -> impl Fn() {
-    fn make_disabled_cleanup_fn() -> Box<dyn Fn() + Send + Sync> {
-        Box::new(|| ())
+    fn make_disabled_cleanup_fn(
+        cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+    ) -> Box<dyn Fn() + Send + Sync> {
+        Box::new(move || {
+            cleanup_queue.write().unwrap().clear();
+        })
     }
 
     fn make_eager_cleanup_fn(
@@ -692,7 +696,7 @@ fn make_cleanup_fn(
     }
 
     match cleanup_strategy {
-        DatabaseCleanupStrategy::Disabled => make_disabled_cleanup_fn(),
+        DatabaseCleanupStrategy::Disabled => make_disabled_cleanup_fn(cleanup_queue),
         DatabaseCleanupStrategy::Eager => make_eager_cleanup_fn(database_name, storage, schema, cleanup_queue),
     }
 }
