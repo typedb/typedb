@@ -1819,11 +1819,11 @@ impl ThingManager {
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
-        self.create_commit_locks(snapshot)
+        self.finalise_storage_writes(snapshot)
             .map_err(|error| vec![ConceptWriteError::ConceptRead { typedb_source: error }])
     }
 
-    fn create_commit_locks(
+    fn finalise_storage_writes(
         &self,
         snapshot: &mut impl WritableSnapshot,
     ) -> Result<CleanupRecord, Box<ConceptReadError>> {
@@ -1831,88 +1831,39 @@ impl ThingManager {
 
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, write) in snapshot.iterate_writes().collect_vec() {
-            if ThingEdgeHas::is_has(&key) {
-                let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
-                let object = Object::new(has.from());
-                let attribute = Attribute::new(has.to());
-                let attribute_type = attribute.type_();
-
-                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
-                self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
-            } else if ThingEdgeLinks::is_links(&key) {
-                let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
-                let relation = Relation::new(role_player.relation());
-                let player = Object::new(role_player.player());
-                let role_type = RoleType::build_from_type_id(role_player.role_id());
-
-                self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
-                self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
-            }
+            self.create_commit_locks(snapshot, &key)?;
 
             if let Write::Delete = write {
-                if let Some(object) = ObjectVertex::try_decode(key.bytes()) {
-                    let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
-                    cleanup_record.insert(
-                        prefix.resize_to(),
-                        StorageKey::Array(key).resize_to(),
-                        ObjectVertex::FIXED_WIDTH_ENCODING,
-                    );
-                } else if let Some(attr) = AttributeVertex::try_decode(key.bytes()) {
-                    let prefix = AttributeVertex::build_prefix_type(attr.prefix(), attr.type_id_(), attr.keyspace());
-                    cleanup_record.insert(
-                        prefix.resize_to(),
-                        StorageKey::Array(key).resize_to(),
-                        AttributeVertex::FIXED_WIDTH_ENCODING,
-                    );
-                } else if let Some(has) = ThingEdgeHas::try_decode(key.bytes()) {
-                    let prefix = ThingEdgeHas::prefix_from_type(Object::new(has.from()).type_().vertex());
-                    cleanup_record.insert(
-                        prefix.resize_to(),
-                        StorageKey::Array(key).resize_to(),
-                        ThingEdgeHas::FIXED_WIDTH_ENCODING,
-                    );
-                } else if let Some(reverse_has) = ThingEdgeHasReverse::try_decode(key.bytes()) {
-                    let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
-                        reverse_has.from().value_type_category(),
-                        reverse_has.from().type_id_(),
-                    );
-                    cleanup_record.insert(
-                        prefix.resize_to(),
-                        StorageKey::Array(key).resize_to(),
-                        ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
-                    );
-                } else if let Some(links) = ThingEdgeLinks::try_decode(key.bytes()) {
-                    let prefix = if links.is_reverse() {
-                        ThingEdgeLinks::prefix_reverse_from_player_type(
-                            Object::new(links.from()).type_().vertex().prefix(),
-                            links.from().type_id_(),
-                        )
-                    } else {
-                        ThingEdgeLinks::prefix_from_relation_type(links.from().type_id_())
-                    };
-                    cleanup_record.insert(
-                        prefix.resize_to(),
-                        StorageKey::Array(key).resize_to(),
-                        ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-                    );
-                } else if let Some(links_index) = ThingEdgeIndexedRelation::try_decode(key.bytes()) {
-                    let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
-                        links_index.relation_type_id(),
-                        Object::new(links_index.from()).type_().vertex().prefix(),
-                        links_index.from().type_id_(),
-                    );
-                    cleanup_record.insert(
-                        prefix.resize_to(),
-                        StorageKey::Array(key).resize_to(),
-                        ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
-                    );
-                } else {
-                    debug!("Unhandled delete when constructing compaction record!")
-                }
+                register_delete_in_cleanup_record(&mut cleanup_record, key);
             }
         }
 
         Ok(cleanup_record)
+    }
+
+    fn create_commit_locks(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        key: &StorageKeyArray<BUFFER_KEY_INLINE>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if ThingEdgeHas::is_has(key) {
+            let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
+            let object = Object::new(has.from());
+            let attribute = Attribute::new(has.to());
+            let attribute_type = attribute.type_();
+
+            self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
+            self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
+        } else if ThingEdgeLinks::is_links(key) {
+            let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
+            let relation = Relation::new(role_player.relation());
+            let player = Object::new(role_player.player());
+            let role_type = RoleType::build_from_type_id(role_player.role_id());
+
+            self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
+            self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
+        }
+        Ok(())
     }
 
     fn add_exclusive_lock_for_unique_constraint(
@@ -3071,5 +3022,67 @@ impl ThingManager {
                 unreachable!("Encountered an `insert` while a `put` was expected in the snapshot.")
             }
         }
+    }
+}
+
+fn register_delete_in_cleanup_record(cleanup_record: &mut CleanupRecord, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+    if let Some(object) = ObjectVertex::try_decode(key.bytes()) {
+        let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
+        cleanup_record.insert(
+            prefix.resize_to(),
+            StorageKey::Array(key).resize_to(),
+            ObjectVertex::FIXED_WIDTH_ENCODING,
+        );
+    } else if let Some(attr) = AttributeVertex::try_decode(key.bytes()) {
+        let prefix = AttributeVertex::build_prefix_type(attr.prefix(), attr.type_id_(), attr.keyspace());
+        cleanup_record.insert(
+            prefix.resize_to(),
+            StorageKey::Array(key).resize_to(),
+            AttributeVertex::FIXED_WIDTH_ENCODING,
+        );
+    } else if let Some(has) = ThingEdgeHas::try_decode(key.bytes()) {
+        let prefix = ThingEdgeHas::prefix_from_type(Object::new(has.from()).type_().vertex());
+        cleanup_record.insert(
+            prefix.resize_to(),
+            StorageKey::Array(key).resize_to(),
+            ThingEdgeHas::FIXED_WIDTH_ENCODING,
+        );
+    } else if let Some(reverse_has) = ThingEdgeHasReverse::try_decode(key.bytes()) {
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
+            reverse_has.from().value_type_category(),
+            reverse_has.from().type_id_(),
+        );
+        cleanup_record.insert(
+            prefix.resize_to(),
+            StorageKey::Array(key).resize_to(),
+            ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+        );
+    } else if let Some(links) = ThingEdgeLinks::try_decode(key.bytes()) {
+        let prefix = if links.is_reverse() {
+            ThingEdgeLinks::prefix_reverse_from_player_type(
+                Object::new(links.from()).type_().vertex().prefix(),
+                links.from().type_id_(),
+            )
+        } else {
+            ThingEdgeLinks::prefix_from_relation_type(links.from().type_id_())
+        };
+        cleanup_record.insert(
+            prefix.resize_to(),
+            StorageKey::Array(key).resize_to(),
+            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+        );
+    } else if let Some(links_index) = ThingEdgeIndexedRelation::try_decode(key.bytes()) {
+        let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
+            links_index.relation_type_id(),
+            Object::new(links_index.from()).type_().vertex().prefix(),
+            links_index.from().type_id_(),
+        );
+        cleanup_record.insert(
+            prefix.resize_to(),
+            StorageKey::Array(key).resize_to(),
+            ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
+        );
+    } else {
+        debug!("Unhandled delete when constructing compaction record!")
     }
 }
