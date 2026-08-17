@@ -18,6 +18,7 @@ use concept::{
     },
 };
 use durability::DurabilitySequenceNumber;
+use encoding::{EncodingKeyspace, layout::prefix::Prefix};
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use options::TransactionOptions;
@@ -25,6 +26,7 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError},
+    keyspace::KeyspaceSet,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
         WriteSnapshot, snapshot_id::SnapshotId,
@@ -187,7 +189,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             Ok(snapshot) => snapshot,
         };
 
-        let cleanup_ranges = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+        let cleanup_record = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             Ok(compaction) => compaction,
             Err(errs) => {
                 // TODO: send all the errors, not just the first,
@@ -197,7 +199,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             }
         };
         commit_profile.things_finalised();
-        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot, cleanup_ranges }))
+        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot, cleanup_record }))
     }
 
     pub fn rollback(&mut self) {
@@ -298,7 +300,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
         commit_profile.types_validated();
 
-        let cleanup_ranges = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+        let cleanup_record = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             Ok(compaction) => compaction,
             Err(errs) => {
                 // TODO: send all the errors, not just the first,
@@ -319,7 +321,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let _type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         (
             profile,
-            Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot, cleanup_ranges }),
+            Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot, cleanup_record }),
         )
     }
 
@@ -394,12 +396,12 @@ macro_rules! with_transaction_parts {
 pub struct DataCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     write_snapshot: WriteSnapshot<D>,
-    cleanup_ranges: CleanupRecord,
+    cleanup_record: CleanupRecord,
 }
 
 impl<D: DurabilityClient> DataCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>, cleanup_ranges: CleanupRecord) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_ranges }
+    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_record }
     }
 }
 
@@ -424,9 +426,9 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
             database
                 .storage
                 .durability()
-                .unsequenced_write(&self.cleanup_ranges)
+                .unsequenced_write(&self.cleanup_record)
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_ranges);
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_record);
         }
         Ok(())
     }
@@ -435,12 +437,12 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
 pub struct SchemaCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     schema_snapshot: SchemaSnapshot<D>,
-    cleanup_ranges: CleanupRecord,
+    cleanup_record: CleanupRecord,
 }
 
 impl<D: DurabilityClient> SchemaCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>, cleanup_ranges: CleanupRecord) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_ranges }
+    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_record }
     }
 }
 
@@ -486,9 +488,9 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             database
                 .storage
                 .durability()
-                .unsequenced_write(&self.cleanup_ranges)
+                .unsequenced_write(&self.cleanup_record)
                 .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
-            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_ranges);
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_record);
 
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
