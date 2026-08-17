@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 use database::Database;
 use database::transaction::TransactionWrite;
 use lib_benchmark::{commit, execute_write_query_in, runner::{BenchmarkRunner, BenchmarkRunnerGroup}, templates::{given_rows_with, n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx}, QueryAnswer};
@@ -27,10 +27,9 @@ fn parametrised_entity_insert(name: &'static str, n_txns: usize, n_query_per_txn
     let query = "given; insert $x isa person;";
     let query_owned = query.to_owned();
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, given_rows_to_clone: Option<GivenRowsSimple>| {
-        let mut results = MultiTxMultiQueryProfile {
-            profiles: Vec::with_capacity(n_txns),
-        };
+        let mut profiles = Vec::with_capacity(n_txns);
         for _ in 0..n_txns {
+            let start = Instant::now();
             let mut query_profiles = Vec::with_capacity(n_query_per_txn);
             let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
             for _ in 0..n_query_per_txn {
@@ -45,9 +44,10 @@ fn parametrised_entity_insert(name: &'static str, n_txns: usize, n_query_per_txn
                 query_profiles.push(query_profile);
             }
             let tx_profile = commit(tx).unwrap();
-            results.profiles.push(MultiQueryTxProfile { tx_profile, query_profiles })
+            let time_elapsed = start.elapsed();
+            profiles.push(MultiQueryTxProfile { tx_profile, query_profiles, time_elapsed });
         }
-        results
+        MultiTxMultiQueryProfile { profiles }
     });
     TypeDBMicroBenchmark {
         name,
