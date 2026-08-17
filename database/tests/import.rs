@@ -223,22 +223,23 @@ fn recovered_staging_can_be_finalised_or_cancelled() {
 }
 
 #[test]
-fn repeated_finalisation_of_a_published_database_discards_the_staging_copy() {
+fn staged_leftover_of_a_published_database_is_discarded_on_recovery() {
     init_logging();
     let data_dir = create_tmp_dir("import_finalise_replay");
     {
         let dbm = manager(&data_dir, ImportOwnership::Shared);
         drop(dbm.prepare_imported_database("typedb".to_string()).expect("prepare"));
     }
-    // Simulate a repeated finalisation after a restart: the database is already published, but the
-    // staging copy also survived.
+    // Simulate a crash between publishing a finalised database and persisting the removal of its
+    // staging copy: both are on disk at the next startup.
     copy_dir(&import_path(&data_dir, "typedb"), &data_dir.as_ref().join("typedb"));
     let dbm = manager(&data_dir, ImportOwnership::Shared);
-    assert!(dbm.database("typedb").is_some());
-    assert_eq!(dbm.imported_database_names(), vec!["typedb".to_string()]);
-    assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::AlreadyExists { .. })));
-    assert!(!import_path(&data_dir, "typedb").exists(), "the staging copy must be discarded");
     assert!(dbm.database("typedb").is_some(), "the published database must survive");
+    assert_eq!(dbm.imported_database_names(), Vec::<String>::new());
+    assert!(!import_path(&data_dir, "typedb").exists(), "the staging copy must be discarded on recovery");
+    assert!(matches!(dbm.finalise_imported_database("typedb"), Err(DatabaseCreateError::IsNotBeingImported { .. })));
+    dbm.put_database("typedb").expect("a served database with a healed leftover is an ordinary database");
+    assert!(dbm.database("typedb").is_some());
 }
 
 #[test]

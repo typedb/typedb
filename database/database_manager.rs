@@ -66,6 +66,7 @@ impl DatabaseManager {
         let staged_databases = Self::initialise_staged_databases(
             &import_directory,
             import_ownership,
+            &served_databases,
             &diagnostics_manager,
             &rocks_resources,
         )?;
@@ -123,6 +124,7 @@ impl DatabaseManager {
     fn initialise_staged_databases(
         import_directory: &PathBuf,
         import_ownership: ImportOwnership,
+        served_databases: &DatabasesMap,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
     ) -> Result<DatabasesMap, DatabaseOpenError> {
@@ -132,7 +134,7 @@ impl DatabaseManager {
                 Ok(DatabasesMap::new())
             }
             ImportOwnership::Shared => {
-                Self::recover_staged_databases(import_directory, diagnostics_manager, rocks_resources)
+                Self::recover_staged_databases(import_directory, served_databases, diagnostics_manager, rocks_resources)
             }
         }
     }
@@ -172,6 +174,7 @@ impl DatabaseManager {
 
     fn recover_staged_databases(
         directory: &PathBuf,
+        served_databases: &DatabasesMap,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
     ) -> Result<DatabasesMap, DatabaseOpenError> {
@@ -182,6 +185,11 @@ impl DatabaseManager {
         for entry_path in directory_entries(directory)? {
             let name = file_name_lossy(&entry_path);
             if !entry_path.is_dir() || name.starts_with(CACHE_DB_NAME_PREFIX) {
+                Self::remove_import_leftover_best_effort(&entry_path);
+                continue;
+            }
+            if served_databases.contains_key(&name) {
+                event!(Level::INFO, "Removing the staged leftover of the finalised import of '{name}'.");
                 Self::remove_import_leftover_best_effort(&entry_path);
                 continue;
             }
@@ -326,8 +334,7 @@ impl DatabaseManager {
         let mut databases = self.database_registry.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
         let Some(database) = Self::take_database(&mut databases.staged, name)? else {
             if self.staged_database_exists(name) {
-                fs::remove_dir_all(self.staged_database_path(name)).map_err(map_fs_err)?;
-                self.sync_import_directory().map_err(map_fs_err)?;
+                self.remove_staged_directory(name).map_err(map_fs_err)?;
             }
             return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name: name.to_string() });
         };
@@ -431,12 +438,9 @@ impl DatabaseManager {
         }
         match self.import_ownership {
             ImportOwnership::Shared => Err(DatabaseCreateError::IsBeingImported { name: name.to_string() }),
-            ImportOwnership::Exclusive => {
-                let map_fs_err =
-                    |source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) };
-                fs::remove_dir_all(self.staged_database_path(name)).map_err(map_fs_err)?;
-                self.sync_import_directory().map_err(map_fs_err)
-            }
+            ImportOwnership::Exclusive => self.remove_staged_directory(name).map_err(|source| {
+                DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) }
+            }),
         }
     }
 
@@ -463,6 +467,11 @@ impl DatabaseManager {
 
     fn served_database_path(&self, name: &str) -> PathBuf {
         self.data_directory.join(name)
+    }
+
+    fn remove_staged_directory(&self, name: &str) -> io::Result<()> {
+        fs::remove_dir_all(self.staged_database_path(name))?;
+        self.sync_import_directory()
     }
 
     fn staged_database_path(&self, name: &str) -> PathBuf {
