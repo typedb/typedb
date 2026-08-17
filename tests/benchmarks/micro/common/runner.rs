@@ -5,7 +5,7 @@
  */
 use criterion::{BatchSize, Criterion, measurement::Measurement};
 
-use crate::templates::SimpleBenchmark;
+use crate::templates::{SimpleBenchmark, SimpleReport};
 
 pub trait BenchmarkRunnerGroup {
     fn run_benchmark<T: SimpleBenchmark>(&mut self, b: T) -> Vec<T::IterOutput>;
@@ -97,6 +97,8 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
         let input = b.prepare_iter(&context, database.clone());
         let iter_result = b.run_iter(&context, database.clone(), input);
         drop(database);
-        vec![iter_result]
+        let outputs = vec![iter_result];
+        <T::IterOutput as SimpleReport>::report(&outputs);
+        outputs
     }
 }

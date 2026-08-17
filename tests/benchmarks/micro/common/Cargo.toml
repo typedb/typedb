@@ -66,6 +66,9 @@ features = {}
 	[dependencies.typeql]
 		workspace = true
 
+	[dependencies.encoding]
+		workspace = true
+
 	[dependencies.compiler]
 		workspace = true
 
