@@ -468,13 +468,17 @@ impl Database<WALClient> {
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let earliest_uncleaned = storage.earliest_uncleaned();
-        let cleanup_queue = Arc::new(RwLock::new(
-            storage
-                .durability()
-                .iter_type_from(earliest_uncleaned)
-                .and_then(Itertools::try_collect)
-                .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?,
-        ));
+        let cleanup_queue = if let DatabaseCleanupStrategy::Disabled = cleanup_strategy {
+            Default::default()
+        } else {
+            Arc::new(RwLock::new(
+                storage
+                    .durability()
+                    .iter_type_from(earliest_uncleaned)
+                    .and_then(Itertools::try_collect)
+                    .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?,
+            ))
+        };
         let cleanup_fn =
             make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), cleanup_queue.clone(), cleanup_strategy);
 
