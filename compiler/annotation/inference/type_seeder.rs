@@ -232,7 +232,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for c in graph.conjunction.constraints().iter().filter_map(|c| c.as_comparison()) {
             c.apply(self, vertices)?;
         }
-        for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
+        for nested_graph in graph.nested_disjunctions.iter_mut().flatten() {
             self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?;
         }
         Ok(())
@@ -418,17 +418,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             (Some(_), Some(_)) => false,
             (Some(left_types), None) => {
                 let mut right_types = BTreeSet::new();
-                left_types
-                    .iter()
-                    .try_for_each(|type_| inner.annotate_left_to_right_for_type(self, type_, &mut right_types))?;
+                for type_ in left_types {
+                    inner.annotate_left_to_right_for_type(self, type_, &mut right_types)?;
+                }
                 vertices.insert(right.clone(), right_types);
                 true
             }
             (None, Some(right_types)) => {
                 let mut left_types = BTreeSet::new();
-                right_types
-                    .iter()
-                    .try_for_each(|type_| inner.annotate_right_to_left_for_type(self, type_, &mut left_types))?;
+                for type_ in right_types {
+                    inner.annotate_right_to_left_for_type(self, type_, &mut left_types)
+                }
                 vertices.insert(left.clone(), left_types);
                 true
             }
@@ -593,7 +593,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             }
         }
-        for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
+        for nested in graph.nested_disjunctions.iter_mut().flatten() {
             self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
         }
         Ok(())
