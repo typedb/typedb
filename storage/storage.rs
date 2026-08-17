@@ -610,7 +610,7 @@ impl<Durability> MVCCStorage<Durability> {
         ranges: impl IntoIterator<
             Item = (StorageKey<'static, BUFFER_KEY_INLINE>, KeyRange<StorageKey<'static, BUFFER_KEY_INLINE>>),
         >,
-    ) -> Result<(), StorageCompactError> {
+    ) -> Result<(), StorageCleanupError> {
         let cleanup_until = SequenceNumber::min(cleanup_until, self.earliest_possible_reader());
 
         if self.earliest_uncleaned.load(Ordering::Relaxed) >= cleanup_until.number() {
@@ -635,7 +635,7 @@ impl<Durability> MVCCStorage<Durability> {
             let mut last_seen = None;
             while let Some(raw) = it.next() {
                 let (k, _) =
-                    raw.map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
+                    raw.map_err(|err| StorageCleanupError::Keyspace { name: self.name.clone(), source: err })?;
                 let mvcc_key = MVCCKey::wrap_slice(k);
 
                 let overwritten =
@@ -653,7 +653,7 @@ impl<Durability> MVCCStorage<Durability> {
         for (keyspace_id, batch) in batches {
             self.get_keyspace(keyspace_id)
                 .write(batch)
-                .map_err(|err| StorageCompactError::Keyspace { name: self.name.clone(), source: err })?;
+                .map_err(|err| StorageCleanupError::Keyspace { name: self.name.clone(), source: err })?;
         }
 
         self.earliest_uncleaned.store(cleanup_until.number(), Ordering::Relaxed);
@@ -701,9 +701,9 @@ typedb_error! {
 }
 
 typedb_error! {
-    pub StorageCompactError(component = "Storage commit", prefix = "STP") {
-        Internal(1, "Compaction in database '{name}' failed with internal error.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
-        Keyspace(2, "Compaction in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: KeyspaceError),
+    pub StorageCleanupError(component = "Storage cleanup", prefix = "STP") {
+        Internal(1, "Cleanup in database '{name}' failed with internal error.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
+        Keyspace(2, "Cleanup in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: KeyspaceError),
     }
 }
 
