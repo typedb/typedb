@@ -84,7 +84,7 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
             }
             NestedPattern::Optional(optional) => {
                 let optional_graph = infer_types_impl(ctx, optional.conjunction(), &vertices, type_inference_mode)?;
-                for optional_var in optional.optionally_bound_in_pattern() {
+                for optional_var in optional.optionally_bound_by_pattern() {
                     let optional_vertex = Vertex::Variable(optional_var);
                     needs_value_type_inference!("Remove the cagtegory check");
                     debug_assert!(
@@ -109,7 +109,7 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
             .into_iter()
             .map(|d| infer_types_in_negations_and_optionals_and_complete(ctx, d, type_inference_mode))
             .collect::<Result<Vec<_>, _>>()?;
-        for optional_var in nested_disjunction.disjunction_pattern.optionally_bound_in_pattern() {
+        for optional_var in nested_disjunction.disjunction_pattern.optionally_bound_by_pattern() {
             let optional_vertex = Vertex::Variable(optional_var);
             debug_assert!(
                 branches.iter().all(|b| b.vertices.contains_key(&optional_vertex))
