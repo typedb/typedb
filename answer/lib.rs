@@ -88,6 +88,15 @@ impl Type {
         }
     }
 
+    pub fn try_as_object_type(&self) -> Option<ObjectType> {
+        match self {
+            Type::Entity(entity) => Some((*entity).into_object_type()),
+            Type::Relation(relation) => Some((*relation).into_object_type()),
+            Type::Attribute(_) => None,
+            Type::RoleType(_) => None,
+        }
+    }
+
     pub fn as_object_type(&self) -> ObjectType {
         match self {
             Type::Entity(entity) => (*entity).into_object_type(),
