@@ -324,6 +324,12 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
     }
 }
 
+impl From<Box<ConceptReadError>> for TypeInferenceError {
+    fn from(typedb_source: Box<ConceptReadError>) -> Self {
+        Self::ConceptRead { typedb_source }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
