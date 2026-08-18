@@ -77,6 +77,8 @@ pub trait Pattern {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
+
+    fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
 }
 
 macro_rules! impl_pattern_from_pattern_variables {
@@ -88,6 +90,10 @@ macro_rules! impl_pattern_from_pattern_variables {
 
             fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
                 self.pattern_variables.required_inputs()
+            }
+
+            fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.optionally_bound_in_pattern()
             }
         }
     };
@@ -475,13 +481,14 @@ impl ContextualisedBindingMode {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum IsRequired {
-    Required,
-    NotRequired,
+pub(crate) enum PatternVariableMode {
+    RequiredInput,
+    Binding,
+    OptionallyBinding,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct PatternVariables(HashMap<Variable, IsRequired>);
+pub(crate) struct PatternVariables(HashMap<Variable, PatternVariableMode>);
 impl PatternVariables {
     fn from(modes: &ContextualisedBindingMode) -> Self {
         Self(
@@ -489,10 +496,9 @@ impl PatternVariables {
                 .0
                 .iter()
                 .filter_map(|(var, mode)| match mode {
-                    BindingMode::RequirePrebound => Some((*var, IsRequired::Required)),
-                    BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => {
-                        Some((*var, IsRequired::NotRequired))
-                    }
+                    BindingMode::RequirePrebound => Some((*var, PatternVariableMode::RequiredInput)),
+                    BindingMode::AlwaysBinding => Some((*var, PatternVariableMode::Binding)),
+                    BindingMode::OptionallyBinding => Some((*var, PatternVariableMode::OptionallyBinding)),
                     BindingMode::LocallyBindingInChild | BindingMode::Absent => None,
                 })
                 .collect(),
@@ -504,7 +510,11 @@ impl PatternVariables {
     }
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, required)| (*required == IsRequired::Required).then_some(*v))
+        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::RequiredInput).then_some(*v))
+    }
+
+    pub(crate) fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::OptionallyBinding).then_some(*v))
     }
 }
 

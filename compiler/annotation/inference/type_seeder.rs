@@ -37,8 +37,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
-    inference::match_inference::{
-        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+    inference::{
+        VertexAnnotations,
+        match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph},
     },
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
@@ -181,6 +182,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         let nested_graphs = disjunction.conjunctions().iter().map(|conj| self.build_recursive(conj)).collect_vec();
         let shared_variables = disjunction.visible_referenced_variables().collect();
         NestedTypeInferenceGraphDisjunction {
+            disjunction_pattern: disjunction,
             disjunction: nested_graphs,
             shared_variables,
             shared_vertex_annotations: VertexAnnotations::default(),
@@ -230,7 +232,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for c in graph.conjunction.constraints().iter().filter_map(|c| c.as_comparison()) {
             c.apply(self, vertices)?;
         }
-        for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
+        for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
             self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?;
         }
         Ok(())
@@ -416,17 +418,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             (Some(_), Some(_)) => false,
             (Some(left_types), None) => {
                 let mut right_types = BTreeSet::new();
-                left_types
-                    .iter()
-                    .try_for_each(|type_| inner.annotate_left_to_right_for_type(self, type_, &mut right_types))?;
+                for type_ in left_types {
+                    inner.annotate_left_to_right_for_type(self, type_, &mut right_types)?;
+                }
                 vertices.insert(right.clone(), right_types);
                 true
             }
             (None, Some(right_types)) => {
                 let mut left_types = BTreeSet::new();
-                right_types
-                    .iter()
-                    .try_for_each(|type_| inner.annotate_right_to_left_for_type(self, type_, &mut left_types))?;
+                for type_ in right_types {
+                    inner.annotate_right_to_left_for_type(self, type_, &mut left_types)?;
+                }
                 vertices.insert(left.clone(), left_types);
                 true
             }
@@ -459,6 +461,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Update shared variables of the disjunction
         let NestedTypeInferenceGraphDisjunction {
+            disjunction_pattern: _,
             shared_vertex_annotations,
             disjunction: nested_graph_disjunction,
             shared_variables,
@@ -1663,7 +1666,8 @@ pub mod tests {
     use crate::annotation::{
         function::EmptyAnnotatedFunctionSignatures,
         inference::{
-            match_inference::{TypeInferenceGraph, VertexAnnotations, tests::expected_edge},
+            VertexAnnotations,
+            match_inference::{TypeInferenceGraph, tests::expected_edge},
             type_seeder::{TypeGraphSeedingContext, TypeInferenceMode},
         },
         tests::{
