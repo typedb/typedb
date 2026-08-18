@@ -77,6 +77,8 @@ pub trait Pattern {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
+
+    fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
 }
 
 macro_rules! impl_pattern_from_pattern_variables {
@@ -88,6 +90,10 @@ macro_rules! impl_pattern_from_pattern_variables {
 
             fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
                 self.pattern_variables.required_inputs()
+            }
+
+            fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.optionally_bound_in_pattern()
             }
         }
     };
@@ -471,12 +477,12 @@ impl PatternVariableModes {
 
     pub(crate) fn build(
         mut pattern_modes: HashMap<Variable, BindingMode>,
-        parent_pattern_variables: &PatternVariableModes,
+        parent_modes: &PatternVariableModes,
     ) -> Self {
         let pattern_variables = pattern_modes
             .into_iter()
             .filter_map(|(var, mode)| {
-                let mode = if let Some(parent_mode) = parent_pattern_variables.0.get(&var).copied() {
+                let mode = if let Some(parent_mode) = parent_modes.0.get(&var).copied() {
                     match (parent_mode, mode) {
                         (_, BindingMode::Absent) => None?,
                         (PatternVariableMode::RequiredInput, _) => PatternVariableMode::RequiredInput,
@@ -527,6 +533,10 @@ impl PatternVariableModes {
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::RequiredInput).then_some(*v))
+    }
+
+    pub(crate) fn optionally_bound_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::OptionallyBinding).then_some(*v))
     }
 }
 
