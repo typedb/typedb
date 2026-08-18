@@ -419,6 +419,7 @@ impl DatabaseImporter {
         self.validate_imported_data()?;
         self.check_interrupt()?;
         self.restore_relaxed_schema()?;
+        self.check_interrupt()?;
 
         let Some(import_handler) = self.import_handler.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
@@ -559,28 +560,34 @@ impl DatabaseImporter {
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
                 self.make_attribute_types_independent(&mut inner_snapshot, &type_manager, &thing_manager)?;
+                self.check_interrupt()?;
                 self.make_relation_types_independent(&mut inner_snapshot, &type_manager)?;
+                self.check_interrupt()?;
                 self.relax_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
         );
 
+        self.check_interrupt()?;
         self.commit_schema_transaction(transaction, |typedb_source| {
             DatabaseImportError::PreparationSchemaCommitFailed { typedb_source }
         })
     }
 
-    fn restore_relaxed_schema(&self) -> Result<(), DatabaseImportError> {
+    fn restore_relaxed_schema(&mut self) -> Result<(), DatabaseImportError> {
         let transaction = self.open_schema_transaction()?;
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
                 self.restore_independent_attribute_types(&mut inner_snapshot, &type_manager, &thing_manager)?;
+                self.check_interrupt()?;
                 self.restore_independent_relation_types(&mut inner_snapshot, &type_manager)?;
+                self.check_interrupt()?;
                 self.restore_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
         );
 
+        self.check_interrupt()?;
         self.commit_schema_transaction(transaction, |typedb_source| {
             DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source }
         })

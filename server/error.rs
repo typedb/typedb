@@ -256,7 +256,8 @@ impl ServerStateError for LocalServerStateError {
                 | DatabaseImportServiceError::ImportDatabaseNotFound { .. }
                 | DatabaseImportServiceError::ImportEmptyItem { .. }
                 | DatabaseImportServiceError::AbsentAttributeValue { .. }
-                | DatabaseImportServiceError::AttributesOwningAttributes { .. } => Request,
+                | DatabaseImportServiceError::AttributesOwningAttributes { .. }
+                | DatabaseImportServiceError::ClientClosed { .. } => Request,
                 DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { .. }
                 | DatabaseImportServiceError::ImportTaskFailed { .. }

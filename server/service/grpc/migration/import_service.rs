@@ -181,6 +181,7 @@ impl DatabaseImportService {
         let interrupted = tokio::select! { biased;
             _ = self.shutdown_receiver.changed() => DatabaseImportServiceError::ShutdownInterrupt {},
             _ = self.close_receiver.recv() => DatabaseImportServiceError::ImportClosed {},
+            _ = self.response_sender.closed() => DatabaseImportServiceError::ClientClosed {},
             result = &mut step => return result.map_err(|_| Self::import_task_failed(phase)),
         };
         let _ = self.interrupt_sender.send(InterruptType::DatabaseImportAborted);
