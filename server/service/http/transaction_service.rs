@@ -86,9 +86,12 @@ macro_rules! respond_else_return_break {
 }
 
 macro_rules! check_interrupt_else_respond_error_and_return_break {
-    ($interrupt:ident, $responder:ident) => {{
+    ($interrupt:ident, $responder:ident) => {
+        check_interrupt_else_respond_error_and_return_break!($interrupt, $responder, QueryInterrupted)
+    };
+    ($interrupt:ident, $responder:ident, $error_variant:ident) => {{
         if let Some(interrupt) = $interrupt.check() {
-            respond_error_and_return_break!($responder, TransactionServiceError::QueryInterrupted { interrupt });
+            respond_error_and_return_break!($responder, TransactionServiceError::$error_variant { interrupt });
         }
     }};
 }
@@ -541,7 +544,10 @@ impl TransactionService {
             }
 
             // transmission of interrupt signal is ok if it fails
-            respond_error_and_return_break!(responder, TransactionServiceError::QueryInterrupted { interrupt });
+            respond_error_and_return_break!(
+                responder,
+                TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }
+            );
         } else {
             Continue(())
         }
@@ -873,7 +879,7 @@ impl TransactionService {
 
         while let Some(row) = batch_iterator.next() {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
-            check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
+            check_interrupt_else_respond_error_and_return_break!(interrupt, responder, WriteQueryAnswersInterrupted);
             // TODO: Consider multiplicity?
             if let Some(limit) = query_options.answer_count_limit {
                 if result.len() >= limit {
@@ -929,7 +935,7 @@ impl TransactionService {
         let mut warning = None;
         for document in documents {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
-            check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
+            check_interrupt_else_respond_error_and_return_break!(interrupt, responder, WriteQueryAnswersInterrupted);
             // TODO: Consider multiplicity?
             if let Some(limit) = query_options.answer_count_limit {
                 if result.len() >= limit {

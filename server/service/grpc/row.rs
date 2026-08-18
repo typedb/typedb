@@ -48,8 +48,8 @@ pub(crate) fn encode_row(
             let mut involved_blocks = Vec::new();
             chain!(row.provenance().branch_ids().map(|b| b.0), always_involved.iter().map(|b| b.0)).for_each(
                 |block_index| {
-                    let byte_index = block_index as usize / 64;
-                    let bit_index = block_index % 64;
+                    let byte_index = block_index as usize / 8;
+                    let bit_index = block_index % 8;
                     if byte_index >= involved_blocks.len() {
                         involved_blocks.resize(byte_index + 1, 0);
                     }

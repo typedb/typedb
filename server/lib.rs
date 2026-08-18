@@ -18,8 +18,8 @@ use resource::{
     constants::{
         common::STUDIO_URL,
         server::{
-            DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_ID_ALPHABET,
-            SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
+            DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, HTTP_MAX_MESSAGE_SIZE,
+            SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
         },
     },
     distribution_info::DistributionInfo,
@@ -383,6 +383,7 @@ impl Server {
             .layer(authenticator)
             .merge(http::typedb_service::HTTPTypeDBService::create_unprotected_router(http_service))
             .layer(http::typedb_service::HTTPTypeDBService::create_cors_layer())
+            .layer(axum::extract::DefaultBodyLimit::max(HTTP_MAX_MESSAGE_SIZE))
             .into_make_service();
 
         let shutdown_handle = Handle::new();

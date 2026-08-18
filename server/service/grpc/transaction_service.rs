@@ -680,7 +680,7 @@ impl TransactionService {
                 &self.response_sender,
                 req_id,
                 ImmediateQueryResponse::NonFatalErr(
-                    TransactionServiceError::QueryInterrupted { interrupt }.into_proto_error_message(),
+                    TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }.into_proto_error_message(),
                 ),
             )
             .await
@@ -1101,7 +1101,7 @@ impl TransactionService {
             if let Some(interrupt) = interrupt.check() {
                 Self::submit_response_async(
                     &sender,
-                    StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                    StreamQueryResponse::done_err(TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }),
                 )
                 .await;
                 return;
@@ -1159,7 +1159,7 @@ impl TransactionService {
             if let Some(interrupt) = interrupt.check() {
                 Self::submit_response_async(
                     &sender,
-                    StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                    StreamQueryResponse::done_err(TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }),
                 )
                 .await;
                 return;
