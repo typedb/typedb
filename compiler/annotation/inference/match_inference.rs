@@ -215,7 +215,7 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
     graph
         .nested_disjunctions
         .iter()
-        .flatten()
+        .flat_map(|d| d.disjunction.iter())
         .try_for_each(|nested| pre_check_edges_for_trivial_unsatisfiability(nested))?;
     Ok(())
 }
@@ -272,7 +272,7 @@ impl<'this> TypeInferenceGraph<'this> {
         }
         self.nested_disjunctions
             .iter()
-            .flatten()
+            .flat_map(|d| d.disjunction.iter())
             .try_for_each(|graph| graph.check_thing_constraints_satisfiable(variable_registry))?;
         Ok(())
     }
