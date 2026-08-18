@@ -19,7 +19,7 @@ use std::{
 };
 
 use logger::result::ResultExt;
-use primitive::maybe_owns::MaybeOwns;
+use primitive::atomic_arc::AtomicArcOption;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
@@ -151,20 +151,17 @@ impl IsolationManager {
             commit_record.open_sequence_number().next(),
             stop_sequence_number,
         )? {
-            if let Ok((_, commit_status)) = commit_status_result {
-                let commit_dependency = match commit_status {
-                    CommitStatus::Aborted => CommitDependency::Independent,
-                    CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
-                    CommitStatus::Pending(_) => {
-                        unreachable!("Evicted records cannot be pending")
-                    }
-                    CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
-                };
-                if let Some(conflict) = handle_dependency(commit_dependency) {
-                    return Ok(Some(conflict));
+            let (_, commit_status) = commit_status_result?;
+            let commit_dependency = match commit_status {
+                CommitStatus::Aborted => CommitDependency::Independent,
+                CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
+                CommitStatus::Pending(_) => {
+                    unreachable!("Evicted records cannot be pending")
                 }
-            } else if let Err(err) = commit_status_result {
-                return Err(err);
+                CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
+            };
+            if let Some(conflict) = handle_dependency(commit_dependency) {
+                return Ok(Some(conflict));
             }
         }
         Ok(None)
@@ -199,7 +196,7 @@ impl IsolationManager {
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
     ) -> Result<
-        impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'_>), DurabilityClientError>>,
+        impl Iterator<Item = Result<(SequenceNumber, CommitStatus), DurabilityClientError>>,
         DurabilityClientError,
     > {
         let mut is_committed = HashMap::new();
@@ -216,8 +213,8 @@ impl IsolationManager {
                         None
                     } else {
                         let status = match is_committed.get(&commit_sequence_number) {
-                            None => CommitStatus::Pending(MaybeOwns::Owned(commit_record)),
-                            Some(true) => CommitStatus::Applied(MaybeOwns::Owned(commit_record)),
+                            None => CommitStatus::Pending(Arc::new(commit_record)),
+                            Some(true) => CommitStatus::Applied(Arc::new(commit_record)),
                             Some(false) => CommitStatus::Aborted,
                         };
                         Some(Ok((commit_sequence_number, status)))
@@ -524,10 +521,33 @@ impl Drop for ReaderDropGuard {
 }
 
 #[derive(Debug)]
+pub(crate) struct EvictableCommitRecord {
+    #[expect(unused, reason = "to be used when the read of evicted records from WAL is implemented")]
+    sequence_number: SequenceNumber,
+    commit_record: AtomicArcOption<CommitRecord>,
+    // TODO: read from WAL on-demand
+}
+
+impl EvictableCommitRecord {
+    fn new(sequence_number: SequenceNumber, commit_record: CommitRecord) -> Self {
+        Self { sequence_number, commit_record: AtomicArcOption::new(commit_record) }
+    }
+
+    fn get(&self) -> Arc<CommitRecord> {
+        // TODO: read from WAL on-demand
+        self.commit_record.clone_arc().expect("attempted to read an evicted CommitRecord!")
+    }
+
+    fn evict(&self) {
+        self.commit_record.take();
+    }
+}
+
+#[derive(Debug)]
 struct TimelineWindow<const SIZE: usize> {
     start: SequenceNumber,
     slot_status: [AtomicU8; SIZE],
-    commit_records: [OnceLock<CommitRecord>; SIZE],
+    commit_records: [OnceLock<EvictableCommitRecord>; SIZE],
     readers: AtomicU64,
 }
 
@@ -550,7 +570,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 
     fn insert_pending(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
         let index = sequence_number - self.start;
-        self.commit_records[index].set(commit_record).unwrap_or_log();
+        self.commit_records[index].set(EvictableCommitRecord::new(sequence_number, commit_record)).unwrap_or_log();
         self.slot_status[index].store(SlotMarker::Pending.as_u8(), Ordering::SeqCst);
     }
 
@@ -569,16 +589,16 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         self.slot_status[index].store(SlotMarker::Applied.as_u8(), Ordering::SeqCst);
     }
 
-    fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus<'_> {
+    fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus {
         let index = sequence_number - self.start;
         let status = SlotMarker::from(self.slot_status[index].load(Ordering::SeqCst));
-        let lazy_record = || self.commit_records[index].get().unwrap();
+        let lazy_record = || self.commit_records[index].get().unwrap().get();
         match status {
             SlotMarker::Empty => CommitStatus::Empty,
             SlotMarker::Aborted => CommitStatus::Aborted,
-            SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(lazy_record())),
-            SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(lazy_record())),
-            SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(lazy_record())),
+            SlotMarker::Pending => CommitStatus::Pending(lazy_record()),
+            SlotMarker::Validated => CommitStatus::Validated(lazy_record()),
+            SlotMarker::Applied => CommitStatus::Applied(lazy_record()),
         }
     }
 
@@ -613,11 +633,11 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 }
 
 #[derive(Debug)]
-pub(crate) enum CommitStatus<'a> {
+pub(crate) enum CommitStatus {
     Empty,
-    Pending(MaybeOwns<'a, CommitRecord>),
-    Validated(MaybeOwns<'a, CommitRecord>),
-    Applied(MaybeOwns<'a, CommitRecord>),
+    Pending(Arc<CommitRecord>),
+    Validated(Arc<CommitRecord>),
+    Applied(Arc<CommitRecord>),
     Aborted,
 }
 
@@ -836,7 +856,7 @@ mod tests {
                 for _ in 0..TRANSACTIONS_PER_THREAD {
                     let (timeline, commit_sequence_number_counter) = &*timeline_and_counter;
                     let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
-                    let tx = MockTransaction::new(&timeline, _seq(index));
+                    let tx = MockTransaction::new(timeline, _seq(index));
                     tx_start_commit(timeline, &tx);
                     tx_finalise_commit_status(timeline, tx, true);
                 }
