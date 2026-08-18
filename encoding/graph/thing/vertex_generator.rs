@@ -435,9 +435,4 @@ impl ThingVertexGenerator {
     {
         StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
     }
-
-    pub fn reset(&mut self) {
-        self.entity_ids.iter().for_each(|id| id.store(0, Ordering::SeqCst));
-        self.relation_ids.iter().for_each(|id| id.store(0, Ordering::SeqCst));
-    }
 }

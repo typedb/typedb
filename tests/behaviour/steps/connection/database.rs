@@ -58,7 +58,7 @@ pub async fn connection_reset_database(context: &mut Context, name: String) {
     if context.transaction().is_some() {
         context.close_active_transaction();
     }
-    context.server().unwrap().lock().unwrap().database_manager().reset_else_recreate_database(&name).unwrap();
+    context.server().unwrap().lock().unwrap().database_manager().reset_database(&name).unwrap();
 }
 
 #[cucumber::when(expr = "connection delete database: {word}{may_error}")]

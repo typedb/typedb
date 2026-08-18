@@ -6,7 +6,7 @@
 
 use std::{
     marker::PhantomData,
-    sync::atomic::{AtomicU64, Ordering, Ordering::Relaxed},
+    sync::atomic::{AtomicU64, Ordering::Relaxed},
 };
 
 use bytes::Bytes;
@@ -102,10 +102,6 @@ impl<T: SchemaID + Keyable<BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
                 }
             }
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.last_allocated_type_id.store(0, Ordering::SeqCst)
     }
 }
 

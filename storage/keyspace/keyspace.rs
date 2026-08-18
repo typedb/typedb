@@ -15,7 +15,7 @@ use bytes::Bytes;
 use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
 use resource::profile::StorageCounters;
-use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint};
+use rocksdb::{DB, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint};
 use serde::{Deserialize, Serialize};
 
 use super::{IteratorPool, constants, iterator};
@@ -143,13 +143,6 @@ impl Keyspaces {
             .collect_vec();
         if !errors.is_empty() {
             return Err(errors);
-        }
-        Ok(())
-    }
-
-    pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
-        for keyspace in self.keyspaces.iter_mut() {
-            keyspace.reset()?
         }
         Ok(())
     }
@@ -309,15 +302,6 @@ impl Keyspace {
         drop(self.kv_storage);
         fs::remove_dir_all(self.path.clone())
             .map_err(|error| KeyspaceDeleteError::DirectoryRemove { name: self.name, source: Arc::new(error) })?;
-        Ok(())
-    }
-
-    pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
-        let iterator = self.kv_storage.iterator(IteratorMode::Start);
-        for entry in iterator {
-            let (key, _) = entry.map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
-            self.kv_storage.delete(key).map_err(|err| KeyspaceError::Iterate { name: self.name, source: err })?;
-        }
         Ok(())
     }
 

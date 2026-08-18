@@ -46,7 +46,7 @@ use function::{FunctionError, function_cache::FunctionCache};
 use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
-    MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
+    MVCCStorage, StorageDeleteError, StorageOpenError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     keyspace::rocks_resources::RocksResources,
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
@@ -56,13 +56,7 @@ use storage::{
 use tracing::{Level, debug, event, trace};
 
 use crate::{
-    DatabaseOpenError::FunctionCacheInitialise,
-    DatabaseResetError::{
-        CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
-        CorruptionPartialResetTypeVertexGeneratorInUse,
-    },
-    database_manager::DatabaseManager,
-    transaction::TransactionError,
+    DatabaseOpenError::FunctionCacheInitialise, database_manager::DatabaseManager, transaction::TransactionError,
 };
 
 #[derive(Debug, Clone)]
@@ -503,41 +497,6 @@ impl Database<WALClient> {
         Ok(())
     }
 
-    pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
-        use DatabaseResetError::CorruptionPartialResetStorageInUse;
-
-        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64)
-            .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?; // exclusively lock out other write or schema transactions;
-        let mut locked_schema = self.schema.write().unwrap();
-
-        match Arc::get_mut(&mut self.storage) {
-            None => return Err(DatabaseResetError::StorageInUse {}),
-            Some(storage) => {
-                storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { typedb_source: err })?
-            }
-        }
-        match Arc::get_mut(&mut self.definition_key_generator) {
-            None => return Err(CorruptionPartialResetKeyGeneratorInUse {}),
-            Some(definition_key_generator) => definition_key_generator.reset(),
-        }
-        match Arc::get_mut(&mut self.type_vertex_generator) {
-            None => return Err(CorruptionPartialResetTypeVertexGeneratorInUse {}),
-            Some(type_vertex_generator) => type_vertex_generator.reset(),
-        }
-        match Arc::get_mut(&mut self.thing_vertex_generator) {
-            None => return Err(CorruptionPartialResetThingVertexGeneratorInUse {}),
-            Some(thing_vertex_generator) => thing_vertex_generator.reset(),
-        }
-
-        let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
-        thing_statistics.reset(self.storage.snapshot_watermark());
-
-        self.query_cache.force_reset(&Statistics::new(SequenceNumber::MIN));
-
-        self.release_schema_transaction();
-        Ok(())
-    }
-
     pub fn get_metrics(&self) -> DatabaseMetricsSnapshot {
         let schema = self.schema.read().expect("Expected database schema lock acquisition");
         DatabaseMetricsSnapshot {
@@ -659,29 +618,5 @@ typedb_error! {
     pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
         DatabaseDelete(1, "Cannot delete database.", typedb_source: DatabaseDeleteError),
         DatabaseCreate(2, "Cannot create database.", typedb_source: DatabaseCreateError),
-        Transaction(3, "Transaction error.", typedb_source: TransactionError),
-        InUse(4, "Database cannot be reset since it is in use."),
-        StorageInUse(5, "Database cannot be reset since the storage is in use."),
-        CorruptionPartialResetStorageInUse(
-            6,
-            "Corruption warning: database reset failed partway because the storage is still in use.",
-            typedb_source: StorageResetError
-        ),
-        CorruptionPartialResetKeyGeneratorInUse(
-            7,
-            "Corruption warning: Database reset failed partway because the schema key generator is still in use."
-        ),
-        CorruptionPartialResetTypeVertexGeneratorInUse(
-            8,
-            "Corruption warning: Database reset failed partway because the type key generator is still in use."
-        ),
-        CorruptionPartialResetThingVertexGeneratorInUse(
-            9,
-            "Corruption warning: Database reset failed partway because the instance key generator is still in use."
-        ),
-        CorruptionPartialResetQuertyCacheInUse(
-            10,
-            "Corruption warning: Database reset failed partway because the query cache is still in use."
-        ),
     }
 }
