@@ -92,9 +92,8 @@ struct Guard<'a>(&'a AtomicBool);
 
 impl Drop for Guard<'_> {
     fn drop(&mut self) {
-        while self.0.compare_exchange_weak(true, false, Ordering::SeqCst, Ordering::SeqCst).is_err() {
-            spin_loop();
-        }
+        // The flag is only set to `true` by CAS(false, true).
+        self.0.store(false, Ordering::SeqCst);
     }
 }
 
