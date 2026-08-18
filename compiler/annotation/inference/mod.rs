@@ -29,7 +29,7 @@ impl VertexAnnotations {
         if let Some(existing_annotations) = self.get_mut(vertex) {
             let size_before = existing_annotations.len();
             existing_annotations.retain(|x| new_annotations.contains(x));
-            existing_annotations.len() == size_before
+            existing_annotations.len() != size_before
         } else {
             self.insert(vertex.clone(), new_annotations.into_owned());
             true
