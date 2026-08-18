@@ -80,6 +80,7 @@ impl<T> AtomicArcOption<T> {
     }
 
     fn acquire(&self) -> Guard<'_> {
+        // At the longest this waits for an atomic load and a fetch_add (in `clone_arc`)
         while self.busy.compare_exchange_weak(false, true, Ordering::SeqCst, Ordering::SeqCst).is_err() {
             spin_loop();
         }
