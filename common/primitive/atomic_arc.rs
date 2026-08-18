@@ -16,6 +16,7 @@ use std::{
 
 pub struct AtomicArcOption<T> {
     busy: AtomicBool,
+    // Invariant: either null, or pointing to a `T` in a live `Arc` store.
     ptr: AtomicPtr<T>,
 }
 
