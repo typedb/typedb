@@ -49,7 +49,7 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
+    pub(crate) fn opened_for_read_by_reader(&self, sequence_number: SequenceNumber) -> ReadingReaderDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
@@ -57,6 +57,16 @@ impl IsolationManager {
             self.watermark()
         );
         self.timeline.record_reader(sequence_number)
+    }
+
+    pub(crate) fn opened_for_read_by_writer(&self, sequence_number: SequenceNumber) -> WritingReaderDropGuard {
+        debug_assert!(
+            sequence_number <= self.watermark(),
+            "assertion `{} <= {}` failed",
+            sequence_number,
+            self.watermark()
+        );
+        self.timeline.record_writing_reader(sequence_number)
     }
 
     pub(crate) fn applied(&self, sequence_number: SequenceNumber) -> Result<(), ExpectedWindowError> {
@@ -366,12 +376,21 @@ impl Timeline {
 
     fn may_free_windows(&self) {
         let watermark = self.watermark();
-        let can_free_some =
-            self.windows.read().unwrap_or_log().front().is_some_and(|f| f.get_readers() == 0 && watermark >= f.end());
+        let can_free_some = self
+            .windows
+            .read()
+            .unwrap_or_log()
+            .front()
+            .is_some_and(|f| f.get_writing_readers() == 0 && watermark >= f.end());
         if can_free_some {
             let windows = &mut *self.windows.write().unwrap_or_log();
             while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 0 {
                 windows.pop_front();
+            }
+            for window in windows {
+                if window.get_writing_readers() == 0 {
+                    window.evict();
+                }
             }
         }
     }
@@ -431,13 +450,23 @@ impl Timeline {
         None
     }
 
-    fn record_reader(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
+    fn record_reader(&self, sequence_number: SequenceNumber) -> ReadingReaderDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
             window.increment_readers();
-            ReaderDropGuard { window: Some(window) }
+            ReadingReaderDropGuard { window: Some(window) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
-            ReaderDropGuard { window: None }
+            ReadingReaderDropGuard { window: None }
+        }
+    }
+
+    fn record_writing_reader(&self, sequence_number: SequenceNumber) -> WritingReaderDropGuard {
+        if let Some(window) = self.try_get_window(sequence_number) {
+            window.increment_writing_readers();
+            WritingReaderDropGuard { window: Some(window) }
+        } else {
+            // we only need to record readers against the timeline for windows that are still in-memory
+            WritingReaderDropGuard { window: None }
         }
     }
 
@@ -508,14 +537,26 @@ impl Timeline {
     }
 }
 
-pub struct ReaderDropGuard {
+pub struct ReadingReaderDropGuard {
     window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
-impl Drop for ReaderDropGuard {
+impl Drop for ReadingReaderDropGuard {
     fn drop(&mut self) {
         if let Some(window) = self.window.as_ref() {
             window.decrement_readers();
+        }
+    }
+}
+
+pub struct WritingReaderDropGuard {
+    window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
+}
+
+impl Drop for WritingReaderDropGuard {
+    fn drop(&mut self) {
+        if let Some(window) = self.window.as_ref() {
+            window.decrement_writing_readers();
         }
     }
 }
@@ -549,6 +590,7 @@ struct TimelineWindow<const SIZE: usize> {
     slot_status: [AtomicU8; SIZE],
     commit_records: [OnceLock<EvictableCommitRecord>; SIZE],
     readers: AtomicU64,
+    writing_readers: AtomicU64,
 }
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
@@ -557,7 +599,13 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         let slot_status = [const { AtomicU8::new(0) }; SIZE];
         debug_assert_eq!(slot_status[0].load(Ordering::SeqCst), SlotMarker::Empty.as_u8());
 
-        TimelineWindow { start, slot_status, commit_records, readers: AtomicU64::new(0) }
+        TimelineWindow {
+            start,
+            slot_status,
+            commit_records,
+            readers: AtomicU64::new(0),
+            writing_readers: AtomicU64::new(0),
+        }
     }
 
     fn start(&self) -> SequenceNumber {
@@ -619,6 +667,12 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }
     }
 
+    fn evict(&self) {
+        for commit_record in &self.commit_records {
+            commit_record.get().map(EvictableCommitRecord::evict);
+        }
+    }
+
     fn get_readers(&self) -> u64 {
         self.readers.load(Ordering::Relaxed)
     }
@@ -629,6 +683,20 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 
     fn decrement_readers(&self) -> u64 {
         self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+    }
+
+    fn get_writing_readers(&self) -> u64 {
+        self.writing_readers.load(Ordering::Relaxed)
+    }
+
+    fn increment_writing_readers(&self) {
+        self.increment_readers(); // a writing reader is a reader
+        self.writing_readers.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn decrement_writing_readers(&self) -> u64 {
+        self.decrement_readers(); // a writing reader is a reader
+        self.writing_readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
     }
 }
 
@@ -687,7 +755,7 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, ReaderDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
+        isolation_manager::{CommitStatus, ReadingReaderDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
         keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
@@ -720,7 +788,7 @@ mod tests {
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
-        reader_drop_guard: ReaderDropGuard,
+        reader_drop_guard: ReadingReaderDropGuard,
     }
 
     impl MockTransaction {

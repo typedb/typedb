@@ -25,7 +25,7 @@ use resource::{
 use crate::{
     MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
-    isolation_manager::ReaderDropGuard,
+    isolation_manager::{ReadingReaderDropGuard, WritingReaderDropGuard},
     iterator::MVCCReadError,
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -216,7 +216,7 @@ where
 {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
-    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord);
+    fn into_commit_record(self) -> (WritingReaderDropGuard, CommitRecord);
 
     fn has_changes(&self) -> bool {
         !self.operations().is_writes_empty() || !self.operations().locks_empty()
@@ -228,7 +228,7 @@ pub struct ReadSnapshot<D> {
     id: SnapshotId,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    reader_guard: ReaderDropGuard,
+    _reader_guard: ReadingReaderDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
@@ -239,14 +239,14 @@ impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
 
 impl<D> ReadSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
-        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
+        let _reader_guard = storage.isolation_manager.opened_for_read_by_reader(open_sequence_number);
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot {
             open_sequence_number,
             id: SnapshotId::new(),
             iterator_pool: IteratorPool::new(),
             storage,
-            reader_guard,
+            _reader_guard,
         }
     }
 }
@@ -332,7 +332,7 @@ pub struct WriteSnapshot<D> {
     operations: OperationsBuffer,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    reader_guard: ReaderDropGuard,
+    reader_guard: WritingReaderDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
@@ -364,7 +364,7 @@ impl<D> WriteSnapshot<D> {
         open_sequence_number: SequenceNumber,
         id: Option<SnapshotId>,
     ) -> Self {
-        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
+        let reader_guard = storage.isolation_manager.opened_for_read_by_writer(open_sequence_number);
         WriteSnapshot {
             storage,
             operations,
@@ -499,7 +499,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
+    fn into_commit_record(self) -> (WritingReaderDropGuard, CommitRecord) {
         let Self { operations, open_sequence_number, id, reader_guard, iterator_pool: _, storage: _ } = self;
         (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data, id))
     }
@@ -511,7 +511,7 @@ pub struct SchemaSnapshot<D> {
     operations: OperationsBuffer,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    reader_guard: ReaderDropGuard,
+    reader_guard: WritingReaderDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
@@ -543,7 +543,7 @@ impl<D> SchemaSnapshot<D> {
         open_sequence_number: SequenceNumber,
         id: Option<SnapshotId>,
     ) -> Self {
-        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
+        let reader_guard = storage.isolation_manager.opened_for_read_by_writer(open_sequence_number);
         SchemaSnapshot {
             storage,
             operations,
@@ -678,7 +678,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
+    fn into_commit_record(self) -> (WritingReaderDropGuard, CommitRecord) {
         let Self { operations, open_sequence_number, reader_guard, id, iterator_pool: _, storage: _ } = self;
         (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id))
     }
