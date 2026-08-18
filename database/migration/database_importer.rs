@@ -300,11 +300,11 @@ impl DatabaseImporter {
 
     pub fn new(
         import_handler: Box<dyn DatabaseImportHandler>,
-        import_directory: PathBuf,
+        scratch_directory: PathBuf,
         interrupt: ExecutionInterrupt,
     ) -> Self {
         let database_name = import_handler.database_name().to_owned();
-        let data_info = DataInfo::new(&import_directory, &database_name);
+        let data_info = DataInfo::new(&scratch_directory, &database_name);
         Self {
             import_handler: Some(import_handler),
             database_name,

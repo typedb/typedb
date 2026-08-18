@@ -167,20 +167,21 @@ impl LocalDatabaseOperator {
     }
 
     pub async fn record_import(&self, name: String, close_sender: Sender<()>) -> Result<(), DatabaseCreateError> {
-        let close_sender_for_cleanup = close_sender.clone();
-        let imports_for_cleanup = self.active_imports.clone();
         let mut imports = self.active_imports.write().await;
         match imports.get(&name) {
             Some(live) if !live.close_sender.is_closed() => {
                 return Err(DatabaseCreateError::IsBeingImported { name });
             }
-            _ => imports.insert(name.clone(), ImportInfo { close_sender }),
+            _ => imports.insert(name.clone(), ImportInfo { close_sender: close_sender.clone() }),
         };
+        drop(imports);
+
+        let imports_for_cleanup = self.active_imports.clone();
         self.background_task_spawner.spawn(async move {
-            close_sender_for_cleanup.closed().await;
+            close_sender.closed().await;
             let mut imports = imports_for_cleanup.write().await;
             if let Some(info) = imports.get(&name) {
-                if info.close_sender.same_channel(&close_sender_for_cleanup) {
+                if info.close_sender.same_channel(&close_sender) {
                     imports.remove(&name);
                 }
             }

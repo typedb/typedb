@@ -323,7 +323,7 @@ impl DatabaseManager {
             })?;
             return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
         }
-        self.promote_staged_database(&mut databases, name, database)
+        self.serve_staged_database(&mut databases, name, database)
     }
 
     pub fn discard_imported_database(&self, name: &str) -> Result<(), DatabaseDeleteError> {
@@ -402,7 +402,7 @@ impl DatabaseManager {
         exists_served
     }
 
-    fn promote_staged_database(
+    fn serve_staged_database(
         &self,
         databases: &mut Databases,
         name: &str,
