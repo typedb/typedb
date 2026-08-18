@@ -19,7 +19,7 @@ use std::{
 };
 
 use logger::result::ResultExt;
-use primitive::atomic_arc::AtomicArcOption;
+use primitive::{atomic_arc::AtomicArcOption, maybe_owns::MaybeOwns};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
@@ -102,7 +102,8 @@ impl IsolationManager {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
-        let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
+        let isolation_conflict =
+            self.validate_all_concurrent(sequence_number, &commit_record.get(), durability_client)?;
         if isolation_conflict.is_none() {
             window.set_validated(sequence_number);
         } else {
@@ -116,7 +117,10 @@ impl IsolationManager {
                     CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
                     _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
                 };
-                Ok(ValidatedCommit::Write(WriteBatches::from_operations(sequence_number, commit_record.operations())))
+                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
+                    sequence_number,
+                    commit_record.get().operations(),
+                )))
             }
         }
     }
@@ -164,7 +168,9 @@ impl IsolationManager {
             let (_, commit_status) = commit_status_result?;
             let commit_dependency = match commit_status {
                 CommitStatus::Aborted => CommitDependency::Independent,
-                CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
+                CommitStatus::Applied(predecessor_record) => {
+                    commit_record.compute_dependency(&predecessor_record.get())
+                }
                 CommitStatus::Pending(_) => {
                     unreachable!("Evicted records cannot be pending")
                 }
@@ -206,7 +212,7 @@ impl IsolationManager {
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
     ) -> Result<
-        impl Iterator<Item = Result<(SequenceNumber, CommitStatus), DurabilityClientError>>,
+        impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'static>), DurabilityClientError>>,
         DurabilityClientError,
     > {
         let mut is_committed = HashMap::new();
@@ -223,8 +229,14 @@ impl IsolationManager {
                         None
                     } else {
                         let status = match is_committed.get(&commit_sequence_number) {
-                            None => CommitStatus::Pending(Arc::new(commit_record)),
-                            Some(true) => CommitStatus::Applied(Arc::new(commit_record)),
+                            None => CommitStatus::Pending(MaybeOwns::Owned(EvictableCommitRecord::new(
+                                commit_sequence_number,
+                                commit_record,
+                            ))),
+                            Some(true) => CommitStatus::Applied(MaybeOwns::Owned(EvictableCommitRecord::new(
+                                commit_sequence_number,
+                                commit_record,
+                            ))),
                             Some(false) => CommitStatus::Aborted,
                         };
                         Some(Ok((commit_sequence_number, status)))
@@ -264,18 +276,20 @@ fn resolve_concurrent(
     }
     let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
         CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
-        CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(&predecessor_record) {
-            CommitDependency::Independent => CommitDependency::Independent,
-            result => {
-                if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
-                    result
-                } else {
-                    CommitDependency::Independent
+        CommitStatus::Pending(predecessor_record) => {
+            match commit_record.compute_dependency(&predecessor_record.get()) {
+                CommitDependency::Independent => CommitDependency::Independent,
+                result => {
+                    if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
+                        result
+                    } else {
+                        CommitDependency::Independent
+                    }
                 }
             }
-        },
+        }
         CommitStatus::Validated(predecessor_record) | CommitStatus::Applied(predecessor_record) => {
-            commit_record.compute_dependency(&predecessor_record)
+            commit_record.compute_dependency(&predecessor_record.get())
         }
         CommitStatus::Aborted => CommitDependency::Independent,
     };
@@ -637,16 +651,16 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         self.slot_status[index].store(SlotMarker::Applied.as_u8(), Ordering::SeqCst);
     }
 
-    fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus {
+    fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus<'_> {
         let index = sequence_number - self.start;
         let status = SlotMarker::from(self.slot_status[index].load(Ordering::SeqCst));
-        let lazy_record = || self.commit_records[index].get().unwrap().get();
+        let lazy_record = || self.commit_records[index].get().unwrap();
         match status {
             SlotMarker::Empty => CommitStatus::Empty,
             SlotMarker::Aborted => CommitStatus::Aborted,
-            SlotMarker::Pending => CommitStatus::Pending(lazy_record()),
-            SlotMarker::Validated => CommitStatus::Validated(lazy_record()),
-            SlotMarker::Applied => CommitStatus::Applied(lazy_record()),
+            SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(lazy_record())),
+            SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(lazy_record())),
+            SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(lazy_record())),
         }
     }
 
@@ -701,11 +715,11 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 }
 
 #[derive(Debug)]
-pub(crate) enum CommitStatus {
+pub(crate) enum CommitStatus<'a> {
     Empty,
-    Pending(Arc<CommitRecord>),
-    Validated(Arc<CommitRecord>),
-    Applied(Arc<CommitRecord>),
+    Pending(MaybeOwns<'a, EvictableCommitRecord>),
+    Validated(MaybeOwns<'a, EvictableCommitRecord>),
+    Applied(MaybeOwns<'a, EvictableCommitRecord>),
     Aborted,
 }
 
@@ -818,7 +832,7 @@ mod tests {
             } else {
                 window.set_aborted(tx.commit_sequence_number);
             }
-            let _sequence_number = commit_record.open_sequence_number();
+            let _sequence_number = commit_record.get().open_sequence_number();
             drop(window);
             drop(read_guard);
             timeline.may_increment_watermark(tx.commit_sequence_number);
