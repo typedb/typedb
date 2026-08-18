@@ -25,7 +25,7 @@ impl<T> AtomicArcOption<T> {
         Self::from_arc(Arc::new(value))
     }
 
-    /// Constructs a new `AtomicArc<T>`.
+    /// Converts an `Arc<T>` into an `AtomicArc<T>`.
     pub fn from_arc(arc: Arc<T>) -> Self {
         // `cast_mut` is necessary because AtomicPtr expects a `*mut T`.
         // This is safe because `AtomicArc` behaves the same as `Arc`, i.e. it only exposes `*const T`.
