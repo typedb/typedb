@@ -640,6 +640,8 @@ typedb_error! {
         IsNotBeingImported(9, "Internal error: database '{name}' is not being imported.", name: String),
         DirectoryWrite(10, "Error while writing to data directory for '{name}'.", name: String, source: Arc<io::Error>),
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
+        ImportedDatabaseInUse(12, "Imported database '{name}' is still in use.", name: String),
+        ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
     }
 }
 

@@ -21,6 +21,25 @@ use crate::wal::WALError;
 
 pub mod wal;
 
+/// Durably record a directory-shape change (creation, deletion, rename of entries) by fsyncing
+/// the directory itself. On Windows, std cannot open a directory handle (it omits
+/// FILE_FLAG_BACKUP_SEMANTICS) and FlushFileBuffers does not support directories, so this is
+/// best-effort there; NTFS journals metadata operations.
+pub fn sync_directory(directory: impl AsRef<std::path::Path>) -> io::Result<()> {
+    #[cfg(unix)]
+    {
+        std::fs::File::open(directory)?.sync_all()
+    }
+
+    #[cfg(windows)]
+    {
+        if let Ok(directory) = std::fs::File::open(directory) {
+            let _ = directory.sync_all();
+        }
+        Ok(())
+    }
+}
+
 pub trait DurabilityService {
     fn register_record_type(&mut self, record_type: DurabilityRecordType, record_name: &str);
 

@@ -32,6 +32,7 @@ fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
         ByteSize::mb(64),
+        database::database_manager::ImportOwnership::Exclusive,
     )
     .unwrap();
     dbm.put_database(DB_NAME).unwrap();

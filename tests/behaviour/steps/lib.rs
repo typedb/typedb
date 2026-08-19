@@ -29,6 +29,7 @@ use server::{
     Server, ServerBuilder,
     parameters::config::{ConfigBuilder, DiagnosticsConfig},
     service::http::message::analyze::AnalysedQueryResponse,
+    state::ServerState,
 };
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
@@ -210,9 +211,9 @@ impl Context {
         self.close_active_concurrent_transactions();
 
         if clean_databases {
-            let database_names = self.server().unwrap().lock().unwrap().database_manager().database_names();
-            for database_name in database_names {
-                self.server().unwrap().lock().unwrap().database_manager().delete_database(&database_name).unwrap();
+            let state = self.server_state();
+            for database_name in state.databases().all().await.unwrap() {
+                state.databases().delete(&database_name).await.unwrap();
             }
         }
 
@@ -235,8 +236,12 @@ impl Context {
         self.server.as_deref()
     }
 
+    pub fn server_state(&self) -> Arc<ServerState> {
+        self.server().unwrap().lock().unwrap().server_state()
+    }
+
     pub async fn database(&self, name: &str) -> Arc<Database<WALClient>> {
-        self.server().unwrap().lock().unwrap().database_manager().database(name).unwrap()
+        self.server_state().databases().get(name).await.unwrap().unwrap()
     }
 
     pub fn set_transaction(&mut self, tx: ActiveTransaction) {

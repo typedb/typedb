@@ -340,28 +340,7 @@ impl Files {
             .get_mut()
             .sync_all()
             .map_err(|err| WALError::Sync { source: Arc::new(err) })?;
-        self.sync_directory_best_effort()
-    }
-
-    fn sync_directory_best_effort(&mut self) -> Result<(), DurabilityServiceError> {
-        #[cfg(unix)]
-        {
-            StdFile::open(&self.directory)
-                .map_err(|err| WALError::Sync { source: Arc::new(err) })?
-                .sync_all()
-                .map_err(|err| WALError::Sync { source: Arc::new(err) }.into())
-        }
-
-        #[cfg(windows)]
-        {
-            // On Windows, FlushFileBuffers doesn't support directory handles, so it's likely
-            // a noop or an error (which is ignored), but we try it for symmetry.
-            // TODO: This requires additional testing and probably a separate OS-specific impl.
-            if let Ok(dir) = StdFile::open(&self.directory) {
-                let _ = dir.sync_all();
-            }
-            Ok(())
-        }
+        crate::sync_directory(&self.directory).map_err(|err| WALError::Sync { source: Arc::new(err) }.into())
     }
 
     fn iter(&self) -> impl DoubleEndedIterator<Item = &File> {
