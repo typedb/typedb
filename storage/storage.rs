@@ -607,7 +607,7 @@ impl<Durability> MVCCStorage<Durability> {
         SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed))
     }
 
-    pub fn cleanup_dead_keys(
+    pub fn mvcc_cleanup(
         &self,
         cleanup_until: SequenceNumber,
         ranges: impl IntoIterator<

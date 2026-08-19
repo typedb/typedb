@@ -13,7 +13,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
-use options::{DatabaseCleanupStrategy, TransactionOptions, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
@@ -119,7 +119,7 @@ fn setup() -> Arc<Database<WALClient>> {
             ByteSize::mb(64),
             ByteSize::mb(64),
             ImportOwnership::Exclusive,
-            DatabaseCleanupStrategy::Disabled,
+            MvccCleanupStrategy::Disabled,
         )
         .unwrap();
         dbm.put_database(DB_NAME).unwrap();
@@ -138,7 +138,7 @@ fn setup() -> Arc<Database<WALClient>> {
         ByteSize::mb(64),
         ByteSize::mb(64),
         ImportOwnership::Exclusive,
-        DatabaseCleanupStrategy::Disabled,
+        MvccCleanupStrategy::Disabled,
     )
     .unwrap();
     dbm.put_database(DB_NAME).unwrap();

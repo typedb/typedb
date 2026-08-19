@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use database::{Database, database_manager::DatabaseManager};
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::{DatabaseCleanupStrategy, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
 use test_utils_storage::create_rocks_resources;
@@ -23,7 +23,7 @@ fn create_delete_database() {
         &database_path.join("create_delete"),
         &diagnostics_manager,
         &resources,
-        DatabaseCleanupStrategy::Disabled,
+        MvccCleanupStrategy::Disabled,
     );
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();
@@ -41,7 +41,7 @@ fn prepare_for_writes_iterates_every_loaded_database() {
         ByteSize::mb(64),
         ByteSize::mb(64),
         database::database_manager::ImportOwnership::Exclusive,
-        DatabaseCleanupStrategy::Disabled,
+        MvccCleanupStrategy::Disabled,
     )
     .expect("DatabaseManager::new");
     for name in ["alpha", "beta", "gamma"] {

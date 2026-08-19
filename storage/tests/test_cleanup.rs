@@ -58,7 +58,7 @@ fn cleanup_test() {
     assert_eq!(count_keys(&storage), 6);
 
     storage
-        .cleanup_dead_keys(
+        .mvcc_cleanup(
             seq,
             [(
                 StorageKey::new(Keyspace, Bytes::copy(&[])),
@@ -108,7 +108,7 @@ fn concurrent_reader_cleanup_test() {
     assert_eq!(count_keys(&storage), 6);
 
     storage
-        .cleanup_dead_keys(
+        .mvcc_cleanup(
             seq,
             [(
                 StorageKey::new(Keyspace, Bytes::copy(&[])),

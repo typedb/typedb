@@ -13,7 +13,7 @@ use std::{
 use cache::CACHE_DB_NAME_PREFIX;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 pub(crate) use durability::sync_directory;
-use options::{DatabaseCleanupStrategy, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, byte_size::ByteSize};
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
 use tracing::{Level, debug, event, warn};
@@ -42,7 +42,7 @@ pub struct DatabaseManager {
     database_registry: DatabaseRegistry,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
-    cleanup_strategy: DatabaseCleanupStrategy,
+    cleanup_strategy: MvccCleanupStrategy,
 }
 
 impl DatabaseManager {
@@ -54,7 +54,7 @@ impl DatabaseManager {
         rocksdb_cache_size: ByteSize,
         rocksdb_write_buffers_limit: ByteSize,
         import_ownership: ImportOwnership,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<Arc<Self>, Box<DatabaseOpenError>> {
         let data_directory = data_directory.as_ref().to_owned();
         let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
@@ -92,7 +92,7 @@ impl DatabaseManager {
         import_directory: &Path,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<DatabasesMap, Box<DatabaseOpenError>> {
         let mut databases = DatabasesMap::new();
 
@@ -138,7 +138,7 @@ impl DatabaseManager {
         served_databases: &DatabasesMap,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<DatabasesMap, Box<DatabaseOpenError>> {
         match import_ownership {
             ImportOwnership::Exclusive => {
@@ -193,7 +193,7 @@ impl DatabaseManager {
         served_databases: &DatabasesMap,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<DatabasesMap, Box<DatabaseOpenError>> {
         let mut recovered = DatabasesMap::new();
         if !directory.exists() {

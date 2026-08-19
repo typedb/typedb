@@ -13,7 +13,7 @@ use resource::constants::server::{
 };
 
 #[derive(Debug, Clone)]
-pub enum DatabaseCleanupStrategy {
+pub enum MvccCleanupStrategy {
     Disabled,
     Eager,
 }

@@ -47,7 +47,7 @@ use error::typedb_error;
 use fail_point::{UNFINISHED_CHECKPOINT, fail_point};
 use function::{FunctionError, function_cache::FunctionCache};
 use itertools::Itertools;
-use options::DatabaseCleanupStrategy;
+use options::MvccCleanupStrategy;
 use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, CLEANUP_WAKEUP_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
@@ -267,7 +267,7 @@ impl Database<WALClient> {
         path: &Path,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<Database<WALClient>, Box<DatabaseOpenError>> {
         use DatabaseOpenError::InvalidUnicodeName;
 
@@ -287,7 +287,7 @@ impl Database<WALClient> {
         name: impl AsRef<str>,
         wal_metrics: FsyncMetrics,
         rocks_resources: &RocksResources,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<Database<WALClient>, Box<DatabaseOpenError>> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
@@ -366,7 +366,7 @@ impl Database<WALClient> {
         name: impl AsRef<str>,
         wal_metrics: FsyncMetrics,
         rocks_resources: &RocksResources,
-        cleanup_strategy: DatabaseCleanupStrategy,
+        cleanup_strategy: MvccCleanupStrategy,
     ) -> Result<Database<WALClient>, Box<DatabaseOpenError>> {
         use DatabaseOpenError::{
             CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
@@ -468,7 +468,7 @@ impl Database<WALClient> {
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let earliest_uncleaned = storage.earliest_uncleaned();
-        let cleanup_queue = if let DatabaseCleanupStrategy::Disabled = cleanup_strategy {
+        let cleanup_queue = if let MvccCleanupStrategy::Disabled = cleanup_strategy {
             Default::default()
         } else {
             Arc::new(RwLock::new(
@@ -651,7 +651,7 @@ fn make_cleanup_fn(
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
     cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
-    cleanup_strategy: DatabaseCleanupStrategy,
+    cleanup_strategy: MvccCleanupStrategy,
 ) -> impl Fn() {
     fn make_disabled_cleanup_fn(
         cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
@@ -692,7 +692,7 @@ fn make_cleanup_fn(
                 }
             };
 
-            if let Err(error) = storage.cleanup_dead_keys(watermark, ranges) {
+            if let Err(error) = storage.mvcc_cleanup(watermark, ranges) {
                 error!("Cleanup failed: {:?}", error);
             }
             debug!("Finished cleanup for database {} in {:?}", database_name, start.elapsed());
@@ -700,8 +700,8 @@ fn make_cleanup_fn(
     }
 
     match cleanup_strategy {
-        DatabaseCleanupStrategy::Disabled => make_disabled_cleanup_fn(cleanup_queue),
-        DatabaseCleanupStrategy::Eager => make_eager_cleanup_fn(database_name, storage, schema, cleanup_queue),
+        MvccCleanupStrategy::Disabled => make_disabled_cleanup_fn(cleanup_queue),
+        MvccCleanupStrategy::Eager => make_eager_cleanup_fn(database_name, storage, schema, cleanup_queue),
     }
 }
 

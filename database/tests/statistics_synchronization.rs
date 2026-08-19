@@ -14,7 +14,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
-use options::{DatabaseCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
@@ -48,7 +48,7 @@ fn statistics_synchronization_under_concurrent_load() {
             ByteSize::mb(64),
             ByteSize::mb(64),
             database::database_manager::ImportOwnership::Exclusive,
-            DatabaseCleanupStrategy::Disabled,
+            MvccCleanupStrategy::Disabled,
         )
         .unwrap();
         dbm.put_database(DB_NAME).unwrap();
@@ -85,7 +85,7 @@ fn statistics_synchronization_under_concurrent_load() {
         ByteSize::mb(64),
         ByteSize::mb(64),
         database::database_manager::ImportOwnership::Exclusive,
-        DatabaseCleanupStrategy::Disabled,
+        MvccCleanupStrategy::Disabled,
     )
     .unwrap();
     let database = dbm.database(DB_NAME).unwrap();

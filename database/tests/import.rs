@@ -12,7 +12,7 @@ use database::{
     database_manager::{DatabaseManager, ImportOwnership},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::{DatabaseCleanupStrategy, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, byte_size::ByteSize};
 use test_utils::{TempDir, create_tmp_dir, init_logging};
 
 fn manager(data_dir: &TempDir, import_ownership: ImportOwnership) -> Arc<DatabaseManager> {
@@ -23,7 +23,7 @@ fn manager(data_dir: &TempDir, import_ownership: ImportOwnership) -> Arc<Databas
         ByteSize::mb(64),
         ByteSize::mb(64),
         import_ownership,
-        DatabaseCleanupStrategy::Disabled,
+        MvccCleanupStrategy::Disabled,
     )
     .expect("DatabaseManager::new")
 }
