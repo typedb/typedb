@@ -70,7 +70,7 @@ impl StageIterator for WrittenRowsIterator {
 typedb_error! {
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors
-        Interrupted(1, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
+        Interrupted(1, "Execution interrupted by a concurrent {interrupt}.", interrupt: InterruptType),
         FetchUsedAsRows(2, "Cannot use a Fetch query to return ConceptRows"),
         RowsUsedAsFetch(3, "Cannot use query returning ConceptRows as a Fetch query."),
         ConceptRead(4, "Error reading concept.", typedb_source: Box<ConceptReadError>),

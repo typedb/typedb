@@ -87,6 +87,7 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::AnalyseQueryExpectsPipeline { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::NoOpenTransaction { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::QueryInterrupted { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::WriteQueryAnswersInterrupted { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::QueryStreamNotFound { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::QueueCleanupFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::PipelineExecution { .. } => StatusCode::BAD_REQUEST,

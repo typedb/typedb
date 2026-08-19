@@ -107,7 +107,7 @@ typedb_error! {
         SchemaQueryFailedAbortingTransaction(10, "Aborting transaction due to failed schema query.", typedb_source: Box<QueryError>),
         QueryFailed(11, "Query failed.", typedb_source: Box<QueryError>),
         NoOpenTransaction(12, "Operation failed: no open transaction."),
-        QueryInterrupted(13, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
+        QueryInterrupted(13, "Execution interrupted by a concurrent {interrupt}.", interrupt: InterruptType),
         QueryStreamNotFound(
             14,
             r#"
@@ -120,10 +120,15 @@ typedb_error! {
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
-        AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
+        AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query. Only query pipelines can be analysed."),
         AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
         CannotOpen(21, "Could not open transaction.", typedb_source: ArcServerStateError),
         DecodingGivenRowsFailed(22, "Decoding the input failed", typedb_source: ConceptDecodeError),
+        WriteQueryAnswersInterrupted(
+            23,
+            "Answer stream interrupted by a concurrent {interrupt}. The write was still applied; only its answers were dropped.",
+            interrupt: InterruptType
+        ),
     }
 }
 
@@ -141,6 +146,7 @@ impl TransactionServiceError {
             | TransactionServiceError::QueryFailed { .. }
             | TransactionServiceError::NoOpenTransaction { .. }
             | TransactionServiceError::QueryInterrupted { .. }
+            | TransactionServiceError::WriteQueryAnswersInterrupted { .. }
             | TransactionServiceError::QueryStreamNotFound { .. }
             | TransactionServiceError::QueueCleanupFailed { .. }
             | TransactionServiceError::PipelineExecution { .. }
