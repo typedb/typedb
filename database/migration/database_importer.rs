@@ -9,7 +9,6 @@ use std::{
     marker::PhantomData,
     path::PathBuf,
     sync::Arc,
-    time::Duration,
 };
 
 use bytes::{Bytes, byte_array::ByteArray};
@@ -39,30 +38,23 @@ use concept::{
     },
 };
 use encoding::value::{label::Label, value::Value};
-use error::{TypeDBError, typedb_error};
-use options::TransactionOptions;
+use error::typedb_error;
+use executor::ExecutionInterrupt;
 use query::error::QueryError;
-use resource::{
-    constants::{common::SECONDS_IN_DAY, snapshot::BUFFER_KEY_INLINE},
-    profile::StorageCounters,
-};
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use tokio::task::spawn_blocking;
-use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
-    Database, DatabaseDeleteError,
-    database::DatabaseCreateError,
-    database_manager::DatabaseManager,
-    migration::Checksums,
-    query::execute_schema_query,
-    transaction::{
-        CommitIntent, DataCommitError, SchemaCommitError, TransactionError, TransactionSchema, TransactionWrite,
+    migration::{
+        Checksums,
+        database_import_handler::{DatabaseImportHandler, ImportHandlerError},
     },
+    query::execute_schema_query,
+    transaction::{TransactionError, TransactionSchema, TransactionWrite},
     with_transaction_parts,
 };
 
@@ -109,7 +101,7 @@ macro_rules! for_item_in_write_transaction {
         $self.count_item();
         if $self.transaction_item_count() % DatabaseImporter::COMMIT_BATCH_SIZE == 0 {
             let transaction = $self.data_transaction.take().unwrap();
-            DatabaseImporter::commit_write_transaction(transaction).await?;
+            $self.commit_write_transaction(transaction)?;
         }
         Ok(())
     }};
@@ -286,53 +278,61 @@ impl AttributesInfo {
     }
 }
 
-#[derive(Debug)]
 pub struct DatabaseImporter {
-    database_manager: Arc<DatabaseManager>,
+    import_handler: Option<Box<dyn DatabaseImportHandler>>,
     database_name: String,
-    database: Option<Arc<Database<WALClient>>>, // owned by the importer!
     schema_info: SchemaInfo,
     data_info: DataInfo,
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_item_count: u64,
     total_item_count: u64,
+    interrupt: ExecutionInterrupt,
+}
+
+impl std::fmt::Debug for DatabaseImporter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseImporter").field("database_name", &self.database_name).finish_non_exhaustive()
+    }
 }
 
 impl DatabaseImporter {
-    const OPTIONS_PARALLEL: bool = true;
-    const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
-    const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
-
     const COMMIT_BATCH_SIZE: u64 = 10_000;
 
-    pub fn new(database_manager: Arc<DatabaseManager>, name: String) -> Result<Self, DatabaseImportError> {
-        let database = database_manager
-            .prepare_imported_database(name)
-            .map_err(|typedb_source| DatabaseImportError::DatabaseCreate { typedb_source })?;
-        let database_name = database.name().to_string();
-        let data_info = DataInfo::new(database_manager.import_directory(), &database_name);
-        let database = Some(Arc::new(database));
-        Ok(Self {
-            database_manager,
+    pub fn new(
+        import_handler: Box<dyn DatabaseImportHandler>,
+        scratch_directory: PathBuf,
+        interrupt: ExecutionInterrupt,
+    ) -> Self {
+        let database_name = import_handler.database_name().to_owned();
+        let data_info = DataInfo::new(&scratch_directory, &database_name);
+        Self {
+            import_handler: Some(import_handler),
             database_name,
-            database,
             schema_info: SchemaInfo::new(),
             data_info,
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
-        })
+            interrupt,
+        }
     }
 
-    pub async fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
+    fn check_interrupt(&mut self) -> Result<(), DatabaseImportError> {
+        match self.interrupt.check() {
+            Some(_) => Err(DatabaseImportError::Interrupted {}),
+            None => Ok(()),
+        }
+    }
+
+    pub fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
         if schema.trim().is_empty() {
             return Ok(());
         }
-        self.submit_original_schema(schema).await?;
-        self.relax_schema().await
+        self.submit_original_schema(schema)?;
+        self.relax_schema()
     }
 
-    pub async fn import_attribute(
+    pub fn import_attribute(
         &mut self,
         id: String,
         label: Label,
@@ -355,7 +355,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub async fn import_entity(
+    pub fn import_entity(
         &mut self,
         id: String,
         label: Label,
@@ -378,7 +378,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub async fn import_relation(
+    pub fn import_relation(
         &mut self,
         id: String,
         label: Label,
@@ -409,31 +409,22 @@ impl DatabaseImporter {
         self.data_info.record_expected_checksums(checksums)
     }
 
-    pub async fn import_done(&mut self) -> Result<(), DatabaseImportError> {
+    pub fn import_done(mut self) -> Result<(), DatabaseImportError> {
+        self.check_interrupt()?;
         if let Some(data_transaction) = self.data_transaction.take() {
-            Self::commit_write_transaction(data_transaction).await?;
+            self.commit_write_transaction(data_transaction)?;
         }
 
+        self.check_interrupt()?;
         self.validate_imported_data()?;
-        self.restore_relaxed_schema().await?;
+        self.check_interrupt()?;
+        self.restore_relaxed_schema()?;
+        self.check_interrupt()?;
 
-        let Some(database) = self.take_owned_database() else {
+        let Some(import_handler) = self.import_handler.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         };
-
-        self.database_manager
-            .finalise_imported_database(database)
-            .map_err(|typedb_source| DatabaseImportError::Finalisation { typedb_source })
-    }
-
-    fn take_owned_database(&mut self) -> Option<Database<WALClient>> {
-        let Some(database) = self.database.take() else {
-            return None;
-        };
-        Some(
-            Arc::into_inner(database)
-                .expect("Expected a unique ownership of the imported database, but it is used by other components"),
-        )
+        import_handler.finalise().map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
     }
 
     fn process_owned_attributes(
@@ -543,21 +534,18 @@ impl DatabaseImporter {
         self.total_item_count
     }
 
-    async fn submit_original_schema(&self, schema: String) -> Result<(), DatabaseImportError> {
+    fn submit_original_schema(&self, schema: String) -> Result<(), DatabaseImportError> {
         let parsed = parse_query(schema.as_ref())
             .map_err(|typedb_source| DatabaseImportError::SchemaQueryParseFailed { typedb_source })?;
         match parsed.into_structure() {
             typeql::query::QueryStructure::Schema(schema_query) => match &schema_query {
                 SchemaQuery::Define(_) => {
-                    let transaction = Self::open_schema_transaction(self.database()?)?;
-                    let (transaction, query_result) =
-                        spawn_blocking(move || execute_schema_query(transaction, schema_query, schema))
-                            .await
-                            .expect("Expected schema query execution finishing");
+                    let transaction = self.open_schema_transaction()?;
+                    let (transaction, query_result) = execute_schema_query(transaction, schema_query, schema);
                     query_result.map_err(|typedb_source| DatabaseImportError::SchemaQueryFailed { typedb_source })?;
-                    Self::commit_schema_transaction(transaction)
-                        .await
-                        .map_err(|typedb_source| DatabaseImportError::ProvidedSchemaCommitFailed { typedb_source })
+                    self.commit_schema_transaction(transaction, |typedb_source| {
+                        DatabaseImportError::ProvidedSchemaCommitFailed { typedb_source }
+                    })
                 }
                 _ => Err(DatabaseImportError::InvalidSchemaDefineQuery {}),
             },
@@ -565,38 +553,44 @@ impl DatabaseImporter {
         }
     }
 
-    async fn relax_schema(&mut self) -> Result<(), DatabaseImportError> {
-        let transaction = Self::open_schema_transaction(self.database()?)?;
+    fn relax_schema(&mut self) -> Result<(), DatabaseImportError> {
+        let transaction = self.open_schema_transaction()?;
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
                 self.make_attribute_types_independent(&mut inner_snapshot, &type_manager, &thing_manager)?;
+                self.check_interrupt()?;
                 self.make_relation_types_independent(&mut inner_snapshot, &type_manager)?;
+                self.check_interrupt()?;
                 self.relax_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
         );
 
-        Self::commit_schema_transaction(transaction)
-            .await
-            .map_err(|typedb_source| DatabaseImportError::PreparationSchemaCommitFailed { typedb_source })
+        self.check_interrupt()?;
+        self.commit_schema_transaction(transaction, |typedb_source| {
+            DatabaseImportError::PreparationSchemaCommitFailed { typedb_source }
+        })
     }
 
-    async fn restore_relaxed_schema(&self) -> Result<(), DatabaseImportError> {
-        let transaction = Self::open_schema_transaction(self.database()?)?;
+    fn restore_relaxed_schema(&mut self) -> Result<(), DatabaseImportError> {
+        let transaction = self.open_schema_transaction()?;
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
                 self.restore_independent_attribute_types(&mut inner_snapshot, &type_manager, &thing_manager)?;
+                self.check_interrupt()?;
                 self.restore_independent_relation_types(&mut inner_snapshot, &type_manager)?;
+                self.check_interrupt()?;
                 self.restore_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
         );
 
-        Self::commit_schema_transaction(transaction)
-            .await
-            .map_err(|typedb_source| DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source })
+        self.check_interrupt()?;
+        self.commit_schema_transaction(transaction, |typedb_source| {
+            DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source }
+        })
     }
 
     // The @independent constraint is inherited by all subtypes, and a subtype cannot redeclare
@@ -955,88 +949,49 @@ impl DatabaseImporter {
     fn get_data_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
         match self.data_transaction.take() {
             Some(transaction) => Ok(transaction),
-            None => Self::open_write_transaction(self.database()?),
+            None => self
+                .import_handler()?
+                .open_write()
+                .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
 
-    fn database(&self) -> Result<Arc<Database<WALClient>>, DatabaseImportError> {
-        self.database.as_ref().ok_or(DatabaseImportError::AccessAfterFinalisation {}).cloned()
-    }
-
-    fn open_schema_transaction(
-        database: Arc<Database<WALClient>>,
-    ) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
-        TransactionSchema::open(database, Self::transaction_options())
+    fn open_schema_transaction(&self) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
+        self.import_handler()?
+            .open_schema()
             .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
     }
 
-    fn open_write_transaction(
-        database: Arc<Database<WALClient>>,
-    ) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
-        TransactionWrite::open(database, Self::transaction_options())
-            .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
+    fn commit_schema_transaction(
+        &self,
+        transaction: TransactionSchema<WALClient>,
+        map_err: impl Fn(ImportHandlerError) -> DatabaseImportError,
+    ) -> Result<(), DatabaseImportError> {
+        let (_, finalise_result) = transaction.finalise();
+        let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
+        self.import_handler()?.commit_schema(intent).map_err(map_err)
     }
 
-    // TODO: It's currently local-only, not extensible
-    async fn commit_write_transaction(transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
-        spawn_blocking(move || {
-            let (mut profile, finalise_result) = transaction.finalise();
-            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
-            profile.commit_profile().end();
-            commit_result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
-        })
-        .await
-        .expect("Expected write transaction commit completion")
+    fn commit_write_transaction(&self, transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
+        let map_err = |typedb_source| DatabaseImportError::DataCommitFailed { typedb_source };
+        let (_, finalise_result) = transaction.finalise();
+        let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
+        self.import_handler()?.commit_data(intent).map_err(map_err)
     }
 
-    // TODO: It's currently local-only, not extensible
-    async fn commit_schema_transaction(transaction: TransactionSchema<WALClient>) -> Result<(), SchemaCommitError> {
-        spawn_blocking(move || {
-            let (mut profile, finalise_result) = transaction.finalise();
-            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
-            profile.commit_profile().end();
-            commit_result
-        })
-        .await
-        .expect("Expected schema transaction commit completion")
-    }
-
-    fn transaction_options() -> TransactionOptions {
-        TransactionOptions {
-            parallel: Self::OPTIONS_PARALLEL,
-            schema_lock_acquire_timeout_millis: Self::OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
-            transaction_timeout_millis: Self::OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
-        }
+    fn import_handler(&self) -> Result<&dyn DatabaseImportHandler, DatabaseImportError> {
+        self.import_handler.as_deref().ok_or(DatabaseImportError::AccessAfterFinalisation {})
     }
 }
 
 impl Drop for DatabaseImporter {
     fn drop(&mut self) {
         if let Some(data_transaction) = self.data_transaction.take() {
-            assert!(self.database.is_some(), "Unexpected open import transaction while the import is still not done");
+            assert!(
+                self.import_handler.is_some(),
+                "Unexpected open import transaction while the import is still not done"
+            );
             data_transaction.close();
-        }
-
-        let name = self.database_name().to_string();
-        if self.database.is_some() {
-            // import is not completed
-            let Some(database) = self.take_owned_database() else {
-                assert!(false, "Could not delete database {name} after unsuccessful import: used by other components.");
-                event!(
-                    Level::ERROR,
-                    "Could not delete database {name} after unsuccessful import: used by other components."
-                );
-                return;
-            };
-
-            if let Err(err) = self.database_manager.cancel_database_import(database) {
-                assert!(false, "Could not delete database {name} after unsuccessful import: {err:?}");
-                event!(
-                    Level::ERROR,
-                    "Could not delete database {name} after unsuccessful import: {}",
-                    err.format_code_and_description()
-                );
-            }
         }
     }
 }
@@ -1046,12 +1001,10 @@ typedb_error! {
         TransactionFailed(1, "Import transaction failed.", typedb_source: TransactionError),
         ConceptRead(2, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
         ConceptWrite(3, "Error writing concepts.", typedb_source: Box<ConceptWriteError>),
-        DatabaseCreate(4, "Error creating imported database.", typedb_source: DatabaseCreateError),
-        DatabaseDelete(5, "Error deleting an unsuccessfully imported database. Another attempt will be performed on the next startup.", typedb_source: DatabaseDeleteError),
-        DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: DataCommitError),
-        ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: SchemaCommitError),
-        PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: SchemaCommitError),
-        FinalizationSchemaCommitFailed(9, "Import schema transaction commit failed on finalization. It is a sign of a bug.", typedb_source: SchemaCommitError),
+        DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: ImportHandlerError),
+        ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: ImportHandlerError),
+        PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: ImportHandlerError),
+        FinalizationSchemaCommitFailed(9, "Import schema transaction commit failed on finalization. It is a sign of a bug.", typedb_source: ImportHandlerError),
         SchemaQueryParseFailed(10, "Import schema query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryFailed(11, "Import schema query failed.", typedb_source: Box<QueryError>),
         InvalidSchemaDefineQuery(12, "Import schema query is not a valid define query."),
@@ -1065,8 +1018,9 @@ typedb_error! {
         IncompleteOwnershipsOnDone(20, "Invalid imported database with {count} unknown owned attributes. It is a sign of a corrupted file or a client bug.", count: usize),
         IncompleteRolesOnDone(21, "Invalid imported database with {count} unknown role players. It is a sign of a corrupted file or a client bug.", count: usize),
         DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
-        Finalisation(23, "Error finalizing the imported database.", typedb_source: DatabaseCreateError),
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
         CacheError(25, "Error writing import data.", source: CacheError),
+        FinalisationFailed(26, "Import finalisation failed.", typedb_source: ImportHandlerError),
+        Interrupted(27, "The import was interrupted by a close request or server shutdown before completion. The import is aborted and can be retried."),
     }
 }

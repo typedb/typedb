@@ -11,10 +11,11 @@ use options::QueryOptions;
 use serde::{Deserialize, Serialize};
 
 pub mod admin;
-pub(crate) mod export_service;
+pub mod export_service;
 pub(crate) mod grpc;
 pub mod http;
 pub mod import_service;
+pub mod migration;
 mod transaction_service;
 
 pub use crate::transaction::TransactionType;

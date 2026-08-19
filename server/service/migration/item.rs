@@ -76,7 +76,7 @@ pub(crate) fn encode_attribute_item(
     })))
 }
 
-pub(crate) fn encode_header_item(typedb_version: String, original_database: String) -> Item {
+pub fn encode_header_item(typedb_version: String, original_database: String) -> Item {
     encode_item(item::Item::Header(item::Header { typedb_version, original_database }))
 }
 

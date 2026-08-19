@@ -5,30 +5,41 @@
  */
 
 use std::{
-    collections::HashMap,
-    fs,
+    fs, io,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::Arc,
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
+pub(crate) use durability::sync_directory;
 use options::byte_size::ByteSize;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::{durability_client::WALClient, keyspace::rocks_resources::RocksResources};
 use tracing::{Level, debug, event, warn};
 
-use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
+use crate::{
+    Database, DatabaseDeleteError, DatabaseOpenError,
+    database::DatabaseCreateError,
+    database_registry::{DatabaseRegistry, Databases, DatabasesMap},
+};
 
-type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
-type Databases = RwLock<DatabasesMap>;
-type DatabasesWriteLock<'a> = RwLockWriteGuard<'a, DatabasesMap>;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImportOwnership {
+    /// This process is the only one importing: nobody else can be holding an unfinished import,
+    /// so it may discard and reclaim them freely.
+    Exclusive,
+    /// Other processes drive the same imports: an unfinished import may still be required, so this
+    /// process may neither discard nor reclaim them on its own.
+    Shared,
+}
 
 #[derive(Debug)]
 pub struct DatabaseManager {
     data_directory: PathBuf,
     import_directory: PathBuf,
-    databases: Databases,
+    import_ownership: ImportOwnership,
+    database_registry: DatabaseRegistry,
     diagnostics_manager: Arc<DiagnosticsManager>,
     rocks_resources: Arc<RocksResources>,
 }
@@ -41,51 +52,52 @@ impl DatabaseManager {
         diagnostics_manager: Arc<DiagnosticsManager>,
         rocksdb_cache_size: ByteSize,
         rocksdb_write_buffers_limit: ByteSize,
+        import_ownership: ImportOwnership,
     ) -> Result<Arc<Self>, DatabaseOpenError> {
         let data_directory = data_directory.as_ref().to_owned();
         let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
-
         let rocks_resources = Arc::new(RocksResources::new(rocksdb_cache_size, rocksdb_write_buffers_limit));
-
-        let databases = RwLock::new(Self::initialise_databases(
+        let served_databases = Self::initialise_served_databases(
             &data_directory,
             &import_directory,
             &diagnostics_manager,
             &rocks_resources,
-        )?);
-        Self::cleanup_import_directory(&import_directory)?;
+        )?;
+        let staged_databases = Self::initialise_staged_databases(
+            &import_directory,
+            import_ownership,
+            &served_databases,
+            &diagnostics_manager,
+            &rocks_resources,
+        )?;
+        let database_registry = DatabaseRegistry::new(served_databases, staged_databases);
 
-        Ok(Arc::new(Self { data_directory, import_directory, databases, diagnostics_manager, rocks_resources }))
+        Ok(Arc::new(Self {
+            data_directory,
+            import_directory,
+            import_ownership,
+            database_registry,
+            diagnostics_manager,
+            rocks_resources,
+        }))
     }
 
-    fn initialise_databases(
+    fn initialise_served_databases(
         data_directory: &PathBuf,
-        import_directory: &PathBuf,
+        import_directory: &Path,
         diagnostics_manager: &DiagnosticsManager,
         rocks_resources: &RocksResources,
     ) -> Result<DatabasesMap, DatabaseOpenError> {
-        let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
-            name: Self::file_name_lossy(data_directory),
-            source: Arc::new(error),
-        })?;
-
         let mut databases = DatabasesMap::new();
 
-        for entry in entries {
-            let entry_path = entry
-                .map_err(|error| DatabaseOpenError::DirectoryRead {
-                    name: Self::file_name_lossy(data_directory),
-                    source: Arc::new(error),
-                })?
-                .path();
-
+        for entry_path in directory_entries(data_directory)? {
             if !entry_path.is_dir() {
                 event!(Level::DEBUG, "Not attempting to load database @ {:?}: not a directory", entry_path);
                 continue;
             }
 
             // TODO: Can be extended to "is in ignored/system/private directories"
-            if &entry_path == import_directory {
+            if entry_path == import_directory {
                 continue;
             }
 
@@ -109,54 +121,104 @@ impl DatabaseManager {
         Ok(databases)
     }
 
-    fn cleanup_import_directory(import_directory: &PathBuf) -> Result<(), DatabaseOpenError> {
-        if !import_directory.exists() {
+    fn initialise_staged_databases(
+        import_directory: &PathBuf,
+        import_ownership: ImportOwnership,
+        served_databases: &DatabasesMap,
+        diagnostics_manager: &DiagnosticsManager,
+        rocks_resources: &RocksResources,
+    ) -> Result<DatabasesMap, DatabaseOpenError> {
+        match import_ownership {
+            ImportOwnership::Exclusive => {
+                Self::cleanup_import_directory(import_directory)?;
+                Ok(DatabasesMap::new())
+            }
+            ImportOwnership::Shared => {
+                Self::recover_staged_databases(import_directory, served_databases, diagnostics_manager, rocks_resources)
+            }
+        }
+    }
+
+    fn cleanup_import_directory(directory: &PathBuf) -> Result<(), DatabaseOpenError> {
+        if !directory.exists() {
             return Ok(());
         }
-
-        let entries = fs::read_dir(import_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
-            name: Self::file_name_lossy(import_directory),
-            source: Arc::new(error),
-        })?;
-
-        for entry in entries {
-            let entry_path = entry
-                .map_err(|error| DatabaseOpenError::DirectoryRead {
-                    name: Self::file_name_lossy(import_directory),
-                    source: Arc::new(error),
-                })?
-                .path();
-
-            match entry_path.is_dir() {
-                true => {
-                    let name = entry_path.file_name().unwrap_or("".as_ref()).to_string_lossy();
-                    if name.starts_with(CACHE_DB_NAME_PREFIX) {
-                        event!(
-                            Level::DEBUG,
-                            "Cache '{name}' was not removed after an interrupted import operation. It will be deleted."
-                        );
-                    } else {
-                        event!(
-                            Level::WARN,
-                            "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted."
-                        );
-                    }
-                    fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
-                        name: Self::file_name_lossy(&entry_path),
-                        source: Arc::new(source),
-                    })?;
+        for entry_path in directory_entries(directory)? {
+            if entry_path.is_dir() {
+                let name = file_name_lossy(&entry_path);
+                if name.starts_with(CACHE_DB_NAME_PREFIX) {
+                    event!(
+                        Level::DEBUG,
+                        "Cache '{name}' was not removed after an interrupted import operation. It will be deleted."
+                    );
+                } else {
+                    event!(
+                        Level::DEBUG,
+                        "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted."
+                    );
                 }
-                false => {
-                    event!(Level::DEBUG, "Removing import file @ {:?}: expected to be temporary", entry_path);
-                    fs::remove_file(&entry_path).map_err(|source| DatabaseOpenError::FileDelete {
-                        name: Self::file_name_lossy(&entry_path),
-                        source: Arc::new(source),
-                    })?;
+                fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
+                    name: file_name_lossy(&entry_path),
+                    source: Arc::new(source),
+                })?;
+            } else {
+                event!(Level::DEBUG, "Removing import file @ {:?}: expected to be temporary", entry_path);
+                fs::remove_file(&entry_path).map_err(|source| DatabaseOpenError::FileDelete {
+                    name: file_name_lossy(&entry_path),
+                    source: Arc::new(source),
+                })?;
+            }
+        }
+        Ok(())
+    }
+
+    fn recover_staged_databases(
+        directory: &PathBuf,
+        served_databases: &DatabasesMap,
+        diagnostics_manager: &DiagnosticsManager,
+        rocks_resources: &RocksResources,
+    ) -> Result<DatabasesMap, DatabaseOpenError> {
+        let mut recovered = DatabasesMap::new();
+        if !directory.exists() {
+            return Ok(recovered);
+        }
+        for entry_path in directory_entries(directory)? {
+            let name = file_name_lossy(&entry_path);
+            if !entry_path.is_dir() || name.starts_with(CACHE_DB_NAME_PREFIX) {
+                Self::remove_import_leftover_best_effort(&entry_path);
+                continue;
+            }
+            if served_databases.contains_key(&name) {
+                event!(Level::INFO, "Removing the staged leftover of the finalised import of '{name}'.");
+                Self::remove_import_leftover_best_effort(&entry_path);
+                continue;
+            }
+            match Database::<WALClient>::open(&entry_path, diagnostics_manager, rocks_resources) {
+                Ok(database) => {
+                    event!(Level::INFO, "Recovered in-progress import of database '{name}' after restart.");
+                    recovered.insert(database.name().to_owned(), Arc::new(database));
+                }
+                Err(typedb_source) => {
+                    event!(
+                        Level::WARN,
+                        "Import database '{name}' could not be reopened after restart. The name stays \
+                         reserved until the import is cancelled or prepared again: {typedb_source:?}"
+                    );
                 }
             }
         }
+        Ok(recovered)
+    }
 
-        Ok(())
+    fn remove_import_leftover_best_effort(entry_path: &Path) {
+        // Best effort: `is_dir` returns false when the entry's metadata cannot be read at all, so
+        // such an entry takes the file branch, which removes it if it is a broken symlink and
+        // otherwise fails for the same reason its metadata did. Failures here are logged and the
+        // leftover is left for the next startup to retry
+        let result = if entry_path.is_dir() { fs::remove_dir_all(entry_path) } else { fs::remove_file(entry_path) };
+        if let Err(error) = result {
+            debug!("Could not remove import leftover {entry_path:?}: {error}");
+        }
     }
 
     pub fn put_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
@@ -166,13 +228,15 @@ impl DatabaseManager {
 
     pub fn put_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         let name = name.as_ref();
-        let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        if self.exists_import(&databases, name) {
-            return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
-        }
-        if !databases.contains_key(name) {
-            let database = self.new_public_database(name)?;
-            databases.insert(name.to_string(), Arc::new(database));
+        let mut databases = self.database_registry.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        self.ensure_not_staged(&databases.staged, name)?;
+        if !databases.served.contains_key(name) {
+            let database = self.open_served_database(name)?;
+            databases.served.insert(name.to_string(), Arc::new(database));
+            self.sync_data_directory().map_err(|source| DatabaseCreateError::DirectoryWrite {
+                name: name.to_string(),
+                source: Arc::new(source),
+            })?;
         }
         Ok(())
     }
@@ -185,114 +249,14 @@ impl DatabaseManager {
         }
 
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
-        // remove from map to make DB unavailable
-        let mut databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
-        let db = databases.remove(name);
-        match db {
-            None => return Err(DatabaseDeleteError::DoesNotExist {}),
-            Some(db) => {
-                match Arc::try_unwrap(db) {
-                    Ok(unwrapped) => unwrapped.delete()?,
-                    Err(arc) => {
-                        // failed to delete since it's in use - let's re-insert for now instead of losing the reference
-                        databases.insert(name.to_owned(), arc);
-                        return Err(DatabaseDeleteError::InUse {});
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub(crate) fn prepare_imported_database(&self, name: String) -> Result<Database<WALClient>, DatabaseCreateError> {
-        if !self.import_directory.exists() {
-            fs::create_dir(&self.import_directory).map_err(|source| DatabaseCreateError::DirectoryWrite {
-                name: name.clone(),
-                source: Arc::new(source),
-            })?;
-        }
-
-        Self::validate_user_database_name(&name)?;
-
-        let databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        if self.exists_public(&databases, &name) {
-            return Err(DatabaseCreateError::AlreadyExists { name });
-        }
-        if self.exists_import(&databases, &name) {
-            return Err(DatabaseCreateError::IsBeingImported { name });
-        }
-
-        self.new_imported_database(&name)
-    }
-
-    pub(crate) fn finalise_imported_database(&self, database: Database<WALClient>) -> Result<(), DatabaseCreateError> {
-        let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        let name = database.name().to_string();
-        let database_path = database.path.clone();
-
-        assert!(self.exists_import(&databases, &name), "Imported database is not in the import folder");
-        if self.exists_public(&databases, &name) {
-            database.delete().map_err(|typedb_source| DatabaseCreateError::AlreadyExistsAndCleanupBlocked {
-                name: name.clone(),
-                typedb_source,
-            })?;
-            Err(DatabaseCreateError::AlreadyExists { name })
-        } else {
-            drop(database);
-            self.move_directory_to_data(&name, &database_path)?;
-            let database = self.new_public_database(&name)?;
-            databases.insert(name, Arc::new(database));
-            Ok(())
-        }
-    }
-
-    pub(crate) fn cancel_database_import(&self, database: Database<WALClient>) -> Result<(), DatabaseDeleteError> {
-        let databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
-        let name = database.name().to_string();
-        if !self.exists_import(&databases, &name) {
-            return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name });
-        }
-        database.delete()
-    }
-
-    pub fn reset_else_recreate_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseResetError> {
-        // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
-        // remove from map to make DB unavailable
-        let mut databases = self.databases.write().unwrap();
-        let db = databases.remove(name.as_ref());
-        let result = if let Some(db) = db {
-            match Arc::try_unwrap(db) {
-                Ok(mut unwrapped) => {
-                    let reset_result = unwrapped.reset();
-                    databases.insert(name.as_ref().to_owned(), Arc::new(unwrapped));
-                    reset_result
-                }
-                Err(arc) => {
-                    // failed to reset since it's in use - let's re-insert for now instead of losing the reference
-                    databases.insert(name.as_ref().to_owned(), arc);
-                    Err(DatabaseResetError::InUse {})
-                }
-            }
-        } else {
-            drop(databases);
-            self.put_database(name).map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?;
-            return Ok(());
+        let mut databases = self.database_registry.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
+        let Some(database) = Self::take_database(&mut databases.served, name)? else {
+            return Err(DatabaseDeleteError::DoesNotExist {});
         };
-
-        drop(databases);
-        match result {
-            Ok(_) => (),
-            Err(_) => {
-                self.delete_database(name.as_ref())
-                    .map_err(|typedb_source| DatabaseResetError::DatabaseDelete { typedb_source })?;
-                self.put_database(name).map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?
-            }
-        };
+        database.delete()?;
+        self.sync_data_directory()
+            .map_err(|source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) })?;
         Ok(())
-    }
-
-    pub fn rocks_resources(&self) -> &Arc<RocksResources> {
-        &self.rocks_resources
     }
 
     pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
@@ -303,24 +267,100 @@ impl DatabaseManager {
     }
 
     pub fn database_unrestricted(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.databases.read().unwrap().get(name).cloned()
+        self.database_registry.served(name)
     }
 
     pub fn database_names(&self) -> Vec<String> {
-        self.databases.read().unwrap().keys().filter(|&db| Self::is_user_database(db)).cloned().collect()
+        self.database_registry.served_names().into_iter().filter(|name| Self::is_user_database(name)).collect()
     }
 
-    pub fn databases(&self) -> RwLockReadGuard<'_, HashMap<String, Arc<Database<WALClient>>>> {
-        self.databases.read().unwrap()
+    pub fn map_user_databases<T>(&self, mut f: impl FnMut(&Arc<Database<WALClient>>) -> T) -> Vec<T> {
+        self.database_registry
+            .read()
+            .served
+            .values()
+            .filter(|database| Self::is_user_database(database.name()))
+            .map(&mut f)
+            .collect()
     }
 
     pub fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError> {
-        for (name, database) in self.databases.read().unwrap().iter() {
+        for (name, database) in self.database_registry.read().served.iter() {
             database
                 .prepare_for_writes()
                 .map_err(|source| DatabaseOpenError::PrepareForWrites { name: name.clone(), source })?;
         }
         Ok(())
+    }
+
+    pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
+        Self::validate_user_database_name(&name)?;
+        let mut databases = self.database_registry.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        if self.exists_served(&databases.served, &name) {
+            return Err(DatabaseCreateError::AlreadyExists { name });
+        }
+        self.evict_staged_leftover(&mut databases.staged, &name)?;
+
+        let map_fs_err = |source| DatabaseCreateError::DirectoryWrite { name: name.clone(), source: Arc::new(source) };
+        fs::create_dir_all(&self.import_directory).map_err(map_fs_err)?;
+        let database = Arc::new(self.open_staged_database(&name)?);
+        self.sync_import_directory().map_err(map_fs_err)?;
+        databases.staged.insert(name, database.clone());
+        Ok(database)
+    }
+
+    pub fn finalise_imported_database(&self, name: &str) -> Result<(), DatabaseCreateError> {
+        let mut databases = self.database_registry.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        let database = match Self::take_database(&mut databases.staged, name) {
+            Ok(Some(database)) => database,
+            Ok(None) => return Err(DatabaseCreateError::IsNotBeingImported { name: name.to_string() }),
+            Err(_) => return Err(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() }),
+        };
+        if self.exists_served(&databases.served, name) {
+            database.delete().map_err(|typedb_source| DatabaseCreateError::AlreadyExistsAndCleanupBlocked {
+                name: name.to_string(),
+                typedb_source,
+            })?;
+            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+        }
+        self.serve_staged_database(&mut databases, name, database)
+    }
+
+    pub fn discard_imported_database(&self, name: &str) -> Result<(), DatabaseDeleteError> {
+        if Self::validate_user_database_name(name).is_err() {
+            return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name: name.to_string() });
+        }
+        let map_fs_err = |source| DatabaseDeleteError::DirectoryDelete { source: Arc::new(source) };
+        let mut databases = self.database_registry.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
+        let Some(database) = Self::take_database(&mut databases.staged, name)? else {
+            if self.staged_database_exists(name) {
+                self.remove_staged_directory(name).map_err(map_fs_err)?;
+            }
+            return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name: name.to_string() });
+        };
+        database.delete()?;
+        self.sync_import_directory().map_err(map_fs_err)?;
+        Ok(())
+    }
+
+    pub fn imported_database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+        self.database_registry.staged(name)
+    }
+
+    pub fn imported_database_names(&self) -> Vec<String> {
+        self.database_registry.staged_names()
+    }
+
+    pub fn is_abandoned_import(&self, name: &str) -> bool {
+        !self.database_registry.read().staged.contains_key(name) && self.staged_database_exists(name)
+    }
+
+    pub fn import_directory(&self) -> &Path {
+        &self.import_directory
+    }
+
+    pub fn rocks_resources(&self) -> &Arc<RocksResources> {
+        &self.rocks_resources
     }
 
     pub fn is_user_database(name: &str) -> bool {
@@ -331,40 +371,56 @@ impl DatabaseManager {
         name.starts_with(INTERNAL_DATABASE_PREFIX)
     }
 
-    pub(crate) fn import_directory(&self) -> &PathBuf {
-        &self.import_directory
+    fn take_database(
+        databases: &mut DatabasesMap,
+        name: &str,
+    ) -> Result<Option<Database<WALClient>>, DatabaseDeleteError> {
+        let Some(database) = databases.remove(name) else {
+            return Ok(None);
+        };
+        match Arc::try_unwrap(database) {
+            Ok(database) => Ok(Some(database)),
+            Err(database) => {
+                databases.insert(name.to_string(), database);
+                Err(DatabaseDeleteError::InUse {})
+            }
+        }
     }
 
-    fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.data_directory.join(name), &self.diagnostics_manager, &self.rocks_resources)
+    fn open_served_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
+        Database::<WALClient>::open(&self.served_database_path(name), &self.diagnostics_manager, &self.rocks_resources)
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
-    fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.import_directory.join(name), &self.diagnostics_manager, &self.rocks_resources)
-            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
-    }
-
-    fn exists_public<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {
-        let exists_public = self.data_directory.join(name).is_dir();
+    fn exists_served(&self, served: &DatabasesMap, name: &str) -> bool {
+        let exists_served = self.served_database_path(name).is_dir();
         assert_eq!(
-            exists_public,
-            databases.contains_key(name),
-            "Public databases should be in the public database list: {name}"
+            exists_served,
+            served.contains_key(name),
+            "Served databases should be in the served database list: {name}"
         );
-        exists_public
+        exists_served
     }
 
-    fn exists_import<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {
-        let exists_import = self.import_directory.join(name).is_dir();
-        assert!(
-            !exists_import || !databases.contains_key(name),
-            "Imported databases cannot be in the public database list: {name}"
-        );
-        exists_import
+    fn serve_staged_database(
+        &self,
+        databases: &mut Databases,
+        name: &str,
+        database: Database<WALClient>,
+    ) -> Result<(), DatabaseCreateError> {
+        let staged_path = database.path.clone();
+        drop(database);
+        self.move_directory_to_data(name, &staged_path)?;
+        let map_fs_err =
+            |source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) };
+        self.sync_data_directory().map_err(map_fs_err)?;
+        self.sync_import_directory().map_err(map_fs_err)?;
+        let database = self.open_served_database(name)?;
+        databases.served.insert(name.to_string(), Arc::new(database));
+        Ok(())
     }
 
-    fn move_directory_to_data(&self, name: &str, directory: &PathBuf) -> Result<(), DatabaseCreateError> {
+    fn move_directory_to_data(&self, name: &str, directory: &Path) -> Result<(), DatabaseCreateError> {
         let directory_name =
             directory.file_name().ok_or_else(|| DatabaseCreateError::DatabaseMove { name: name.to_string() })?;
 
@@ -373,8 +429,65 @@ impl DatabaseManager {
             .map_err(|source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
     }
 
-    fn file_name_lossy(path: &Path) -> String {
-        path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
+    fn ensure_not_staged(&self, staged: &DatabasesMap, name: &str) -> Result<(), DatabaseCreateError> {
+        if staged.contains_key(name) {
+            return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
+        }
+        if !self.staged_database_exists(name) {
+            return Ok(());
+        }
+        match self.import_ownership {
+            ImportOwnership::Shared => Err(DatabaseCreateError::IsBeingImported { name: name.to_string() }),
+            ImportOwnership::Exclusive => self.remove_staged_directory(name).map_err(|source| {
+                DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) }
+            }),
+        }
+    }
+
+    fn evict_staged_leftover(&self, staged: &mut DatabasesMap, name: &str) -> Result<(), DatabaseCreateError> {
+        match Self::take_database(staged, name) {
+            Ok(Some(leftover)) => leftover.delete().map_err(|typedb_source| DatabaseCreateError::ImportCleanupFailed {
+                name: name.to_string(),
+                typedb_source,
+            }),
+            Ok(None) if self.staged_database_exists(name) => {
+                fs::remove_dir_all(self.staged_database_path(name)).map_err(|source| {
+                    DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) }
+                })
+            }
+            Ok(None) => Ok(()),
+            Err(_) => Err(DatabaseCreateError::ImportedDatabaseInUse { name: name.to_string() }),
+        }
+    }
+
+    fn open_staged_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
+        Database::<WALClient>::open(&self.staged_database_path(name), &self.diagnostics_manager, &self.rocks_resources)
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+    }
+
+    fn served_database_path(&self, name: &str) -> PathBuf {
+        self.data_directory.join(name)
+    }
+
+    fn remove_staged_directory(&self, name: &str) -> io::Result<()> {
+        fs::remove_dir_all(self.staged_database_path(name))?;
+        self.sync_import_directory()
+    }
+
+    fn staged_database_path(&self, name: &str) -> PathBuf {
+        self.import_directory.join(name)
+    }
+
+    fn staged_database_exists(&self, name: &str) -> bool {
+        self.staged_database_path(name).is_dir()
+    }
+
+    fn sync_data_directory(&self) -> io::Result<()> {
+        sync_directory(&self.data_directory)
+    }
+
+    fn sync_import_directory(&self) -> io::Result<()> {
+        sync_directory(&self.import_directory)
     }
 
     fn validate_user_database_name(name: &str) -> Result<(), DatabaseCreateError> {
@@ -390,4 +503,23 @@ impl DatabaseManager {
         }
         Ok(())
     }
+}
+
+pub(crate) fn file_name_lossy(path: &Path) -> String {
+    path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
+}
+
+pub(crate) fn directory_entries(directory: &Path) -> Result<Vec<PathBuf>, DatabaseOpenError> {
+    let entries = fs::read_dir(directory).map_err(|error| DatabaseOpenError::DirectoryRead {
+        name: file_name_lossy(directory),
+        source: Arc::new(error),
+    })?;
+    entries
+        .map(|entry| {
+            entry.map(|entry| entry.path()).map_err(|error| DatabaseOpenError::DirectoryRead {
+                name: file_name_lossy(directory),
+                source: Arc::new(error),
+            })
+        })
+        .collect()
 }

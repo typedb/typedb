@@ -47,6 +47,7 @@ fn statistics_synchronization_under_concurrent_load() {
             Arc::new(DiagnosticsManager::new_disabled()),
             ByteSize::mb(64),
             ByteSize::mb(64),
+            database::database_manager::ImportOwnership::Exclusive,
         )
         .unwrap();
         dbm.put_database(DB_NAME).unwrap();
@@ -82,6 +83,7 @@ fn statistics_synchronization_under_concurrent_load() {
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
         ByteSize::mb(64),
+        database::database_manager::ImportOwnership::Exclusive,
     )
     .unwrap();
     let database = dbm.database(DB_NAME).unwrap();

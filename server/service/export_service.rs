@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use concept::error::ConceptReadError;
-use database::transaction::{TransactionError, TransactionRead};
+use database::transaction::TransactionRead;
 use error::typedb_error;
 use ir::pipeline::FunctionReadError;
 use storage::durability_client::DurabilityClient;
 
-pub(crate) fn get_transaction_schema<D: DurabilityClient>(
+pub fn get_transaction_schema<D: DurabilityClient>(
     transaction: &TransactionRead<D>,
 ) -> Result<String, DatabaseExportError> {
     let types_syntax = get_types_syntax(transaction)?;
@@ -40,10 +40,10 @@ fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -
 
 typedb_error! {
     pub DatabaseExportError(component = "Database export", prefix = "DBE") {
-        TransactionFailed(1, "Transaction failed.", typedb_source: TransactionError),
         ConceptRead(2, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
         FunctionRead(3, "Error reading functions.", typedb_source: FunctionReadError),
         ShutdownInterrupt(4, "Execution interrupted by a shutdown signal."),
         ClientChannelIsClosed(5, "Client channel is closed."),
+        TransactionCloseInterrupt(6, "Execution interrupted: the export's transaction was forcefully closed."),
     }
 }

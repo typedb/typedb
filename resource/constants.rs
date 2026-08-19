@@ -59,6 +59,8 @@ pub mod server {
 
     pub const GRPC_MAX_MESSAGE_SIZE: usize = GB as usize;
 
+    pub const MAX_CONCURRENT_IMPORTS: usize = 8;
+
     // TODO: Maybe we start moving these options to separate crates?
     pub const DEFAULT_PREFETCH_SIZE: usize = 32;
     pub const DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
