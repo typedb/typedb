@@ -128,7 +128,9 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                     DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
                         may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
                     }
-                    DataCommitError::SnapshotInUse { .. } | DataCommitError::SnapshotError { .. } => {
+                    DataCommitError::SnapshotInUse { .. }
+                    | DataCommitError::SnapshotError { .. }
+                    | DataCommitError::DurabilityError { .. } => {
                         panic!("Unexpected write commit error: {:?}", error);
                     }
                 }
@@ -151,7 +153,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                     SchemaCommitError::FunctionError { .. } => {}
                     SchemaCommitError::TypeCacheUpdateError { .. }
                     | SchemaCommitError::StatisticsError { .. }
-                    | SchemaCommitError::SnapshotError { .. } => {
+                    | SchemaCommitError::SnapshotError { .. }
+                    | SchemaCommitError::DurabilityError { .. } => {
                         panic!("Unexpected schema commit error: {:?}", error);
                     }
                 }

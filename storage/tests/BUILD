@@ -135,6 +135,28 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_cleanup",
+    crate_root = "test_cleanup.rs",
+    srcs = glob([
+        "test_cleanup.rs",
+    ]),
+    deps = [
+        "//common/bytes",
+        "//common/lending_iterator",
+        "//common/logger",
+        "//common/primitive",
+        "//diagnostics",
+        "//durability",
+        "//resource",
+        "//storage",
+        "//util/test:test_utils",
+        ":test_utils_storage",
+
+        "@crates//:tracing",
+    ]
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [

@@ -12,6 +12,12 @@ use resource::constants::server::{
     DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
 
+#[derive(Debug, Clone)]
+pub enum MvccCleanupStrategy {
+    Disabled,
+    Eager,
+}
+
 #[derive(Debug)]
 pub struct TransactionOptions {
     pub parallel: bool,

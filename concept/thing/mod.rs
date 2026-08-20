@@ -25,6 +25,7 @@ use crate::{
 };
 
 pub mod attribute;
+pub mod cleanup;
 pub mod entity;
 pub mod has;
 pub mod object;

@@ -15,7 +15,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::graph::thing::vertex_attribute::StringAttributeID;
 use executor::ExecutionInterrupt;
-use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use storage::{
     StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, snapshot::SnapshotError,
@@ -33,6 +33,7 @@ fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
         ByteSize::mb(64),
         ByteSize::mb(64),
         database::database_manager::ImportOwnership::Exclusive,
+        MvccCleanupStrategy::Disabled,
     )
     .unwrap();
     dbm.put_database(DB_NAME).unwrap();

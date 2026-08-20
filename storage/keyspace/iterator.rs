@@ -38,7 +38,6 @@ impl KeyspaceRangeIterator {
     ) -> Self {
         let start_prefix = match range.start() {
             RangeStart::Inclusive(bytes) => Bytes::Reference(bytes.as_ref()),
-            RangeStart::ExcludeFirstWithPrefix(bytes) => Bytes::Reference(bytes.as_ref()),
             RangeStart::ExcludePrefix(bytes) => {
                 let mut cloned = bytes.to_array();
                 cloned.increment().unwrap();
@@ -51,9 +50,6 @@ impl KeyspaceRangeIterator {
             iterpool.get_iterator_unprefixed(keyspace)
         };
         let mut iterator = DBIterator::new_from(raw_iterator, start_prefix.as_ref(), storage_counters);
-        if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
-            Self::may_skip_start(&mut iterator, range.start().get_value());
-        }
 
         let continue_condition = match range.end() {
             RangeEnd::WithinStartAsPrefix => {
@@ -81,13 +77,13 @@ impl KeyspaceRangeIterator {
                         // if the key is shorter than the end, and the end starts with the key, then it must be OK
                         //  example: A will be included when searching up to and including AA
                         // otherwise, the key is longer and we check the corresponding ranges
-                        end_inclusive.starts_with(key) || &key[0..end_inclusive.len()] <= &**end_inclusive
+                        end_inclusive.starts_with(key) || key[0..end_inclusive.len()] <= **end_inclusive
                     }
                     ContinueCondition::EndPrefixExclusive(end_exclusive) => {
                         // if the key is shorter than the end, and the end starts with the key, then it must be OK
                         //  example: A will be included when searching up to but not including AA
                         // otherwise, the key is longer and we check the corresponding ranges
-                        end_exclusive.starts_with(key) || &key[0..end_exclusive.len()] < &**end_exclusive
+                        end_exclusive.starts_with(key) || key[0..end_exclusive.len()] < **end_exclusive
                     }
                     ContinueCondition::Always => true,
                 }
@@ -100,9 +96,7 @@ impl KeyspaceRangeIterator {
         keyspace: &Keyspace,
         range: &KeyRange<Bytes<'_, INLINE_BYTES>>,
     ) -> bool {
-        let Some(prefix_length) = keyspace.prefix_length() else {
-            return false;
-        };
+        let Some(prefix_length) = keyspace.prefix_length() else { return false };
         let start = range.start().get_value();
         if start.length() < prefix_length {
             return false;

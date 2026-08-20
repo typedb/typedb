@@ -14,6 +14,7 @@ use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::{DatabaseManager, ImportOwnership};
 use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
+use options::MvccCleanupStrategy;
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
 use tokio::{net::lookup_host, sync::watch::Receiver};
 
@@ -93,8 +94,9 @@ impl ServerState {
             config.storage.rocksdb.cache_size,
             config.storage.rocksdb.write_buffers_limit,
             import_ownership,
+            config.storage.mvcc.cleanup.clone().map(Into::into).unwrap_or(MvccCleanupStrategy::Disabled),
         )
-        .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
+        .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source: *typedb_source })?;
         let database_diagnostics_updater = IntervalRunner::new(
             {
                 let diagnostics_manager = diagnostics_manager.clone();

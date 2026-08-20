@@ -58,8 +58,8 @@ impl<T: Prefix> KeyRange<T> {
         prefix_mapper: impl Fn(&'a T) -> V,
         fixed_width_mapper: impl Fn(bool) -> bool,
     ) -> KeyRange<V> {
-        let start = (&self.start).map(&prefix_mapper);
-        let end = (&self.end).map(&prefix_mapper);
+        let start = self.start.map(&prefix_mapper);
+        let end = self.end.map(&prefix_mapper);
         let fixed_width = fixed_width_mapper(self.fixed_width_keys);
         match fixed_width {
             true => KeyRange::new_fixed_width(start, end),
@@ -69,12 +69,8 @@ impl<T: Prefix> KeyRange<T> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RangeStart<T>
-where
-    T: Ord + Debug,
-{
+pub enum RangeStart<T: Ord> {
     Inclusive(T),
-    ExcludeFirstWithPrefix(T),
     ExcludePrefix(T),
 }
 
@@ -85,14 +81,13 @@ where
     pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeStart<U> {
         match self {
             Self::Inclusive(end) => RangeStart::Inclusive(mapper(end)),
-            Self::ExcludeFirstWithPrefix(end) => RangeStart::ExcludeFirstWithPrefix(mapper(end)),
             Self::ExcludePrefix(end) => RangeStart::ExcludePrefix(mapper(end)),
         }
     }
 
     pub fn get_value(&self) -> &T {
         match self {
-            Self::Inclusive(value) | Self::ExcludeFirstWithPrefix(value) | Self::ExcludePrefix(value) => value,
+            Self::Inclusive(value) | Self::ExcludePrefix(value) => value,
         }
     }
     //

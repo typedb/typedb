@@ -9,6 +9,8 @@
 #![allow(clippy::module_inception)]
 
 use std::{
+    collections::BTreeMap,
+    convert::identity,
     error::Error,
     fs, io,
     path::{Path, PathBuf},
@@ -33,9 +35,13 @@ use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::{
-    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    constants::{
+        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+        storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS,
+    },
     profile::{CommitProfile, StorageCounters},
 };
+use rocksdb::WriteBatch;
 use tracing::trace;
 
 use crate::{
@@ -51,7 +57,7 @@ use crate::{
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
-        checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
+        checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter, StorageMetadata},
         commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     },
     sequence_number::SequenceNumber,
@@ -81,6 +87,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
+    earliest_uncleaned: AtomicU64,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -117,6 +124,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            earliest_uncleaned: AtomicU64::new(0),
         })
     }
 
@@ -146,16 +154,15 @@ impl<Durability> MVCCStorage<Durability> {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
         Self::register_durability_record_types(&mut durability_client);
-        let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
+        let (keyspaces, next_sequence_number, earliest_uncleaned) = if let Some(checkpoint) = checkpoint {
             checkpoint
                 .recover_storage::<KS, _>(name, &storage_dir, &durability_client, rocks_resources)
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
-            match fs::remove_dir_all(&storage_dir) {
-                Err(err) if err.kind() != io::ErrorKind::NotFound => {
-                    return Err(StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) });
-                }
-                _ => (),
+            if let Err(err) = fs::remove_dir_all(&storage_dir)
+                && err.kind() != io::ErrorKind::NotFound
+            {
+                return Err(StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) });
             }
             fail_point!(STORAGE_MISSING_STORAGE_DIR);
             fs::create_dir_all(&storage_dir)
@@ -169,7 +176,7 @@ impl<Durability> MVCCStorage<Durability> {
             apply_recovered(name, commits, &durability_client, &keyspaces)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
-            (keyspaces, next_sequence_number)
+            (keyspaces, next_sequence_number, SequenceNumber::MIN)
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
@@ -180,6 +187,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            earliest_uncleaned: AtomicU64::new(earliest_uncleaned.number()),
         })
     }
 
@@ -388,8 +396,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
-        while let Some(entry) = iter.next() {
+        for entry in self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)? {
             let (_, iter_record) = entry?;
             if iter_record.snapshot_id() == snapshot_id && iter_record.open_sequence_number() == open_sequence_number {
                 return Ok(true);
@@ -414,8 +421,15 @@ impl<Durability> MVCCStorage<Durability> {
         self.keyspaces.get(keyspace_id)
     }
 
+    fn metadata(&self) -> StorageMetadata {
+        StorageMetadata::new(
+            self.snapshot_watermark(),
+            SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed)),
+        )
+    }
+
     pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
-        checkpoint.add_storage(&self.keyspaces, self.snapshot_watermark())
+        checkpoint.add_storage(&self.keyspaces, self.metadata())
     }
 
     pub fn delete_storage(self) -> Result<(), StorageDeleteError>
@@ -580,6 +594,75 @@ impl<Durability> MVCCStorage<Durability> {
         Ok(())
     }
 
+    pub fn earliest_possible_reader(&self) -> SequenceNumber {
+        let watermark = self.isolation_manager.watermark();
+        if let Some(earliest_reader) = self.isolation_manager.earliest_reader() {
+            SequenceNumber::min(watermark, earliest_reader)
+        } else {
+            watermark
+        }
+    }
+
+    pub fn earliest_uncleaned(&self) -> SequenceNumber {
+        SequenceNumber::new(self.earliest_uncleaned.load(Ordering::Relaxed))
+    }
+
+    pub fn mvcc_cleanup(
+        &self,
+        cleanup_until: SequenceNumber,
+        ranges: impl IntoIterator<
+            Item = (StorageKey<'static, BUFFER_KEY_INLINE>, KeyRange<StorageKey<'static, BUFFER_KEY_INLINE>>),
+        >,
+    ) -> Result<(), StorageCleanupError> {
+        let cleanup_until = SequenceNumber::min(cleanup_until, self.earliest_possible_reader());
+
+        if self.earliest_uncleaned.load(Ordering::Relaxed) >= cleanup_until.number() {
+            return Ok(());
+        }
+
+        let mut batches =
+            BTreeMap::from_iter(self.keyspaces.iter().map(|keyspace| (keyspace.id(), WriteBatch::default())));
+
+        for (prefix, range) in ranges {
+            let keyspace_id = prefix.keyspace_id();
+            let batch = batches.get_mut(&keyspace_id).unwrap_or_else(|| {
+                panic!("Keyspace ID {keyspace_id} not found in write batches during cleanup! Keyspace mismatch?")
+            });
+
+            let mut it = self.get_keyspace(keyspace_id).iterate_range(
+                &IteratorPool::new(),
+                &range.map(StorageKey::as_bytes, identity),
+                StorageCounters::DISABLED,
+            );
+
+            let mut last_seen = None;
+            while let Some(raw) = it.next() {
+                let (k, _) =
+                    raw.map_err(|err| StorageCleanupError::Keyspace { name: self.name.clone(), source: err })?;
+                let mvcc_key = MVCCKey::wrap_slice(k);
+
+                let overwritten =
+                    mvcc_key.sequence_number() < cleanup_until && last_seen.as_deref() == Some(mvcc_key.key());
+                let deleted = mvcc_key.sequence_number() <= cleanup_until
+                    && matches!(mvcc_key.operation(), StorageOperation::Delete);
+
+                if overwritten || deleted {
+                    batch.delete(k);
+                }
+                last_seen = Some(Bytes::<MVCC_KEY_INLINE_SIZE>::copy(mvcc_key.key()));
+            }
+        }
+
+        for (keyspace_id, batch) in batches {
+            self.get_keyspace(keyspace_id)
+                .write(batch)
+                .map_err(|err| StorageCleanupError::Keyspace { name: self.name.clone(), source: err })?;
+        }
+
+        self.earliest_uncleaned.store(cleanup_until.number(), Ordering::Relaxed);
+        Ok(())
+    }
+
     pub fn estimate_size_in_bytes(&self) -> Result<u64, StorageOpenError> {
         self.keyspaces.estimate_size_in_bytes().map_err(|source| StorageOpenError::Keyspace { source })
     }
@@ -617,6 +700,13 @@ typedb_error! {
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
         Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
+    }
+}
+
+typedb_error! {
+    pub StorageCleanupError(component = "Storage cleanup", prefix = "STP") {
+        Internal(1, "Cleanup in database '{name}' failed with internal error.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
+        Keyspace(2, "Cleanup in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: KeyspaceError),
     }
 }
 
