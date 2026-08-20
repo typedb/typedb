@@ -126,6 +126,12 @@ pub struct StorageConfig {
     pub data_directory: PathBuf,
     #[serde(default)]
     pub rocksdb: RocksDbConfig,
+    pub mvcc: MvccConfig,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct MvccConfig {
     #[serde(default)]
     pub cleanup: OptionEnabled<CleanupConfig>,
 }

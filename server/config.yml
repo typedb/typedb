@@ -27,9 +27,10 @@ storage:
     rocksdb:
         cache-size: 1gb
         write-buffers-limit: 512mb
-    cleanup:
-        enabled: false
-        strategy: eager
+    mvcc:
+        cleanup:
+            enabled: false
+            strategy: eager
 
 logging:
     directory: "logs"

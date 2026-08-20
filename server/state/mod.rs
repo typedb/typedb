@@ -94,7 +94,7 @@ impl ServerState {
             config.storage.rocksdb.cache_size,
             config.storage.rocksdb.write_buffers_limit,
             import_ownership,
-            config.storage.cleanup.clone().map(Into::into).unwrap_or(MvccCleanupStrategy::Disabled),
+            config.storage.mvcc.cleanup.clone().map(Into::into).unwrap_or(MvccCleanupStrategy::Disabled),
         )
         .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source: *typedb_source })?;
         let database_diagnostics_updater = IntervalRunner::new(
