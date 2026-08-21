@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use database::{migration::Checksums, transaction::TransactionRead};
+use database::{migration::database_exporter::DatabaseExporter, transaction::TransactionRead};
 use options::TransactionOptions;
 use resource::{constants::common::SECONDS_IN_DAY, distribution_info::DistributionInfo};
 use storage::durability_client::WALClient;
@@ -28,14 +28,14 @@ use crate::{
     error::LocalServerStateError,
     service::{
         TransactionType,
-        export_service::{DatabaseExportError, get_transaction_schema},
+        export_service::DatabaseExportError,
         grpc::{
             error::IntoGrpcStatus,
             response_builders::database::{
                 database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
             },
         },
-        migration::{item::encode_header_item, item_stream::ExportItems},
+        migration::item::{EncodedItem, encode_item},
     },
     state::ServerState,
     transaction::Transaction,
@@ -65,7 +65,6 @@ pub(crate) struct DatabaseExportService {
     database_name: String,
     owner: String,
     response_sender: ResponseSender,
-    checksums: Checksums,
     shutdown_receiver: watch::Receiver<()>,
     close_receiver: Receiver<()>,
     close_sender: Sender<()>,
@@ -95,7 +94,6 @@ impl DatabaseExportService {
             database_name,
             owner,
             response_sender,
-            checksums: Checksums::new(),
             shutdown_receiver,
             close_receiver,
             close_sender,
@@ -110,16 +108,28 @@ impl DatabaseExportService {
             return;
         };
 
-        let schema = unwrap_else_send_error_and_return!(self, get_transaction_schema(&transaction));
-        unwrap_else_send_error_and_return!(self, self.send_schema(schema).await);
-
-        let header = encode_header_item(self.distribution_info.version.to_string(), self.database_name.clone());
-        let mut items = unwrap_else_send_error_and_return!(self, ExportItems::new(&transaction, header));
-        while let Some(batch) =
-            unwrap_else_send_error_and_return!(self, items.next_batch(Self::ITEM_BATCH_SIZE, &mut self.checksums))
-        {
-            self.count_items(&batch);
-            unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
+        let mut exporter = unwrap_else_send_error_and_return!(
+            self,
+            DatabaseExporter::new(&transaction, self.distribution_info.version.to_string(), self.database_name.clone())
+                .map_err(DatabaseExportError::from)
+        );
+        while let Some(items) = unwrap_else_send_error_and_return!(
+            self,
+            exporter.next_batch(Self::ITEM_BATCH_SIZE).map_err(DatabaseExportError::from)
+        ) {
+            let mut batch = Vec::with_capacity(items.len());
+            for item in items {
+                match encode_item(item) {
+                    EncodedItem::Schema(schema) => {
+                        unwrap_else_send_error_and_return!(self, self.send_schema(schema).await)
+                    }
+                    EncodedItem::Item(item) => batch.push(item),
+                }
+            }
+            if !batch.is_empty() {
+                self.count_items(&batch);
+                unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
+            }
         }
 
         unwrap_else_send_error_and_return!(self, self.send_done().await);
