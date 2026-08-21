@@ -367,6 +367,13 @@ impl<T> ArcOrWeak<T> {
         }
     }
 
+    fn downgrade(&self) -> Weak<T> {
+        match self {
+            ArcOrWeak::Arc(arc) => Arc::downgrade(arc),
+            ArcOrWeak::Weak(weak) => weak.clone(),
+        }
+    }
+
     fn get_readers(&self) -> usize {
         self.strong_count() + self.weak_count()
     }
@@ -387,6 +394,10 @@ impl<T> ArcOrWeak<T> {
             ArcOrWeak::Arc(arc) => Arc::weak_count(arc),
             ArcOrWeak::Weak(weak) => Weak::weak_count(weak),
         }
+    }
+
+    fn evict(&mut self) {
+        *self = Self::Weak(self.downgrade())
     }
 }
 
@@ -448,6 +459,12 @@ impl Timeline {
                 && window.get_readers() <= 1
             {
                 windows.pop_first();
+            }
+            while let mut entry = windows.first_entry().unwrap()
+                && watermark >= entry.key().end()
+                && entry.get().get_writing_readers() <= 1
+            {
+                entry.get_mut().evict();
             }
         }
     }
