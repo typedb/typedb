@@ -14,7 +14,7 @@ use answer::{Type, variable::Variable};
 use concept::type_::role_type::RoleType;
 use ir::pattern::{
     IrID,
-    constraint::{Has, Iid, Isa, Links},
+    constraint::{Has, Iid, Isa, Links, VectorSearch},
 };
 
 use crate::{
@@ -136,6 +136,52 @@ impl<ID: IrID> IsaReverseInstruction<ID> {
 impl<ID: IrID> fmt::Display for IsaReverseInstruction<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
+    }
+}
+
+/// Produces the attributes of the searched type whose cosine similarity to the query vector
+/// meets the threshold. Output is in natural attribute order (join-safe); the descending
+/// similarity ordering of the answer stream is applied at the pipeline level.
+#[derive(Debug, Clone)]
+pub struct VectorSearchInstruction<ID> {
+    pub vector_search: VectorSearch<ID>,
+    pub inputs: Inputs<ID>,
+    pub types: Arc<BTreeSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl VectorSearchInstruction<Variable> {
+    pub fn new(
+        vector_search: VectorSearch<Variable>,
+        inputs: Inputs<Variable>,
+        type_annotations: &TypeAnnotations,
+    ) -> Self {
+        let types = type_annotations.vertex_annotations_of(vector_search.attribute()).unwrap().clone();
+        Self { vector_search, inputs, types, checks: Vec::new() }
+    }
+}
+
+impl<ID> VectorSearchInstruction<ID> {
+    pub fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+}
+
+impl<ID: IrID> VectorSearchInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> VectorSearchInstruction<T> {
+        let Self { vector_search, inputs, types, checks } = self;
+        VectorSearchInstruction {
+            vector_search: vector_search.map(mapping),
+            inputs: inputs.map(mapping),
+            types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+impl<ID: IrID> fmt::Display for VectorSearchInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] filter {}", &self.vector_search, DisplayVec::new(&self.checks))
     }
 }
 

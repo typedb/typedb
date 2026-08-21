@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, hash::Hash, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, hash::Hash, sync::Arc};
 
 use answer::{Thing, variable_value::VariableValue};
 use compiler::annotation::expression::{
@@ -15,7 +15,7 @@ use compiler::annotation::expression::{
             Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
             MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
         },
-        list_operations::{ListConstructor, ListIndex, ListIndexRange},
+        list_operations::{ListConstructor, ListIndex, ListIndexRange, VectorConstructor},
         load_cast::{
             CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
             CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDecimal, CastRightIntegerToDouble,
@@ -175,6 +175,7 @@ fn evaluate_instruction(
         ExpressionOpCode::ListConstructor => ListConstructor::evaluate(state),
         ExpressionOpCode::ListIndex => ListIndex::evaluate(state),
         ExpressionOpCode::ListIndexRange => ListIndexRange::evaluate(state),
+        ExpressionOpCode::VectorConstructor => VectorConstructor::evaluate(state),
 
         ExpressionOpCode::CastUnaryIntegerToDouble => CastUnaryIntegerToDouble::evaluate(state),
         ExpressionOpCode::CastLeftIntegerToDouble => CastLeftIntegerToDouble::evaluate(state),
@@ -272,6 +273,29 @@ impl ExpressionEvaluation for ListConstructor {
         let n_elements = state.pop_value().unwrap_integer() as usize;
         let elements: Arc<[Value<'static>]> = (0..n_elements).map(|_| state.pop_value()).collect();
         state.push_list(elements);
+        Ok(())
+    }
+}
+
+impl ExpressionEvaluation for VectorConstructor {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
+        let n_elements = state.pop_value().unwrap_integer() as usize;
+        let mut elements = Vec::with_capacity(n_elements);
+        for _ in 0..n_elements {
+            // The compiler has already rejected non-numeric elements; widen to the vector's
+            // precision, which is float32 for every precision the grammar currently accepts.
+            let element = match state.pop_value() {
+                Value::Double(double) => double as f32,
+                Value::Integer(integer) => integer as f32,
+                other => {
+                    return Err(ExpressionEvaluationError::CastFailed {
+                        description: format!("cannot use {other} as a vector element"),
+                    });
+                }
+            };
+            elements.push(element);
+        }
+        state.push_value(Value::Vector(Cow::Owned(elements)));
         Ok(())
     }
 }

@@ -13,7 +13,7 @@ use std::{
 use answer::{Type, variable::Variable};
 use concept::thing::statistics::Statistics;
 use ir::pattern::constraint::{
-    Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
+    Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value, VectorSearch,
 };
 use itertools::Itertools;
 
@@ -40,6 +40,7 @@ pub(crate) enum ConstraintVertex<'a> {
     Iid(IidPlanner<'a>),
 
     Isa(IsaPlanner<'a>),
+    VectorSearch(VectorSearchPlanner<'a>),
     Has(HasPlanner<'a>),
     Links(LinksPlanner<'a>),
     IndexedRelation(IndexedRelationPlanner<'a>),
@@ -61,6 +62,7 @@ impl ConstraintVertex<'_> {
             Self::Iid(inner) => Box::new(inner.variables()),
 
             Self::Isa(inner) => Box::new(inner.variables()),
+            Self::VectorSearch(inner) => Box::new(inner.variables()),
             Self::Has(inner) => Box::new(inner.variables()),
             Self::Links(inner) => Box::new(inner.variables()),
             Self::IndexedRelation(inner) => Box::new(inner.variables()),
@@ -165,6 +167,9 @@ impl fmt::Display for ConstraintVertex<'_> {
             ConstraintVertex::Isa(p) => {
                 write!(f, "|{:?} isa {:?}|", p.isa.thing(), p.isa.type_())
             }
+            ConstraintVertex::VectorSearch(p) => {
+                write!(f, "|{:?} vector-search {:?}|", p.vector_search.attribute(), p.vector_search.attribute_type())
+            }
             ConstraintVertex::Has(p) => {
                 write!(f, "|{:?} has {:?}|", p.has.owner(), p.has.attribute())
             }
@@ -202,6 +207,7 @@ impl Costed for ConstraintVertex<'_> {
             Self::Iid(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
 
             Self::Isa(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::VectorSearch(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Has(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Links(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::IndexedRelation(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
@@ -483,6 +489,65 @@ impl Costed for IsaPlanner<'_> {
         };
         let io_ratio = scan_size;
         Ok((Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse)))
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct VectorSearchPlanner<'a> {
+    vector_search: &'a VectorSearch<Variable>,
+    attribute: VariableVertexId,
+    query: Option<VariableVertexId>,
+    similarity: VariableVertexId,
+    pub(crate) unrestricted_expected_size: f64,
+}
+
+impl fmt::Debug for VectorSearchPlanner<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VectorSearchPlanner").field("vector_search", self.vector_search).finish()
+    }
+}
+
+impl<'a> VectorSearchPlanner<'a> {
+    pub(crate) fn from_constraint(
+        vector_search: &'a VectorSearch<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        type_annotations: &TypeAnnotations,
+        statistics: &Statistics,
+    ) -> Self {
+        let attribute = variable_index[&vector_search.attribute().as_variable().unwrap()];
+        let query = vector_search.query().as_variable().map(|var| variable_index[&var]);
+        let similarity = variable_index[&vector_search.similarity().as_variable().unwrap()];
+        let unrestricted_expected_size = type_annotations
+            .vertex_annotations_of(vector_search.attribute())
+            .map(|types| types.iter().map(|type_| instance_count(type_, statistics)).sum::<u64>() as f64)
+            .unwrap_or(0.0);
+        Self { vector_search, attribute, query, similarity, unrestricted_expected_size }
+    }
+
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        [Some(self.attribute), self.query, Some(self.similarity)].into_iter().flatten()
+    }
+
+    pub(crate) fn vector_search(&self) -> &VectorSearch<Variable> {
+        self.vector_search
+    }
+}
+
+impl Costed for VectorSearchPlanner<'_> {
+    fn cost_and_metadata(
+        &self,
+        inputs: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        // Brute-force scan: every instance of the attribute type is visited regardless of bindings.
+        let scan_size = self.unrestricted_expected_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE);
+        let is_attribute_bound = inputs.contains(&VertexId::Variable(self.attribute));
+        let cost = match is_attribute_bound {
+            true => 0.0,
+            false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
+        };
+        Ok((Cost { cost, io_ratio: scan_size }, CostMetaData::Direction(Direction::Canonical)))
     }
 }
 

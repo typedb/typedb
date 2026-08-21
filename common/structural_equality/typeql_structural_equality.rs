@@ -49,6 +49,10 @@ impl StructuralEquality for NamedType {
             ^ match self {
                 NamedType::Label(label) => label.ident.as_str_unchecked().hash(),
                 NamedType::BuiltinValueType(builtin_value_type) => builtin_value_type.token.as_str().hash(),
+                NamedType::Vector(vector_type) => ordered_hash_combine(
+                    vector_type.length.value.as_str().hash(),
+                    vector_type.precision.as_str().hash(),
+                ),
             }
     }
 
@@ -60,8 +64,12 @@ impl StructuralEquality for NamedType {
             (Self::BuiltinValueType(inner), Self::BuiltinValueType(other_inner)) => {
                 inner.token.as_str().equals(other_inner.token.as_str())
             }
+            (Self::Vector(inner), Self::Vector(other_inner)) => {
+                inner.length.value.as_str().equals(other_inner.length.value.as_str())
+                    && inner.precision.as_str().equals(other_inner.precision.as_str())
+            }
             // note: this style forces updating the match when the variants change
-            (Self::Label { .. }, _) | (Self::BuiltinValueType { .. }, _) => false,
+            (Self::Label { .. }, _) | (Self::BuiltinValueType { .. }, _) | (Self::Vector { .. }, _) => false,
         }
     }
 }

@@ -175,6 +175,11 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.simsimd]
+			features = ["default"]
+			version = "6.5.16"
+			default-features = false
+
 		[workspace.dependencies.rpassword]
 			features = []
 			version = "7.5.3"
@@ -222,8 +227,8 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
+			rev = "82361cf09b2dcbf0836c4a5bc312ffbd4b26eade"
 			git = "https://github.com/typedb/typeql"
-			tag = "3.12.0"
 			default-features = false
 
 		[workspace.dependencies.cache]
@@ -493,8 +498,8 @@ features = {}
 
 		[workspace.dependencies.typedb-protocol]
 			features = []
+			rev = "b0c691014e75f11446bc5cf5154fef61e45afbd6"
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.12.0"
 			default-features = false
 
 		[workspace.dependencies.resource]

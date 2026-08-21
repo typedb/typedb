@@ -36,6 +36,65 @@ pub enum ValueType {
     String,
 
     Struct(DefinitionKey),
+
+    // A fixed-length, single-precision vector, e.g. `vector(384, "float32")`. `length` is the
+    // number of elements declared for the attribute type; `precision` is the element encoding.
+    Vector(VectorTypeParameters),
+}
+
+/// The parameters that make a vector value type concrete: its declared length and element precision.
+/// These are packed into the value type's tail bytes (see [`ValueTypeBytes`]), analogously to how
+/// [`ValueType::Struct`] carries a [`DefinitionKey`].
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct VectorTypeParameters {
+    pub length: u16,
+    pub precision: VectorPrecision,
+}
+
+impl VectorTypeParameters {
+    pub const fn new(length: u16, precision: VectorPrecision) -> Self {
+        Self { length, precision }
+    }
+}
+
+impl fmt::Display for VectorTypeParameters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "vector({}, \"{}\")", self.length, self.precision.name())
+    }
+}
+
+/// The element encoding of a vector value type. Mirrors `typeql::common::token::VectorPrecision`.
+/// Currently only single-precision float (`"float32"`) is supported by the spec.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub enum VectorPrecision {
+    Float32,
+}
+
+impl VectorPrecision {
+    pub const fn to_byte(&self) -> u8 {
+        match self {
+            VectorPrecision::Float32 => 0,
+        }
+    }
+
+    pub fn from_byte(byte: u8) -> Self {
+        match byte {
+            0 => VectorPrecision::Float32,
+            _ => panic!("Unrecognised vector precision byte: {byte}"),
+        }
+    }
+
+    pub const fn name(&self) -> &'static str {
+        match self {
+            VectorPrecision::Float32 => "float32",
+        }
+    }
+}
+
+impl fmt::Display for VectorPrecision {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl ValueType {
@@ -51,6 +110,7 @@ impl ValueType {
             ValueType::Duration => ValueTypeCategory::Duration,
             ValueType::String => ValueTypeCategory::String,
             ValueType::Struct(_) => ValueTypeCategory::Struct,
+            ValueType::Vector(_) => ValueTypeCategory::Vector,
         }
     }
 
@@ -65,7 +125,8 @@ impl ValueType {
             | ValueType::Duration
             | ValueType::String => true,
 
-            | ValueType::Double | ValueType::Struct(_) => false,
+            // Vectors are variable-length and hash-stored (like Struct), so they are not keyable.
+            | ValueType::Double | ValueType::Struct(_) | ValueType::Vector(_) => false,
         }
     }
 
@@ -84,6 +145,12 @@ impl ValueType {
                 let definition_key = DefinitionKey::new(Bytes::Array(ByteArray::copy(&tail)));
                 Self::Struct(definition_key)
             }
+            ValueTypeCategory::Vector => {
+                // Tail layout: [length_lo, length_hi, precision] (see ValueTypeBytes::build).
+                let length = u16::from_le_bytes([tail[0], tail[1]]);
+                let precision = VectorPrecision::from_byte(tail[2]);
+                Self::Vector(VectorTypeParameters::new(length, precision))
+            }
         }
     }
 
@@ -96,6 +163,16 @@ impl ValueType {
             ValueType::Decimal => other == ValueTypeCategory::Double,
             ValueType::Date => other == ValueTypeCategory::DateTime,
             _ => false,
+        }
+    }
+
+    /// Like [`Self::is_trivially_castable_to`], but compares against a full value type rather than
+    /// just a category. Parameterized value types need this: a `vector(2, "float32")` value shares a
+    /// category with a `vector(3, "float32")` attribute type but is not a legal value for it.
+    pub fn is_trivially_castable_to_value_type(&self, other: &ValueType) -> bool {
+        match (self, other) {
+            (ValueType::Vector(params), ValueType::Vector(other_params)) => params == other_params,
+            _ => self.is_trivially_castable_to(other.category()),
         }
     }
 
@@ -120,6 +197,9 @@ impl StructuralEquality for ValueType {
         mem::discriminant(self).hash()
             & match self {
                 ValueType::Struct(key) => (key.definition_id().as_uint() as usize).hash(),
+                ValueType::Vector(params) => {
+                    ((params.length as usize) ^ ((params.precision.to_byte() as usize) << 16)).hash()
+                }
                 _ => 0,
             }
     }
@@ -138,6 +218,7 @@ impl StructuralEquality for ValueType {
             (Self::Struct(key), Self::Struct(other_key)) => {
                 (key.definition_id().as_uint() as usize).equals(&(other_key.definition_id().as_uint() as usize))
             }
+            (Self::Vector(params), Self::Vector(other_params)) => params == other_params,
             // note: this style forces updating the match when the variants change
             (Self::Boolean { .. }, _)
             | (Self::Integer { .. }, _)
@@ -148,7 +229,8 @@ impl StructuralEquality for ValueType {
             | (Self::DateTimeTZ { .. }, _)
             | (Self::Duration { .. }, _)
             | (Self::String { .. }, _)
-            | (Self::Struct { .. }, _) => false,
+            | (Self::Struct { .. }, _)
+            | (Self::Vector { .. }, _) => false,
         }
     }
 }
@@ -162,7 +244,10 @@ impl fmt::Debug for ValueType {
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: Don't we want to display structs differently?
-        write!(f, "{}", self.category().name())
+        match self {
+            ValueType::Vector(params) => write!(f, "{params}"),
+            _ => write!(f, "{}", self.category().name()),
+        }
     }
 }
 
@@ -178,6 +263,7 @@ pub enum ValueTypeCategory {
     Duration,
     String,
     Struct,
+    Vector,
 }
 
 impl ValueTypeCategory {
@@ -194,6 +280,7 @@ impl ValueTypeCategory {
             Self::Duration => [7],
             Self::String => [8],
             Self::Struct => [40],
+            Self::Vector => [41],
         }
     }
 
@@ -209,6 +296,7 @@ impl ValueTypeCategory {
             [7] => ValueTypeCategory::Duration,
             [8] => ValueTypeCategory::String,
             [40] => ValueTypeCategory::Struct,
+            [41] => ValueTypeCategory::Vector,
             _ => panic!("Unrecognised value type category byte: {:?}", bytes),
         };
         debug_assert_eq!(bytes, category.to_bytes());
@@ -233,6 +321,7 @@ impl ValueTypeCategory {
             ValueTypeCategory::String => &[ValueTypeCategory::String],
             ValueTypeCategory::Struct => &[ValueTypeCategory::Struct],
             ValueTypeCategory::Date => &[ValueTypeCategory::Date],
+            ValueTypeCategory::Vector => &[ValueTypeCategory::Vector],
         }
     }
 
@@ -247,7 +336,11 @@ impl ValueTypeCategory {
             ValueTypeCategory::DateTimeTZ => Some(ValueType::DateTimeTZ),
             ValueTypeCategory::Duration => Some(ValueType::Duration),
             ValueTypeCategory::String => Some(ValueType::String),
+            // Struct and Vector are parameterized: the category alone is insufficient to
+            // reconstruct the full value type (Struct needs a DefinitionKey, Vector needs a
+            // length + precision), so they cannot be materialized from a bare category.
             ValueTypeCategory::Struct => None,
+            ValueTypeCategory::Vector => None,
         }
     }
 
@@ -263,6 +356,7 @@ impl ValueTypeCategory {
             ValueTypeCategory::Duration => "duration",
             ValueTypeCategory::String => "string",
             ValueTypeCategory::Struct => "struct",
+            ValueTypeCategory::Vector => "vector",
         }
     }
 }
@@ -292,8 +386,19 @@ impl ValueTypeBytes {
     pub fn build(value_type: &ValueType) -> Self {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
-        if let ValueType::Struct(definition_key) = value_type {
-            array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
+        match value_type {
+            ValueType::Struct(definition_key) => {
+                array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
+            }
+            ValueType::Vector(params) => {
+                // Tail layout: [length_lo, length_hi, precision]. TAIL_LENGTH is 3 bytes, exactly
+                // enough for a u16 length plus a single precision byte.
+                let length_bytes = params.length.to_le_bytes();
+                array[Self::RANGE_TAIL.start] = length_bytes[0];
+                array[Self::RANGE_TAIL.start + 1] = length_bytes[1];
+                array[Self::RANGE_TAIL.start + 2] = params.precision.to_byte();
+            }
+            _ => {}
         }
         Self { bytes: array }
     }

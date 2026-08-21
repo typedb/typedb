@@ -9,11 +9,15 @@ use concept::type_::annotation::{
     AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex,
     AnnotationUnique, AnnotationValues,
 };
-use encoding::{graph::type_::Kind, value::value_type::ValueType};
+use encoding::{
+    graph::type_::Kind,
+    value::value_type::{ValueType, VectorPrecision, VectorTypeParameters},
+};
 use typeql::{
     annotation::CardinalityRange,
     common::{Spanned, error::TypeQLError},
     token,
+    type_::VectorType,
 };
 
 use crate::{
@@ -111,6 +115,39 @@ pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
         token::ValueType::Integer => ValueType::Integer,
         token::ValueType::String => ValueType::String,
     }
+}
+
+pub fn translate_vector_precision(typeql_precision: token::VectorPrecision) -> VectorPrecision {
+    match typeql_precision {
+        token::VectorPrecision::Float32 => VectorPrecision::Float32,
+    }
+}
+
+/// The largest vector length representable in the value type's tail bytes (a `u16`).
+pub const MAX_VECTOR_LENGTH: u16 = u16::MAX;
+
+/// Translate a parsed `vector(N, "precision")` type into an encoding [`ValueType::Vector`], validating
+/// that the declared length is a positive integer that fits in the on-disk representation.
+///
+/// The grammar already guarantees `N` is a non-negative integer literal and the precision is a
+/// recognised keyword, so the only failure mode reachable here is a length of zero or one that
+/// overflows the length field.
+pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<ValueType, VectorLengthError> {
+    let raw_length = vector_type.length.value.as_str();
+    let length = raw_length
+        .parse::<u16>()
+        .ok()
+        .filter(|length| *length > 0)
+        .ok_or_else(|| VectorLengthError { length: raw_length.to_owned(), max: MAX_VECTOR_LENGTH })?;
+    let precision = translate_vector_precision(vector_type.precision);
+    Ok(ValueType::Vector(VectorTypeParameters::new(length, precision)))
+}
+
+/// Reported when a vector value type's declared length is not a positive integer within range.
+#[derive(Debug, Clone)]
+pub struct VectorLengthError {
+    pub length: String,
+    pub max: u16,
 }
 
 pub(crate) fn checked_identifier(ident: &typeql::Identifier) -> Result<&str, Box<RepresentationError>> {

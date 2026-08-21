@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     iter::zip,
     sync::Arc,
 };
@@ -201,9 +201,26 @@ pub(crate) fn annotate_pipeline_stages(
         let annotated_stage =
             annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage, pipeline_origin)?;
 
+        // A vector search's hidden similarity variable is anonymous but is sorted on by the
+        // implicit stage that follows the match, so its annotation must survive the stage boundary.
+        let similarity_variables: HashSet<Variable> = match &annotated_stage {
+            AnnotatedStage::Match { block, .. } => block
+                .conjunction()
+                .constraints()
+                .iter()
+                .filter_map(|constraint| match constraint {
+                    Constraint::VectorSearch(search) => search.similarity().as_variable(),
+                    _ => None,
+                })
+                .collect(),
+            _ => HashSet::new(),
+        };
         // running_annotations.retain(|var| var.is_named());
-        let retain_running_var_fn =
-            |var: &Variable| var.is_named() || return_variables.as_ref().map_or(false, |vars| vars.contains(var));
+        let retain_running_var_fn = |var: &Variable| {
+            var.is_named()
+                || return_variables.as_ref().map_or(false, |vars| vars.contains(var))
+                || similarity_variables.contains(var)
+        };
         running_annotations.retain(retain_running_var_fn);
         if let AnnotatedStage::Match { .. } = annotated_stage {
             latest_match_index = Some(annotated_stages.len());
@@ -253,6 +270,15 @@ fn annotate_stage(
                     .values
                     .insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
                 debug_assert!(_existing.is_none() || _existing == Some(compiled.return_type().clone()))
+            });
+            // A vector search binds its hidden similarity variable to a double.
+            block.conjunction().constraints().iter().for_each(|constraint| {
+                if let Constraint::VectorSearch(search) = constraint {
+                    running_annotations.values.insert(
+                        search.similarity().as_variable().unwrap(),
+                        ExpressionValueType::Single(ValueType::Double),
+                    );
+                }
             });
             complete_block_annotations_with_value_types(
                 ctx,
@@ -485,6 +511,24 @@ fn annotate_write_stage(
         infer_types_for_block(ctx, running_annotations, block, TypeInferenceMode::ExactAndExplicit)
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
+    // Write stages accept constant-rooted expression bindings (e.g. a folded vector literal in
+    // `insert`), so their assigned value variables must be annotated before value-type completion,
+    // just like in a match stage. Non-constant-rooted bindings are rejected later, when the write
+    // executable is compiled.
+    let compiled_expressions = compile_expressions(
+        ctx.snapshot,
+        ctx.type_manager,
+        block,
+        ctx.variable_registry,
+        ctx.parameters,
+        &block_annotations,
+        &mut running_annotations.values,
+    )
+    .map_err(|typedb_source| AnnotationError::ExpressionCompilation { typedb_source })?;
+    compiled_expressions.iter().for_each(|(binding, compiled)| {
+        running_annotations.values.insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
+    });
+
     complete_block_annotations_with_value_types(
         ctx,
         &running_annotations,
@@ -696,7 +740,11 @@ fn resolve_reduce_instruction_by_value_type(
             _ => err(),
         },
 
-        ValueTypeCategory::Boolean | ValueTypeCategory::Duration | ValueTypeCategory::Struct => err(),
+        // Vectors have no ordering and no arithmetic, so no reducer other than count applies.
+        ValueTypeCategory::Boolean
+        | ValueTypeCategory::Duration
+        | ValueTypeCategory::Struct
+        | ValueTypeCategory::Vector => err(),
     }
 }
 

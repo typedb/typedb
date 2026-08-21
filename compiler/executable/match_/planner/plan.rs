@@ -22,7 +22,8 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable, Value,
+            Isa, IsaKind, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable,
+            Value, VectorSearch,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -45,7 +46,7 @@ use crate::{
                 CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
                 thing::{
                     HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
-                    IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
+                    IsaReverseInstruction, LinksInstruction, LinksReverseInstruction, VectorSearchInstruction,
                 },
                 type_::{
                     OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction,
@@ -61,7 +62,7 @@ use crate::{
                     PlannerVertex, UnsatisfiableVertex,
                     constraint::{
                         ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
-                        OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
+                        OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner, VectorSearchPlanner,
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 },
@@ -383,6 +384,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Plays(plays) => self.register_plays(plays),
 
                 Constraint::Isa(isa) => self.register_isa(isa),
+                Constraint::VectorSearch(search) => self.register_vector_search(search),
                 Constraint::Iid(iid) => self.register_iid(iid),
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
@@ -453,6 +455,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner =
             IsaPlanner::from_constraint(isa, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Isa(planner));
+    }
+
+    fn register_vector_search(&mut self, search: &'a VectorSearch<Variable>) {
+        let planner = VectorSearchPlanner::from_constraint(
+            search,
+            &self.graph.variable_index,
+            self.local_annotations,
+            self.statistics,
+        );
+        self.graph.push_constraint(ConstraintVertex::VectorSearch(planner));
     }
 
     fn register_iid(&mut self, iid: &'a Iid<Variable>) {
@@ -1725,6 +1737,24 @@ impl ConjunctionPlan<'_> {
                 let isa = planner.isa();
                 binary!(thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
             }
+            ConstraintVertex::VectorSearch(planner) => {
+                let search = planner.vector_search();
+                let attribute_var = search.attribute().as_variable().unwrap();
+                // the query vector variable (if any) is always prebound, e.g. by a `given` stage
+                let mut bound_vars = Vec::with_capacity(2);
+                if inputs.contains(&attribute_var) {
+                    bound_vars.push(attribute_var);
+                }
+                bound_vars.extend(search.query().as_variable());
+                let instruction_inputs = Inputs::build_from(&bound_vars);
+                let instruction = ConstraintInstruction::VectorSearch(VectorSearchInstruction::new(
+                    search.clone(),
+                    instruction_inputs,
+                    self.local_annotations,
+                ));
+                let sort_variable = sort_variable.unwrap_or(attribute_var);
+                conjunction_builder.push_instruction(sort_variable, instruction);
+            }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();
                 binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
@@ -1881,6 +1911,22 @@ impl ConjunctionPlan<'_> {
             ConstraintVertex::Isa(planner) => {
                 let isa = planner.isa();
                 binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+            }
+            ConstraintVertex::VectorSearch(planner) => {
+                let search = planner.vector_search();
+                let attribute_pos = search.attribute().clone().map(conjunction_builder.position_mapping());
+                let type_pos = search.attribute_type().clone().map(conjunction_builder.position_mapping());
+                conjunction_builder.push_check(CheckInstruction::Isa {
+                    isa_kind: IsaKind::Exact,
+                    type_: CheckVertex::resolve(type_pos, self.local_annotations),
+                    thing: CheckVertex::resolve(attribute_pos.clone(), self.local_annotations),
+                });
+                let query_pos = search.query().clone().map(conjunction_builder.position_mapping());
+                conjunction_builder.push_check(CheckInstruction::VectorSearch {
+                    attribute: CheckVertex::resolve(attribute_pos, self.local_annotations),
+                    query: CheckVertex::resolve(query_pos, self.local_annotations),
+                    threshold: search.threshold(),
+                });
             }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();

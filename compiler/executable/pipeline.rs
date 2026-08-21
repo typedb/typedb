@@ -306,6 +306,14 @@ fn compile_stage(
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(stage_input_positions.keys().copied());
             selected_variables.extend(block.conjunction().named_visible_referenced_variables());
+            // A vector search's hidden similarity variable is anonymous but must survive into the
+            // implicit sort stage that follows the match.
+            selected_variables.extend(block.conjunction().constraints().iter().filter_map(
+                |constraint| match constraint {
+                    ir::pattern::constraint::Constraint::VectorSearch(search) => search.similarity().as_variable(),
+                    _ => None,
+                },
+            ));
             let plan = crate::executable::match_::planner::compile(
                 block,
                 stage_input_annotations,
