@@ -187,9 +187,8 @@ git_override(
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
-# TODO(vector-search): repoint to master commit once the vector-search branch merges
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "e79eb9926e3bb664ccfe073ee21244ed14de7e31",
+    commit = "69d24558e3f6098f6ef24662f7f954e2984b1a6b",
 )

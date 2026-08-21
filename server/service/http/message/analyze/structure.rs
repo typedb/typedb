@@ -460,7 +460,7 @@ fn encode_structure_constraint(
         Constraint::VectorSearch(search) => push(StructureConstraint::VectorSearch {
             attribute: encode_structure_vertex(context, search.attribute())?,
             attribute_type: encode_structure_vertex(context, search.attribute_type())?,
-            query: encode_structure_vertex(context, &Vertex::Parameter(search.query()))?,
+            query: encode_structure_vertex(context, search.query())?,
             threshold: encode_structure_vertex(context, &Vertex::Parameter(search.threshold()))?,
             similarity: encode_structure_vertex(context, search.similarity())?,
         }),

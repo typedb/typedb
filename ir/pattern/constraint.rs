@@ -315,15 +315,19 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         attribute: Variable,
         attribute_type: Vertex<Variable>,
-        query: ParameterID,
+        query: Vertex<Variable>,
         threshold: ParameterID,
         similarity: Variable,
         source_span: Option<Span>,
     ) -> Result<&VectorSearch<Variable>, Box<RepresentationError>> {
         let type_var = attribute_type.as_variable();
+        let query_var = query.as_variable();
         let search = VectorSearch::new(attribute, attribute_type, query, threshold, similarity, source_span);
         self.context.set_variable_category(attribute, VariableCategory::Thing, search.clone().into())?;
         self.context.set_variable_category(similarity, VariableCategory::Value, search.clone().into())?;
+        if let Some(query_var) = query_var {
+            self.context.set_variable_category(query_var, VariableCategory::Value, search.clone().into())?;
+        }
         if let Some(type_) = type_var {
             self.context.set_variable_category(type_, VariableCategory::ThingType, search.clone().into())?;
         }
@@ -777,7 +781,14 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Sub(sub) => _all_binding(sub.ids()),
             Constraint::Isa(isa) => _all_binding(isa.ids()),
             Constraint::Iid(iid) => _all_binding(iid.ids()),
-            Constraint::VectorSearch(search) => _all_binding(search.ids()),
+            Constraint::VectorSearch(search) => Box::new(search.ids().map(|id| {
+                // the query vector variable is an input (e.g. supplied via `given`), never bound here
+                if search.query().as_variable() == Some(id) {
+                    (id, BindingMode::RequirePrebound)
+                } else {
+                    (id, BindingMode::AlwaysBinding)
+                }
+            })),
             Constraint::Links(rp) => _all_binding(rp.ids()),
             Constraint::IndexedRelation(indexed) => _all_binding(indexed.ids()),
             Constraint::Has(has) => _all_binding(has.ids()),
@@ -1694,7 +1705,7 @@ impl<ID: IrID> fmt::Display for Isa<ID> {
     }
 }
 
-/// `let $e in cosine_similarity_search(<attribute type>, <query vector parameter>, <threshold parameter>)`
+/// `let $e in cosine_similarity_search(<attribute type>, <query vector parameter or variable>, <threshold parameter>)`
 /// Binds `attribute` to instances of `attribute_type` whose cosine similarity to `query` is
 /// >= `threshold`, streamed in descending similarity order.
 #[derive(Debug, Clone)]
@@ -1713,7 +1724,7 @@ impl<ID> VectorSearch<ID> {
     fn new(
         attribute: ID,
         attribute_type: Vertex<ID>,
-        query: ParameterID,
+        query: Vertex<ID>,
         threshold: ParameterID,
         similarity: ID,
         source_span: Option<Span>,
@@ -1721,7 +1732,7 @@ impl<ID> VectorSearch<ID> {
         Self {
             attribute: Vertex::Variable(attribute),
             attribute_type,
-            query: Vertex::Parameter(query),
+            query,
             threshold: Vertex::Parameter(threshold),
             similarity: Vertex::Variable(similarity),
             source_span,
@@ -1742,8 +1753,8 @@ impl<ID: IrID> VectorSearch<ID> {
         &self.attribute_type
     }
 
-    pub fn query(&self) -> ParameterID {
-        self.query.as_parameter().unwrap().clone()
+    pub fn query(&self) -> &Vertex<ID> {
+        &self.query
     }
 
     pub fn threshold(&self) -> ParameterID {
@@ -1755,9 +1766,14 @@ impl<ID: IrID> VectorSearch<ID> {
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
-        [self.attribute.as_variable(), self.attribute_type.as_variable(), self.similarity.as_variable()]
-            .into_iter()
-            .flatten()
+        [
+            self.attribute.as_variable(),
+            self.attribute_type.as_variable(),
+            self.query.as_variable(),
+            self.similarity.as_variable(),
+        ]
+        .into_iter()
+        .flatten()
     }
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
@@ -1770,6 +1786,7 @@ impl<ID: IrID> VectorSearch<ID> {
     {
         self.attribute.as_variable().inspect(|&id| function(id));
         self.attribute_type.as_variable().inspect(|&id| function(id));
+        self.query.as_variable().inspect(|&id| function(id));
         self.similarity.as_variable().inspect(|&id| function(id));
     }
 

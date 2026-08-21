@@ -497,7 +497,7 @@ fn query_structure_constraint(
             constraint: Some(structure_constraint::Constraint::VectorSearch(structure_constraint::VectorSearch {
                 attribute: Some(encode_structure_vertex_variable(search.attribute())?),
                 attribute_type: Some(encode_structure_vertex_label_or_variable(context, search.attribute_type())?),
-                query: Some(encode_structure_vertex_value_or_variable(context, &Vertex::Parameter(search.query()))?),
+                query: Some(encode_structure_vertex_value_or_variable(context, search.query())?),
                 threshold: Some(encode_structure_vertex_value_or_variable(
                     context,
                     &Vertex::Parameter(search.threshold()),

@@ -104,6 +104,7 @@ typedb_error! {
         GivenRowsVariableWasNotDeclared(5, "The variable '{variable}' was not declared in the query.", variable: String),
         ExpectedInstanceReceivedValue(6, "A value was provided where a concept instance was expected."),
         ValueTypeMismatch(7, "The provided value '{value}' has type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
+        InvalidVectorForGivenEntry(8, "The provided value '{value}' could not be decoded as a vector: expected an array of numbers.", value: String),
     }
 }
 
