@@ -151,20 +151,17 @@ impl IsolationManager {
             commit_record.open_sequence_number().next(),
             stop_sequence_number,
         )? {
-            if let Ok((_, commit_status)) = commit_status_result {
-                let commit_dependency = match commit_status {
-                    CommitStatus::Aborted => CommitDependency::Independent,
-                    CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
-                    CommitStatus::Pending(_) => {
-                        unreachable!("Evicted records cannot be pending")
-                    }
-                    CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
-                };
-                if let Some(conflict) = handle_dependency(commit_dependency) {
-                    return Ok(Some(conflict));
+            let (_, commit_status) = commit_status_result?;
+            let commit_dependency = match commit_status {
+                CommitStatus::Aborted => CommitDependency::Independent,
+                CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
+                CommitStatus::Pending(_) => {
+                    unreachable!("Evicted records cannot be pending")
                 }
-            } else if let Err(err) = commit_status_result {
-                return Err(err);
+                CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
+            };
+            if let Some(conflict) = handle_dependency(commit_dependency) {
+                return Ok(Some(conflict));
             }
         }
         Ok(None)
