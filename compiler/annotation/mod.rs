@@ -249,15 +249,23 @@ typedb_error!(
             "Expression compilation error.",
             typedb_source: Box<ExpressionCompileError>,
         ),
-        VariableMultipleValueTypes(
+        VariableMultipleValueTypesInExpression( // Could also be an attribute
             13,
             "The variable '{variable}' must have a single possible value type to be used in an expression, but it could have any of: {value_types}.",
             variable: String,
             value_types: String,
             source_span: Option<Span>,
         ),
-        InternalUnresolvedExpressions(
+        ValueVariableMultipleValueTypes( // Not necessarily used in an expression
             14,
+            "All assignments of the variable '{variable}' must have the same value type. Found: {value_types}.",
+            // "The value variable '{variable}' must have a single possible value type, but it could have any of: {value_types}.",
+            variable: String,
+            value_types: String,
+            source_span: Option<Span>,
+        ),
+        InternalUnresolvedExpressions(
+            15,
             "Type-inference was unable to resolve types for the following assigned variables: [{assigned_variables}]",
             assigned_variables: String,
         ),
