@@ -8,16 +8,12 @@ use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use ir::{
     RepresentationError,
-    pattern::{
-        expression::{BuiltinValueFunctionID, Operator},
-        variable_category::VariableCategory,
-    },
+    pattern::expression::{BuiltinValueFunctionID, Operator},
 };
 use typeql::common::Span;
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
-pub mod block_compiler;
 mod builtin_resolution;
 pub mod compiled_expression;
 pub mod expression_compiler;
@@ -43,38 +39,6 @@ typedb_error! {
             op: Operator,
             left_category: ValueTypeCategory,
             right_category: ValueTypeCategory,
-            source_span: Option<Span>,
-        ),
-        MultipleAssignmentsForVariable(
-            7,
-            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        CircularDependency(
-            8,
-            "The variable '{variable}' has an illegal circular expression assignment & usage.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        CouldNotDetermineValueTypeForVariable(
-            9,
-            "Could not determine a value type for variable '{variable}'.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        VariableMultipleValueTypes(
-            10,
-            "The variable '{variable}' must have a single possible value type to be used in an expression, but it could have any of: {value_types}.",
-            variable: String,
-            value_types: String,
-            source_span: Option<Span>,
-        ),
-        VariableMustBeValueOrAttribute(
-            11,
-            "Variable '{variable}' used in expressions must contain either a value or an attribute, but it is a '{category}'.",
-            variable: String,
-            category: VariableCategory,
             source_span: Option<Span>,
         ),
         UnsupportedArgumentsForBuiltin(
@@ -107,18 +71,6 @@ typedb_error! {
             "Cannot infer inner value types of an empty list constructor.",
             source_span: Option<Span>,
         ),
-        ReassigningValueVariableFromPreviousStage(
-            18,
-            "The variable '{variable}' cannot be assigned to, as it was already assigned in a previous stage.",
-            variable: String,
-        ),
-        ValueVariableConflictingAssignmentTypes(
-            19,
-            "All assignments of the variable '{variable}' must have the same value type. Found: {value_types}.",
-            variable: String,
-            value_types: String,
-            source_span: Option<Span>,
-        ),
-        Representation(20, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
+        Representation(20, "Error building expression representation.", typedb_source: Box<RepresentationError>),
     }
 }

@@ -244,6 +244,36 @@ typedb_error!(
             constraint_type: String,
             source_span: Option<Span>,
         ),
+        ExpressionCompilation(
+            12,
+            "Expression compilation error.",
+            typedb_source: Box<ExpressionCompileError>,
+        ),
+        VariableMultipleValueTypesInExpression( // Could also be an attribute
+            13,
+            "The variable '{variable}' must have a single possible value type to be used in an expression, but it could have any of: {value_types}.",
+            variable: String,
+            value_types: String,
+            source_span: Option<Span>,
+        ),
+        ValueVariableMultipleValueTypes( // Not necessarily used in an expression
+            14,
+            "All assignments of the variable '{variable}' must have the same value type. Found: {value_types}.",
+            // "The value variable '{variable}' must have a single possible value type, but it could have any of: {value_types}.",
+            variable: String,
+            value_types: String,
+            source_span: Option<Span>,
+        ),
+        InternalUnresolvedExpressions(
+            15,
+            "Type-inference was unable to resolve types for the following assigned variables: [{assigned_variables}]",
+            assigned_variables: String,
+        ),
+        InternalVertexTypesMismatch(
+            254,
+            "BUG! Expected vertex to have annotations of kind '{expected}' but it wasn't.",
+            expected: String,
+        ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),
     }
