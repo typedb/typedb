@@ -60,7 +60,7 @@ pub mod server {
     pub const GRPC_MAX_MESSAGE_SIZE: usize = GB as usize;
 
     pub const HTTP_MAX_MESSAGE_SIZE: usize = GB as usize;
-  
+
     pub const MAX_CONCURRENT_IMPORTS: usize = 8;
 
     // TODO: Maybe we start moving these options to separate crates?

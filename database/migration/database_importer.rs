@@ -46,12 +46,14 @@ use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     migration::{
         Checksums,
         database_import_handler::{DatabaseImportHandler, ImportHandlerError},
+        item::MigrationItem,
     },
     query::execute_schema_query,
     transaction::{TransactionError, TransactionSchema, TransactionWrite},
@@ -287,6 +289,7 @@ pub struct DatabaseImporter {
     transaction_item_count: u64,
     total_item_count: u64,
     interrupt: ExecutionInterrupt,
+    schema_imported: bool,
 }
 
 impl std::fmt::Debug for DatabaseImporter {
@@ -313,6 +316,7 @@ impl DatabaseImporter {
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
+            schema_imported: false,
             interrupt,
         }
     }
@@ -324,7 +328,7 @@ impl DatabaseImporter {
         }
     }
 
-    pub fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
+    fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
         if schema.trim().is_empty() {
             return Ok(());
         }
@@ -332,12 +336,43 @@ impl DatabaseImporter {
         self.relax_schema()
     }
 
-    pub fn import_attribute(
-        &mut self,
-        id: String,
-        label: Label,
-        value: Value<'static>,
-    ) -> Result<(), DatabaseImportError> {
+    pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+        self.check_stream_position(&item)?;
+        match item {
+            MigrationItem::Schema(schema) => {
+                self.import_schema(schema)?;
+                self.schema_imported = true;
+                Ok(())
+            }
+            MigrationItem::Header { typedb_version, original_database } => {
+                event!(
+                    Level::DEBUG,
+                    "Importing '{original_database}' from TypeDB {typedb_version} to '{}'.",
+                    self.database_name()
+                );
+                Ok(())
+            }
+            MigrationItem::Entity { id, label, owned_attributes } => self.import_entity(id, label, owned_attributes),
+            MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
+                self.import_relation(id, label, owned_attributes, related_role_players)
+            }
+            MigrationItem::Attribute { id, label, value } => self.import_attribute(id, label, value),
+            MigrationItem::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
+        }
+    }
+
+    fn check_stream_position(&self, item: &MigrationItem) -> Result<(), DatabaseImportError> {
+        match item {
+            MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
+            MigrationItem::Schema(_) => Ok(()),
+            _ if !self.schema_imported => Err(DatabaseImportError::ItemBeforeSchema {}),
+            MigrationItem::Checksums(_) => Ok(()),
+            _ if self.data_info.expected_checksums.is_some() => Err(DatabaseImportError::ItemAfterChecksums {}),
+            _ => Ok(()),
+        }
+    }
+
+    fn import_attribute(&mut self, id: String, label: Label, value: Value<'static>) -> Result<(), DatabaseImportError> {
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let attribute_type = type_manager
                 .get_attribute_type(&snapshot, &label)
@@ -355,7 +390,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub fn import_entity(
+    fn import_entity(
         &mut self,
         id: String,
         label: Label,
@@ -378,7 +413,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub fn import_relation(
+    fn import_relation(
         &mut self,
         id: String,
         label: Label,
@@ -403,10 +438,6 @@ impl DatabaseImporter {
 
             self.data_info.record_relation(id, relation)
         })
-    }
-
-    pub fn record_expected_checksums(&mut self, checksums: Checksums) -> Result<(), DatabaseImportError> {
-        self.data_info.record_expected_checksums(checksums)
     }
 
     pub fn import_done(mut self) -> Result<(), DatabaseImportError> {
@@ -526,7 +557,7 @@ impl DatabaseImporter {
         &self.database_name
     }
 
-    pub fn transaction_item_count(&self) -> u64 {
+    fn transaction_item_count(&self) -> u64 {
         self.transaction_item_count
     }
 
@@ -1022,5 +1053,8 @@ typedb_error! {
         CacheError(25, "Error writing import data.", source: CacheError),
         FinalisationFailed(26, "Import finalisation failed.", typedb_source: ImportHandlerError),
         Interrupted(27, "The import was interrupted by a close request or server shutdown before completion. The import is aborted and can be retried."),
+        ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
+        SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
+        ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
     }
 }

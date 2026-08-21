@@ -44,6 +44,23 @@ rust_test(
 )
 
 rust_test(
+    name = "test_migration",
+    srcs = glob([
+        "migration.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//database",
+        "//diagnostics",
+        "//encoding",
+        "//executor",
+        "//resource",
+        "//storage",
+        "//util/test:test_utils",
+    ]
+)
+
+rust_test(
     name = "test_transaction",
     srcs = glob([
         "transaction.rs",
@@ -117,6 +134,7 @@ rustfmt_test(
     targets = [
         ":test_database",
         ":test_import",
+        ":test_migration",
         ":test_transaction",
         ":test_statistics_synchronization",
         ":test_transaction_isolation",

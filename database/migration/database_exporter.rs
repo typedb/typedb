@@ -8,106 +8,114 @@ use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, entity::Entity, relation::Relation},
 };
-use database::{migration::Checksums, transaction::TransactionRead};
 use resource::profile::StorageCounters;
 use storage::durability_client::WALClient;
-use typedb_protocol::migration::Item as MigrationItemProto;
 
-use crate::service::{
-    export_service::DatabaseExportError,
-    migration::item::{encode_attribute_item, encode_checksums_item, encode_entity_item, encode_relation_item},
+use crate::{
+    migration::{
+        Checksums, MigrationExportError,
+        item::{MigrationItem, encode_attribute, encode_entity, encode_relation},
+        transaction_schema,
+    },
+    transaction::TransactionRead,
 };
 
-pub struct ExportItems<'a> {
+pub struct DatabaseExporter<'a> {
     transaction: &'a TransactionRead<WALClient>,
-    header: Option<MigrationItemProto>,
+    opening: std::vec::IntoIter<MigrationItem>,
     entities: Box<dyn Iterator<Item = Result<Entity, Box<ConceptReadError>>> + Send + 'a>,
     relations: Box<dyn Iterator<Item = Result<Relation, Box<ConceptReadError>>> + Send + 'a>,
     attributes: Box<dyn Iterator<Item = Result<Attribute, Box<ConceptReadError>>> + Send + 'a>,
+    checksums: Checksums,
     checksums_pending: bool,
 }
 
-impl<'a> ExportItems<'a> {
+impl<'a> DatabaseExporter<'a> {
     pub fn new(
         transaction: &'a TransactionRead<WALClient>,
-        header: MigrationItemProto,
-    ) -> Result<Self, DatabaseExportError> {
+        typedb_version: impl Into<String>,
+        original_database: impl Into<String>,
+    ) -> Result<Self, MigrationExportError> {
         let entities = transaction.thing_manager.get_entities(transaction.snapshot(), StorageCounters::DISABLED);
         let relations = transaction.thing_manager.get_relations(transaction.snapshot(), StorageCounters::DISABLED);
         let attributes = transaction
             .thing_manager
             .get_attributes(transaction.snapshot(), StorageCounters::DISABLED)
-            .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
+            .map_err(read_error)?;
+        let header = MigrationItem::Header {
+            typedb_version: typedb_version.into(),
+            original_database: original_database.into(),
+        };
         Ok(Self {
             transaction,
-            header: Some(header),
+            opening: vec![MigrationItem::Schema(transaction_schema(transaction)?), header].into_iter(),
             entities: Box::new(entities),
             relations: Box::new(relations),
             attributes: Box::new(attributes),
+            checksums: Checksums::new(),
             checksums_pending: true,
         })
     }
 
-    pub fn next_batch(
-        &mut self,
-        batch_size: usize,
-        checksums: &mut Checksums,
-    ) -> Result<Option<Vec<MigrationItemProto>>, DatabaseExportError> {
+    pub fn next_item(&mut self) -> Result<Option<MigrationItem>, MigrationExportError> {
+        if let Some(item) = self.opening.next() {
+            return Ok(Some(item));
+        }
+        let transaction = self.transaction;
+        if let Some(entity) = self.entities.next() {
+            let item = encode_entity(
+                transaction.snapshot(),
+                &transaction.type_manager,
+                &transaction.thing_manager,
+                &mut self.checksums,
+                entity.map_err(read_error)?,
+            )
+            .map_err(read_error)?;
+            self.checksums.entity_count += 1;
+            return Ok(Some(item));
+        }
+        if let Some(relation) = self.relations.next() {
+            let item = encode_relation(
+                transaction.snapshot(),
+                &transaction.type_manager,
+                &transaction.thing_manager,
+                &mut self.checksums,
+                relation.map_err(read_error)?,
+            )
+            .map_err(read_error)?;
+            self.checksums.relation_count += 1;
+            return Ok(Some(item));
+        }
+        if let Some(attribute) = self.attributes.next() {
+            let item = encode_attribute(
+                transaction.snapshot(),
+                &transaction.type_manager,
+                &transaction.thing_manager,
+                attribute.map_err(read_error)?,
+            )
+            .map_err(read_error)?;
+            self.checksums.attribute_count += 1;
+            return Ok(Some(item));
+        }
+        if self.checksums_pending {
+            self.checksums_pending = false;
+            return Ok(Some(MigrationItem::Checksums(self.checksums.clone())));
+        }
+        Ok(None)
+    }
+
+    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<MigrationItem>>, MigrationExportError> {
         let mut batch = Vec::with_capacity(batch_size);
         while batch.len() < batch_size {
-            match self.next_item(checksums)? {
+            match self.next_item()? {
                 Some(item) => batch.push(item),
                 None => break,
             }
         }
         Ok((!batch.is_empty()).then_some(batch))
     }
+}
 
-    pub fn next_item(&mut self, checksums: &mut Checksums) -> Result<Option<MigrationItemProto>, DatabaseExportError> {
-        let map_read_err = |typedb_source| DatabaseExportError::ConceptRead { typedb_source };
-        if let Some(header) = self.header.take() {
-            return Ok(Some(header));
-        }
-        let transaction = self.transaction;
-        if let Some(entity) = self.entities.next() {
-            let item = encode_entity_item(
-                transaction.snapshot(),
-                &transaction.type_manager,
-                &transaction.thing_manager,
-                checksums,
-                entity.map_err(map_read_err)?,
-            )
-            .map_err(map_read_err)?;
-            checksums.entity_count += 1;
-            return Ok(Some(item));
-        }
-        if let Some(relation) = self.relations.next() {
-            let item = encode_relation_item(
-                transaction.snapshot(),
-                &transaction.type_manager,
-                &transaction.thing_manager,
-                checksums,
-                relation.map_err(map_read_err)?,
-            )
-            .map_err(map_read_err)?;
-            checksums.relation_count += 1;
-            return Ok(Some(item));
-        }
-        if let Some(attribute) = self.attributes.next() {
-            let item = encode_attribute_item(
-                transaction.snapshot(),
-                &transaction.type_manager,
-                &transaction.thing_manager,
-                attribute.map_err(map_read_err)?,
-            )
-            .map_err(map_read_err)?;
-            checksums.attribute_count += 1;
-            return Ok(Some(item));
-        }
-        if self.checksums_pending {
-            self.checksums_pending = false;
-            return Ok(Some(encode_checksums_item(checksums)));
-        }
-        Ok(None)
-    }
+fn read_error(typedb_source: Box<ConceptReadError>) -> MigrationExportError {
+    MigrationExportError::ConceptRead { typedb_source }
 }
