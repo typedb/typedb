@@ -370,10 +370,10 @@ impl Timeline {
     fn may_free_windows(&self) {
         let watermark = self.watermark();
         let can_free_some =
-            self.windows.read().unwrap_or_log().front().is_some_and(|f| f.get_readers() == 0 && watermark >= f.end());
+            self.windows.read().unwrap_or_log().front().is_some_and(|f| f.get_readers() == 1 && watermark >= f.end());
         if can_free_some {
             let windows = &mut *self.windows.write().unwrap_or_log();
-            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 0 {
+            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 1 {
                 windows.pop_front();
             }
         }
@@ -427,7 +427,7 @@ impl Timeline {
 
     fn earliest_reader(&self) -> Option<SequenceNumber> {
         for window in &*self.windows.read().unwrap() {
-            if window.readers.load(Ordering::Relaxed) > 0 {
+            if window.get_readers() > 1 {
                 return Some(window.start());
             }
         }
@@ -436,11 +436,10 @@ impl Timeline {
 
     fn record_reader(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
-            window.increment_readers();
-            ReaderDropGuard { window: Some(window) }
+            ReaderDropGuard { _window: Some(window) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
-            ReaderDropGuard { window: None }
+            ReaderDropGuard { _window: None }
         }
     }
 
@@ -512,15 +511,7 @@ impl Timeline {
 }
 
 pub struct ReaderDropGuard {
-    window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-}
-
-impl Drop for ReaderDropGuard {
-    fn drop(&mut self) {
-        if let Some(window) = self.window.as_ref() {
-            window.decrement_readers();
-        }
-    }
+    _window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
 #[derive(Debug)]
@@ -528,7 +519,6 @@ struct TimelineWindow<const SIZE: usize> {
     start: SequenceNumber,
     slot_status: [AtomicU8; SIZE],
     commit_records: [OnceLock<CommitRecord>; SIZE],
-    readers: AtomicU64,
 }
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
@@ -537,7 +527,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         let slot_status = [const { AtomicU8::new(0) }; SIZE];
         debug_assert_eq!(slot_status[0].load(Ordering::SeqCst), SlotMarker::Empty.as_u8());
 
-        TimelineWindow { start, slot_status, commit_records, readers: AtomicU64::new(0) }
+        TimelineWindow { start, slot_status, commit_records }
     }
 
     fn start(&self) -> SequenceNumber {
@@ -599,16 +589,8 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }
     }
 
-    fn get_readers(&self) -> u64 {
-        self.readers.load(Ordering::Relaxed)
-    }
-
-    fn increment_readers(&self) {
-        self.readers.fetch_add(1, Ordering::Relaxed);
-    }
-
-    fn decrement_readers(&self) -> u64 {
-        self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+    fn get_readers(self: &Arc<Self>) -> usize {
+        Arc::strong_count(self) + Arc::weak_count(self)
     }
 }
 
@@ -819,7 +801,7 @@ mod tests {
         }
 
         match timeline.try_get_window(timeline.watermark()) {
-            Some(window) => assert_eq!(0, window.get_readers()),
+            Some(window) => assert_eq!(2, window.get_readers()), // 1 in the timeline, 1 not yet dropped here
             None => panic!(),
         };
     }
