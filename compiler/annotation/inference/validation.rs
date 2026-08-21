@@ -8,11 +8,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
 use ir::{
-    pattern::{
-        Vertex,
-        constraint::{Constraint, Unsatisfiable},
-        variable_category::VariableCategory,
-    },
+    pattern::{Vertex, constraint::Constraint, variable_category::VariableCategory},
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
@@ -30,7 +26,7 @@ pub(super) fn validate_inferred_types_are_valid(
     variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
     run_local_validation(graph, variable_registry, validate_category_alignment)?; // Could be a debug_assert
-    run_local_validation(graph, variable_registry, check_thing_constraints_satisfiable)?;
+    run_local_validation(graph, variable_registry, check_non_type_constraints_satisfiable)?;
 
     // check_expressions_were_compiled comes before general uniqueness_of_value_types
     check_expressions_were_compiled(graph, variable_registry)?;
@@ -81,7 +77,7 @@ fn validate_category_alignment(
     })
 }
 
-fn check_thing_constraints_satisfiable(
+fn check_non_type_constraints_satisfiable(
     graph: &FullTypeInferenceGraph<'_>,
     _variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
