@@ -499,7 +499,9 @@ impl<'this> TypeInferenceExpression<'this> {
     }
 
     pub(super) fn attribute_value_types(&self, vertex_types: &ConceptVertexTypes) -> impl Iterator<Item = ValueType> {
-        filter_variants!(answer::Type::Attribute: vertex_types).map(|t| self.value_types_of_attributes[t]).unique()
+        filter_variants!(answer::Type::Attribute: vertex_types)
+            .filter_map(|t| self.value_types_of_attributes.get(t))
+            .unique()
     }
 }
 
