@@ -8,7 +8,11 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
 use ir::{
-    pattern::{Vertex, variable_category::VariableCategory},
+    pattern::{
+        Vertex,
+        constraint::{Constraint, Unsatisfiable},
+        variable_category::VariableCategory,
+    },
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
@@ -79,17 +83,33 @@ fn validate_category_alignment(
 
 fn check_thing_constraints_satisfiable(
     graph: &FullTypeInferenceGraph<'_>,
-    variable_registry: &VariableRegistry,
+    _variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
-    let thing_variable_present = graph
-        .vertices
-        .annotations
-        .iter()
-        .filter_map(|(var, _)| var.as_variable())
-        .any(|var| variable_registry.get_variable_category(var).unwrap().is_category_thing());
+    let not_only_type_constraints = graph.conjunction.constraints().iter().any(|constraint| match constraint {
+        Constraint::Is(_)
+        | Constraint::Isa(_)
+        | Constraint::Iid(_)
+        | Constraint::Links(_)
+        | Constraint::IndexedRelation(_)
+        | Constraint::Has(_)
+        | Constraint::ExpressionBinding(_)
+        | Constraint::FunctionCallBinding(_)
+        | Constraint::LinksDeduplication(_)
+        | Constraint::Comparison(_) => true,
+
+        Constraint::Kind(_)
+        | Constraint::Label(_)
+        | Constraint::RoleName(_)
+        | Constraint::Sub(_)
+        | Constraint::Owns(_)
+        | Constraint::Relates(_)
+        | Constraint::Plays(_)
+        | Constraint::Value(_)
+        | Constraint::Unsatisfiable(_) => false,
+    });
 
     let any_vertex_empty = graph.vertices.annotations.iter().any(|(_, types)| types.is_empty());
-    if any_vertex_empty && thing_variable_present {
+    if any_vertex_empty && not_only_type_constraints {
         return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
     }
     Ok(())
