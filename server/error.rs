@@ -353,7 +353,10 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::IncompleteOwnershipsOnDone { .. }
         | DatabaseImportError::IncompleteRolesOnDone { .. }
         | DatabaseImportError::DoubleFinalisation { .. }
-        | DatabaseImportError::AccessAfterFinalisation { .. } => ErrorOrigin::Request,
+        | DatabaseImportError::AccessAfterFinalisation { .. }
+        | DatabaseImportError::ItemBeforeSchema { .. }
+        | DatabaseImportError::SchemaAlreadyImported { .. }
+        | DatabaseImportError::ItemAfterChecksums { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
         | DatabaseImportError::DataCommitFailed { .. }
