@@ -13,11 +13,10 @@ use storage::durability_client::WALClient;
 
 use crate::{
     migration::{
-        Checksums, MigrationExportError,
+        Checksums,
         item::{MigrationItem, encode_attribute, encode_entity, encode_relation},
-        transaction_schema,
     },
-    transaction::TransactionRead,
+    transaction::{DatabaseReadError, TransactionRead},
 };
 
 pub struct DatabaseExporter<'a> {
@@ -35,20 +34,17 @@ impl<'a> DatabaseExporter<'a> {
         transaction: &'a TransactionRead<WALClient>,
         typedb_version: impl Into<String>,
         original_database: impl Into<String>,
-    ) -> Result<Self, MigrationExportError> {
+    ) -> Result<Self, DatabaseReadError> {
         let entities = transaction.thing_manager.get_entities(transaction.snapshot(), StorageCounters::DISABLED);
         let relations = transaction.thing_manager.get_relations(transaction.snapshot(), StorageCounters::DISABLED);
-        let attributes = transaction
-            .thing_manager
-            .get_attributes(transaction.snapshot(), StorageCounters::DISABLED)
-            .map_err(read_error)?;
+        let attributes = transaction.thing_manager.get_attributes(transaction.snapshot(), StorageCounters::DISABLED)?;
         let header = MigrationItem::Header {
             typedb_version: typedb_version.into(),
             original_database: original_database.into(),
         };
         Ok(Self {
             transaction,
-            opening: vec![MigrationItem::Schema(transaction_schema(transaction)?), header].into_iter(),
+            opening: vec![MigrationItem::Schema(transaction.schema()?), header].into_iter(),
             entities: Box::new(entities),
             relations: Box::new(relations),
             attributes: Box::new(attributes),
@@ -57,7 +53,7 @@ impl<'a> DatabaseExporter<'a> {
         })
     }
 
-    pub fn next_item(&mut self) -> Result<Option<MigrationItem>, MigrationExportError> {
+    pub fn next_item(&mut self) -> Result<Option<MigrationItem>, DatabaseReadError> {
         if let Some(item) = self.opening.next() {
             return Ok(Some(item));
         }
@@ -68,9 +64,8 @@ impl<'a> DatabaseExporter<'a> {
                 &transaction.type_manager,
                 &transaction.thing_manager,
                 &mut self.checksums,
-                entity.map_err(read_error)?,
-            )
-            .map_err(read_error)?;
+                entity?,
+            )?;
             self.checksums.entity_count += 1;
             return Ok(Some(item));
         }
@@ -80,9 +75,8 @@ impl<'a> DatabaseExporter<'a> {
                 &transaction.type_manager,
                 &transaction.thing_manager,
                 &mut self.checksums,
-                relation.map_err(read_error)?,
-            )
-            .map_err(read_error)?;
+                relation?,
+            )?;
             self.checksums.relation_count += 1;
             return Ok(Some(item));
         }
@@ -91,9 +85,8 @@ impl<'a> DatabaseExporter<'a> {
                 transaction.snapshot(),
                 &transaction.type_manager,
                 &transaction.thing_manager,
-                attribute.map_err(read_error)?,
-            )
-            .map_err(read_error)?;
+                attribute?,
+            )?;
             self.checksums.attribute_count += 1;
             return Ok(Some(item));
         }
@@ -104,7 +97,7 @@ impl<'a> DatabaseExporter<'a> {
         Ok(None)
     }
 
-    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<MigrationItem>>, MigrationExportError> {
+    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<MigrationItem>>, DatabaseReadError> {
         let mut batch = Vec::with_capacity(batch_size);
         while batch.len() < batch_size {
             match self.next_item()? {
@@ -114,8 +107,4 @@ impl<'a> DatabaseExporter<'a> {
         }
         Ok((!batch.is_empty()).then_some(batch))
     }
-}
-
-fn read_error(typedb_source: Box<ConceptReadError>) -> MigrationExportError {
-    MigrationExportError::ConceptRead { typedb_source }
 }

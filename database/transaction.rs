@@ -10,7 +10,7 @@ use std::{
 };
 
 use concept::{
-    error::ConceptWriteError,
+    error::{ConceptReadError, ConceptWriteError},
     thing::{cleanup::CleanupRecord, statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
         TypeManager,
@@ -20,6 +20,7 @@ use concept::{
 use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
+use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
@@ -106,6 +107,29 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
     pub fn id(&self) -> TransactionId {
         TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+
+    pub fn schema(&self) -> Result<String, DatabaseReadError> {
+        let types_syntax = self.types_syntax()?;
+        let functions_syntax = self.functions_syntax()?;
+        Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
+    }
+
+    pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
+        let types_syntax = self.types_syntax()?;
+        Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
+    }
+
+    fn types_syntax(&self) -> Result<String, DatabaseReadError> {
+        self.type_manager
+            .get_types_syntax(self.snapshot())
+            .map_err(|typedb_source| DatabaseReadError::ConceptRead { typedb_source })
+    }
+
+    fn functions_syntax(&self) -> Result<String, DatabaseReadError> {
+        self.function_manager
+            .get_functions_syntax(self.snapshot())
+            .map_err(|typedb_source| DatabaseReadError::FunctionRead { typedb_source })
     }
 }
 
@@ -588,6 +612,19 @@ typedb_error! {
         FunctionError(5, "Function error.", typedb_source: FunctionError),
         SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
         DurabilityError(7, "Durability error.", typedb_source: DurabilityClientError),
+    }
+}
+
+typedb_error! {
+    pub DatabaseReadError(component = "Database read", prefix = "DRE") {
+        ConceptRead(1, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
+        FunctionRead(2, "Error reading functions.", typedb_source: FunctionReadError),
+    }
+}
+
+impl From<Box<ConceptReadError>> for DatabaseReadError {
+    fn from(typedb_source: Box<ConceptReadError>) -> Self {
+        Self::ConceptRead { typedb_source }
     }
 }
 

@@ -126,10 +126,8 @@ impl DatabaseExportService {
                     EncodedItem::Item(item) => batch.push(item),
                 }
             }
-            if !batch.is_empty() {
-                self.count_items(&batch);
-                unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
-            }
+            self.count_items(&batch);
+            unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
         }
 
         unwrap_else_send_error_and_return!(self, self.send_done().await);

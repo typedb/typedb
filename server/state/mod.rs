@@ -19,9 +19,7 @@ use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution
 use tokio::{net::lookup_host, sync::watch::Receiver};
 
 pub use self::{
-    database_operator::{
-        DatabaseOperator, LocalDatabaseOperator, get_database_schema, get_functions_syntax, get_types_syntax,
-    },
+    database_operator::{DatabaseOperator, LocalDatabaseOperator, get_database_schema},
     server_operator::{LocalServerOperator, ServerOperator},
     transaction_operator::{LocalTransactionOperator, TransactionOperator},
     user_operator::{LocalUserOperator, UserOperator},
