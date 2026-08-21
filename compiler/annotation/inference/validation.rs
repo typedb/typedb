@@ -15,26 +15,44 @@ use itertools::Itertools;
 
 use crate::annotation::{
     TypeInferenceError,
-    expression::ExpressionCompileError,
     inference::{
         ValueVertexTypes, VertexAnnotations, VertexTypeAnnotations,
-        match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceExpression, TypeInferenceGraph},
+        match_inference::{FullTypeInferenceGraph, TypeInferenceExpression},
     },
 };
 
 pub(super) fn validate_inferred_types_are_valid(
-    graph: &TypeInferenceGraph<'_>,
+    graph: &FullTypeInferenceGraph<'_>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
-    validate_category_alignment(graph, variable_registry)?; // Could be a debug_assert
-    check_thing_constraints_satisfiable(graph, variable_registry)?;
+    run_local_validation(graph, variable_registry, validate_category_alignment)?; // Could be a debug_assert
+    run_local_validation(graph, variable_registry, check_thing_constraints_satisfiable)?;
+
+    // check_expressions_were_compiled comes before general uniqueness_of_value_types
     check_expressions_were_compiled(graph, variable_registry)?;
-    check_uniqueness_of_value_types(graph, variable_registry)?;
+
+    run_local_validation(graph, variable_registry, check_uniqueness_of_value_types)?;
+    Ok(())
+}
+
+fn run_local_validation(
+    graph: &FullTypeInferenceGraph<'_>,
+    variable_registry: &VariableRegistry,
+    validation: fn(&FullTypeInferenceGraph<'_>, &VariableRegistry) -> Result<(), TypeInferenceError>,
+) -> Result<(), TypeInferenceError> {
+    validation(graph, variable_registry)?;
+    graph
+        .disjunctions
+        .iter()
+        .flatten()
+        .chain(graph.negations.iter())
+        .chain(graph.optionals.iter())
+        .try_for_each(|nested| run_local_validation(nested, variable_registry, validation))?;
     Ok(())
 }
 
 fn validate_category_alignment(
-    graph: &TypeInferenceGraph<'_>,
+    graph: &FullTypeInferenceGraph<'_>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
     graph.vertices.iter().try_for_each(|(vertex, types)| {
@@ -60,7 +78,7 @@ fn validate_category_alignment(
 }
 
 fn check_thing_constraints_satisfiable(
-    graph: &TypeInferenceGraph<'_>,
+    graph: &FullTypeInferenceGraph<'_>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
     let thing_variable_present = graph
@@ -74,23 +92,18 @@ fn check_thing_constraints_satisfiable(
     if any_vertex_empty && thing_variable_present {
         return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
     }
-    graph
-        .nested_disjunctions
-        .iter()
-        .flat_map(|d| d.disjunction.iter())
-        .try_for_each(|branch| check_thing_constraints_satisfiable(branch, variable_registry))?;
     Ok(())
 }
 
 fn check_expressions_were_compiled(
-    graph: &TypeInferenceGraph<'_>,
+    graph: &FullTypeInferenceGraph<'_>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
     fn join_names(iter: impl Iterator<Item = ValueType>) -> String {
         iter.map(|v| v.category().name()).join(", ")
     }
     fn collect_uncompiled_recursive<'graph, 'conj>(
-        graph: &'graph TypeInferenceGraph<'conj>,
+        graph: &'graph FullTypeInferenceGraph<'conj>,
         expressions: &mut HashMap<
             Vertex<Variable>,
             Vec<(&'graph TypeInferenceExpression<'conj>, &'graph VertexAnnotations)>,
@@ -101,11 +114,7 @@ fn check_expressions_were_compiled(
             .iter()
             .filter(|e| e.compiled_expression.is_none())
             .for_each(|e| expressions.entry(e.assigned.clone()).or_default().push((e, &graph.vertices)));
-        graph
-            .nested_disjunctions
-            .iter()
-            .flat_map(|d| d.disjunction.iter())
-            .for_each(|g| collect_uncompiled_recursive(g, expressions))
+        graph.disjunctions.iter().flatten().for_each(|g| collect_uncompiled_recursive(g, expressions))
     }
     let mut uncompiled = HashMap::new();
     collect_uncompiled_recursive(graph, &mut uncompiled);
@@ -132,7 +141,11 @@ fn check_expressions_were_compiled(
         if let Some((arg, value_types)) = bad_arg_opt {
             let variable = variable_registry.get_variable_name_or_unnamed(arg.as_variable().unwrap()).to_owned();
             let source_span = expr.expression.source_span();
-            return Err(TypeInferenceError::VariableMultipleValueTypes { variable, value_types, source_span });
+            return Err(TypeInferenceError::VariableMultipleValueTypesInExpression {
+                variable,
+                value_types,
+                source_span,
+            });
         }
     }
     debug_assert!(false && leaf_uncompiled.is_some(), "Unreachable: we've already caught circular-dependencies");
@@ -142,77 +155,16 @@ fn check_expressions_were_compiled(
 }
 
 fn check_uniqueness_of_value_types(
-    graph: &TypeInferenceGraph<'_>,
+    graph: &FullTypeInferenceGraph<'_>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
-    // I think this can only happen at a disjunction, so we focus on validating those first.
-    graph.nested_disjunctions.iter().try_for_each(|disjunction| {
-        check_uniqueness_of_value_types_at_disjunctions(disjunction, variable_registry)
-            .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })
-    })?;
-
-    check_uniqueness_of_value_types_in_conjunction(graph, variable_registry)
-        .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })?;
-
-    Ok(())
-}
-
-fn check_uniqueness_of_value_types_at_disjunctions(
-    disjunction: &NestedTypeInferenceGraphDisjunction<'_>,
-    variable_registry: &VariableRegistry,
-) -> Result<(), Box<ExpressionCompileError>> {
-    // We first recurse so we get the closest error span possible:
-    disjunction
-        .disjunction
-        .iter()
-        .flat_map(|d| d.nested_disjunctions.iter())
-        .try_for_each(|nested| check_uniqueness_of_value_types_at_disjunctions(nested, variable_registry))?;
-    let shared_value_annotations =
-        NestedTypeInferenceGraphDisjunction::variables_affecting_parent(disjunction.disjunction_pattern)
-            .filter_map(|v| {
-                if disjunction.disjunction.iter().all(|b| matches!(b.vertices[&v], VertexTypeAnnotations::Value(_))) {
-                    let union = VertexAnnotations::try_union(disjunction.disjunction.iter().map(|b| &b.vertices), &v)
-                        .expect("Homogenous")?;
-                    Some((v, union))
-                } else {
-                    None
-                }
-            })
-            .collect();
-    let shared_value_annotations = VertexAnnotations { annotations: shared_value_annotations };
-    if let Some((variable, value_types)) = find_multiply_typed_value_vertex(&shared_value_annotations) {
-        let variable = variable_registry.get_variable_name_or_unnamed(variable).to_owned();
-        let value_types = join_value_type_names(value_types.iter());
-        let source_span = disjunction.disjunction_pattern.source_span();
-        Err(Box::new(ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
-            variable,
-            value_types,
-            source_span,
-        }))
-    } else {
-        Ok(())
-    }
-}
-
-fn check_uniqueness_of_value_types_in_conjunction(
-    graph: &TypeInferenceGraph<'_>,
-    variable_registry: &VariableRegistry,
-) -> Result<(), Box<ExpressionCompileError>> {
     if let Some((variable, value_types)) = find_multiply_typed_value_vertex(&graph.vertices) {
         let variable = variable_registry.get_variable_name_or_unnamed(variable).to_owned();
         let value_types = join_value_type_names(value_types.iter());
         let source_span = None; // Can't do much with a conjunction
-        Err(Box::new(ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
-            variable,
-            value_types,
-            source_span,
-        }))
+        Err(TypeInferenceError::ValueVariableMultipleValueTypes { variable, value_types, source_span })
     } else {
-        graph
-            .nested_disjunctions
-            .iter()
-            .flat_map(|d| d.disjunction.iter())
-            .try_for_each(|branch| check_uniqueness_of_value_types_in_conjunction(branch, variable_registry))
+        Ok(())
     }
 }
 

@@ -67,6 +67,8 @@ pub fn infer_types_for_block(
         input_annotations.insert(Vertex::Variable(*var), VertexTypeAnnotations::value_from([*value_type]));
     });
     let root_graph = infer_types_impl(ctx, block.conjunction(), &input_annotations, type_inference_mode)?;
+    validate_inferred_types_are_valid(&root_graph, ctx.variable_registry)?;
+
     let mut type_annotations_by_scope = HashMap::new();
     root_graph.into_type_annotations_by_scope(&mut type_annotations_by_scope);
     debug_assert!(all_vertex_annotations_available(
@@ -186,7 +188,6 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     prune_types(&mut graph)?;
 
-    validate_inferred_types_are_valid(&graph, ctx.variable_registry)?;
     Ok(graph)
 }
 
@@ -503,14 +504,14 @@ impl<'this> TypeInferenceExpression<'this> {
 }
 
 #[derive(Debug)]
-struct FullTypeInferenceGraph<'this> {
-    conjunction: &'this Conjunction,
-    vertices: VertexAnnotations,
-    edges: Vec<TypeInferenceEdge<'this>>,
-    expressions: Vec<TypeInferenceExpression<'this>>,
-    disjunctions: Vec<Vec<FullTypeInferenceGraph<'this>>>,
-    optionals: Vec<FullTypeInferenceGraph<'this>>,
-    negations: Vec<FullTypeInferenceGraph<'this>>,
+pub(super) struct FullTypeInferenceGraph<'this> {
+    pub(super) conjunction: &'this Conjunction,
+    pub(super) vertices: VertexAnnotations,
+    pub(super) edges: Vec<TypeInferenceEdge<'this>>,
+    pub(super) expressions: Vec<TypeInferenceExpression<'this>>,
+    pub(super) disjunctions: Vec<Vec<FullTypeInferenceGraph<'this>>>,
+    pub(super) optionals: Vec<FullTypeInferenceGraph<'this>>,
+    pub(super) negations: Vec<FullTypeInferenceGraph<'this>>,
 }
 
 impl FullTypeInferenceGraph<'_> {
