@@ -470,6 +470,10 @@ impl<'this> TypeInferenceExpression<'this> {
     }
 
     fn prune_self_from_vertices(&mut self, vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {
+        self.try_compile_from_vertices(vertices)
+    }
+
+    fn try_compile_from_vertices(&mut self, vertices: &VertexAnnotations) -> Result<(), TypeInferenceError> {
         if self.compiled_expression.is_some() {
             return Ok(());
         }
