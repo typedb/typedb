@@ -543,10 +543,16 @@ impl Timeline {
         commit_sequence_number: SequenceNumber,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
         let windows = &*self.windows.read().unwrap_or_log();
-        let first_concurrent_window_index =
-            Self::resolve_window(windows, open_sequence_number.next()).unwrap_or(*windows.first_key_value().unwrap().0);
-        let last_concurrent_window_index = Self::resolve_window(windows, commit_sequence_number.previous())
+
+        let first_concurrent_sequence_number = open_sequence_number.next();
+        let last_concurrent_sequence_number =
+            SequenceNumber::max(first_concurrent_sequence_number, commit_sequence_number.previous());
+
+        let first_concurrent_window_index = Self::resolve_window(windows, first_concurrent_sequence_number)
             .unwrap_or(*windows.first_key_value().unwrap().0);
+        let last_concurrent_window_index =
+            Self::resolve_window(windows, last_concurrent_sequence_number).unwrap_or(first_concurrent_window_index);
+
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         windows.range(first_concurrent_window_index..=last_concurrent_window_index).for_each(|(_, window)| {
             concurrent_windows.push(window.upgrade().unwrap());
