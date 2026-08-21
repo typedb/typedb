@@ -6,13 +6,6 @@
 
 use std::{fmt, fmt::Formatter};
 
-use concept::error::ConceptReadError;
-use error::typedb_error;
-use ir::pipeline::FunctionReadError;
-use storage::durability_client::DurabilityClient;
-
-use crate::transaction::TransactionRead;
-
 pub mod database_exporter;
 pub mod database_import_handler;
 pub mod database_importer;
@@ -46,45 +39,5 @@ impl fmt::Display for Checksums {
             f,
             "[{entity_count} entities, {attribute_count} attributes, {relation_count} relations, {role_count} roles, {ownership_count} ownerships]"
         )
-    }
-}
-
-pub fn transaction_schema<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, MigrationExportError> {
-    let types_syntax = transaction_types_syntax(transaction)?;
-    let functions_syntax = transaction_functions_syntax(transaction)?;
-    Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
-}
-
-pub fn transaction_type_schema<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, MigrationExportError> {
-    let types_syntax = transaction_types_syntax(transaction)?;
-    Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
-}
-
-fn transaction_types_syntax<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, MigrationExportError> {
-    transaction
-        .type_manager
-        .get_types_syntax(transaction.snapshot())
-        .map_err(|typedb_source| MigrationExportError::ConceptRead { typedb_source })
-}
-
-fn transaction_functions_syntax<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, MigrationExportError> {
-    transaction
-        .function_manager
-        .get_functions_syntax(transaction.snapshot())
-        .map_err(|typedb_source| MigrationExportError::FunctionRead { typedb_source })
-}
-
-typedb_error! {
-    pub MigrationExportError(component = "Migration export", prefix = "MEX") {
-        ConceptRead(1, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
-        FunctionRead(2, "Error reading functions.", typedb_source: FunctionReadError),
     }
 }

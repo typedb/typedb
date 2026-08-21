@@ -38,10 +38,7 @@ use tokio::{
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
-    service::{
-        export_service::{get_transaction_schema, get_transaction_type_schema},
-        grpc::migration::import_service::DatabaseImportService,
-    },
+    service::grpc::migration::import_service::DatabaseImportService,
 };
 
 #[async_trait]
@@ -235,8 +232,8 @@ impl LocalDatabaseOperator {
 pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, LocalServerStateError> {
     let transaction = TransactionRead::open(database, options::TransactionOptions::default())
         .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
-    let schema = get_transaction_schema(&transaction)
-        .map_err(|typedb_source| LocalServerStateError::DatabaseExport { typedb_source })?;
+    let schema =
+        transaction.schema().map_err(|error| LocalServerStateError::DatabaseExport { typedb_source: error.into() })?;
     Ok(schema)
 }
 
@@ -245,27 +242,10 @@ pub fn get_database_type_schema<D: DurabilityClient>(
 ) -> Result<String, LocalServerStateError> {
     let transaction = TransactionRead::open(database, options::TransactionOptions::default())
         .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
-    let type_schema = get_transaction_type_schema(&transaction)
-        .map_err(|typedb_source| LocalServerStateError::DatabaseExport { typedb_source })?;
+    let type_schema = transaction
+        .type_schema()
+        .map_err(|error| LocalServerStateError::DatabaseExport { typedb_source: error.into() })?;
     Ok(type_schema)
-}
-
-pub fn get_functions_syntax<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, LocalServerStateError> {
-    transaction
-        .function_manager
-        .get_functions_syntax(transaction.snapshot())
-        .map_err(|typedb_source| LocalServerStateError::FunctionReadError { typedb_source })
-}
-
-pub fn get_types_syntax<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, LocalServerStateError> {
-    transaction
-        .type_manager
-        .get_types_syntax(transaction.snapshot())
-        .map_err(|typedb_source| LocalServerStateError::ConceptReadError { typedb_source })
 }
 
 #[async_trait]
