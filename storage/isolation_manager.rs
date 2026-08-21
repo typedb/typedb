@@ -9,11 +9,11 @@
 
 use std::{
     cmp::max,
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap},
     error::Error,
     fmt,
     sync::{
-        Arc, OnceLock, RwLock,
+        Arc, OnceLock, RwLock, Weak,
         atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
     },
 };
@@ -49,7 +49,7 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
+    pub(crate) fn opened_for_read_by_reader(&self, sequence_number: SequenceNumber) -> ReadingReaderDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
@@ -57,6 +57,16 @@ impl IsolationManager {
             self.watermark()
         );
         self.timeline.record_reader(sequence_number)
+    }
+
+    pub(crate) fn opened_for_read_by_writer(&self, sequence_number: SequenceNumber) -> WritingReaderDropGuard {
+        debug_assert!(
+            sequence_number <= self.watermark(),
+            "assertion `{} <= {}` failed",
+            sequence_number,
+            self.watermark()
+        );
+        self.timeline.record_writing_reader(sequence_number)
     }
 
     pub(crate) fn applied(&self, sequence_number: SequenceNumber) -> Result<(), ExpectedWindowError> {
@@ -151,20 +161,17 @@ impl IsolationManager {
             commit_record.open_sequence_number().next(),
             stop_sequence_number,
         )? {
-            if let Ok((_, commit_status)) = commit_status_result {
-                let commit_dependency = match commit_status {
-                    CommitStatus::Aborted => CommitDependency::Independent,
-                    CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
-                    CommitStatus::Pending(_) => {
-                        unreachable!("Evicted records cannot be pending")
-                    }
-                    CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
-                };
-                if let Some(conflict) = handle_dependency(commit_dependency) {
-                    return Ok(Some(conflict));
+            let (_, commit_status) = commit_status_result?;
+            let commit_dependency = match commit_status {
+                CommitStatus::Aborted => CommitDependency::Independent,
+                CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
+                CommitStatus::Pending(_) => {
+                    unreachable!("Evicted records cannot be pending")
                 }
-            } else if let Err(err) = commit_status_result {
-                return Err(err);
+                CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
+            };
+            if let Some(conflict) = handle_dependency(commit_dependency) {
+                return Ok(Some(conflict));
             }
         }
         Ok(None)
@@ -342,6 +349,73 @@ impl fmt::Display for ExpectedWindowError {
 
 impl Error for ExpectedWindowError {}
 
+#[derive(Debug)]
+enum ArcOrWeak<T> {
+    Arc(Arc<T>),
+    Weak(Weak<T>),
+}
+
+impl<T> ArcOrWeak<T> {
+    fn new_arc(value: T) -> Self {
+        Self::Arc(Arc::new(value))
+    }
+
+    fn upgrade(&self) -> Option<Arc<T>> {
+        match self {
+            ArcOrWeak::Arc(arc) => Some(arc.clone()),
+            ArcOrWeak::Weak(weak) => weak.upgrade(),
+        }
+    }
+
+    fn downgrade(&self) -> Weak<T> {
+        match self {
+            ArcOrWeak::Arc(arc) => Arc::downgrade(arc),
+            ArcOrWeak::Weak(weak) => weak.clone(),
+        }
+    }
+
+    fn get_readers(&self) -> usize {
+        self.strong_count() + self.weak_count()
+    }
+
+    fn get_writing_readers(&self) -> usize {
+        self.strong_count()
+    }
+
+    fn strong_count(&self) -> usize {
+        match self {
+            ArcOrWeak::Arc(arc) => Arc::strong_count(arc),
+            ArcOrWeak::Weak(weak) => Weak::strong_count(weak),
+        }
+    }
+
+    fn weak_count(&self) -> usize {
+        match self {
+            ArcOrWeak::Arc(arc) => Arc::weak_count(arc),
+            ArcOrWeak::Weak(weak) => Weak::weak_count(weak),
+        }
+    }
+
+    fn evict(&mut self) {
+        *self = Self::Weak(self.downgrade())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct WindowRange {
+    start: SequenceNumber,
+}
+
+impl WindowRange {
+    fn starting_at(start: SequenceNumber) -> Self {
+        Self { start }
+    }
+
+    fn end(self) -> SequenceNumber {
+        self.start + TIMELINE_WINDOW_SIZE
+    }
+}
+
 /// Timeline concept:
 ///   Timeline is made of Windows. Each Window stores a number of Slots.
 ///   Conceptually the timeline is one sequence of Slots, but we cut it into Windows for more efficient allocation/clean up/search.
@@ -356,25 +430,41 @@ impl Error for ExpectedWindowError {}
 #[derive(Debug)]
 struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
-    windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
+    windows: RwLock<BTreeMap<WindowRange, ArcOrWeak<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     watermark: AtomicU64,
 }
 
 impl Timeline {
     // The whole of the timeline uses the underlying u64
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
-        let windows = VecDeque::from([Arc::new(TimelineWindow::new(next_sequence_number))]);
+        let windows = BTreeMap::from([(
+            WindowRange::starting_at(next_sequence_number),
+            ArcOrWeak::new_arc(TimelineWindow::new(next_sequence_number)),
+        )]);
         Timeline { windows: RwLock::new(windows), watermark: AtomicU64::new(next_sequence_number.number() - 1) }
     }
 
     fn may_free_windows(&self) {
         let watermark = self.watermark();
-        let can_free_some =
-            self.windows.read().unwrap_or_log().front().is_some_and(|f| f.get_readers() == 0 && watermark >= f.end());
+        let can_free_some = self
+            .windows
+            .read()
+            .unwrap_or_log()
+            .first_key_value()
+            .is_some_and(|(s, w)| w.get_readers() <= 1 && watermark >= s.end());
         if can_free_some {
             let windows = &mut *self.windows.write().unwrap_or_log();
-            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 0 {
-                windows.pop_front();
+            while let (range, window) = windows.first_key_value().unwrap()
+                && watermark >= range.end()
+                && window.get_readers() <= 1
+            {
+                windows.pop_first();
+            }
+            while let mut entry = windows.first_entry().unwrap()
+                && watermark >= entry.key().end()
+                && entry.get().get_writing_readers() <= 1
+            {
+                entry.get_mut().evict();
             }
         }
     }
@@ -426,22 +516,25 @@ impl Timeline {
     }
 
     fn earliest_reader(&self) -> Option<SequenceNumber> {
-        for window in &*self.windows.read().unwrap() {
-            if window.readers.load(Ordering::Relaxed) > 0 {
-                return Some(window.start());
+        for (range, window) in &*self.windows.read().unwrap() {
+            if window.get_readers() > 1 {
+                return Some(range.start);
             }
         }
         None
     }
 
-    fn record_reader(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
+    fn record_reader(&self, sequence_number: SequenceNumber) -> ReadingReaderDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
-            window.increment_readers();
-            ReaderDropGuard { window: Some(window) }
+            ReadingReaderDropGuard { _window: Some(Arc::downgrade(&window)) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
-            ReaderDropGuard { window: None }
+            ReadingReaderDropGuard { _window: None }
         }
+    }
+
+    fn record_writing_reader(&self, sequence_number: SequenceNumber) -> WritingReaderDropGuard {
+        WritingReaderDropGuard { _window: self.try_get_window(sequence_number) }
     }
 
     fn collect_concurrent_windows(
@@ -450,25 +543,32 @@ impl Timeline {
         commit_sequence_number: SequenceNumber,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
         let windows = &*self.windows.read().unwrap_or_log();
-        let first_concurrent_window_index = Self::resolve_window(windows, open_sequence_number.next()).unwrap_or(0);
+
+        let first_concurrent_sequence_number = open_sequence_number.next();
+        let last_concurrent_sequence_number =
+            SequenceNumber::max(first_concurrent_sequence_number, commit_sequence_number.previous());
+
+        let first_concurrent_window_index = Self::resolve_window(windows, first_concurrent_sequence_number)
+            .unwrap_or(*windows.first_key_value().unwrap().0);
         let last_concurrent_window_index =
-            Self::resolve_window(windows, commit_sequence_number.previous()).unwrap_or(0);
+            Self::resolve_window(windows, last_concurrent_sequence_number).unwrap_or(first_concurrent_window_index);
+
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
-        (first_concurrent_window_index..=last_concurrent_window_index).for_each(|window_index| {
-            concurrent_windows.push(windows.get(window_index).unwrap().clone());
+        windows.range(first_concurrent_window_index..=last_concurrent_window_index).for_each(|(_, window)| {
+            concurrent_windows.push(window.upgrade().unwrap());
         });
-        let start_index_of_first_concurrent_window = windows.get(first_concurrent_window_index).unwrap().start();
+        let start_index_of_first_concurrent_window = first_concurrent_window_index.start;
         (concurrent_windows, start_index_of_first_concurrent_window)
     }
 
     fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let windows = self.windows.read().unwrap_or_log();
         let window_index = Self::resolve_window(&windows, sequence_number)?;
-        Some(windows.get(window_index).unwrap().clone())
+        windows.get(&window_index).and_then(ArcOrWeak::upgrade)
     }
 
     fn get_or_create_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
-        let end = self.windows.read().unwrap_or_log().back().unwrap().end();
+        let end = self.windows.read().unwrap_or_log().last_key_value().unwrap().0.end();
         if sequence_number >= end {
             self.create_windows_to(sequence_number);
         }
@@ -481,14 +581,10 @@ impl Timeline {
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
         let windows = &mut *self.windows.write().unwrap_or_log();
-        loop {
-            let end = windows.back().unwrap().end();
-            if sequence_number >= end {
-                let shared_new_window = Arc::new(TimelineWindow::new(end));
-                windows.push_back(shared_new_window.clone());
-            } else {
-                break;
-            }
+        while let end = windows.last_key_value().unwrap().0.end()
+            && end <= sequence_number
+        {
+            windows.insert(WindowRange::starting_at(end), ArcOrWeak::new_arc(TimelineWindow::new(end)));
         }
     }
 
@@ -497,30 +593,27 @@ impl Timeline {
     }
 
     fn resolve_window(
-        windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
+        windows: &BTreeMap<WindowRange, ArcOrWeak<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
         to_resolve: SequenceNumber,
-    ) -> Option<usize> {
-        let start = windows.front().unwrap().start();
-        let end = windows.back().unwrap().end();
+    ) -> Option<WindowRange> {
+        let start = windows.first_key_value().unwrap().0.start;
+        let end = windows.last_key_value().unwrap().0.end();
         if to_resolve >= start && to_resolve < end {
-            let offset = to_resolve - start;
-            Some(offset / TIMELINE_WINDOW_SIZE)
+            let mut offset = to_resolve - start;
+            offset -= offset % TIMELINE_WINDOW_SIZE;
+            Some(WindowRange::starting_at(start + offset))
         } else {
             None
         }
     }
 }
 
-pub struct ReaderDropGuard {
-    window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
+pub struct ReadingReaderDropGuard {
+    _window: Option<Weak<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
-impl Drop for ReaderDropGuard {
-    fn drop(&mut self) {
-        if let Some(window) = self.window.as_ref() {
-            window.decrement_readers();
-        }
-    }
+pub struct WritingReaderDropGuard {
+    _window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
 #[derive(Debug)]
@@ -528,7 +621,6 @@ struct TimelineWindow<const SIZE: usize> {
     start: SequenceNumber,
     slot_status: [AtomicU8; SIZE],
     commit_records: [OnceLock<CommitRecord>; SIZE],
-    readers: AtomicU64,
 }
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
@@ -537,11 +629,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         let slot_status = [const { AtomicU8::new(0) }; SIZE];
         debug_assert_eq!(slot_status[0].load(Ordering::SeqCst), SlotMarker::Empty.as_u8());
 
-        TimelineWindow { start, slot_status, commit_records, readers: AtomicU64::new(0) }
-    }
-
-    fn start(&self) -> SequenceNumber {
-        self.start
+        TimelineWindow { start, slot_status, commit_records }
     }
 
     fn end(&self) -> SequenceNumber {
@@ -597,18 +685,6 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
                 CommitStatus::Aborted => return false,
             }
         }
-    }
-
-    fn get_readers(&self) -> u64 {
-        self.readers.load(Ordering::Relaxed)
-    }
-
-    fn increment_readers(&self) {
-        self.readers.fetch_add(1, Ordering::Relaxed);
-    }
-
-    fn decrement_readers(&self) -> u64 {
-        self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
     }
 }
 
@@ -667,7 +743,7 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, ReaderDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
+        isolation_manager::{CommitStatus, TIMELINE_WINDOW_SIZE, Timeline, WritingReaderDropGuard},
         keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
@@ -700,13 +776,13 @@ mod tests {
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
-        reader_drop_guard: ReaderDropGuard,
+        reader_drop_guard: WritingReaderDropGuard,
     }
 
     impl MockTransaction {
         fn new(timeline: &Timeline, commit_sequence_number: SequenceNumber) -> MockTransaction {
             let read_sequence_number = timeline.watermark();
-            let reader_drop_guard = timeline.record_reader(read_sequence_number);
+            let reader_drop_guard = timeline.record_writing_reader(read_sequence_number);
             MockTransaction { read_sequence_number, commit_sequence_number, reader_drop_guard }
         }
     }
@@ -819,7 +895,7 @@ mod tests {
         }
 
         match timeline.try_get_window(timeline.watermark()) {
-            Some(window) => assert_eq!(0, window.get_readers()),
+            Some(window) => assert_eq!(2, Arc::strong_count(&window)), // 1 in the timeline, 1 not yet dropped here
             None => panic!(),
         };
     }
