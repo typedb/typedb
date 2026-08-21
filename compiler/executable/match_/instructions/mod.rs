@@ -664,9 +664,11 @@ impl<ID: IrID> CheckInstruction<ID> {
             Self::Isa { isa_kind: kind, type_, thing } => {
                 CheckInstruction::Isa { isa_kind: kind, type_: type_.map(mapping), thing: thing.map(mapping) }
             }
-            Self::VectorSearch { attribute, query, threshold } => {
-                CheckInstruction::VectorSearch { attribute: attribute.map(mapping), query: query.map(mapping), threshold }
-            }
+            Self::VectorSearch { attribute, query, threshold } => CheckInstruction::VectorSearch {
+                attribute: attribute.map(mapping),
+                query: query.map(mapping),
+                threshold,
+            },
             Self::Has { owner, attribute } => {
                 CheckInstruction::Has { owner: owner.map(mapping), attribute: attribute.map(mapping) }
             }

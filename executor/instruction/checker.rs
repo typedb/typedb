@@ -1116,8 +1116,7 @@ impl<T> Checker<T> {
             query.as_variable(),
             query.as_parameter().cloned(),
         )?;
-        let threshold =
-            crate::instruction::vector_search_executor::resolve_threshold(context, threshold.clone());
+        let threshold = crate::instruction::vector_search_executor::resolve_threshold(context, threshold.clone());
         let value = match &attribute_value {
             VariableValue::Thing(Thing::Attribute(attr)) => {
                 attr.get_value(context.snapshot.as_ref(), context.thing_manager.as_ref(), storage_counters)?
