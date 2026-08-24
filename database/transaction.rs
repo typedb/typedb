@@ -26,6 +26,7 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError},
+    record::CommitRecord,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
         WriteSnapshot, snapshot_id::SnapshotId,
@@ -415,6 +416,14 @@ macro_rules! with_transaction_parts {
     }};
 }
 
+/// The portable form of a commit, containing all the durably produced data. The data can be then
+/// serialised or sent outside the process and turned back into an intent to apply the commit.
+#[derive(Debug)]
+pub struct CommitInfo {
+    pub commit_record: CommitRecord,
+    pub cleanup_record: CleanupRecord,
+}
+
 pub struct DataCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     write_snapshot: WriteSnapshot<D>,
@@ -424,6 +433,20 @@ pub struct DataCommitIntent<D> {
 impl<D: DurabilityClient> DataCommitIntent<D> {
     pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
         Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_record }
+    }
+
+    /// Rebuilds an intent from a commit's portable form.
+    pub fn from_commit_info(database: Arc<Database<D>>, commit_info: CommitInfo) -> Self {
+        let CommitInfo { commit_record, cleanup_record } = commit_info;
+        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot, cleanup_record)
+    }
+
+    /// Splits an intent into its portable form with MVCC timeline guards.
+    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitInfo) {
+        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
+        let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
+        (self.database_drop_guard, reader_guard, commit_info)
     }
 }
 
@@ -465,6 +488,20 @@ pub struct SchemaCommitIntent<D> {
 impl<D: DurabilityClient> SchemaCommitIntent<D> {
     pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
         Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_record }
+    }
+
+    /// Rebuilds an intent from a commit's portable form.
+    pub fn from_commit_info(database: Arc<Database<D>>, commit_info: CommitInfo) -> Self {
+        let CommitInfo { commit_record, cleanup_record } = commit_info;
+        let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot, cleanup_record)
+    }
+
+    /// Splits an intent into its portable form with MVCC timeline guards.
+    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitInfo) {
+        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
+        let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
+        (self.database_drop_guard, reader_guard, commit_info)
     }
 }
 
