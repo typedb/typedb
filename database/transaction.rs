@@ -9,15 +9,17 @@ use std::{
     sync::{Arc, mpsc::RecvTimeoutError},
 };
 
+pub use concept::thing::cleanup::CleanupRecord;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{cleanup::CleanupRecord, statistics::StatisticsError, thing_manager::ThingManager},
+    thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
     },
 };
 use durability::DurabilitySequenceNumber;
+use encoding::EncodingKeyspace;
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use ir::pipeline::FunctionReadError;
@@ -422,6 +424,13 @@ macro_rules! with_transaction_parts {
 pub struct CommitInfo {
     pub commit_record: CommitRecord,
     pub cleanup_record: CleanupRecord,
+}
+
+impl CommitInfo {
+    /// The portable form of a commit whose cleanup information is not known.
+    pub fn with_everything_cleanup(commit_record: CommitRecord) -> Self {
+        Self { commit_record, cleanup_record: CleanupRecord::everything::<EncodingKeyspace>() }
+    }
 }
 
 pub struct DataCommitIntent<D> {
