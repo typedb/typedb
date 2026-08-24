@@ -81,7 +81,7 @@ impl GivenRowEntry {
         let make_err = {
             let actual_type = value.value_type().to_string();
             let expected_type = expected_type.clone();
-            |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
+            move |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
         };
 
         if value.value_type().is_trivially_castable_to(expected_type.category()) {
