@@ -129,7 +129,6 @@ fn encode_relation_roles(
     relation: Relation,
 ) -> Result<Vec<(Label, Vec<String>)>, Box<ConceptReadError>> {
     // TODO: Cover role players ordering
-    // Ordered by role type so that exporting a database twice produces the same stream.
     let mut players_by_role: BTreeMap<RoleType, Vec<String>> = BTreeMap::new();
     let all_players = relation.get_players(snapshot, thing_manager, StorageCounters::DISABLED);
     for player in all_players {

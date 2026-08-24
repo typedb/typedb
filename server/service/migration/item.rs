@@ -40,7 +40,7 @@ pub(crate) fn encode_item(item: MigrationItem) -> EncodedItem {
                 id,
                 label: label.to_string(),
                 attributes: encode_owned_attributes(owned_attributes),
-                roles: encode_roles(related_role_players),
+                roles: encode_relation_roles(related_role_players),
             })
         }
         MigrationItem::Attribute { id, label, value } => item::Item::Attribute(item::Attribute {
@@ -76,7 +76,7 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
             id,
             label: Label::parse_from(&label, None),
             owned_attributes: decode_owned_attributes(attributes),
-            related_role_players: decode_roles(roles),
+            related_role_players: decode_relation_roles(roles),
         },
         item::Item::Attribute(item::Attribute { id, label, attributes, value }) => {
             if !attributes.is_empty() {
@@ -113,7 +113,7 @@ fn decode_owned_attributes(attributes: Vec<item::OwnedAttribute>) -> Vec<String>
     attributes.into_iter().map(|item::OwnedAttribute { id }| id).collect()
 }
 
-fn encode_roles(related_role_players: Vec<(Label, Vec<String>)>) -> Vec<item::relation::Role> {
+fn encode_relation_roles(related_role_players: Vec<(Label, Vec<String>)>) -> Vec<item::relation::Role> {
     related_role_players
         .into_iter()
         .map(|(label, players)| item::relation::Role {
@@ -123,7 +123,7 @@ fn encode_roles(related_role_players: Vec<(Label, Vec<String>)>) -> Vec<item::re
         .collect()
 }
 
-fn decode_roles(roles: Vec<item::relation::Role>) -> Vec<(Label, Vec<String>)> {
+fn decode_relation_roles(roles: Vec<item::relation::Role>) -> Vec<(Label, Vec<String>)> {
     roles
         .into_iter()
         .map(|item::relation::Role { label, players }| {

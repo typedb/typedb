@@ -101,7 +101,7 @@ macro_rules! for_item_in_write_transaction {
         $self.data_transaction = Some(transaction);
         result?;
         $self.count_item();
-        if $self.transaction_item_count() % DatabaseImporter::COMMIT_BATCH_SIZE == 0 {
+        if $self.transaction_item_count % DatabaseImporter::COMMIT_BATCH_SIZE == 0 {
             let transaction = $self.data_transaction.take().unwrap();
             $self.commit_write_transaction(transaction)?;
         }
@@ -321,21 +321,6 @@ impl DatabaseImporter {
         }
     }
 
-    fn check_interrupt(&mut self) -> Result<(), DatabaseImportError> {
-        match self.interrupt.check() {
-            Some(_) => Err(DatabaseImportError::Interrupted {}),
-            None => Ok(()),
-        }
-    }
-
-    fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
-        if schema.trim().is_empty() {
-            return Ok(());
-        }
-        self.submit_original_schema(schema)?;
-        self.relax_schema()
-    }
-
     pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
         self.check_stream_position(&item)?;
         match item {
@@ -361,6 +346,13 @@ impl DatabaseImporter {
         }
     }
 
+    fn check_interrupt(&mut self) -> Result<(), DatabaseImportError> {
+        match self.interrupt.check() {
+            Some(_) => Err(DatabaseImportError::Interrupted {}),
+            None => Ok(()),
+        }
+    }
+
     fn check_stream_position(&self, item: &MigrationItem) -> Result<(), DatabaseImportError> {
         match item {
             MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
@@ -370,6 +362,14 @@ impl DatabaseImporter {
             _ if self.data_info.expected_checksums.is_some() => Err(DatabaseImportError::ItemAfterChecksums {}),
             _ => Ok(()),
         }
+    }
+
+    fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
+        if schema.trim().is_empty() {
+            return Ok(());
+        }
+        self.submit_original_schema(schema)?;
+        self.relax_schema()
     }
 
     fn import_attribute(&mut self, id: String, label: Label, value: Value<'static>) -> Result<(), DatabaseImportError> {
@@ -555,10 +555,6 @@ impl DatabaseImporter {
 
     pub fn database_name(&self) -> &str {
         &self.database_name
-    }
-
-    fn transaction_item_count(&self) -> u64 {
-        self.transaction_item_count
     }
 
     pub fn total_item_count(&self) -> u64 {
