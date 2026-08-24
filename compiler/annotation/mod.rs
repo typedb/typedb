@@ -244,6 +244,11 @@ typedb_error!(
             constraint_type: String,
             source_span: Option<Span>,
         ),
+        InternalVertexTypesMismatch(
+            254,
+            "Expected vertex to have annotations of kind: {expected} but it wasn't.",
+            expected: String,
+        ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),
     }

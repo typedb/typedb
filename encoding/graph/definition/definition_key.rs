@@ -19,7 +19,7 @@ use crate::{
     layout::prefix::{Prefix, PrefixID},
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DefinitionKey {
     prefix: Prefix,
     definition_id: DefinitionID,
