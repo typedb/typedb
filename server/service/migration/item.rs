@@ -172,3 +172,125 @@ fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>,
     };
     Ok(value)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn items_map_to_the_expected_wire_messages() {
+        for (item, expected) in samples() {
+            match &item {
+                MigrationItem::Schema(_)
+                | MigrationItem::Header { .. }
+                | MigrationItem::Entity { .. }
+                | MigrationItem::Relation { .. }
+                | MigrationItem::Attribute { .. }
+                | MigrationItem::Checksums(_) => (),
+            }
+            assert_eq!(wire_item(encode_item(item)), expected);
+            let decoded = decode_item(expected.clone()).expect("decoded item");
+            assert_eq!(wire_item(encode_item(decoded)), expected, "decoding is not the inverse of encoding");
+        }
+    }
+
+    #[test]
+    fn the_schema_is_not_a_wire_item() {
+        match encode_item(MigrationItem::Schema("define entity person;".to_owned())) {
+            EncodedItem::Schema(schema) => assert_eq!(schema, "define entity person;"),
+            EncodedItem::Item(item) => panic!("the schema must not be encoded as an item: {item:?}"),
+        }
+    }
+
+    fn samples() -> Vec<(MigrationItem, Item)> {
+        vec![
+            (
+                MigrationItem::Header { typedb_version: "3.12.3".to_owned(), original_database: "source".to_owned() },
+                wire(item::Item::Header(item::Header {
+                    typedb_version: "3.12.3".to_owned(),
+                    original_database: "source".to_owned(),
+                })),
+            ),
+            (
+                MigrationItem::Entity {
+                    id: "e1".to_owned(),
+                    label: Label::build("person", None),
+                    owned_attributes: vec!["a1".to_owned(), "a2".to_owned()],
+                },
+                wire(item::Item::Entity(item::Entity {
+                    id: "e1".to_owned(),
+                    label: "person".to_owned(),
+                    attributes: vec![
+                        item::OwnedAttribute { id: "a1".to_owned() },
+                        item::OwnedAttribute { id: "a2".to_owned() },
+                    ],
+                })),
+            ),
+            (
+                MigrationItem::Relation {
+                    id: "r1".to_owned(),
+                    label: Label::build("friendship", None),
+                    owned_attributes: vec!["a1".to_owned()],
+                    related_role_players: vec![(
+                        Label::build_scoped("friend", "friendship", None),
+                        vec!["e1".to_owned(), "e2".to_owned()],
+                    )],
+                },
+                wire(item::Item::Relation(item::Relation {
+                    id: "r1".to_owned(),
+                    label: "friendship".to_owned(),
+                    attributes: vec![item::OwnedAttribute { id: "a1".to_owned() }],
+                    roles: vec![item::relation::Role {
+                        label: "friendship:friend".to_owned(),
+                        players: vec![
+                            item::relation::role::Player { id: "e1".to_owned() },
+                            item::relation::role::Player { id: "e2".to_owned() },
+                        ],
+                    }],
+                })),
+            ),
+            (
+                MigrationItem::Attribute {
+                    id: "a1".to_owned(),
+                    label: Label::build("name", None),
+                    value: Value::String(Cow::Borrowed("Alice")),
+                },
+                wire(item::Item::Attribute(item::Attribute {
+                    id: "a1".to_owned(),
+                    label: "name".to_owned(),
+                    attributes: vec![],
+                    value: Some(MigrationValue {
+                        value: Some(migration::migration_value::Value::String("Alice".to_owned())),
+                    }),
+                })),
+            ),
+            (
+                MigrationItem::Checksums(Checksums {
+                    entity_count: 1,
+                    attribute_count: 2,
+                    relation_count: 3,
+                    role_count: 4,
+                    ownership_count: 5,
+                }),
+                wire(item::Item::Checksums(item::Checksums {
+                    entity_count: 1,
+                    attribute_count: 2,
+                    relation_count: 3,
+                    role_count: 4,
+                    ownership_count: 5,
+                })),
+            ),
+        ]
+    }
+
+    fn wire(item: item::Item) -> Item {
+        Item { item: Some(item) }
+    }
+
+    fn wire_item(encoded: EncodedItem) -> Item {
+        match encoded {
+            EncodedItem::Item(item) => item,
+            EncodedItem::Schema(schema) => panic!("expected a wire item, not a schema: {schema}"),
+        }
+    }
+}
