@@ -21,15 +21,15 @@ pub struct AtomicArcOption<T> {
 }
 
 impl<T> AtomicArcOption<T> {
-    /// Constructs a new `AtomicArc<T>`.
+    /// Constructs a new `AtomicArcOption<T>`.
     pub fn new(value: T) -> Self {
         Self::from_arc(Arc::new(value))
     }
 
-    /// Converts an `Arc<T>` into an `AtomicArc<T>`.
+    /// Converts an `Arc<T>` into an `AtomicArcOption<T>`.
     pub fn from_arc(arc: Arc<T>) -> Self {
         // `cast_mut` is necessary because AtomicPtr expects a `*mut T`.
-        // This is safe because `AtomicArc` behaves the same as `Arc`, i.e. it only exposes `*const T`.
+        // This is safe because `AtomicArcOption` behaves the same as `Arc`, i.e. it only exposes `*const T`.
         Self { ptr: AtomicPtr::new(Arc::into_raw(arc).cast_mut()), busy: AtomicBool::new(false) }
     }
 
@@ -80,10 +80,18 @@ impl<T> AtomicArcOption<T> {
         }
     }
 
+    /// Returns `true` if this `AtomicArcOption<T>` is `Some`.
+    ///
+    /// Note: another thread can take or swap the inner `Arc<T>` at any time, including potentially
+    /// between calling this method and acting on the result.
     pub fn is_some(&self) -> bool {
         !self.is_none()
     }
 
+    /// Returns `true` if this `AtomicArcOption<T>` is `None`.
+    ///
+    /// Note: another thread can take or swap the inner `Arc<T>` at any time, including potentially
+    /// between calling this method and acting on the result.
     pub fn is_none(&self) -> bool {
         self.ptr.load(Ordering::Acquire).is_null()
     }
