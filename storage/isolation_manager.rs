@@ -350,54 +350,56 @@ impl fmt::Display for ExpectedWindowError {
 impl Error for ExpectedWindowError {}
 
 #[derive(Debug)]
-enum ArcOrWeak<T> {
+enum EvictableArc<T> {
     Arc(Arc<T>),
     Weak(Weak<T>),
 }
 
-impl<T> ArcOrWeak<T> {
+impl<T> EvictableArc<T> {
     fn new_arc(value: T) -> Self {
         Self::Arc(Arc::new(value))
     }
 
     fn upgrade(&self) -> Option<Arc<T>> {
         match self {
-            ArcOrWeak::Arc(arc) => Some(arc.clone()),
-            ArcOrWeak::Weak(weak) => weak.upgrade(),
+            Self::Arc(arc) => Some(arc.clone()),
+            Self::Weak(weak) => weak.upgrade(),
         }
     }
 
     fn downgrade(&self) -> Weak<T> {
         match self {
-            ArcOrWeak::Arc(arc) => Arc::downgrade(arc),
-            ArcOrWeak::Weak(weak) => weak.clone(),
+            Self::Arc(arc) => Arc::downgrade(arc),
+            Self::Weak(weak) => weak.clone(),
         }
     }
 
-    fn get_readers(&self) -> usize {
+    fn get_read_snapshot_readers(&self) -> usize {
         self.strong_count() + self.weak_count()
     }
 
-    fn get_writing_readers(&self) -> usize {
+    fn get_write_snapshot_readers(&self) -> usize {
         self.strong_count()
     }
 
     fn strong_count(&self) -> usize {
         match self {
-            ArcOrWeak::Arc(arc) => Arc::strong_count(arc),
-            ArcOrWeak::Weak(weak) => Weak::strong_count(weak),
+            Self::Arc(arc) => Arc::strong_count(arc),
+            Self::Weak(weak) => Weak::strong_count(weak),
         }
     }
 
     fn weak_count(&self) -> usize {
         match self {
-            ArcOrWeak::Arc(arc) => Arc::weak_count(arc),
-            ArcOrWeak::Weak(weak) => Weak::weak_count(weak),
+            Self::Arc(arc) => Arc::weak_count(arc),
+            Self::Weak(weak) => Weak::weak_count(weak),
         }
     }
 
     fn evict(&mut self) {
-        *self = Self::Weak(self.downgrade())
+        if let Self::Arc(_) = self {
+            *self = Self::Weak(self.downgrade())
+        }
     }
 }
 
@@ -430,7 +432,7 @@ impl WindowRange {
 #[derive(Debug)]
 struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
-    windows: RwLock<BTreeMap<WindowRange, ArcOrWeak<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
+    windows: RwLock<BTreeMap<WindowRange, EvictableArc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     watermark: AtomicU64,
 }
 
@@ -439,7 +441,7 @@ impl Timeline {
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
         let windows = BTreeMap::from([(
             WindowRange::starting_at(next_sequence_number),
-            ArcOrWeak::new_arc(TimelineWindow::new(next_sequence_number)),
+            EvictableArc::new_arc(TimelineWindow::new(next_sequence_number)),
         )]);
         Timeline { windows: RwLock::new(windows), watermark: AtomicU64::new(next_sequence_number.number() - 1) }
     }
@@ -451,20 +453,20 @@ impl Timeline {
             .read()
             .unwrap_or_log()
             .first_key_value()
-            .is_some_and(|(s, w)| w.get_readers() <= 1 && watermark >= s.end());
+            .is_some_and(|(s, w)| w.get_write_snapshot_readers() <= 1 && watermark >= s.end());
         if can_free_some {
             let windows = &mut *self.windows.write().unwrap_or_log();
             while let (range, window) = windows.first_key_value().unwrap()
-                && watermark >= range.end()
-                && window.get_readers() <= 1
+                && range.end() <= watermark
+                && window.get_read_snapshot_readers() <= 1
             {
                 windows.pop_first();
             }
-            while let mut entry = windows.first_entry().unwrap()
-                && watermark >= entry.key().end()
-                && entry.get().get_writing_readers() <= 1
-            {
-                entry.get_mut().evict();
+            for (range, window) in windows {
+                if range.end() > watermark || window.get_write_snapshot_readers() > 1 {
+                    break;
+                }
+                window.evict();
             }
         }
     }
@@ -517,7 +519,7 @@ impl Timeline {
 
     fn earliest_reader(&self) -> Option<SequenceNumber> {
         for (range, window) in &*self.windows.read().unwrap() {
-            if window.get_readers() > 1 {
+            if window.get_read_snapshot_readers() > 1 {
                 return Some(range.start);
             }
         }
@@ -564,7 +566,7 @@ impl Timeline {
     fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let windows = self.windows.read().unwrap_or_log();
         let window_index = Self::resolve_window(&windows, sequence_number)?;
-        windows.get(&window_index).and_then(ArcOrWeak::upgrade)
+        windows.get(&window_index).and_then(EvictableArc::upgrade)
     }
 
     fn get_or_create_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
@@ -584,7 +586,7 @@ impl Timeline {
         while let end = windows.last_key_value().unwrap().0.end()
             && end <= sequence_number
         {
-            windows.insert(WindowRange::starting_at(end), ArcOrWeak::new_arc(TimelineWindow::new(end)));
+            windows.insert(WindowRange::starting_at(end), EvictableArc::new_arc(TimelineWindow::new(end)));
         }
     }
 
@@ -593,7 +595,7 @@ impl Timeline {
     }
 
     fn resolve_window(
-        windows: &BTreeMap<WindowRange, ArcOrWeak<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
+        windows: &BTreeMap<WindowRange, EvictableArc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
         to_resolve: SequenceNumber,
     ) -> Option<WindowRange> {
         let start = windows.first_key_value().unwrap().0.start;
