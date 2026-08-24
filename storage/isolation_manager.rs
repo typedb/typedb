@@ -956,7 +956,6 @@ mod tests {
         let timeline = create_timeline();
 
         let _guard = timeline.record_read_snapshot_reader(SequenceNumber::new(1));
-        _guard._window.as_ref().unwrap().weak_count();
 
         for i in 1..TIMELINE_WINDOW_SIZE * 2 {
             let tx = MockTransaction::new(&timeline, _seq(i as u64));
@@ -964,7 +963,6 @@ mod tests {
             tx_finalise_commit_status(&timeline, tx, true);
         }
 
-        _guard._window.as_ref().unwrap().weak_count();
         timeline.may_free_windows();
         assert_eq!(timeline.window_count(), 2);
 
