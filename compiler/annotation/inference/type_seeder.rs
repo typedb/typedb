@@ -372,7 +372,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | VariableCategory::Attribute => (true, false),
             VariableCategory::AttributeOrValue => unreachable!("Insufficiently bound variable!"),
         };
-        let mut annotations = ConceptVertexTypes(BTreeSet::new());
+        let mut annotations = ConceptVertexTypes::new();
 
         let snapshot = self.snapshot;
         let type_manager = self.type_manager;
@@ -451,7 +451,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         let (left, right) = (inner.left(), inner.right());
         let any_modified = match (vertices.get(left), vertices.get(right)) {
             (Some(VertexTypeAnnotations::Concept(left_types)), None) => {
-                let mut right_types = ConceptVertexTypes(BTreeSet::new());
+                let mut right_types = ConceptVertexTypes::new();
                 for type_ in left_types {
                     inner.annotate_left_to_right_for_type(self, type_, &mut right_types)?;
                 }
@@ -459,7 +459,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 true
             }
             (None, Some(VertexTypeAnnotations::Concept(right_types))) => {
-                let mut left_types = ConceptVertexTypes(BTreeSet::new());
+                let mut left_types = ConceptVertexTypes::new();
                 for type_ in right_types {
                     inner.annotate_right_to_left_for_type(self, type_, &mut left_types)?;
                 }
@@ -758,7 +758,7 @@ impl UnaryConstraint for RoleName<Variable> {
     ) -> Result<(), TypeInferenceError> {
         let role_types_opt = context.type_manager.get_roles_by_name(context.snapshot, self.name())?;
         if let Some(role_types) = role_types_opt {
-            let mut annotations = ConceptVertexTypes(BTreeSet::new());
+            let mut annotations = ConceptVertexTypes::new();
             for &role_type in &*role_types {
                 annotations.insert(role_type.into());
                 if !context.is_write_stage() {
@@ -798,7 +798,7 @@ impl UnaryConstraint for Value<Variable> {
             }
         }?;
 
-        let mut annotations = ConceptVertexTypes(BTreeSet::new());
+        let mut annotations = ConceptVertexTypes::new();
         let attribute_types = context.type_manager.get_attribute_types(context.snapshot)?;
         for attribute_type in attribute_types {
             let attribute_value_type_opt =
@@ -911,7 +911,7 @@ trait BinaryConstraint {
         context.may_assert_no_abstract(self.left(), &left_types);
         context.may_assert_no_abstract(self.right(), &allowed_right_types);
         for left_type in left_types {
-            let mut right_annotations = ConceptVertexTypes(BTreeSet::new());
+            let mut right_annotations = ConceptVertexTypes::new();
             self.annotate_left_to_right_for_type(context, left_type, &mut right_annotations)?;
             right_annotations.retain_intersection(allowed_right_types);
             context.may_assert_no_abstract(self.right(), &right_annotations);
@@ -932,7 +932,7 @@ trait BinaryConstraint {
         context.may_assert_no_abstract(self.left(), &allowed_left_types);
         context.may_assert_no_abstract(self.right(), &right_types);
         for right_type in right_types {
-            let mut left_annotations = ConceptVertexTypes(BTreeSet::new());
+            let mut left_annotations = ConceptVertexTypes::new();
             self.annotate_right_to_left_for_type(context, right_type, &mut left_annotations)?;
             left_annotations.retain_intersection(allowed_left_types);
             context.may_assert_no_abstract(self.left(), &left_annotations);
@@ -1238,7 +1238,7 @@ impl BinaryConstraint for Comparison<Variable> {
         context.may_assert_no_abstract(self.right(), &allowed_right_types);
         // TODO: Optimise?
         for left_type in left_types {
-            let mut right_annotations = ConceptVertexTypes(BTreeSet::new());
+            let mut right_annotations = ConceptVertexTypes::new();
             let left_value_type = match left_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute.get_value_type_without_source(context.snapshot, context.type_manager)?
@@ -1278,7 +1278,7 @@ impl BinaryConstraint for Comparison<Variable> {
         context.may_assert_no_abstract(self.right(), &right_types);
         // TODO: Optimise?
         for right_type in right_types {
-            let mut left_annotations = ConceptVertexTypes(BTreeSet::new());
+            let mut left_annotations = ConceptVertexTypes::new();
             let right_value_type = match right_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute.get_value_type_without_source(context.snapshot, context.type_manager)?

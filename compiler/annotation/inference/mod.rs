@@ -9,7 +9,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use answer::variable::Variable;
+use answer::{Type, variable::Variable};
 use encoding::value::value_type::ValueType;
 // use encoding::value::value_type::ValueType;
 use ir::pattern::Vertex;
@@ -86,6 +86,18 @@ impl From<ValueVertexTypes> for VertexTypeAnnotations {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(super) struct ConceptVertexTypes(BTreeSet<answer::Type>);
+
+impl ConceptVertexTypes {
+    fn new() -> Self {
+        Self(BTreeSet::new())
+    }
+}
+
+impl FromIterator<answer::Type> for ConceptVertexTypes {
+    fn from_iter<T: IntoIterator<Item = Type>>(iter: T) -> Self {
+        Self(BTreeSet::from_iter(iter))
+    }
+}
 
 impl Deref for ConceptVertexTypes {
     type Target = BTreeSet<answer::Type>;
