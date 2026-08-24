@@ -93,7 +93,7 @@ impl<T> AtomicArcOption<T> {
     /// Note: another thread can take or swap the inner `Arc<T>` at any time, including potentially
     /// between calling this method and acting on the result.
     pub fn is_none(&self) -> bool {
-        self.ptr.load(Ordering::Acquire).is_null()
+        self.ptr.load(Ordering::Relaxed).is_null()
     }
 
     fn acquire(&self) -> Guard<'_> {
