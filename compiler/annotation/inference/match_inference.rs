@@ -478,7 +478,7 @@ impl<'this> TypeInferenceExpression<'this> {
             return Ok(());
         }
 
-        let value_types_result = self
+        let arg_value_types_result = self
             .args
             .iter()
             .map(|arg| {
@@ -491,8 +491,8 @@ impl<'this> TypeInferenceExpression<'this> {
                 .map(|value_type| (arg.as_variable().unwrap(), ExpressionValueType::Single(value_type)))
             })
             .collect();
-        if let Ok(value_types) = value_types_result {
-            let compiled = ExpressionCompilationContext::compile(&self.expression.expression(), &value_types)
+        if let Ok(arg_value_types) = arg_value_types_result {
+            let compiled = ExpressionCompilationContext::compile(&self.expression.expression(), &arg_value_types)
                 .map_err(|typedb_source| TypeInferenceError::ExpressionCompilation { typedb_source })?;
             if let ExpressionValueType::List(_) = compiled.return_type() {
                 return Err(TypeInferenceError::ListTypesUnsupported {});
