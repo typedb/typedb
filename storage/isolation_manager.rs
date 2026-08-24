@@ -599,6 +599,10 @@ impl EvictableCommitRecord {
     fn evict(&self) {
         self.commit_record.take();
     }
+
+    fn is_evicted(&self) -> bool {
+        self.commit_record.is_none()
+    }
 }
 
 #[derive(Debug)]
@@ -688,6 +692,24 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         for commit_record in &self.commit_records {
             commit_record.get().map(EvictableCommitRecord::evict);
         }
+    }
+
+    #[cfg_attr(not(test), expect(unused, reason = "currently only exists for the tests"))]
+    fn is_evicted(&self) -> bool {
+        debug_assert!(
+            itertools::Itertools::all_equal(
+                &mut self
+                    .commit_records
+                    .iter()
+                    .filter_map(|commit_record| commit_record.get().map(EvictableCommitRecord::is_evicted))
+            ),
+            "Unexpected partially evicted window",
+        );
+        self.commit_records
+            .iter()
+            .filter_map(|commit_record| commit_record.get().map(EvictableCommitRecord::is_evicted))
+            .next()
+            .unwrap_or(false)
     }
 
     fn get_readers(&self) -> u64 {
@@ -967,7 +989,7 @@ mod tests {
 
         for i in 1..2 {
             assert!(
-                timeline.try_get_window(_seq(TIMELINE_WINDOW_SIZE as u64 * i)).is_none(),
+                timeline.try_get_window(_seq(TIMELINE_WINDOW_SIZE as u64 * i)).unwrap().is_evicted(),
                 "Window {i} was not evicted",
             )
         }
