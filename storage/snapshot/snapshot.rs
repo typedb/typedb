@@ -25,7 +25,7 @@ use resource::{
 use crate::{
     MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
-    isolation_manager::{ReadingReaderDropGuard, WritingReaderDropGuard},
+    isolation_manager::{ReadSnapshotDropGuard, WriteSnapshotDropGuard},
     iterator::MVCCReadError,
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -216,7 +216,7 @@ where
 {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
-    fn into_commit_record(self) -> (WritingReaderDropGuard, CommitRecord);
+    fn into_commit_record(self) -> (WriteSnapshotDropGuard, CommitRecord);
 
     fn has_changes(&self) -> bool {
         !self.operations().is_writes_empty() || !self.operations().locks_empty()
@@ -228,7 +228,7 @@ pub struct ReadSnapshot<D> {
     id: SnapshotId,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    _reader_guard: ReadingReaderDropGuard,
+    _reader_guard: ReadSnapshotDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
@@ -332,7 +332,7 @@ pub struct WriteSnapshot<D> {
     operations: OperationsBuffer,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    reader_guard: WritingReaderDropGuard,
+    reader_guard: WriteSnapshotDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
@@ -499,7 +499,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self) -> (WritingReaderDropGuard, CommitRecord) {
+    fn into_commit_record(self) -> (WriteSnapshotDropGuard, CommitRecord) {
         let Self { operations, open_sequence_number, id, reader_guard, iterator_pool: _, storage: _ } = self;
         (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data, id))
     }
@@ -511,7 +511,7 @@ pub struct SchemaSnapshot<D> {
     operations: OperationsBuffer,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    reader_guard: WritingReaderDropGuard,
+    reader_guard: WriteSnapshotDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
@@ -678,7 +678,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self) -> (WritingReaderDropGuard, CommitRecord) {
+    fn into_commit_record(self) -> (WriteSnapshotDropGuard, CommitRecord) {
         let Self { operations, open_sequence_number, reader_guard, id, iterator_pool: _, storage: _ } = self;
         (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id))
     }
