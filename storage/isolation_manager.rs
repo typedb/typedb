@@ -49,24 +49,24 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn opened_for_read_by_reader(&self, sequence_number: SequenceNumber) -> ReadingReaderDropGuard {
+    pub(crate) fn opened_for_read_by_reader(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_reader(sequence_number)
+        self.timeline.record_read_snapshot_reader(sequence_number)
     }
 
-    pub(crate) fn opened_for_read_by_writer(&self, sequence_number: SequenceNumber) -> WritingReaderDropGuard {
+    pub(crate) fn opened_for_read_by_writer(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_writing_reader(sequence_number)
+        self.timeline.record_write_snapshot_reader(sequence_number)
     }
 
     pub(crate) fn applied(&self, sequence_number: SequenceNumber) -> Result<(), ExpectedWindowError> {
@@ -524,17 +524,17 @@ impl Timeline {
         None
     }
 
-    fn record_reader(&self, sequence_number: SequenceNumber) -> ReadingReaderDropGuard {
+    fn record_read_snapshot_reader(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
-            ReadingReaderDropGuard { _window: Some(Arc::downgrade(&window)) }
+            ReadSnapshotDropGuard { _window: Some(Arc::downgrade(&window)) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
-            ReadingReaderDropGuard { _window: None }
+            ReadSnapshotDropGuard { _window: None }
         }
     }
 
-    fn record_writing_reader(&self, sequence_number: SequenceNumber) -> WritingReaderDropGuard {
-        WritingReaderDropGuard { _window: self.try_get_window(sequence_number) }
+    fn record_write_snapshot_reader(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
+        WriteSnapshotDropGuard { _window: self.try_get_window(sequence_number) }
     }
 
     fn collect_concurrent_windows(
@@ -608,11 +608,11 @@ impl Timeline {
     }
 }
 
-pub struct ReadingReaderDropGuard {
+pub struct ReadSnapshotDropGuard {
     _window: Option<Weak<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
-pub struct WritingReaderDropGuard {
+pub struct WriteSnapshotDropGuard {
     _window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
@@ -743,7 +743,7 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, TIMELINE_WINDOW_SIZE, Timeline, WritingReaderDropGuard},
+        isolation_manager::{CommitStatus, TIMELINE_WINDOW_SIZE, Timeline, WriteSnapshotDropGuard},
         keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
@@ -776,13 +776,13 @@ mod tests {
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
-        reader_drop_guard: WritingReaderDropGuard,
+        reader_drop_guard: WriteSnapshotDropGuard,
     }
 
     impl MockTransaction {
         fn new(timeline: &Timeline, commit_sequence_number: SequenceNumber) -> MockTransaction {
             let read_sequence_number = timeline.watermark();
-            let reader_drop_guard = timeline.record_writing_reader(read_sequence_number);
+            let reader_drop_guard = timeline.record_write_snapshot_reader(read_sequence_number);
             MockTransaction { read_sequence_number, commit_sequence_number, reader_drop_guard }
         }
     }
