@@ -26,7 +26,7 @@ use database::{
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::value::{label::Label, value::Value};
 use executor::ExecutionInterrupt;
-use options::{TransactionOptions, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use resource::profile::CommitProfile;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_dir, init_logging};
@@ -74,8 +74,15 @@ impl DatabaseImportHandler for TestImportHandler {
 
 fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
     let diagnostics = Arc::new(DiagnosticsManager::new_disabled());
-    DatabaseManager::new(data_dir.as_ref(), diagnostics, ByteSize::mb(64), ByteSize::mb(64), ImportOwnership::Exclusive)
-        .expect("DatabaseManager::new")
+    DatabaseManager::new(
+        data_dir.as_ref(),
+        diagnostics,
+        ByteSize::mb(64),
+        ByteSize::mb(64),
+        ImportOwnership::Exclusive,
+        MvccCleanupStrategy::Disabled,
+    )
+    .expect("DatabaseManager::new")
 }
 
 fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporter {

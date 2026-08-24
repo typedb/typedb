@@ -164,7 +164,6 @@ impl Context {
     const HTTP_PROTOCOL: &'static str = "http";
     const HTTPS_PROTOCOL: &'static str = "https";
     const DEFAULT_API_VERSION: &'static str = "v1";
-    const DEFAULT_DATABASE: &'static str = "test";
     const ADMIN_USERNAME: &'static str = "admin";
     const ADMIN_PASSWORD: &'static str = "password";
 
