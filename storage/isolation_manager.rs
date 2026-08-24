@@ -744,34 +744,10 @@ mod tests {
 
     use crate::{
         isolation_manager::{CommitStatus, TIMELINE_WINDOW_SIZE, Timeline, WriteSnapshotDropGuard},
-        keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
         snapshot::{buffer::OperationsBuffer, snapshot_id::SnapshotId},
     };
-
-    macro_rules! test_keyspace_set {
-        {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
-            #[derive(Clone, Copy)]
-            enum TestKeyspaceSet { $($variant),* }
-            impl KeyspaceSet for TestKeyspaceSet {
-                fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-                fn id(&self) -> KeyspaceId {
-                    match *self { $(Self::$variant => KeyspaceId($id)),* }
-                }
-                fn name(&self) -> &'static str {
-                    match *self { $(Self::$variant => $name),* }
-                }
-                fn prefix_length(&self) -> Option<usize> {
-                    None
-                }
-            }
-        };
-    }
-
-    test_keyspace_set! {
-        Keyspace => 0: "keyspace",
-    }
 
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
@@ -826,22 +802,22 @@ mod tests {
     #[test]
     fn watermark_is_updated() {
         let timeline = &create_timeline();
-        let tx1 = MockTransaction::new(&timeline, _seq(1));
+        let tx1 = MockTransaction::new(timeline, _seq(1));
 
         tx_start_commit(timeline, &tx1);
         let tx1_commit_sequence_number = tx1.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx1, true);
         assert_eq!(tx1_commit_sequence_number, timeline.watermark());
 
-        let tx2 = MockTransaction::new(&timeline, _seq(2));
+        let tx2 = MockTransaction::new(timeline, _seq(2));
 
         tx_start_commit(timeline, &tx2);
         let tx2_commit_sequence_number = tx2.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx2, false);
         assert_eq!(tx2_commit_sequence_number, timeline.watermark());
 
-        let tx3 = MockTransaction::new(&timeline, _seq(3));
-        let tx4 = MockTransaction::new(&timeline, _seq(4));
+        let tx3 = MockTransaction::new(timeline, _seq(3));
+        let tx4 = MockTransaction::new(timeline, _seq(4));
         tx_start_commit(timeline, &tx3);
         tx_start_commit(timeline, &tx4);
         let tx4_commit_sequence_number = tx4.commit_sequence_number;
@@ -857,18 +833,18 @@ mod tests {
 
         let tx_count = TIMELINE_WINDOW_SIZE + 2;
         for i in 1..tx_count {
-            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            let tx = MockTransaction::new(timeline, _seq(i as u64));
             tx_start_commit(timeline, &tx);
         }
 
         let stop_at = tx_count - 2;
         for i in 1..stop_at {
-            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            let tx = MockTransaction::new(timeline, _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
         assert_true!(timeline.try_get_window(_seq(1)).is_some());
         for i in stop_at..tx_count {
-            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            let tx = MockTransaction::new(timeline, _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
         assert_true!(timeline.try_get_window(_seq(1)).is_none());
@@ -912,7 +888,7 @@ mod tests {
                 for _ in 0..TRANSACTIONS_PER_THREAD {
                     let (timeline, commit_sequence_number_counter) = &*timeline_and_counter;
                     let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
-                    let tx = MockTransaction::new(&timeline, _seq(index));
+                    let tx = MockTransaction::new(timeline, _seq(index));
                     tx_start_commit(timeline, &tx);
                     tx_finalise_commit_status(timeline, tx, true);
                 }
