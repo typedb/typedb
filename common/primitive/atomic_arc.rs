@@ -131,10 +131,6 @@ impl<T> From<Arc<T>> for AtomicArcOption<T> {
 
 impl<T> Drop for AtomicArcOption<T> {
     fn drop(&mut self) {
-        let ptr = self.ptr.load(Ordering::Acquire);
-        if !ptr.is_null() {
-            // SAFETY: the inner `ptr` could only have have come from an `Arc<T>::into_raw`.
-            unsafe { drop(Arc::from_raw(ptr)) };
-        }
+        self.take();
     }
 }
