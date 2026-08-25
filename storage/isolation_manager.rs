@@ -402,12 +402,10 @@ impl Timeline {
                 windows.pop_front();
             }
             for window in windows {
-                if watermark < window.end() {
+                if watermark < window.end() || window.get_writing_readers() != 0 {
                     break;
                 }
-                if window.get_writing_readers() == 0 {
-                    window.evict();
-                }
+                window.evict();
             }
         }
     }
