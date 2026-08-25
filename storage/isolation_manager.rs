@@ -49,7 +49,7 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn opened_for_read_by_reader(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
+    pub(crate) fn opened_for_read_by_read_snapshot(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
@@ -59,7 +59,7 @@ impl IsolationManager {
         self.timeline.record_read_snapshot_reader(sequence_number)
     }
 
-    pub(crate) fn opened_for_read_by_writer(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
+    pub(crate) fn opened_for_read_by_write_snapshot(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
@@ -395,14 +395,14 @@ impl Timeline {
             .read()
             .unwrap_or_log()
             .front()
-            .is_some_and(|f| f.get_writing_readers() == 0 && watermark >= f.end());
+            .is_some_and(|f| f.get_write_snapshots() == 0 && watermark >= f.end());
         if can_free_some {
             let windows = &mut *self.windows.write().unwrap_or_log();
-            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 0 {
+            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_read_snapshots() == 0 {
                 windows.pop_front();
             }
             for window in windows {
-                if watermark < window.end() || window.get_writing_readers() != 0 {
+                if watermark < window.end() || window.get_write_snapshots() != 0 {
                     break;
                 }
                 window.evict();
@@ -458,7 +458,7 @@ impl Timeline {
 
     fn earliest_reader(&self) -> Option<SequenceNumber> {
         for window in &*self.windows.read().unwrap() {
-            if window.readers.load(Ordering::Relaxed) > 0 {
+            if window.read_snapshots.load(Ordering::Relaxed) > 0 {
                 return Some(window.start());
             }
         }
@@ -467,7 +467,7 @@ impl Timeline {
 
     fn record_read_snapshot_reader(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
-            window.increment_readers();
+            window.increment_read_snapshots();
             ReadSnapshotDropGuard { _window: Some(window) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
@@ -477,7 +477,7 @@ impl Timeline {
 
     fn record_write_snapshot_reader(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
-            window.increment_writing_readers();
+            window.increment_write_snapshots();
             WriteSnapshotDropGuard { window: Some(window) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
@@ -559,7 +559,7 @@ pub struct ReadSnapshotDropGuard {
 impl Drop for ReadSnapshotDropGuard {
     fn drop(&mut self) {
         if let Some(window) = self._window.as_ref() {
-            window.decrement_readers();
+            window.decrement_read_snapshots();
         }
     }
 }
@@ -571,7 +571,7 @@ pub struct WriteSnapshotDropGuard {
 impl Drop for WriteSnapshotDropGuard {
     fn drop(&mut self) {
         if let Some(window) = self.window.as_ref() {
-            window.decrement_writing_readers();
+            window.decrement_write_snapshots();
         }
     }
 }
@@ -608,8 +608,8 @@ struct TimelineWindow<const SIZE: usize> {
     start: SequenceNumber,
     slot_status: [AtomicU8; SIZE],
     commit_records: [OnceLock<EvictableCommitRecord>; SIZE],
-    readers: AtomicU64,
-    writing_readers: AtomicU64,
+    read_snapshots: AtomicU64,
+    write_snapshots: AtomicU64,
 }
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
@@ -622,8 +622,8 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
             start,
             slot_status,
             commit_records,
-            readers: AtomicU64::new(0),
-            writing_readers: AtomicU64::new(0),
+            read_snapshots: AtomicU64::new(0),
+            write_snapshots: AtomicU64::new(0),
         }
     }
 
@@ -710,30 +710,30 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
             .unwrap_or(false)
     }
 
-    fn get_readers(&self) -> u64 {
-        self.readers.load(Ordering::Relaxed)
+    fn get_read_snapshots(&self) -> u64 {
+        self.read_snapshots.load(Ordering::Relaxed)
     }
 
-    fn increment_readers(&self) {
-        self.readers.fetch_add(1, Ordering::Relaxed);
+    fn increment_read_snapshots(&self) {
+        self.read_snapshots.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn decrement_readers(&self) -> u64 {
-        self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+    fn decrement_read_snapshots(&self) -> u64 {
+        self.read_snapshots.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
     }
 
-    fn get_writing_readers(&self) -> u64 {
-        self.writing_readers.load(Ordering::Relaxed)
+    fn get_write_snapshots(&self) -> u64 {
+        self.write_snapshots.load(Ordering::Relaxed)
     }
 
-    fn increment_writing_readers(&self) {
-        self.increment_readers(); // a writing reader is a reader
-        self.writing_readers.fetch_add(1, Ordering::Relaxed);
+    fn increment_write_snapshots(&self) {
+        self.increment_read_snapshots(); // a writing reader is a reader
+        self.write_snapshots.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn decrement_writing_readers(&self) -> u64 {
-        self.decrement_readers(); // a writing reader is a reader
-        self.writing_readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+    fn decrement_write_snapshots(&self) -> u64 {
+        self.decrement_read_snapshots(); // a writing reader is a reader
+        self.write_snapshots.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
     }
 }
 
@@ -920,7 +920,7 @@ mod tests {
         }
 
         match timeline.try_get_window(timeline.watermark()) {
-            Some(window) => assert_eq!(0, window.get_readers()),
+            Some(window) => assert_eq!(0, window.get_read_snapshots()),
             None => panic!(),
         };
     }

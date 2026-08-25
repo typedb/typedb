@@ -239,7 +239,7 @@ impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
 
 impl<D> ReadSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
-        let _reader_guard = storage.isolation_manager.opened_for_read_by_reader(open_sequence_number);
+        let _reader_guard = storage.isolation_manager.opened_for_read_by_read_snapshot(open_sequence_number);
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot {
             open_sequence_number,
@@ -364,7 +364,7 @@ impl<D> WriteSnapshot<D> {
         open_sequence_number: SequenceNumber,
         id: Option<SnapshotId>,
     ) -> Self {
-        let reader_guard = storage.isolation_manager.opened_for_read_by_writer(open_sequence_number);
+        let reader_guard = storage.isolation_manager.opened_for_read_by_write_snapshot(open_sequence_number);
         WriteSnapshot {
             storage,
             operations,
@@ -543,7 +543,7 @@ impl<D> SchemaSnapshot<D> {
         open_sequence_number: SequenceNumber,
         id: Option<SnapshotId>,
     ) -> Self {
-        let reader_guard = storage.isolation_manager.opened_for_read_by_writer(open_sequence_number);
+        let reader_guard = storage.isolation_manager.opened_for_read_by_write_snapshot(open_sequence_number);
         SchemaSnapshot {
             storage,
             operations,
