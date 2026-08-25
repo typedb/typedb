@@ -6,7 +6,7 @@
 
 use std::ops::Bound;
 
-pub mod atomic_arc;
+pub mod atomic_arc_option;
 pub mod either;
 pub mod maybe_owns;
 pub mod prefix;

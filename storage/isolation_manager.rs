@@ -19,7 +19,7 @@ use std::{
 };
 
 use logger::result::ResultExt;
-use primitive::{atomic_arc::AtomicArcOption, maybe_owns::MaybeOwns};
+use primitive::{atomic_arc_option::AtomicArcOption, maybe_owns::MaybeOwns};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
