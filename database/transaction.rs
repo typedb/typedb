@@ -444,7 +444,7 @@ macro_rules! with_transaction_parts {
 
 /// The portable form of a commit, containing all the durably produced data. The data can be then
 /// serialised or sent outside the process and turned back into an intent to apply the commit.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CommitInfo {
     pub commit_record: CommitRecord,
     pub cleanup_record: CleanupRecord,
