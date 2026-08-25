@@ -12,9 +12,9 @@ use crate::{error::ArcServerStateError, service::migration::item::ItemDecodeErro
 impl From<ItemDecodeError> for DatabaseImportServiceError {
     fn from(error: ItemDecodeError) -> Self {
         match error {
-            ItemDecodeError::EmptyItem => Self::ImportEmptyItem {},
-            ItemDecodeError::AbsentAttributeValue => Self::AbsentAttributeValue {},
-            ItemDecodeError::AttributesOwningAttributes => Self::AttributesOwningAttributes {},
+            ItemDecodeError::EmptyItem {} => Self::ImportEmptyItem {},
+            ItemDecodeError::AbsentAttributeValue {} => Self::AbsentAttributeValue {},
+            ItemDecodeError::AttributesOwningAttributes {} => Self::AttributesOwningAttributes {},
             ItemDecodeError::ConceptDecode { typedb_source } => Self::ConceptDecode { typedb_source },
         }
     }

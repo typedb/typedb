@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use concept::error::ConceptDecodeError;
 use database::migration::{Checksums, item::MigrationItem};
 use encoding::value::{label::Label, value::Value};
-use error::unimplemented_feature;
+use error::{typedb_error, unimplemented_feature};
 use typedb_protocol::{
     migration,
     migration::{Item, MigrationValue, item},
@@ -62,7 +62,7 @@ pub(crate) fn encode_item(item: MigrationItem) -> EncodedItem {
 
 pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
     let Item { item } = item_proto;
-    let item = item.ok_or(ItemDecodeError::EmptyItem)?;
+    let item = item.ok_or(ItemDecodeError::EmptyItem {})?;
     let decoded = match item {
         item::Item::Header(item::Header { typedb_version, original_database }) => {
             MigrationItem::Header { typedb_version, original_database }
@@ -80,9 +80,9 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
         },
         item::Item::Attribute(item::Attribute { id, label, attributes, value }) => {
             if !attributes.is_empty() {
-                return Err(ItemDecodeError::AttributesOwningAttributes);
+                return Err(ItemDecodeError::AttributesOwningAttributes {});
             }
-            let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentAttributeValue)?)
+            let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentAttributeValue {})?)
                 .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
             MigrationItem::Attribute { id, label: Label::parse_from(&label, None), value }
         }
@@ -97,12 +97,13 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
     Ok(decoded)
 }
 
-#[derive(Debug)]
-pub(crate) enum ItemDecodeError {
-    EmptyItem,
-    AbsentAttributeValue,
-    AttributesOwningAttributes,
-    ConceptDecode { typedb_source: Box<ConceptDecodeError> },
+typedb_error! {
+    pub ItemDecodeError(component = "Migration item decode", prefix = "MID") {
+        EmptyItem(1, "An empty item was received."),
+        AbsentAttributeValue(2, "An attribute item without a value was received."),
+        AttributesOwningAttributes(3, "An item with attributes owning attributes was received."),
+        ConceptDecode(4, "Error decoding an item's concept.", typedb_source: Box<ConceptDecodeError>),
+    }
 }
 
 fn encode_owned_attributes(owned_attributes: Vec<String>) -> Vec<item::OwnedAttribute> {

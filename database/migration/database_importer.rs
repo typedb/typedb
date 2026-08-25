@@ -322,13 +322,16 @@ impl DatabaseImporter {
     }
 
     pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
-        self.check_stream_position(&item)?;
         match item {
+            MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
             MigrationItem::Schema(schema) => {
                 self.import_schema(schema)?;
                 self.schema_imported = true;
                 Ok(())
             }
+            _ if !self.schema_imported => Err(DatabaseImportError::ItemBeforeSchema {}),
+            MigrationItem::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
+            _ if self.data_info.expected_checksums.is_some() => Err(DatabaseImportError::ItemAfterChecksums {}),
             MigrationItem::Header { typedb_version, original_database } => {
                 event!(
                     Level::DEBUG,
@@ -342,7 +345,6 @@ impl DatabaseImporter {
                 self.import_relation(id, label, owned_attributes, related_role_players)
             }
             MigrationItem::Attribute { id, label, value } => self.import_attribute(id, label, value),
-            MigrationItem::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
         }
     }
 
@@ -350,17 +352,6 @@ impl DatabaseImporter {
         match self.interrupt.check() {
             Some(_) => Err(DatabaseImportError::Interrupted {}),
             None => Ok(()),
-        }
-    }
-
-    fn check_stream_position(&self, item: &MigrationItem) -> Result<(), DatabaseImportError> {
-        match item {
-            MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
-            MigrationItem::Schema(_) => Ok(()),
-            _ if !self.schema_imported => Err(DatabaseImportError::ItemBeforeSchema {}),
-            MigrationItem::Checksums(_) => Ok(()),
-            _ if self.data_info.expected_checksums.is_some() => Err(DatabaseImportError::ItemAfterChecksums {}),
-            _ => Ok(()),
         }
     }
 

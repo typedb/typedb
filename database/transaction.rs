@@ -19,7 +19,6 @@ use concept::{
     },
 };
 use durability::DurabilitySequenceNumber;
-use encoding::EncodingKeyspace;
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use ir::pipeline::FunctionReadError;
@@ -113,26 +112,11 @@ impl<D: DurabilityClient> TransactionRead<D> {
     }
 
     pub fn schema(&self) -> Result<String, DatabaseReadError> {
-        let types_syntax = self.types_syntax()?;
-        let functions_syntax = self.functions_syntax()?;
-        Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
+        schema_syntax(&self.type_manager, &self.function_manager, self.snapshot())
     }
 
     pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
-        let types_syntax = self.types_syntax()?;
-        Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
-    }
-
-    fn types_syntax(&self) -> Result<String, DatabaseReadError> {
-        self.type_manager
-            .get_types_syntax(self.snapshot())
-            .map_err(|typedb_source| DatabaseReadError::ConceptRead { typedb_source })
-    }
-
-    fn functions_syntax(&self) -> Result<String, DatabaseReadError> {
-        self.function_manager
-            .get_functions_syntax(self.snapshot())
-            .map_err(|typedb_source| DatabaseReadError::FunctionRead { typedb_source })
+        type_schema_syntax(&self.type_manager, self.snapshot())
     }
 }
 
@@ -237,6 +221,14 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn id(&self) -> TransactionId {
         TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+
+    pub fn schema(&self) -> Result<String, DatabaseReadError> {
+        schema_syntax(&self.type_manager, &self.function_manager, self.snapshot.as_ref())
+    }
+
+    pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
+        type_schema_syntax(&self.type_manager, self.snapshot.as_ref())
     }
 }
 
@@ -361,6 +353,38 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn id(&self) -> TransactionId {
         TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
+
+    pub fn schema(&self) -> Result<String, DatabaseReadError> {
+        schema_syntax(&self.type_manager, &self.function_manager, self.snapshot.as_ref())
+    }
+
+    pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
+        type_schema_syntax(&self.type_manager, self.snapshot.as_ref())
+    }
+}
+
+fn schema_syntax(
+    type_manager: &TypeManager,
+    function_manager: &FunctionManager,
+    snapshot: &impl ReadableSnapshot,
+) -> Result<String, DatabaseReadError> {
+    let types_syntax = type_manager
+        .get_types_syntax(snapshot)
+        .map_err(|typedb_source| DatabaseReadError::ConceptRead { typedb_source })?;
+    let functions_syntax = function_manager
+        .get_functions_syntax(snapshot)
+        .map_err(|typedb_source| DatabaseReadError::FunctionRead { typedb_source })?;
+    Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
+}
+
+fn type_schema_syntax(
+    type_manager: &TypeManager,
+    snapshot: &impl ReadableSnapshot,
+) -> Result<String, DatabaseReadError> {
+    let types_syntax = type_manager
+        .get_types_syntax(snapshot)
+        .map_err(|typedb_source| DatabaseReadError::ConceptRead { typedb_source })?;
+    Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -424,13 +448,6 @@ macro_rules! with_transaction_parts {
 pub struct CommitInfo {
     pub commit_record: CommitRecord,
     pub cleanup_record: CleanupRecord,
-}
-
-impl CommitInfo {
-    /// The portable form of a commit whose cleanup information is not known.
-    pub fn with_everything_cleanup(commit_record: CommitRecord) -> Self {
-        Self { commit_record, cleanup_record: CleanupRecord::everything::<EncodingKeyspace>() }
-    }
 }
 
 pub struct DataCommitIntent<D> {

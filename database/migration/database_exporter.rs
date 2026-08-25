@@ -53,6 +53,17 @@ impl<'a> DatabaseExporter<'a> {
         })
     }
 
+    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<MigrationItem>>, DatabaseReadError> {
+        let mut batch = Vec::with_capacity(batch_size);
+        while batch.len() < batch_size {
+            match self.next_item()? {
+                Some(item) => batch.push(item),
+                None => break,
+            }
+        }
+        Ok((!batch.is_empty()).then_some(batch))
+    }
+
     pub fn next_item(&mut self) -> Result<Option<MigrationItem>, DatabaseReadError> {
         if let Some(item) = self.opening.next() {
             return Ok(Some(item));
@@ -95,16 +106,5 @@ impl<'a> DatabaseExporter<'a> {
             return Ok(Some(MigrationItem::Checksums(self.checksums.clone())));
         }
         Ok(None)
-    }
-
-    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<MigrationItem>>, DatabaseReadError> {
-        let mut batch = Vec::with_capacity(batch_size);
-        while batch.len() < batch_size {
-            match self.next_item()? {
-                Some(item) => batch.push(item),
-                None => break,
-            }
-        }
-        Ok((!batch.is_empty()).then_some(batch))
     }
 }
