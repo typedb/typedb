@@ -25,6 +25,7 @@ use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
+use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError},
     record::CommitRecord,

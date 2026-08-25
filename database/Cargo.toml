@@ -35,6 +35,9 @@ features = {}
 	[dependencies.cache]
 		workspace = true
 
+	[dependencies.serde]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
@@ -106,6 +109,10 @@ features = {}
 [[test]]
 	path = "tests/transaction.rs"
 	name = "test_transaction"
+
+[[test]]
+	path = "tests/migration.rs"
+	name = "test_migration"
 
 [[test]]
 	path = "tests/statistics_synchronization.rs"
