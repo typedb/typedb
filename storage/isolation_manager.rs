@@ -598,6 +598,7 @@ impl EvictableCommitRecord {
         self.commit_record.take();
     }
 
+    #[cfg_attr(not(test), expect(unused, reason = "currently only exists for the tests"))]
     fn is_evicted(&self) -> bool {
         self.commit_record.is_none()
     }
@@ -692,24 +693,6 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }
     }
 
-    #[cfg_attr(not(test), expect(unused, reason = "currently only exists for the tests"))]
-    fn is_evicted(&self) -> bool {
-        debug_assert!(
-            itertools::Itertools::all_equal(
-                &mut self
-                    .commit_records
-                    .iter()
-                    .filter_map(|commit_record| commit_record.get().map(EvictableCommitRecord::is_evicted))
-            ),
-            "Unexpected partially evicted window",
-        );
-        self.commit_records
-            .iter()
-            .filter_map(|commit_record| commit_record.get().map(EvictableCommitRecord::is_evicted))
-            .next()
-            .unwrap_or(false)
-    }
-
     fn get_read_snapshots(&self) -> u64 {
         self.read_snapshots.load(Ordering::Relaxed)
     }
@@ -782,6 +765,7 @@ impl SlotMarker {
 mod tests {
     use std::{
         array,
+        convert::identity,
         sync::{
             Arc,
             atomic::{AtomicU64, Ordering},
@@ -792,7 +776,9 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, TIMELINE_WINDOW_SIZE, Timeline, WriteSnapshotDropGuard},
+        isolation_manager::{
+            CommitStatus, EvictableCommitRecord, TIMELINE_WINDOW_SIZE, Timeline, WriteSnapshotDropGuard,
+        },
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
         snapshot::{buffer::OperationsBuffer, snapshot_id::SnapshotId},
@@ -986,10 +972,13 @@ mod tests {
         assert_eq!(timeline.window_count(), 2);
 
         for i in 1..2 {
-            assert!(
-                timeline.try_get_window(_seq(TIMELINE_WINDOW_SIZE as u64 * i)).unwrap().is_evicted(),
-                "Window {i} was not evicted",
-            )
+            let commit_records =
+                &timeline.try_get_window(_seq(TIMELINE_WINDOW_SIZE as u64 * i)).unwrap().commit_records;
+            let evicted = commit_records
+                .iter()
+                .filter_map(|commit_record| commit_record.get().map(EvictableCommitRecord::is_evicted))
+                .all(identity);
+            assert!(evicted, "Window {i} was not evicted",)
         }
 
         drop(_guard);
