@@ -15,6 +15,8 @@ use std::{
 };
 
 pub struct AtomicArcOption<T> {
+    // A spin lock used to prevent interleaving `swap_impl` and `clone_arc`.
+    // `ptr` must not be read with the intention of dereferencing, unless the `busy` flag is acquired.
     busy: AtomicBool,
     // Invariant: either null, or pointing to a `T` in a live `Arc` store.
     ptr: AtomicPtr<T>,
