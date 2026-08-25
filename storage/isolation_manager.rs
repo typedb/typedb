@@ -792,7 +792,7 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, ReadSnapshotDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
+        isolation_manager::{CommitStatus, TIMELINE_WINDOW_SIZE, Timeline, WriteSnapshotDropGuard},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
         snapshot::{buffer::OperationsBuffer, snapshot_id::SnapshotId},
@@ -801,14 +801,14 @@ mod tests {
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
-        reader_drop_guard: ReadSnapshotDropGuard,
+        drop_guard: WriteSnapshotDropGuard,
     }
 
     impl MockTransaction {
         fn new(timeline: &Timeline, commit_sequence_number: SequenceNumber) -> MockTransaction {
             let read_sequence_number = timeline.watermark();
-            let reader_drop_guard = timeline.record_read_snapshot_reader(read_sequence_number);
-            MockTransaction { read_sequence_number, commit_sequence_number, reader_drop_guard }
+            let drop_guard = timeline.record_write_snapshot_reader(read_sequence_number);
+            MockTransaction { read_sequence_number, commit_sequence_number, drop_guard }
         }
     }
 
@@ -822,7 +822,7 @@ mod tests {
     }
 
     fn tx_finalise_commit_status(timeline: &Timeline, tx: MockTransaction, validation_result: bool) {
-        let read_guard = tx.reader_drop_guard;
+        let read_guard = tx.drop_guard;
         let window = timeline.try_get_window(tx.commit_sequence_number).unwrap();
         if let CommitStatus::Pending(commit_record) = window.get_status(tx.commit_sequence_number) {
             if validation_result {
