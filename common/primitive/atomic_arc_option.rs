@@ -7,6 +7,7 @@
 use std::{
     fmt,
     hint::spin_loop,
+    marker::PhantomData,
     ptr::null,
     sync::{
         Arc,
@@ -20,6 +21,8 @@ pub struct AtomicArcOption<T> {
     busy: AtomicBool,
     // Invariant: either null, or pointing to a `T` in a live `Arc` store.
     ptr: AtomicPtr<T>,
+    // `AtomicArcOption<T>` behaves as if it contains an `Arc<T>`
+    _pd: PhantomData<Arc<T>>,
 }
 
 impl<T> AtomicArcOption<T> {
@@ -32,7 +35,7 @@ impl<T> AtomicArcOption<T> {
     pub fn from_arc(arc: Arc<T>) -> Self {
         // `cast_mut` is necessary because AtomicPtr expects a `*mut T`.
         // This is safe because `AtomicArcOption` behaves the same as `Arc`, i.e. it only exposes `*const T`.
-        Self { ptr: AtomicPtr::new(Arc::into_raw(arc).cast_mut()), busy: AtomicBool::new(false) }
+        Self { ptr: AtomicPtr::new(Arc::into_raw(arc).cast_mut()), busy: AtomicBool::new(false), _pd: PhantomData }
     }
 
     /// Returns the inner `Arc<T>`, atomically replacing it with `None`.
