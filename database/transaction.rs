@@ -28,6 +28,7 @@ use resource::profile::{CommitProfile, TransactionProfile};
 use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError},
+    isolation_manager::WriteSnapshotDropGuard,
     record::CommitRecord,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
@@ -470,7 +471,7 @@ impl<D: DurabilityClient> DataCommitIntent<D> {
     }
 
     /// Splits an intent into its portable form with MVCC timeline guards.
-    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitInfo) {
+    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, WriteSnapshotDropGuard, CommitInfo) {
         let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
         let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
         (self.database_drop_guard, reader_guard, commit_info)
@@ -525,7 +526,7 @@ impl<D: DurabilityClient> SchemaCommitIntent<D> {
     }
 
     /// Splits an intent into its portable form with MVCC timeline guards.
-    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitInfo) {
+    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, WriteSnapshotDropGuard, CommitInfo) {
         let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
         let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
         (self.database_drop_guard, reader_guard, commit_info)
