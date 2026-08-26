@@ -66,6 +66,7 @@ build:
         bazel test --config=ci //common/concurrency:test_crate_concurrency --test_output=streamed
         bazel test --config=ci //common/lending_iterator:test_crate_lending_iterator --test_output=streamed
         bazel test --config=ci //common/logger:test_crate_logger --test_output=streamed
+        bazel test --config=ci //common/primitive:test_crate_primitive --test_output=streamed
         bazel test --config=ci //compiler:test_crate_compiler --test_output=streamed
         bazel test --config=ci //concept:test_crate_concept --test_output=streamed
         bazel test --config=ci //database:test_crate_database --test_output=streamed
