@@ -139,3 +139,117 @@ impl<T> Drop for AtomicArcOption<T> {
         self.take();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        sync::{
+            Arc, Barrier,
+            atomic::{AtomicUsize, Ordering},
+        },
+        thread,
+    };
+
+    use super::*;
+
+    const NUM_THREADS: usize = 16;
+    const OPS_PER_THREAD: usize = 10_000;
+
+    macro_rules! run_threads {
+        ($body:expr) => {
+            let barrier = Arc::new(Barrier::new(NUM_THREADS));
+
+            thread::scope(|s| {
+                for _ in 0..NUM_THREADS {
+                    s.spawn(|| {
+                        barrier.wait();
+                        $body
+                    });
+                }
+            })
+        };
+    }
+
+    #[test]
+    fn test_concurrent_operations() {
+        let atomic_opt = Arc::new(AtomicArcOption::from_arc(Arc::new(String::from("initial"))));
+
+        run_threads! {
+            for j in 0..OPS_PER_THREAD  {
+                _ = atomic_opt.clone_arc();
+                _ = atomic_opt.take();
+                _ = atomic_opt.swap(Arc::new(format!("swap_{j}")));
+                atomic_opt.store(Arc::new(format!("store_{j}")));
+            }
+        }
+    }
+
+    #[test]
+    fn test_concurrent_clone_arc_stress() {
+        let atomic_opt = Arc::new(AtomicArcOption::from_arc(Arc::new(String::from("initial"))));
+        let total_clones = Arc::new(AtomicUsize::new(0));
+        run_threads! {
+            for _ in 0..OPS_PER_THREAD {
+                if let Some(arc) = atomic_opt.clone_arc() {
+                    assert_eq!(*arc, "initial");
+                    total_clones.fetch_add(1, Ordering::Relaxed);
+                }
+            }
+        }
+        assert_eq!(total_clones.load(Ordering::Relaxed), NUM_THREADS * OPS_PER_THREAD);
+    }
+
+    #[test]
+    fn test_concurrent_take_and_swap() {
+        let atomic_opt = Arc::new(AtomicArcOption::from_arc(Arc::new(String::from("initial"))));
+        let ops_count = Arc::new(AtomicUsize::new(0));
+        run_threads! {
+            for j in 0..OPS_PER_THREAD {
+                _ = atomic_opt.take();
+                _ = atomic_opt.swap(Arc::new(format!("{j}")));
+                ops_count.fetch_add(1, Ordering::Relaxed);
+            }
+        }
+        assert_eq!(ops_count.load(Ordering::Relaxed), NUM_THREADS * OPS_PER_THREAD);
+    }
+
+    #[test]
+    fn test_external_arc_drop() {
+        let initial = Arc::new(42);
+        let atomic_opt = Arc::new(AtomicArcOption::from_arc(initial.clone()));
+        run_threads! {
+            for _ in 0..OPS_PER_THREAD {
+                drop(atomic_opt.clone_arc());
+            }
+        }
+        drop(initial);
+        assert!(atomic_opt.take().is_some());
+    }
+
+    #[test]
+    fn test_clone_drop() {
+        let atomic_opt = Arc::new(AtomicArcOption::from_arc(Arc::new(99)));
+        let clone = atomic_opt.clone_arc().unwrap();
+        run_threads! {
+            for _ in 0..OPS_PER_THREAD {
+                drop(atomic_opt.clone_arc());
+            }
+        }
+        assert!(atomic_opt.take().is_some());
+        drop(clone);
+    }
+
+    #[test]
+    fn test_concurrent_clone_arc_weak_upgrade_stress() {
+        let atomic_opt = Arc::new(AtomicArcOption::from_arc(Arc::new(42)));
+        run_threads! {
+            for _ in 0..OPS_PER_THREAD {
+                if let Some(arc) = atomic_opt.clone_arc() {
+                    let weak = Arc::downgrade(&arc);
+                    drop(arc);
+                    let _ = weak.upgrade();
+                }
+            }
+        }
+    }
+}
