@@ -19,7 +19,7 @@ use std::{
 };
 
 use logger::result::ResultExt;
-use primitive::maybe_owns::MaybeOwns;
+use primitive::{atomic_arc_option::AtomicArcOption, maybe_owns::MaybeOwns};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
@@ -49,14 +49,24 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
+    pub(crate) fn opened_for_read_by_read_snapshot(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_reader(sequence_number)
+        self.timeline.record_read_snapshot_opened(sequence_number)
+    }
+
+    pub(crate) fn opened_for_read_by_write_snapshot(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
+        debug_assert!(
+            sequence_number <= self.watermark(),
+            "assertion `{} <= {}` failed",
+            sequence_number,
+            self.watermark()
+        );
+        self.timeline.record_write_snapshot_opened(sequence_number)
     }
 
     pub(crate) fn applied(&self, sequence_number: SequenceNumber) -> Result<(), ExpectedWindowError> {
@@ -92,7 +102,8 @@ impl IsolationManager {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
-        let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
+        let isolation_conflict =
+            self.validate_all_concurrent(sequence_number, &commit_record.get(), durability_client)?;
         if isolation_conflict.is_none() {
             window.set_validated(sequence_number);
         } else {
@@ -106,7 +117,10 @@ impl IsolationManager {
                     CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
                     _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
                 };
-                Ok(ValidatedCommit::Write(WriteBatches::from_operations(sequence_number, commit_record.operations())))
+                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
+                    sequence_number,
+                    commit_record.get().operations(),
+                )))
             }
         }
     }
@@ -151,20 +165,19 @@ impl IsolationManager {
             commit_record.open_sequence_number().next(),
             stop_sequence_number,
         )? {
-            if let Ok((_, commit_status)) = commit_status_result {
-                let commit_dependency = match commit_status {
-                    CommitStatus::Aborted => CommitDependency::Independent,
-                    CommitStatus::Applied(predecessor_record) => commit_record.compute_dependency(&predecessor_record),
-                    CommitStatus::Pending(_) => {
-                        unreachable!("Evicted records cannot be pending")
-                    }
-                    CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
-                };
-                if let Some(conflict) = handle_dependency(commit_dependency) {
-                    return Ok(Some(conflict));
+            let (_, commit_status) = commit_status_result?;
+            let commit_dependency = match commit_status {
+                CommitStatus::Aborted => CommitDependency::Independent,
+                CommitStatus::Applied(predecessor_record) => {
+                    commit_record.compute_dependency(&predecessor_record.get())
                 }
-            } else if let Err(err) = commit_status_result {
-                return Err(err);
+                CommitStatus::Pending(_) => {
+                    unreachable!("Evicted records cannot be pending")
+                }
+                CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
+            };
+            if let Some(conflict) = handle_dependency(commit_dependency) {
+                return Ok(Some(conflict));
             }
         }
         Ok(None)
@@ -199,7 +212,7 @@ impl IsolationManager {
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
     ) -> Result<
-        impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'_>), DurabilityClientError>>,
+        impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'static>), DurabilityClientError>>,
         DurabilityClientError,
     > {
         let mut is_committed = HashMap::new();
@@ -216,8 +229,14 @@ impl IsolationManager {
                         None
                     } else {
                         let status = match is_committed.get(&commit_sequence_number) {
-                            None => CommitStatus::Pending(MaybeOwns::Owned(commit_record)),
-                            Some(true) => CommitStatus::Applied(MaybeOwns::Owned(commit_record)),
+                            None => CommitStatus::Pending(MaybeOwns::Owned(EvictableCommitRecord::new(
+                                commit_sequence_number,
+                                commit_record,
+                            ))),
+                            Some(true) => CommitStatus::Applied(MaybeOwns::Owned(EvictableCommitRecord::new(
+                                commit_sequence_number,
+                                commit_record,
+                            ))),
                             Some(false) => CommitStatus::Aborted,
                         };
                         Some(Ok((commit_sequence_number, status)))
@@ -257,18 +276,20 @@ fn resolve_concurrent(
     }
     let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
         CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
-        CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(&predecessor_record) {
-            CommitDependency::Independent => CommitDependency::Independent,
-            result => {
-                if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
-                    result
-                } else {
-                    CommitDependency::Independent
+        CommitStatus::Pending(predecessor_record) => {
+            match commit_record.compute_dependency(&predecessor_record.get()) {
+                CommitDependency::Independent => CommitDependency::Independent,
+                result => {
+                    if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
+                        result
+                    } else {
+                        CommitDependency::Independent
+                    }
                 }
             }
-        },
+        }
         CommitStatus::Validated(predecessor_record) | CommitStatus::Applied(predecessor_record) => {
-            commit_record.compute_dependency(&predecessor_record)
+            commit_record.compute_dependency(&predecessor_record.get())
         }
         CommitStatus::Aborted => CommitDependency::Independent,
     };
@@ -369,12 +390,22 @@ impl Timeline {
 
     fn may_free_windows(&self) {
         let watermark = self.watermark();
-        let can_free_some =
-            self.windows.read().unwrap_or_log().front().is_some_and(|f| f.get_readers() == 0 && watermark >= f.end());
+        let can_free_some = self
+            .windows
+            .read()
+            .unwrap_or_log()
+            .front()
+            .is_some_and(|f| f.get_write_snapshots() == 0 && watermark >= f.end());
         if can_free_some {
             let windows = &mut *self.windows.write().unwrap_or_log();
-            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 0 {
+            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_read_snapshots() == 0 {
                 windows.pop_front();
+            }
+            for window in windows {
+                if watermark < window.end() || window.get_write_snapshots() != 0 {
+                    break;
+                }
+                window.evict();
             }
         }
     }
@@ -427,20 +458,30 @@ impl Timeline {
 
     fn earliest_reader(&self) -> Option<SequenceNumber> {
         for window in &*self.windows.read().unwrap() {
-            if window.readers.load(Ordering::Relaxed) > 0 {
+            if window.read_snapshots.load(Ordering::Relaxed) > 0 {
                 return Some(window.start());
             }
         }
         None
     }
 
-    fn record_reader(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
+    fn record_read_snapshot_opened(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
-            window.increment_readers();
-            ReaderDropGuard { window: Some(window) }
+            window.increment_read_snapshots();
+            ReadSnapshotDropGuard { _window: Some(window) }
         } else {
             // we only need to record readers against the timeline for windows that are still in-memory
-            ReaderDropGuard { window: None }
+            ReadSnapshotDropGuard { _window: None }
+        }
+    }
+
+    fn record_write_snapshot_opened(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
+        if let Some(window) = self.try_get_window(sequence_number) {
+            window.increment_write_snapshots();
+            WriteSnapshotDropGuard { window: Some(window) }
+        } else {
+            // we only need to record readers against the timeline for windows that are still in-memory
+            WriteSnapshotDropGuard { window: None }
         }
     }
 
@@ -511,15 +552,55 @@ impl Timeline {
     }
 }
 
-pub struct ReaderDropGuard {
+pub struct ReadSnapshotDropGuard {
+    _window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
+}
+
+impl Drop for ReadSnapshotDropGuard {
+    fn drop(&mut self) {
+        if let Some(window) = self._window.as_ref() {
+            window.decrement_read_snapshots();
+        }
+    }
+}
+
+pub struct WriteSnapshotDropGuard {
     window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
 }
 
-impl Drop for ReaderDropGuard {
+impl Drop for WriteSnapshotDropGuard {
     fn drop(&mut self) {
         if let Some(window) = self.window.as_ref() {
-            window.decrement_readers();
+            window.decrement_write_snapshots();
         }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct EvictableCommitRecord {
+    #[expect(unused, reason = "to be used when the read of evicted records from WAL is implemented")]
+    sequence_number: SequenceNumber,
+    commit_record: AtomicArcOption<CommitRecord>,
+    // TODO: read from WAL on-demand
+}
+
+impl EvictableCommitRecord {
+    fn new(sequence_number: SequenceNumber, commit_record: CommitRecord) -> Self {
+        Self { sequence_number, commit_record: AtomicArcOption::new(commit_record) }
+    }
+
+    fn get(&self) -> Arc<CommitRecord> {
+        // TODO: read from WAL on-demand
+        self.commit_record.clone_arc().expect("attempted to read an evicted CommitRecord!")
+    }
+
+    fn evict(&self) {
+        self.commit_record.take();
+    }
+
+    #[cfg_attr(not(test), expect(unused, reason = "currently only exists for the tests"))]
+    fn is_evicted(&self) -> bool {
+        self.commit_record.is_none()
     }
 }
 
@@ -527,8 +608,9 @@ impl Drop for ReaderDropGuard {
 struct TimelineWindow<const SIZE: usize> {
     start: SequenceNumber,
     slot_status: [AtomicU8; SIZE],
-    commit_records: [OnceLock<CommitRecord>; SIZE],
-    readers: AtomicU64,
+    commit_records: [OnceLock<EvictableCommitRecord>; SIZE],
+    read_snapshots: AtomicU64,
+    write_snapshots: AtomicU64,
 }
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
@@ -537,7 +619,13 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         let slot_status = [const { AtomicU8::new(0) }; SIZE];
         debug_assert_eq!(slot_status[0].load(Ordering::SeqCst), SlotMarker::Empty.as_u8());
 
-        TimelineWindow { start, slot_status, commit_records, readers: AtomicU64::new(0) }
+        TimelineWindow {
+            start,
+            slot_status,
+            commit_records,
+            read_snapshots: AtomicU64::new(0),
+            write_snapshots: AtomicU64::new(0),
+        }
     }
 
     fn start(&self) -> SequenceNumber {
@@ -550,7 +638,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 
     fn insert_pending(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
         let index = sequence_number - self.start;
-        self.commit_records[index].set(commit_record).unwrap_or_log();
+        self.commit_records[index].set(EvictableCommitRecord::new(sequence_number, commit_record)).unwrap_or_log();
         self.slot_status[index].store(SlotMarker::Pending.as_u8(), Ordering::SeqCst);
     }
 
@@ -599,25 +687,45 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }
     }
 
-    fn get_readers(&self) -> u64 {
-        self.readers.load(Ordering::Relaxed)
+    fn evict(&self) {
+        for commit_record in &self.commit_records {
+            commit_record.get().map(EvictableCommitRecord::evict);
+        }
     }
 
-    fn increment_readers(&self) {
-        self.readers.fetch_add(1, Ordering::Relaxed);
+    fn get_read_snapshots(&self) -> u64 {
+        self.read_snapshots.load(Ordering::Relaxed)
     }
 
-    fn decrement_readers(&self) -> u64 {
-        self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+    fn increment_read_snapshots(&self) {
+        self.read_snapshots.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn decrement_read_snapshots(&self) -> u64 {
+        self.read_snapshots.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+    }
+
+    fn get_write_snapshots(&self) -> u64 {
+        self.write_snapshots.load(Ordering::Relaxed)
+    }
+
+    fn increment_write_snapshots(&self) {
+        self.increment_read_snapshots(); // a writing reader is a reader
+        self.write_snapshots.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn decrement_write_snapshots(&self) -> u64 {
+        self.decrement_read_snapshots(); // a writing reader is a reader
+        self.write_snapshots.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
     }
 }
 
 #[derive(Debug)]
 pub(crate) enum CommitStatus<'a> {
     Empty,
-    Pending(MaybeOwns<'a, CommitRecord>),
-    Validated(MaybeOwns<'a, CommitRecord>),
-    Applied(MaybeOwns<'a, CommitRecord>),
+    Pending(MaybeOwns<'a, EvictableCommitRecord>),
+    Validated(MaybeOwns<'a, EvictableCommitRecord>),
+    Applied(MaybeOwns<'a, EvictableCommitRecord>),
     Aborted,
 }
 
@@ -657,6 +765,7 @@ impl SlotMarker {
 mod tests {
     use std::{
         array,
+        convert::identity,
         sync::{
             Arc,
             atomic::{AtomicU64, Ordering},
@@ -667,47 +776,25 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, ReaderDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
-        keyspace::{KeyspaceId, KeyspaceSet},
+        isolation_manager::{
+            CommitStatus, EvictableCommitRecord, TIMELINE_WINDOW_SIZE, Timeline, WriteSnapshotDropGuard,
+        },
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
         snapshot::{buffer::OperationsBuffer, snapshot_id::SnapshotId},
     };
 
-    macro_rules! test_keyspace_set {
-        {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
-            #[derive(Clone, Copy)]
-            enum TestKeyspaceSet { $($variant),* }
-            impl KeyspaceSet for TestKeyspaceSet {
-                fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-                fn id(&self) -> KeyspaceId {
-                    match *self { $(Self::$variant => KeyspaceId($id)),* }
-                }
-                fn name(&self) -> &'static str {
-                    match *self { $(Self::$variant => $name),* }
-                }
-                fn prefix_length(&self) -> Option<usize> {
-                    None
-                }
-            }
-        };
-    }
-
-    test_keyspace_set! {
-        Keyspace => 0: "keyspace",
-    }
-
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
-        reader_drop_guard: ReaderDropGuard,
+        drop_guard: WriteSnapshotDropGuard,
     }
 
     impl MockTransaction {
         fn new(timeline: &Timeline, commit_sequence_number: SequenceNumber) -> MockTransaction {
             let read_sequence_number = timeline.watermark();
-            let reader_drop_guard = timeline.record_reader(read_sequence_number);
-            MockTransaction { read_sequence_number, commit_sequence_number, reader_drop_guard }
+            let drop_guard = timeline.record_write_snapshot_opened(read_sequence_number);
+            MockTransaction { read_sequence_number, commit_sequence_number, drop_guard }
         }
     }
 
@@ -721,7 +808,7 @@ mod tests {
     }
 
     fn tx_finalise_commit_status(timeline: &Timeline, tx: MockTransaction, validation_result: bool) {
-        let read_guard = tx.reader_drop_guard;
+        let read_guard = tx.drop_guard;
         let window = timeline.try_get_window(tx.commit_sequence_number).unwrap();
         if let CommitStatus::Pending(commit_record) = window.get_status(tx.commit_sequence_number) {
             if validation_result {
@@ -730,7 +817,7 @@ mod tests {
             } else {
                 window.set_aborted(tx.commit_sequence_number);
             }
-            let _sequence_number = commit_record.open_sequence_number();
+            let _sequence_number = commit_record.get().open_sequence_number();
             drop(window);
             drop(read_guard);
             timeline.may_increment_watermark(tx.commit_sequence_number);
@@ -750,22 +837,22 @@ mod tests {
     #[test]
     fn watermark_is_updated() {
         let timeline = &create_timeline();
-        let tx1 = MockTransaction::new(&timeline, _seq(1));
+        let tx1 = MockTransaction::new(timeline, _seq(1));
 
         tx_start_commit(timeline, &tx1);
         let tx1_commit_sequence_number = tx1.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx1, true);
         assert_eq!(tx1_commit_sequence_number, timeline.watermark());
 
-        let tx2 = MockTransaction::new(&timeline, _seq(2));
+        let tx2 = MockTransaction::new(timeline, _seq(2));
 
         tx_start_commit(timeline, &tx2);
         let tx2_commit_sequence_number = tx2.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx2, false);
         assert_eq!(tx2_commit_sequence_number, timeline.watermark());
 
-        let tx3 = MockTransaction::new(&timeline, _seq(3));
-        let tx4 = MockTransaction::new(&timeline, _seq(4));
+        let tx3 = MockTransaction::new(timeline, _seq(3));
+        let tx4 = MockTransaction::new(timeline, _seq(4));
         tx_start_commit(timeline, &tx3);
         tx_start_commit(timeline, &tx4);
         let tx4_commit_sequence_number = tx4.commit_sequence_number;
@@ -781,18 +868,18 @@ mod tests {
 
         let tx_count = TIMELINE_WINDOW_SIZE + 2;
         for i in 1..tx_count {
-            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            let tx = MockTransaction::new(timeline, _seq(i as u64));
             tx_start_commit(timeline, &tx);
         }
 
         let stop_at = tx_count - 2;
         for i in 1..stop_at {
-            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            let tx = MockTransaction::new(timeline, _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
         assert_true!(timeline.try_get_window(_seq(1)).is_some());
         for i in stop_at..tx_count {
-            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            let tx = MockTransaction::new(timeline, _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
         assert_true!(timeline.try_get_window(_seq(1)).is_none());
@@ -819,7 +906,7 @@ mod tests {
         }
 
         match timeline.try_get_window(timeline.watermark()) {
-            Some(window) => assert_eq!(0, window.get_readers()),
+            Some(window) => assert_eq!(0, window.get_read_snapshots()),
             None => panic!(),
         };
     }
@@ -836,7 +923,7 @@ mod tests {
                 for _ in 0..TRANSACTIONS_PER_THREAD {
                     let (timeline, commit_sequence_number_counter) = &*timeline_and_counter;
                     let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
-                    let tx = MockTransaction::new(&timeline, _seq(index));
+                    let tx = MockTransaction::new(timeline, _seq(index));
                     tx_start_commit(timeline, &tx);
                     tx_finalise_commit_status(timeline, tx, true);
                 }
@@ -866,6 +953,37 @@ mod tests {
             tx_finalise_commit_status(&timeline, tx, true);
         }
 
+        assert_eq!(timeline.window_count(), 1);
+    }
+
+    #[test]
+    fn windows_are_evicted() {
+        let timeline = create_timeline();
+
+        let _guard = timeline.record_read_snapshot_opened(SequenceNumber::new(1));
+
+        for i in 1..TIMELINE_WINDOW_SIZE * 2 {
+            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            tx_start_commit(&timeline, &tx);
+            tx_finalise_commit_status(&timeline, tx, true);
+        }
+
+        timeline.may_free_windows();
+        assert_eq!(timeline.window_count(), 2);
+
+        for i in 1..2 {
+            let commit_records =
+                &timeline.try_get_window(_seq(TIMELINE_WINDOW_SIZE as u64 * i)).unwrap().commit_records;
+            let evicted = commit_records
+                .iter()
+                .filter_map(|commit_record| commit_record.get().map(EvictableCommitRecord::is_evicted))
+                .all(identity);
+            assert!(evicted, "Window {i} was not evicted",)
+        }
+
+        drop(_guard);
+        // after the read transaction closes
+        timeline.may_free_windows();
         assert_eq!(timeline.window_count(), 1);
     }
 }
