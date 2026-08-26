@@ -4,38 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use concept::error::ConceptReadError;
-use database::transaction::TransactionRead;
+use database::transaction::DatabaseReadError;
 use error::typedb_error;
 use ir::pipeline::FunctionReadError;
-use storage::durability_client::DurabilityClient;
 
-pub fn get_transaction_schema<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, DatabaseExportError> {
-    let types_syntax = get_types_syntax(transaction)?;
-    let functions_syntax = get_functions_syntax(transaction)?;
-    Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
-}
-
-pub(crate) fn get_transaction_type_schema<D: DurabilityClient>(
-    transaction: &TransactionRead<D>,
-) -> Result<String, DatabaseExportError> {
-    let types_syntax = get_types_syntax(transaction)?;
-    Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
-}
-
-fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, DatabaseExportError> {
-    transaction
-        .type_manager
-        .get_types_syntax(transaction.snapshot())
-        .map_err(|err| DatabaseExportError::ConceptRead { typedb_source: err })
-}
-
-fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, DatabaseExportError> {
-    transaction
-        .function_manager
-        .get_functions_syntax(transaction.snapshot())
-        .map_err(|err| DatabaseExportError::FunctionRead { typedb_source: err })
+impl From<DatabaseReadError> for DatabaseExportError {
+    fn from(error: DatabaseReadError) -> Self {
+        match error {
+            DatabaseReadError::ConceptRead { typedb_source } => Self::ConceptRead { typedb_source },
+            DatabaseReadError::FunctionRead { typedb_source } => Self::FunctionRead { typedb_source },
+        }
+    }
 }
 
 typedb_error! {

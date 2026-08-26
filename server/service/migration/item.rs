@@ -3,26 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{
-    borrow::{Borrow, Cow},
-    collections::HashMap,
-};
+use std::borrow::Cow;
 
-use bytes::util::Base64Formatter;
-use concept::{
-    error::{ConceptDecodeError, ConceptReadError},
-    thing::{
-        ThingAPI, attribute::Attribute, entity::Entity, object::ObjectAPI, relation::Relation,
-        thing_manager::ThingManager,
-    },
-    type_::{TypeAPI, role_type::RoleType, type_manager::TypeManager},
-};
-use database::migration::Checksums;
-use encoding::value::value::Value;
-use error::unimplemented_feature;
-use itertools::Itertools;
-use resource::profile::StorageCounters;
-use storage::snapshot::ReadableSnapshot;
+use concept::error::ConceptDecodeError;
+use database::migration::{Checksums, item::MigrationItem};
+use encoding::value::{label::Label, value::Value};
+use error::{typedb_error, unimplemented_feature};
 use typedb_protocol::{
     migration,
     migration::{Item, MigrationValue, item},
@@ -33,148 +19,128 @@ use crate::service::grpc::concept::{
     encode_date, encode_datetime, encode_datetime_tz, encode_decimal, encode_duration,
 };
 
-pub(crate) fn encode_entity_item(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    checksums: &mut Checksums,
-    entity: Entity,
-) -> Result<Item, Box<ConceptReadError>> {
-    Ok(encode_item(item::Item::Entity(item::Entity {
-        id: encode_thing_iid(&entity),
-        label: encode_type_label(snapshot, type_manager, entity.type_())?,
-        attributes: encode_owned_attributes(snapshot, thing_manager, checksums, entity.clone())?,
-    })))
+pub(crate) enum EncodedItem {
+    Schema(String),
+    Item(Item),
 }
 
-pub(crate) fn encode_relation_item(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    checksums: &mut Checksums,
-    relation: Relation,
-) -> Result<Item, Box<ConceptReadError>> {
-    Ok(encode_item(item::Item::Relation(item::Relation {
-        id: encode_thing_iid(&relation),
-        label: encode_type_label(snapshot, type_manager, relation.type_())?,
-        attributes: encode_owned_attributes(snapshot, thing_manager, checksums, relation.clone())?,
-        roles: encode_relation_roles(snapshot, type_manager, thing_manager, checksums, relation)?,
-    })))
-}
-
-pub(crate) fn encode_attribute_item(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    attribute: Attribute,
-) -> Result<Item, Box<ConceptReadError>> {
-    Ok(encode_item(item::Item::Attribute(item::Attribute {
-        id: encode_thing_iid(&attribute),
-        label: encode_type_label(snapshot, type_manager, attribute.type_())?,
-        attributes: vec![], // attributes cannot own attributes anymore
-        value: Some(encode_migration_value(snapshot, thing_manager, &attribute)?),
-    })))
-}
-
-pub fn encode_header_item(typedb_version: String, original_database: String) -> Item {
-    encode_item(item::Item::Header(item::Header { typedb_version, original_database }))
-}
-
-pub(crate) fn encode_checksums_item(checksums: &Checksums) -> Item {
-    encode_item(item::Item::Checksums(item::Checksums {
-        entity_count: checksums.entity_count,
-        attribute_count: checksums.attribute_count,
-        relation_count: checksums.relation_count,
-        role_count: checksums.role_count,
-        ownership_count: checksums.ownership_count,
-    }))
-}
-
-fn encode_item(inner_item: item::Item) -> Item {
-    Item { item: Some(inner_item) }
-}
-
-fn encode_thing_iid(thing: &impl ThingAPI) -> String {
-    Base64Formatter::borrowed(thing.iid().borrow()).format()
-}
-
-fn encode_type_label(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    type_: impl TypeAPI,
-) -> Result<String, Box<ConceptReadError>> {
-    let label = type_.get_label(snapshot, type_manager)?;
-    Ok(label.to_string())
-}
-
-fn encode_owned_attributes(
-    snapshot: &impl ReadableSnapshot,
-    thing_manager: &ThingManager,
-    checksums: &mut Checksums,
-    object: impl ObjectAPI,
-) -> Result<Vec<item::OwnedAttribute>, Box<ConceptReadError>> {
-    let mut item_owned_attributes = Vec::new();
-    // TODO: Cover has ordering
-    let all_has = object.get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)?;
-    for has in all_has {
-        let (has, count) = has?;
-        for _ in 0..count {
-            item_owned_attributes.push(encode_owned_attribute(&has.attribute()));
-            checksums.ownership_count += 1;
+pub(crate) fn encode_item(item: MigrationItem) -> EncodedItem {
+    let encoded = match item {
+        MigrationItem::Schema(schema) => return EncodedItem::Schema(schema),
+        MigrationItem::Header { typedb_version, original_database } => {
+            item::Item::Header(item::Header { typedb_version, original_database })
         }
-    }
-    Ok(item_owned_attributes)
+        MigrationItem::Entity { id, label, owned_attributes } => item::Item::Entity(item::Entity {
+            id,
+            label: label.to_string(),
+            attributes: encode_owned_attributes(owned_attributes),
+        }),
+        MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
+            item::Item::Relation(item::Relation {
+                id,
+                label: label.to_string(),
+                attributes: encode_owned_attributes(owned_attributes),
+                roles: encode_relation_roles(related_role_players),
+            })
+        }
+        MigrationItem::Attribute { id, label, value } => item::Item::Attribute(item::Attribute {
+            id,
+            label: label.to_string(),
+            attributes: vec![], // attributes cannot own attributes anymore
+            value: Some(encode_migration_value(value)),
+        }),
+        MigrationItem::Checksums(checksums) => item::Item::Checksums(item::Checksums {
+            entity_count: checksums.entity_count,
+            attribute_count: checksums.attribute_count,
+            relation_count: checksums.relation_count,
+            role_count: checksums.role_count,
+            ownership_count: checksums.ownership_count,
+        }),
+    };
+    EncodedItem::Item(Item { item: Some(encoded) })
 }
 
-fn encode_relation_roles(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    thing_manager: &ThingManager,
-    checksums: &mut Checksums,
-    relation: Relation,
-) -> Result<Vec<item::relation::Role>, Box<ConceptReadError>> {
-    // TODO: Cover role players ordering
-    let mut item_players: HashMap<RoleType, Vec<item::relation::role::Player>> = HashMap::new();
-    let all_players = relation.get_players(snapshot, thing_manager, StorageCounters::DISABLED);
-    for player in all_players {
-        let (role_player, count) = player?;
-        for _ in 0..count {
-            item_players.entry(role_player.role_type()).or_default().push(encode_role_player(&role_player.player()));
-            checksums.role_count += 1;
+pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
+    let Item { item } = item_proto;
+    let item = item.ok_or(ItemDecodeError::EmptyItem {})?;
+    let decoded = match item {
+        item::Item::Header(item::Header { typedb_version, original_database }) => {
+            MigrationItem::Header { typedb_version, original_database }
         }
-    }
+        item::Item::Entity(item::Entity { id, label, attributes }) => MigrationItem::Entity {
+            id,
+            label: Label::parse_from(&label, None),
+            owned_attributes: decode_owned_attributes(attributes),
+        },
+        item::Item::Relation(item::Relation { id, label, attributes, roles }) => MigrationItem::Relation {
+            id,
+            label: Label::parse_from(&label, None),
+            owned_attributes: decode_owned_attributes(attributes),
+            related_role_players: decode_relation_roles(roles),
+        },
+        item::Item::Attribute(item::Attribute { id, label, attributes, value }) => {
+            if !attributes.is_empty() {
+                return Err(ItemDecodeError::AttributesOwningAttributes {});
+            }
+            let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentAttributeValue {})?)
+                .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
+            MigrationItem::Attribute { id, label: Label::parse_from(&label, None), value }
+        }
+        item::Item::Checksums(checksums) => MigrationItem::Checksums(Checksums {
+            entity_count: checksums.entity_count,
+            attribute_count: checksums.attribute_count,
+            relation_count: checksums.relation_count,
+            role_count: checksums.role_count,
+            ownership_count: checksums.ownership_count,
+        }),
+    };
+    Ok(decoded)
+}
 
-    Ok(item_players
+typedb_error! {
+    pub ItemDecodeError(component = "Migration item decode", prefix = "MID") {
+        EmptyItem(1, "An empty item was received."),
+        AbsentAttributeValue(2, "An attribute item without a value was received."),
+        AttributesOwningAttributes(3, "An item with attributes owning attributes was received."),
+        ConceptDecode(4, "Error decoding an item's concept.", typedb_source: Box<ConceptDecodeError>),
+    }
+}
+
+fn encode_owned_attributes(owned_attributes: Vec<String>) -> Vec<item::OwnedAttribute> {
+    owned_attributes.into_iter().map(|id| item::OwnedAttribute { id }).collect()
+}
+
+fn decode_owned_attributes(attributes: Vec<item::OwnedAttribute>) -> Vec<String> {
+    attributes.into_iter().map(|item::OwnedAttribute { id }| id).collect()
+}
+
+fn encode_relation_roles(related_role_players: Vec<(Label, Vec<String>)>) -> Vec<item::relation::Role> {
+    related_role_players
         .into_iter()
-        .map(|(role_type, players)| encode_role(snapshot, type_manager, role_type, players))
-        .try_collect()?)
+        .map(|(label, players)| item::relation::Role {
+            label: label.to_string(),
+            players: players.into_iter().map(|id| item::relation::role::Player { id }).collect(),
+        })
+        .collect()
 }
 
-fn encode_role(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    role_type: RoleType,
-    players: Vec<item::relation::role::Player>,
-) -> Result<item::relation::Role, Box<ConceptReadError>> {
-    let label = encode_type_label(snapshot, type_manager, role_type)?;
-    Ok(item::relation::Role { label, players })
+fn decode_relation_roles(roles: Vec<item::relation::Role>) -> Vec<(Label, Vec<String>)> {
+    roles
+        .into_iter()
+        .map(|item::relation::Role { label, players }| {
+            (
+                Label::parse_from(&label, None),
+                players.into_iter().map(|item::relation::role::Player { id }| id).collect(),
+            )
+        })
+        .collect()
 }
 
-fn encode_role_player(object: &impl ObjectAPI) -> item::relation::role::Player {
-    item::relation::role::Player { id: encode_thing_iid(object) }
-}
-
-fn encode_owned_attribute(attribute: &Attribute) -> item::OwnedAttribute {
-    item::OwnedAttribute { id: encode_thing_iid(attribute) }
-}
-
-fn encode_migration_value(
-    snapshot: &impl ReadableSnapshot,
-    thing_manager: &ThingManager,
-    attribute: &Attribute,
-) -> Result<MigrationValue, Box<ConceptReadError>> {
+fn encode_migration_value(value: Value<'static>) -> MigrationValue {
     use migration::migration_value::Value as ValueProto;
-    let value_message = match attribute.get_value(snapshot, thing_manager, StorageCounters::DISABLED)? {
+    // TODO: We depend on grpc crate (concept), but this format of migration is generic and just
+    // happens to be a grpc message. Is this dependency healthy? Resolve in embedded
+    let value_message = match value {
         Value::Boolean(boolean) => ValueProto::Boolean(boolean),
         Value::Integer(integer) => ValueProto::Integer(integer),
         Value::Double(double) => ValueProto::Double(double),
@@ -186,10 +152,10 @@ fn encode_migration_value(
         Value::String(string) => ValueProto::String(string.to_string()),
         Value::Struct(_struct) => unimplemented_feature!(Structs),
     };
-    Ok(MigrationValue { value: Some(value_message) })
+    MigrationValue { value: Some(value_message) }
 }
 
-pub(crate) fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>, Box<ConceptDecodeError>> {
+fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>, Box<ConceptDecodeError>> {
     use migration::migration_value::Value as ValueProto;
     let value_proto = value_proto.value.ok_or_else(|| Box::new(ConceptDecodeError::NoValue {}))?;
     let value = match value_proto {
@@ -208,12 +174,124 @@ pub(crate) fn decode_migration_value(value_proto: MigrationValue) -> Result<Valu
     Ok(value)
 }
 
-pub(crate) fn decode_checksums(checksums_proto: item::Checksums) -> Checksums {
-    Checksums {
-        entity_count: checksums_proto.entity_count,
-        attribute_count: checksums_proto.attribute_count,
-        relation_count: checksums_proto.relation_count,
-        role_count: checksums_proto.role_count,
-        ownership_count: checksums_proto.ownership_count,
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn items_map_to_the_expected_wire_messages() {
+        for (item, expected) in samples() {
+            match &item {
+                MigrationItem::Schema(_)
+                | MigrationItem::Header { .. }
+                | MigrationItem::Entity { .. }
+                | MigrationItem::Relation { .. }
+                | MigrationItem::Attribute { .. }
+                | MigrationItem::Checksums(_) => (),
+            }
+            assert_eq!(wire_item(encode_item(item)), expected);
+            let decoded = decode_item(expected.clone()).expect("decoded item");
+            assert_eq!(wire_item(encode_item(decoded)), expected, "decoding is not the inverse of encoding");
+        }
+    }
+
+    #[test]
+    fn the_schema_is_not_a_wire_item() {
+        match encode_item(MigrationItem::Schema("define entity person;".to_owned())) {
+            EncodedItem::Schema(schema) => assert_eq!(schema, "define entity person;"),
+            EncodedItem::Item(item) => panic!("the schema must not be encoded as an item: {item:?}"),
+        }
+    }
+
+    fn samples() -> Vec<(MigrationItem, Item)> {
+        vec![
+            (
+                MigrationItem::Header { typedb_version: "3.12.3".to_owned(), original_database: "source".to_owned() },
+                wire(item::Item::Header(item::Header {
+                    typedb_version: "3.12.3".to_owned(),
+                    original_database: "source".to_owned(),
+                })),
+            ),
+            (
+                MigrationItem::Entity {
+                    id: "e1".to_owned(),
+                    label: Label::build("person", None),
+                    owned_attributes: vec!["a1".to_owned(), "a2".to_owned()],
+                },
+                wire(item::Item::Entity(item::Entity {
+                    id: "e1".to_owned(),
+                    label: "person".to_owned(),
+                    attributes: vec![
+                        item::OwnedAttribute { id: "a1".to_owned() },
+                        item::OwnedAttribute { id: "a2".to_owned() },
+                    ],
+                })),
+            ),
+            (
+                MigrationItem::Relation {
+                    id: "r1".to_owned(),
+                    label: Label::build("friendship", None),
+                    owned_attributes: vec!["a1".to_owned()],
+                    related_role_players: vec![(
+                        Label::build_scoped("friend", "friendship", None),
+                        vec!["e1".to_owned(), "e2".to_owned()],
+                    )],
+                },
+                wire(item::Item::Relation(item::Relation {
+                    id: "r1".to_owned(),
+                    label: "friendship".to_owned(),
+                    attributes: vec![item::OwnedAttribute { id: "a1".to_owned() }],
+                    roles: vec![item::relation::Role {
+                        label: "friendship:friend".to_owned(),
+                        players: vec![
+                            item::relation::role::Player { id: "e1".to_owned() },
+                            item::relation::role::Player { id: "e2".to_owned() },
+                        ],
+                    }],
+                })),
+            ),
+            (
+                MigrationItem::Attribute {
+                    id: "a1".to_owned(),
+                    label: Label::build("name", None),
+                    value: Value::String(Cow::Borrowed("Alice")),
+                },
+                wire(item::Item::Attribute(item::Attribute {
+                    id: "a1".to_owned(),
+                    label: "name".to_owned(),
+                    attributes: vec![],
+                    value: Some(MigrationValue {
+                        value: Some(migration::migration_value::Value::String("Alice".to_owned())),
+                    }),
+                })),
+            ),
+            (
+                MigrationItem::Checksums(Checksums {
+                    entity_count: 1,
+                    attribute_count: 2,
+                    relation_count: 3,
+                    role_count: 4,
+                    ownership_count: 5,
+                }),
+                wire(item::Item::Checksums(item::Checksums {
+                    entity_count: 1,
+                    attribute_count: 2,
+                    relation_count: 3,
+                    role_count: 4,
+                    ownership_count: 5,
+                })),
+            ),
+        ]
+    }
+
+    fn wire(item: item::Item) -> Item {
+        Item { item: Some(item) }
+    }
+
+    fn wire_item(encoded: EncodedItem) -> Item {
+        match encoded {
+            EncodedItem::Item(item) => item,
+            EncodedItem::Schema(schema) => panic!("expected a wire item, not a schema: {schema}"),
+        }
     }
 }

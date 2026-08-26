@@ -6,10 +6,12 @@
 
 use std::{fmt, fmt::Formatter};
 
+pub mod database_exporter;
 pub mod database_import_handler;
 pub mod database_importer;
+pub mod item;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Checksums {
     pub entity_count: i64,
     pub attribute_count: i64,

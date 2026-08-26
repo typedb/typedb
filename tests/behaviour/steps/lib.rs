@@ -111,7 +111,7 @@ impl<I: AsRef<Path>> cucumber::Parser<I> for SingletonParser {
 #[derive(Debug)]
 struct ServerInstance {
     pub(crate) server: Arc<Mutex<Server>>,
-    server_dir: TempDir,
+    _server_dir: TempDir,
 }
 
 impl ServerInstance {
@@ -142,7 +142,7 @@ impl ServerInstance {
             .build(config)
             .await
             .expect("Failed to start TypeDB server");
-        Self { server_dir, server: Arc::new(Mutex::new(server)) }
+        Self { _server_dir: server_dir, server: Arc::new(Mutex::new(server)) }
     }
 }
 

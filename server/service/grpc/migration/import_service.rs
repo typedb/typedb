@@ -12,7 +12,7 @@ use std::{
     time::Instant,
 };
 
-use database::migration::database_importer::DatabaseImporter;
+use database::migration::{database_importer::DatabaseImporter, item::MigrationItem};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use error::TypeDBError;
 use executor::{ExecutionInterrupt, InterruptType};
@@ -41,7 +41,7 @@ use crate::{
             response_builders::database_manager::database_import_res_done,
         },
         import_service::DatabaseImportServiceError,
-        migration::item_apply::process_item,
+        migration::item::decode_item,
     },
     state::ServerState,
 };
@@ -268,7 +268,7 @@ impl DatabaseImportService {
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
         self.active = Some(ActiveImport::new(name, importer));
 
-        self.run_importer_step("schema loading", move |importer| importer.import_schema(schema))
+        self.run_importer_step("schema loading", move |importer| importer.apply(MigrationItem::Schema(schema)))
             .await?
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
         Ok(Continue(()))
@@ -278,9 +278,11 @@ impl DatabaseImportService {
         &mut self,
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        self.run_importer_step("data loading", move |importer| {
+        self.run_importer_step("data loading", move |importer| -> Result<(), DatabaseImportServiceError> {
             for item in items {
-                process_item(item, importer)?;
+                importer
+                    .apply(decode_item(item).map_err(DatabaseImportServiceError::from)?)
+                    .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
                 let total_items = importer.total_item_count();
                 if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {

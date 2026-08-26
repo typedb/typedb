@@ -7,7 +7,18 @@ use concept::error::ConceptDecodeError;
 use database::migration::database_importer::DatabaseImportError;
 use error::typedb_error;
 
-use crate::error::ArcServerStateError;
+use crate::{error::ArcServerStateError, service::migration::item::ItemDecodeError};
+
+impl From<ItemDecodeError> for DatabaseImportServiceError {
+    fn from(error: ItemDecodeError) -> Self {
+        match error {
+            ItemDecodeError::EmptyItem {} => Self::ImportEmptyItem {},
+            ItemDecodeError::AbsentAttributeValue {} => Self::AbsentAttributeValue {},
+            ItemDecodeError::AttributesOwningAttributes {} => Self::AttributesOwningAttributes {},
+            ItemDecodeError::ConceptDecode { typedb_source } => Self::ConceptDecode { typedb_source },
+        }
+    }
+}
 
 typedb_error! {
     pub DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {

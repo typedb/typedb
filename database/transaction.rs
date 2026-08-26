@@ -9,9 +9,10 @@ use std::{
     sync::{Arc, mpsc::RecvTimeoutError},
 };
 
+pub use concept::thing::cleanup::CleanupRecord;
 use concept::{
-    error::ConceptWriteError,
-    thing::{cleanup::CleanupRecord, statistics::StatisticsError, thing_manager::ThingManager},
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -20,11 +21,15 @@ use concept::{
 use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
+use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
+use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError},
+    isolation_manager::WriteSnapshotDropGuard,
+    record::CommitRecord,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
         WriteSnapshot, snapshot_id::SnapshotId,
@@ -106,6 +111,14 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
     pub fn id(&self) -> TransactionId {
         TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+
+    pub fn schema(&self) -> Result<String, DatabaseReadError> {
+        schema_syntax(&self.type_manager, &self.function_manager, self.snapshot())
+    }
+
+    pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
+        type_schema_syntax(&self.type_manager, self.snapshot())
     }
 }
 
@@ -210,6 +223,14 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn id(&self) -> TransactionId {
         TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+
+    pub fn schema(&self) -> Result<String, DatabaseReadError> {
+        schema_syntax(&self.type_manager, &self.function_manager, self.snapshot.as_ref())
+    }
+
+    pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
+        type_schema_syntax(&self.type_manager, self.snapshot.as_ref())
     }
 }
 
@@ -334,6 +355,38 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn id(&self) -> TransactionId {
         TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
+
+    pub fn schema(&self) -> Result<String, DatabaseReadError> {
+        schema_syntax(&self.type_manager, &self.function_manager, self.snapshot.as_ref())
+    }
+
+    pub fn type_schema(&self) -> Result<String, DatabaseReadError> {
+        type_schema_syntax(&self.type_manager, self.snapshot.as_ref())
+    }
+}
+
+fn schema_syntax(
+    type_manager: &TypeManager,
+    function_manager: &FunctionManager,
+    snapshot: &impl ReadableSnapshot,
+) -> Result<String, DatabaseReadError> {
+    let types_syntax = type_manager
+        .get_types_syntax(snapshot)
+        .map_err(|typedb_source| DatabaseReadError::ConceptRead { typedb_source })?;
+    let functions_syntax = function_manager
+        .get_functions_syntax(snapshot)
+        .map_err(|typedb_source| DatabaseReadError::FunctionRead { typedb_source })?;
+    Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
+}
+
+fn type_schema_syntax(
+    type_manager: &TypeManager,
+    snapshot: &impl ReadableSnapshot,
+) -> Result<String, DatabaseReadError> {
+    let types_syntax = type_manager
+        .get_types_syntax(snapshot)
+        .map_err(|typedb_source| DatabaseReadError::ConceptRead { typedb_source })?;
+    Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -391,6 +444,14 @@ macro_rules! with_transaction_parts {
     }};
 }
 
+/// The portable form of a commit, containing all the durably produced data. The data can be then
+/// serialised or sent outside the process and turned back into an intent to apply the commit.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommitInfo {
+    pub commit_record: CommitRecord,
+    pub cleanup_record: CleanupRecord,
+}
+
 pub struct DataCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     write_snapshot: WriteSnapshot<D>,
@@ -400,6 +461,20 @@ pub struct DataCommitIntent<D> {
 impl<D: DurabilityClient> DataCommitIntent<D> {
     pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
         Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_record }
+    }
+
+    /// Rebuilds an intent from a commit's portable form.
+    pub fn from_commit_info(database: Arc<Database<D>>, commit_info: CommitInfo) -> Self {
+        let CommitInfo { commit_record, cleanup_record } = commit_info;
+        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot, cleanup_record)
+    }
+
+    /// Splits an intent into its portable form with MVCC timeline guards.
+    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, WriteSnapshotDropGuard, CommitInfo) {
+        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
+        let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
+        (self.database_drop_guard, reader_guard, commit_info)
     }
 }
 
@@ -441,6 +516,20 @@ pub struct SchemaCommitIntent<D> {
 impl<D: DurabilityClient> SchemaCommitIntent<D> {
     pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
         Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_record }
+    }
+
+    /// Rebuilds an intent from a commit's portable form.
+    pub fn from_commit_info(database: Arc<Database<D>>, commit_info: CommitInfo) -> Self {
+        let CommitInfo { commit_record, cleanup_record } = commit_info;
+        let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot, cleanup_record)
+    }
+
+    /// Splits an intent into its portable form with MVCC timeline guards.
+    pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, WriteSnapshotDropGuard, CommitInfo) {
+        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
+        let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
+        (self.database_drop_guard, reader_guard, commit_info)
     }
 }
 
@@ -588,6 +677,19 @@ typedb_error! {
         FunctionError(5, "Function error.", typedb_source: FunctionError),
         SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
         DurabilityError(7, "Durability error.", typedb_source: DurabilityClientError),
+    }
+}
+
+typedb_error! {
+    pub DatabaseReadError(component = "Database read", prefix = "DRE") {
+        ConceptRead(1, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
+        FunctionRead(2, "Error reading functions.", typedb_source: FunctionReadError),
+    }
+}
+
+impl From<Box<ConceptReadError>> for DatabaseReadError {
+    fn from(typedb_source: Box<ConceptReadError>) -> Self {
+        Self::ConceptRead { typedb_source }
     }
 }
 

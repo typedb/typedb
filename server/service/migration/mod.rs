@@ -4,6 +4,4 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod item;
-pub mod item_apply;
-pub mod item_stream;
+pub(crate) mod item;
