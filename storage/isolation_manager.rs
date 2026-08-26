@@ -56,7 +56,7 @@ impl IsolationManager {
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_read_snapshot_reader(sequence_number)
+        self.timeline.record_read_snapshot_opened(sequence_number)
     }
 
     pub(crate) fn opened_for_read_by_write_snapshot(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
@@ -66,7 +66,7 @@ impl IsolationManager {
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_write_snapshot_reader(sequence_number)
+        self.timeline.record_write_snapshot_opened(sequence_number)
     }
 
     pub(crate) fn applied(&self, sequence_number: SequenceNumber) -> Result<(), ExpectedWindowError> {
@@ -465,7 +465,7 @@ impl Timeline {
         None
     }
 
-    fn record_read_snapshot_reader(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
+    fn record_read_snapshot_opened(&self, sequence_number: SequenceNumber) -> ReadSnapshotDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
             window.increment_read_snapshots();
             ReadSnapshotDropGuard { _window: Some(window) }
@@ -475,7 +475,7 @@ impl Timeline {
         }
     }
 
-    fn record_write_snapshot_reader(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
+    fn record_write_snapshot_opened(&self, sequence_number: SequenceNumber) -> WriteSnapshotDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
             window.increment_write_snapshots();
             WriteSnapshotDropGuard { window: Some(window) }
@@ -793,7 +793,7 @@ mod tests {
     impl MockTransaction {
         fn new(timeline: &Timeline, commit_sequence_number: SequenceNumber) -> MockTransaction {
             let read_sequence_number = timeline.watermark();
-            let drop_guard = timeline.record_write_snapshot_reader(read_sequence_number);
+            let drop_guard = timeline.record_write_snapshot_opened(read_sequence_number);
             MockTransaction { read_sequence_number, commit_sequence_number, drop_guard }
         }
     }
@@ -960,7 +960,7 @@ mod tests {
     fn windows_are_evicted() {
         let timeline = create_timeline();
 
-        let _guard = timeline.record_read_snapshot_reader(SequenceNumber::new(1));
+        let _guard = timeline.record_read_snapshot_opened(SequenceNumber::new(1));
 
         for i in 1..TIMELINE_WINDOW_SIZE * 2 {
             let tx = MockTransaction::new(&timeline, _seq(i as u64));
