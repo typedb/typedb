@@ -216,6 +216,7 @@ fn add_connection_deletes(
             | Constraint::Plays(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::Is(_)
+            | Constraint::IsSet(_)
             | Constraint::Comparison(_)
             | Constraint::Sub(_)
             | Constraint::Value(_)

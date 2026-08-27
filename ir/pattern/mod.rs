@@ -10,7 +10,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::{BitAnd, BitAndAssign, BitOr, BitXor},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor},
 };
 
 use answer::variable::Variable;
@@ -93,6 +93,12 @@ macro_rules! impl_pattern_from_pattern_variables {
     };
 }
 pub(self) use impl_pattern_from_pattern_variables;
+
+use crate::pattern::{
+    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
+    constraint::Constraint,
+    disjunction::DisjunctionBuilder,
+};
 
 // TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -505,6 +511,241 @@ impl PatternVariables {
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == IsRequired::Required).then_some(*v))
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) enum AssignmentMode {
+    #[default]
+    NotAssigned,
+    AtMostOncePerBranch(Option<Span>),
+    ErrorMultipleAssignments(Option<Span>, Option<Span>),
+}
+
+impl BitAnd for AssignmentMode {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::NotAssigned, x) | (x, Self::NotAssigned) => x,
+            (Self::ErrorMultipleAssignments(s1, s2), _) | (_, Self::ErrorMultipleAssignments(s1, s2)) => {
+                Self::ErrorMultipleAssignments(s1, s2)
+            }
+            (Self::AtMostOncePerBranch(s1), Self::AtMostOncePerBranch(s2)) => Self::ErrorMultipleAssignments(s1, s2),
+        }
+    }
+}
+
+impl BitOr for AssignmentMode {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::NotAssigned, x) | (x, Self::NotAssigned) => x,
+            (Self::ErrorMultipleAssignments(s1, s2), _) | (_, Self::ErrorMultipleAssignments(s1, s2)) => {
+                Self::ErrorMultipleAssignments(s1, s2)
+            }
+            (Self::AtMostOncePerBranch(s), Self::AtMostOncePerBranch(_)) => Self::AtMostOncePerBranch(s),
+        }
+    }
+}
+
+impl BitAndAssign for AssignmentMode {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(super) enum OptionalReferenceMode {
+    // We do not use this to detect the semantic issues of two try blocks assigning the same variable.
+    // That is done by the regular BindingMode.
+    UnsafeUnwrap(LocationNote),         // Can be reset by a safe unwrap in a parent
+    RegularReference(LocationNote),     // match $x isa person;
+    AssignedOrStageInput(LocationNote), // Can we treat Assign & Input them as the same thing?
+
+    // TryBlockReference,      // Identical to regular reference?
+    #[default]
+    AbsentOrSafe, // When uninteresting
+}
+
+impl BitAnd for OptionalReferenceMode {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (OptionalReferenceMode::AbsentOrSafe, other) | (other, OptionalReferenceMode::AbsentOrSafe) => other,
+            (OptionalReferenceMode::UnsafeUnwrap(location), _) | (_, OptionalReferenceMode::UnsafeUnwrap(location)) => {
+                OptionalReferenceMode::UnsafeUnwrap(location)
+            }
+            (OptionalReferenceMode::AssignedOrStageInput(location), OptionalReferenceMode::AssignedOrStageInput(_)) => {
+                OptionalReferenceMode::UnsafeUnwrap(location) // Should trigger the MultipleAssignments
+            }
+            (OptionalReferenceMode::RegularReference(location), OptionalReferenceMode::AssignedOrStageInput(_))
+            | (OptionalReferenceMode::AssignedOrStageInput(_), OptionalReferenceMode::RegularReference(location)) => {
+                OptionalReferenceMode::UnsafeUnwrap(location)
+            }
+            (OptionalReferenceMode::RegularReference(location), OptionalReferenceMode::RegularReference(_)) => {
+                OptionalReferenceMode::RegularReference(location)
+            }
+        }
+    }
+}
+
+impl BitOr for OptionalReferenceMode {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (OptionalReferenceMode::AbsentOrSafe, other) | (other, OptionalReferenceMode::AbsentOrSafe) => other,
+            (OptionalReferenceMode::UnsafeUnwrap(location), _) | (_, OptionalReferenceMode::UnsafeUnwrap(location)) => {
+                OptionalReferenceMode::UnsafeUnwrap(location)
+            }
+            (OptionalReferenceMode::AssignedOrStageInput(location), OptionalReferenceMode::AssignedOrStageInput(_)) => {
+                OptionalReferenceMode::AssignedOrStageInput(location) // Should trigger the MultipleAssignments
+            }
+            (OptionalReferenceMode::RegularReference(location), OptionalReferenceMode::AssignedOrStageInput(_))
+            | (OptionalReferenceMode::AssignedOrStageInput(_), OptionalReferenceMode::RegularReference(location)) => {
+                OptionalReferenceMode::AssignedOrStageInput(location) // Should be illegal unsatisfiable input / double assignment
+            }
+            (OptionalReferenceMode::RegularReference(location), OptionalReferenceMode::RegularReference(_)) => {
+                OptionalReferenceMode::RegularReference(location)
+            }
+        }
+    }
+}
+
+pub(crate) type LocationNote = Option<Span>;
+fn pick_any_set(first: Option<LocationNote>, second: Option<LocationNote>) -> Option<LocationNote> {
+    match (first, second) {
+        (Some(Some(x)), _) => Some(Some(x)),
+        (_, Some(Some(x))) => Some(Some(x)),
+        (Some(None), _) | (_, Some(None)) => Some(None),
+        (None, None) => None,
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct VariableUsageMode {
+    pub(super) assigned: AssignmentMode,
+    pub(super) optionality: OptionalReferenceMode,
+}
+
+impl VariableUsageMode {
+    pub(crate) fn of_constraint(
+        constraint: &Constraint<Variable>,
+    ) -> Box<dyn Iterator<Item = (Variable, VariableUsageMode)> + '_> {
+        if let Constraint::FunctionCallBinding(f) = constraint {
+            Box::new(f.binding_modes().filter_map(|(id, binding_mode)| match binding_mode {
+                BindingMode::AlwaysBinding => {
+                    Some((id, VariableUsageMode::assigned(VariableOptionality::Required, f.source_span())))
+                }
+                BindingMode::OptionallyBinding => {
+                    Some((id, VariableUsageMode::assigned(VariableOptionality::Optional, f.source_span())))
+                }
+                BindingMode::RequirePrebound => Some((id, VariableUsageMode::regular_reference(f.source_span()))),
+                BindingMode::Absent | BindingMode::LocallyBindingInChild => {
+                    debug_assert!(false, "Unreachable");
+                    None
+                }
+            }))
+        } else {
+            Box::new(constraint.ids().map(|id| (id, VariableUsageMode::regular_reference(constraint.source_span()))))
+        }
+    }
+
+    pub(crate) fn for_conjunction(conjunction: &ConjunctionBuilder) -> HashMap<Variable, VariableUsageMode> {
+        let mut modes = HashMap::new();
+        conjunction.constraints().iter().flat_map(Self::of_constraint).for_each(|(id, mode)| {
+            *modes.entry(id).or_default() &= mode;
+        });
+
+        conjunction
+            .nested_patterns()
+            .iter()
+            .flat_map(|nested| match nested {
+                NestedPatternBuilder::Disjunction(disjunction) => Self::for_disjunction(disjunction).into_iter(),
+                NestedPatternBuilder::Negation(negation) => Self::for_conjunction(negation.conjunction()).into_iter(),
+                NestedPatternBuilder::Optional(optional) => Self::for_conjunction(optional.conjunction()).into_iter(),
+            })
+            .for_each(|(id, mode)| {
+                *modes.entry(id).or_default() &= mode;
+            });
+
+        // Reset any safely unwrapped
+        for is_set in conjunction.constraints().iter().filter_map(|c| c.as_is_set()) {
+            for id in is_set.ids() {
+                let entry: &mut VariableUsageMode = modes.entry(id).or_default();
+                entry.optionality = OptionalReferenceMode::AbsentOrSafe;
+            }
+        }
+        modes
+    }
+
+    pub(crate) fn for_disjunction(disjunction: &DisjunctionBuilder) -> HashMap<Variable, VariableUsageMode> {
+        let mut modes = HashMap::new();
+        disjunction.conjunctions().flat_map(|branch| Self::for_conjunction(branch).into_iter()).for_each(
+            |(id, mode)| {
+                *modes.entry(id).or_default() |= mode;
+            },
+        );
+        modes
+    }
+
+    fn new(assignment_mode: AssignmentMode, optionality_mode: OptionalReferenceMode) -> Self {
+        Self { assigned: AssignmentMode::NotAssigned, optionality: optionality_mode }
+    }
+
+    pub(crate) fn absent() -> Self {
+        Self::new(AssignmentMode::NotAssigned, OptionalReferenceMode::AbsentOrSafe)
+    }
+
+    // pub(crate) fn input(optionality: VariableOptionality) -> Self {
+    //     match optionality {
+    //         VariableOptionality::Optional => Self::new(AssignmentMode::StageInput, OptionalityMode::StageInput),
+    //         VariableOptionality::Required => Self::new(AssignmentMode::StageInput, OptionalityMode::Absent),
+    //     }
+    // }
+
+    pub(crate) fn regular_reference(location: LocationNote) -> Self {
+        Self::new(AssignmentMode::NotAssigned, OptionalReferenceMode::RegularReference(location))
+    }
+
+    pub(crate) fn assigned(optionality: VariableOptionality, location: LocationNote) -> Self {
+        let assignment_mode = AssignmentMode::AtMostOncePerBranch(location);
+        let optionality_mode = match optionality {
+            VariableOptionality::Optional => OptionalReferenceMode::AssignedOrStageInput(location),
+            VariableOptionality::Required => OptionalReferenceMode::RegularReference(location),
+        };
+        Self::new(assignment_mode, optionality_mode)
+    }
+}
+
+impl BitAnd for VariableUsageMode {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        Self { assigned: self.assigned & rhs.assigned, optionality: self.optionality & rhs.optionality }
+    }
+}
+
+impl BitOr for VariableUsageMode {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        Self { assigned: self.assigned | rhs.assigned, optionality: self.optionality | rhs.optionality }
+    }
+}
+
+impl BitAndAssign for VariableUsageMode {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl BitOrAssign for VariableUsageMode {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
     }
 }
 

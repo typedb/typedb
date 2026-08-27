@@ -17,11 +17,12 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode, BranchID, ContextualisedBindingMode, Pattern, ScopeId,
+        AssignmentMode, BindingMode, BranchID, ContextualisedBindingMode, OptionalReferenceMode, Pattern, ScopeId,
+        VariableUsageMode,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
         nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
 };
@@ -79,6 +80,10 @@ impl<'reg> BlockBuilder<'reg> {
         validate_no_unbound_variable_categories(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
 
+        let variable_usage_modes = self.variable_usage_modes();
+        validate_expressions_assignments_are_unique(&variable_usage_modes, &self.context)?;
+        validate_all_optional_dereferences_are_safe(&variable_usage_modes, &self.context)?;
+
         // Update
         block_binding_modes
             .iter()
@@ -111,6 +116,17 @@ impl<'reg> BlockBuilder<'reg> {
         let mut block_binding_modes = self.conjunction.variable_binding_modes();
         block_binding_modes.extend(self.context.input_variables().map(|v| (v, BindingMode::AlwaysBinding)));
         block_binding_modes
+    }
+
+    fn variable_usage_modes(&self) -> HashMap<Variable, VariableUsageMode> {
+        let mut variable_usage_modes = VariableUsageMode::for_conjunction(&self.conjunction);
+        for (id, optionality) in self.context.input_variable_optionality() {
+            let mode = variable_usage_modes.entry(id).or_default();
+            if optionality == VariableOptionality::Optional {
+                mode.optionality = mode.optionality & OptionalReferenceMode::AssignedOrStageInput(None);
+            }
+        }
+        variable_usage_modes
     }
 }
 
@@ -279,17 +295,45 @@ fn validate_optional_returns_recursive(
     });
     if let Some((var, &source_span)) = reused_optional_return_opt {
         let variable = context.get_variable_name_or_unnamed(*var).to_owned();
-        // TODO: This has to wait till we finalize the spec
-        // // Err(Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }))
-        // use error::TypeDBError;
-        // tracing::warn!(
-        //     "Function call reuses optionally assigned variable. This will fail in the next version:\n{}",
-        //     RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }.format_description()
-        // );
+        error::optional_usage_error!(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span });
         Ok(())
     } else {
         Ok(())
     }
+}
+
+fn validate_all_optional_dereferences_are_safe(
+    variable_usage_modes: &HashMap<Variable, VariableUsageMode>,
+    context: &BlockBuilderContext<'_>,
+) -> Result<(), Box<RepresentationError>> {
+    for (id, mode) in variable_usage_modes {
+        if let OptionalReferenceMode::UnsafeUnwrap(source_span) = mode.optionality {
+            let variable = context.get_variable_name_or_unnamed(*id).to_owned();
+            return Err(Box::new(RepresentationError::UnsafeOptionalDereference { variable, source_span }));
+        }
+    }
+    Ok(())
+}
+
+fn validate_expressions_assignments_are_unique(
+    variable_usage_modes: &HashMap<Variable, VariableUsageMode>,
+    context: &BlockBuilderContext<'_>,
+) -> Result<(), Box<RepresentationError>> {
+    for (id, optionality) in context.input_variable_optionality() {
+        let assignment_mode = variable_usage_modes.get(&id).map_or(AssignmentMode::NotAssigned, |mode| mode.assigned);
+        if let AssignmentMode::AtMostOncePerBranch(source_span) = assignment_mode {
+            let variable = context.get_variable_name_or_unnamed(id).to_owned();
+            return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
+        }
+    }
+
+    for (id, mode) in variable_usage_modes {
+        if let AssignmentMode::ErrorMultipleAssignments(source_span, other_span) = mode.assigned {
+            let variable = context.get_variable_name_or_unnamed(*id).to_owned();
+            return Err(Box::new(RepresentationError::MultipleAssignmentsForVariable { variable, source_span }));
+        }
+    }
+    Ok(())
 }
 
 fn validate_is_plannable(
@@ -552,6 +596,14 @@ impl<'a> BlockBuilderContext<'a> {
 
     pub(crate) fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.block_context.registered_variables().filter(|var| self.is_block_input_variable(*var))
+    }
+
+    pub(crate) fn input_variable_optionality(&self) -> impl Iterator<Item = (Variable, VariableOptionality)> + '_ {
+        // TODO: Actually propagate per-stage optionality changes
+        self.input_variables().map(|v| match self.variable_registry.is_variable_optional(v) {
+            true => (v, VariableOptionality::Optional),
+            false => (v, VariableOptionality::Required),
+        })
     }
 
     pub(crate) fn next_scope_id(&mut self) -> ScopeId {

@@ -132,6 +132,9 @@ pub enum StructureConstraint {
         lhs: StructureVertex,
         rhs: StructureVertex,
     },
+    IsSet {
+        variables: Vec<StructureVertex>,
+    },
     Iid {
         concept: StructureVertex,
         iid: String,
@@ -398,6 +401,10 @@ fn encode_structure_constraint(
                 lhs: encode_structure_vertex(context, is.lhs())?,
                 rhs: encode_structure_vertex(context, is.rhs())?,
             }
+        }),
+        Constraint::IsSet(isset) => push({
+            let variables = encode_structure_vertices(context, isset.ids())?;
+            StructureConstraint::IsSet { variables }
         }),
         Constraint::Iid(iid) => push({
             let concept = encode_structure_vertex(context, iid.var())?;

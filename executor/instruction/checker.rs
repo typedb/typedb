@@ -278,7 +278,7 @@ impl<T> Checker<T> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     self.filter_comparison(context, row, &source, lhs, rhs, *comparator, storage_counters.clone())?
                 }
-                CheckInstruction::NotNone { variables } => Self::filter_not_none(row, variables),
+                CheckInstruction::NotNone { variable } => Self::filter_not_none(row, *variable),
                 CheckInstruction::Unsatisfiable => false,
             };
             if !passes {
@@ -337,10 +337,7 @@ impl<T> Checker<T> {
                 &CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                     self.filter_links_dedup_fn(row, role1, player1, role2, player2)
                 }
-                CheckInstruction::NotNone { variables } => {
-                    todo!()
-                    // self.filter_not(context, row, check)
-                }
+                CheckInstruction::NotNone { variable } => self.filter_not_none_fn(context, row, *variable),
                 &CheckInstruction::Is { lhs, rhs } => self.filter_is_fn(row, lhs, rhs),
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     self.filter_comparison_fn(context, row, lhs, rhs, *comparator, storage_counters.clone())
@@ -1022,25 +1019,19 @@ impl<T> Checker<T> {
     }
 
     fn filter_not_none_fn(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
-        variables: Arc<Vec<ExecutorVariable>>,
+        variable: ExecutorVariable,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let values: Vec<_> = variables
-            .iter()
-            .map(|var| {
-                let ExecutorVariable::RowPosition(pos) = var else { unreachable!() };
-                row.get(*pos).clone().into_owned()
-            })
-            .collect();
-        Box::new(move |_value: &T| Ok(values.iter().all(|value| !value.is_none())))
+        let extractor = self.make_extractor(&CheckVertex::Variable(variable), row, context);
+        Box::new(move |value: &T| Ok(!extractor(value).is_none()))
     }
 
-    fn filter_not_none(row: &MaybeOwnedRow<'_>, variables: &[ExecutorVariable]) -> bool {
-        variables.iter().all(|var| {
-            let ExecutorVariable::RowPosition(pos) = var else { unreachable!() };
-            let value = row.get(*pos);
-            !value.is_none()
-        })
+    fn filter_not_none(row: &MaybeOwnedRow<'_>, variable: ExecutorVariable) -> bool {
+        let ExecutorVariable::RowPosition(pos) = variable else { unreachable!() };
+        let value = row.get(pos);
+        !value.is_none()
     }
 
     fn filter_comparison_fn(
