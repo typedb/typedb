@@ -532,7 +532,7 @@ impl PatternVariables {
     }
 
     fn is_input(&self, variable: &Variable) -> bool {
-        self.0.get(variable) == Some(&IsRequired::Required)
+        self.0.get(variable) == Some(&PatternVariableMode::RequiredInput)
     }
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {

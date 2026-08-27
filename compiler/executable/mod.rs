@@ -3,17 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashSet;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    collections::HashSet,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use error::typedb_error;
 use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
 
-use crate::executable::{
-    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
+use crate::{
+    VariablePosition,
+    executable::{
+        fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
+    },
 };
-use crate::VariablePosition;
 
 pub mod delete;
 pub mod fetch;

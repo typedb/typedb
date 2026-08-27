@@ -29,6 +29,7 @@ use crate::{
     pipeline::{
         PipelineExecutionError, WrittenRowsIterator,
         insert::prepare_output_rows,
+        required_inputs_satisfied,
         stage::{ExecutionContext, StageAPI, StageIterator},
     },
     row::Row,
@@ -71,8 +72,7 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Update pattern"));
-        let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
-            build_step_profiles(&executable, &pattern_profile);
+        let (concept_profiles, connection_profiles) = build_step_profiles(&executable, &pattern_profile);
 
         let input_output_mapping = executable
             .output_row_schema
@@ -103,8 +103,6 @@ where
                 &mut row,
                 &concept_profiles,
                 &connection_profiles,
-                &optional_concept_profiles,
-                &optional_connection_profiles,
             ) {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
@@ -127,34 +125,22 @@ where
 fn build_step_profiles(
     executable: &UpdateExecutable,
     pattern_profile: &PatternProfile,
-) -> (Vec<Arc<StepProfile>>, Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
+) -> (Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
     let mut next_subpattern: usize = 0;
-
-    let concept_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Concept updates"));
-    next_subpattern += 1;
-    let concept_profiles = reserve_step_profiles(&concept_subpattern, &executable.concept_instructions);
-
-    let connection_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Connection updates"));
-    next_subpattern += 1;
-    let connection_profiles = reserve_step_profiles(&connection_subpattern, &executable.connection_instructions);
-
-    let mut optional_concept_profiles = Vec::with_capacity(executable.optional_updates.len());
-    let mut optional_connection_profiles = Vec::with_capacity(executable.optional_updates.len());
-    for (i, optional) in executable.optional_updates.iter().enumerate() {
-        let opt_concept_sub =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} concept updates"));
+    let mut concept_profiles = Vec::with_capacity(executable.updates.len());
+    let mut connection_profiles = Vec::with_capacity(executable.updates.len());
+    for (i, optional) in executable.updates.iter().enumerate() {
+        let concept_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Update {i} concepts"));
         next_subpattern += 1;
-        optional_concept_profiles.push(reserve_step_profiles(&opt_concept_sub, &optional.concept_instructions));
+        concept_profiles.push(reserve_step_profiles(&concept_subpattern, &optional.concept_instructions));
 
-        let opt_connection_sub =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} connection updates"));
+        let connection_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Update {i} connections"));
         next_subpattern += 1;
-        optional_connection_profiles
-            .push(reserve_step_profiles(&opt_connection_sub, &optional.connection_instructions));
+        connection_profiles.push(reserve_step_profiles(&connection_subpattern, &optional.connection_instructions));
     }
-    (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles)
+    (concept_profiles, connection_profiles)
 }
 
 fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
@@ -172,38 +158,23 @@ fn execute_update(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    concept_profiles: &[Arc<StepProfile>],
-    connection_profiles: &[Arc<StepProfile>],
-    optional_concept_profiles: &[Vec<Arc<StepProfile>>],
-    optional_connection_profiles: &[Vec<Arc<StepProfile>>],
+    concept_profiles: &[Vec<Arc<StepProfile>>],
+    connection_profiles: &[Vec<Arc<StepProfile>>],
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
-    debug_assert_eq!(executable.concept_instructions.len(), concept_profiles.len());
-    debug_assert_eq!(executable.connection_instructions.len(), connection_profiles.len());
-    debug_assert_eq!(executable.optional_updates.len(), optional_concept_profiles.len());
-    debug_assert_eq!(executable.optional_updates.len(), optional_connection_profiles.len());
-    execute_concept_instructions(
-        &executable.concept_instructions,
-        concept_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    execute_connection_instructions(
-        &executable.connection_instructions,
-        connection_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    for (i, optional) in executable.optional_updates.iter().enumerate() {
-        execute_optional_update(
-            optional,
-            &optional_concept_profiles[i],
-            &optional_connection_profiles[i],
+    debug_assert_eq!(executable.updates.len(), concept_profiles.len());
+    debug_assert_eq!(executable.updates.len(), connection_profiles.len());
+
+    // First the concept instructions
+    for (i, update) in executable.updates.iter().enumerate() {
+        may_execute_concept_instructions(&update, &concept_profiles[i], snapshot, thing_manager, parameters, row)?;
+    }
+    // Then the connection instructions
+    for (i, update) in executable.updates.iter().enumerate() {
+        may_execute_connection_instructions(
+            &update,
+            &connection_profiles[i],
             snapshot,
             thing_manager,
             parameters,
@@ -213,51 +184,20 @@ fn execute_update(
     Ok(())
 }
 
-fn execute_optional_update(
-    optional: &ConditionalUpdate,
-    concept_profiles: &[Arc<StepProfile>],
-    connection_profiles: &[Arc<StepProfile>],
-    snapshot: &mut impl WritableSnapshot,
-    thing_manager: &ThingManager,
-    parameters: &ParameterRegistry,
-    row: &mut Row<'_>,
-) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(optional.concept_instructions.len(), concept_profiles.len());
-    debug_assert_eq!(optional.connection_instructions.len(), connection_profiles.len());
-    for &input in &optional.required_input_variables {
-        if row.len() <= input.as_usize() || row.get(input).is_none() {
-            return Ok(());
-        }
-    }
-    execute_concept_instructions(
-        &optional.concept_instructions,
-        concept_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    execute_connection_instructions(
-        &optional.connection_instructions,
-        connection_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    Ok(())
-}
-
-fn execute_concept_instructions(
-    concept_instructions: &[ConceptInstruction],
+fn may_execute_concept_instructions(
+    update: &ConditionalUpdate,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(concept_instructions.len(), step_profiles.len());
-    for (instruction, step_profile) in concept_instructions.iter().zip(step_profiles) {
+    if !required_inputs_satisfied(&update.required_input_variables, row) {
+        return Ok(());
+    }
+
+    debug_assert_eq!(update.concept_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in update.concept_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
@@ -272,16 +212,20 @@ fn execute_concept_instructions(
     Ok(())
 }
 
-fn execute_connection_instructions(
-    connection_instructions: &[ConnectionInstruction],
+fn may_execute_connection_instructions(
+    update: &ConditionalUpdate,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(connection_instructions.len(), step_profiles.len());
-    for (instruction, step_profile) in connection_instructions.iter().zip(step_profiles) {
+    if !required_inputs_satisfied(&update.required_input_variables, row) {
+        return Ok(());
+    }
+
+    debug_assert_eq!(update.connection_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in update.connection_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {

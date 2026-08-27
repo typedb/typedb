@@ -9,7 +9,7 @@ use compiler::{
     VariablePosition,
     executable::insert::{
         VariableSource,
-        executable::{InsertExecutable, ConditionalInsert},
+        executable::{ConditionalInsert, InsertExecutable},
         instructions::{ConceptInstruction, ConnectionInstruction},
     },
 };
@@ -26,13 +26,12 @@ use crate::{
     ExecutionInterrupt,
     batch::Batch,
     pipeline::{
-        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, StageIterator, WrittenRowsIterator, required_inputs_satisfied,
         stage::{ExecutionContext, StageAPI},
     },
     row::{MaybeOwnedRow, Row},
     write::{WriteError, write_instruction::AsWriteInstruction},
 };
-use crate::pipeline::required_inputs_satisfied;
 
 pub struct InsertStageExecutor<InputIterator> {
     executable: Arc<InsertExecutable>,
@@ -170,8 +169,7 @@ pub(crate) fn build_step_profiles(
         let connection_subpattern =
             pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Inserts {i} connection"));
         next_subpattern += 1;
-        connection_profiles
-            .push(reserve_step_profiles(&connection_subpattern, &optional.connection_instructions));
+        connection_profiles.push(reserve_step_profiles(&connection_subpattern, &optional.connection_instructions));
     }
     (concept_profiles, connection_profiles)
 }
@@ -200,14 +198,7 @@ pub(crate) fn execute_insert(
     debug_assert_eq!(executable.inserts.len(), connection_profiles.len());
     // First all the concept inserts
     for (i, insert) in executable.inserts.iter().enumerate() {
-        may_execute_concept_instructions(
-            &insert,
-            &concept_profiles[i],
-            snapshot,
-            thing_manager,
-            parameters,
-            row,
-        )?;
+        may_execute_concept_instructions(&insert, &concept_profiles[i], snapshot, thing_manager, parameters, row)?;
     }
 
     // Then all the connection inserts

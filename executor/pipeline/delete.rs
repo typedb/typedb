@@ -5,13 +5,13 @@
  */
 use std::{collections::HashSet, fmt::Display, marker::PhantomData, sync::Arc};
 
-use compiler::{
-    executable::delete::{
-        executable::{DeleteExecutable},
+use compiler::executable::{
+    WriteRequiredVariables,
+    delete::{
+        executable::DeleteExecutable,
         instructions::{ConnectionInstruction, ThingInstruction},
     },
 };
-use compiler::executable::WriteRequiredVariables;
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use resource::{
@@ -23,13 +23,12 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     ExecutionInterrupt,
     pipeline::{
-        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, StageIterator, WrittenRowsIterator, required_inputs_satisfied,
         stage::{ExecutionContext, StageAPI},
     },
     row::Row,
     write::{WriteError, write_instruction::AsWriteInstruction},
 };
-use crate::pipeline::required_inputs_satisfied;
 
 pub struct DeleteStageExecutor<InputIterator> {
     executable: Arc<DeleteExecutable>,
@@ -72,7 +71,7 @@ where
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot = Arc::get_mut(&mut context.snapshot).unwrap();
-        // First delete connections
+        // First delete connections from ALL rows
         for index in 0..batch.len() {
             let mut row = batch.get_row_mut(index);
 
@@ -97,7 +96,7 @@ where
             }
         }
 
-        // Then delete concepts
+        // Then delete concepts from ALL rows
         for index in 0..batch.len() {
             let mut row = batch.get_row_mut(index);
 

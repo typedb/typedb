@@ -14,10 +14,9 @@ use crate::{
     batch::Batch,
     error::ReadExecutionError,
     pipeline::{fetch::FetchExecutionError, stage::StageIterator},
-    row::MaybeOwnedRow,
+    row::{MaybeOwnedRow, Row},
     write::WriteError,
 };
-use crate::row::Row;
 
 pub mod delete;
 pub mod fetch;
@@ -59,9 +58,7 @@ impl LendingIterator for WrittenRowsIterator {
 }
 
 fn required_inputs_satisfied(required_variables: &WriteRequiredVariables, row: &Row<'_>) -> bool {
-    required_variables.iter().all(|position| {
-        position.as_usize() < row.len() && !row.get(*position).is_none()
-    })
+    required_variables.iter().all(|position| position.as_usize() < row.len() && !row.get(*position).is_none())
 }
 
 impl StageIterator for WrittenRowsIterator {

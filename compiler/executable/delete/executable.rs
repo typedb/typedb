@@ -9,16 +9,16 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::{
-    pattern::{Vertex, constraint::Constraint, nested_pattern::NestedPattern},
+    pattern::{Pattern, Vertex, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
-use ir::pattern::Pattern;
+
 use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
-        WriteCompilationError,
+        WriteCompilationError, WriteRequiredVariables,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             ThingPosition,
@@ -27,7 +27,6 @@ use crate::{
         next_executable_id,
     },
 };
-use crate::executable::WriteRequiredVariables;
 
 #[derive(Debug)]
 pub struct DeleteExecutable {
@@ -127,13 +126,15 @@ impl ConditionalDelete {
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables = WriteRequiredVariables(conjunction
-            .constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .filter(|id| conjunction.is_input(id))
-            .filter_map(|id| input_variables.get(&id).copied())
-            .collect());
+        let required_input_variables = WriteRequiredVariables(
+            conjunction
+                .constraints()
+                .iter()
+                .flat_map(|constraint| constraint.ids())
+                .filter(|id| conjunction.is_input(id))
+                .filter_map(|id| input_variables.get(&id).copied())
+                .collect(),
+        );
 
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })
     }
@@ -179,8 +180,7 @@ fn add_connection_deletes(
     input_variables: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
 ) -> Result<Vec<ConnectionInstruction>, Box<WriteCompilationError>> {
-    let resolved_roles =
-        resolve_links_roles(conjunction.constraints(), block_annotations, input_variables, variable_registry)?;
+    let resolved_roles = resolve_links_roles(conjunction, block_annotations, input_variables, variable_registry)?;
     let mut connection_deletes = Vec::new();
     for constraint in conjunction.constraints() {
         match constraint {

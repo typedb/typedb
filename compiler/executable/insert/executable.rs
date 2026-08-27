@@ -10,7 +10,8 @@ use answer::{Type, variable::Variable};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::{
-        ParameterID, Vertex,
+        ParameterID, Pattern, Vertex,
+        conjunction::Conjunction,
         constraint::{Comparator, Constraint},
         expression::Expression,
         nested_pattern::NestedPattern,
@@ -19,12 +20,12 @@ use ir::{
 };
 use itertools::Itertools;
 use typeql::common::Span;
-use ir::pattern::Pattern;
+
 use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
-        WriteCompilationError,
+        WriteCompilationError, WriteRequiredVariables,
         insert::{
             ThingPosition, TypeSource, ValueSource, VariableSource,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
@@ -33,7 +34,6 @@ use crate::{
     },
     filter_variants,
 };
-use crate::executable::WriteRequiredVariables;
 
 #[derive(Debug)]
 pub struct InsertExecutable {
@@ -133,21 +133,19 @@ impl ConditionalInsert {
             stage_source_span,
         )?;
 
-        let connection_instructions = add_connections(
-            conjunction,
-            block_annotations,
-            variable_positions,
-            variable_registry,
-        )?;
+        let connection_instructions =
+            add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables = WriteRequiredVariables(conjunction
-            .constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .filter(|id| conjunction.is_input(id))
-            .filter_map(|id| variable_positions.get(&id).copied())
-            .collect());
+        let required_input_variables = WriteRequiredVariables(
+            conjunction
+                .constraints()
+                .iter()
+                .flat_map(|constraint| constraint.ids())
+                .filter(|id| conjunction.is_input(id))
+                .filter_map(|id| variable_positions.get(&id).copied())
+                .collect(),
+        );
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })
@@ -155,7 +153,7 @@ impl ConditionalInsert {
 }
 
 pub(crate) fn add_inserted_concepts(
-    conjunction: &ir::pattern::conjunction::Conjunction,
+    conjunction: &Conjunction,
     block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     variable_positions: &mut HashMap<Variable, VariablePosition>,
@@ -281,33 +279,26 @@ pub(crate) fn add_inserted_concepts(
 }
 
 fn add_connections(
-    conjunction: &ir::pattern::conjunction::Conjunction,
+    conjunction: &Conjunction,
     block_annotations: &BlockAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
 ) -> Result<Vec<ConnectionInstruction>, Box<WriteCompilationError>> {
-    let constraints = conjunction.constraints();
-    let mut connection_instructions = Vec::with_capacity(constraints.len());
+    let mut connection_instructions = Vec::with_capacity(conjunction.constraints().len());
     let type_annotations =
         block_annotations.type_annotations_of(conjunction).expect("insert conjunction must have type annotations");
-    add_has(constraints, variable_positions, variable_registry, &mut connection_instructions)?;
-    add_links(
-        constraints,
-        type_annotations,
-        variable_positions,
-        variable_registry,
-        &mut connection_instructions,
-    )?;
+    add_has(conjunction, variable_positions, variable_registry, &mut connection_instructions)?;
+    add_links(conjunction, type_annotations, variable_positions, variable_registry, &mut connection_instructions)?;
     Ok(connection_instructions)
 }
 
 fn add_has(
-    constraints: &[Constraint<Variable>],
+    conjunction: &Conjunction,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
+    filter_variants!(Constraint::Has: conjunction.constraints()).try_for_each(|has| {
         let owner = get_thing_position(
             variable_positions,
             has.owner().as_variable().unwrap(),
@@ -326,14 +317,15 @@ fn add_has(
 }
 
 fn add_links(
-    constraints: &[Constraint<Variable>],
+    conjunction: &Conjunction,
     type_annotations: &TypeAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>, // Also contains ones inserted.
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let resolved_role_types = resolve_links_roles(constraints, type_annotations, variable_positions, variable_registry)?;
-    for links in filter_variants!(Constraint::Links: constraints) {
+    let resolved_role_types =
+        resolve_links_roles(conjunction, type_annotations, variable_positions, variable_registry)?;
+    for links in filter_variants!(Constraint::Links: conjunction.constraints()) {
         let relation = get_thing_position(
             variable_positions,
             links.relation().as_variable().unwrap(),
@@ -482,16 +474,17 @@ fn collect_type_bindings(
 }
 
 pub(crate) fn resolve_links_roles(
-    constraints: &[Constraint<Variable>],
+    conjunction: &Conjunction,
     type_annotations: &TypeAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
 ) -> Result<HashMap<Variable, TypeSource>, Box<WriteCompilationError>> {
-    filter_variants!(Constraint::Links : constraints)
+    filter_variants!(Constraint::Links : conjunction.constraints())
         .map(|links| {
             let role_type_vertex = links.role_type();
             let role_type = role_type_vertex.as_variable().expect("links.role_type is always a variable");
-            if let Some(input_position) = variable_positions.get(&role_type) {
+            if conjunction.is_input(&role_type) {
+                let input_position = variable_positions.get(&role_type).expect("inputs have positions");
                 Ok((role_type, TypeSource::Variable(*input_position)))
             } else {
                 let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
