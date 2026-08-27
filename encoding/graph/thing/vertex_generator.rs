@@ -20,7 +20,7 @@ use storage::{
 
 use super::vertex_attribute::{
     BooleanAttributeID, DateAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID,
-    DoubleAttributeID, DurationAttributeID, StructAttributeID,
+    DoubleAttributeID, DurationAttributeID, StructAttributeID, VectorAttributeID,
 };
 use crate::{
     AsBytes, Keyable,
@@ -39,7 +39,7 @@ use crate::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes,
-        struct_bytes::StructBytes,
+        struct_bytes::StructBytes, vector_bytes::VectorBytes,
     },
 };
 
@@ -422,6 +422,50 @@ impl ThingVertexGenerator {
             ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().to_bytes(), &type_id.to_bytes(), &hash]);
         snapshot.exclusive_lock_add(lock);
         Ok(id)
+    }
+
+    pub fn create_attribute_vector<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: VectorBytes<'_, INLINE_LENGTH>,
+        snapshot: &mut Snapshot,
+    ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let vector_attribute_id = self.create_attribute_id_vector(type_id, value.as_reference(), snapshot)?;
+        let vertex = AttributeVertex::new(type_id, AttributeID::Vector(vector_attribute_id));
+        snapshot.put_val(vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        Ok(vertex)
+    }
+
+    pub fn create_attribute_id_vector<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
+        type_id: TypeID,
+        vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
+        snapshot: &mut Snapshot,
+    ) -> Result<VectorAttributeID, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let id = VectorAttributeID::build_hashed_id(type_id, vector_bytes, snapshot, &self.large_value_hasher)?;
+        let hash = id.get_hash_hash();
+        let lock =
+            ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().to_bytes(), &type_id.to_bytes(), &hash]);
+        snapshot.exclusive_lock_add(lock);
+        Ok(id)
+    }
+
+    pub fn find_attribute_id_vector<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
+        type_id: TypeID,
+        vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+    ) -> Result<Option<VectorAttributeID>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        VectorAttributeID::find_hashed_id(type_id, vector_bytes, snapshot, &self.large_value_hasher)
     }
 
     pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(

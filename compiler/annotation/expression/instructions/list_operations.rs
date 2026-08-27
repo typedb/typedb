@@ -20,3 +20,9 @@ impl ExpressionInstruction for ListIndex {
 impl ExpressionInstruction for ListIndexRange {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::ListIndexRange;
 }
+
+pub struct VectorConstructor {}
+
+impl ExpressionInstruction for VectorConstructor {
+    const OP_CODE: ExpressionOpCode = ExpressionOpCode::VectorConstructor;
+}

@@ -376,6 +376,11 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
     match value.value_type.as_str() {
         "decimal" => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
         "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
+        vector_type if vector_type.starts_with("vector") => {
+            let elements: Vec<f32> = serde_json::from_value(value.value)
+                .map_err(|_| GivenRowDecodeError::InvalidVectorForGivenEntry { value: as_str })?;
+            Ok(Value::Vector(std::borrow::Cow::Owned(elements)))
+        }
         _ => decode(&as_str),
     }
 }

@@ -51,6 +51,7 @@ use encoding::{
         value::Value,
         value_struct::{StructIndexEntry, StructValue},
         value_type::{ValueType, ValueTypeCategory},
+        vector_bytes::VectorBytes,
     },
 };
 use itertools::Itertools;
@@ -423,6 +424,17 @@ impl ThingManager {
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
+            AttributeID::Vector(_id) => {
+                let vector = snapshot
+                    .get_mapped(
+                        attribute.vertex().into_storage_key().as_reference(),
+                        |bytes| VectorBytes::new(Bytes::<1>::Reference(bytes)).as_vector(),
+                        storage_counters,
+                    )
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                    .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
+                Ok(Value::Vector(Cow::Owned(vector)))
+            }
         }
     }
 
@@ -484,6 +496,20 @@ impl ThingManager {
                     Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
                         AttributeID::Struct(id),
+                    )),
+                    Ok(None) => return Ok(None),
+                    Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
+                }
+            }
+            ValueType::Vector(_) => {
+                match self.vertex_generator.find_attribute_id_vector(
+                    attribute_type.vertex().type_id_(),
+                    value.encode_vector::<256>(),
+                    snapshot,
+                ) {
+                    Ok(Some(id)) => Attribute::new(AttributeVertex::new(
+                        attribute_type.vertex().type_id_(),
+                        AttributeID::Vector(id),
                     )),
                     Ok(None) => return Ok(None),
                     Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
@@ -2441,6 +2467,12 @@ impl ThingManager {
                 self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
                 struct_attribute
             }
+            Value::Vector(ref vector) => {
+                let encoded_vector: VectorBytes<'static, BUFFER_KEY_INLINE> = VectorBytes::build(vector);
+                self.vertex_generator
+                    .create_attribute_vector(attribute_type.vertex().type_id_(), encoded_vector, snapshot)
+                    .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
+            }
         };
         Ok(Attribute::new(vertex))
     }
@@ -2529,6 +2561,7 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let value = match attribute.get_value(snapshot, self, storage_counters)? {
             Value::String(string) => ByteArray::copy(string.as_bytes()),
+            vector @ Value::Vector(_) => vector.encode_bytes(),
             _ => ByteArray::empty(),
         };
         let key = attribute.vertex().into_storage_key().into_owned_array();

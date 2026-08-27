@@ -245,6 +245,13 @@ typedb_error!(
             constraint_type: String,
             source_span: Option<Span>,
         ),
+        VectorLengthInvalid(
+            12,
+            "The vector length '{length}' is invalid: it must be a positive integer no greater than {max}.",
+            length: String,
+            max: u16,
+            source_span: Option<Span>,
+        ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),
     }

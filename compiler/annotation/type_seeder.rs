@@ -23,7 +23,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
-            Relates, RoleName, Sub, SubKind, Value,
+            Relates, RoleName, Sub, SubKind, Value, VectorSearch,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -204,6 +204,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
+                | Constraint::VectorSearch(_)
                 | Constraint::Links(_)
                 | Constraint::Has(_)
                 | Constraint::Owns(_)
@@ -376,6 +377,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<bool, Box<ConceptReadError>> {
         let any_modified = match constraint {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
+            Constraint::VectorSearch(search) => self.try_propagating_vertex_annotation_impl(search, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
             Constraint::Links(links) => {
                 let relation_role = RelationRoleEdge { links };
@@ -512,6 +514,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
+                Constraint::VectorSearch(search) => edges.push(self.seed_edge(constraint, search, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
                 Constraint::Links(links) => {
                     let relation_role = RelationRoleEdge { links };
@@ -996,6 +999,36 @@ impl BinaryConstraint for Owns<Variable> {
             .for_each(|type_| {
                 collector.insert(type_);
             });
+        Ok(())
+    }
+}
+
+impl BinaryConstraint for VectorSearch<Variable> {
+    fn left(&self) -> &Vertex<Variable> {
+        self.attribute()
+    }
+
+    fn right(&self) -> &Vertex<Variable> {
+        self.attribute_type()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        collector.insert(*left_type);
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        collector.insert(*right_type);
         Ok(())
     }
 }

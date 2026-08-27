@@ -12,6 +12,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use encoding::value::value_type::VectorPrecision;
 use error::typedb_error;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -71,7 +72,8 @@ impl<ID: IrID> ExpressionTree<ID> {
             Expression::Constant(_)
             | Expression::Operation(_)
             | Expression::BuiltinValueFunctionCall(_)
-            | Expression::List(_) => None,
+            | Expression::List(_)
+            | Expression::Vector(_) => None,
         })
     }
 
@@ -89,6 +91,7 @@ impl<ID: IrID> ExpressionTree<ID> {
                 Expression::Operation(inner) => Expression::Operation(inner.clone()),
                 Expression::BuiltinValueFunctionCall(inner) => Expression::BuiltinValueFunctionCall(inner.clone()),
                 Expression::List(inner) => Expression::List(inner.clone()),
+                Expression::Vector(inner) => Expression::Vector(inner.clone()),
             })
             .collect::<Vec<Expression<T>>>();
         ExpressionTree { preorder_tree }
@@ -115,6 +118,8 @@ pub enum Expression<ID> {
 
     List(ListConstructor),
     ListIndexRange(ListIndexRange<ID>),
+
+    Vector(VectorConstructor),
 }
 
 impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
@@ -128,6 +133,7 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
                 Expression::ListIndex(inner) => StructuralEquality::hash(inner),
                 Expression::List(inner) => StructuralEquality::hash(inner),
                 Expression::ListIndexRange(inner) => StructuralEquality::hash(inner),
+                Expression::Vector(inner) => StructuralEquality::hash(inner),
             }
     }
 
@@ -142,6 +148,7 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             (Self::ListIndex(inner), Self::ListIndex(other_inner)) => inner.equals(other_inner),
             (Self::List(inner), Self::List(other_inner)) => inner.equals(other_inner),
             (Self::ListIndexRange(inner), Self::ListIndexRange(other_inner)) => inner.equals(other_inner),
+            (Self::Vector(inner), Self::Vector(other_inner)) => inner.equals(other_inner),
             // this structure forces us to update the match block when the variants change!
             (Self::Constant(_), _)
             | (Self::Variable(_), _)
@@ -149,7 +156,8 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             | (Self::BuiltinValueFunctionCall(_), _)
             | (Self::ListIndex(_), _)
             | (Self::List(_), _)
-            | (Self::ListIndexRange(_), _) => false,
+            | (Self::ListIndexRange(_), _)
+            | (Self::Vector(_), _) => false,
         }
     }
 }
@@ -623,6 +631,76 @@ impl StructuralEquality for ListConstructor {
         self.item_expression_ids.equals(&other.item_expression_ids) && self.len_id.equals(&other.len_id)
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct VectorConstructor {
+    item_expression_ids: Vec<ExpressionTreeNodeId>,
+    len_id: ParameterID,
+    precision: VectorPrecision,
+    source_span: Option<Span>,
+}
+
+impl VectorConstructor {
+    pub fn new(
+        item_expression_ids: Vec<ExpressionTreeNodeId>,
+        len_id: ParameterID,
+        precision: VectorPrecision,
+        source_span: Option<Span>,
+    ) -> Self {
+        Self { item_expression_ids, len_id, precision, source_span }
+    }
+
+    pub fn item_expression_ids(&self) -> &[ExpressionTreeNodeId] {
+        &self.item_expression_ids
+    }
+
+    pub fn len_id(&self) -> &ParameterID {
+        &self.len_id
+    }
+
+    pub fn precision(&self) -> VectorPrecision {
+        self.precision
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+}
+
+impl Hash for VectorConstructor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.item_expression_ids, state);
+        Hash::hash(&self.len_id, state);
+        Hash::hash(&self.precision, state);
+    }
+}
+
+impl Eq for VectorConstructor {}
+
+impl PartialEq for VectorConstructor {
+    fn eq(&self, other: &Self) -> bool {
+        self.item_expression_ids.eq(&other.item_expression_ids)
+            && self.len_id.eq(&other.len_id)
+            && self.precision.eq(&other.precision)
+    }
+}
+
+impl StructuralEquality for VectorConstructor {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.item_expression_ids));
+        hasher.write_u64(StructuralEquality::hash(&self.len_id));
+        hasher.write_u8(self.precision.to_byte());
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.item_expression_ids.equals(&other.item_expression_ids)
+            && self.len_id.equals(&other.len_id)
+            && self.precision == other.precision
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ListIndexRange<ID> {
     list_variable: ID,

@@ -15,6 +15,7 @@ pub enum ExpressionOpCode {
     ListConstructor,
     ListIndex,
     ListIndexRange,
+    VectorConstructor,
 
     // Casts
     // TODO: We can't cast arguments for functions of arity > 2. It may require rewriting compilation.
@@ -99,6 +100,7 @@ impl fmt::Display for ExpressionOpCode {
             ExpressionOpCode::ListConstructor => write!(f, "list-constructor"),
             ExpressionOpCode::ListIndex => write!(f, "list-index"),
             ExpressionOpCode::ListIndexRange => write!(f, "list-range"),
+            ExpressionOpCode::VectorConstructor => write!(f, "vector-constructor"),
             ExpressionOpCode::CastUnaryIntegerToDouble => write!(f, "cast-integer-to-double"),
             ExpressionOpCode::CastLeftIntegerToDouble => write!(f, "cast-left-integer-to-double"),
             ExpressionOpCode::CastRightIntegerToDouble => write!(f, "cast-right-integer-to-double"),
