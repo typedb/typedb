@@ -380,7 +380,6 @@ impl AnnotationRange {
                 | ValueType::DateTimeTZ
                 | ValueType::String => true,
 
-                // Vectors have no ordering, so they cannot bound a range.
                 | ValueType::Duration | ValueType::Struct(_) | ValueType::Vector(_) => false,
             },
             None => false,
@@ -496,7 +495,6 @@ impl AnnotationValues {
                 | ValueType::Duration
                 | ValueType::String => true,
 
-                // TODO(vector-search): allow @values on vectors once vector values can be stored.
                 | ValueType::Struct(_) | ValueType::Vector(_) => false,
             },
             None => false,

@@ -1740,8 +1740,12 @@ impl ConjunctionPlan<'_> {
             ConstraintVertex::VectorSearch(planner) => {
                 let search = planner.vector_search();
                 let attribute_var = search.attribute().as_variable().unwrap();
-                let instruction_inputs =
-                    if inputs.contains(&attribute_var) { Inputs::Single([attribute_var]) } else { Inputs::None([]) };
+                let mut bound_vars = Vec::with_capacity(2);
+                if inputs.contains(&attribute_var) {
+                    bound_vars.push(attribute_var);
+                }
+                bound_vars.extend(search.query().as_variable());
+                let instruction_inputs = Inputs::build_from(&bound_vars);
                 let instruction = ConstraintInstruction::VectorSearch(VectorSearchInstruction::new(
                     search.clone(),
                     instruction_inputs,
@@ -1916,9 +1920,10 @@ impl ConjunctionPlan<'_> {
                     type_: CheckVertex::resolve(type_pos, self.local_annotations),
                     thing: CheckVertex::resolve(attribute_pos.clone(), self.local_annotations),
                 });
+                let query_pos = search.query().clone().map(conjunction_builder.position_mapping());
                 conjunction_builder.push_check(CheckInstruction::VectorSearch {
                     attribute: CheckVertex::resolve(attribute_pos, self.local_annotations),
-                    query: search.query(),
+                    query: CheckVertex::resolve(query_pos, self.local_annotations),
                     threshold: search.threshold(),
                 });
             }

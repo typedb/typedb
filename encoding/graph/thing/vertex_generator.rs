@@ -448,7 +448,6 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        // We never inline vectors
         let id = VectorAttributeID::build_hashed_id(type_id, vector_bytes, snapshot, &self.large_value_hasher)?;
         let hash = id.get_hash_hash();
         let lock =

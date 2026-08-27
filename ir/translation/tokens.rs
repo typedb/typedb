@@ -123,15 +123,8 @@ pub fn translate_vector_precision(typeql_precision: token::VectorPrecision) -> V
     }
 }
 
-/// The largest vector length representable in the value type's tail bytes (a `u16`).
 pub const MAX_VECTOR_LENGTH: u16 = u16::MAX;
 
-/// Translate a parsed `vector(N, "precision")` type into an encoding [`ValueType::Vector`], validating
-/// that the declared length is a positive integer that fits in the on-disk representation.
-///
-/// The grammar already guarantees `N` is a non-negative integer literal and the precision is a
-/// recognised keyword, so the only failure mode reachable here is a length of zero or one that
-/// overflows the length field.
 pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<ValueType, VectorLengthError> {
     let raw_length = vector_type.length.value.as_str();
     let length = raw_length
@@ -143,7 +136,6 @@ pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<ValueType, 
     Ok(ValueType::Vector(VectorTypeParameters::new(length, precision)))
 }
 
-/// Reported when a vector value type's declared length is not a positive integer within range.
 #[derive(Debug, Clone)]
 pub struct VectorLengthError {
     pub length: String,

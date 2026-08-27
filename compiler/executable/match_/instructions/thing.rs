@@ -139,9 +139,6 @@ impl<ID: IrID> fmt::Display for IsaReverseInstruction<ID> {
     }
 }
 
-/// Produces the attributes of the searched type whose cosine similarity to the query vector
-/// meets the threshold. Output is in natural attribute order (join-safe); the descending
-/// similarity ordering of the answer stream is applied at the pipeline level.
 #[derive(Debug, Clone)]
 pub struct VectorSearchInstruction<ID> {
     pub vector_search: VectorSearch<ID>,

@@ -182,8 +182,6 @@ impl<'this> ExpressionCompilationContext<'this> {
             source_span: vector_constructor.source_span(),
         })?;
 
-        // Elements are widened to the vector's precision at evaluation time, so any numeric element
-        // type is accepted here.
         for _ in 0..n_elements {
             let element_category = self.pop_type_single()?.category();
             if !matches!(element_category, ValueTypeCategory::Integer | ValueTypeCategory::Double) {
@@ -194,7 +192,6 @@ impl<'this> ExpressionCompilationContext<'this> {
             }
         }
 
-        // A vector is a single value, not a list: its length and precision are part of its type.
         self.push_type_single(ValueType::Vector(VectorTypeParameters::new(length, vector_constructor.precision())));
         Ok(())
     }
@@ -552,8 +549,6 @@ impl<'this> ExpressionCompilationContext<'this> {
         }))
     }
 
-    // TODO(vector-search): vectors support no binary operators yet; arithmetic over vectors (and
-    // similarity operators) would be added here.
     fn compile_op_vector(
         &mut self,
         op: Operator,

@@ -97,6 +97,11 @@ typedb_error! {
             expected: u16,
             provided: usize,
         ),
+        VectorSearchQueryNotAVector(
+            31,
+            "Vector search query variable is bound to a non-vector value of type '{actual_type}'.",
+            actual_type: String,
+        ),
     }
 }
 

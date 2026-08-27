@@ -119,8 +119,6 @@ pub enum Expression<ID> {
     List(ListConstructor),
     ListIndexRange(ListIndexRange<ID>),
 
-    /// A `vector([..], "float32")` literal. Unlike [`Expression::List`], this evaluates to a
-    /// *single* value (of `ValueType::Vector`), not to a list.
     Vector(VectorConstructor),
 }
 
@@ -634,10 +632,6 @@ impl StructuralEquality for ListConstructor {
     }
 }
 
-/// A `vector([e0, e1, ..], "float32")` literal. Structurally this mirrors [`ListConstructor`] — the
-/// elements are arbitrary sub-expressions and the element count is carried as a parameter so the
-/// evaluator knows how many values to pop — but it produces a single vector value rather than a
-/// list, and it additionally pins the element precision declared in the query.
 #[derive(Debug, Clone)]
 pub struct VectorConstructor {
     item_expression_ids: Vec<ExpressionTreeNodeId>,

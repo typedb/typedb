@@ -177,7 +177,6 @@ pub enum ConstraintInstruction<ID> {
 
     // thing -> type
     Isa(thing::IsaInstruction<ID>),
-    // attribute type -> attributes within cosine-similarity threshold of a query vector
     VectorSearch(thing::VectorSearchInstruction<ID>),
     // type -> thing
     IsaReverse(thing::IsaReverseInstruction<ID>),
@@ -598,7 +597,7 @@ pub enum CheckInstruction<ID> {
     },
     VectorSearch {
         attribute: CheckVertex<ID>,
-        query: ParameterID,
+        query: CheckVertex<ID>,
         threshold: ParameterID,
     },
     Has {
@@ -664,9 +663,11 @@ impl<ID: IrID> CheckInstruction<ID> {
             Self::Isa { isa_kind: kind, type_, thing } => {
                 CheckInstruction::Isa { isa_kind: kind, type_: type_.map(mapping), thing: thing.map(mapping) }
             }
-            Self::VectorSearch { attribute, query, threshold } => {
-                CheckInstruction::VectorSearch { attribute: attribute.map(mapping), query, threshold }
-            }
+            Self::VectorSearch { attribute, query, threshold } => CheckInstruction::VectorSearch {
+                attribute: attribute.map(mapping),
+                query: query.map(mapping),
+                threshold,
+            },
             Self::Has { owner, attribute } => {
                 CheckInstruction::Has { owner: owner.map(mapping), attribute: attribute.map(mapping) }
             }
@@ -721,7 +722,9 @@ impl<ID: IrID> CheckInstruction<ID> {
             CheckInstruction::Isa { thing, type_, .. } => {
                 Box::new(thing.as_variable().into_iter().chain(type_.as_variable().into_iter()))
             }
-            CheckInstruction::VectorSearch { attribute, .. } => Box::new(attribute.as_variable().into_iter()),
+            CheckInstruction::VectorSearch { attribute, query, .. } => {
+                Box::new(attribute.as_variable().into_iter().chain(query.as_variable().into_iter()))
+            }
             CheckInstruction::Has { owner, attribute } => {
                 Box::new(owner.as_variable().into_iter().chain(attribute.as_variable().into_iter()))
             }

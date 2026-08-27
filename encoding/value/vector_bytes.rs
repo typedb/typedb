@@ -10,11 +10,6 @@ use bytes::{Bytes, byte_array::ByteArray};
 
 use crate::AsBytes;
 
-/// The storage encoding of a vector value: each f32 element's raw bit pattern, little-endian,
-/// concatenated. There is no header: the element count and precision are declared on the value
-/// type ([`crate::value::value_type::VectorTypeParameters`]), not stored per value.
-/// Equality (and therefore attribute dedup) is bitwise over these bytes, matching the
-/// bit-pattern `Hash` impl of `Value::Vector`.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct VectorBytes<'a, const INLINE_LENGTH: usize> {
     bytes: Bytes<'a, INLINE_LENGTH>,

@@ -1102,7 +1102,7 @@ impl<T> Checker<T> {
         row: &MaybeOwnedRow<'_>,
         source: &T,
         attribute: &CheckVertex<ExecutorVariable>,
-        query: &ir::pattern::ParameterID,
+        query: &CheckVertex<ExecutorVariable>,
         threshold: &ir::pattern::ParameterID,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -1110,11 +1110,13 @@ impl<T> Checker<T> {
             Some(function) => function(source),
             None => get_vertex_value(attribute, Some(row), &context.parameters),
         };
-        let (query_vector, threshold) = crate::instruction::vector_search_executor::resolve_query_and_threshold(
+        let query_vector = crate::instruction::vector_search_executor::resolve_query_vector(
             context,
-            query.clone(),
-            threshold.clone(),
-        );
+            row,
+            query.as_variable(),
+            query.as_parameter().cloned(),
+        )?;
+        let threshold = crate::instruction::vector_search_executor::resolve_threshold(context, threshold.clone());
         let value = match &attribute_value {
             VariableValue::Thing(Thing::Attribute(attr)) => {
                 attr.get_value(context.snapshot.as_ref(), context.thing_manager.as_ref(), storage_counters)?
@@ -1131,19 +1133,27 @@ impl<T> Checker<T> {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
         attribute: &CheckVertex<ExecutorVariable>,
-        query: &ir::pattern::ParameterID,
+        query: &CheckVertex<ExecutorVariable>,
         threshold: &ir::pattern::ParameterID,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let extractor = self.make_extractor(attribute, row, context);
-        let (query_vector, threshold) = crate::instruction::vector_search_executor::resolve_query_and_threshold(
+        let resolved = crate::instruction::vector_search_executor::resolve_query_vector(
             context,
-            query.clone(),
-            threshold.clone(),
-        );
+            row,
+            query.as_variable(),
+            query.as_parameter().cloned(),
+        )
+        .map(|query_vector| {
+            (query_vector, crate::instruction::vector_search_executor::resolve_threshold(context, threshold.clone()))
+        });
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
         Box::new(move |source| {
+            let (query_vector, threshold) = match &resolved {
+                Ok(resolved) => resolved,
+                Err(err) => return Err(err.clone()),
+            };
             let attribute_value = extractor(source);
             let value = match &attribute_value {
                 VariableValue::Thing(Thing::Attribute(attr)) => {
@@ -1153,8 +1163,8 @@ impl<T> Checker<T> {
                 _ => return Ok(false),
             };
             let Value::Vector(vector) = &value else { return Ok(false) };
-            Ok(crate::instruction::vector_search_executor::cosine_similarity(&query_vector, vector.as_ref())
-                >= threshold)
+            Ok(crate::instruction::vector_search_executor::cosine_similarity(query_vector, vector.as_ref())
+                >= *threshold)
         })
     }
 

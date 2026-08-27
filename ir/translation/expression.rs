@@ -109,8 +109,6 @@ fn build_recursive(
             Expression::List(ListConstructor::new(items, len_id, list.span()))
         }
         typeql::Expression::Vector(vector) => {
-            // The grammar allows any list-producing expression inside `vector(..)`, but only an
-            // inline list literal has a statically known element count, which the constructor needs.
             let typeql::Expression::List(list) = &vector.list else {
                 return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
                     feature: UnimplementedFeature::VectorSearch,
@@ -123,13 +121,6 @@ fn build_recursive(
                 .collect::<Result<Vec<_>, _>>()?;
             let precision = translate_vector_precision(vector.precision);
 
-            // A vector literal is overwhelmingly written with literal elements. Folding that case
-            // into a single constant keeps vectors usable everywhere a plain value is (notably in
-            // `insert`, which only accepts constant-rooted expressions), and leaves the general
-            // constructor for vectors built out of variables or nested expressions.
-            //
-            // Empty and over-long vectors deliberately fall through to the constructor, which
-            // reports them properly at compile time rather than silently folding a bad length.
             let foldable = !items.is_empty() && items.len() <= MAX_VECTOR_LENGTH as usize;
             let folded: Option<Vec<f32>> = foldable
                 .then(|| {

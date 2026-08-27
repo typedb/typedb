@@ -282,8 +282,6 @@ impl ExpressionEvaluation for VectorConstructor {
         let n_elements = state.pop_value().unwrap_integer() as usize;
         let mut elements = Vec::with_capacity(n_elements);
         for _ in 0..n_elements {
-            // The compiler has already rejected non-numeric elements; widen to the vector's
-            // precision, which is float32 for every precision the grammar currently accepts.
             let element = match state.pop_value() {
                 Value::Double(double) => double as f32,
                 Value::Integer(integer) => integer as f32,

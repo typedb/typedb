@@ -9,7 +9,7 @@ use std::{collections::HashMap, fmt, iter, sync::Arc, vec};
 use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::thing::VectorSearchInstruction};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use encoding::value::{value::Value, value_type::ValueType};
+use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
 use ir::pattern::{ParameterID, constraint::VectorSearch};
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -26,10 +26,6 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-/// Cosine similarity between two vectors, in [-1, 1], SIMD-accelerated via simsimd.
-/// simsimd returns cosine *distance* (1 - similarity), inverted here. Mismatched lengths yield
-/// NEG_INFINITY so they never pass a threshold; zero vectors follow simsimd's convention
-/// (two zero vectors are identical → similarity 1, one zero vector → similarity 0).
 pub(crate) fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
     if a.len() != b.len() {
         return f64::NEG_INFINITY;
@@ -54,7 +50,6 @@ mod test {
     }
 }
 
-/// A matching attribute together with its cosine similarity to the query vector.
 pub(super) type VectorSearchItem = (VariableValue<'static>, f64);
 
 pub(super) type VectorSearchFilterMapFn = FilterMapUnchangedFn<VectorSearchItem>;
@@ -107,8 +102,8 @@ impl VectorSearchExecutor {
         _sort_by: ExecutorVariable,
     ) -> Self {
         let VectorSearchInstruction { vector_search, types, checks, inputs } = instruction;
-        let attribute_bound = !matches!(inputs, compiler::executable::match_::instructions::Inputs::None(_));
         let var = vector_search.attribute().as_variable().unwrap();
+        let attribute_bound = inputs.iter().any(|&input| input == var);
         let similarity_var = vector_search.similarity().as_variable();
         let tuple_positions = TuplePositions::Pair([Some(var), similarity_var]);
         let checker = Checker::<VectorSearchItem>::new(
@@ -135,8 +130,10 @@ impl VectorSearchExecutor {
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
-        let (query, threshold) =
-            resolve_query_and_threshold(context, self.vector_search.query(), self.vector_search.threshold());
+        let query_vertex = self.vector_search.query();
+        let query =
+            resolve_query_vector(context, &row, query_vertex.as_variable(), query_vertex.as_parameter().cloned())?;
+        let threshold = resolve_threshold(context, self.vector_search.threshold());
 
         for type_ in self.types.iter() {
             let attribute_type = type_.as_attribute_type();
@@ -153,13 +150,8 @@ impl VectorSearchExecutor {
             }
         }
 
-        // Materialize matching attributes with their similarity. Storage order is preserved, which
-        // keeps the stream sorted by the attribute variable and therefore join-safe; the descending
-        // similarity ordering of the answer stream comes from the implicit pipeline sort stage.
         let mut matching: Vec<Result<VectorSearchItem, Box<ConceptReadError>>> = Vec::new();
         if self.attribute_bound {
-            // The attribute is already bound in the row: emit it (with its similarity) only if it
-            // is of the searched type and passes the threshold.
             let ExecutorVariable::RowPosition(position) = self.vector_search.attribute().as_variable().unwrap() else {
                 unreachable!("bound vector search attribute must have a row position")
             };
@@ -212,20 +204,44 @@ impl VectorSearchExecutor {
     }
 }
 
-pub(crate) fn resolve_query_and_threshold(
+pub(crate) fn resolve_query_vector(
     context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    query: ParameterID,
+    row: &MaybeOwnedRow<'_>,
+    variable: Option<ExecutorVariable>,
+    parameter: Option<ParameterID>,
+) -> Result<Vec<f32>, Box<ConceptReadError>> {
+    if let Some(parameter) = parameter {
+        match context.parameters().value_unchecked(&parameter) {
+            Value::Vector(vector) => Ok(vector.as_ref().clone()),
+            other => unreachable!("vector search query parameter is not a vector: {other}"),
+        }
+    } else {
+        let ExecutorVariable::RowPosition(position) =
+            variable.expect("vector search query must be a parameter or a variable")
+        else {
+            unreachable!("vector search query variable must have a row position")
+        };
+        match row.get(position) {
+            VariableValue::Value(Value::Vector(vector)) => Ok(vector.as_ref().clone()),
+            other => {
+                let actual_type = match other {
+                    VariableValue::Value(value) => value.value_type().to_string(),
+                    other => format!("{other:?}"),
+                };
+                Err(Box::new(ConceptReadError::VectorSearchQueryNotAVector { actual_type }))
+            }
+        }
+    }
+}
+
+pub(crate) fn resolve_threshold(
+    context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     threshold: ParameterID,
-) -> (Vec<f32>, f64) {
-    let query_vector = match context.parameters().value_unchecked(&query) {
-        Value::Vector(vector) => vector.as_ref().clone(),
-        other => unreachable!("vector search query parameter is not a vector: {other}"),
-    };
-    let threshold = match context.parameters().value_unchecked(&threshold) {
+) -> f64 {
+    match context.parameters().value_unchecked(&threshold) {
         Value::Double(double) => *double,
         other => unreachable!("vector search threshold parameter is not a double: {other}"),
-    };
-    (query_vector, threshold)
+    }
 }
 
 impl fmt::Display for VectorSearchExecutor {

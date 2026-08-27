@@ -21,8 +21,6 @@ impl ExpressionInstruction for ListIndexRange {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::ListIndexRange;
 }
 
-/// Pops an element count followed by that many numeric values, and pushes a single vector value.
-/// Shares this module with the list operations because it consumes the stack the same way.
 pub struct VectorConstructor {}
 
 impl ExpressionInstruction for VectorConstructor {

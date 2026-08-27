@@ -12,12 +12,6 @@ config:
 
 build:
   correctness:
-    # TODO(vector-search): temporary debug machine for reproducing CI issues — remove before merge
-    debug-window:
-      image: typedb-ubuntu-22.04
-      command: |
-        sleep 3600
-
     build:
       image: typedb-ubuntu-22.04
       command: |

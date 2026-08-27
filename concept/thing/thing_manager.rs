@@ -2561,7 +2561,6 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let value = match attribute.get_value(snapshot, self, storage_counters)? {
             Value::String(string) => ByteArray::copy(string.as_bytes()),
-            // Vectors are hash-stored: the buffered write's value part holds the vector bytes.
             vector @ Value::Vector(_) => vector.encode_bytes(),
             _ => ByteArray::empty(),
         };

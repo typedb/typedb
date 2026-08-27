@@ -322,7 +322,6 @@ impl AttributeID {
             ValueType::Duration => DurationAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
             ValueType::Struct(_) => StructAttributeID::is_inlineable(),
-            // Vectors are variable-length and never inlineable (hash-stored, like Struct).
             ValueType::Vector(_) => false,
         }
     }
@@ -962,10 +961,6 @@ impl HashedID<{ StructAttributeID::HASH_LENGTH + 1 }> for StructAttributeID {
     const FIXED_WIDTH_KEYS: bool = true;
 }
 
-/// A vector attribute's ID: `[category: 1][hash: 7][disambiguator: 1]`. Vectors are always
-/// hash-stored (never inlined): the full element bytes live in the storage value of the
-/// attribute vertex key, exactly like Struct. There is no sortable value prefix in the ID —
-/// vectors have no meaningful sort order.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct VectorAttributeID {
     bytes: [u8; Self::LENGTH],
@@ -1045,7 +1040,6 @@ impl VectorAttributeID {
         Self { bytes }
     }
 
-    // write the deterministic ID prefix for the provided vector value, and return the length of the prefix written
     pub(crate) fn write_hashed_id_deterministic_prefix<const INLINE_LENGTH: usize>(
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         hasher: &impl Fn(&[u8]) -> u64,

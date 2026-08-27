@@ -574,8 +574,6 @@ fn add_typeql_iterable_binding(
 
 pub const VECTOR_SEARCH_FUNCTION_NAME: &str = "cosine_similarity_search";
 
-// ponytail: builtin accepts only literal vector + literal threshold; variable/expression args
-// can be added when a use case appears.
 fn add_vector_search_call(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     assigned: Vec<AssignedVariable>,
@@ -597,32 +595,35 @@ fn add_vector_search_call(
         _ => return Err(invalid("first argument must be an attribute type label")),
     };
 
-    let typeql::Expression::Vector(vector) = vector_arg else {
-        return Err(invalid("second argument must be a vector literal"));
-    };
-    let typeql::Expression::List(list) = &vector.list else {
-        return Err(invalid("second argument must be a vector literal with inline elements"));
-    };
-    if list.items.is_empty() || list.items.len() > MAX_VECTOR_LENGTH as usize {
-        return Err(invalid("query vector length out of range"));
-    }
-    let elements = list
-        .items
-        .iter()
-        .map(|item| {
-            let typeql::Expression::Value(literal) = item else { return None };
-            match translate_literal(literal).ok()? {
-                Value::Double(double) => Some(double as f32),
-                Value::Integer(integer) => Some(integer as f32),
-                _ => None,
+    let query = match vector_arg {
+        typeql::Expression::Variable(var) => Vertex::Variable(register_typeql_var(constraints, var)?),
+        typeql::Expression::Vector(vector) => {
+            let typeql::Expression::List(list) = &vector.list else {
+                return Err(invalid("second argument must be a vector literal with inline elements"));
+            };
+            if list.items.is_empty() || list.items.len() > MAX_VECTOR_LENGTH as usize {
+                return Err(invalid("query vector length out of range"));
             }
-        })
-        .collect::<Option<Vec<f32>>>()
-        .ok_or_else(|| invalid("query vector elements must be numeric literals"))?;
-    let query_id = constraints.parameters().register_value(
-        Value::Vector(Cow::Owned(elements)),
-        vector.span().expect("Parser did not provide Vector text range"),
-    );
+            let elements = list
+                .items
+                .iter()
+                .map(|item| {
+                    let typeql::Expression::Value(literal) = item else { return None };
+                    match translate_literal(literal).ok()? {
+                        Value::Double(double) => Some(double as f32),
+                        Value::Integer(integer) => Some(integer as f32),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<f32>>>()
+                .ok_or_else(|| invalid("query vector elements must be numeric literals"))?;
+            Vertex::Parameter(constraints.parameters().register_value(
+                Value::Vector(Cow::Owned(elements)),
+                vector.span().expect("Parser did not provide Vector text range"),
+            ))
+        }
+        _ => return Err(invalid("second argument must be a vector literal or a variable")),
+    };
 
     let typeql::Expression::Value(threshold_literal) = threshold_arg else {
         return Err(invalid("third argument must be a numeric literal threshold"));
@@ -644,7 +645,7 @@ fn add_vector_search_call(
     );
 
     let similarity = constraints.create_anonymous_variable(span)?;
-    constraints.add_vector_search(assigned_var.variable, attribute_type, query_id, threshold_id, similarity, span)?;
+    constraints.add_vector_search(assigned_var.variable, attribute_type, query, threshold_id, similarity, span)?;
     Ok(())
 }
 

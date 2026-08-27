@@ -307,8 +307,6 @@ pub fn encode_value_value(value: Value<'_>) -> serde_json::Value {
             json!(value.to_string())
         }
         Value::Struct(_) => unimplemented_feature!(Structs),
-        // A vector is rendered as a plain JSON array of its elements; its declared length and
-        // precision travel separately in the value type (see `encode_value_value_type`).
         Value::Vector(elements) => json!(elements.as_ref()),
     }
 }
@@ -331,8 +329,6 @@ pub fn encode_value_type(
         ValueType::Struct(struct_definition_key) => {
             type_manager.get_struct_definition(snapshot, struct_definition_key)?.name.clone()
         }
-        // Rendered in full typeql form, e.g. `vector(384, "float32")`, since the length and
-        // precision are part of the type.
         value_type @ ValueType::Vector(_) => value_type.to_string(),
     };
     Ok(value_type)

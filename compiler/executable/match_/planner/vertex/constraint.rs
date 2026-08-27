@@ -496,6 +496,7 @@ impl Costed for IsaPlanner<'_> {
 pub(crate) struct VectorSearchPlanner<'a> {
     vector_search: &'a VectorSearch<Variable>,
     attribute: VariableVertexId,
+    query: Option<VariableVertexId>,
     similarity: VariableVertexId,
     pub(crate) unrestricted_expected_size: f64,
 }
@@ -514,16 +515,17 @@ impl<'a> VectorSearchPlanner<'a> {
         statistics: &Statistics,
     ) -> Self {
         let attribute = variable_index[&vector_search.attribute().as_variable().unwrap()];
+        let query = vector_search.query().as_variable().map(|var| variable_index[&var]);
         let similarity = variable_index[&vector_search.similarity().as_variable().unwrap()];
         let unrestricted_expected_size = type_annotations
             .vertex_annotations_of(vector_search.attribute())
             .map(|types| types.iter().map(|type_| instance_count(type_, statistics)).sum::<u64>() as f64)
             .unwrap_or(0.0);
-        Self { vector_search, attribute, similarity, unrestricted_expected_size }
+        Self { vector_search, attribute, query, similarity, unrestricted_expected_size }
     }
 
     fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
-        [self.attribute, self.similarity].into_iter()
+        [Some(self.attribute), self.query, Some(self.similarity)].into_iter().flatten()
     }
 
     pub(crate) fn vector_search(&self) -> &VectorSearch<Variable> {
@@ -538,7 +540,6 @@ impl Costed for VectorSearchPlanner<'_> {
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        // Brute-force scan: every instance of the attribute type is visited regardless of bindings.
         let scan_size = self.unrestricted_expected_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE);
         let is_attribute_bound = inputs.contains(&VertexId::Variable(self.attribute));
         let cost = match is_attribute_bound {

@@ -212,8 +212,6 @@ pub(crate) fn translate_pipeline_stages(
             TranslatedPipelinePart::Stage(stage) => {
                 let implicit_sort = vector_search_implicit_sort(&stage);
                 translated_stages.push(stage);
-                // A vector search's answer stream is ordered by similarity, descending: sort on the
-                // constraint's hidden similarity variable immediately after the match stage.
                 if let Some(sort) = implicit_sort {
                     translated_stages.push(TranslatedStage::Sort(sort));
                 }
@@ -239,8 +237,6 @@ pub(crate) fn translate_pipeline_stages(
 
 fn vector_search_implicit_sort(stage: &TranslatedStage) -> Option<Sort> {
     let TranslatedStage::Match { block, source_span } = stage else { return None };
-    // ponytail: only top-level vector searches get the implicit ordering; inside a
-    // disjunction/negation the stream order is undefined anyway.
     let similarity_variables: Vec<(Variable, bool)> = block
         .conjunction()
         .constraints()

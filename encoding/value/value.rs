@@ -46,9 +46,6 @@ pub enum Value<'a> {
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
-    // A fixed-length single-precision vector. Length/precision live on the value type; the value
-    // itself is just the element data. Deep storage encoding is not yet implemented (see the
-    // `todo!()`s in the encode paths below and in `AttributeID`).
     Vector(Cow<'a, Vec<f32>>),
 }
 
@@ -115,7 +112,6 @@ impl Hash for Value<'_> {
             Value::Duration(value) => Hash::hash(value, state),
             Value::String(value) => Hash::hash(value, state),
             Value::Struct(value) => Hash::hash(value, state),
-            // hash the raw bit patterns so it matches whatever the eventual storage encoding uses
             Value::Vector(value) => {
                 for element in value.iter() {
                     Hash::hash(&element.to_bits(), state);
@@ -384,7 +380,6 @@ impl ValueEncodable for Value<'_> {
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
             Value::Vector(vector) => {
-                // The precision is fixed at float32 for now; the length is derived from the data.
                 ValueType::Vector(VectorTypeParameters::new(vector.len() as u16, VectorPrecision::Float32))
             }
         }

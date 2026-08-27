@@ -37,14 +37,9 @@ pub enum ValueType {
 
     Struct(DefinitionKey),
 
-    // A fixed-length, single-precision vector, e.g. `vector(384, "float32")`. `length` is the
-    // number of elements declared for the attribute type; `precision` is the element encoding.
     Vector(VectorTypeParameters),
 }
 
-/// The parameters that make a vector value type concrete: its declared length and element precision.
-/// These are packed into the value type's tail bytes (see [`ValueTypeBytes`]), analogously to how
-/// [`ValueType::Struct`] carries a [`DefinitionKey`].
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct VectorTypeParameters {
     pub length: u16,
@@ -63,8 +58,6 @@ impl fmt::Display for VectorTypeParameters {
     }
 }
 
-/// The element encoding of a vector value type. Mirrors `typeql::common::token::VectorPrecision`.
-/// Currently only single-precision float (`"float32"`) is supported by the spec.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum VectorPrecision {
     Float32,
@@ -125,7 +118,6 @@ impl ValueType {
             | ValueType::Duration
             | ValueType::String => true,
 
-            // Vectors are variable-length and hash-stored (like Struct), so they are not keyable.
             | ValueType::Double | ValueType::Struct(_) | ValueType::Vector(_) => false,
         }
     }
@@ -146,7 +138,6 @@ impl ValueType {
                 Self::Struct(definition_key)
             }
             ValueTypeCategory::Vector => {
-                // Tail layout: [length_lo, length_hi, precision] (see ValueTypeBytes::build).
                 let length = u16::from_le_bytes([tail[0], tail[1]]);
                 let precision = VectorPrecision::from_byte(tail[2]);
                 Self::Vector(VectorTypeParameters::new(length, precision))
@@ -166,9 +157,6 @@ impl ValueType {
         }
     }
 
-    /// Like [`Self::is_trivially_castable_to`], but compares against a full value type rather than
-    /// just a category. Parameterized value types need this: a `vector(2, "float32")` value shares a
-    /// category with a `vector(3, "float32")` attribute type but is not a legal value for it.
     pub fn is_trivially_castable_to_value_type(&self, other: &ValueType) -> bool {
         match (self, other) {
             (ValueType::Vector(params), ValueType::Vector(other_params)) => params == other_params,
@@ -336,9 +324,6 @@ impl ValueTypeCategory {
             ValueTypeCategory::DateTimeTZ => Some(ValueType::DateTimeTZ),
             ValueTypeCategory::Duration => Some(ValueType::Duration),
             ValueTypeCategory::String => Some(ValueType::String),
-            // Struct and Vector are parameterized: the category alone is insufficient to
-            // reconstruct the full value type (Struct needs a DefinitionKey, Vector needs a
-            // length + precision), so they cannot be materialized from a bare category.
             ValueTypeCategory::Struct => None,
             ValueTypeCategory::Vector => None,
         }
@@ -391,8 +376,6 @@ impl ValueTypeBytes {
                 array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
             }
             ValueType::Vector(params) => {
-                // Tail layout: [length_lo, length_hi, precision]. TAIL_LENGTH is 3 bytes, exactly
-                // enough for a u16 length plus a single precision byte.
                 let length_bytes = params.length.to_le_bytes();
                 array[Self::RANGE_TAIL.start] = length_bytes[0];
                 array[Self::RANGE_TAIL.start + 1] = length_bytes[1];

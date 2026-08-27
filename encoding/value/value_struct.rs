@@ -227,7 +227,6 @@ impl StructIndexEntry<'static> {
             | Value::DateTimeTZ(_)
             | Value::Duration(_) => None,
             Value::String(value) => Some(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(value).to_bytes()),
-            // Struct and Vector fields are not indexable: see `StructValue::create_index_entries`.
             Value::Struct(_) | Value::Vector(_) => unreachable!(),
         };
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
@@ -285,7 +284,6 @@ impl StructIndexEntry<'static> {
                 let string_bytes = StringBytes::<0>::build_ref(value);
                 Self::encode_string_into(snapshot, hasher, string_bytes.as_reference(), &mut buf)?;
             }
-            // TODO(vector-search): vectors are not indexable as struct fields yet.
             Value::Struct(_) | Value::Vector(_) => unreachable!(),
         };
         Ok(buf)

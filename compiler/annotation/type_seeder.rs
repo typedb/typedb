@@ -1003,8 +1003,6 @@ impl BinaryConstraint for Owns<Variable> {
     }
 }
 
-// Type-inference-wise a vector search binds its attribute variable to exactly the named
-// attribute type, i.e. it behaves like an exact `isa`.
 impl BinaryConstraint for VectorSearch<Variable> {
     fn left(&self) -> &Vertex<Variable> {
         self.attribute()
