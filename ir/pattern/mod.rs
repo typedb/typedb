@@ -467,31 +467,7 @@ impl BitOr for BindingMode {
     }
 }
 
-#[derive(Debug, Clone)]
-pub(crate) struct ContextualisedBindingMode(HashMap<Variable, BindingMode>);
-
-impl ContextualisedBindingMode {
-    pub(crate) fn for_block(block_binding_modes: HashMap<Variable, BindingMode>) -> ContextualisedBindingMode {
-        Self(block_binding_modes)
-    }
-
-    pub(crate) fn from(
-        mut pattern_modes: HashMap<Variable, BindingMode>,
-        parent_modes: &ContextualisedBindingMode,
-    ) -> ContextualisedBindingMode {
-        pattern_modes.iter_mut().for_each(|(var, mode)| {
-            *mode = match (*mode, parent_modes.0.get(var).copied().unwrap_or(BindingMode::Absent)) {
-                (_, BindingMode::RequirePrebound) => BindingMode::RequirePrebound,
-                (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding)
-                | (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding) => BindingMode::RequirePrebound,
-                (mode, _) => mode,
-            };
-        });
-        Self(pattern_modes)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum PatternVariableMode {
     RequiredInput,
     Binding,
@@ -500,20 +476,66 @@ pub(crate) enum PatternVariableMode {
 
 #[derive(Debug, Clone)]
 pub(crate) struct PatternVariables(HashMap<Variable, PatternVariableMode>);
+
 impl PatternVariables {
-    fn from(modes: &ContextualisedBindingMode) -> Self {
-        Self(
-            modes
-                .0
-                .iter()
-                .filter_map(|(var, mode)| match mode {
-                    BindingMode::RequirePrebound => Some((*var, PatternVariableMode::RequiredInput)),
-                    BindingMode::AlwaysBinding => Some((*var, PatternVariableMode::Binding)),
-                    BindingMode::OptionallyBinding => Some((*var, PatternVariableMode::OptionallyBinding)),
-                    BindingMode::LocallyBindingInChild | BindingMode::Absent => None,
-                })
-                .collect(),
-        )
+    pub(crate) fn for_block(
+        block_binding_modes: HashMap<Variable, BindingMode>,
+        input_variables: impl Iterator<Item = Variable>,
+    ) -> Self {
+        let input_modes = input_variables.map(|variable| (variable, PatternVariableMode::RequiredInput)).collect();
+        PatternVariables::build(block_binding_modes, &PatternVariables(input_modes))
+    }
+
+    pub(crate) fn build(
+        mut pattern_modes: HashMap<Variable, BindingMode>,
+        parent_pattern_variables: &PatternVariables,
+    ) -> Self {
+        let pattern_variables = pattern_modes
+            .into_iter()
+            .filter_map(|(var, mode)| {
+                let mode = if let Some(parent_mode) = parent_pattern_variables.0.get(&var).copied() {
+                    match (parent_mode, mode) {
+                        (_, BindingMode::Absent) => None?,
+                        (PatternVariableMode::RequiredInput, _) => PatternVariableMode::RequiredInput,
+                        (PatternVariableMode::Binding, BindingMode::LocallyBindingInChild)
+                        | (PatternVariableMode::Binding, BindingMode::OptionallyBinding) => {
+                            PatternVariableMode::RequiredInput
+                        }
+                        (PatternVariableMode::Binding, BindingMode::RequirePrebound) => {
+                            PatternVariableMode::RequiredInput
+                        }
+                        (PatternVariableMode::Binding, BindingMode::AlwaysBinding) => PatternVariableMode::Binding,
+                        (PatternVariableMode::OptionallyBinding, BindingMode::LocallyBindingInChild)
+                        | (PatternVariableMode::OptionallyBinding, BindingMode::RequirePrebound) => {
+                            debug_assert!(false, "Unreachable: Illegal optional reuse");
+                            PatternVariableMode::RequiredInput
+                        }
+                        (PatternVariableMode::OptionallyBinding, BindingMode::AlwaysBinding) => {
+                            // Happens in the transition from optional to inner
+                            PatternVariableMode::Binding
+                        }
+                        (PatternVariableMode::OptionallyBinding, BindingMode::OptionallyBinding) => {
+                            // There's a nested optional even deeper.
+                            PatternVariableMode::OptionallyBinding
+                        }
+                    }
+                } else {
+                    debug_assert!(
+                        mode != BindingMode::RequirePrebound,
+                        "Unreachable: checked in validate_all_required_variables_can_be_bound"
+                    );
+                    match mode {
+                        BindingMode::RequirePrebound => PatternVariableMode::RequiredInput,
+                        BindingMode::OptionallyBinding => PatternVariableMode::OptionallyBinding,
+                        BindingMode::AlwaysBinding => PatternVariableMode::Binding,
+                        BindingMode::LocallyBindingInChild => None?,
+                        BindingMode::Absent => None?,
+                    }
+                };
+                Some((var, mode))
+            })
+            .collect();
+        Self(pattern_variables)
     }
 
     pub(crate) fn is_variable_visible_referenced(&self, variable: &Variable) -> bool {
