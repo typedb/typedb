@@ -53,7 +53,7 @@ bazel_dep(name = "rules_kotlin", version = "2.0.0")
 register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
 
 # Python
-bazel_dep(name = "rules_python", version = "1.0.0")
+bazel_dep(name = "rules_python", version = "2.3.2")
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(is_default = True, python_version = "3.11", ignore_root_user_error = True)
 
@@ -162,14 +162,14 @@ bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "ab5bfc90274e2d34569d5bc22558314b551cdecd",
+    commit = "c98429250c448e7bd940062584c3ebd6a2368faf",
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "a5c51254088f343fb8b6a9668eaf99b35503dad4",
+    commit = "b137ccdae216d144bb5efc07a0bb42a662f17116",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")

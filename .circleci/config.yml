@@ -11,14 +11,14 @@ orbs:
 executors:
   linux-arm64-amazonlinux-2:
     docker:
-      - image: typedb/amazonlinux2-ci:3.12.0-arm64
+      - image: typedb/amazonlinux2-ci:3.13.0-arm64
     resource_class: arm.large
     working_directory: ~/typedb
 
   # All builds go on amazon-linux.
   linux-x86_64-amazonlinux-2:
     docker:
-      - image: typedb/amazonlinux2-ci:3.12.0-amd64
+      - image: typedb/amazonlinux2-ci:3.13.0-amd64
     resource_class: large
     working_directory: ~/typedb
 
