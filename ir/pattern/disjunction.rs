@@ -43,7 +43,7 @@ impl Disjunction {
         &mut self.conjunctions
     }
 
-    pub(crate) fn source_span(&self) -> Option<Span> {
+    pub fn source_span(&self) -> Option<Span> {
         self.source_span
     }
 

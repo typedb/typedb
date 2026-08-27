@@ -55,7 +55,6 @@ pub fn compile(
     selected_variables: HashSet<Variable>,
     type_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
 ) -> Result<ConjunctionExecutable, ConjunctionCompilationError> {
@@ -73,7 +72,6 @@ pub fn compile(
         stage_input_positions,
         type_annotations,
         variable_registry,
-        expressions,
         statistics,
         call_cost_provider,
     )

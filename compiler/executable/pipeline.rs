@@ -300,7 +300,7 @@ fn compile_stage(
     annotated_stage: &AnnotatedStage,
 ) -> Result<(ExecutableStage, BTreeSet<Type>), ExecutableCompilationError> {
     match annotated_stage {
-        AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
+        AnnotatedStage::Match { block, block_annotations, .. } => {
             // TODO: technically, we only need to select variables that are used _later_ in the pipeline, not everything
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(stage_input_positions.keys().copied());
@@ -312,7 +312,6 @@ fn compile_stage(
                 selected_variables,
                 block_annotations,
                 variable_registry,
-                executable_expressions,
                 statistics,
                 call_cost_provider,
             )
@@ -353,7 +352,6 @@ fn compile_stage(
                 selected_variables,
                 match_annotations,
                 variable_registry,
-                &HashMap::new(),
                 statistics,
                 call_cost_provider,
             )
