@@ -36,10 +36,7 @@ pub fn make_constraint_variables_unique(
                     (cmp.rhs(), cmp.lhs())
                 };
                 let vertex_annotations = annotations.value_type_annotations_of(old_vertex).unwrap().clone();
-                annotations
-                    .value_type_annotations_mut()
-                    .expect("ValueTypeAnnotations should be available by now")
-                    .insert(new_vertex.clone(), vertex_annotations);
+                annotations.value_type_annotations_mut().insert(new_vertex.clone(), vertex_annotations);
             }
             Constraint::Is(is) => {
                 let (new_vertex, old_vertex) = if variable_mapping.contains_key(&is.lhs().as_variable().unwrap()) {

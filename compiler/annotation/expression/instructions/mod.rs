@@ -5,7 +5,6 @@
  */
 
 use concept::error::ConceptReadError;
-use encoding::value::value::NativeValueConvertible;
 use error::typedb_error;
 
 use crate::annotation::expression::{
