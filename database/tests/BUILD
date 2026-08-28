@@ -107,6 +107,7 @@ rust_test(
         "//common/options",
         "//database",
         "//diagnostics",
+        "//durability",
         "//executor",
         "//query",
         "//storage",
