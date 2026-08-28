@@ -12,7 +12,7 @@ use std::{
 pub use concept::thing::cleanup::CleanupRecord;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{statistics::StatisticsError, thing_manager::ThingManager},
+    thing::{cleanup::CleanupIntervals, statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -200,7 +200,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             Ok(snapshot) => snapshot,
         };
 
-        let cleanup_record = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+        let cleanup_intervals = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             Ok(compaction) => compaction,
             Err(errs) => {
                 // TODO: send all the errors, not just the first,
@@ -210,7 +210,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             }
         };
         commit_profile.things_finalised();
-        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot, cleanup_record }))
+        (
+            profile,
+            Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot, cleanup_intervals }),
+        )
     }
 
     pub fn rollback(&mut self) {
@@ -319,7 +322,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
         commit_profile.types_validated();
 
-        let cleanup_record = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+        let cleanup_intervals = match self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             Ok(compaction) => compaction,
             Err(errs) => {
                 // TODO: send all the errors, not just the first,
@@ -340,7 +343,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let _type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         (
             profile,
-            Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot, cleanup_record }),
+            Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot, cleanup_intervals }),
         )
     }
 
@@ -449,31 +452,35 @@ macro_rules! with_transaction_parts {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CommitInfo {
     pub commit_record: CommitRecord,
-    pub cleanup_record: CleanupRecord,
+    pub cleanup_intervals: CleanupIntervals,
 }
 
 pub struct DataCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     write_snapshot: WriteSnapshot<D>,
-    cleanup_record: CleanupRecord,
+    cleanup_intervals: CleanupIntervals,
 }
 
 impl<D: DurabilityClient> DataCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_record }
+    pub fn new(
+        database: Arc<Database<D>>,
+        write_snapshot: WriteSnapshot<D>,
+        cleanup_intervals: CleanupIntervals,
+    ) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot, cleanup_intervals }
     }
 
     /// Rebuilds an intent from a commit's portable form.
     pub fn from_commit_info(database: Arc<Database<D>>, commit_info: CommitInfo) -> Self {
-        let CommitInfo { commit_record, cleanup_record } = commit_info;
+        let CommitInfo { commit_record, cleanup_intervals } = commit_info;
         let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot, cleanup_record)
+        Self::new(database, snapshot, cleanup_intervals)
     }
 
     /// Splits an intent into its portable form with MVCC timeline guards.
     pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, WriteSnapshotDropGuard, CommitInfo) {
         let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
-        let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
+        let commit_info = CommitInfo { commit_record, cleanup_intervals: self.cleanup_intervals };
         (self.database_drop_guard, reader_guard, commit_info)
     }
 }
@@ -499,9 +506,9 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
             database
                 .storage
                 .durability()
-                .unsequenced_write(&self.cleanup_record)
+                .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_record);
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
         }
         Ok(())
     }
@@ -510,25 +517,29 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
 pub struct SchemaCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     schema_snapshot: SchemaSnapshot<D>,
-    cleanup_record: CleanupRecord,
+    cleanup_intervals: CleanupIntervals,
 }
 
 impl<D: DurabilityClient> SchemaCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>, cleanup_record: CleanupRecord) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_record }
+    pub fn new(
+        database: Arc<Database<D>>,
+        schema_snapshot: SchemaSnapshot<D>,
+        cleanup_intervals: CleanupIntervals,
+    ) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot, cleanup_intervals }
     }
 
     /// Rebuilds an intent from a commit's portable form.
     pub fn from_commit_info(database: Arc<Database<D>>, commit_info: CommitInfo) -> Self {
-        let CommitInfo { commit_record, cleanup_record } = commit_info;
+        let CommitInfo { commit_record, cleanup_intervals } = commit_info;
         let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot, cleanup_record)
+        Self::new(database, snapshot, cleanup_intervals)
     }
 
     /// Splits an intent into its portable form with MVCC timeline guards.
     pub fn into_commit_info(self) -> (DatabaseDropGuard<D>, WriteSnapshotDropGuard, CommitInfo) {
         let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
-        let commit_info = CommitInfo { commit_record, cleanup_record: self.cleanup_record };
+        let commit_info = CommitInfo { commit_record, cleanup_intervals: self.cleanup_intervals };
         (self.database_drop_guard, reader_guard, commit_info)
     }
 }
@@ -575,9 +586,9 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             database
                 .storage
                 .durability()
-                .unsequenced_write(&self.cleanup_record)
+                .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
-            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_record);
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
 
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {

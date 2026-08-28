@@ -77,7 +77,7 @@ use crate::{
     thing::{
         ThingAPI,
         attribute::{Attribute, AttributeIterator},
-        cleanup::CleanupRecord,
+        cleanup::CleanupIntervals,
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         has::Has,
@@ -1797,7 +1797,7 @@ impl ThingManager {
         &self,
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
-    ) -> Result<CleanupRecord, Vec<ConceptWriteError>> {
+    ) -> Result<CleanupIntervals, Vec<ConceptWriteError>> {
         let cardinality_change_tracker =
             CardinalityChangeTracker::build(snapshot, self.type_manager(), self, storage_counters.clone())
                 .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
@@ -1826,19 +1826,19 @@ impl ThingManager {
     fn finalise_storage_writes(
         &self,
         snapshot: &mut impl WritableSnapshot,
-    ) -> Result<CleanupRecord, Box<ConceptReadError>> {
-        let mut cleanup_record = CleanupRecord::new();
+    ) -> Result<CleanupIntervals, Box<ConceptReadError>> {
+        let mut cleanup_intervals = CleanupIntervals::new();
 
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, write) in snapshot.iterate_writes().collect_vec() {
             self.create_commit_locks(snapshot, &key)?;
 
             if let Write::Delete = write {
-                register_delete_in_cleanup_record(&mut cleanup_record, key);
+                register_delete_in_cleanup_intervals(&mut cleanup_intervals, key);
             }
         }
 
-        Ok(cleanup_record)
+        Ok(cleanup_intervals)
     }
 
     fn create_commit_locks(
@@ -3025,24 +3025,27 @@ impl ThingManager {
     }
 }
 
-fn register_delete_in_cleanup_record(cleanup_record: &mut CleanupRecord, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+fn register_delete_in_cleanup_intervals(
+    cleanup_intervals: &mut CleanupIntervals,
+    key: StorageKeyArray<BUFFER_KEY_INLINE>,
+) {
     if let Some(object) = ObjectVertex::try_decode(key.bytes()) {
         let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
-        cleanup_record.insert(
+        cleanup_intervals.insert(
             prefix.resize_to(),
             StorageKey::Array(key).resize_to(),
             ObjectVertex::FIXED_WIDTH_ENCODING,
         );
     } else if let Some(attr) = AttributeVertex::try_decode(key.bytes()) {
         let prefix = AttributeVertex::build_prefix_type(attr.prefix(), attr.type_id_(), attr.keyspace());
-        cleanup_record.insert(
+        cleanup_intervals.insert(
             prefix.resize_to(),
             StorageKey::Array(key).resize_to(),
             AttributeVertex::FIXED_WIDTH_ENCODING,
         );
     } else if let Some(has) = ThingEdgeHas::try_decode(key.bytes()) {
         let prefix = ThingEdgeHas::prefix_from_type(Object::new(has.from()).type_().vertex());
-        cleanup_record.insert(
+        cleanup_intervals.insert(
             prefix.resize_to(),
             StorageKey::Array(key).resize_to(),
             ThingEdgeHas::FIXED_WIDTH_ENCODING,
@@ -3052,7 +3055,7 @@ fn register_delete_in_cleanup_record(cleanup_record: &mut CleanupRecord, key: St
             reverse_has.from().value_type_category(),
             reverse_has.from().type_id_(),
         );
-        cleanup_record.insert(
+        cleanup_intervals.insert(
             prefix.resize_to(),
             StorageKey::Array(key).resize_to(),
             ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
@@ -3066,7 +3069,7 @@ fn register_delete_in_cleanup_record(cleanup_record: &mut CleanupRecord, key: St
         } else {
             ThingEdgeLinks::prefix_from_relation_type(links.from().type_id_())
         };
-        cleanup_record.insert(
+        cleanup_intervals.insert(
             prefix.resize_to(),
             StorageKey::Array(key).resize_to(),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
@@ -3077,7 +3080,7 @@ fn register_delete_in_cleanup_record(cleanup_record: &mut CleanupRecord, key: St
             Object::new(links_index.from()).type_().vertex().prefix(),
             links_index.from().type_id_(),
         );
-        cleanup_record.insert(
+        cleanup_intervals.insert(
             prefix.resize_to(),
             StorageKey::Array(key).resize_to(),
             ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
