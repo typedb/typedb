@@ -14,21 +14,12 @@ use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::pattern::{
-    AssignmentStatus,
-    mode_inference::{OptionalSafety, OptionalSafetyError},
-};
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode,
-        BranchID,
-        Pattern,
-        PatternVariables,
-        ScopeId,
+        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariables, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
-        // mode_inference::{AssignmentStatus, OptionalReferenceSafety, VariableUsageMode},
         nested_pattern::NestedPattern,
         variable_category::{VariableCategory, VariableOptionality},
     },
@@ -109,17 +100,7 @@ impl<'reg> BlockBuilder<'reg> {
 
         // Update
         for (v, mode) in optional_modes {
-            debug_assert!({
-                if let Some(VariableOptionality::Required) = self.context.variable_optionalities.get(&v) {
-                    mode.optionality.is_none() // i.e. is optional
-                } else {
-                    true
-                }
-            });
-            let optionality = match mode.optionality {
-                Some(_) => VariableOptionality::Optional,
-                None => VariableOptionality::Required,
-            };
+            let optionality = todo!("Omitted for diff / change of strategy downstream");
             self.context.variable_optionalities.insert(v, optionality);
         }
 
@@ -135,12 +116,12 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        let mut variable_usage_modes = self.conjunction.variable_binding_modes();
+        let mut variable_binding_modes = self.conjunction.variable_binding_modes();
         for (id, optionality) in self.context.input_variable_optionalities() {
-            let mode = variable_usage_modes.entry(id).or_default();
+            let mode = variable_binding_modes.entry(id).or_default();
             *mode = BindingMode::AlwaysBinding;
         }
-        variable_usage_modes
+        variable_binding_modes
     }
 }
 
@@ -328,6 +309,7 @@ fn validate_optional_returns_recursive(
     }
 }
 
+type OptionalSafety = ();
 fn validate_all_optional_dereferences_are_safe(
     conjunction: &mut Conjunction,
     context: &BlockBuilderContext<'_>,

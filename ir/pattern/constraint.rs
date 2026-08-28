@@ -439,15 +439,13 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
-        // todo_must_implement!("Ensure this is still wired up properly. Add a test");
-        // binding.optionally_assigned.iter().for_each(|var| self.context.set_variable_optionality(*var, true));
-        // for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
-        //     self.context.set_variable_category(
-        //         caller_var,
-        //         callee_signature.arguments[callee_arg_index],
-        //         binding.clone().into(),
-        //     )?;
-        // }
+        for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
+            self.context.set_variable_category(
+                caller_var,
+                callee_signature.arguments[callee_arg_index],
+                binding.clone().into(),
+            )?;
+        }
         let constraint = self.constraints.add_constraint(binding);
         Ok(constraint.as_function_call_binding().unwrap())
     }
@@ -932,13 +930,6 @@ impl<ID: IrID> Constraint<ID> {
     pub fn as_links(&self) -> Option<&Links<ID>> {
         match self {
             Constraint::Links(rp) => Some(rp),
-            _ => None,
-        }
-    }
-
-    pub fn as_require(&self) -> Option<&IsSet<ID>> {
-        match self {
-            Constraint::IsSet(inner) => Some(inner),
             _ => None,
         }
     }

@@ -29,7 +29,6 @@ pub mod variable_category;
 pub mod disjunction;
 pub mod expression;
 pub mod function_call;
-pub(super) mod mode_inference;
 pub mod nested_pattern;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
