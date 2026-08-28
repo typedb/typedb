@@ -1,45 +1,73 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.12.3](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.12.3)
+[Distributions for 3.13.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.13.0-rc0)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.12.3```
+```docker pull typedb/typedb:3.13.0-rc0```
 
 
 ## New Features
-
+- **Allow evicting commits in isolation manager**
+  
+  Allow freeing memory held by old commits that are still being read, but cannot cause a conflict.
+  
+  
+- **Add eager cleanup strategy of deleted keys**
+  
+  We implement an `eager` cleanup strategy, disabled by default, that scans the backing storage for inaccessible data (keys marked as deleted or shadowed by later writes) and deletes them for good.
+  
+  
+- **Support clustered database import and export**
+  
+  Extend the database import and export functionalities to support these features in applications built on top of TypeDB, e.g., TypeDB Cluster.
+  
+  Before, both import and export operated on local data only, avoiding the new extensible state `Operator`s and keeping all the related information and handles private. Now, by becoming more open, both services support flexible extensions to their behavior.
+  
+  
 
 ## Bugs Fixed
-- **Fix database import blockers on inherited constraints**
-  
-  In specific situations, database import could be incorrectly rejected while relaxing or recovering the schema due to coincidental combinations of inherited constraints. We fix these cases completely.
-  
-  ### Independent sub attributes
-  
-  Independent sub attributes could lead to rejects on schema relaxation. At this stage, every attribute type must become independent so as not to lose data. However, double redeclarations of such annotations are prohibited, and an incorrectly working algorithm could produce a schema like `define attribute name @independent, value string; attribute surname @independent, sub name;`.
-  
-  ### Ownerships and roleplaying specializations
-  
-  A similar problem with `owns` and `plays` specializations using the same interface types (e.g., `define superperson owns name @card(0..); define person sub superperson, owns name @card(1..);`.
-  
-  While the algorithm correctly avoided conflicts in declared cardinalities, it could still have rare conflicts with other annotations, which, with the change of cardinality-based constraints, could lead to identical `owns`/`plays` declarations (which is, just like in the `attribute @independent` case, is prohibited). 
+- **Increase HTTP message size limit to 1GB**
+  We increase the HTTP message size limit to match grpc (1GB). We also improve an the interrupted stream error message and some typos in error messages.
   
   
 
 ## Code Refactors
-- **Add specific error message for 'Attribute' and 'Value' mismatch**
+- **Enable networkless database export and import**
   
-  Add a correction hint that help people fix Attribute and Value concept mismatches themselves.
+  Refactor database export and import logic by exposing intermediate `MigrationItems` to avoid conversions to proto messages while executing export/import in a single process.
+  
+  With this refactor, the core of the export and import has stronger and cleaner isolation from networking, making the gRPC services just thin and straightforward wrappers on top of the consolidated and strictly ordered logic.
+  
+  Additionally, fix `typedb-cluster` build by returning methods for converting `CommitIntent`s into serializable objects required for replication.
   
   
 
 ## Other Improvements
-- **Fix add_or_intersect change condition**
-  Fixes the condition that determines whether add_or_intersect changed the type annotations of the vertex
+- **Cleanup record carries its commit's sequence number**
+  
+  Fix bug where a cleanup record would inherit the sequence number of the previous commit record in the WAL, rather than track the sequence number of the commit that it is associated with. This could lead to multiple cleanup records with the same sequence number, and conversely to some commit records lacking a corresponding cleanup record.
   
   
-- **Move unit tests from type-inference to match-inference**
-  Straight copy paste + update imports.
+- **Bump amazonlinux-ci image for clang dependency & rules python**
+  Bumps our amazon linux image to a new one that has clang & llvm installed.
+  Bumps rules python to a version that doesn't have a silly print statement that breaks our deploy scripts on certain pythoon versions.
+  
+- **Fix build-breaking formatting**
+  
+  
+  
+- **Make query cache eviction less sensitive to relative changes in small databases**
+  
+  Reduce the impact on query cache eviction of large relative changes when the amount of data is small for the type considered.
+  
+  
+- **Add "manual" tag to mac-installer targets**
+  To stop local `build //...` on mac failing because of the signing keychain not existing.
+  
+  
+- **Ban expressions in write stage**
+  Checks for expressions in write stages (insert, put, update, delete). If found, we error instead of crashing downstream.
+  
   
     
