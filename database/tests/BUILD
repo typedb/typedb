@@ -99,6 +99,25 @@ rust_test(
 )
 
 rust_test(
+    name = "test_cleanup_records",
+    srcs = glob([
+        "cleanup_records.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//database",
+        "//diagnostics",
+        "//durability",
+        "//executor",
+        "//query",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
+rust_test(
     name = "test_transaction_isolation",
     srcs = glob([
         "test_transaction_isolation.rs",

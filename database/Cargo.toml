@@ -111,6 +111,10 @@ features = {}
 	name = "test_transaction"
 
 [[test]]
+	path = "tests/cleanup_records.rs"
+	name = "test_cleanup_records"
+
+[[test]]
 	path = "tests/migration.rs"
 	name = "test_migration"
 

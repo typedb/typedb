@@ -18,7 +18,7 @@ use std::{
 
 use concept::{
     thing::{
-        cleanup::CleanupRecord,
+        cleanup::{CleanupIntervals, CleanupRecord},
         statistics::{Statistics, StatisticsError},
     },
     type_::type_manager::{
@@ -94,7 +94,7 @@ pub struct Database<D> {
 
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
-    pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+    pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
 
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
@@ -340,7 +340,7 @@ impl Database<WALClient> {
 
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
 
-        let cleanup_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>::default();
+        let cleanup_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>::default();
         let cleanup_fn =
             make_cleanup_fn(name.to_owned(), storage.clone(), schema.clone(), cleanup_queue.clone(), cleanup_strategy);
 
@@ -474,8 +474,10 @@ impl Database<WALClient> {
             Arc::new(RwLock::new(
                 storage
                     .durability()
-                    .iter_type_from(earliest_uncleaned)
-                    .and_then(Itertools::try_collect)
+                    .iter_type_from::<CleanupRecord>(earliest_uncleaned)
+                    .and_then(|iter| {
+                        iter.map_ok(|(_, record)| (record.sequence_number, record.cleanup_intervals)).try_collect()
+                    })
                     .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })?,
             ))
         };
@@ -650,11 +652,11 @@ fn make_cleanup_fn(
     database_name: String,
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
-    cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+    cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
     cleanup_strategy: MvccCleanupStrategy,
 ) -> impl Fn() {
     fn make_disabled_cleanup_fn(
-        cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+        cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
     ) -> Box<dyn Fn() + Send + Sync> {
         Box::new(move || {
             cleanup_queue.write().unwrap().clear();
@@ -665,7 +667,7 @@ fn make_cleanup_fn(
         database_name: String,
         storage: Arc<MVCCStorage<WALClient>>,
         schema: Arc<RwLock<Schema>>,
-        cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupRecord>>>,
+        cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
     ) -> Box<dyn Fn() + Send + Sync> {
         Box::new(move || {
             debug!("Running cleanup for database {}", database_name);
@@ -685,10 +687,10 @@ fn make_cleanup_fn(
                 let contains_end = range.contains_key(&watermark.previous());
                 let all_consecutive = range.keys().tuple_windows().all(|(a, &b)| a.next() == b);
                 if contains_start && contains_end && all_consecutive {
-                    range.into_values().fold(CleanupRecord::default(), CleanupRecord::merge)
+                    range.into_values().fold(CleanupIntervals::default(), CleanupIntervals::merge)
                 } else {
                     info!("Missing delta records during cleanup; scanning database for dead keys.");
-                    CleanupRecord::everything::<EncodingKeyspace>()
+                    CleanupIntervals::everything::<EncodingKeyspace>()
                 }
             };
 
