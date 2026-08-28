@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     fmt,
 };
 
@@ -17,7 +17,7 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariables, ScopeId,
+        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableOptionality, PatternVariables, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
         nested_pattern::NestedPattern,
@@ -86,11 +86,15 @@ impl<'reg> BlockBuilder<'reg> {
         self.context
             .variable_names_index
             .retain(|_, var| block_binding_modes.get(var) != Some(&BindingMode::LocallyBindingInChild));
+        let block_pattern_variables = PatternVariables::for_block(
+            block_binding_modes,
+            self.context.input_variable_optionalities(),
+            self.conjunction.unwrapped_variables(),
+        );
 
-        let mut conjunction =
-            self.conjunction.finish(&PatternVariables::for_block(block_binding_modes, self.context.input_variables()));
+        let mut conjunction = self.conjunction.finish(&block_pattern_variables);
 
-        let optional_modes = validate_all_optional_dereferences_are_safe(&mut conjunction, &self.context)?;
+        validate_all_optional_dereferences_are_safe(&mut conjunction, &self.context)?;
 
         validate_is_plannable(
             &conjunction,
@@ -99,9 +103,8 @@ impl<'reg> BlockBuilder<'reg> {
         )?;
 
         // Update
-        for (v, mode) in optional_modes {
-            let optionality = todo!("Omitted for diff / change of strategy downstream");
-            self.context.variable_optionalities.insert(v, optionality);
+        for id in block_pattern_variables.visible_referenced_variables() {
+            self.context.variable_optionalities.insert(id, block_pattern_variables.optionality(&id));
         }
 
         Ok(Block { conjunction, block_context: self.context.block_context })
@@ -116,12 +119,12 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        let mut variable_binding_modes = self.conjunction.variable_binding_modes();
+        let mut variable_usage_modes = self.conjunction.variable_binding_modes();
         for (id, optionality) in self.context.input_variable_optionalities() {
-            let mode = variable_binding_modes.entry(id).or_default();
-            *mode = BindingMode::AlwaysBinding;
+            let mode = variable_usage_modes.entry(id).or_default();
+            *mode = BindingMode::AlwaysBinding(optionality.into());
         }
-        variable_binding_modes
+        variable_usage_modes
     }
 }
 
@@ -142,17 +145,9 @@ fn validate_no_unbound_variable_categories(
             source_span: context.variable_registry.source_span(variable),
         }))
     } else {
-        conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-            NestedPatternBuilder::Disjunction(disjunction) => {
-                disjunction.conjunctions().try_for_each(|c| validate_no_unbound_variable_categories(c, context))
-            }
-            NestedPatternBuilder::Negation(negation) => {
-                validate_no_unbound_variable_categories(negation.conjunction(), context)
-            }
-            NestedPatternBuilder::Optional(optional) => {
-                validate_no_unbound_variable_categories(optional.conjunction(), context)
-            }
-        })?;
+        conjunction
+            .nested_patterns_flattened()
+            .try_for_each(|inner_conjunction| validate_no_unbound_variable_categories(inner_conjunction, context))?;
         Ok(())
     }
 }
@@ -162,26 +157,12 @@ fn validate_no_optionals_in_negations(
     this_conjunction_in_negation: bool,
 ) -> Result<(), Box<RepresentationError>> {
     if this_conjunction_in_negation {
-        if let Some(optional) = conjunction
-            .nested_patterns()
-            .iter()
-            .filter_map(|nested| match nested {
-                NestedPatternBuilder::Optional(optional) => Some(optional),
-                _ => None,
-            })
-            .next()
-        {
+        if let Some(optional) = conjunction.nested_patterns().iter().find_map(|nested| nested.as_optional()) {
             return Err(Box::new(RepresentationError::OptionalInNegation {}));
         }
     }
-    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-        NestedPatternBuilder::Disjunction(disjunction) => disjunction
-            .conjunctions()
-            .try_for_each(|c| validate_no_optionals_in_negations(c, this_conjunction_in_negation)),
-        NestedPatternBuilder::Negation(negation) => validate_no_optionals_in_negations(negation.conjunction(), true),
-        NestedPatternBuilder::Optional(optional) => {
-            validate_no_optionals_in_negations(optional.conjunction(), this_conjunction_in_negation)
-        }
+    conjunction.nested_patterns_flattened().try_for_each(|inner_conjunction| {
+        validate_no_optionals_in_negations(inner_conjunction, this_conjunction_in_negation)
     })
 }
 
@@ -209,19 +190,9 @@ fn validate_is_variables_have_same_category(
             source_span: is.source_span(),
         }));
     }
-
-    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-        NestedPatternBuilder::Disjunction(disjunction) => disjunction
-            .conjunctions()
-            .try_for_each(|inner| validate_is_variables_have_same_category(inner, variable_registry)),
-        NestedPatternBuilder::Negation(negation) => {
-            validate_is_variables_have_same_category(negation.conjunction(), variable_registry)
-        }
-        NestedPatternBuilder::Optional(optional) => {
-            validate_is_variables_have_same_category(optional.conjunction(), variable_registry)
-        }
+    conjunction.nested_patterns_flattened().try_for_each(|inner_conjunction| {
+        validate_is_variables_have_same_category(inner_conjunction, variable_registry)
     })?;
-
     Ok(())
 }
 
@@ -250,17 +221,9 @@ fn find_constraints_referencing_variable(conjunction: &ConjunctionBuilder, varia
     spans.extend(
         conjunction.constraints().iter().filter(|c| c.ids().contains(&variable)).filter_map(|c| c.source_span()),
     );
-    conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPatternBuilder::Disjunction(disjunction) => {
-            disjunction.conjunctions().for_each(|c| find_constraints_referencing_variable(c, variable, spans));
-        }
-        NestedPatternBuilder::Negation(negation) => {
-            find_constraints_referencing_variable(negation.conjunction(), variable, spans)
-        }
-        NestedPatternBuilder::Optional(optional) => {
-            find_constraints_referencing_variable(optional.conjunction(), variable, spans)
-        }
-    })
+    conjunction
+        .nested_patterns_flattened()
+        .for_each(|inner_conjunction| find_constraints_referencing_variable(inner_conjunction, variable, spans))
 }
 
 fn validate_optional_returns(
@@ -276,17 +239,9 @@ fn validate_optional_returns_recursive(
     conjunction: &ConjunctionBuilder,
     acc: &mut HashMap<Variable, Option<Span>>,
 ) -> Result<(), Box<RepresentationError>> {
-    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-        NestedPatternBuilder::Disjunction(disjunction) => {
-            disjunction.conjunctions().try_for_each(|branch| validate_optional_returns_recursive(context, branch, acc))
-        }
-        NestedPatternBuilder::Negation(negation) => {
-            validate_optional_returns_recursive(context, negation.conjunction(), acc)
-        }
-        NestedPatternBuilder::Optional(optional) => {
-            validate_optional_returns_recursive(context, optional.conjunction(), acc)
-        }
-    })?;
+    conjunction
+        .nested_patterns_flattened()
+        .try_for_each(|inner_conjunction| validate_optional_returns_recursive(context, inner_conjunction, acc))?;
     conjunction.constraints().iter().filter_map(|c| c.as_function_call_binding()).for_each(|call| {
         for (var, mode) in call.binding_modes() {
             if mode == BindingMode::BoundInTry {
@@ -309,12 +264,25 @@ fn validate_optional_returns_recursive(
     }
 }
 
-type OptionalSafety = ();
 fn validate_all_optional_dereferences_are_safe(
-    conjunction: &mut Conjunction,
+    conjunction: &Conjunction,
     context: &BlockBuilderContext<'_>,
-) -> Result<HashMap<Variable, OptionalSafety>, Box<RepresentationError>> {
-    todo!("Not part of the diff for convenience")
+) -> Result<(), Box<RepresentationError>> {
+    let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
+        let (id, _) = constraint
+            .variable_binding_modes()
+            .filter(|(_, mode)| mode != &BindingMode::AlwaysBinding(PatternVariableOptionality::MaybeNone))
+            .find(|(id, _)| conjunction.optionality(id) == VariableOptionality::Optional)?;
+        Some((id, constraint.source_span()))
+    });
+    if let Some((id, source_span)) = bad_unwrap {
+        let variable = context.get_variable_name_or_unnamed(id).to_owned();
+        return Err(Box::new(RepresentationError::UnsafeOptionalDereference { variable, source_span }));
+    }
+    conjunction
+        .nested_patterns_flattened()
+        .try_for_each(|nested| validate_all_optional_dereferences_are_safe(nested, context))?;
+    Ok(())
 }
 
 fn validate_expressions_assignments_are_unique(

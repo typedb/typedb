@@ -6,7 +6,7 @@
 
 use std::{
     cmp::{Ordering, PartialEq},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt,
     hash::{Hash, Hasher},
     mem,
@@ -77,11 +77,17 @@ pub trait Pattern {
     // includes all variables from constraints and subpatterns. Does not include stage inputs if unused.
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn always_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_;
-
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+    fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+
+    fn bound_outside_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+
+    fn optionality(&self, variable: &Variable) -> VariableOptionality;
+
+    fn input_optionalities(&self) -> impl Iterator<Item = (Variable, VariableOptionality)> + '_;
+
+    fn bound_optionalities(&self) -> impl Iterator<Item = (Variable, VariableOptionality)> + '_;
 }
 
 macro_rules! impl_pattern_from_pattern_variables {
@@ -99,12 +105,28 @@ macro_rules! impl_pattern_from_pattern_variables {
                 self.pattern_variables.required_inputs()
             }
 
-            fn always_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-                self.pattern_variables.always_bound_by_pattern()
+            fn bound_outside_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.bound_outside_try_in_pattern()
             }
 
-            fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-                self.pattern_variables.optionally_bound_by_pattern()
+            fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.bound_by_try_in_pattern()
+            }
+
+            fn optionality(&self, variable: &Variable) -> crate::pattern::VariableOptionality {
+                self.pattern_variables.optionality(&variable)
+            }
+
+            fn input_optionalities(
+                &self,
+            ) -> impl Iterator<Item = (Variable, crate::pattern::VariableOptionality)> + '_ {
+                self.pattern_variables.input_optionalities()
+            }
+
+            fn bound_optionalities(
+                &self,
+            ) -> impl Iterator<Item = (Variable, crate::pattern::VariableOptionality)> + '_ {
+                self.pattern_variables.bound_optionalities()
             }
         }
     };
@@ -112,9 +134,9 @@ macro_rules! impl_pattern_from_pattern_variables {
 pub(self) use impl_pattern_from_pattern_variables;
 
 use crate::pattern::{
-    conjunction::{Conjunction, ConjunctionBuilder, NestedPatternBuilder},
+    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
     constraint::Constraint,
-    disjunction::{Disjunction, DisjunctionBuilder},
+    disjunction::DisjunctionBuilder,
 };
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -403,9 +425,9 @@ impl fmt::Display for ValueType {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum PatternVariableMode {
-    RequiredInput,
-    Binding,
-    OptionallyBinding,
+    RequiredInput(VariableOptionality),
+    Binding(VariableOptionality),
+    BoundByTry,
 }
 
 #[derive(Debug, Clone)]
@@ -414,52 +436,70 @@ pub(crate) struct PatternVariables(HashMap<Variable, PatternVariableMode>);
 impl PatternVariables {
     pub(crate) fn for_block(
         block_binding_modes: HashMap<Variable, BindingMode>,
-        input_variables: impl Iterator<Item = Variable>,
+        input_variables: impl Iterator<Item = (Variable, VariableOptionality)>,
+        root_unwrapped_vars: impl Iterator<Item = Variable>,
     ) -> Self {
-        let input_modes = input_variables.map(|variable| (variable, PatternVariableMode::RequiredInput)).collect();
-        PatternVariables::build(block_binding_modes, &PatternVariables(input_modes))
+        let input_modes = input_variables
+            .map(|(variable, optionality)| (variable, PatternVariableMode::RequiredInput(optionality)))
+            .collect();
+        PatternVariables::build(block_binding_modes, &PatternVariables(input_modes), root_unwrapped_vars)
     }
 
     pub(crate) fn build(
-        mut pattern_modes: HashMap<Variable, BindingMode>,
+        pattern_modes: HashMap<Variable, BindingMode>,
         parent_pattern_variables: &PatternVariables,
+        unwrapped_vars: impl IntoIterator<Item = Variable>,
     ) -> Self {
-        let pattern_variables = pattern_modes
+        let mut pattern_variables: HashMap<Variable, PatternVariableMode> = pattern_modes
             .into_iter()
             .filter_map(|(var, mode)| {
                 let mode = if let Some(parent_mode) = parent_pattern_variables.0.get(&var).copied() {
                     match (parent_mode, mode) {
                         (_, BindingMode::Absent) => None?,
-                        (PatternVariableMode::RequiredInput, _) => PatternVariableMode::RequiredInput,
-                        (PatternVariableMode::Binding, BindingMode::LocallyBindingInChild)
-                        | (PatternVariableMode::Binding, BindingMode::BoundInTry) => PatternVariableMode::RequiredInput,
-                        (PatternVariableMode::Binding, BindingMode::RequirePrebound) => {
-                            PatternVariableMode::RequiredInput
+                        (PatternVariableMode::RequiredInput(o), _) => PatternVariableMode::RequiredInput(o),
+                        (PatternVariableMode::Binding(o), BindingMode::LocallyBindingInChild)
+                        | (PatternVariableMode::Binding(o), BindingMode::BoundInTry) => {
+                            PatternVariableMode::RequiredInput(o)
                         }
-                        (PatternVariableMode::Binding, BindingMode::AlwaysBinding) => PatternVariableMode::Binding,
-                        (PatternVariableMode::OptionallyBinding, BindingMode::LocallyBindingInChild)
-                        | (PatternVariableMode::OptionallyBinding, BindingMode::RequirePrebound) => {
+                        (PatternVariableMode::Binding(o), BindingMode::RequirePrebound) => {
+                            PatternVariableMode::RequiredInput(o)
+                        }
+                        (PatternVariableMode::Binding(o1), BindingMode::AlwaysBinding(o2)) => {
+                            let o = match (o1, o2) {
+                                (VariableOptionality::Optional, _) | (_, PatternVariableOptionality::MaybeNone) => {
+                                    VariableOptionality::Optional
+                                }
+                                (VariableOptionality::Required, PatternVariableOptionality::NotNone) => {
+                                    VariableOptionality::Required
+                                }
+                            };
+                            PatternVariableMode::Binding(o)
+                        }
+                        (PatternVariableMode::BoundByTry, BindingMode::LocallyBindingInChild)
+                        | (PatternVariableMode::BoundByTry, BindingMode::RequirePrebound) => {
                             debug_assert!(false, "Unreachable: Illegal optional reuse");
-                            PatternVariableMode::RequiredInput
+                            PatternVariableMode::RequiredInput(VariableOptionality::Optional)
                         }
-                        (PatternVariableMode::OptionallyBinding, BindingMode::AlwaysBinding) => {
+                        (PatternVariableMode::BoundByTry, BindingMode::AlwaysBinding(o)) => {
                             // Happens in the transition from optional to inner
-                            PatternVariableMode::Binding
+                            PatternVariableMode::Binding(o.into())
                         }
-                        (PatternVariableMode::OptionallyBinding, BindingMode::BoundInTry) => {
+                        (PatternVariableMode::BoundByTry, BindingMode::BoundInTry) => {
                             // There's a nested optional even deeper.
-                            PatternVariableMode::OptionallyBinding
+                            PatternVariableMode::BoundByTry
                         }
                     }
                 } else {
-                    debug_assert!(
-                        mode != BindingMode::RequirePrebound,
-                        "Unreachable: checked in validate_all_required_variables_can_be_bound"
-                    );
                     match mode {
-                        BindingMode::RequirePrebound => PatternVariableMode::RequiredInput,
-                        BindingMode::BoundInTry => PatternVariableMode::OptionallyBinding,
-                        BindingMode::AlwaysBinding => PatternVariableMode::Binding,
+                        BindingMode::RequirePrebound => {
+                            debug_assert!(
+                                false,
+                                "Unreachable: checked in validate_all_required_variables_can_be_bound"
+                            );
+                            PatternVariableMode::RequiredInput(VariableOptionality::Required)
+                        }
+                        BindingMode::BoundInTry => PatternVariableMode::BoundByTry,
+                        BindingMode::AlwaysBinding(o) => PatternVariableMode::Binding(o.into()),
                         BindingMode::LocallyBindingInChild => None?,
                         BindingMode::Absent => None?,
                     }
@@ -467,6 +507,17 @@ impl PatternVariables {
                 Some((var, mode))
             })
             .collect();
+        unwrapped_vars.into_iter().for_each(|id| {
+            if let Some(mode) = pattern_variables.get_mut(&id) {
+                match mode {
+                    PatternVariableMode::Binding(o) => *o = VariableOptionality::Required,
+                    PatternVariableMode::RequiredInput(o) => *o = VariableOptionality::Required,
+                    PatternVariableMode::BoundByTry => {
+                        debug_assert!(false, "A try-bound variable can't be referenced in the same stage")
+                    }
+                }
+            }
+        });
         Self(pattern_variables)
     }
 
@@ -479,22 +530,87 @@ impl PatternVariables {
     }
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::RequiredInput).then_some(*v))
+        self.0
+            .iter()
+            .filter_map(|(v, required)| matches!(required, PatternVariableMode::RequiredInput(_)).then_some(*v))
     }
 
-    pub(crate) fn always_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::Binding).then_some(*v))
+    pub(crate) fn bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| {
+            (matches!(*required, PatternVariableMode::BoundByTry | PatternVariableMode::Binding(_))).then_some(*v)
+        })
     }
 
-    pub(crate) fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::OptionallyBinding).then_some(*v))
+    pub(crate) fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::BoundByTry).then_some(*v))
+    }
+
+    pub(crate) fn bound_outside_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| (matches!(*required, PatternVariableMode::Binding(_))).then_some(*v))
+    }
+
+    pub(crate) fn optionality(&self, variable: &Variable) -> VariableOptionality {
+        match self.0[variable] {
+            PatternVariableMode::Binding(o) | PatternVariableMode::RequiredInput(o) => o,
+            PatternVariableMode::BoundByTry => VariableOptionality::Optional,
+        }
+    }
+
+    pub(crate) fn input_optionalities(&self) -> impl Iterator<Item = (Variable, VariableOptionality)> + '_ {
+        self.0.iter().filter_map(|(v, required)| match required {
+            PatternVariableMode::RequiredInput(optionality) => Some((*v, *optionality)),
+            PatternVariableMode::BoundByTry => None,
+            PatternVariableMode::Binding(_) => None,
+        })
+    }
+
+    pub(crate) fn bound_optionalities(&self) -> impl Iterator<Item = (Variable, VariableOptionality)> + '_ {
+        self.0.iter().filter_map(|(v, required)| match required {
+            PatternVariableMode::RequiredInput(_) => None,
+            PatternVariableMode::BoundByTry => Some((*v, VariableOptionality::Optional)),
+            PatternVariableMode::Binding(optionality) => Some((*v, *optionality)),
+        })
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum PatternVariableOptionality {
+    NotNone, // InAtleastOneBranch
+    MaybeNone,
+}
+
+impl BitOr for PatternVariableOptionality {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::MaybeNone, _) | (_, Self::MaybeNone) => Self::MaybeNone,
+            (Self::NotNone, Self::NotNone) => Self::NotNone,
+        }
+    }
+}
+
+impl From<VariableOptionality> for PatternVariableOptionality {
+    fn from(optionality: VariableOptionality) -> Self {
+        match optionality {
+            VariableOptionality::Required => Self::NotNone,
+            VariableOptionality::Optional => Self::MaybeNone,
+        }
+    }
+}
+
+impl Into<VariableOptionality> for PatternVariableOptionality {
+    fn into(self) -> VariableOptionality {
+        match self {
+            Self::MaybeNone => VariableOptionality::Optional,
+            Self::NotNone => VariableOptionality::Required,
+        }
     }
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum BindingMode {
+pub(super) enum BindingMode {
     RequirePrebound,
-    AlwaysBinding,
+    AlwaysBinding(PatternVariableOptionality),
     LocallyBindingInChild, // Bound in some, but not all branches
     BoundInTry,            // Try blocks, but not assignments. Assignments are AlwaysBinding regardless.
     #[default]
@@ -502,19 +618,19 @@ pub enum BindingMode {
 }
 
 impl BindingMode {
-    pub fn is_require_prebound(&self) -> bool {
+    pub(super) fn is_require_prebound(&self) -> bool {
         *self == BindingMode::RequirePrebound
     }
 
-    pub fn is_always_binding(&self) -> bool {
-        *self == BindingMode::AlwaysBinding
+    pub(super) fn is_always_binding(&self) -> bool {
+        matches!(self, BindingMode::AlwaysBinding(_))
     }
 
-    pub fn is_locally_binding_in_child(&self) -> bool {
+    pub(super) fn is_locally_binding_in_child(&self) -> bool {
         *self == BindingMode::LocallyBindingInChild
     }
 
-    pub fn is_optionally_binding(&self) -> bool {
+    pub(super) fn is_optionally_binding(&self) -> bool {
         *self == BindingMode::BoundInTry
     }
 }
@@ -526,7 +642,8 @@ impl BitAnd for BindingMode {
         // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
         match (self, rhs) {
             (Self::Absent, x) | (x, Self::Absent) => x,
-            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::AlwaysBinding(a), Self::AlwaysBinding(b)) => Self::AlwaysBinding(a | b), // Yes, or.
+            (Self::AlwaysBinding(a), _) | (_, Self::AlwaysBinding(a)) => Self::AlwaysBinding(a),
             (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
             (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => Self::RequirePrebound,
             (Self::BoundInTry, Self::BoundInTry) => Self::RequirePrebound,
@@ -539,9 +656,11 @@ impl BitOr for BindingMode {
     fn bitor(self, rhs: Self) -> Self {
         match (self, rhs) {
             (Self::BoundInTry, Self::BoundInTry) => Self::BoundInTry,
-            (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::AlwaysBinding(a), Self::AlwaysBinding(b)) => Self::AlwaysBinding(a | b),
             (Self::Absent, Self::Absent) => Self::Absent,
-            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => Self::LocallyBindingInChild,
+            (Self::Absent, Self::AlwaysBinding(_)) | (Self::AlwaysBinding(_), Self::Absent) => {
+                Self::LocallyBindingInChild
+            }
             (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
                 Self::LocallyBindingInChild
             }
