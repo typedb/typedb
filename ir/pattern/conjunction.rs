@@ -19,7 +19,7 @@ use crate::{
     RepresentationError,
     pattern::{
         BindingMode, Pattern, PatternVariables, Scope, ScopeId,
-        constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
+        constraint::{Constraint, Constraints, ConstraintsBuilder, IsSet, Unsatisfiable},
         disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
         impl_pattern_from_pattern_variables,
         negation::NegationBuilder,
@@ -82,7 +82,7 @@ impl Conjunction {
         Box<RepresentationError>,
     > {
         let (new_checks, constraint_mapping, variable_mapping) =
-            self.constraints.make_variables_unique(variable_registry)?;
+            self.constraints.make_variables_unique(variable_registry, &mut self.pattern_variables)?;
         for (new_var, old_var) in &variable_mapping {
             if let Some(value) = self.pattern_variables.0.get(old_var).cloned() {
                 self.pattern_variables.0.insert(*new_var, value);
@@ -186,7 +186,10 @@ impl ConjunctionBuilder {
     }
 
     pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        let mut binding_modes = self.constraints.variable_binding_modes();
+        let mut binding_modes = HashMap::new();
+        self.constraints.variable_binding_modes().for_each(|(id, mode)| {
+            *binding_modes.entry(id).or_default() &= mode;
+        });
         for nested in self.nested_patterns.iter() {
             let nested_pattern_modes = nested.variable_binding_modes();
             for (var, mode) in nested_pattern_modes {

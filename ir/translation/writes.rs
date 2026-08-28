@@ -3,6 +3,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
+use std::os::macos::raw::stat;
 
 use answer::variable::Variable;
 use error::UnimplementedFeature;
@@ -34,7 +35,7 @@ pub fn translate_insert(
     insert: &typeql::query::stage::Insert,
 ) -> Result<Block, Box<RepresentationError>> {
     validate_insert_patterns(&insert.patterns)?;
-    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
     add_patterns(&function_index, &mut conjunction, &insert.patterns)?;
@@ -77,6 +78,7 @@ fn validate_insert_pattern(pattern: &typeql::Pattern) -> Result<(), Box<Represen
                 }
             }
         }
+        typeql::Pattern::Statement(Statement::IsSet(_)) => (),
         typeql::Pattern::Statement(stmt) => {
             return Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: stmt.span() }));
         }
@@ -90,7 +92,7 @@ pub fn translate_update(
     update: &typeql::query::stage::Update,
 ) -> Result<Block, Box<RepresentationError>> {
     validate_update_patterns(context, &update.patterns)?;
-    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
     add_patterns(&function_index, &mut conjunction, &update.patterns)?;
@@ -103,7 +105,7 @@ pub fn translate_put(
     put: &Put,
 ) -> Result<Block, Box<RepresentationError>> {
     validate_insert_patterns(&put.patterns)?;
-    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
     add_patterns(&function_index, &mut conjunction, &put.patterns)?;
@@ -135,7 +137,7 @@ pub fn translate_delete(
 ) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
     validate_delete(delete)?;
     validate_deleted_variables_availability(context, delete)?;
-    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
     let mut deleted_concepts = Vec::new();
     let mut conjunction = builder.conjunction_mut();
     add_deletables(&delete.deletables, &mut conjunction, &mut deleted_concepts)?;
@@ -185,6 +187,14 @@ fn add_deletables(
                 debug_assert!(deletables.iter().all(|d| !matches!(d.kind, DeletableKind::Optional { .. })));
                 let mut optional_builder = conjunction.add_optional(deletable.span())?;
                 add_deletables(deletables, &mut optional_builder, deleted_concepts)?;
+            }
+            DeletableKind::IsSet { variables } => {
+                let mut constraints = conjunction.constraints_mut();
+                let translated_variables = variables
+                    .iter()
+                    .map(|variable| constraints.get_or_declare_variable(variable.name().unwrap(), variable.span()))
+                    .collect::<Result<Vec<_>, _>>()?;
+                constraints.add_is_set(translated_variables, deletable.span())?;
             }
         }
     }
@@ -265,6 +275,8 @@ fn validate_update_pattern(
                         }
                     }
                 }
+            } else if let Statement::IsSet(_) = statement {
+                () // Is set is allowed. Do nothing.
             } else {
                 return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: statement.span() }));
             }
@@ -348,6 +360,11 @@ fn validate_deleted_variable_availability_deletable(
             for deletable in deletables {
                 debug_assert!(!matches!(deletable.kind, DeletableKind::Optional { .. }));
                 validate_deleted_variable_availability_deletable(context, deletable)?;
+            }
+        }
+        DeletableKind::IsSet { variables } => {
+            for variable in variables {
+                verify_variable_available!(context, variable => DeleteVariableUnavailable)?;
             }
         }
     };

@@ -132,6 +132,9 @@ pub enum StructureConstraint {
         lhs: StructureVertex,
         rhs: StructureVertex,
     },
+    IsSet {
+        variables: Vec<StructureVertex>,
+    },
     Iid {
         concept: StructureVertex,
         iid: String,
@@ -399,6 +402,10 @@ fn encode_structure_constraint(
                 rhs: encode_structure_vertex(context, is.rhs())?,
             }
         }),
+        Constraint::IsSet(isset) => push({
+            let variables = encode_structure_vertices(context, isset.ids())?;
+            StructureConstraint::IsSet { variables }
+        }),
         Constraint::Iid(iid) => push({
             let concept = encode_structure_vertex(context, iid.var())?;
             let iid_bytes = context.get_parameter_iid(iid.iid().as_parameter().as_ref().unwrap()).unwrap();
@@ -585,6 +592,7 @@ pub mod bdd {
         Plays { player, role, } |
         FunctionCall { name, assigned, arguments, } |
         Expression { text, assigned, arguments, } |
+        IsSet { variables, } |
         Is { lhs, rhs, } |
         Iid { concept, iid, } |
         Comparison { lhs, rhs, comparator, } |

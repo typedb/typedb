@@ -26,7 +26,7 @@ use ir::{
     translation::pipeline::{TranslatedGiven, TranslatedStage},
 };
 use storage::snapshot::ReadableSnapshot;
-use typeql::common::Span;
+use typeql::{common::Span, type_::NamedTypeAny};
 
 use crate::{
     PipelineOrigin,
@@ -152,8 +152,9 @@ fn annotate_given_stage(
     )?;
     let optionality = variables
         .iter()
-        .map(|&variable| {
-            if ctx.variable_registry.is_variable_optional(variable) {
+        .zip(labels.iter())
+        .map(|(&variable, label)| {
+            if matches!(label, NamedTypeAny::Optional(_)) {
                 VariableOptionality::Optional
             } else {
                 VariableOptionality::Required

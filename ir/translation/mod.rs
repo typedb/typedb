@@ -36,6 +36,7 @@ use crate::pattern::variable_category::VariableOptionality;
 pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
     last_stage_visible_variables: HashMap<String, Variable>,
+    variable_optionalities: HashMap<Variable, VariableOptionality>,
 }
 
 impl Default for PipelineTranslationContext {
@@ -46,7 +47,11 @@ impl Default for PipelineTranslationContext {
 
 impl PipelineTranslationContext {
     pub fn new() -> Self {
-        Self { variable_registry: VariableRegistry::new(), last_stage_visible_variables: HashMap::new() }
+        Self {
+            variable_registry: VariableRegistry::new(),
+            last_stage_visible_variables: HashMap::new(),
+            variable_optionalities: HashMap::new(),
+        }
     }
 
     pub fn new_function_pipeline(
@@ -66,8 +71,8 @@ impl PipelineTranslationContext {
         input_variable: (String, Option<Span>, (VariableCategory, VariableOptionality)),
     ) -> Result<Variable, Box<RepresentationError>> {
         let (name, source_span, (category, optionality)) = input_variable;
-        let variable =
-            self.variable_registry.register_input_variable(name.as_str(), category, optionality, source_span)?;
+        let variable = self.variable_registry.register_input_variable(name.as_str(), category, source_span)?;
+        self.variable_optionalities.insert(variable, optionality);
         self.last_stage_visible_variables.insert(name.clone(), variable);
         Ok(variable)
     }
@@ -76,8 +81,18 @@ impl PipelineTranslationContext {
         &'a mut self,
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
-        let Self { variable_registry, last_stage_visible_variables: visible_variables } = self;
-        BlockBuilderContext::new(variable_registry, visible_variables, parameters)
+        let Self { variable_registry, last_stage_visible_variables, variable_optionalities: variable_optionality } =
+            self;
+        BlockBuilderContext::new(variable_registry, last_stage_visible_variables, variable_optionality, parameters)
+    }
+
+    pub fn new_block_builder_context_for_writes<'a>(
+        &'a mut self,
+        parameters: &'a mut ParameterRegistry,
+    ) -> BlockBuilderContext<'a> {
+        let mut new_context = Self::new_block_builder_context(self, parameters);
+        new_context.is_write_stage = true;
+        new_context
     }
 
     pub(crate) fn register_reduced_variable(
@@ -98,16 +113,24 @@ impl PipelineTranslationContext {
         let variable = self.variable_registry.register_reduce_output_variable(
             name.to_owned(),
             variable_category,
-            is_optional,
             source_span,
             reducer,
         )?;
+        let optionality = if is_optional { VariableOptionality::Optional } else { VariableOptionality::Required };
+        self.variable_optionalities.insert(variable, optionality);
         self.last_stage_visible_variables.insert(name.to_owned(), variable);
         Ok(variable)
     }
 
     pub fn get_variable(&self, variable: &str) -> Option<Variable> {
         self.last_stage_visible_variables.get(variable).cloned()
+    }
+
+    pub fn is_variable_optional(&self, variable: Variable) -> bool {
+        match self.variable_optionalities.get(&variable).unwrap_or(&VariableOptionality::Required) {
+            VariableOptionality::Required => false,
+            VariableOptionality::Optional => true,
+        }
     }
 }
 
