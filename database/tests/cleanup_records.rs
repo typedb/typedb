@@ -75,9 +75,9 @@ fn statistics_synchronization_under_concurrent_load() {
     }
 
     #[derive(Debug, PartialEq, Eq)]
-    enum Flag {
-        SeenCommit,
-        SeenBoth,
+    enum Seen {
+        Commit,
+        Both,
     }
     let wal = WAL::load(tmp_dir.join(DB_NAME), FsyncMetrics::new()).unwrap();
     let mut scratch = HashMap::new();
@@ -85,14 +85,14 @@ fn statistics_synchronization_under_concurrent_load() {
         let raw_record = item.unwrap();
         let sequence_number = raw_record.sequence_number;
         if raw_record.record_type == CommitRecord::RECORD_TYPE {
-            if scratch.insert(sequence_number, Flag::SeenCommit).is_some() {
+            if scratch.insert(sequence_number, Seen::Commit).is_some() {
                 panic!("Saw a commit record {} twice", sequence_number.number())
             }
         } else if raw_record.record_type == CleanupRecord::RECORD_TYPE {
             let sequence_number = CleanupRecord::deserialise_from(&mut &*raw_record.bytes).unwrap().sequence_number;
             if let Some(flag) = scratch.get_mut(&sequence_number) {
-                assert_eq!(*flag, Flag::SeenCommit, "Saw a cleanup record for {} twice", sequence_number.number());
-                *flag = Flag::SeenBoth;
+                assert_eq!(*flag, Seen::Commit, "Saw a cleanup record for {} twice", sequence_number.number());
+                *flag = Seen::Both;
             } else {
                 panic!("Saw a cleanup record for {} before its commit record", sequence_number.number())
             }
