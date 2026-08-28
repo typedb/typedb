@@ -17,7 +17,7 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode, BranchID, Pattern, PatternVariables, ScopeId,
+        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariables, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
         nested_pattern::NestedPattern,
@@ -78,6 +78,7 @@ impl<'reg> BlockBuilder<'reg> {
         validate_all_required_variables_can_be_bound(&self, &block_binding_modes, &self.context.variable_registry)?;
         validate_no_unbound_variable_categories(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
+        validate_expressions_assignments_are_unique(&self.conjunction, &self.context)?;
 
         // Update
         block_binding_modes
@@ -92,7 +93,7 @@ impl<'reg> BlockBuilder<'reg> {
 
         let input_variables = self.context.input_variables().collect();
         validate_is_plannable(&conjunction, &input_variables, &self.context.variable_registry)?;
-        validate_expressions_assignments_are_unique(&conjunction, &input_variables, &self.context.variable_registry)?;
+
         let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
     }
@@ -291,73 +292,25 @@ fn validate_optional_returns_recursive(
 }
 
 fn validate_expressions_assignments_are_unique(
-    conjunction: &Conjunction,
-    input_variables: &BTreeSet<Variable>,
-    variable_registry: &VariableRegistry,
+    conjunction: &ConjunctionBuilder,
+    context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut assigned_in_block = BTreeMap::new();
-    validate_expressions_assignments_are_unique_impl(conjunction, &mut assigned_in_block, variable_registry)?;
-
-    if let Some((&variable, &source_span)) = assigned_in_block.iter().find(|(var, _)| input_variables.contains(var)) {
-        let variable = variable_registry.get_variable_name_or_unnamed(variable).to_owned();
-        Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }))
-    } else {
-        Ok(())
-    }
-}
-fn validate_expressions_assignments_are_unique_impl(
-    conjunction: &Conjunction,
-    assigned: &mut BTreeMap<Variable, Option<Span>>,
-    variable_registry: &VariableRegistry,
-) -> Result<(), Box<RepresentationError>> {
-    // TODO: Can we absorb this change into BindingModes if we introduce an "Assigned" variant?
-    fn add_or_error(
-        variable_registry: &VariableRegistry,
-        assigned: &mut BTreeMap<Variable, Option<Span>>,
-        (id, source_span): (Variable, Option<Span>),
-    ) -> Result<(), Box<RepresentationError>> {
-        if let Some(other_span) = assigned.insert(id, source_span) {
-            let variable = variable_registry.get_variable_name_or_unnamed(id).to_owned();
-            Err(Box::new(RepresentationError::MultipleAssignmentsForVariable { variable, source_span, other_span }))
-        } else {
-            Ok(())
+    let assignment_statuses = AssignmentStatus::for_conjunction(conjunction);
+    for id in context.input_variables() {
+        if let Some(AssignmentStatus::AtMostOncePerBranch(source_span)) = assignment_statuses.get(&id).copied() {
+            let variable = context.get_variable_name_or_unnamed(id).to_owned();
+            return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
     }
 
-    conjunction
-        .constraints()
-        .iter()
-        .filter_map(|constraint| constraint.as_expression_binding())
-        .flat_map(|expr| expr.ids_assigned().map(|id| (id, expr.source_span())))
-        .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
-
-    conjunction
-        .constraints()
-        .iter()
-        .filter_map(|constraint| constraint.as_function_call_binding())
-        .flat_map(|func_call| func_call.ids_assigned().map(|id| (id, func_call.source_span())))
-        .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
-
-    for nested in conjunction.nested_patterns() {
-        match nested {
-            NestedPattern::Optional(optional) => {
-                validate_expressions_assignments_are_unique_impl(optional.conjunction(), assigned, variable_registry)?;
-            }
-            NestedPattern::Negation(negation) => {
-                validate_expressions_assignments_are_unique_impl(negation.conjunction(), assigned, variable_registry)?;
-            }
-            NestedPattern::Disjunction(disjunction) => {
-                let mut disjunction_assigned = BTreeMap::new();
-                disjunction.conjunctions().iter().try_for_each(|branch| {
-                    let mut branch_assigned = BTreeMap::new();
-                    validate_expressions_assignments_are_unique_impl(branch, &mut branch_assigned, variable_registry)?;
-                    disjunction_assigned.extend(branch_assigned);
-                    Ok::<_, Box<RepresentationError>>(())
-                })?;
-                disjunction_assigned
-                    .into_iter()
-                    .try_for_each(|id_span| add_or_error(variable_registry, assigned, id_span))?;
-            }
+    for (id, mode) in assignment_statuses {
+        if let AssignmentStatus::ErrorMultipleAssignments(source_span, other_span) = mode {
+            let variable = context.get_variable_name_or_unnamed(id).to_owned();
+            return Err(Box::new(RepresentationError::MultipleAssignmentsForVariable {
+                variable,
+                source_span,
+                other_span,
+            }));
         }
     }
     Ok(())

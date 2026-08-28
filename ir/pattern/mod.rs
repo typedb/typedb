@@ -10,7 +10,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::{BitAnd, BitAndAssign, BitOr, BitXor},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor},
 };
 
 use answer::variable::Variable;
@@ -110,6 +110,12 @@ macro_rules! impl_pattern_from_pattern_variables {
     };
 }
 pub(self) use impl_pattern_from_pattern_variables;
+
+use crate::pattern::{
+    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
+    constraint::Constraint,
+    disjunction::DisjunctionBuilder,
+};
 
 // TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -556,6 +562,96 @@ impl PatternVariables {
 
     pub(crate) fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::OptionallyBinding).then_some(*v))
+    }
+}
+
+pub(crate) type LocationNote = Option<Span>;
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) enum AssignmentStatus {
+    #[default]
+    NotAssigned,
+    AtMostOncePerBranch(LocationNote),
+    ErrorMultipleAssignments(LocationNote, LocationNote),
+}
+
+impl AssignmentStatus {
+    pub(crate) fn for_conjunction(conjunction: &ConjunctionBuilder) -> HashMap<Variable, AssignmentStatus> {
+        let mut assignment_statuses = HashMap::new();
+        conjunction.constraints().iter().for_each(|constraint| {
+            let assigned_ids = match constraint {
+                Constraint::FunctionCallBinding(binding) => binding.ids_assigned().for_each(|id| {
+                    *assignment_statuses.entry(id).or_default() &=
+                        AssignmentStatus::AtMostOncePerBranch(constraint.source_span());
+                }),
+                Constraint::ExpressionBinding(binding) => binding.ids_assigned().for_each(|id| {
+                    *assignment_statuses.entry(id).or_default() &=
+                        AssignmentStatus::AtMostOncePerBranch(constraint.source_span());
+                }),
+                _ => return,
+            };
+        });
+        for nested in conjunction.nested_patterns() {
+            let nested_statuses = match nested {
+                NestedPatternBuilder::Negation(negation) => Self::for_conjunction(negation.conjunction()),
+                NestedPatternBuilder::Optional(optional) => Self::for_conjunction(optional.conjunction()),
+                NestedPatternBuilder::Disjunction(disjunction) => Self::for_disjunction(disjunction),
+            };
+            for (id, status) in nested_statuses {
+                *assignment_statuses.entry(id).or_default() &= status;
+            }
+        }
+        assignment_statuses
+    }
+
+    pub(crate) fn for_disjunction(disjunction: &DisjunctionBuilder) -> HashMap<Variable, AssignmentStatus> {
+        let mut assignment_statuses = HashMap::new();
+        for conjunction in disjunction.conjunctions() {
+            for (id, status) in Self::for_conjunction(conjunction) {
+                *assignment_statuses.entry(id).or_default() |= status;
+            }
+        }
+        assignment_statuses
+    }
+}
+
+impl BitAnd for AssignmentStatus {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::NotAssigned, x) | (x, Self::NotAssigned) => x,
+            (Self::ErrorMultipleAssignments(s1, s2), _) | (_, Self::ErrorMultipleAssignments(s1, s2)) => {
+                Self::ErrorMultipleAssignments(s1, s2)
+            }
+            (Self::AtMostOncePerBranch(s1), Self::AtMostOncePerBranch(s2)) => Self::ErrorMultipleAssignments(s1, s2),
+        }
+    }
+}
+
+impl BitOr for AssignmentStatus {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::NotAssigned, x) | (x, Self::NotAssigned) => x,
+            (Self::ErrorMultipleAssignments(s1, s2), _) | (_, Self::ErrorMultipleAssignments(s1, s2)) => {
+                Self::ErrorMultipleAssignments(s1, s2)
+            }
+            (Self::AtMostOncePerBranch(s), Self::AtMostOncePerBranch(_)) => Self::AtMostOncePerBranch(s),
+        }
+    }
+}
+
+impl BitAndAssign for AssignmentStatus {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl BitOrAssign for AssignmentStatus {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
     }
 }
 
