@@ -395,6 +395,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     self.register_optimised_to_unsatisfiable(optimised_unsatisfiable)
                 }
                 Constraint::IsSet(is_set) => self.register_is_set(&is_set),
+                Constraint::DeleteConcepts(_) => {
+                    debug_assert!(false, "DeleteConcepts can only appear in delete blocks")
+                }
             }
         }
     }

@@ -38,6 +38,7 @@ use ir::{
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::{Either, chain};
+use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -204,7 +205,7 @@ fn insert_pipeline_annotations_recursive(
     let block_id = structure.parametrised_structure.resolve_conjunction_id(stage_index, conjunction.scope_id());
     let variable_annotations =
         variable_annotations_for_block(variable_registry, block_annotations.type_annotations_of(conjunction).unwrap());
-    pipeline_annotations[block_id.0 as usize] = enrich_annotations(variable_registry, variable_annotations);
+    pipeline_annotations[block_id.0 as usize] = enrich_annotations(conjunction, variable_annotations);
 
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(branches) => branches.conjunctions().iter().for_each(|inner| {
@@ -241,12 +242,12 @@ fn insert_pipeline_annotations_recursive(
 }
 
 fn enrich_annotations(
-    variable_registry: &VariableRegistry,
+    conjunction: &Conjunction,
     variable_annotations: impl Iterator<Item = (Variable, PipelineVariableAnnotation)>,
 ) -> ConjunctionAnnotations {
     variable_annotations
         .map(|(variable, annotations)| {
-            let is_optional = todo_must_implement!("variable_registry.is_variable_optional(variable)");
+            let is_optional = conjunction.optionality(&variable) == VariableOptionality::Optional;
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })
         .collect()

@@ -54,7 +54,7 @@ impl Conjunction {
         &mut self.nested_patterns
     }
 
-    pub(crate) fn nested_patterns_flattened(&self) -> impl Iterator<Item = &Conjunction> + '_ {
+    pub fn nested_patterns_flattened(&self) -> impl Iterator<Item = &Conjunction> + '_ {
         let negations = self.nested_patterns().iter().filter_map(|n| n.as_negation()).map(|n| n.conjunction());
         let optionals = self.nested_patterns().iter().filter_map(|n| n.as_optional()).map(|n| n.conjunction());
         let disjunctions =
