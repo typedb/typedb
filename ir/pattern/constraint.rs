@@ -491,7 +491,13 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
-
+        for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
+            self.context.set_variable_category(
+                caller_var,
+                callee_signature.arguments[callee_arg_index],
+                binding.clone().into(),
+            )?;
+        }
         let constraint = self.constraints.add_constraint(binding);
         Ok(constraint.as_function_call_binding().unwrap())
     }
@@ -724,7 +730,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
-            Constraint::IsSet(require) => Box::new(require.ids()),
+            Constraint::IsSet(is_set) => Box::new(is_set.ids()),
             Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
         }
@@ -787,7 +793,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
-            Constraint::IsSet(require) => Box::new(require.vertices()),
+            Constraint::IsSet(is_set) => Box::new(is_set.vertices()),
             Constraint::LinksDeduplication(dedup) => Box::new(dedup.vertices()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.vertices()),
         }
