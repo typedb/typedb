@@ -499,7 +499,7 @@ fn query_structure_constraint(
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Optimisations don't represent the structure
-        Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
+        Constraint::DeleteConcepts(_) | Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
     Ok(())
 }

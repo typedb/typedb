@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     fmt::Formatter,
     marker::PhantomData,
     str::FromStr,
@@ -21,6 +21,7 @@ use ir::{
     },
     pipeline::{
         ParameterRegistry, VariableRegistry,
+        block::Block,
         modifier::SortVariable,
         reduce::{AssignedReduction, Reducer},
     },
@@ -142,13 +143,16 @@ pub fn extract_pipeline_structure_from(
             | AnnotatedStage::Put { block, .. } => {
                 Some(block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>())
             }
-            AnnotatedStage::Delete { block, deleted_variables, .. } => Some(
-                block
-                    .conjunction()
-                    .named_visible_referenced_variables()
-                    .filter(|v| !deleted_variables.contains(v))
-                    .collect::<Vec<_>>(),
-            ),
+            AnnotatedStage::Delete { block, .. } => {
+                let deleted_variables = collect_deleted_variables(&block);
+                Some(
+                    block
+                        .conjunction()
+                        .named_visible_referenced_variables()
+                        .filter(|v| !deleted_variables.contains(v))
+                        .collect::<Vec<_>>(),
+                )
+            }
             AnnotatedStage::Select(select) => Some(select.variables.iter().cloned().collect::<Vec<_>>()),
             AnnotatedStage::Reduce(reduce, _) => Some(reduce.variables().collect::<Vec<_>>()),
             AnnotatedStage::Sort(_) => None,
@@ -353,11 +357,10 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
             }
-            AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
+            AnnotatedStage::Delete { block, annotations, .. } => {
+                let deleted_variables = vec_from(collect_deleted_variables(block).iter());
                 let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
-                self.pipeline_structure
-                    .stages
-                    .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
+                self.pipeline_structure.stages.push(QueryStructureStage::Delete { block, deleted_variables });
             }
             AnnotatedStage::Select(select) => self
                 .pipeline_structure
@@ -558,6 +561,20 @@ impl From<&AssignedReduction> for StructureReduceAssign {
         let reducer = StructureReducer { reducer: value.reduction.name().to_owned(), arguments };
         StructureReduceAssign { assigned: value.assigned.into(), reducer }
     }
+}
+
+pub fn collect_deleted_variables(block: &Block) -> BTreeSet<Variable> {
+    fn collect_recursive(conjunction: &Conjunction, deleted_variables: &mut BTreeSet<Variable>) {
+        for delete_concepts in conjunction.constraints().iter().filter_map(|c| c.as_delete_concepts()) {
+            deleted_variables.extend(delete_concepts.ids())
+        }
+        for inner_conjunction in conjunction.nested_patterns_flattened() {
+            collect_recursive(inner_conjunction, deleted_variables);
+        }
+    }
+    let mut deleted_variables = BTreeSet::new();
+    collect_recursive(block.conjunction(), &mut deleted_variables);
+    deleted_variables
 }
 
 // utils
