@@ -214,6 +214,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) // Done later
                 | Constraint::LinksDeduplication(_) => (),
+                Constraint::DeleteConcepts(c) => {
+                    debug_assert!(c.vertices().all(|id| vertices.contains_key(&id)));
+                }
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
                 }
@@ -391,6 +394,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
             Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
             Constraint::Comparison(_) // Unlike in 2.x, We don't use comparisons to propagate.
+            | Constraint::DeleteConcepts(_)
             | Constraint::Iid(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
@@ -532,6 +536,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
                 Constraint::Relates(relates) => edges.push(self.seed_edge(constraint, relates, vertices)?),
                 Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
+                | Constraint::DeleteConcepts(_)
                 | Constraint::Iid(_)
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
