@@ -32,13 +32,12 @@ use encoding::value::value_type::ValueType;
 use error::todo_must_implement;
 use ir::{
     pattern::{
-        ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
+        ParameterID, Pattern, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
         variable_category::VariableOptionality,
     },
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::{Either, chain};
-use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
