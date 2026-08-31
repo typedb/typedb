@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 use ir::{
     RepresentationError,
-    pattern::Pattern,
+    pattern::{Pattern, conjunction::Conjunction, variable_category::VariableOptionality},
     pipeline::{
         ParameterRegistry, VariableRegistry,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
@@ -51,19 +51,21 @@ macro_rules! assert_vars {
 }
 
 macro_rules! assert_optionals {
-    ($registry:expr, $optionals:tt) => {
+    ($registry:expr, $pattern:expr, $optionals:tt) => {
         let mut optionals: Vec<&'static str> = vec!$optionals;
         optionals.sort();
-        assert_eq!(&get_optionals($registry), &optionals);
+        assert_eq!(&get_optionals($pattern, $registry), &optionals);
     }
 }
 
-fn get_optionals(variable_registry: &VariableRegistry) -> Vec<&'_ str> {
-    variable_registry
-        .variable_names()
-        .iter()
-        .filter(|(v, _)| variable_registry.is_variable_optional(**v))
-        .map(|(_, name)| name.as_str())
+fn get_optionals<'a>(pattern: &impl Pattern, variable_registry: &'a VariableRegistry) -> Vec<&'a str> {
+    pattern
+        .input_optionalities()
+        .chain(pattern.bound_optionalities())
+        .filter_map(|(variable, optionality)| {
+            (optionality == VariableOptionality::Optional)
+                .then_some(variable_registry.get_variable_name_or_unnamed(variable))
+        })
         .sorted()
         .collect()
 }
@@ -91,7 +93,10 @@ fn test_negation() {
     assert_vars!(&context.variable_registry, conjunction, Required[], Bound["x"]);
     assert_vars!(&context.variable_registry, negation, Required["x"], Bound[]);
     assert_vars!(&context.variable_registry, negation.conjunction(), Required["x"], Bound["y"]);
-    assert_optionals!(&context.variable_registry, []);
+
+    assert_optionals!(&context.variable_registry, conjunction, []);
+    assert_optionals!(&context.variable_registry, negation, []);
+    assert_optionals!(&context.variable_registry, negation.conjunction(), []);
 }
 
 #[test]
@@ -130,7 +135,14 @@ fn test_disjunction() {
     assert_vars!(&context.variable_registry, b12, Required[], Bound["x"]);
     assert_vars!(&context.variable_registry, b21, Required["x"], Bound[]);
     assert_vars!(&context.variable_registry, b22, Required[], Bound["y"]);
-    assert_optionals!(&context.variable_registry, []);
+
+    assert_optionals!(&context.variable_registry, conjunction, []);
+    assert_optionals!(&context.variable_registry, first_disjunction, []);
+    assert_optionals!(&context.variable_registry, second_disjunction, []);
+    assert_optionals!(&context.variable_registry, b11, []);
+    assert_optionals!(&context.variable_registry, b12, []);
+    assert_optionals!(&context.variable_registry, b21, []);
+    assert_optionals!(&context.variable_registry, b22, []);
 }
 
 #[test]
@@ -158,7 +170,10 @@ fn test_optional() {
     assert_vars!(&context.variable_registry, conjunction, Required[], Bound["x", "y"]);
     assert_vars!(&context.variable_registry, optional, Required["x"], Bound["y"]);
     assert_vars!(&context.variable_registry, optional.conjunction(), Required["x"], Bound["y"]);
-    assert_optionals!(&context.variable_registry, ["y"]);
+
+    assert_optionals!(&context.variable_registry, conjunction, ["y"]);
+    assert_optionals!(&context.variable_registry, optional, ["y"]);
+    assert_optionals!(&context.variable_registry, optional.conjunction(), []);
 }
 
 #[test]
@@ -211,7 +226,7 @@ fn problematic_is() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     assert_vars!(&context.variable_registry, conjunction, Required[], Bound["a"]);
-    assert_optionals!(&context.variable_registry, []);
+    assert_optionals!(&context.variable_registry, conjunction, []);
 }
 
 #[test]
@@ -306,7 +321,10 @@ fn test_negation_with_inputs() {
     assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
     assert_vars!(&translated_pipeline.variable_registry, negation, Required["x", "y"], Bound[]);
     assert_vars!(&translated_pipeline.variable_registry, negation.conjunction(), Required["x", "y"], Bound[]);
-    assert_optionals!(&translated_pipeline.variable_registry, []);
+
+    assert_optionals!(&translated_pipeline.variable_registry, conjunction, []);
+    assert_optionals!(&translated_pipeline.variable_registry, negation, []);
+    assert_optionals!(&translated_pipeline.variable_registry, negation.conjunction(), []);
 }
 
 #[test]
@@ -345,7 +363,15 @@ fn test_disjunction_with_inputs() {
     assert_vars!(&translated_pipeline.variable_registry, b12, Required[], Bound["x"]);
     assert_vars!(&translated_pipeline.variable_registry, b21, Required["x"], Bound[]);
     assert_vars!(&translated_pipeline.variable_registry, b22, Required["y"], Bound[]);
-    assert_optionals!(&translated_pipeline.variable_registry, []);
+
+    assert_optionals!(&translated_pipeline.variable_registry, first_block.conjunction(), []);
+    assert_optionals!(&translated_pipeline.variable_registry, conjunction, []);
+    assert_optionals!(&translated_pipeline.variable_registry, first_disjunction, []);
+    assert_optionals!(&translated_pipeline.variable_registry, second_disjunction, []);
+    assert_optionals!(&translated_pipeline.variable_registry, b11, []);
+    assert_optionals!(&translated_pipeline.variable_registry, b12, []);
+    assert_optionals!(&translated_pipeline.variable_registry, b21, []);
+    assert_optionals!(&translated_pipeline.variable_registry, b22, []);
 }
 
 #[test]
@@ -356,7 +382,7 @@ fn test_optional_with_inputs() {
         try { $y isa name; };
     match
         $x isa person;
-        try { $x has $y;};
+        try { isset $y; $x has $y;};
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
@@ -366,13 +392,24 @@ fn test_optional_with_inputs() {
     let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
         unreachable!();
     };
-    let conjunction = second_block.conjunction();
-    let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+
+    let first_conjunction = first_block.conjunction();
+    let first_optional = first_conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+
+    let second_conjunction = second_block.conjunction();
+    let second_optional = second_conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
     assert_vars!(&translated_pipeline.variable_registry, first_block.conjunction(), Required[], Bound["y"]);
-    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
-    assert_vars!(&translated_pipeline.variable_registry, optional, Required["x", "y"], Bound[]);
-    assert_vars!(&translated_pipeline.variable_registry, optional.conjunction(), Required["x", "y"], Bound[]);
-    assert_optionals!(&translated_pipeline.variable_registry, ["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_conjunction, Required["y"], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_optional, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, second_optional.conjunction(), Required["x", "y"], Bound[]);
+
+    assert_optionals!(&translated_pipeline.variable_registry, first_conjunction, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, first_optional, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, first_optional.conjunction(), []);
+
+    assert_optionals!(&translated_pipeline.variable_registry, second_conjunction, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, second_optional, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, second_optional.conjunction(), []);
 }
 
 #[test]
@@ -385,7 +422,7 @@ fn test_optional_skip_a_stage() {
         let $_ = 0;
     match
         $x isa person;
-        try { $x has $y;};
+        try {  isset $y; $x has $y;};
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
@@ -398,14 +435,25 @@ fn test_optional_skip_a_stage() {
     let TranslatedStage::Match { block: third_block, .. } = &translated_pipeline.translated_stages[2] else {
         unreachable!();
     };
-    let conjunction = third_block.conjunction();
-    let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+
+    let third_conjunction = third_block.conjunction();
+    let third_optional = third_conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
     assert_vars!(&translated_pipeline.variable_registry, first_block.conjunction(), Required[], Bound["y"]);
     assert_vars!(&translated_pipeline.variable_registry, second_block.conjunction(), Required[], Bound[]);
-    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
-    assert_vars!(&translated_pipeline.variable_registry, optional, Required["x", "y"], Bound[]);
-    assert_vars!(&translated_pipeline.variable_registry, optional.conjunction(), Required["x", "y"], Bound[]);
-    assert_optionals!(&translated_pipeline.variable_registry, ["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, third_conjunction, Required["y"], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, third_optional, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, third_optional.conjunction(), Required["x", "y"], Bound[]);
+
+    assert_optionals!(&translated_pipeline.variable_registry, first_block.conjunction(), ["y"]);
+    assert!(
+        !second_block
+            .conjunction()
+            .visible_referenced_variables()
+            .any(|v| { translated_pipeline.variable_registry.get_variable_name_or_unnamed(v) == "y" })
+    );
+    assert_optionals!(&translated_pipeline.variable_registry, third_conjunction, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, third_optional, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, third_optional.conjunction(), []);
 }
 
 #[test]
@@ -433,7 +481,7 @@ fn test_nested_negation() {
     assert_vars!(&translated_pipeline.variable_registry, inner_negation, Required["x", "y"], Bound[]);
     assert_vars!(&translated_pipeline.variable_registry, outer_negation.conjunction(), Required["x"], Bound["y"]);
     assert_vars!(&translated_pipeline.variable_registry, inner_negation.conjunction(), Required["x", "y"], Bound["f"]);
-    assert_optionals!(&translated_pipeline.variable_registry, []);
+    assert_optionals!(&translated_pipeline.variable_registry, conjunction, []);
 }
 
 #[test]
@@ -460,7 +508,12 @@ fn test_nested_optional() {
     assert_vars!(&translated_pipeline.variable_registry, inner_optional, Required["x"], Bound["y"]);
     assert_vars!(&translated_pipeline.variable_registry, outer_optional.conjunction(), Required[], Bound["x", "y"]);
     assert_vars!(&translated_pipeline.variable_registry, inner_optional.conjunction(), Required["x"], Bound["y"]);
-    assert_optionals!(&translated_pipeline.variable_registry, ["x", "y"]);
+
+    assert_optionals!(&translated_pipeline.variable_registry, conjunction, ["x", "y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, outer_optional, ["x", "y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, outer_optional.conjunction(), ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, inner_optional, ["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, inner_optional.conjunction(), []);
 }
 
 #[test]
@@ -482,5 +535,5 @@ fn test_optional_return() {
     };
     let conjunction = block.conjunction();
     assert_vars!(&translated_pipeline.variable_registry, conjunction, Required[], Bound["x", "y"]);
-    assert_optionals!(&translated_pipeline.variable_registry, ["x"]);
+    assert_optionals!(&translated_pipeline.variable_registry, conjunction, ["x"]);
 }
