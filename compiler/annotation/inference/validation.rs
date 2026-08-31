@@ -91,6 +91,7 @@ fn check_non_type_constraints_satisfiable(
         | Constraint::ExpressionBinding(_)
         | Constraint::FunctionCallBinding(_)
         | Constraint::LinksDeduplication(_)
+        | Constraint::DeleteConcepts(_)
         | Constraint::Comparison(_) => true,
 
         Constraint::IsSet(_)
