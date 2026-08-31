@@ -23,11 +23,7 @@ use typeql::{
 
 use crate::{
     LiteralParseError, RepresentationError,
-    pattern::{
-        BranchID, ParameterID, ValueType,
-        constraint::Constraint,
-        variable_category::{VariableCategory, VariableOptionality},
-    },
+    pattern::{BranchID, ParameterID, ValueType, constraint::Constraint, variable_category::VariableCategory},
     pipeline::{function_signature::FunctionID, reduce::Reducer},
 };
 
@@ -162,7 +158,6 @@ pub struct VariableRegistry {
     variable_names: HashMap<Variable, String>,
     variable_id_allocator: u16,
     variable_categories: HashMap<Variable, (VariableCategory, VariableCategorySource)>,
-    variable_optionality: HashMap<Variable, VariableOptionality>,
     variable_source_spans: HashMap<Variable, Span>,
 }
 
@@ -175,7 +170,6 @@ impl VariableRegistry {
             variable_names: HashMap::new(),
             variable_id_allocator: 0,
             variable_categories: HashMap::new(),
-            variable_optionality: HashMap::new(),
             variable_source_spans: HashMap::new(),
         }
     }
@@ -214,9 +208,6 @@ impl VariableRegistry {
         let new_var = self.register_anonymous_variable(None)?;
         if let Some(category) = self.get_variable_category(variable) {
             self.set_variable_category(new_var, category, VariableCategorySource::Variable(variable))?;
-        }
-        if let Some(optionality) = self.variable_optionality.get(&variable) {
-            self.set_variable_is_optional(new_var, *optionality == VariableOptionality::Optional);
         }
         Ok(new_var)
     }
@@ -307,20 +298,6 @@ impl VariableRegistry {
         self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
     }
 
-    pub fn is_variable_optional(&self, variable: Variable) -> bool {
-        match self.variable_optionality.get(&variable).unwrap_or(&VariableOptionality::Required) {
-            VariableOptionality::Required => false,
-            VariableOptionality::Optional => true,
-        }
-    }
-
-    fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
-        match optional {
-            true => self.variable_optionality.insert(variable, VariableOptionality::Optional),
-            false => self.variable_optionality.remove(&variable),
-        };
-    }
-
     pub fn has_variable_as_named(&self, variable: &Variable) -> bool {
         self.variable_names.contains_key(variable)
     }
@@ -333,13 +310,11 @@ impl VariableRegistry {
         &mut self,
         name: &str,
         category: VariableCategory,
-        optionality: VariableOptionality,
         source_span: Option<Span>,
     ) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.register_variable_named(name.to_owned(), source_span)?;
         self.set_variable_category(variable, category, VariableCategorySource::ArgumentOrGiven)
             .expect("Expected a newly created variable");
-        self.set_variable_is_optional(variable, optionality == VariableOptionality::Optional);
         Ok(variable)
     }
 
@@ -347,14 +322,12 @@ impl VariableRegistry {
         &mut self,
         name: String,
         category: VariableCategory,
-        is_optional: bool,
         source_span: Option<Span>,
         reducer: Reducer,
     ) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.register_variable_named(name, source_span)?;
         self.set_variable_category(variable, category, VariableCategorySource::Reduce(reducer))
             .expect("Expected a newly created variable");
-        self.set_variable_is_optional(variable, is_optional);
         Ok(variable)
     }
 }
@@ -368,10 +341,6 @@ impl fmt::Display for VariableRegistry {
         writeln!(f, "Variable categories:")?;
         for var in self.variable_categories.keys().sorted_unstable() {
             writeln!(f, "  {}: {}", var, self.variable_categories[var].0)?;
-        }
-        writeln!(f, "Optional variables:")?;
-        for var in self.variable_optionality.keys().sorted_unstable() {
-            writeln!(f, "  {}", var)?;
         }
         Ok(())
     }

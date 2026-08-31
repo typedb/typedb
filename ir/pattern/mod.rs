@@ -112,9 +112,9 @@ macro_rules! impl_pattern_from_pattern_variables {
 pub(self) use impl_pattern_from_pattern_variables;
 
 use crate::pattern::{
-    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
+    conjunction::{Conjunction, ConjunctionBuilder, NestedPatternBuilder},
     constraint::Constraint,
-    disjunction::DisjunctionBuilder,
+    disjunction::{Disjunction, DisjunctionBuilder},
 };
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -401,78 +401,6 @@ impl fmt::Display for ValueType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) enum BindingMode {
-    RequirePrebound,
-    AlwaysBinding,
-    LocallyBindingInChild,
-    OptionallyBinding,
-    #[default]
-    Absent,
-}
-
-impl BindingMode {
-    pub(crate) fn is_require_prebound(&self) -> bool {
-        *self == BindingMode::RequirePrebound
-    }
-
-    pub(crate) fn is_always_binding(&self) -> bool {
-        *self == BindingMode::AlwaysBinding
-    }
-
-    pub(crate) fn is_locally_binding_in_child(&self) -> bool {
-        *self == BindingMode::LocallyBindingInChild
-    }
-
-    pub(crate) fn is_optionally_binding(&self) -> bool {
-        *self == BindingMode::OptionallyBinding
-    }
-}
-
-impl BitAnd for BindingMode {
-    type Output = Self;
-
-    fn bitand(self, rhs: Self) -> Self {
-        // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
-        match (self, rhs) {
-            (Self::Absent, x) | (x, Self::Absent) => x,
-            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => Self::AlwaysBinding,
-            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => Self::RequirePrebound,
-            (Self::OptionallyBinding, Self::OptionallyBinding) => Self::RequirePrebound,
-        }
-    }
-}
-
-impl BitAndAssign for BindingMode {
-    fn bitand_assign(&mut self, rhs: Self) {
-        *self = *self & rhs;
-    }
-}
-
-impl BitOr for BindingMode {
-    type Output = Self;
-    fn bitor(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Self::OptionallyBinding, Self::OptionallyBinding) => Self::OptionallyBinding,
-            (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,
-            (Self::Absent, Self::Absent) => Self::Absent,
-            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => Self::LocallyBindingInChild,
-            (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
-                Self::LocallyBindingInChild
-            }
-            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
-            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => Self::RequirePrebound,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => {
-                // This preserves associativity, but doesn't correctly escalate to RequirePrebound.
-                // ((AlwaysBinding | AlwaysBinding) | Absent) should be required
-                // That's corrected in disjunction
-                Self::LocallyBindingInChild
-            }
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum PatternVariableMode {
     RequiredInput,
@@ -504,9 +432,7 @@ impl PatternVariables {
                         (_, BindingMode::Absent) => None?,
                         (PatternVariableMode::RequiredInput, _) => PatternVariableMode::RequiredInput,
                         (PatternVariableMode::Binding, BindingMode::LocallyBindingInChild)
-                        | (PatternVariableMode::Binding, BindingMode::OptionallyBinding) => {
-                            PatternVariableMode::RequiredInput
-                        }
+                        | (PatternVariableMode::Binding, BindingMode::BoundInTry) => PatternVariableMode::RequiredInput,
                         (PatternVariableMode::Binding, BindingMode::RequirePrebound) => {
                             PatternVariableMode::RequiredInput
                         }
@@ -520,7 +446,7 @@ impl PatternVariables {
                             // Happens in the transition from optional to inner
                             PatternVariableMode::Binding
                         }
-                        (PatternVariableMode::OptionallyBinding, BindingMode::OptionallyBinding) => {
+                        (PatternVariableMode::OptionallyBinding, BindingMode::BoundInTry) => {
                             // There's a nested optional even deeper.
                             PatternVariableMode::OptionallyBinding
                         }
@@ -532,7 +458,7 @@ impl PatternVariables {
                     );
                     match mode {
                         BindingMode::RequirePrebound => PatternVariableMode::RequiredInput,
-                        BindingMode::OptionallyBinding => PatternVariableMode::OptionallyBinding,
+                        BindingMode::BoundInTry => PatternVariableMode::OptionallyBinding,
                         BindingMode::AlwaysBinding => PatternVariableMode::Binding,
                         BindingMode::LocallyBindingInChild => None?,
                         BindingMode::Absent => None?,
@@ -562,6 +488,84 @@ impl PatternVariables {
 
     pub(crate) fn optionally_bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::OptionallyBinding).then_some(*v))
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum BindingMode {
+    RequirePrebound,
+    AlwaysBinding,
+    LocallyBindingInChild, // Bound in some, but not all branches
+    BoundInTry,            // Try blocks, but not assignments. Assignments are AlwaysBinding regardless.
+    #[default]
+    Absent,
+}
+
+impl BindingMode {
+    pub fn is_require_prebound(&self) -> bool {
+        *self == BindingMode::RequirePrebound
+    }
+
+    pub fn is_always_binding(&self) -> bool {
+        *self == BindingMode::AlwaysBinding
+    }
+
+    pub fn is_locally_binding_in_child(&self) -> bool {
+        *self == BindingMode::LocallyBindingInChild
+    }
+
+    pub fn is_optionally_binding(&self) -> bool {
+        *self == BindingMode::BoundInTry
+    }
+}
+
+impl BitAnd for BindingMode {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
+        match (self, rhs) {
+            (Self::Absent, x) | (x, Self::Absent) => x,
+            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => Self::RequirePrebound,
+            (Self::BoundInTry, Self::BoundInTry) => Self::RequirePrebound,
+        }
+    }
+}
+
+impl BitOr for BindingMode {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::BoundInTry, Self::BoundInTry) => Self::BoundInTry,
+            (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::Absent, Self::Absent) => Self::Absent,
+            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => Self::LocallyBindingInChild,
+            (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
+                Self::LocallyBindingInChild
+            }
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
+            (Self::BoundInTry, _) | (_, Self::BoundInTry) => Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => {
+                // This preserves associativity, but doesn't correctly escalate to RequirePrebound.
+                // ((AlwaysBinding | AlwaysBinding) | Absent) should be required
+                // That's corrected in disjunction
+                Self::LocallyBindingInChild
+            }
+        }
+    }
+}
+
+impl BitAndAssign for BindingMode {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl BitOrAssign for BindingMode {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
     }
 }
 

@@ -93,7 +93,8 @@ fn check_non_type_constraints_satisfiable(
         | Constraint::LinksDeduplication(_)
         | Constraint::Comparison(_) => true,
 
-        Constraint::Kind(_)
+        Constraint::IsSet(_)
+        | Constraint::Kind(_)
         | Constraint::Label(_)
         | Constraint::RoleName(_)
         | Constraint::Sub(_)
