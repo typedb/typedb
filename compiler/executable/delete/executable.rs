@@ -16,7 +16,7 @@ use typeql::common::Span;
 
 use crate::{
     VariablePosition,
-    annotation::type_annotations::BlockAnnotations,
+    annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
         WriteCompilationError,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
@@ -43,17 +43,21 @@ pub fn compile(
     block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     block: &Block,
-    deleted_concepts: &[Variable],
-    source_span: Option<Span>,
+    _source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let mut connection_instructions = Vec::new();
-    add_connection_deletes(
+    let conjunction_annotations = block_annotations
+        .type_annotations_of(block.conjunction())
+        .expect("delete conjunction must have type annotations");
+    let mut deleted_variables_recursive = HashSet::new();
+    let concept_instructions = add_concept_deletes(
         block.conjunction(),
-        block_annotations,
+        conjunction_annotations,
         input_variables,
         variable_registry,
-        &mut connection_instructions,
+        &mut deleted_variables_recursive,
     )?;
+    let connection_instructions =
+        add_connection_deletes(block.conjunction(), conjunction_annotations, input_variables, variable_registry)?;
 
     let unsafely_used_optional_variable = block
         .conjunction()
@@ -75,38 +79,10 @@ pub fn compile(
         optional_deletes.push(OptionalDelete::new(optional, block_annotations, variable_registry, input_variables)?);
     }
 
-    let mut concept_instructions = Vec::new();
-    for &variable in deleted_concepts {
-        let Some(input_position) = input_variables.get(&variable) else {
-            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
-                variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
-                source_span,
-            }));
-        };
-        assert!(
-            block_annotations
-                .type_annotations()
-                .values()
-                .any(|type_annotations| type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some())
-        );
-        if block_annotations.type_annotations().values().any(|type_annotations| {
-            type_annotations
-                .vertex_annotations_of(&Vertex::Variable(variable))
-                .is_some_and(|anno| anno.iter().any(|type_| type_.kind() == Kind::Role))
-        }) {
-            return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
-                variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
-                source_span,
-            }));
-        } else {
-            concept_instructions.push(ThingInstruction { thing: ThingPosition(*input_position) });
-        };
-    }
-
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let mut output_row_schema = Vec::new();
     for (&variable, position) in input_variables {
-        if deleted_concepts.contains(&variable) {
+        if deleted_variables_recursive.contains(&variable) {
             continue;
         }
         let pos_as_usize = position.as_usize();
@@ -138,13 +114,14 @@ impl OptionalDelete {
         variable_registry: &VariableRegistry,
         input_variables: &HashMap<Variable, VariablePosition>,
     ) -> Result<Self, Box<WriteCompilationError>> {
-        let mut connection_instructions = Vec::new();
-        add_connection_deletes(
+        let conjunction_annotations = block_annotations
+            .type_annotations_of(optional.conjunction())
+            .expect("delete conjunction must have type annotations");
+        let connection_instructions = add_connection_deletes(
             optional.conjunction(),
-            block_annotations,
+            conjunction_annotations,
             input_variables,
             variable_registry,
-            &mut connection_instructions,
         )?;
 
         let required_input_variables = optional
@@ -159,19 +136,49 @@ impl OptionalDelete {
     }
 }
 
-fn add_connection_deletes(
+fn add_concept_deletes(
     conjunction: &ir::pattern::conjunction::Conjunction,
-    block_annotations: &BlockAnnotations,
+    conjunction_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
-    connection_deletes: &mut Vec<ConnectionInstruction>,
-) -> Result<(), Box<WriteCompilationError>> {
-    let resolved_roles = resolve_links_roles(
-        conjunction.constraints(),
-        block_annotations.type_annotations_of(conjunction).expect("delete conjunction must have type annotations"),
-        input_variables,
-        variable_registry,
-    )?;
+    deleted_variables_recursive: &mut HashSet<Variable>,
+) -> Result<Vec<ThingInstruction>, Box<WriteCompilationError>> {
+    let mut concept_instructions = Vec::new();
+    for constraint in conjunction.constraints().iter().filter_map(|c| c.as_delete_concepts()) {
+        for variable in constraint.ids() {
+            let Some(input_position) = input_variables.get(&variable) else {
+                return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
+                    variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
+                    source_span: constraint.source_span(),
+                }));
+            };
+            assert!(conjunction_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some());
+            if conjunction_annotations
+                .vertex_annotations_of(&Vertex::Variable(variable))
+                .is_some_and(|anno| anno.iter().any(|type_| type_.kind() == Kind::Role))
+            {
+                return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
+                    variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
+                    source_span: constraint.source_span(),
+                }));
+            } else {
+                deleted_variables_recursive.insert(variable);
+                concept_instructions.push(ThingInstruction { thing: ThingPosition(*input_position) });
+            };
+        }
+    }
+    Ok(concept_instructions)
+}
+
+fn add_connection_deletes(
+    conjunction: &ir::pattern::conjunction::Conjunction,
+    block_annotations: &TypeAnnotations,
+    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_registry: &VariableRegistry,
+) -> Result<Vec<ConnectionInstruction>, Box<WriteCompilationError>> {
+    let resolved_roles =
+        resolve_links_roles(conjunction.constraints(), block_annotations, input_variables, variable_registry)?;
+    let mut connection_deletes = Vec::new();
     for constraint in conjunction.constraints() {
         match constraint {
             Constraint::Has(has) => {
@@ -207,6 +214,7 @@ fn add_connection_deletes(
                 connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
             Constraint::LinksDeduplication(_) | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
+            Constraint::DeleteConcepts(_) => (),                               // Is a ConceptInstruction
             Constraint::Iid(_)
             | Constraint::Isa(_)
             | Constraint::Kind(_)
@@ -226,5 +234,5 @@ fn add_connection_deletes(
             }
         }
     }
-    Ok(())
+    Ok(connection_deletes)
 }
