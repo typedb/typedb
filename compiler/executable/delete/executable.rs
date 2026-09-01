@@ -31,9 +31,7 @@ use crate::{
 #[derive(Debug)]
 pub struct DeleteExecutable {
     pub executable_id: u64,
-    pub concept_instructions: Vec<ThingInstruction>,
-    pub connection_instructions: Vec<ConnectionInstruction>,
-    pub optional_deletes: Vec<OptionalDelete>,
+    pub deletes: Vec<ConditionalDelete>,
     pub output_row_schema: Vec<Option<Variable>>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
@@ -45,19 +43,17 @@ pub fn compile(
     block: &Block,
     _source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let conjunction_annotations = block_annotations
-        .type_annotations_of(block.conjunction())
-        .expect("delete conjunction must have type annotations");
     let mut deleted_variables_recursive = HashSet::new();
-    let concept_instructions = add_concept_deletes(
+    let mut deletes = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
+
+    let root_delete = ConditionalDelete::new(
         block.conjunction(),
-        conjunction_annotations,
-        input_variables,
+        block_annotations,
         variable_registry,
+        input_variables,
         &mut deleted_variables_recursive,
     )?;
-    let connection_instructions =
-        add_connection_deletes(block.conjunction(), conjunction_annotations, input_variables, variable_registry)?;
+    deletes.push(root_delete);
 
     let unsafely_used_optional_variable = block
         .conjunction()
@@ -71,13 +67,12 @@ pub fn compile(
         return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
     }
 
-    let mut optional_deletes = Vec::with_capacity(block.conjunction().nested_patterns().len());
     for nested_pattern in block.conjunction().nested_patterns() {
         let NestedPattern::Optional(optional) = nested_pattern else {
             unreachable!("Only optionals are allowed as nested patterns in delete")
         };
-        optional_deletes.push(OptionalDelete::new(
-            optional,
+        deletes.push(ConditionalDelete::new(
+            optional.conjunction(),
             block_annotations,
             variable_registry,
             input_variables,
@@ -98,54 +93,44 @@ pub fn compile(
         output_row_schema[pos_as_usize] = Some(variable);
     }
 
-    Ok(DeleteExecutable {
-        executable_id: next_executable_id(),
-        connection_instructions,
-        concept_instructions,
-        optional_deletes,
-        output_row_schema,
-    })
+    Ok(DeleteExecutable { executable_id: next_executable_id(), deletes, output_row_schema })
 }
 
 #[derive(Debug)]
-pub struct OptionalDelete {
+pub struct ConditionalDelete {
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub required_input_variables: HashSet<VariablePosition>,
 }
 
-impl OptionalDelete {
+impl ConditionalDelete {
     fn new(
-        optional: &ir::pattern::optional::Optional,
+        conjunction: &ir::pattern::conjunction::Conjunction,
         block_annotations: &BlockAnnotations,
         variable_registry: &VariableRegistry,
         input_variables: &HashMap<Variable, VariablePosition>,
         deleted_variables_recursive: &mut HashSet<Variable>,
     ) -> Result<Self, Box<WriteCompilationError>> {
-        let conjunction_annotations = block_annotations
-            .type_annotations_of(optional.conjunction())
-            .expect("delete conjunction must have type annotations");
+        let conjunction_annotations =
+            block_annotations.type_annotations_of(conjunction).expect("delete conjunction must have type annotations");
 
         let concept_instructions = add_concept_deletes(
-            optional.conjunction(),
+            conjunction,
             conjunction_annotations,
             input_variables,
             variable_registry,
             deleted_variables_recursive,
         )?;
 
-        let connection_instructions = add_connection_deletes(
-            optional.conjunction(),
-            conjunction_annotations,
-            input_variables,
-            variable_registry,
-        )?;
+        let connection_instructions =
+            add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
 
-        let required_input_variables = optional
-            .conjunction()
+        // We can't just use required_inputs
+        let required_input_variables = conjunction
             .constraints()
             .iter()
-            .flat_map(|constraint| constraint.ids())
+            .filter_map(|c| c.as_is_set())
+            .flat_map(|c| c.ids())
             .filter_map(|id| input_variables.get(&id).copied())
             .collect();
 
