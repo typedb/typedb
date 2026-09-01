@@ -76,7 +76,13 @@ pub fn compile(
         let NestedPattern::Optional(optional) = nested_pattern else {
             unreachable!("Only optionals are allowed as nested patterns in delete")
         };
-        optional_deletes.push(OptionalDelete::new(optional, block_annotations, variable_registry, input_variables)?);
+        optional_deletes.push(OptionalDelete::new(
+            optional,
+            block_annotations,
+            variable_registry,
+            input_variables,
+            &mut deleted_variables_recursive,
+        )?);
     }
 
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
@@ -103,6 +109,7 @@ pub fn compile(
 
 #[derive(Debug)]
 pub struct OptionalDelete {
+    pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub required_input_variables: HashSet<VariablePosition>,
 }
@@ -113,10 +120,20 @@ impl OptionalDelete {
         block_annotations: &BlockAnnotations,
         variable_registry: &VariableRegistry,
         input_variables: &HashMap<Variable, VariablePosition>,
+        deleted_variables_recursive: &mut HashSet<Variable>,
     ) -> Result<Self, Box<WriteCompilationError>> {
         let conjunction_annotations = block_annotations
             .type_annotations_of(optional.conjunction())
             .expect("delete conjunction must have type annotations");
+
+        let concept_instructions = add_concept_deletes(
+            optional.conjunction(),
+            conjunction_annotations,
+            input_variables,
+            variable_registry,
+            deleted_variables_recursive,
+        )?;
+
         let connection_instructions = add_connection_deletes(
             optional.conjunction(),
             conjunction_annotations,
@@ -132,7 +149,7 @@ impl OptionalDelete {
             .filter_map(|id| input_variables.get(&id).copied())
             .collect();
 
-        Ok(Self { connection_instructions, required_input_variables })
+        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
     }
 }
 
