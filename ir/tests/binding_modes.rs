@@ -537,3 +537,74 @@ fn test_optional_return() {
     assert_vars!(&translated_pipeline.variable_registry, conjunction, Required[], Bound["x", "y"]);
     assert_optionals!(&translated_pipeline.variable_registry, conjunction, ["x"]);
 }
+
+#[test]
+fn unwrap_in_one_branch() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let query = r#"
+        match $p isa person; try { $p has name $name; };
+        match { isset $name; $q has $name; } or { $q has name $other; $other == "Steve"; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let first_conjunction = first_block.conjunction();
+    let optional = first_conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+    let second_conjunction = second_block.conjunction();
+    let disjunction = second_conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
+    let b1 = &disjunction.conjunctions()[0];
+    let b2 = &disjunction.conjunctions()[1];
+    assert_vars!(&translated_pipeline.variable_registry, first_conjunction, Required[], Bound["p", "name"]);
+    assert_vars!(&translated_pipeline.variable_registry, optional, Required["p"], Bound["name"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_conjunction, Required["name"], Bound["q"]);
+    assert_vars!(&translated_pipeline.variable_registry, disjunction, Required["name"], Bound["q"]);
+    assert_vars!(&translated_pipeline.variable_registry, b1, Required["name"], Bound["q"]);
+    assert_vars!(&translated_pipeline.variable_registry, b2, Required[], Bound["q", "other"]);
+
+    assert_optionals!(&translated_pipeline.variable_registry, first_conjunction, ["name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, optional, ["name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, second_conjunction, ["name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, disjunction, ["name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, b1, []);
+    assert_optionals!(&translated_pipeline.variable_registry, b2, []);
+}
+
+#[test]
+fn unwrap_downstream() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let query = r#"
+        match $p isa person; try { $p has name $name; };
+        match isset $name;
+        match $q has name $name;
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: third_block, .. } = &translated_pipeline.translated_stages[2] else {
+        unreachable!();
+    };
+    let first_conjunction = first_block.conjunction();
+    let optional = first_conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+    let second_conjunction = second_block.conjunction();
+    let third_conjunction = third_block.conjunction();
+
+    assert_vars!(&translated_pipeline.variable_registry, first_conjunction, Required[], Bound["p", "name"]);
+    assert_vars!(&translated_pipeline.variable_registry, optional, Required["p"], Bound["name"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_conjunction, Required["name"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, third_conjunction, Required["name"], Bound["q"]);
+
+    assert_optionals!(&translated_pipeline.variable_registry, first_conjunction, ["name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, optional, ["name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, second_conjunction, []);
+    assert_optionals!(&translated_pipeline.variable_registry, third_conjunction, []);
+}
