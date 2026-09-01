@@ -9,10 +9,10 @@ use std::{
     sync::{Arc, mpsc::RecvTimeoutError},
 };
 
-pub use concept::thing::cleanup::CleanupRecord;
+pub use concept::thing::cleanup::{CleanupIntervals, CleanupRecord};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{cleanup::CleanupIntervals, statistics::StatisticsError, thing_manager::ThingManager},
+    thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
