@@ -93,7 +93,7 @@ impl NegationBuilder {
             .variable_binding_modes()
             .into_iter()
             .map(|(var, mode)| {
-                if mode.is_always_binding() {
+                if mode.is_always_binding() || mode.is_optionally_binding() {
                     // if it is binding, we demote it to only locally binding (only relevant in the negation)
                     (var, BindingMode::LocallyBindingInChild)
                 } else {

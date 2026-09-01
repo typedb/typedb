@@ -161,8 +161,14 @@ fn validate_no_optionals_in_negations(
             return Err(Box::new(RepresentationError::OptionalInNegation {}));
         }
     }
-    conjunction.nested_patterns_flattened().try_for_each(|inner_conjunction| {
-        validate_no_optionals_in_negations(inner_conjunction, this_conjunction_in_negation)
+    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
+        NestedPatternBuilder::Disjunction(disjunction) => disjunction
+            .conjunctions()
+            .try_for_each(|c| validate_no_optionals_in_negations(c, this_conjunction_in_negation)),
+        NestedPatternBuilder::Negation(negation) => validate_no_optionals_in_negations(negation.conjunction(), true),
+        NestedPatternBuilder::Optional(optional) => {
+            validate_no_optionals_in_negations(optional.conjunction(), this_conjunction_in_negation)
+        }
     })
 }
 
