@@ -44,12 +44,12 @@ pub struct RequiredVariablesForWrite(HashSet<VariablePosition>);
 impl RequiredVariablesForWrite {
     pub fn build(conjunction: &Conjunction, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
         let required_variables = conjunction.constraints().iter().filter_map(|c| c.as_is_set()).flat_map(|c| c.ids());
-        let without_is_set = conjunction // Probably not needed
-            .constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .filter(|id| conjunction.is_input(id) && conjunction.optionality(id) == VariableOptionality::Optional);
-        let required_variables = required_variables.chain(without_is_set);
+        // let without_is_set = conjunction // Probably not needed
+        //     .constraints()
+        //     .iter()
+        //     .flat_map(|constraint| constraint.ids())
+        //     .filter(|id| conjunction.is_input(id) && conjunction.optionality(id) == VariableOptionality::Optional);
+        // let required_variables = required_variables.chain(without_is_set);
         Self(required_variables.filter_map(|id| variable_positions.get(&id).copied()).collect())
     }
 }
