@@ -338,12 +338,12 @@ fn add_links(
 }
 
 pub(crate) fn get_thing_position(
-    available_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     variable: Variable,
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<ThingPosition, Box<WriteCompilationError>> {
-    match available_variables.get(&variable) {
+    match variable_positions.get(&variable) {
         Some(input) => Ok(ThingPosition(*input)),
         None => Err(Box::new(WriteCompilationError::MissingExpectedInput {
             variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
