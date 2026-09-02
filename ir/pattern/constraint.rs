@@ -780,6 +780,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Comparison(comparison) => _all_required(comparison.ids()),
             Constraint::Is(is) => _all_binding(is.ids()),
             Constraint::IsSet(is_set) => _all_required(is_set.ids()),
+
             Constraint::DeleteConcepts(inner) => _all_required(inner.ids()),
             Constraint::Unsatisfiable(inner) => _all_binding(inner.ids()),
             Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
@@ -931,7 +932,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_is_set(&self) -> Option<&IsSet<ID>> {
+    pub fn as_is_set(&self) -> Option<&IsSet<ID>> {
         match self {
             Constraint::IsSet(is_set) => Some(is_set),
             _ => None,

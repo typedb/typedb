@@ -6,7 +6,7 @@
 use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
 use compiler::executable::delete::{
-    executable::{DeleteExecutable, OptionalDelete},
+    executable::{ConditionalDelete, DeleteExecutable},
     instructions::ConnectionInstruction,
 };
 use concept::thing::thing_manager::ThingManager;
@@ -20,7 +20,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     ExecutionInterrupt,
     pipeline::{
-        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, StageIterator, WrittenRowsIterator, required_inputs_satisfied,
         stage::{ExecutionContext, StageAPI},
     },
     row::Row,
@@ -64,30 +64,18 @@ where
         // TODO: all write stages will have the same block below: we could merge them
         let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Delete"));
-        let (connection_profiles, optional_connection_profiles, concept_profiles) =
-            build_step_profiles(&self.executable, &pattern_profile);
+        let (connection_profiles, concept_profiles) = build_step_profiles(&self.executable, &pattern_profile);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot = Arc::get_mut(&mut context.snapshot).unwrap();
-        // First delete connections
+        // First delete connections from ALL rows
         for index in 0..batch.len() {
             let mut row = batch.get_row_mut(index);
 
-            if let Err(typedb_source) = execute_delete_connections(
-                &self.executable.connection_instructions,
-                &connection_profiles,
-                snapshot,
-                &context.thing_manager,
-                &context.parameters,
-                &mut row,
-            ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
-            }
-
-            for (i, optional) in self.executable.optional_deletes.iter().enumerate() {
-                if let Err(typedb_source) = execute_optional_delete(
-                    optional,
-                    &optional_connection_profiles[i],
+            for (i, delete) in self.executable.deletes.iter().enumerate() {
+                if let Err(typedb_source) = may_execute_delete_connections(
+                    delete,
+                    &connection_profiles[i],
                     snapshot,
                     &context.thing_manager,
                     &context.parameters,
@@ -104,18 +92,21 @@ where
             }
         }
 
-        // Then delete concepts
+        // Then delete concepts from ALL rows
         for index in 0..batch.len() {
             let mut row = batch.get_row_mut(index);
-            if let Err(typedb_source) = execute_delete_concepts(
-                &self.executable,
-                &concept_profiles,
-                snapshot,
-                &context.thing_manager,
-                &context.parameters,
-                &mut row,
-            ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+
+            for (i, delete) in self.executable.deletes.iter().enumerate() {
+                if let Err(typedb_source) = may_execute_delete_concepts(
+                    &delete,
+                    &concept_profiles[i],
+                    snapshot,
+                    &context.thing_manager,
+                    &context.parameters,
+                    &mut row,
+                ) {
+                    return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+                }
             }
 
             if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
@@ -137,28 +128,22 @@ where
 fn build_step_profiles(
     executable: &DeleteExecutable,
     pattern_profile: &PatternProfile,
-) -> (Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Arc<StepProfile>>) {
+) -> (Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
     let mut next_subpattern: usize = 0;
-
-    let connection_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Connection deletes"));
-    next_subpattern += 1;
-    let connection_profiles = reserve_step_profiles(&connection_subpattern, &executable.connection_instructions);
-
-    let mut optional_connection_profiles = Vec::with_capacity(executable.optional_deletes.len());
-    for (i, optional) in executable.optional_deletes.iter().enumerate() {
-        let opt_connection_sub =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} connection deletes"));
+    let mut connection_profiles = Vec::with_capacity(executable.deletes.len());
+    let mut concept_profiles = Vec::with_capacity(executable.deletes.len());
+    for (i, delete) in executable.deletes.iter().enumerate() {
+        let connection_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Deletes {i} connections"));
         next_subpattern += 1;
-        optional_connection_profiles
-            .push(reserve_step_profiles(&opt_connection_sub, &optional.connection_instructions));
+        connection_profiles.push(reserve_step_profiles(&connection_subpattern, &delete.connection_instructions));
+        let concept_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Deletes {i} concepts"));
+        next_subpattern += 1;
+        concept_profiles.push(reserve_step_profiles(&concept_subpattern, &delete.concept_instructions));
     }
 
-    let concept_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Concept deletes"));
-    let concept_profiles = reserve_step_profiles(&concept_subpattern, &executable.concept_instructions);
-
-    (connection_profiles, optional_connection_profiles, concept_profiles)
+    (connection_profiles, concept_profiles)
 }
 
 fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
@@ -169,42 +154,21 @@ fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions:
         .collect()
 }
 
-fn execute_optional_delete(
-    optional: &OptionalDelete,
-    connection_profiles: &[Arc<StepProfile>],
-    snapshot: &mut impl WritableSnapshot,
-    thing_manager: &ThingManager,
-    parameters: &ParameterRegistry,
-    row: &mut Row<'_>,
-) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(optional.connection_instructions.len(), connection_profiles.len());
-    for &input in &optional.required_input_variables {
-        if row.len() <= input.as_usize() || row.get(input).is_none() {
-            return Ok(());
-        }
-    }
-    execute_delete_connections(
-        &optional.connection_instructions,
-        connection_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    Ok(())
-}
-
-pub fn execute_delete_connections(
-    connection_instructions: &[ConnectionInstruction],
+pub fn may_execute_delete_connections(
+    delete: &ConditionalDelete,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(connection_instructions.len(), step_profiles.len());
+    if !required_inputs_satisfied(&delete.required_input_variables, input_output_row) {
+        return Ok(());
+    }
+
     // Row multiplicity doesn't matter. You can't delete the same thing twice
-    for (instruction, step_profile) in connection_instructions.iter().zip(step_profiles) {
+    debug_assert_eq!(delete.connection_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in delete.connection_instructions.iter().zip(step_profiles) {
         let counters = step_profile.storage_counters();
         let measurement = step_profile.start_measurement();
         match instruction {
@@ -220,17 +184,21 @@ pub fn execute_delete_connections(
     Ok(())
 }
 
-pub fn execute_delete_concepts(
-    executable: &DeleteExecutable,
+pub fn may_execute_delete_concepts(
+    delete: &ConditionalDelete,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(executable.concept_instructions.len(), step_profiles.len());
+    if !required_inputs_satisfied(&delete.required_input_variables, input_output_row) {
+        return Ok(());
+    }
+
     // Row multiplicity doesn't matter. You can't delete the same thing twice
-    for (instruction, step_profile) in executable.concept_instructions.iter().zip(step_profiles) {
+    debug_assert_eq!(delete.concept_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in delete.concept_instructions.iter().zip(step_profiles) {
         let counters = step_profile.storage_counters();
         let measurement = step_profile.start_measurement();
         instruction.execute(snapshot, thing_manager, parameters, input_output_row, counters)?;

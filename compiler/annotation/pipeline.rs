@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -15,10 +15,7 @@ use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{
-        Vertex,
-        conjunction::Conjunction,
-        constraint::{Constraint, DeleteConcepts},
-        nested_pattern::NestedPattern,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern,
         variable_category::VariableOptionality,
     },
     pipeline::{
@@ -277,7 +274,7 @@ fn annotate_stage(
             Ok(AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span })
         }
         TranslatedStage::Delete { block, source_span } => {
-            let mut delete_annotations = annotate_write_stage(ctx, running_annotations, &block)?;
+            let delete_annotations = annotate_write_stage(ctx, running_annotations, &block)?;
             check_type_combinations_for_write(
                 ctx,
                 &block,

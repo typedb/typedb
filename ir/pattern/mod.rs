@@ -6,7 +6,7 @@
 
 use std::{
     cmp::{Ordering, PartialEq},
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fmt,
     hash::{Hash, Hasher},
     mem,
@@ -77,6 +77,8 @@ pub trait Pattern {
     // includes all variables from constraints and subpatterns. Does not include stage inputs if unused.
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
+    fn is_input(&self, variable: &Variable) -> bool;
+
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
@@ -99,6 +101,10 @@ macro_rules! impl_pattern_from_pattern_variables {
 
             fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
                 self.pattern_variables.visible_referenced_variables()
+            }
+
+            fn is_input(&self, variable: &Variable) -> bool {
+                self.pattern_variables.is_input(variable)
             }
 
             fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -527,6 +533,10 @@ impl PatternVariables {
 
     pub(crate) fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.keys().copied()
+    }
+
+    fn is_input(&self, variable: &Variable) -> bool {
+        matches!(self.0.get(variable), Some(PatternVariableMode::RequiredInput(_)))
     }
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
