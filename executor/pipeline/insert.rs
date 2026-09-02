@@ -223,11 +223,11 @@ fn may_execute_concept_instructions(
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(insert.concept_instructions.len(), step_profiles.len());
     if !required_inputs_satisfied(&insert.required_input_variables, row) {
         return Ok(());
     }
 
+    debug_assert_eq!(insert.concept_instructions.len(), step_profiles.len());
     for (instruction, step_profile) in insert.concept_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
@@ -251,11 +251,11 @@ fn may_execute_connection_instructions(
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(insert.connection_instructions.len(), step_profiles.len());
     if !required_inputs_satisfied(&insert.required_input_variables, row) {
         return Ok(());
     }
 
+    debug_assert_eq!(insert.connection_instructions.len(), step_profiles.len());
     for (instruction, step_profile) in insert.connection_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
