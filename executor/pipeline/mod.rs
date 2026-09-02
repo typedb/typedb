@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use compiler::executable::RequiredVariablesForWrite;
 use concept::error::ConceptReadError;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
@@ -13,7 +14,7 @@ use crate::{
     batch::Batch,
     error::ReadExecutionError,
     pipeline::{fetch::FetchExecutionError, stage::StageIterator},
-    row::MaybeOwnedRow,
+    row::{MaybeOwnedRow, Row},
     write::WriteError,
 };
 
@@ -54,6 +55,10 @@ impl LendingIterator for WrittenRowsIterator {
             None
         }
     }
+}
+
+fn required_inputs_satisfied(required_variables: &RequiredVariablesForWrite, row: &Row<'_>) -> bool {
+    required_variables.iter().all(|position| position.as_usize() < row.len() && !row.get(*position).is_none())
 }
 
 impl StageIterator for WrittenRowsIterator {

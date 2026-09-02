@@ -108,6 +108,7 @@ fn check_type_combinations_for_write_conjunction(
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
             | Constraint::Is(_)
+            | Constraint::DeleteConcepts(_)
             | Constraint::Comparison(_)
             | Constraint::Owns(_)
             | Constraint::Relates(_)

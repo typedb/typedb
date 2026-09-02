@@ -52,8 +52,8 @@ pub fn check_annotations(
                     constraint_annotations[constraint].as_links(),
                 )?;
             }
-
-            Constraint::Isa(_)
+            Constraint::DeleteConcepts(_)
+            | Constraint::Isa(_)
             | Constraint::Is(_)
             | Constraint::Comparison(_)
             | Constraint::LinksDeduplication(_)

@@ -98,7 +98,6 @@ pub enum AnnotatedStage {
     },
     Delete {
         block: Block,
-        deleted_variables: Vec<Variable>,
         annotations: BlockAnnotations,
         source_span: Option<Span>,
     },
@@ -329,15 +328,8 @@ fn annotate_stage(
 
             Ok(AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span })
         }
-        TranslatedStage::Delete { block, deleted_variables, source_span } => {
+        TranslatedStage::Delete { block, source_span } => {
             let mut delete_annotations = annotate_write_stage(ctx, running_annotations, &block)?;
-            let root_annotations = delete_annotations.type_annotations_mut_of(block.conjunction()).unwrap();
-            for v in &deleted_variables {
-                root_annotations
-                    .vertex_annotations_mut()
-                    .entry(Vertex::Variable(*v))
-                    .or_insert_with(|| running_annotations.concepts.get(v).unwrap().clone());
-            }
             check_type_combinations_for_write(
                 ctx,
                 &block,
@@ -346,10 +338,10 @@ fn annotate_stage(
                 &delete_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            deleted_variables.iter().for_each(|var| {
+            collect_deleted_variables(&block).iter().for_each(|var| {
                 running_annotations.concepts.remove(var);
             });
-            Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
+            Ok(AnnotatedStage::Delete { block, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
             validate_sort_variables_comparable(ctx, &sort, running_annotations)?;
@@ -749,6 +741,20 @@ fn collect_value_types_of_function_call_assignments(
         }
     })?;
     Ok(())
+}
+
+pub fn collect_deleted_variables(block: &Block) -> BTreeSet<Variable> {
+    fn collect_recursive(conjunction: &Conjunction, deleted_variables: &mut BTreeSet<Variable>) {
+        for delete_concepts in conjunction.constraints().iter().filter_map(|c| c.as_delete_concepts()) {
+            deleted_variables.extend(delete_concepts.ids())
+        }
+        for nested in conjunction.nested_patterns() {
+            collect_recursive(nested.as_optional().unwrap().conjunction(), deleted_variables);
+        }
+    }
+    let mut deleted_variables = BTreeSet::new();
+    collect_recursive(block.conjunction(), &mut deleted_variables);
+    deleted_variables
 }
 
 #[derive(Debug, Clone)]
