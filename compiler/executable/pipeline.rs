@@ -371,13 +371,12 @@ fn compile_stage(
                 match_annotations.referenced_types(),
             ))
         }
-        AnnotatedStage::Delete { block, annotations, source_span } => {
+        AnnotatedStage::Delete { block, annotations, .. } => {
             let plan = crate::executable::delete::executable::compile(
                 stage_input_positions,
                 annotations,
                 variable_registry,
                 block,
-                *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::DeleteExecutableCompilation { typedb_source })?;
             Ok((ExecutableStage::Delete(Arc::new(plan)), BTreeSet::new()))

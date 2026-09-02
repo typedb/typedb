@@ -271,7 +271,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
 
     let typeql_delete =
         typeql::parse_query(delete_str).unwrap().into_structure().into_pipeline().stages.pop().unwrap().into_delete();
-    let (block, deleted_concepts) =
+    let block =
         ir::translation::writes::translate_delete(&mut translation_context, &mut value_parameters, &typeql_delete)
             .unwrap();
     let input_row_format = input_row_var_names
@@ -285,7 +285,6 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         &block_annotations,
         &translation_context.variable_registry,
         &block,
-        &deleted_concepts,
         None,
     )
     .unwrap();
