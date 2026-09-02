@@ -5,44 +5,23 @@
 features = {}
 
 [package]
-	name = "http_steps"
 	edition = "2024"
+	name = "http_steps"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.test_utils]
+	[dependencies.async-std]
 		workspace = true
 
-	[dependencies.tokio]
-		workspace = true
-
-	[dependencies.server]
-		workspace = true
-
-	[dependencies.smol]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.resource]
+	[dependencies.chrono]
 		workspace = true
 
 	[dependencies.cucumber]
-		workspace = true
-
-	[dependencies.macro_rules_attribute]
-		workspace = true
-
-	[dependencies.params]
-		workspace = true
-
-	[dependencies.futures]
 		workspace = true
 
 	[dependencies.encoding]
@@ -51,36 +30,57 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
-	[dependencies.itertools]
-		workspace = true
-
-	[dependencies.uuid]
-		workspace = true
-
-	[dependencies.url]
-		workspace = true
-
-	[dependencies.regex]
-		workspace = true
-
-	[dependencies.async-std]
-		workspace = true
-
-	[dependencies.options]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.chrono]
+	[dependencies.futures]
 		workspace = true
 
 	[dependencies.hyper]
 		workspace = true
 
+	[dependencies.hyper-rustls]
+		workspace = true
+
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.macro_rules_attribute]
+		workspace = true
+
+	[dependencies.options]
+		workspace = true
+
+	[dependencies.params]
+		workspace = true
+
+	[dependencies.regex]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
 	[dependencies.serde_json]
 		workspace = true
 
-	[dependencies.hyper-rustls]
+	[dependencies.server]
+		workspace = true
+
+	[dependencies.smol]
+		workspace = true
+
+	[dependencies.test_utils]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.url]
+		workspace = true
+
+	[dependencies.uuid]
 		workspace = true
 

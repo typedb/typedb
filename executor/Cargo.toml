@@ -5,67 +5,29 @@
 features = {}
 
 [package]
-	name = "executor"
 	edition = "2024"
+	name = "executor"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.test_utils_encoding]
-		workspace = true
-
-	[dev-dependencies.criterion]
-		workspace = true
-
-	[dev-dependencies.query]
-		workspace = true
-
-	[dev-dependencies.durability]
-		workspace = true
-
-	[dev-dependencies.pprof]
-		workspace = true
-
-	[dev-dependencies.test_utils_concept]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.tokio]
+	[dependencies.answer]
 		workspace = true
 
-	[dependencies.tracing]
+	[dependencies.bytes]
 		workspace = true
 
-	[dependencies.primitive]
+	[dependencies.chrono]
 		workspace = true
 
-	[dependencies.unicase]
-		workspace = true
-
-	[dependencies.resource]
+	[dependencies.compiler]
 		workspace = true
 
 	[dependencies.concept]
-		workspace = true
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.paste]
-		workspace = true
-
-	[dependencies.storage]
 		workspace = true
 
 	[dependencies.encoding]
@@ -74,84 +36,122 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
-	[dependencies.itertools]
+	[dependencies.function]
+		workspace = true
+
+	[dependencies.ir]
 		workspace = true
 
 	[dependencies.iterator]
 		workspace = true
 
-	[dependencies.regex]
-		workspace = true
-
-	[dependencies.smallvec]
-		workspace = true
-
-	[dependencies.answer]
-		workspace = true
-
-	[dependencies.bytes]
-		workspace = true
-
-	[dependencies.function]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.compiler]
-		workspace = true
-
-	[dependencies.chrono]
+	[dependencies.itertools]
 		workspace = true
 
 	[dependencies.lending_iterator]
 		workspace = true
 
+	[dependencies.logger]
+		workspace = true
+
+	[dependencies.paste]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.regex]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.smallvec]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.unicase]
+		workspace = true
+
+[dev-dependencies]
+
+	[dev-dependencies.criterion]
+		workspace = true
+
+	[dev-dependencies.durability]
+		workspace = true
+
+	[dev-dependencies.pprof]
+		workspace = true
+
+	[dev-dependencies.query]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
+	[dev-dependencies.test_utils_concept]
+		workspace = true
+
+	[dev-dependencies.test_utils_encoding]
+		workspace = true
+
 [[bench]]
-	name = "bench_instructions"
 	harness = false
+	name = "bench_instructions"
 
 [[test]]
-	path = "tests/execute_function.rs"
-	name = "test_functions"
-
-[[test]]
-	path = "tests/execute_expression.rs"
-	name = "test_execute_expression"
-
-[[test]]
-	path = "tests/efficiency.rs"
-	name = "test_efficiency"
-
-[[test]]
-	path = "tests/execute_has.rs"
-	name = "test_execute_has"
-
-[[test]]
-	path = "tests/pipelines.rs"
-	name = "test_pipelines"
-
-[[test]]
-	path = "tests/execute_select.rs"
-	name = "test_select"
-
-[[test]]
-	path = "tests/execute_relation_index.rs"
-	name = "test_execute_relation_index"
-
-[[test]]
-	path = "tests/writes.rs"
-	name = "test_writes"
-
-[[test]]
-	path = "tests/compile_execute.rs"
 	name = "test_compile_execute"
+	path = "tests/compile_execute.rs"
 
 [[test]]
-	path = "tests/execute_isa.rs"
+	name = "test_efficiency"
+	path = "tests/efficiency.rs"
+
+[[test]]
+	name = "test_execute_expression"
+	path = "tests/execute_expression.rs"
+
+[[test]]
+	name = "test_execute_has"
+	path = "tests/execute_has.rs"
+
+[[test]]
 	name = "test_execute_isa"
+	path = "tests/execute_isa.rs"
 
 [[test]]
-	path = "tests/execute_links.rs"
 	name = "test_execute_links"
+	path = "tests/execute_links.rs"
+
+[[test]]
+	name = "test_execute_relation_index"
+	path = "tests/execute_relation_index.rs"
+
+[[test]]
+	name = "test_functions"
+	path = "tests/execute_function.rs"
+
+[[test]]
+	name = "test_pipelines"
+	path = "tests/pipelines.rs"
+
+[[test]]
+	name = "test_select"
+	path = "tests/execute_select.rs"
+
+[[test]]
+	name = "test_writes"
+	path = "tests/writes.rs"
 

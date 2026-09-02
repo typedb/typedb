@@ -5,32 +5,32 @@
 features = {}
 
 [package]
-	name = "database-tools"
 	edition = "2024"
+	name = "database-tools"
 	version = "0.0.0"
 
 [dependencies]
 
-	[dependencies.diagnostics]
-		workspace = true
-
 	[dependencies.clap]
 		workspace = true
 
-	[dependencies.durability]
+	[dependencies.concept]
 		workspace = true
 
-	[dependencies.concept]
+	[dependencies.diagnostics]
+		workspace = true
+
+	[dependencies.durability]
 		workspace = true
 
 	[dependencies.storage]
 		workspace = true
 
 [[bin]]
-	path = "replay_wal.rs"
-	name = "replay_wal"
+	name = "read_wal"
+	path = "read_wal.rs"
 
 [[bin]]
-	path = "read_wal.rs"
-	name = "read_wal"
+	name = "replay_wal"
+	path = "replay_wal.rs"
 

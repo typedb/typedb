@@ -5,37 +5,37 @@
 features = {}
 
 [package]
-	name = "test_utils_encoding"
 	edition = "2024"
+	name = "test_utils_encoding"
 	version = "0.0.0"
 
 [lib]
-	path = "test_utils_encoding.rs"
 	crate-type = ["lib"]
+	path = "test_utils_encoding.rs"
 
 [dependencies]
 
-	[dependencies.test_utils]
-		workspace = true
-
-	[dependencies.tracing]
-		workspace = true
-
 	[dependencies.diagnostics]
-		workspace = true
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.test_utils_storage]
 		workspace = true
 
 	[dependencies.durability]
 		workspace = true
 
+	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.logger]
+		workspace = true
+
 	[dependencies.storage]
 		workspace = true
 
-	[dependencies.encoding]
+	[dependencies.test_utils]
+		workspace = true
+
+	[dependencies.test_utils_storage]
+		workspace = true
+
+	[dependencies.tracing]
 		workspace = true
 

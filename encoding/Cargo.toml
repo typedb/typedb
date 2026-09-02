@@ -5,15 +5,77 @@
 features = {}
 
 [package]
-	name = "encoding"
 	edition = "2024"
+	name = "encoding"
 	version = "0.0.0"
 
 [lib]
-	path = "encoding.rs"
 	crate-type = ["lib"]
+	path = "encoding.rs"
+
+[dependencies]
+
+	[dependencies.bincode]
+		workspace = true
+
+	[dependencies.bytes]
+		workspace = true
+
+	[dependencies.chrono]
+		workspace = true
+
+	[dependencies.chrono-tz]
+		workspace = true
+
+	[dependencies.durability]
+		workspace = true
+
+	[dependencies.error]
+		workspace = true
+
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.logger]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.rocksdb]
+		workspace = true
+
+	[dependencies.seahash]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.structural_equality]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
 
 [dev-dependencies]
+
+	[dev-dependencies.criterion]
+		workspace = true
+
+	[dev-dependencies.diagnostics]
+		workspace = true
 
 	[dev-dependencies.rand]
 		workspace = true
@@ -24,84 +86,22 @@ features = {}
 	[dev-dependencies.test_utils_encoding]
 		workspace = true
 
-	[dev-dependencies.diagnostics]
-		workspace = true
-
-	[dev-dependencies.criterion]
-		workspace = true
-
 	[dev-dependencies.test_utils_storage]
 		workspace = true
 
-[dependencies]
-
-	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.primitive]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.structural_equality]
-		workspace = true
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.durability]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.error]
-		workspace = true
-
-	[dependencies.itertools]
-		workspace = true
-
-	[dependencies.seahash]
-		workspace = true
-
-	[dependencies.chrono-tz]
-		workspace = true
-
-	[dependencies.bytes]
-		workspace = true
-
-	[dependencies.bincode]
-		workspace = true
-
-	[dependencies.rocksdb]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.chrono]
-		workspace = true
-
-	[dependencies.lending_iterator]
-		workspace = true
-
 [[bench]]
-	name = "benchmark"
 	harness = false
+	name = "benchmark"
 
 [[test]]
-	path = "tests/test_attribute_vertex.rs"
 	name = "test_attribute_vertex"
+	path = "tests/test_attribute_vertex.rs"
 
 [[test]]
-	path = "tests/test_type_vertex.rs"
-	name = "test_type_vertex"
-
-[[test]]
-	path = "tests/test_definitions.rs"
 	name = "test_definitions"
+	path = "tests/test_definitions.rs"
+
+[[test]]
+	name = "test_type_vertex"
+	path = "tests/test_type_vertex.rs"
 

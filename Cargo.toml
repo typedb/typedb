@@ -5,37 +5,45 @@
 features = {}
 
 [package]
-	name = "typedb_server_bin"
 	edition = "2024"
+	name = "typedb_server_bin"
 	version = "0.0.0"
+
+[dependencies]
+
+	[dependencies.clap]
+		workspace = true
+
+	[dependencies.database]
+		workspace = true
+
+	[dependencies.fail_point]
+		workspace = true
+
+	[dependencies.logger]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.sentry]
+		workspace = true
+
+	[dependencies.server]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
 
 [dev-dependencies]
 
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.xoshiro]
-		workspace = true
-
-	[dev-dependencies.query]
-		workspace = true
-
-	[dev-dependencies.storage]
-		workspace = true
-
-	[dev-dependencies.steps]
-		workspace = true
-
-	[dev-dependencies.rand]
-		workspace = true
-
-	[dev-dependencies.http_steps]
+	[dev-dependencies.answer]
 		workspace = true
 
 	[dev-dependencies.diagnostics]
-		workspace = true
-
-	[dev-dependencies.answer]
 		workspace = true
 
 	[dev-dependencies.executor]
@@ -44,636 +52,628 @@ features = {}
 	[dev-dependencies.function]
 		workspace = true
 
-	[dev-dependencies.options]
-		workspace = true
-
-	[dev-dependencies.typeql]
-		workspace = true
-
-	[dev-dependencies.rand_core]
+	[dev-dependencies.http_steps]
 		workspace = true
 
 	[dev-dependencies.lending_iterator]
 		workspace = true
 
-[dependencies]
-
-	[dependencies.tokio]
+	[dev-dependencies.options]
 		workspace = true
 
-	[dependencies.server]
+	[dev-dependencies.query]
 		workspace = true
 
-	[dependencies.database]
+	[dev-dependencies.rand]
 		workspace = true
 
-	[dependencies.tracing]
+	[dev-dependencies.rand_core]
 		workspace = true
 
-	[dependencies.resource]
+	[dev-dependencies.steps]
 		workspace = true
 
-	[dependencies.clap]
+	[dev-dependencies.storage]
 		workspace = true
 
-	[dependencies.logger]
+	[dev-dependencies.test_utils]
 		workspace = true
 
-	[dependencies.fail_point]
+	[dev-dependencies.typeql]
 		workspace = true
 
-	[dependencies.sentry]
+	[dev-dependencies.xoshiro]
 		workspace = true
-
-[[test]]
-	path = "tests/assembly/assembly.rs"
-	name = "test_assembly"
-
-[[test]]
-	path = "tests/assembly/fail_points.rs"
-	name = "test_fail_points"
-
-[[test]]
-	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
-	name = "bench_concurrency"
-
-[[test]]
-	path = "tests/benchmarks/iam/bench_iam.rs"
-	name = "bench_iam"
-
-[[test]]
-	path = "tests/behaviour/connection/main.rs"
-	name = "test_connection"
-
-[[test]]
-	path = "tests/behaviour/concept/main.rs"
-	name = "test_concept"
-
-[[test]]
-	path = "tests/behaviour/service/http/connection/database.rs"
-	name = "test_http_database"
-
-[[test]]
-	path = "tests/behaviour/service/http/connection/transaction.rs"
-	name = "test_http_transaction"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/concept.rs"
-	name = "test_http_driver_concept"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/http.rs"
-	name = "test_http_driver_http"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/query.rs"
-	name = "test_http_driver_query"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/user.rs"
-	name = "test_http_driver_user"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/connection.rs"
-	name = "test_http_driver_connection"
-
-[[test]]
-	path = "tests/behaviour/service/http/debug/debug.rs"
-	name = "test_http_debug"
-
-[[test]]
-	path = "tests/behaviour/query/main.rs"
-	name = "test_query"
-
-[[test]]
-	path = "tests/behaviour/debug/debug.rs"
-	name = "test_debug"
 
 [[bin]]
-	path = "main.rs"
 	name = "typedb_server_bin"
+	path = "main.rs"
+
+[[test]]
+	name = "bench_concurrency"
+	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
+
+[[test]]
+	name = "bench_iam"
+	path = "tests/benchmarks/iam/bench_iam.rs"
+
+[[test]]
+	name = "test_assembly"
+	path = "tests/assembly/assembly.rs"
+
+[[test]]
+	name = "test_concept"
+	path = "tests/behaviour/concept/main.rs"
+
+[[test]]
+	name = "test_connection"
+	path = "tests/behaviour/connection/main.rs"
+
+[[test]]
+	name = "test_debug"
+	path = "tests/behaviour/debug/debug.rs"
+
+[[test]]
+	name = "test_fail_points"
+	path = "tests/assembly/fail_points.rs"
+
+[[test]]
+	name = "test_http_database"
+	path = "tests/behaviour/service/http/connection/database.rs"
+
+[[test]]
+	name = "test_http_debug"
+	path = "tests/behaviour/service/http/debug/debug.rs"
+
+[[test]]
+	name = "test_http_driver_concept"
+	path = "tests/behaviour/service/http/driver/concept.rs"
+
+[[test]]
+	name = "test_http_driver_connection"
+	path = "tests/behaviour/service/http/driver/connection.rs"
+
+[[test]]
+	name = "test_http_driver_http"
+	path = "tests/behaviour/service/http/driver/http.rs"
+
+[[test]]
+	name = "test_http_driver_query"
+	path = "tests/behaviour/service/http/driver/query.rs"
+
+[[test]]
+	name = "test_http_driver_user"
+	path = "tests/behaviour/service/http/driver/user.rs"
+
+[[test]]
+	name = "test_http_transaction"
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+
+[[test]]
+	name = "test_query"
+	path = "tests/behaviour/query/main.rs"
 
 
 [workspace]
+	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "user", "util/project", "util/test"]
 	resolver = "2"
-	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "admin", "admin/client", "encoding/tests", "encoding", "server", "server/service/admin/proto", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
 	[workspace.dependencies]
 
-		[workspace.dependencies.hyper-util]
-			features = ["client", "client-legacy", "default", "http1", "http2", "server", "server-auto", "service", "tokio"]
-			version = "0.1.20"
-			default-features = false
-
-		[workspace.dependencies.logger]
-			path = "common/logger"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.fail_point]
-			path = "common/fail_point"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.rpassword]
-			features = []
-			version = "7.5.3"
-			default-features = false
-
-		[workspace.dependencies.rand]
-			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-			version = "0.8.6"
-			default-features = false
-
-		[workspace.dependencies.tokio-test]
-			features = []
-			version = "0.4.5"
-			default-features = false
-
-		[workspace.dependencies.iterator]
-			path = "common/iterator"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.rustyline]
-			features = ["custom-bindings", "fd-lock", "radix_trie", "with-file-history"]
-			version = "15.0.0"
-			default-features = false
-
-		[workspace.dependencies.tokio-rustls]
-			features = ["logging", "ring", "tls12"]
-			version = "0.26.4"
-			default-features = false
-
-		[workspace.dependencies.executor]
-			path = "executor"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.xxhash-rust]
-			features = ["xxh3"]
-			version = "0.8.15"
-			default-features = false
-
-		[workspace.dependencies.options]
-			path = "common/options"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.typeql]
-			features = []
-			git = "https://github.com/typedb/typeql"
-			tag = "3.13.0-rc0"
-			default-features = false
-
-		[workspace.dependencies.cache]
-			path = "common/cache"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.axum]
-			features = ["default", "form", "http1", "json", "matched-path", "original-uri", "query", "tokio", "tower-log", "tracing", "ws"]
-			version = "0.7.9"
-			default-features = false
-
-		[workspace.dependencies.ir]
-			path = "ir"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.params]
-			path = "tests/behaviour/steps/params"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.regex]
-			features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-			version = "1.12.3"
-			default-features = false
-
-		[workspace.dependencies.system]
-			path = "system"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.rocksdb]
-			features = ["bindgen-runtime", "lz4"]
-			version = "0.23.0"
-			default-features = false
-
-		[workspace.dependencies.tonic]
-			features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
-			version = "0.12.3"
-			default-features = false
-
-		[workspace.dependencies.durability_test_common]
-			path = "durability/tests/common"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.test_utils]
-			path = "util/test"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.server]
-			path = "server"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.erased-serde]
-			features = ["alloc", "default", "std"]
-			version = "0.4.10"
-			default-features = false
-
-		[workspace.dependencies.criterion]
-			features = ["cargo_bench_support", "default", "plotters", "rayon"]
-			version = "0.5.1"
-			default-features = false
-
-		[workspace.dependencies.primitive]
-			path = "common/primitive"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.tracing-subscriber]
-			features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
-			version = "0.3.23"
-			default-features = false
-
-		[workspace.dependencies.pwhash]
-			features = []
-			version = "1.0.0"
-			default-features = false
-
-		[workspace.dependencies.moka]
-			features = ["default", "sync"]
-			version = "0.12.15"
-			default-features = false
-
-		[workspace.dependencies.server_admin_proto]
-			path = "server/service/admin/proto"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.async-trait]
-			features = []
-			version = "0.1.89"
-			default-features = false
-
-		[workspace.dependencies.typedb-admin]
-			path = "admin/client"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.serde_yaml2]
-			features = []
-			version = "0.1.3"
-			default-features = false
-
-		[workspace.dependencies.test_utils_encoding]
-			path = "encoding/tests"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.tokio-util]
-			features = ["codec", "default", "futures-util", "io", "rt"]
-			version = "0.7.18"
-			default-features = false
-
-		[workspace.dependencies.tower-http]
-			features = ["cors", "default"]
-			version = "0.6.11"
-			default-features = false
-
-		[workspace.dependencies.serde]
-			features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-			version = "1.0.228"
-			default-features = false
-
-		[workspace.dependencies.lz4]
-			features = []
-			version = "1.28.1"
-			default-features = false
-
-		[workspace.dependencies.test_utils_concept]
-			path = "concept/tests"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.url]
-			features = ["default", "serde", "std"]
-			version = "2.5.8"
-			default-features = false
-
-		[workspace.dependencies.concurrency]
-			path = "common/concurrency"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.diagnostics]
-			path = "diagnostics"
-			features = []
-			default-features = false
-
 		[workspace.dependencies.answer]
-			path = "answer"
+			default-features = false
 			features = []
-			default-features = false
-
-		[workspace.dependencies.clap]
-			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-			version = "4.6.1"
-			default-features = false
+			path = "answer"
 
 		[workspace.dependencies.async-std]
+			default-features = false
 			features = ["alloc", "async-attributes", "async-channel", "async-global-executor", "async-io", "async-lock", "attributes", "crossbeam-utils", "default", "futures-channel", "futures-core", "futures-io", "futures-lite", "gloo-timers", "kv-log-macro", "log", "memchr", "once_cell", "pin-project-lite", "pin-utils", "slab", "std", "wasm-bindgen-futures"]
 			version = "1.13.2"
+
+		[workspace.dependencies.async-trait]
 			default-features = false
+			features = []
+			version = "0.1.92"
+
+		[workspace.dependencies.axum]
+			default-features = false
+			features = ["default", "form", "http1", "json", "matched-path", "original-uri", "query", "tokio", "tower-log", "tracing", "ws"]
+			version = "0.7.9"
+
+		[workspace.dependencies.axum-extra]
+			default-features = false
+			features = ["default", "multipart", "tracing", "typed-header"]
+			version = "0.9.6"
 
 		[workspace.dependencies.axum-server]
+			default-features = false
 			features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
 			version = "0.7.3"
-			default-features = false
-
-		[workspace.dependencies.chrono]
-			features = ["alloc", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-			version = "0.4.44"
-			default-features = false
-
-		[workspace.dependencies.serde_json]
-			features = ["default", "raw_value", "std"]
-			version = "1.0.150"
-			default-features = false
-
-		[workspace.dependencies.xoshiro]
-			features = []
-			version = "0.0.5"
-			default-features = false
-
-		[workspace.dependencies.smol]
-			features = []
-			version = "1.3.0"
-			default-features = false
-
-		[workspace.dependencies.cucumber]
-			features = ["default", "macros"]
-			version = "0.19.1"
-			default-features = false
-
-		[workspace.dependencies.test_utils_storage]
-			path = "storage/tests"
-			features = []
-			default-features = false
 
 		[workspace.dependencies.base64]
+			default-features = false
 			features = ["alloc", "default", "std"]
 			version = "0.22.1"
-			default-features = false
 
-		[workspace.dependencies.uuid]
-			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.21.0"
+		[workspace.dependencies.bincode]
 			default-features = false
+			features = []
+			version = "1.3.3"
 
-		[workspace.dependencies.seahash]
-			features = ["default"]
-			version = "4.1.0"
+		[workspace.dependencies.bytes]
 			default-features = false
+			features = []
+			path = "common/bytes"
 
-		[workspace.dependencies.prost]
-			features = ["default", "derive", "prost-derive", "std"]
-			version = "0.13.5"
+		[workspace.dependencies.cache]
 			default-features = false
+			features = []
+			path = "common/cache"
+
+		[workspace.dependencies.chrono]
+			default-features = false
+			features = ["alloc", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+			version = "0.4.45"
+
+		[workspace.dependencies.chrono-tz]
+			default-features = false
+			features = ["case-insensitive", "default", "std"]
+			version = "0.9.0"
+
+		[workspace.dependencies.clap]
+			default-features = false
+			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
+			version = "4.6.6"
+
+		[workspace.dependencies.compiler]
+			default-features = false
+			features = []
+			path = "compiler"
+
+		[workspace.dependencies.concept]
+			default-features = false
+			features = []
+			path = "concept"
+
+		[workspace.dependencies.concurrency]
+			default-features = false
+			features = []
+			path = "common/concurrency"
+
+		[workspace.dependencies.criterion]
+			default-features = false
+			features = ["cargo_bench_support", "default", "plotters", "rayon"]
+			version = "0.5.1"
+
+		[workspace.dependencies.cucumber]
+			default-features = false
+			features = ["default", "macros"]
+			version = "0.19.1"
+
+		[workspace.dependencies.database]
+			default-features = false
+			features = []
+			path = "database"
+
+		[workspace.dependencies.diagnostics]
+			default-features = false
+			features = []
+			path = "diagnostics"
+
+		[workspace.dependencies.durability]
+			default-features = false
+			features = []
+			path = "durability"
+
+		[workspace.dependencies.durability_test_common]
+			default-features = false
+			features = []
+			path = "durability/tests/common"
+
+		[workspace.dependencies.encoding]
+			default-features = false
+			features = []
+			path = "encoding"
+
+		[workspace.dependencies.erased-serde]
+			default-features = false
+			features = ["alloc", "default", "std"]
+			version = "0.4.10"
+
+		[workspace.dependencies.error]
+			default-features = false
+			features = []
+			path = "common/error"
+
+		[workspace.dependencies.executor]
+			default-features = false
+			features = []
+			path = "executor"
+
+		[workspace.dependencies.fail_point]
+			default-features = false
+			features = []
+			path = "common/fail_point"
 
 		[workspace.dependencies.function]
+			default-features = false
+			features = []
 			path = "function"
-			features = []
-			default-features = false
 
-		[workspace.dependencies.rustls-pemfile]
+		[workspace.dependencies.futures]
+			default-features = false
+			features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
+			version = "0.3.34"
+
+		[workspace.dependencies.home]
+			default-features = false
+			features = []
+			version = "0.5.12"
+
+		[workspace.dependencies.http]
+			default-features = false
 			features = ["default", "std"]
-			version = "2.2.0"
-			default-features = false
+			version = "1.5.0"
 
-		[workspace.dependencies.pprof]
-			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
-			version = "0.13.0"
+		[workspace.dependencies.http_steps]
 			default-features = false
-
-		[workspace.dependencies.sysinfo]
-			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
-			version = "0.33.1"
-			default-features = false
-
-		[workspace.dependencies.same-file]
 			features = []
-			version = "1.0.6"
-			default-features = false
-
-		[workspace.dependencies.serde_with]
-			features = ["alloc", "default", "macros", "std"]
-			version = "3.20.0"
-			default-features = false
+			path = "tests/behaviour/service/http/http_steps"
 
 		[workspace.dependencies.hyper]
+			default-features = false
 			features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
 			version = "0.14.32"
+
+		[workspace.dependencies.hyper-rustls]
 			default-features = false
+			features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
+			version = "0.25.0"
+
+		[workspace.dependencies.hyper-util]
+			default-features = false
+			features = ["client", "client-legacy", "default", "http1", "http2", "server", "server-auto", "service", "tokio"]
+			version = "0.1.20"
+
+		[workspace.dependencies.ir]
+			default-features = false
+			features = []
+			path = "ir"
+
+		[workspace.dependencies.iterator]
+			default-features = false
+			features = []
+			path = "common/iterator"
+
+		[workspace.dependencies.itertools]
+			default-features = false
+			features = ["default", "use_alloc", "use_std"]
+			version = "0.14.0"
+
+		[workspace.dependencies.jsonwebtoken]
+			default-features = false
+			features = ["default", "pem", "simple_asn1", "use_pem"]
+			version = "9.3.1"
+
+		[workspace.dependencies.lending_iterator]
+			default-features = false
+			features = []
+			path = "common/lending_iterator"
+
+		[workspace.dependencies.logger]
+			default-features = false
+			features = []
+			path = "common/logger"
+
+		[workspace.dependencies.lz4]
+			default-features = false
+			features = []
+			version = "1.28.1"
+
+		[workspace.dependencies.macro_rules_attribute]
+			default-features = false
+			features = ["default"]
+			version = "0.2.3"
+
+		[workspace.dependencies.moka]
+			default-features = false
+			features = ["default", "sync"]
+			version = "0.12.16"
+
+		[workspace.dependencies.options]
+			default-features = false
+			features = []
+			path = "common/options"
+
+		[workspace.dependencies.params]
+			default-features = false
+			features = []
+			path = "tests/behaviour/steps/params"
+
+		[workspace.dependencies.paste]
+			default-features = false
+			features = []
+			version = "1.0.15"
+
+		[workspace.dependencies.pprof]
+			default-features = false
+			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
+			version = "0.13.0"
+
+		[workspace.dependencies.primitive]
+			default-features = false
+			features = []
+			path = "common/primitive"
+
+		[workspace.dependencies.prost]
+			default-features = false
+			features = ["default", "derive", "prost-derive", "std"]
+			version = "0.13.5"
+
+		[workspace.dependencies.pwhash]
+			default-features = false
+			features = []
+			version = "1.0.0"
+
+		[workspace.dependencies.query]
+			default-features = false
+			features = []
+			path = "query"
+
+		[workspace.dependencies.rand]
+			default-features = false
+			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
+			version = "0.8.8"
+
+		[workspace.dependencies.rand_core]
+			default-features = false
+			features = ["default", "std"]
+			version = "0.3.2"
+
+		[workspace.dependencies.regex]
+			default-features = false
+			features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
+			version = "1.13.1"
+
+		[workspace.dependencies.resource]
+			default-features = false
+			features = []
+			path = "resource"
+
+		[workspace.dependencies.rocksdb]
+			default-features = false
+			features = ["bindgen-runtime", "lz4"]
+			version = "0.23.0"
+
+		[workspace.dependencies.rpassword]
+			default-features = false
+			features = []
+			version = "7.5.4"
+
+		[workspace.dependencies.rustls-pemfile]
+			default-features = false
+			features = ["default", "std"]
+			version = "2.2.0"
+
+		[workspace.dependencies.rustyline]
+			default-features = false
+			features = ["custom-bindings", "fd-lock", "radix_trie", "with-file-history"]
+			version = "15.0.0"
+
+		[workspace.dependencies.same-file]
+			default-features = false
+			features = []
+			version = "1.0.6"
+
+		[workspace.dependencies.seahash]
+			default-features = false
+			features = ["default"]
+			version = "4.1.0"
+
+		[workspace.dependencies.sentry]
+			default-features = false
+			features = ["backtrace", "contexts", "httpdate", "panic", "rustls", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq", "webpki-roots"]
+			version = "0.36.0"
+
+		[workspace.dependencies.serde]
+			default-features = false
+			features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+			version = "1.0.229"
+
+		[workspace.dependencies.serde_json]
+			default-features = false
+			features = ["default", "raw_value", "std"]
+			version = "1.0.151"
+
+		[workspace.dependencies.serde_with]
+			default-features = false
+			features = ["alloc", "default", "macros", "std"]
+			version = "3.22.0"
+
+		[workspace.dependencies.serde_yaml2]
+			default-features = false
+			features = []
+			version = "0.1.3"
+
+		[workspace.dependencies.server]
+			default-features = false
+			features = []
+			path = "server"
+
+		[workspace.dependencies.server_admin_proto]
+			default-features = false
+			features = []
+			path = "server/service/admin/proto"
+
+		[workspace.dependencies.smallvec]
+			default-features = false
+			features = ["const_generics", "const_new"]
+			version = "1.16.0"
+
+		[workspace.dependencies.smol]
+			default-features = false
+			features = []
+			version = "1.3.0"
+
+		[workspace.dependencies.steps]
+			default-features = false
+			features = []
+			path = "tests/behaviour/steps"
+
+		[workspace.dependencies.storage]
+			default-features = false
+			features = []
+			path = "storage"
+
+		[workspace.dependencies.structural_equality]
+			default-features = false
+			features = []
+			path = "common/structural_equality"
+
+		[workspace.dependencies.sysinfo]
+			default-features = false
+			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
+			version = "0.33.1"
+
+		[workspace.dependencies.system]
+			default-features = false
+			features = []
+			path = "system"
+
+		[workspace.dependencies.tempdir]
+			default-features = false
+			features = []
+			version = "0.3.7"
+
+		[workspace.dependencies.test_utils]
+			default-features = false
+			features = []
+			path = "util/test"
+
+		[workspace.dependencies.test_utils_concept]
+			default-features = false
+			features = []
+			path = "concept/tests"
+
+		[workspace.dependencies.test_utils_encoding]
+			default-features = false
+			features = []
+			path = "encoding/tests"
+
+		[workspace.dependencies.test_utils_storage]
+			default-features = false
+			features = []
+			path = "storage/tests"
+
+		[workspace.dependencies.tokio]
+			default-features = false
+			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+			version = "1.53.1"
+
+		[workspace.dependencies.tokio-rustls]
+			default-features = false
+			features = ["logging", "ring", "tls12"]
+			version = "0.26.4"
+
+		[workspace.dependencies.tokio-stream]
+			default-features = false
+			features = ["default", "net", "time"]
+			version = "0.1.19"
+
+		[workspace.dependencies.tokio-test]
+			default-features = false
+			features = []
+			version = "0.4.5"
+
+		[workspace.dependencies.tokio-util]
+			default-features = false
+			features = ["codec", "default", "futures-util", "io", "libc", "rt"]
+			version = "0.7.19"
+
+		[workspace.dependencies.tonic]
+			default-features = false
+			features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
+			version = "0.12.3"
+
+		[workspace.dependencies.tonic-types]
+			default-features = false
+			features = []
+			version = "0.12.3"
 
 		[workspace.dependencies.tower]
+			default-features = false
 			features = ["__common", "balance", "buffer", "default", "discover", "futures-core", "futures-util", "indexmap", "limit", "load", "log", "make", "pin-project", "pin-project-lite", "rand", "ready-cache", "slab", "tokio", "tokio-util", "tracing", "util"]
 			version = "0.4.13"
+
+		[workspace.dependencies.tower-http]
 			default-features = false
+			features = ["cors", "default"]
+			version = "0.6.11"
 
 		[workspace.dependencies.tracing]
+			default-features = false
 			features = ["attributes", "default", "log", "std", "tracing-attributes"]
 			version = "0.1.44"
+
+		[workspace.dependencies.tracing-appender]
 			default-features = false
+			features = []
+			version = "0.2.5"
+
+		[workspace.dependencies.tracing-subscriber]
+			default-features = false
+			features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
+			version = "0.3.23"
+
+		[workspace.dependencies.typedb-admin]
+			default-features = false
+			features = []
+			path = "admin/client"
 
 		[workspace.dependencies.typedb-protocol]
+			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
 			tag = "3.12.0"
-			default-features = false
 
-		[workspace.dependencies.resource]
-			path = "resource"
+		[workspace.dependencies.typeql]
+			default-features = false
 			features = []
-			default-features = false
-
-		[workspace.dependencies.query]
-			path = "query"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.durability]
-			path = "durability"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.macro_rules_attribute]
-			features = ["default"]
-			version = "0.2.2"
-			default-features = false
-
-		[workspace.dependencies.encoding]
-			path = "encoding"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.steps]
-			path = "tests/behaviour/steps"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.axum-extra]
-			features = ["default", "multipart", "tracing", "typed-header"]
-			version = "0.9.6"
-			default-features = false
-
-		[workspace.dependencies.http]
-			features = ["default", "std"]
-			version = "1.4.1"
-			default-features = false
-
-		[workspace.dependencies.hyper-rustls]
-			features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
-			version = "0.25.0"
-			default-features = false
-
-		[workspace.dependencies.rand_core]
-			features = ["default", "std"]
-			version = "0.3.1"
-			default-features = false
-
-		[workspace.dependencies.lending_iterator]
-			path = "common/lending_iterator"
-			features = []
-			default-features = false
+			git = "https://github.com/typedb/typeql"
+			tag = "3.13.0-rc0"
 
 		[workspace.dependencies.unicase]
+			default-features = false
 			features = []
 			version = "2.9.0"
-			default-features = false
 
-		[workspace.dependencies.yaml-rust2]
-			features = ["default", "encoding"]
-			version = "0.10.4"
+		[workspace.dependencies.url]
 			default-features = false
-
-		[workspace.dependencies.concept]
-			path = "concept"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.storage]
-			path = "storage"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.paste]
-			features = []
-			version = "1.0.15"
-			default-features = false
-
-		[workspace.dependencies.error]
-			path = "common/error"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.itertools]
-			features = ["default", "use_alloc", "use_std"]
-			version = "0.14.0"
-			default-features = false
-
-		[workspace.dependencies.jsonwebtoken]
-			features = ["default", "pem", "simple_asn1", "use_pem"]
-			version = "9.3.1"
-			default-features = false
-
-		[workspace.dependencies.database]
-			path = "database"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.chrono-tz]
-			features = ["case-insensitive", "default", "std"]
-			version = "0.9.0"
-			default-features = false
-
-		[workspace.dependencies.tracing-appender]
-			features = []
-			version = "0.2.5"
-			default-features = false
-
-		[workspace.dependencies.tempdir]
-			features = []
-			version = "0.3.7"
-			default-features = false
-
-		[workspace.dependencies.compiler]
-			path = "compiler"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.sentry]
-			features = ["backtrace", "contexts", "httpdate", "panic", "rustls", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq", "webpki-roots"]
-			version = "0.36.0"
-			default-features = false
-
-		[workspace.dependencies.tokio]
-			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
-			version = "1.52.3"
-			default-features = false
-
-		[workspace.dependencies.structural_equality]
-			path = "common/structural_equality"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.tokio-stream]
-			features = ["default", "net", "time"]
-			version = "0.1.18"
-			default-features = false
-
-		[workspace.dependencies.futures]
-			features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
-			version = "0.3.32"
-			default-features = false
-
-		[workspace.dependencies.home]
-			features = []
-			version = "0.5.12"
-			default-features = false
-
-		[workspace.dependencies.http_steps]
-			path = "tests/behaviour/service/http/http_steps"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.tonic-types]
-			features = []
-			version = "0.12.3"
-			default-features = false
-
-		[workspace.dependencies.smallvec]
-			features = ["const_generics", "const_new"]
-			version = "1.15.1"
-			default-features = false
-
-		[workspace.dependencies.bytes]
-			path = "common/bytes"
-			features = []
-			default-features = false
-
-		[workspace.dependencies.bincode]
-			features = []
-			version = "1.3.3"
-			default-features = false
+			features = ["default", "serde", "std"]
+			version = "2.5.8"
 
 		[workspace.dependencies.user]
-			path = "user"
-			features = []
 			default-features = false
+			features = []
+			path = "user"
+
+		[workspace.dependencies.uuid]
+			default-features = false
+			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
+			version = "1.21.0"
+
+		[workspace.dependencies.xoshiro]
+			default-features = false
+			features = []
+			version = "0.0.5"
+
+		[workspace.dependencies.xxhash-rust]
+			default-features = false
+			features = ["xxh3"]
+			version = "0.8.18"
+
+		[workspace.dependencies.yaml-rust2]
+			default-features = false
+			features = ["default", "encoding"]
+			version = "0.10.4"
 

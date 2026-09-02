@@ -6,13 +6,13 @@ features = {}
 dev-dependencies = {}
 
 [package]
-	name = "primitive"
 	edition = "2024"
+	name = "primitive"
 	version = "0.0.0"
 
 [lib]
-	path = "primitives.rs"
 	crate-type = ["lib"]
+	path = "primitives.rs"
 
 [dependencies]
 

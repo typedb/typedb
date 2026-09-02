@@ -5,32 +5,32 @@
 features = {}
 
 [package]
-	name = "test_utils_storage"
 	edition = "2024"
+	name = "test_utils_storage"
 	version = "0.0.0"
 
 [lib]
-	path = "test_utils_storage/lib.rs"
 	crate-type = ["lib"]
+	path = "test_utils_storage/lib.rs"
 
 [dependencies]
-
-	[dependencies.diagnostics]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
 
 	[dependencies.bytes]
 		workspace = true
 
-	[dependencies.logger]
+	[dependencies.diagnostics]
 		workspace = true
 
 	[dependencies.durability]
 		workspace = true
 
+	[dependencies.logger]
+		workspace = true
+
 	[dependencies.options]
+		workspace = true
+
+	[dependencies.resource]
 		workspace = true
 
 	[dependencies.storage]
