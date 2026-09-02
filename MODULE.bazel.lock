@@ -8630,6 +8630,24 @@
         ]
       }
     },
+    "@@typedb_dependencies+//library/crates:crate_versions.bzl%crate_versions_extension": {
+      "general": {
+        "bzlTransitiveDigest": "lkeEyssm7z9zNVvWWkOCu3zve7GwNZAat+mamssLIa4=",
+        "usagesDigest": "qAQhEO86GE4/Wvh/xzpLlg+CSVug+iPJyCOR7vf82p8=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "crate_versions": {
+            "repoRuleId": "@@typedb_dependencies+//library/crates:crate_versions.bzl%crate_versions_repository",
+            "attributes": {
+              "manifest": "@@typedb_dependencies+//library/crates:Cargo.toml"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": []
+      }
+    },
     "@@typedb_dependencies+//library/maven:maven_extension.bzl%maven": {
       "general": {
         "bzlTransitiveDigest": "IpHT8ELY4NYAu4/ZrlB9T41Pl90PKHy4aWpZECETZUc=",
