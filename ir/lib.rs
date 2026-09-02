@@ -265,7 +265,7 @@ typedb_error! {
         ),
         IllegalStatementForPut(
             43,
-            "Illegal statement '{constraint_type}' provided for a put stage. Only 'has', 'links', 'isa' and 'isset' constraints are allowed.",
+            "Illegal statement '{constraint_type}' provided for a put stage. Only 'has', 'links' and 'isa' constraints are allowed.",
             constraint_type: String,
             source_span: Option<Span>,
         ),
@@ -278,7 +278,7 @@ typedb_error! {
         ),
         IllegalStatementForInsert(
             45,
-            "Illegal statement provided for an insert stage. Only 'has', 'links', 'isa' and 'isset' constraints are allowed.",
+            "Illegal statement provided for an insert stage. Only 'has', 'links', and 'isa' constraints are allowed.",
             source_span: Option<Span>,
         ),
         IllegalNestedPatternForInsert(
@@ -355,6 +355,12 @@ typedb_error! {
             201,
             "Invalid timezone offset '{offset}'.",
             offset: String,
+            source_span: Option<Span>,
+        ),
+        Tmp__OptionalVariableUsedOutsideTry(
+            253,
+            "A write stage uses the optional variable '{variable}' outside a 'try' block.",
+            variable: String,
             source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(
