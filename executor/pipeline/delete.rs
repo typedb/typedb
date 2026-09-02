@@ -3,14 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashSet, fmt::Display, marker::PhantomData, sync::Arc};
+use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
-use compiler::executable::{
-    RequiredVariablesForWrite,
-    delete::{
-        executable::DeleteExecutable,
-        instructions::{ConnectionInstruction, ThingInstruction},
-    },
+use compiler::executable::delete::{
+    executable::{ConditionalDelete, DeleteExecutable},
+    instructions::ConnectionInstruction,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
@@ -77,8 +74,7 @@ where
 
             for (i, delete) in self.executable.deletes.iter().enumerate() {
                 if let Err(typedb_source) = may_execute_delete_connections(
-                    &delete.required_input_variables,
-                    &delete.connection_instructions,
+                    delete,
                     &connection_profiles[i],
                     snapshot,
                     &context.thing_manager,
@@ -102,8 +98,7 @@ where
 
             for (i, delete) in self.executable.deletes.iter().enumerate() {
                 if let Err(typedb_source) = may_execute_delete_concepts(
-                    &delete.required_input_variables,
-                    &delete.concept_instructions,
+                    &delete,
                     &concept_profiles[i],
                     snapshot,
                     &context.thing_manager,
@@ -160,21 +155,20 @@ fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions:
 }
 
 pub fn may_execute_delete_connections(
-    required_input_variables: &RequiredVariablesForWrite,
-    connection_instructions: &[ConnectionInstruction],
+    delete: &ConditionalDelete,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(connection_instructions.len(), step_profiles.len());
-    if !required_inputs_satisfied(required_input_variables, input_output_row) {
+    if !required_inputs_satisfied(&delete.required_input_variables, input_output_row) {
         return Ok(());
     }
 
     // Row multiplicity doesn't matter. You can't delete the same thing twice
-    for (instruction, step_profile) in connection_instructions.iter().zip(step_profiles) {
+    debug_assert_eq!(delete.connection_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in delete.connection_instructions.iter().zip(step_profiles) {
         let counters = step_profile.storage_counters();
         let measurement = step_profile.start_measurement();
         match instruction {
@@ -191,21 +185,20 @@ pub fn may_execute_delete_connections(
 }
 
 pub fn may_execute_delete_concepts(
-    required_input_variables: &RequiredVariablesForWrite,
-    concept_instructions: &[ThingInstruction],
+    delete: &ConditionalDelete,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(concept_instructions.len(), step_profiles.len());
-    if !required_inputs_satisfied(required_input_variables, input_output_row) {
+    if !required_inputs_satisfied(&delete.required_input_variables, input_output_row) {
         return Ok(());
     }
 
     // Row multiplicity doesn't matter. You can't delete the same thing twice
-    for (instruction, step_profile) in concept_instructions.iter().zip(step_profiles) {
+    debug_assert_eq!(delete.concept_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in delete.concept_instructions.iter().zip(step_profiles) {
         let counters = step_profile.storage_counters();
         let measurement = step_profile.start_measurement();
         instruction.execute(snapshot, thing_manager, parameters, input_output_row, counters)?;
