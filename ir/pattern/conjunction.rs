@@ -18,7 +18,7 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
+        BindingMode, Pattern, PatternVariables, Scope, ScopeId,
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
         disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
         impl_pattern_from_pattern_variables,
@@ -135,7 +135,7 @@ pub(crate) enum NestedPatternBuilder {
 }
 
 impl NestedPatternBuilder {
-    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+    pub(crate) fn finish(self, parent_modes: &PatternVariables) -> NestedPattern {
         match self {
             NestedPatternBuilder::Disjunction(disjunction) => disjunction.finish(parent_modes),
             NestedPatternBuilder::Negation(negation) => negation.finish(parent_modes),
@@ -166,12 +166,11 @@ impl ConjunctionBuilder {
         Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() }
     }
 
-    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> Conjunction {
-        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
+    pub(crate) fn finish(self, parent_modes: &PatternVariables) -> Conjunction {
+        let pattern_variables = PatternVariables::build(self.variable_binding_modes(), parent_modes);
         let Self { scope_id, constraints, nested_patterns } = self;
-        let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&binding_modes)).collect();
-        let variable_requirements = PatternVariables::from(&binding_modes);
-        Conjunction { scope_id, constraints, nested_patterns, pattern_variables: variable_requirements }
+        let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&pattern_variables)).collect();
+        Conjunction { scope_id, constraints, nested_patterns, pattern_variables }
     }
 
     pub fn scope_id(&self) -> ScopeId {

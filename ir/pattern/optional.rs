@@ -11,7 +11,7 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::pattern::{
-    BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
+    BindingMode, BranchID, Pattern, PatternVariables, Scope, ScopeId,
     conjunction::{Conjunction, ConjunctionBuilder},
     impl_pattern_from_pattern_variables,
     nested_pattern::NestedPattern,
@@ -80,12 +80,11 @@ impl OptionalBuilder {
         Self { conjunction, branch_id, source_span }
     }
 
-    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+    pub(crate) fn finish(self, parent_modes: &PatternVariables) -> NestedPattern {
         let source_span = self.source_span;
-        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
+        let pattern_variables = PatternVariables::build(self.variable_binding_modes(), parent_modes);
         let branch_id = self.branch_id;
-        let conjunction = self.conjunction.finish(&binding_modes);
-        let pattern_variables = PatternVariables::from(&binding_modes);
+        let conjunction = self.conjunction.finish(&pattern_variables);
         NestedPattern::Optional(Optional { branch_id, conjunction, pattern_variables, source_span })
     }
 
