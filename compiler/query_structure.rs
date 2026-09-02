@@ -568,8 +568,8 @@ pub fn collect_deleted_variables(block: &Block) -> BTreeSet<Variable> {
         for delete_concepts in conjunction.constraints().iter().filter_map(|c| c.as_delete_concepts()) {
             deleted_variables.extend(delete_concepts.ids())
         }
-        for inner_conjunction in conjunction.nested_patterns_flattened() {
-            collect_recursive(inner_conjunction, deleted_variables);
+        for nested in conjunction.nested_patterns() {
+            collect_recursive(nested.as_optional().unwrap().conjunction(), deleted_variables);
         }
     }
     let mut deleted_variables = BTreeSet::new();

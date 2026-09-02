@@ -19,7 +19,7 @@ pub enum VariableSource {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum TypeSource {
-    InputVariable(VariablePosition),
+    Variable(VariablePosition),
     Constant(answer::Type),
 }
 

@@ -6,12 +6,12 @@
 use std::{collections::HashSet, fmt::Display, marker::PhantomData, sync::Arc};
 
 use compiler::{
-    VariablePosition,
     executable::delete::{
-        executable::{ConditionalDelete, DeleteExecutable},
+        executable::{DeleteExecutable},
         instructions::{ConnectionInstruction, ThingInstruction},
     },
 };
+use compiler::executable::WriteRequiredVariables;
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use resource::{
@@ -29,6 +29,7 @@ use crate::{
     row::Row,
     write::{WriteError, write_instruction::AsWriteInstruction},
 };
+use crate::pipeline::required_inputs_satisfied;
 
 pub struct DeleteStageExecutor<InputIterator> {
     executable: Arc<DeleteExecutable>,
@@ -159,12 +160,8 @@ fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions:
         .collect()
 }
 
-fn required_inputs_satisfied(required_input_variables: &HashSet<VariablePosition>, row: &Row<'_>) -> bool {
-    required_input_variables.iter().all(|&input| input.as_usize() < row.len() && !row.get(input).is_none())
-}
-
 pub fn may_execute_delete_connections(
-    required_input_variables: &HashSet<VariablePosition>,
+    required_input_variables: &WriteRequiredVariables,
     connection_instructions: &[ConnectionInstruction],
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
@@ -195,7 +192,7 @@ pub fn may_execute_delete_connections(
 }
 
 pub fn may_execute_delete_concepts(
-    required_input_variables: &HashSet<VariablePosition>,
+    required_input_variables: &WriteRequiredVariables,
     concept_instructions: &[ThingInstruction],
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,

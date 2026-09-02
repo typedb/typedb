@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use error::typedb_error;
@@ -13,6 +13,7 @@ use typeql::common::Span;
 use crate::executable::{
     fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
 };
+use crate::VariablePosition;
 
 pub mod delete;
 pub mod fetch;
@@ -29,6 +30,16 @@ static EXECUTABLE_ID: AtomicU64 = AtomicU64::new(0);
 
 pub fn next_executable_id() -> u64 {
     EXECUTABLE_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+#[derive(Debug)]
+pub struct WriteRequiredVariables(HashSet<VariablePosition>);
+
+impl std::ops::Deref for WriteRequiredVariables {
+    type Target = HashSet<VariablePosition>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 typedb_error! {

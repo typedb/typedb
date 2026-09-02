@@ -13,7 +13,7 @@ use ir::{
     pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
-
+use ir::pattern::Pattern;
 use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
@@ -27,6 +27,7 @@ use crate::{
         next_executable_id,
     },
 };
+use crate::executable::WriteRequiredVariables;
 
 #[derive(Debug)]
 pub struct DeleteExecutable {
@@ -41,7 +42,7 @@ pub fn compile(
     block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     block: &Block,
-    _source_span: Option<Span>,
+    source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
     let mut deleted_variables_recursive = HashSet::new();
     let mut deletes = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
@@ -100,7 +101,7 @@ pub fn compile(
 pub struct ConditionalDelete {
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: HashSet<VariablePosition>,
+    pub required_input_variables: WriteRequiredVariables,
 }
 
 impl ConditionalDelete {
@@ -125,14 +126,14 @@ impl ConditionalDelete {
         let connection_instructions =
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
 
-        // We can't just use required_inputs
-        let required_input_variables = conjunction
+        // We can't just use required_inputs because that's recursive and we only want those at this level.
+        let required_input_variables = WriteRequiredVariables(conjunction
             .constraints()
             .iter()
-            .filter_map(|c| c.as_is_set())
-            .flat_map(|c| c.ids())
+            .flat_map(|constraint| constraint.ids())
+            .filter(|id| conjunction.is_input(id))
             .filter_map(|id| input_variables.get(&id).copied())
-            .collect();
+            .collect());
 
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })
     }

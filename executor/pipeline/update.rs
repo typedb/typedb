@@ -10,7 +10,7 @@ use compiler::{
     executable::{
         insert::{VariableSource, instructions::ConceptInstruction},
         update::{
-            executable::{OptionalUpdate, UpdateExecutable},
+            executable::{ConditionalUpdate, UpdateExecutable},
             instructions::ConnectionInstruction,
         },
     },
@@ -214,7 +214,7 @@ fn execute_update(
 }
 
 fn execute_optional_update(
-    optional: &OptionalUpdate,
+    optional: &ConditionalUpdate,
     concept_profiles: &[Arc<StepProfile>],
     connection_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,

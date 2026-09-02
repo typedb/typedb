@@ -9,7 +9,7 @@ use compiler::{
     VariablePosition,
     executable::insert::{
         VariableSource,
-        executable::{InsertExecutable, OptionalInsert},
+        executable::{InsertExecutable, ConditionalInsert},
         instructions::{ConceptInstruction, ConnectionInstruction},
     },
 };
@@ -32,6 +32,7 @@ use crate::{
     row::{MaybeOwnedRow, Row},
     write::{WriteError, write_instruction::AsWriteInstruction},
 };
+use crate::pipeline::required_inputs_satisfied;
 
 pub struct InsertStageExecutor<InputIterator> {
     executable: Arc<InsertExecutable>,
@@ -69,8 +70,7 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Insert pattern"));
-        let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
-            build_step_profiles(&executable, &pattern_profile);
+        let (concept_profiles, connection_profiles) = build_step_profiles(&executable, &pattern_profile);
 
         // prepare_output_rows copies unmapped
         let input_output_mapping = executable
@@ -102,8 +102,6 @@ where
                 &mut row,
                 &concept_profiles,
                 &connection_profiles,
-                &optional_concept_profiles,
-                &optional_connection_profiles,
             ) {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
@@ -158,34 +156,24 @@ pub(crate) fn append_row_for_insert_mapped(
 pub(crate) fn build_step_profiles(
     executable: &InsertExecutable,
     pattern_profile: &PatternProfile,
-) -> (Vec<Arc<StepProfile>>, Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
+) -> (Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
     let mut next_subpattern: usize = 0;
 
-    let concept_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Concept inserts"));
-    next_subpattern += 1;
-    let concept_profiles = reserve_step_profiles(&concept_subpattern, &executable.concept_instructions);
-
-    let connection_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Connection inserts"));
-    next_subpattern += 1;
-    let connection_profiles = reserve_step_profiles(&connection_subpattern, &executable.connection_instructions);
-
-    let mut optional_concept_profiles = Vec::with_capacity(executable.optional_inserts.len());
-    let mut optional_connection_profiles = Vec::with_capacity(executable.optional_inserts.len());
-    for (i, optional) in executable.optional_inserts.iter().enumerate() {
-        let opt_concept_sub =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} concept inserts"));
+    let mut concept_profiles = Vec::with_capacity(executable.inserts.len());
+    let mut connection_profiles = Vec::with_capacity(executable.inserts.len());
+    for (i, optional) in executable.inserts.iter().enumerate() {
+        let concept_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Inserts {i} concept"));
         next_subpattern += 1;
-        optional_concept_profiles.push(reserve_step_profiles(&opt_concept_sub, &optional.concept_instructions));
+        concept_profiles.push(reserve_step_profiles(&concept_subpattern, &optional.concept_instructions));
 
-        let opt_connection_sub =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} connection inserts"));
+        let connection_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Inserts {i} connection"));
         next_subpattern += 1;
-        optional_connection_profiles
-            .push(reserve_step_profiles(&opt_connection_sub, &optional.connection_instructions));
+        connection_profiles
+            .push(reserve_step_profiles(&connection_subpattern, &optional.connection_instructions));
     }
-    (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles)
+    (concept_profiles, connection_profiles)
 }
 
 fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
@@ -203,38 +191,30 @@ pub(crate) fn execute_insert(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    concept_profiles: &[Arc<StepProfile>],
-    connection_profiles: &[Arc<StepProfile>],
-    optional_concept_profiles: &[Vec<Arc<StepProfile>>],
-    optional_connection_profiles: &[Vec<Arc<StepProfile>>],
+    concept_profiles: &[Vec<Arc<StepProfile>>],
+    connection_profiles: &[Vec<Arc<StepProfile>>],
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
-    debug_assert_eq!(executable.concept_instructions.len(), concept_profiles.len());
-    debug_assert_eq!(executable.connection_instructions.len(), connection_profiles.len());
-    debug_assert_eq!(executable.optional_inserts.len(), optional_concept_profiles.len());
-    debug_assert_eq!(executable.optional_inserts.len(), optional_connection_profiles.len());
-    execute_concept_instructions(
-        &executable.concept_instructions,
-        concept_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    execute_connection_instructions(
-        &executable.connection_instructions,
-        connection_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    for (i, optional) in executable.optional_inserts.iter().enumerate() {
-        execute_optional_insert(
-            optional,
-            &optional_concept_profiles[i],
-            &optional_connection_profiles[i],
+    debug_assert_eq!(executable.inserts.len(), concept_profiles.len());
+    debug_assert_eq!(executable.inserts.len(), connection_profiles.len());
+    // First all the concept inserts
+    for (i, insert) in executable.inserts.iter().enumerate() {
+        may_execute_concept_instructions(
+            &insert,
+            &concept_profiles[i],
+            snapshot,
+            thing_manager,
+            parameters,
+            row,
+        )?;
+    }
+
+    // Then all the connection inserts
+    for (i, insert) in executable.inserts.iter().enumerate() {
+        may_execute_connection_instructions(
+            &insert,
+            &connection_profiles[i],
             snapshot,
             thing_manager,
             parameters,
@@ -244,51 +224,20 @@ pub(crate) fn execute_insert(
     Ok(())
 }
 
-fn execute_optional_insert(
-    optional: &OptionalInsert,
-    concept_profiles: &[Arc<StepProfile>],
-    connection_profiles: &[Arc<StepProfile>],
-    snapshot: &mut impl WritableSnapshot,
-    thing_manager: &ThingManager,
-    parameters: &ParameterRegistry,
-    row: &mut Row<'_>,
-) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(optional.concept_instructions.len(), concept_profiles.len());
-    debug_assert_eq!(optional.connection_instructions.len(), connection_profiles.len());
-    for &input in &optional.required_input_variables {
-        if row.len() <= input.as_usize() || row.get(input).is_none() {
-            return Ok(());
-        }
-    }
-    execute_concept_instructions(
-        &optional.concept_instructions,
-        concept_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    execute_connection_instructions(
-        &optional.connection_instructions,
-        connection_profiles,
-        snapshot,
-        thing_manager,
-        parameters,
-        row,
-    )?;
-    Ok(())
-}
-
-fn execute_concept_instructions(
-    concept_instructions: &[ConceptInstruction],
+fn may_execute_concept_instructions(
+    insert: &ConditionalInsert,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(concept_instructions.len(), step_profiles.len());
-    for (instruction, step_profile) in concept_instructions.iter().zip(step_profiles) {
+    debug_assert_eq!(insert.concept_instructions.len(), step_profiles.len());
+    if !required_inputs_satisfied(&insert.required_input_variables, row) {
+        return Ok(());
+    }
+
+    for (instruction, step_profile) in insert.concept_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
@@ -303,16 +252,20 @@ fn execute_concept_instructions(
     Ok(())
 }
 
-fn execute_connection_instructions(
-    connection_instructions: &[ConnectionInstruction],
+fn may_execute_connection_instructions(
+    insert: &ConditionalInsert,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    debug_assert_eq!(connection_instructions.len(), step_profiles.len());
-    for (instruction, step_profile) in connection_instructions.iter().zip(step_profiles) {
+    debug_assert_eq!(insert.connection_instructions.len(), step_profiles.len());
+    if !required_inputs_satisfied(&insert.required_input_variables, row) {
+        return Ok(());
+    }
+
+    for (instruction, step_profile) in insert.connection_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {

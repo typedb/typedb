@@ -38,7 +38,7 @@ pub struct UpdateExecutable {
     // Reuse the insert's concept instruction for attributes. Other isas should be validated earlier
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub optional_updates: Vec<OptionalUpdate>,
+    pub optional_updates: Vec<ConditionalUpdate>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
 
@@ -50,17 +50,16 @@ impl UpdateExecutable {
 
 pub fn compile(
     block: &Block,
-    input_variables: &HashMap<Variable, VariablePosition>,
+    input_variable_positions: &HashMap<Variable, VariablePosition>,
     block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
-    let mut variable_positions = input_variables.clone();
+    let mut variable_positions = input_variable_positions.clone();
     let attributes_inserts_map = add_inserted_concepts(
         block.conjunction(),
         block_annotations,
         variable_registry,
-        input_variables,
         &mut variable_positions,
         source_span,
     )?;
@@ -70,7 +69,6 @@ pub fn compile(
         block_annotations,
         &variable_positions,
         variable_registry,
-        input_variables,
     )?;
 
     let unsafely_used_optional_variable = block
@@ -92,12 +90,11 @@ pub fn compile(
                 "Non-optional nested patterns in update are illegal and should have been rejected during translation"
             )
         };
-        optional_updates.push(OptionalUpdate::new(
-            optional,
+        optional_updates.push(ConditionalUpdate::new(
+            optional.conjunction(),
             block_annotations,
             &mut variable_positions,
             variable_registry,
-            input_variables,
             source_span,
         )?);
     }
@@ -108,49 +105,45 @@ pub fn compile(
         concept_instructions: attributes_inserts,
         connection_instructions,
         optional_updates,
-        output_row_schema: prepare_output_row_schema(input_variables, &variable_positions),
+        output_row_schema: prepare_output_row_schema(input_variable_positions, &variable_positions),
     })
 }
 
 #[derive(Debug)]
-pub struct OptionalUpdate {
+pub struct ConditionalUpdate {
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub required_input_variables: HashSet<VariablePosition>,
 }
 
-impl OptionalUpdate {
+impl ConditionalUpdate {
     fn new(
-        optional: &ir::pattern::optional::Optional,
+        conjunction: &ir::pattern::conjunction::Conjunction,
         block_annotations: &BlockAnnotations,
         variable_positions: &mut HashMap<Variable, VariablePosition>,
         variable_registry: &VariableRegistry,
-        input_variables: &HashMap<Variable, VariablePosition>,
         stage_source_span: Option<Span>,
     ) -> Result<Self, Box<WriteCompilationError>> {
         let concept_instruction_map = add_inserted_concepts(
-            optional.conjunction(),
+            conjunction,
             block_annotations,
             variable_registry,
-            input_variables,
             variable_positions,
             stage_source_span,
         )?;
 
         let connection_instructions = add_connections(
-            optional.conjunction(),
+            conjunction,
             block_annotations,
             variable_positions,
             variable_registry,
-            input_variables,
         )?;
 
-        let required_input_variables = optional
-            .conjunction()
+        let required_input_variables = conjunction
             .constraints()
             .iter()
             .flat_map(|constraint| constraint.ids())
-            .filter_map(|id| input_variables.get(&id).copied())
+            .filter_map(|id| variable_positions.get(&id).copied())
             .collect();
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instruction_map);
@@ -164,7 +157,6 @@ fn add_connections(
     block_annotations: &BlockAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
-    input_variables: &HashMap<Variable, VariablePosition>,
 ) -> Result<Vec<ConnectionInstruction>, Box<WriteCompilationError>> {
     let constraints = conjunction.constraints();
     let mut connection_instructions = Vec::with_capacity(constraints.len());
@@ -174,7 +166,6 @@ fn add_connections(
     add_links(
         constraints,
         type_annotations,
-        input_variables,
         variable_positions,
         variable_registry,
         &mut connection_instructions,
@@ -209,12 +200,11 @@ fn add_has(
 fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-    input_variables: &HashMap<Variable, VariablePosition>, // Strictly input
     variable_positions: &HashMap<Variable, VariablePosition>, // Also contains ones inserted.
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let resolved_role_types = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
+    let resolved_role_types = resolve_links_roles(constraints, type_annotations, variable_positions, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,
