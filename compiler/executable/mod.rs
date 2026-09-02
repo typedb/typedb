@@ -49,7 +49,8 @@ impl RequiredVariablesForWrite {
             .iter()
             .flat_map(|constraint| constraint.ids())
             .filter(|id| conjunction.is_input(id) && conjunction.optionality(id) == VariableOptionality::Optional);
-        Self(required_variables.chain(without_is_set).filter_map(|id| variable_positions.get(&id).copied()).collect())
+        let required_variables = required_variables.chain(without_is_set);
+        Self(required_variables.filter_map(|id| variable_positions.get(&id).copied()).collect())
     }
 }
 
