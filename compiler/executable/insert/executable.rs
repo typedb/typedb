@@ -119,7 +119,7 @@ pub struct ConditionalInsert {
 
 impl ConditionalInsert {
     fn new(
-        conjunction: &ir::pattern::conjunction::Conjunction,
+        conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_positions: &mut HashMap<Variable, VariablePosition>,
         variable_registry: &VariableRegistry,

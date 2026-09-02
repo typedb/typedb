@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::{
-    pattern::{Pattern, Vertex, constraint::Constraint, nested_pattern::NestedPattern},
+    pattern::{Vertex, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
@@ -105,7 +105,7 @@ pub struct ConditionalDelete {
 
 impl ConditionalDelete {
     fn new(
-        conjunction: &ir::pattern::conjunction::Conjunction,
+        conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_registry: &VariableRegistry,
         input_variables: &HashMap<Variable, VariablePosition>,
@@ -134,7 +134,7 @@ impl ConditionalDelete {
 }
 
 fn add_concept_deletes(
-    conjunction: &ir::pattern::conjunction::Conjunction,
+    conjunction: &Conjunction,
     conjunction_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
@@ -168,7 +168,7 @@ fn add_concept_deletes(
 }
 
 fn add_connection_deletes(
-    conjunction: &ir::pattern::conjunction::Conjunction,
+    conjunction: &Conjunction,
     block_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,

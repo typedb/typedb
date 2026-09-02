@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
 };
@@ -18,7 +18,7 @@ use ir::{
     pattern::{
         Vertex,
         conjunction::Conjunction,
-        constraint::{Constraint, DeleteConcepts, ExpressionBinding},
+        constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
         variable_category::{VariableCategory, VariableOptionality},
     },
