@@ -5,58 +5,26 @@
 features = {}
 
 [package]
-	name = "storage"
 	edition = "2024"
+	name = "storage"
 	version = "0.0.0"
 
 [lib]
-	path = "storage.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.rand]
-		workspace = true
-
-	[dev-dependencies.xoshiro]
-		workspace = true
-
-	[dev-dependencies.database]
-		workspace = true
-
-	[dev-dependencies.criterion]
-		workspace = true
-
-	[dev-dependencies.test_utils_storage]
-		workspace = true
-
-	[dev-dependencies.pprof]
-		workspace = true
-
-	[dev-dependencies.rand_core]
-		workspace = true
+	path = "storage.rs"
 
 [dependencies]
 
-	[dependencies.tracing]
+	[dependencies.bincode]
 		workspace = true
 
-	[dependencies.primitive]
+	[dependencies.bytes]
 		workspace = true
 
-	[dependencies.serde]
+	[dependencies.chrono]
 		workspace = true
 
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.fail_point]
-		workspace = true
-
-	[dependencies.logger]
+	[dependencies.diagnostics]
 		workspace = true
 
 	[dependencies.durability]
@@ -65,19 +33,25 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
+	[dependencies.fail_point]
+		workspace = true
+
 	[dependencies.itertools]
 		workspace = true
 
-	[dependencies.diagnostics]
+	[dependencies.lending_iterator]
 		workspace = true
 
-	[dependencies.bytes]
-		workspace = true
-
-	[dependencies.bincode]
+	[dependencies.logger]
 		workspace = true
 
 	[dependencies.options]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.resource]
 		workspace = true
 
 	[dependencies.rocksdb]
@@ -86,44 +60,70 @@ features = {}
 	[dependencies.same-file]
 		workspace = true
 
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
 	[dependencies.typeql]
 		workspace = true
 
-	[dependencies.chrono]
+[dev-dependencies]
+
+	[dev-dependencies.criterion]
 		workspace = true
 
-	[dependencies.lending_iterator]
+	[dev-dependencies.database]
+		workspace = true
+
+	[dev-dependencies.pprof]
+		workspace = true
+
+	[dev-dependencies.rand]
+		workspace = true
+
+	[dev-dependencies.rand_core]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
+	[dev-dependencies.test_utils_storage]
+		workspace = true
+
+	[dev-dependencies.xoshiro]
 		workspace = true
 
 [[bench]]
-	name = "bench_rocks"
 	harness = false
-
-[[bench]]
 	name = "bench_mvcc_storage"
+
+[[bench]]
 	harness = false
+	name = "bench_rocks"
 
 [[test]]
-	path = "tests/test_isolation.rs"
-	name = "test_isolation"
-
-[[test]]
-	path = "tests/test_recovery.rs"
-	name = "test_recovery"
-
-[[test]]
-	path = "tests/test_snapshot.rs"
-	name = "test_snapshot"
-
-[[test]]
-	path = "tests/test_mvcc.rs"
-	name = "test_mvcc"
-
-[[test]]
-	path = "tests/test_storage.rs"
-	name = "test_storage"
-
-[[test]]
-	path = "tests/test_cleanup.rs"
 	name = "test_cleanup"
+	path = "tests/test_cleanup.rs"
+
+[[test]]
+	name = "test_isolation"
+	path = "tests/test_isolation.rs"
+
+[[test]]
+	name = "test_mvcc"
+	path = "tests/test_mvcc.rs"
+
+[[test]]
+	name = "test_recovery"
+	path = "tests/test_recovery.rs"
+
+[[test]]
+	name = "test_snapshot"
+	path = "tests/test_snapshot.rs"
+
+[[test]]
+	name = "test_storage"
+	path = "tests/test_storage.rs"
 

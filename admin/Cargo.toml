@@ -6,29 +6,29 @@ features = {}
 dev-dependencies = {}
 
 [package]
-	name = "typedb_admin_bin"
 	edition = "2024"
+	name = "typedb_admin_bin"
 	version = "0.0.0"
 
 [dependencies]
 
-	[dependencies.tokio]
+	[dependencies.clap]
 		workspace = true
 
 	[dependencies.resource]
 		workspace = true
 
-	[dependencies.clap]
+	[dependencies.tokio]
 		workspace = true
 
 	[dependencies.typedb-admin]
 		workspace = true
 
-[[test]]
-	path = "tests/admin_assembly.rs"
-	name = "test_admin_assembly"
-
 [[bin]]
-	path = "main.rs"
 	name = "typedb_admin_bin"
+	path = "main.rs"
+
+[[test]]
+	name = "test_admin_assembly"
+	path = "tests/admin_assembly.rs"
 

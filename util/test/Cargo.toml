@@ -5,22 +5,22 @@
 features = {}
 
 [package]
-	name = "test_utils"
 	edition = "2024"
+	name = "test_utils"
 	version = "0.0.0"
 
 [lib]
-	path = "test_utils.rs"
 	crate-type = ["lib"]
+	path = "test_utils.rs"
 
 [dependencies]
+
+	[dependencies.logger]
+		workspace = true
 
 	[dependencies.rand]
 		workspace = true
 
 	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.logger]
 		workspace = true
 

@@ -5,54 +5,54 @@
 features = {}
 
 [package]
-	name = "typedb-admin"
 	edition = "2024"
+	name = "typedb-admin"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.tokio]
+	[dependencies.error]
+		workspace = true
+
+	[dependencies.home]
 		workspace = true
 
 	[dependencies.hyper-util]
 		workspace = true
 
-	[dependencies.tonic-types]
-		workspace = true
-
-	[dependencies.rustyline]
-		workspace = true
-
 	[dependencies.resource]
-		workspace = true
-
-	[dependencies.server_admin_proto]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.tonic]
-		workspace = true
-
-	[dependencies.error]
 		workspace = true
 
 	[dependencies.rpassword]
 		workspace = true
 
+	[dependencies.rustyline]
+		workspace = true
+
+	[dependencies.server_admin_proto]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tonic]
+		workspace = true
+
+	[dependencies.tonic-types]
+		workspace = true
+
 	[dependencies.tower]
 		workspace = true
 
-	[dependencies.home]
+	[dependencies.typeql]
+		workspace = true
+
+[dev-dependencies]
+
+	[dev-dependencies.test_utils]
 		workspace = true
 

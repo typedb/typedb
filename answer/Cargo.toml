@@ -5,24 +5,15 @@
 features = {}
 
 [package]
-	name = "answer"
 	edition = "2024"
+	name = "answer"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
-
-	[dependencies.primitive]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.structural_equality]
-		workspace = true
 
 	[dependencies.bytes]
 		workspace = true
@@ -30,12 +21,21 @@ features = {}
 	[dependencies.concept]
 		workspace = true
 
-	[dependencies.storage]
-		workspace = true
-
 	[dependencies.encoding]
 		workspace = true
 
 	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.structural_equality]
 		workspace = true
 

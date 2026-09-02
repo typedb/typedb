@@ -5,52 +5,29 @@
 features = {}
 
 [package]
-	name = "function"
 	edition = "2024"
+	name = "function"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.rand]
-		workspace = true
-
-	[dev-dependencies.diagnostics]
-		workspace = true
-
-	[dev-dependencies.tracing]
-		workspace = true
-
-	[dev-dependencies.test_utils_storage]
-		workspace = true
-
-	[dev-dependencies.logger]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.primitive]
+	[dependencies.answer]
 		workspace = true
 
-	[dependencies.resource]
+	[dependencies.bytes]
 		workspace = true
 
-	[dependencies.durability]
+	[dependencies.compiler]
 		workspace = true
 
 	[dependencies.concept]
 		workspace = true
 
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.storage]
+	[dependencies.durability]
 		workspace = true
 
 	[dependencies.encoding]
@@ -59,22 +36,45 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
+	[dependencies.ir]
+		workspace = true
+
 	[dependencies.itertools]
 		workspace = true
 
-	[dependencies.answer]
+	[dependencies.primitive]
 		workspace = true
 
-	[dependencies.bytes]
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.storage]
 		workspace = true
 
 	[dependencies.typeql]
 		workspace = true
 
-	[dependencies.compiler]
+[dev-dependencies]
+
+	[dev-dependencies.diagnostics]
+		workspace = true
+
+	[dev-dependencies.logger]
+		workspace = true
+
+	[dev-dependencies.rand]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
+	[dev-dependencies.test_utils_storage]
+		workspace = true
+
+	[dev-dependencies.tracing]
 		workspace = true
 
 [[test]]
-	path = "tests/test_definition.rs"
 	name = "test_definition"
+	path = "tests/test_definition.rs"
 
