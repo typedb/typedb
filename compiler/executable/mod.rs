@@ -4,12 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     sync::atomic::{AtomicU64, Ordering},
 };
 
+use answer::variable::Variable;
 use error::typedb_error;
-use ir::pattern::constraint::Comparator;
+use ir::{
+    pattern::{Pattern, conjunction::Conjunction, constraint::Comparator},
+    pipeline::VariableRegistry,
+};
 use typeql::common::Span;
 
 use crate::{
@@ -37,9 +41,27 @@ pub fn next_executable_id() -> u64 {
 }
 
 #[derive(Debug)]
-pub struct WriteRequiredVariables(HashSet<VariablePosition>);
+pub struct RequiredVariablesForWrite(HashSet<VariablePosition>);
 
-impl std::ops::Deref for WriteRequiredVariables {
+impl RequiredVariablesForWrite {
+    pub fn build(
+        conjunction: &Conjunction,
+        variable_registry: &VariableRegistry,
+        variable_positions: &HashMap<Variable, VariablePosition>,
+    ) -> Self {
+        Self(
+            conjunction
+                .constraints()
+                .iter()
+                .flat_map(|constraint| constraint.ids())
+                .filter(|id| conjunction.is_input(id) && variable_registry.is_variable_optional(*id))
+                .filter_map(|id| variable_positions.get(&id).copied())
+                .collect(),
+        )
+    }
+}
+
+impl std::ops::Deref for RequiredVariablesForWrite {
     type Target = HashSet<VariablePosition>;
     fn deref(&self) -> &Self::Target {
         &self.0

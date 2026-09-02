@@ -18,7 +18,7 @@ use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
-        WriteCompilationError, WriteRequiredVariables,
+        RequiredVariablesForWrite, WriteCompilationError,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             ThingPosition,
@@ -100,7 +100,7 @@ pub fn compile(
 pub struct ConditionalDelete {
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: WriteRequiredVariables,
+    pub required_input_variables: RequiredVariablesForWrite,
 }
 
 impl ConditionalDelete {
@@ -126,15 +126,8 @@ impl ConditionalDelete {
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables = WriteRequiredVariables(
-            conjunction
-                .constraints()
-                .iter()
-                .flat_map(|constraint| constraint.ids())
-                .filter(|id| conjunction.is_input(id))
-                .filter_map(|id| input_variables.get(&id).copied())
-                .collect(),
-        );
+        let required_input_variables =
+            RequiredVariablesForWrite::build(conjunction, variable_registry, input_variables);
 
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })
     }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::executable::WriteRequiredVariables;
+use compiler::executable::RequiredVariablesForWrite;
 use concept::error::ConceptReadError;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
@@ -57,7 +57,7 @@ impl LendingIterator for WrittenRowsIterator {
     }
 }
 
-fn required_inputs_satisfied(required_variables: &WriteRequiredVariables, row: &Row<'_>) -> bool {
+fn required_inputs_satisfied(required_variables: &RequiredVariablesForWrite, row: &Row<'_>) -> bool {
     required_variables.iter().all(|position| position.as_usize() < row.len() && !row.get(*position).is_none())
 }
 

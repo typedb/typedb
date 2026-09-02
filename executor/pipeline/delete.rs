@@ -6,7 +6,7 @@
 use std::{collections::HashSet, fmt::Display, marker::PhantomData, sync::Arc};
 
 use compiler::executable::{
-    WriteRequiredVariables,
+    RequiredVariablesForWrite,
     delete::{
         executable::DeleteExecutable,
         instructions::{ConnectionInstruction, ThingInstruction},
@@ -160,7 +160,7 @@ fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions:
 }
 
 pub fn may_execute_delete_connections(
-    required_input_variables: &WriteRequiredVariables,
+    required_input_variables: &RequiredVariablesForWrite,
     connection_instructions: &[ConnectionInstruction],
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
@@ -191,7 +191,7 @@ pub fn may_execute_delete_connections(
 }
 
 pub fn may_execute_delete_concepts(
-    required_input_variables: &WriteRequiredVariables,
+    required_input_variables: &RequiredVariablesForWrite,
     concept_instructions: &[ThingInstruction],
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
