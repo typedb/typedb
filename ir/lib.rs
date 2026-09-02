@@ -368,6 +368,12 @@ typedb_error! {
             offset: String,
             source_span: Option<Span>,
         ),
+        Tmp__OptionalVariableUsedOutsideTry(
+            252,
+            "A write stage uses the optional variable '{variable}' outside a 'try' block.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         UnimplementedExpressionsInWrite(
             253,
             "Expressions are currently not supported in write stages. Please move it to a preceding match stage.",
