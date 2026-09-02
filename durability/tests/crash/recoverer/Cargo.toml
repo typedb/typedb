@@ -5,22 +5,22 @@
 features = {}
 
 [package]
-	name = "recoverer"
 	edition = "2024"
+	name = "recoverer"
 	version = "0.0.0"
 
 [dependencies]
 
-	[dependencies.durability]
+	[dependencies.bincode]
 		workspace = true
 
-	[dependencies.bincode]
+	[dependencies.durability]
 		workspace = true
 
 	[dependencies.durability_test_common]
 		workspace = true
 
 [[bin]]
-	path = "recoverer.rs"
 	name = "recoverer"
+	path = "recoverer.rs"
 

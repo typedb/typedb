@@ -5,22 +5,22 @@
 features = {}
 
 [package]
-	name = "durability_test_common"
 	edition = "2024"
+	name = "durability_test_common"
 	version = "0.0.0"
 
 [lib]
-	path = "test_common.rs"
 	crate-type = ["lib"]
+	path = "test_common.rs"
 
 [dependencies]
+
+	[dependencies.bincode]
+		workspace = true
 
 	[dependencies.diagnostics]
 		workspace = true
 
 	[dependencies.durability]
-		workspace = true
-
-	[dependencies.bincode]
 		workspace = true
 

@@ -5,43 +5,32 @@
 features = {}
 
 [package]
-	name = "ir"
 	edition = "2024"
+	name = "ir"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.resource]
-		workspace = true
-
-	[dev-dependencies.test_utils_storage]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.test_utils]
+	[dependencies.answer]
 		workspace = true
 
-	[dependencies.tracing]
+	[dependencies.bytes]
 		workspace = true
 
-	[dependencies.primitive]
+	[dependencies.chrono]
 		workspace = true
 
-	[dependencies.structural_equality]
+	[dependencies.chrono-tz]
 		workspace = true
 
 	[dependencies.concept]
 		workspace = true
 
 	[dependencies.durability]
-		workspace = true
-
-	[dependencies.storage]
 		workspace = true
 
 	[dependencies.encoding]
@@ -53,37 +42,48 @@ features = {}
 	[dependencies.itertools]
 		workspace = true
 
+	[dependencies.primitive]
+		workspace = true
+
 	[dependencies.regex]
 		workspace = true
 
-	[dependencies.chrono-tz]
+	[dependencies.storage]
 		workspace = true
 
-	[dependencies.answer]
+	[dependencies.structural_equality]
 		workspace = true
 
-	[dependencies.bytes]
+	[dependencies.test_utils]
+		workspace = true
+
+	[dependencies.tracing]
 		workspace = true
 
 	[dependencies.typeql]
 		workspace = true
 
-	[dependencies.chrono]
+[dev-dependencies]
+
+	[dev-dependencies.resource]
+		workspace = true
+
+	[dev-dependencies.test_utils_storage]
 		workspace = true
 
 [[test]]
-	path = "tests/pattern.rs"
-	name = "pattern"
-
-[[test]]
-	path = "tests/pipeline.rs"
-	name = "pipeline"
-
-[[test]]
-	path = "tests/structural_equality.rs"
-	name = "test_structural_equality"
-
-[[test]]
-	path = "tests/binding_modes.rs"
 	name = "binding_modes"
+	path = "tests/binding_modes.rs"
+
+[[test]]
+	name = "pattern"
+	path = "tests/pattern.rs"
+
+[[test]]
+	name = "pipeline"
+	path = "tests/pipeline.rs"
+
+[[test]]
+	name = "test_structural_equality"
+	path = "tests/structural_equality.rs"
 

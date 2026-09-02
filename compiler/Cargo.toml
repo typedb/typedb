@@ -5,55 +5,23 @@
 features = {}
 
 [package]
-	name = "compiler"
 	edition = "2024"
+	name = "compiler"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.diagnostics]
-		workspace = true
-
-	[dev-dependencies.test_utils_encoding]
-		workspace = true
-
-	[dev-dependencies.test_utils_storage]
-		workspace = true
-
-	[dev-dependencies.durability]
-		workspace = true
-
-	[dev-dependencies.test_utils_concept]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.tracing]
+	[dependencies.answer]
 		workspace = true
 
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.serde]
+	[dependencies.chrono]
 		workspace = true
 
 	[dependencies.concept]
-		workspace = true
-
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.paste]
 		workspace = true
 
 	[dependencies.encoding]
@@ -62,19 +30,51 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
+	[dependencies.ir]
+		workspace = true
+
 	[dependencies.itertools]
 		workspace = true
 
-	[dependencies.answer]
+	[dependencies.paste]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.tracing]
 		workspace = true
 
 	[dependencies.typeql]
 		workspace = true
 
-	[dependencies.chrono]
+[dev-dependencies]
+
+	[dev-dependencies.diagnostics]
+		workspace = true
+
+	[dev-dependencies.durability]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
+	[dev-dependencies.test_utils_concept]
+		workspace = true
+
+	[dev-dependencies.test_utils_encoding]
+		workspace = true
+
+	[dev-dependencies.test_utils_storage]
 		workspace = true
 
 [[test]]
-	path = "tests/transformation.rs"
 	name = "transformation"
+	path = "tests/transformation.rs"
 

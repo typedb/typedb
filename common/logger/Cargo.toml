@@ -6,13 +6,13 @@ features = {}
 dev-dependencies = {}
 
 [package]
-	name = "logger"
 	edition = "2024"
+	name = "logger"
 	version = "0.0.0"
 
 [lib]
-	path = "logger.rs"
 	crate-type = ["lib"]
+	path = "logger.rs"
 
 [dependencies]
 

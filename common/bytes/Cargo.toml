@@ -5,25 +5,25 @@
 features = {}
 
 [package]
-	name = "bytes"
 	edition = "2024"
+	name = "bytes"
 	version = "0.0.0"
 
 [lib]
-	path = "bytes.rs"
 	crate-type = ["lib"]
+	path = "bytes.rs"
 
 [dependencies]
-
-	[dependencies.primitive]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
 
 	[dependencies.base64]
 		workspace = true
 
 	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.serde]
 		workspace = true
 
