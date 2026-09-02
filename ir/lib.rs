@@ -265,7 +265,7 @@ typedb_error! {
         ),
         IllegalStatementForPut(
             43,
-            "Illegal statement '{constraint_type}' provided for a put stage. Only 'has', 'links' and 'isa' constraints are allowed.",
+            "Illegal statement '{constraint_type}' provided for a put stage. Only 'has', 'links', 'isa' and 'isset' constraints are allowed.",
             constraint_type: String,
             source_span: Option<Span>,
         ),
