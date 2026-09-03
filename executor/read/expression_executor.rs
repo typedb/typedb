@@ -35,7 +35,8 @@ use compiler::{
             },
             unary::{
                 LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-                MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
+                MathFloorDecimal, MathFloorDouble, MathLog10Double, MathLog10Integer, MathRoundDecimal,
+                MathRoundDouble, Unary, UnaryExpression,
             },
         },
     },

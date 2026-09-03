@@ -80,4 +80,7 @@ unary_instruction! { 'a
         let len = a1.chars().count();
         len.try_into().map_err(|_| ExpressionEvaluationError::OverlongString { len })
     }
+
+    MathLog10Integer(a1: i64) -> f64 { Ok((a1 as f64).log10()) }
+    MathLog10Double(a1: f64) -> f64 { Ok(a1.log10()) }
 }

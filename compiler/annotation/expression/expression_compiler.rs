@@ -31,6 +31,11 @@ use crate::annotation::expression::{
         ExpressionInstruction, list_operations,
         load::{LoadConstant, LoadVariable},
         op_codes::ExpressionOpCode,
+        operators,
+        unary::{
+            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
+            MathFloorDecimal, MathFloorDouble, MathLog10Double, MathLog10Integer, MathRoundDecimal, MathRoundDouble,
+        },
     },
     operation_resolution,
 };
@@ -197,26 +202,29 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_value_builtin(&mut self, builtin: &BuiltinValueFunctionCall) -> Result<(), Box<ExpressionCompileError>> {
         match builtin.function_id() {
-            BuiltinValueFunctionID::Abs => {
-                UnaryValueFunctionResolverImpl::<builtin_resolution::Abs>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::MathAbs => {
+                UnaryValueFunctionResolverImpl::<builtin_resolution::MathAbs>::resolve_validate_append(builtin, self)
             }
-            BuiltinValueFunctionID::Ceil => {
-                UnaryValueFunctionResolverImpl::<builtin_resolution::Ceil>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::MathCeil => {
+                UnaryValueFunctionResolverImpl::<builtin_resolution::MathCeil>::resolve_validate_append(builtin, self)
             }
-            BuiltinValueFunctionID::Floor => {
-                UnaryValueFunctionResolverImpl::<builtin_resolution::Floor>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::MathFloor => {
+                UnaryValueFunctionResolverImpl::<builtin_resolution::MathFloor>::resolve_validate_append(builtin, self)
             }
-            BuiltinValueFunctionID::Round => {
-                UnaryValueFunctionResolverImpl::<builtin_resolution::Round>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::MathRound => {
+                UnaryValueFunctionResolverImpl::<builtin_resolution::MathRound>::resolve_validate_append(builtin, self)
             }
-            BuiltinValueFunctionID::Min => {
-                BinaryValueFunctionResolverImpl::<builtin_resolution::Min>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::MathMin => {
+                BinaryValueFunctionResolverImpl::<builtin_resolution::MathMin>::resolve_validate_append(builtin, self)
             }
-            BuiltinValueFunctionID::Max => {
-                BinaryValueFunctionResolverImpl::<builtin_resolution::Max>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::MathMax => {
+                BinaryValueFunctionResolverImpl::<builtin_resolution::MathMax>::resolve_validate_append(builtin, self)
             }
-            BuiltinValueFunctionID::Len => {
-                UnaryValueFunctionResolverImpl::<builtin_resolution::Len>::resolve_validate_append(builtin, self)
+            BuiltinValueFunctionID::StringLen => {
+                UnaryValueFunctionResolverImpl::<builtin_resolution::StringLen>::resolve_validate_append(builtin, self)
+            }
+            BuiltinValueFunctionID::MathLog10 => {
+                UnaryValueFunctionResolverImpl::<builtin_resolution::MathLog10>::resolve_validate_append(builtin, self)
             }
         }
     }

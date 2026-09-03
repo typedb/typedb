@@ -135,7 +135,7 @@ fn translate_fetch_list(
         }
         FetchStream::Function(call) => {
             match &call.name {
-                FunctionName::Builtin(name) => {
+                FunctionName::Namespaced(_) | FunctionName::Builtin(_) => {
                     // built-in functions always return single values, so should not be wrapped in a list (although we could allow it if it's something interesting)
                     Err(Box::new(FetchRepresentationError::BuiltinFunctionInList { declaration: call.clone() }))
                 }
@@ -219,7 +219,7 @@ fn translate_fetch_single(
                 translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
             }
             Expression::Function(call) => match &call.name {
-                FunctionName::Builtin(_) => {
+                FunctionName::Namespaced(_) | FunctionName::Builtin(_) => {
                     translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
                 }
                 FunctionName::Identifier(name) => {

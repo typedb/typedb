@@ -64,8 +64,6 @@ macro_rules! for_each_opcode {
             MathAbsDecimal,
             MathAbsInteger,
 
-            MathRemainderInteger,
-
             MathRoundDouble,
             MathCeilDouble,
             MathFloorDouble,
@@ -81,6 +79,11 @@ macro_rules! for_each_opcode {
             MathMaxIntegerInteger,
             MathMaxDoubleDouble,
             MathMaxDecimalDecimal,
+
+            MathRemainderInteger,
+
+            MathLog10Integer,
+            MathLog10Double,
 
             LenString,
         }

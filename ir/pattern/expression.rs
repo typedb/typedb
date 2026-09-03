@@ -14,9 +14,10 @@ use std::{
 use answer::variable::Variable;
 use error::typedb_error;
 use structural_equality::StructuralEquality;
-use typeql::common::Span;
+use typeql::{common::Span, expression::NamespacedFunctionName};
 
 use crate::{
+    RepresentationError,
     pattern::{
         IrID, ParameterID,
         variable_category::{VariableCategory, VariableOptionality},
@@ -281,15 +282,47 @@ impl StructuralEquality for BuiltinValueFunctionCall {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum BuiltinValueFunctionID {
-    Abs,
-    Ceil,
-    Floor,
-    Round,
-    Max,
-    Min,
-    Len,
+macro_rules! function_id_enum {
+    ( $($id:ident = $name:literal,)* ) => {
+        #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+        pub enum BuiltinValueFunctionID {
+            $( $id, ) *
+        }
+
+        impl BuiltinValueFunctionID {
+            pub(crate) fn resolve_namespaced(name: &NamespacedFunctionName) -> Result<Self, Box<RepresentationError>> {
+                match name.name.as_str() {
+                    $( $name => Ok(Self::$id), )*
+                    other => Err(Box::new(RepresentationError::UnresolvedFunction {
+                        function_name: other.to_owned(),
+                        source_span: name.span.clone(),
+                    }))
+                }
+            }
+
+            fn name(&self) -> &'static str {
+                match self {
+                    $( Self::$id => $name, )*
+                }
+            }
+        }
+    };
+}
+
+function_id_enum! {
+    // math unary
+    MathAbs = "std::math::abs",
+    MathCeil = "std::math::ceil",
+    MathFloor = "std::math::floor",
+    MathRound = "std::math::round",
+    MathLog10 = "std::math::log10",
+
+    // math binary
+    MathMax = "std::math::max",
+    MathMin = "std::math::min",
+
+    // string
+    StringLen = "std::string::len",
 }
 
 impl StructuralEquality for BuiltinValueFunctionID {
@@ -304,15 +337,7 @@ impl StructuralEquality for BuiltinValueFunctionID {
 
 impl fmt::Display for BuiltinValueFunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
-            Self::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
-            Self::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
-            Self::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
-            Self::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
-            Self::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
-            Self::Len => fmt::Display::fmt(&typeql::token::Function::Len, f),
-        }
+        fmt::Display::fmt(self.name(), f)
     }
 }
 
