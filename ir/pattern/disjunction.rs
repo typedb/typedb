@@ -96,7 +96,7 @@ impl DisjunctionBuilder {
 
     pub(crate) fn finish(self, parent_modes: &PatternVariables) -> NestedPattern {
         let source_span = self.source_span;
-        let pattern_variables = PatternVariables::build(self.variable_binding_modes(), parent_modes);
+        let pattern_variables = PatternVariables::build(self.variable_binding_modes(), parent_modes, []);
         let scope_id = self.scope_id;
         let branch_ids = self.conjunctions.iter().map(|(bid, _)| *bid).collect();
         let conjunctions =

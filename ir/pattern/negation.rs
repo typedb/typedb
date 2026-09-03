@@ -75,7 +75,7 @@ impl NegationBuilder {
 
     pub(crate) fn finish(self, parent_modes: &PatternVariables) -> NestedPattern {
         let source_span = self.source_span;
-        let pattern_variables = PatternVariables::build(self.variable_binding_modes(), parent_modes);
+        let pattern_variables = PatternVariables::build(self.variable_binding_modes(), parent_modes, []);
         let conjunction = self.conjunction.finish(&pattern_variables);
         NestedPattern::Negation(Negation { conjunction, pattern_variables, source_span })
     }
@@ -93,7 +93,7 @@ impl NegationBuilder {
             .variable_binding_modes()
             .into_iter()
             .map(|(var, mode)| {
-                if mode.is_always_binding() {
+                if mode.is_always_binding() || mode.is_optionally_binding() {
                     // if it is binding, we demote it to only locally binding (only relevant in the negation)
                     (var, BindingMode::LocallyBindingInChild)
                 } else {

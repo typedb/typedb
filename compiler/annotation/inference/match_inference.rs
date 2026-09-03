@@ -111,7 +111,7 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
             }
             NestedPattern::Optional(optional) => {
                 let optional_graph = infer_types_impl(ctx, optional.conjunction(), &vertices, type_inference_mode)?;
-                for optional_var in optional.optionally_bound_by_pattern() {
+                for optional_var in optional.bound_by_try_in_pattern() {
                     let optional_vertex = Vertex::Variable(optional_var);
                     debug_assert!(optional_graph.vertices.contains_key(&optional_vertex));
                     let annotations = optional_graph.vertices[&optional_vertex].clone();
@@ -128,7 +128,7 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
             .into_iter()
             .map(|d| infer_types_in_negations_and_optionals_and_complete(ctx, d, type_inference_mode))
             .collect::<Result<Vec<_>, _>>()?;
-        for optional_var in nested_disjunction.disjunction_pattern.optionally_bound_by_pattern() {
+        for optional_var in nested_disjunction.disjunction_pattern.bound_by_try_in_pattern() {
             let optional_vertex = Vertex::Variable(optional_var);
             debug_assert!(branches.iter().all(|b| b.vertices.contains_key(&optional_vertex)));
             let annotations = VertexAnnotations::try_union(branches.iter().map(|g| &g.vertices), &optional_vertex)?
@@ -429,7 +429,7 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
 
     pub(crate) fn variables_affecting_parent(disjunction: &Disjunction) -> impl Iterator<Item = Vertex<Variable>> {
         // Are those in every branch. But simpler:
-        disjunction.always_bound_by_pattern().map(Vertex::Variable)
+        disjunction.bound_outside_try_in_pattern().map(Vertex::Variable)
     }
 
     pub(crate) fn branch_variables_affected_by_parent(
@@ -438,7 +438,7 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
     ) -> impl Iterator<Item = Vertex<Variable>> {
         // Must exclude OptionallyBinding
         disjunction
-            .always_bound_by_pattern()
+            .bound_outside_try_in_pattern()
             .chain(disjunction.required_inputs().filter(|variable| branch.is_variable_visible_referenced(variable)))
             .map(Vertex::Variable)
     }

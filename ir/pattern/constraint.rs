@@ -14,7 +14,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::todo_must_implement;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -22,8 +21,8 @@ use typeql::common::Span;
 use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
-        AssignedVariable, BindingMode, IrID, ParameterID, PatternVariableMode, PatternVariables, ScopeId, ValueType,
-        Vertex,
+        AssignedVariable, BindingMode, IrID, ParameterID, PatternVariableMode, PatternVariableOptionality,
+        PatternVariables, ScopeId, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
@@ -98,7 +97,7 @@ impl Constraints {
                     Is::new(old_var, *var, None).into()
                 };
                 variable_mapping.insert(*var, old_var);
-                pattern_variables.0.insert(*var, PatternVariableMode::Binding);
+                pattern_variables.0.insert(*var, PatternVariableMode::Binding(VariableOptionality::Required));
                 check_collector.push(check);
             }
             Ok::<(), Box<RepresentationError>>(())
@@ -740,7 +739,7 @@ impl<ID: IrID> Constraint<ID> {
         fn _all_binding<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
         ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
-            Box::new(it.map(move |id| (id, BindingMode::AlwaysBinding)))
+            Box::new(it.map(move |id| (id, BindingMode::AlwaysBinding(PatternVariableOptionality::NotNone))))
         }
         fn _all_required<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
@@ -765,8 +764,8 @@ impl<ID: IrID> Constraint<ID> {
 
             Constraint::Comparison(comparison) => _all_required(comparison.ids()),
             Constraint::Is(is) => _all_binding(is.ids()),
+            Constraint::IsSet(is_set) => _all_required(is_set.ids()),
             Constraint::Unsatisfiable(inner) => _all_binding(inner.ids()),
-            Constraint::IsSet(inner) => _all_required(inner.ids()),
             Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
 
             Constraint::ExpressionBinding(binding) => Box::new(binding.binding_modes()),
@@ -2201,7 +2200,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
-            .map(|id| (id, BindingMode::AlwaysBinding))
+            .map(|id| (id, BindingMode::AlwaysBinding(PatternVariableOptionality::NotNone)))
             .chain(self.expression_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
@@ -2330,9 +2329,9 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
-        self.ids_assigned()
-            .filter(|id| !self.function_call.arguments().contains(id))
-            .map(|id| (id, BindingMode::AlwaysBinding))
+        self.assigned_optionalities()
+            .filter(|(id, _)| !self.function_call.arguments().contains(id))
+            .map(|(id, optionality)| (id, BindingMode::AlwaysBinding(optionality.into())))
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
