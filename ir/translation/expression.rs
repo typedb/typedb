@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 use typeql::{
     common::{Span, Spanned},
-    expression::{BuiltinFunctionName, FunctionName},
+    expression::{BuiltinFunctionName, FunctionName, NamespacedFunctionName},
     token::{ArithmeticOperator, Function},
 };
 
@@ -199,6 +199,18 @@ fn build_function(
     tree: &mut ExpressionTree<Variable>,
 ) -> Result<Expression<Variable>, Box<RepresentationError>> {
     match &function_call.name {
+        FunctionName::Namespaced(namespaced) => {
+            let args = function_call
+                .args
+                .iter()
+                .map(|expr| build_recursive(function_index, constraints, expr, tree))
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(Expression::BuiltinValueFunctionCall(BuiltinValueFunctionCall::new(
+                to_namespaced_value_function_id(namespaced, &args)?,
+                args,
+                namespaced.span(),
+            )))
+        }
         FunctionName::Builtin(builtin) if is_builtin_value_function(builtin) => {
             let args = function_call
                 .args
@@ -280,6 +292,13 @@ fn is_builtin_value_function(typeql_id: &BuiltinFunctionName) -> bool {
     )
 }
 
+fn to_namespaced_value_function_id(
+    name: &NamespacedFunctionName,
+    args: &[usize],
+) -> Result<BuiltinValueFunctionID, Box<RepresentationError>> {
+    BuiltinValueFunctionID::resolve_namespaced(name)
+}
+
 fn to_builtin_value_function_id(
     typeql_id: &BuiltinFunctionName,
     args: &[usize],
@@ -288,31 +307,31 @@ fn to_builtin_value_function_id(
     match token {
         Function::Abs => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Abs)
+            Ok(BuiltinValueFunctionID::MathAbs)
         }
         Function::Ceil => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Ceil)
+            Ok(BuiltinValueFunctionID::MathCeil)
         }
         Function::Floor => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Floor)
+            Ok(BuiltinValueFunctionID::MathFloor)
         }
         Function::Round => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Round)
+            Ok(BuiltinValueFunctionID::MathRound)
         }
         Function::Max => {
             check_builtin_arg_count(token, args.len(), 2, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Max)
+            Ok(BuiltinValueFunctionID::MathMax)
         }
         Function::Min => {
             check_builtin_arg_count(token, args.len(), 2, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Min)
+            Ok(BuiltinValueFunctionID::MathMin)
         }
         Function::Len => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinValueFunctionID::Len)
+            Ok(BuiltinValueFunctionID::StringLen)
         }
         _ => Err(Box::new(RepresentationError::InternalNotAValueBuiltin { token, source_span: typeql_id.span() })),
     }

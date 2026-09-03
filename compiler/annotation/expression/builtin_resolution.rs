@@ -18,7 +18,7 @@ use crate::annotation::expression::{
         },
         unary::{
             LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-            MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
+            MathFloorDecimal, MathFloorDouble, MathLog10Double, MathLog10Integer, MathRoundDecimal, MathRoundDouble,
         },
     },
 };
@@ -102,14 +102,15 @@ impl BinaryValueFunctionResolver for $fid {
     };
 }
 unary_builtin! {
-    Abs = MathAbs [ Integer, Double, Decimal, ]
-    Ceil = MathCeil [ Double, Decimal, ]
-    Floor = MathFloor [ Double, Decimal, ]
-    Round = MathRound [ Double, Decimal, ]
-    Len = Len [ String, ]
+    MathAbs = MathAbs [ Integer, Double, Decimal, ]
+    MathCeil = MathCeil [ Double, Decimal, ]
+    MathFloor = MathFloor [ Double, Decimal, ]
+    MathRound = MathRound [ Double, Decimal, ]
+    StringLen = Len [ String, ]
+    MathLog10 = MathLog10 [ Integer, Double, ]
 }
 
 binary_builtin! {
-    Max:true = MathMax [ (Integer, Integer), (Double, Double), (Decimal, Decimal), ]
-    Min:true = MathMin [ (Integer, Integer), (Double, Double), (Decimal, Decimal), ]
+    MathMax:true = MathMax [ (Integer, Integer), (Double, Double), (Decimal, Decimal), ]
+    MathMin:true = MathMin [ (Integer, Integer), (Double, Double), (Decimal, Decimal), ]
 }

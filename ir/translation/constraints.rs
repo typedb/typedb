@@ -536,7 +536,8 @@ fn add_typeql_iterable_binding(
         typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, span }) => {
             add_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args, *span)
         }
-        typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
+        typeql::Expression::Function(FunctionCall { name: FunctionName::Namespaced(_), .. })
+        | typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
                 feature: UnimplementedFeature::LetInBuiltinCall,
             }))
