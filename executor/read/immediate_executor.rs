@@ -938,9 +938,7 @@ impl CheckExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            if self
-                .checker
-                .filter(context, &input_row, (), self.profile.storage_counters())
+            if Checker::filter(&self.checker.checks, context, &input_row, self.profile.storage_counters())
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {
