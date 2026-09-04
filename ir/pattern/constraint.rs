@@ -172,6 +172,7 @@ impl Constraints {
                 | Constraint::Value(_)
                 | Constraint::Comparison(_)
                 | Constraint::IsSet(_)
+                | Constraint::DeleteConcepts(_)
                 | Constraint::LinksDeduplication(_)
                 | Constraint::Unsatisfiable(_) => {}
             }
@@ -295,6 +296,16 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let is_set = IsSet::new(variables, source_span);
         let constraint = self.constraints.add_constraint(is_set);
         Ok(constraint.as_is_set().unwrap())
+    }
+
+    pub fn add_delete_concepts(
+        &mut self,
+        variables: Vec<Variable>,
+        source_span: Option<Span>,
+    ) -> &DeleteConcepts<Variable> {
+        let delete_concepts = DeleteConcepts::new(variables, source_span);
+        let constraint = self.constraints.add_constraint(delete_concepts);
+        constraint.as_delete_concepts().unwrap()
     }
 
     pub fn add_isa(
@@ -679,6 +690,8 @@ pub enum Constraint<ID> {
     Plays(Plays<ID>),
     Value(Value<ID>),
     IsSet(IsSet<ID>),
+
+    DeleteConcepts(DeleteConcepts<ID>),
     LinksDeduplication(LinksDeduplication<ID>),
     Unsatisfiable(Unsatisfiable),
 }
@@ -703,6 +716,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
             Constraint::IsSet(_) => typeql::token::Keyword::IsSet.as_str(),
+            Constraint::DeleteConcepts(_) => "delete-concepts",
 
             Constraint::RoleName(_) => "role-name",
             Constraint::LinksDeduplication(_) => "links-deduplication",
@@ -730,6 +744,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
             Constraint::IsSet(is_set) => Box::new(is_set.ids()),
+            Constraint::DeleteConcepts(inner) => Box::new(inner.ids()),
             Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
         }
@@ -765,6 +780,8 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Comparison(comparison) => _all_required(comparison.ids()),
             Constraint::Is(is) => _all_binding(is.ids()),
             Constraint::IsSet(is_set) => _all_required(is_set.ids()),
+
+            Constraint::DeleteConcepts(inner) => _all_required(inner.ids()),
             Constraint::Unsatisfiable(inner) => _all_binding(inner.ids()),
             Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
 
@@ -793,6 +810,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(plays) => Box::new(plays.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
             Constraint::IsSet(is_set) => Box::new(is_set.vertices()),
+            Constraint::DeleteConcepts(inner) => Box::new(inner.vertices()),
             Constraint::LinksDeduplication(dedup) => Box::new(dedup.vertices()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.vertices()),
         }
@@ -821,6 +839,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Plays(plays) => plays.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
             Self::IsSet(require) => require.ids_foreach(function),
+            Self::DeleteConcepts(inner) => inner.ids_foreach(function),
             Self::LinksDeduplication(dedup) => dedup.ids_foreach(function),
             Self::Unsatisfiable(inner) => inner.ids_foreach(function),
         }
@@ -846,6 +865,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
             Self::IsSet(inner) => Constraint::IsSet(inner.map(mapping)),
+            Self::DeleteConcepts(inner) => Constraint::DeleteConcepts(inner.map(mapping)),
             Self::LinksDeduplication(inner) => Constraint::LinksDeduplication(inner.map(mapping)),
             Self::Unsatisfiable(inner) => Constraint::Unsatisfiable(inner.map(mapping)),
         }
@@ -871,6 +891,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(inner) => inner.source_span(),
             Constraint::Value(inner) => inner.source_span(),
             Constraint::IsSet(inner) => inner.source_span(),
+            Constraint::DeleteConcepts(inner) => inner.source_span(),
             Constraint::LinksDeduplication(inner) => None,
             Constraint::Unsatisfiable(inner) => None,
         }
@@ -911,9 +932,16 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_is_set(&self) -> Option<&IsSet<ID>> {
+    pub fn as_is_set(&self) -> Option<&IsSet<ID>> {
         match self {
             Constraint::IsSet(is_set) => Some(is_set),
+            _ => None,
+        }
+    }
+
+    pub fn as_delete_concepts(&self) -> Option<&DeleteConcepts<ID>> {
+        match self {
+            Constraint::DeleteConcepts(inner) => Some(inner),
             _ => None,
         }
     }
@@ -1032,6 +1060,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Plays(inner) => inner.hash(),
                 Self::Value(inner) => inner.hash(),
                 Self::IsSet(inner) => inner.hash(),
+                Self::DeleteConcepts(inner) => inner.hash(),
                 Self::LinksDeduplication(inner) => inner.hash(),
                 Self::Unsatisfiable(inner) => StructuralEquality::hash(&inner),
             }
@@ -1057,6 +1086,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
             (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
             (Self::IsSet(inner), Self::IsSet(other_inner)) => inner.equals(other_inner),
+            (Self::DeleteConcepts(inner), Self::DeleteConcepts(other_inner)) => inner.equals(other_inner),
             (Self::LinksDeduplication(inner), Self::LinksDeduplication(other_inner)) => inner.equals(other_inner),
             (Self::Unsatisfiable(inner), Self::Unsatisfiable(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
@@ -1078,6 +1108,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::Plays { .. }, _)
             | (Self::Value { .. }, _)
             | (Self::IsSet { .. }, _)
+            | (Self::DeleteConcepts { .. }, _)
             | (Self::LinksDeduplication { .. }, _)
             | (Self::Unsatisfiable(_), _) => false,
         }
@@ -1105,6 +1136,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
             Self::Value(constraint) => fmt::Display::fmt(constraint, f),
             Self::IsSet(constraint) => fmt::Display::fmt(constraint, f),
+            Self::DeleteConcepts(constraint) => fmt::Display::fmt(constraint, f),
             Self::LinksDeduplication(constraint) => fmt::Display::fmt(constraint, f),
             Self::Unsatisfiable(constraint) => fmt::Display::fmt(constraint, f),
         }
@@ -3000,6 +3032,63 @@ impl<ID: IrID> fmt::Display for IsSet<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let vars = self.variables.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(", ");
         write!(f, "{} {}", typeql::token::Keyword::IsSet, vars)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct DeleteConcepts<ID> {
+    variables: Vec<Vertex<ID>>,
+    source_span: Option<Span>,
+}
+
+impl<ID: IrID> DeleteConcepts<ID> {
+    pub fn new(variables: Vec<ID>, source_span: Option<Span>) -> Self {
+        let variables = variables.into_iter().map(Vertex::Variable).collect();
+        Self { variables, source_span }
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.variables.iter().map(|v| v.as_variable().unwrap())
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        self.variables.iter()
+    }
+
+    pub fn ids_foreach<F: FnMut(ID)>(&self, mut function: F) {
+        self.ids().for_each(|id| function(id))
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> DeleteConcepts<T> {
+        let variables = self.variables.iter().map(|v| v.clone().map(mapping)).collect();
+        DeleteConcepts { variables, source_span: self.source_span }
+    }
+}
+
+impl<ID: IrID> From<DeleteConcepts<ID>> for Constraint<ID> {
+    fn from(val: DeleteConcepts<ID>) -> Self {
+        Constraint::DeleteConcepts(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for DeleteConcepts<ID> {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&self.variables)
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variables.equals(&other.variables)
+    }
+}
+
+impl<ID: IrID> fmt::Display for DeleteConcepts<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let vars = self.variables.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(", ");
+        write!(f, "delete {}", vars)
     }
 }
 

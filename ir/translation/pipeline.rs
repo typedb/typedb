@@ -79,7 +79,7 @@ pub enum TranslatedStage {
     Insert { block: Block, source_span: Option<Span> },
     Update { block: Block, source_span: Option<Span> },
     Put { block: Block, source_span: Option<Span> },
-    Delete { block: Block, deleted_variables: Vec<Variable>, source_span: Option<Span> },
+    Delete { block: Block, source_span: Option<Span> },
 
     // ...
     Select(Select),
@@ -118,12 +118,7 @@ impl StructuralEquality for TranslatedStage {
                 Self::Insert { block, .. } => block.hash(),
                 Self::Update { block, .. } => block.hash(),
                 Self::Put { block, .. } => block.hash(),
-                Self::Delete { block, deleted_variables, .. } => {
-                    let mut hasher = DefaultHasher::new();
-                    block.hash_into(&mut hasher);
-                    deleted_variables.hash_into(&mut hasher);
-                    hasher.finish()
-                }
+                Self::Delete { block, .. } => block.hash(),
                 Self::Select(select) => select.hash(),
                 Self::Sort(sort) => sort.hash(),
                 Self::Offset(offset) => offset.hash(),
@@ -255,15 +250,8 @@ fn translate_stage(
             .map(|block| TranslatedPipelinePart::Stage(TranslatedStage::Update { block, source_span: update.span() })),
         TypeQLStage::Put(put) => translate_put(translation_context, value_parameters, put)
             .map(|block| TranslatedPipelinePart::Stage(TranslatedStage::Put { block, source_span: put.span() })),
-        TypeQLStage::Delete(delete) => {
-            translate_delete(translation_context, value_parameters, delete).map(|(block, deleted_variables)| {
-                TranslatedPipelinePart::Stage(TranslatedStage::Delete {
-                    block,
-                    deleted_variables,
-                    source_span: delete.span(),
-                })
-            })
-        }
+        TypeQLStage::Delete(delete) => translate_delete(translation_context, value_parameters, delete)
+            .map(|block| TranslatedPipelinePart::Stage(TranslatedStage::Delete { block, source_span: delete.span() })),
         TypeQLStage::Fetch(fetch) => {
             translate_fetch(translation_context, value_parameters, all_function_signatures, fetch)
                 .map(TranslatedPipelinePart::Fetch)

@@ -4,14 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::atomic::{AtomicU64, Ordering},
+};
 
+use answer::variable::Variable;
 use error::typedb_error;
-use ir::pattern::constraint::Comparator;
+use ir::pattern::{Pattern, conjunction::Conjunction, constraint::Comparator, variable_category::VariableOptionality};
 use typeql::common::Span;
 
-use crate::executable::{
-    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
+use crate::{
+    VariablePosition,
+    executable::{
+        fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
+    },
 };
 
 pub mod delete;
@@ -29,6 +36,29 @@ static EXECUTABLE_ID: AtomicU64 = AtomicU64::new(0);
 
 pub fn next_executable_id() -> u64 {
     EXECUTABLE_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+#[derive(Debug)]
+pub struct RequiredVariablesForWrite(HashSet<VariablePosition>);
+
+impl RequiredVariablesForWrite {
+    pub fn build(conjunction: &Conjunction, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
+        let required_variables = conjunction.constraints().iter().filter_map(|c| c.as_is_set()).flat_map(|c| c.ids());
+        // let without_is_set = conjunction // Probably not needed
+        //     .constraints()
+        //     .iter()
+        //     .flat_map(|constraint| constraint.ids())
+        //     .filter(|id| conjunction.is_input(id) && conjunction.optionality(id) == VariableOptionality::Optional);
+        // let required_variables = required_variables.chain(without_is_set);
+        Self(required_variables.filter_map(|id| variable_positions.get(&id).copied()).collect())
+    }
+}
+
+impl std::ops::Deref for RequiredVariablesForWrite {
+    type Target = HashSet<VariablePosition>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 typedb_error! {

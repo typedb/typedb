@@ -3,6 +3,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
+use std::collections::HashSet;
 
 use answer::variable::Variable;
 use error::UnimplementedFeature;
@@ -117,7 +118,7 @@ pub fn translate_put(
             | crate::pattern::constraint::Constraint::Has(_)
             | crate::pattern::constraint::Constraint::Comparison(_)
             | crate::pattern::constraint::Constraint::LinksDeduplication(_)
-            | crate::pattern::constraint::Constraint::Value(_) => (),
+            | crate::pattern::constraint::Constraint::IsSet(_) => (),
             constraint => {
                 return Err(Box::new(RepresentationError::IllegalStatementForPut {
                     constraint_type: constraint.name().to_owned(),
@@ -133,16 +134,16 @@ pub fn translate_delete(
     context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     delete: &typeql::query::stage::Delete,
-) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
+) -> Result<Block, Box<RepresentationError>> {
     validate_delete(delete)?;
     validate_deleted_variables_availability(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
-    let mut deleted_concepts = Vec::new();
+    let mut deleted_concepts = HashSet::new();
     let mut conjunction = builder.conjunction_mut();
     add_deletables(&delete.deletables, &mut conjunction, &mut deleted_concepts)?;
     let block = builder.finish()?;
-    context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
-    Ok((block, deleted_concepts))
+    context.last_stage_visible_variables.retain(|_name, var| !deleted_concepts.contains(var));
+    Ok(block)
 }
 
 fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<RepresentationError>> {
@@ -161,7 +162,7 @@ fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<Repr
 fn add_deletables(
     deletables: &[Deletable],
     conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
-    deleted_concepts: &mut Vec<Variable>,
+    deleted_concepts_recursive: &mut HashSet<Variable>,
 ) -> Result<(), Box<RepresentationError>> {
     for deletable in deletables {
         match &deletable.kind {
@@ -180,12 +181,13 @@ fn add_deletables(
                 let mut constraints = conjunction.constraints_mut();
                 let translated_variable =
                     constraints.get_or_declare_variable(variable.name().unwrap(), variable.span())?;
-                deleted_concepts.push(translated_variable);
+                conjunction.constraints_mut().add_delete_concepts(vec![translated_variable], deletable.span());
+                deleted_concepts_recursive.insert(translated_variable);
             }
             DeletableKind::Optional { deletables } => {
                 debug_assert!(deletables.iter().all(|d| !matches!(d.kind, DeletableKind::Optional { .. })));
                 let mut optional_builder = conjunction.add_optional(deletable.span())?;
-                add_deletables(deletables, &mut optional_builder, deleted_concepts)?;
+                add_deletables(deletables, &mut optional_builder, deleted_concepts_recursive)?;
             }
             DeletableKind::IsSet { variables } => {
                 let mut constraints = conjunction.constraints_mut();

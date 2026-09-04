@@ -25,7 +25,7 @@ macro_rules! try_unwrap_as {
 
 fn get_type(input: &Row<'_>, source: &TypeSource) -> answer::Type {
     match source {
-        TypeSource::InputVariable(position) => input.get(*position).as_type(),
+        TypeSource::Variable(position) => input.get(*position).as_type(),
         &TypeSource::Constant(type_) => type_,
     }
 }
