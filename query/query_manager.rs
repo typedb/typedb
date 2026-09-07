@@ -107,7 +107,9 @@ impl QueryManager {
         function_manager: &FunctionManager,
         thing_manager: &ThingManager,
     ) -> Result<TranslatedPipeline, Box<QueryError>> {
-        if let Some(translated) = self.cache.as_ref().and_then(|cache| cache.get_translated(query)) {
+        if let Some(translated) =
+            self.cache.as_ref().and_then(|cache| cache.get_translated(snapshot.open_sequence_number(), query))
+        {
             QUERY_TRANSLATION_CACHE_HITS.increment();
             return Ok(translated);
         }
@@ -206,7 +208,13 @@ impl QueryManager {
         let arced_fetch = Arc::new(translated_fetch);
         let arced_parameters = Arc::new(parameters);
         let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
-            cache.get_executable(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
+            cache.get_executable(
+                snapshot.open_sequence_number(),
+                arced_preamble.clone(),
+                arced_given.clone(),
+                arced_stages.clone(),
+                arced_fetch.clone(),
+            )
         }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
@@ -306,7 +314,13 @@ impl QueryManager {
         let arced_parameters = Arc::new(value_parameters);
 
         let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
-            cache.get_executable(arced_preamble.clone(), arced_given.clone(), arced_stages.clone(), arced_fetch.clone())
+            cache.get_executable(
+                snapshot.open_sequence_number(),
+                arced_preamble.clone(),
+                arced_given.clone(),
+                arced_stages.clone(),
+                arced_fetch.clone(),
+            )
         }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();

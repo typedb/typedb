@@ -66,7 +66,11 @@ impl QueryCache {
         self.parse_cache.insert(source_query.to_owned(), pipeline);
     }
 
-    pub fn get_translated(&self, query: &str) -> Option<TranslatedPipeline> {
+    pub fn get_translated(&self, snapshot_sequence_number: SequenceNumber, query: &str) -> Option<TranslatedPipeline> {
+        let read_lock = self.validity_requirements.read().unwrap();
+        if read_lock.latest_schema_commit.is_some_and(|commit| snapshot_sequence_number < commit) {
+            return None;
+        }
         self.translation_cache.get(query)
     }
 
@@ -88,11 +92,16 @@ impl QueryCache {
 
     pub(crate) fn get_executable(
         &self,
+        snapshot_sequence_number: SequenceNumber,
         preamble: Arc<Vec<Function>>,
         given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
+        let read_lock = self.validity_requirements.read().unwrap();
+        if read_lock.latest_schema_commit.is_some_and(|commit| snapshot_sequence_number < commit) {
+            return None;
+        }
         let key = IRQuery::new(preamble.clone(), given, stages, fetch);
         self.executable_cache.get(&key).map(|mut found| {
             let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
@@ -137,9 +146,10 @@ impl QueryCache {
     pub fn force_reset(&self, statistics: &Statistics) {
         let mut write_lock = self.validity_requirements.write().unwrap();
         (*write_lock).latest_schema_commit = Some(statistics.sequence_number);
-        drop(write_lock);
+        // Keep the schema boundary and both invalidations atomic with respect to cache access.
         self.translation_cache.invalidate_all();
         self.executable_cache.invalidate_all();
+        drop(write_lock);
         QUERY_CACHE_FLUSH.increment();
     }
 }

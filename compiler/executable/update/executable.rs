@@ -8,7 +8,10 @@ use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use ir::{
-    pattern::{constraint::Constraint, nested_pattern::NestedPattern},
+    pattern::{
+        constraint::{Constraint, InterfaceOrdering},
+        nested_pattern::NestedPattern,
+    },
     pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
@@ -19,15 +22,15 @@ use crate::{
     executable::{
         WriteCompilationError,
         insert::{
-            VariableSource,
+            ThingPosition, TypeSource, VariableSource,
             executable::{
                 add_inserted_concepts, concept_instructions_map_to_vec, get_thing_position, prepare_output_row_schema,
-                resolve_links_roles,
+                resolve_has_attribute_type, resolve_links_roles,
             },
             instructions::ConceptInstruction,
         },
         next_executable_id,
-        update::instructions::{ConnectionInstruction, Has, Links},
+        update::instructions::{ConnectionInstruction, Has, HasOrdered, Links, LinksOrdered},
     },
     filter_variants,
 };
@@ -170,7 +173,7 @@ fn add_connections(
     let mut connection_instructions = Vec::with_capacity(constraints.len());
     let type_annotations =
         block_annotations.type_annotations_of(conjunction).expect("update conjunction must have type annotations");
-    add_has(constraints, variable_positions, variable_registry, &mut connection_instructions)?;
+    add_has(constraints, type_annotations, variable_positions, variable_registry, &mut connection_instructions)?;
     add_links(
         constraints,
         type_annotations,
@@ -184,11 +187,13 @@ fn add_connections(
 
 fn add_has(
     constraints: &[Constraint<Variable>],
+    type_annotations: &TypeAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
+    let mut ordered_has_groups = Vec::<(ThingPosition, TypeSource, Vec<ThingPosition>)>::new();
+    for has in filter_variants!(Constraint::Has: constraints) {
         let owner = get_thing_position(
             variable_positions,
             has.owner().as_variable().unwrap(),
@@ -201,9 +206,25 @@ fn add_has(
             variable_registry,
             has.source_span(),
         )?;
-        instructions.push(ConnectionInstruction::Has(Has { owner, attribute }));
-        Ok(())
-    })
+        match has.ordering() {
+            InterfaceOrdering::Unordered => instructions.push(ConnectionInstruction::Has(Has { owner, attribute })),
+            InterfaceOrdering::Ordered => {
+                let attribute_type = resolve_has_attribute_type(has, type_annotations, variable_registry)?;
+                if let Some((_, _, attributes)) = ordered_has_groups
+                    .iter_mut()
+                    .find(|(group_owner, group_type, _)| *group_owner == owner && *group_type == attribute_type)
+                {
+                    attributes.push(attribute);
+                } else {
+                    ordered_has_groups.push((owner, attribute_type, vec![attribute]));
+                }
+            }
+        }
+    }
+    for (owner, attribute_type, attributes) in ordered_has_groups {
+        instructions.push(ConnectionInstruction::HasOrdered(HasOrdered { owner, attribute_type, attributes }));
+    }
+    Ok(())
 }
 
 fn add_links(
@@ -215,6 +236,7 @@ fn add_links(
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     let resolved_role_types = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
+    let mut ordered_links_groups = Vec::<(ThingPosition, TypeSource, Vec<ThingPosition>)>::new();
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,
@@ -229,7 +251,24 @@ fn add_links(
             links.source_span(),
         )?;
         let role = resolved_role_types.get(&links.role_type().as_variable().unwrap()).unwrap().clone();
-        instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
+        match links.ordering() {
+            InterfaceOrdering::Unordered => {
+                instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
+            }
+            InterfaceOrdering::Ordered => {
+                if let Some((_, _, players)) = ordered_links_groups
+                    .iter_mut()
+                    .find(|(group_relation, group_role, _)| *group_relation == relation && *group_role == role)
+                {
+                    players.push(player);
+                } else {
+                    ordered_links_groups.push((relation, role, vec![player]));
+                }
+            }
+        }
+    }
+    for (relation, role, players) in ordered_links_groups {
+        instructions.push(ConnectionInstruction::LinksOrdered(LinksOrdered { relation, role, players }));
     }
     Ok(())
 }

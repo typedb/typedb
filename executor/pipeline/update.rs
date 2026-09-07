@@ -287,8 +287,14 @@ fn execute_connection_instructions(
             ConnectionInstruction::Has(has) => {
                 has.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
+            ConnectionInstruction::HasOrdered(has) => {
+                has.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
+            }
             ConnectionInstruction::Links(role_player) => {
                 role_player.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
+            }
+            ConnectionInstruction::LinksOrdered(role_players) => {
+                role_players.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         };
         measurement.end(step_profile, 1, 1);

@@ -380,6 +380,7 @@ macro_rules! typedb_error {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnimplementedFeature {
     Lists,
+    OrderedListLiteralMatch,
     Structs,
 
     BuiltinFunction(String),

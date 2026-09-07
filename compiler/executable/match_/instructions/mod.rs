@@ -182,6 +182,8 @@ pub enum ConstraintInstruction<ID> {
 
     // owner -> attribute
     Has(thing::HasInstruction<ID>),
+    // owner -> attribute[]
+    HasOrdered(thing::HasOrderedInstruction<ID>),
     // attribute -> owner
     HasReverse(thing::HasReverseInstruction<ID>),
 
@@ -232,6 +234,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(apply),
             Self::Has(thing::HasInstruction { has, .. })
+            | Self::HasOrdered(thing::HasOrderedInstruction { has, .. })
             | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(apply),
             Self::Links(thing::LinksInstruction { links, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.ids_foreach(apply),
@@ -268,6 +271,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::Isa(thing::IsaInstruction { inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { inputs, .. })
             | Self::Has(thing::HasInstruction { inputs, .. })
+            | Self::HasOrdered(thing::HasOrderedInstruction { inputs, .. })
             | Self::HasReverse(thing::HasReverseInstruction { inputs, .. })
             | Self::Links(thing::LinksInstruction { inputs, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { inputs, .. }) => {
@@ -321,6 +325,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 }
             }),
             Self::Has(thing::HasInstruction { has, inputs, .. })
+            | Self::HasOrdered(thing::HasOrderedInstruction { has, inputs, .. })
             | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
@@ -376,6 +381,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
             Self::Has(inner) => inner.add_check(check),
+            Self::HasOrdered(inner) => inner.add_check(check),
             Self::HasReverse(inner) => inner.add_check(check),
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
@@ -399,6 +405,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
             Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
             Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
+            Self::HasOrdered(inner) => ConstraintInstruction::HasOrdered(inner.map(mapping)),
             Self::HasReverse(inner) => ConstraintInstruction::HasReverse(inner.map(mapping)),
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
             Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
@@ -424,6 +431,7 @@ impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
             ConstraintInstruction::Isa(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::IsaReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Has(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::HasOrdered(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::HasReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::LinksReverse(instruction) => write!(f, "{instruction}"),

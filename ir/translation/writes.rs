@@ -22,7 +22,7 @@ use crate::{
     pipeline::{ParameterRegistry, block::Block, function_signature::HashMapFunctionSignatureIndex},
     translation::{
         PipelineTranslationContext,
-        constraints::{add_typeql_relation, register_typeql_var},
+        constraints::{PatternTranslationMode, add_typeql_relation, register_typeql_var},
         match_::add_patterns,
         verify_variable_available,
     },
@@ -37,7 +37,7 @@ pub fn translate_insert(
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
-    add_patterns(&function_index, &mut conjunction, &insert.patterns)?;
+    add_patterns(&function_index, &mut conjunction, &insert.patterns, PatternTranslationMode::Write)?;
     builder.finish()
 }
 
@@ -93,7 +93,7 @@ pub fn translate_update(
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
-    add_patterns(&function_index, &mut conjunction, &update.patterns)?;
+    add_patterns(&function_index, &mut conjunction, &update.patterns, PatternTranslationMode::Write)?;
     builder.finish()
 }
 
@@ -106,7 +106,7 @@ pub fn translate_put(
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
-    add_patterns(&function_index, &mut conjunction, &put.patterns)?;
+    add_patterns(&function_index, &mut conjunction, &put.patterns, PatternTranslationMode::Match)?;
     let block = builder.finish()?;
     for constraint in block.conjunction().constraints() {
         match constraint {

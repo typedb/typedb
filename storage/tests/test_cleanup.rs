@@ -78,6 +78,15 @@ fn cleanup_test() {
 
 #[test]
 fn concurrent_reader_cleanup_test() {
+    concurrent_reader_cleanup(0);
+}
+
+#[test]
+fn concurrent_reader_cleanup_after_timeline_advance() {
+    concurrent_reader_cleanup(40);
+}
+
+fn concurrent_reader_cleanup(unrelated_commits: usize) {
     init_logging();
     let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
@@ -96,6 +105,12 @@ fn concurrent_reader_cleanup_test() {
 
     assert_eq!(count_keys(&storage), 4);
 
+    // Advance beyond the isolation timeline window before opening the reader.
+    for i in 0..unrelated_commits {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        snapshot.put(StorageKeyArray::from((Keyspace, [0x3, i as u8])));
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log();
+    }
     let snapshot = storage.clone().open_snapshot_read();
 
     let seq = {
@@ -105,7 +120,7 @@ fn concurrent_reader_cleanup_test() {
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log().unwrap()
     };
 
-    assert_eq!(count_keys(&storage), 6);
+    assert_eq!(count_keys(&storage), 6 + unrelated_commits);
 
     storage
         .mvcc_cleanup(
@@ -117,7 +132,7 @@ fn concurrent_reader_cleanup_test() {
         )
         .unwrap_or_log();
 
-    assert_eq!(count_keys(&storage), 6);
+    assert_eq!(count_keys(&storage), 6 + unrelated_commits);
 
     assert!(get_key(key_1, &snapshot).is_some());
     assert!(get_key(key_2, &snapshot).is_some());

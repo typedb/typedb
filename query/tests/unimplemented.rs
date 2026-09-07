@@ -9,14 +9,12 @@ use std::{collections::HashMap, sync::Arc};
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use error::UnimplementedFeature;
 use executor::{
     ExecutionInterrupt,
     pipeline::{PipelineExecutionError, stage::ExecutionContext},
     row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
-use ir::RepresentationError;
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
@@ -150,7 +148,7 @@ fn illegal_stages_in_function() {
 }
 
 #[test]
-fn structs_lists_optionals() {
+fn list_runtime_boundaries() {
     let custom_schema = r#"define
         entity person;
         relation friendship, relates persons[], relates person;
@@ -172,17 +170,9 @@ fn structs_lists_optionals() {
         match
             $f isa friendship(persons[]: $pl);
         "#;
-        let Either::Left(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
-        check_unimplemented_language_feature(&err, &error::UnimplementedFeature::Lists);
+        let (rows, positions) = run_read_query(&context, query).unwrap();
+        assert!(rows.is_empty());
+        assert!(positions.contains_key("f"));
+        assert!(positions.contains_key("pl"));
     }
-}
-
-fn check_unimplemented_language_feature(err: &QueryError, expected: &UnimplementedFeature) {
-    match &err {
-        QueryError::Representation { typedb_source, .. } => match typedb_source.as_ref() {
-            RepresentationError::UnimplementedLanguageFeature { feature: actual, .. } => assert_eq!(expected, actual),
-            _ => Err(err).unwrap(),
-        },
-        _ => Err(err).unwrap(),
-    };
 }

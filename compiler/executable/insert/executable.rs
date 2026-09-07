@@ -11,7 +11,7 @@ use encoding::graph::type_::Kind;
 use ir::{
     pattern::{
         ParameterID, Vertex,
-        constraint::{Comparator, Constraint},
+        constraint::{Comparator, Constraint, InterfaceOrdering},
         expression::Expression,
         nested_pattern::NestedPattern,
     },
@@ -27,7 +27,10 @@ use crate::{
         WriteCompilationError,
         insert::{
             ThingPosition, TypeSource, ValueSource, VariableSource,
-            instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
+            instructions::{
+                ConceptInstruction, ConnectionInstruction, Has, HasOrdered, Links, LinksOrdered, PutAttribute,
+                PutObject,
+            },
         },
         next_executable_id,
     },
@@ -314,7 +317,7 @@ fn add_connections(
     let mut connection_instructions = Vec::with_capacity(constraints.len());
     let type_annotations =
         block_annotations.type_annotations_of(conjunction).expect("insert conjunction must have type annotations");
-    add_has(constraints, variable_positions, variable_registry, &mut connection_instructions)?;
+    add_has(constraints, type_annotations, variable_positions, variable_registry, &mut connection_instructions)?;
     add_links(
         constraints,
         type_annotations,
@@ -328,11 +331,13 @@ fn add_connections(
 
 fn add_has(
     constraints: &[Constraint<Variable>],
+    type_annotations: &TypeAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
+    let mut ordered_has_groups = Vec::<(ThingPosition, TypeSource, Vec<ThingPosition>)>::new();
+    for has in filter_variants!(Constraint::Has: constraints) {
         let owner = get_thing_position(
             variable_positions,
             has.owner().as_variable().unwrap(),
@@ -345,9 +350,25 @@ fn add_has(
             variable_registry,
             has.source_span(),
         )?;
-        instructions.push(ConnectionInstruction::Has(Has { owner, attribute }));
-        Ok(())
-    })
+        match has.ordering() {
+            InterfaceOrdering::Unordered => instructions.push(ConnectionInstruction::Has(Has { owner, attribute })),
+            InterfaceOrdering::Ordered => {
+                let attribute_type = resolve_has_attribute_type(has, type_annotations, variable_registry)?;
+                if let Some((_, _, attributes)) = ordered_has_groups
+                    .iter_mut()
+                    .find(|(group_owner, group_type, _)| *group_owner == owner && *group_type == attribute_type)
+                {
+                    attributes.push(attribute);
+                } else {
+                    ordered_has_groups.push((owner, attribute_type, vec![attribute]));
+                }
+            }
+        }
+    }
+    for (owner, attribute_type, attributes) in ordered_has_groups {
+        instructions.push(ConnectionInstruction::HasOrdered(HasOrdered { owner, attribute_type, attributes }));
+    }
+    Ok(())
 }
 
 fn add_links(
@@ -359,6 +380,7 @@ fn add_links(
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     let resolved_role_types = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
+    let mut ordered_links_groups = Vec::<(ThingPosition, TypeSource, Vec<ThingPosition>)>::new();
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,
@@ -373,7 +395,24 @@ fn add_links(
             links.source_span(),
         )?;
         let role = resolved_role_types.get(&links.role_type().as_variable().unwrap()).unwrap().clone();
-        instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
+        match links.ordering() {
+            InterfaceOrdering::Unordered => {
+                instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
+            }
+            InterfaceOrdering::Ordered => {
+                if let Some((_, _, players)) = ordered_links_groups
+                    .iter_mut()
+                    .find(|(group_relation, group_role, _)| *group_relation == relation && *group_role == role)
+                {
+                    players.push(player);
+                } else {
+                    ordered_links_groups.push((relation, role, vec![player]));
+                }
+            }
+        }
+    }
+    for (relation, role, players) in ordered_links_groups {
+        instructions.push(ConnectionInstruction::LinksOrdered(LinksOrdered { relation, role, players }));
     }
     Ok(())
 }
@@ -505,6 +544,25 @@ fn collect_type_bindings(
             Ok((label.clone(), *type_))
         }))
         .collect()
+}
+
+pub(crate) fn resolve_has_attribute_type(
+    has: &ir::pattern::constraint::Has<Variable>,
+    type_annotations: &TypeAnnotations,
+    variable_registry: &VariableRegistry,
+) -> Result<TypeSource, Box<WriteCompilationError>> {
+    let attribute_type_vertex = has.attribute();
+    let annotations = type_annotations.vertex_annotations_of(attribute_type_vertex).unwrap();
+    if let Ok(type_) = annotations.iter().exactly_one() {
+        Ok(TypeSource::Constant(*type_))
+    } else {
+        let attribute_variable =
+            variable_registry.get_variable_name_or_unnamed(has.attribute().as_variable().unwrap()).to_owned();
+        Err(Box::new(WriteCompilationError::InsertVariableUnknownType {
+            variable: attribute_variable,
+            source_span: has.source_span(),
+        }))
+    }
 }
 
 pub(crate) fn resolve_links_roles(

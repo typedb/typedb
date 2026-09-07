@@ -62,6 +62,14 @@ typedb_error!(
             attribute: String,
             source_span: Option<Span>,
         ),
+        FetchListAttributeNotOrdered(
+            19,
+            "Type checking '${var}.{attribute}[]' failed, since attribute '{attribute}' is not owned as an ordered list when '${var}' has type '{owner}'.",
+            var: String,
+            owner: String,
+            attribute: String,
+            source_span: Option<Span>,
+        ),
         FetchSingleAttributeCannotBeOwnedByKind(
             10,
             "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.",
@@ -129,7 +137,7 @@ typedb_error!(
             typedb_source: TypeInferenceError
         ),
         ValueTypeMismatch(
-            19,
+            20,
             "The argument to the function {function_id} is expected to have value type '{expected}', found '{actual}'.",
             function_id: FunctionID,
             expected: ValueType,

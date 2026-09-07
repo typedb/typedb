@@ -636,21 +636,24 @@ impl<Durability> MVCCStorage<Durability> {
                 StorageCounters::DISABLED,
             );
 
-            let mut last_seen = None;
+            let mut last_visible = None;
             while let Some(raw) = it.next() {
                 let (k, _) =
                     raw.map_err(|err| StorageCleanupError::Keyspace { name: self.name.clone(), source: err })?;
                 let mvcc_key = MVCCKey::wrap_slice(k);
 
                 let overwritten =
-                    mvcc_key.sequence_number() < cleanup_until && last_seen.as_deref() == Some(mvcc_key.key());
+                    mvcc_key.sequence_number() < cleanup_until && last_visible.as_deref() == Some(mvcc_key.key());
                 let deleted = mvcc_key.sequence_number() <= cleanup_until
                     && matches!(mvcc_key.operation(), StorageOperation::Delete);
 
                 if overwritten || deleted {
                     batch.delete(k);
                 }
-                last_seen = Some(Bytes::<MVCC_KEY_INLINE_SIZE>::copy(mvcc_key.key()));
+                // Newer versions cannot supersede the value visible to a reader at the cutoff.
+                if mvcc_key.sequence_number() <= cleanup_until {
+                    last_visible = Some(Bytes::<MVCC_KEY_INLINE_SIZE>::copy(mvcc_key.key()));
+                }
             }
         }
 

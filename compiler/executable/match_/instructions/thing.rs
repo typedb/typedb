@@ -192,6 +192,58 @@ impl<ID: IrID> fmt::Display for HasInstruction<ID> {
 }
 
 #[derive(Debug, Clone)]
+pub struct HasOrderedInstruction<ID> {
+    pub has: Has<ID>,
+    pub inputs: Inputs<ID>,
+    owner_to_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    attribute_types: Arc<BTreeSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl HasOrderedInstruction<Variable> {
+    pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let constraint_annotations =
+            type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
+        let owner_to_attribute_types = constraint_annotations.left_to_right();
+        let attribute_types = type_annotations.vertex_annotations_of(has.attribute()).unwrap().clone();
+        Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
+    }
+}
+
+impl<ID> HasOrderedInstruction<ID> {
+    pub fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub fn owner_to_attribute_types(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.owner_to_attribute_types
+    }
+
+    pub fn attribute_types(&self) -> &Arc<BTreeSet<Type>> {
+        &self.attribute_types
+    }
+}
+
+impl<ID: IrID> HasOrderedInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> HasOrderedInstruction<T> {
+        let Self { has, inputs, owner_to_attribute_types, attribute_types, checks } = self;
+        HasOrderedInstruction {
+            has: has.map(mapping),
+            inputs: inputs.map(mapping),
+            owner_to_attribute_types,
+            attribute_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+impl<ID: IrID> fmt::Display for HasOrderedInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct HasReverseInstruction<ID> {
     pub has: Has<ID>,
     pub inputs: Inputs<ID>,

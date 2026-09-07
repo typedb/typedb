@@ -25,10 +25,7 @@ use crate::{
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::{
-            VariableCategory, VariableOptionality,
-            VariableOptionality::{Optional, Required},
-        },
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{
         ParameterRegistry, VariableRegistry, block::BlockBuilderContext, function_signature::FunctionSignature,
@@ -310,6 +307,25 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_isa().unwrap())
     }
 
+    pub fn add_isa_attribute_list(
+        &mut self,
+        kind: IsaKind,
+        attributes: Variable,
+        type_: Vertex<Variable>,
+        source_span: Option<Span>,
+    ) -> Result<&Isa<Variable>, Box<RepresentationError>> {
+        let type_var = type_.as_variable();
+        let isa = Isa::new(kind, attributes, type_, source_span);
+        self.context.set_variable_category(attributes, VariableCategory::AttributeList, isa.clone().into())?;
+
+        if let Some(type_) = type_var {
+            self.context.set_variable_category(type_, VariableCategory::AttributeType, isa.clone().into())?;
+        };
+
+        let constraint = self.constraints.add_constraint(isa);
+        Ok(constraint.as_isa().unwrap())
+    }
+
     pub fn add_iid(
         &mut self,
         var: Variable,
@@ -329,9 +345,33 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         attribute: Variable,
         source_span: Option<Span>,
     ) -> Result<&Has<Variable>, Box<RepresentationError>> {
-        let has = Has::new(owner, attribute, source_span);
+        self.add_has_with_ordering(owner, attribute, InterfaceOrdering::Unordered, source_span)
+    }
+
+    pub fn add_has_with_ordering(
+        &mut self,
+        owner: Variable,
+        attribute: Variable,
+        ordering: InterfaceOrdering,
+        source_span: Option<Span>,
+    ) -> Result<&Has<Variable>, Box<RepresentationError>> {
+        let has = Has::new(owner, attribute, ordering, source_span);
         self.context.set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
         self.context.set_variable_category(attribute, VariableCategory::Attribute, has.clone().into())?;
+
+        let constraint = self.constraints.add_constraint(has);
+        Ok(constraint.as_has().unwrap())
+    }
+
+    pub fn add_has_list(
+        &mut self,
+        owner: Variable,
+        attributes: Variable,
+        source_span: Option<Span>,
+    ) -> Result<&Has<Variable>, Box<RepresentationError>> {
+        let has = Has::new(owner, attributes, InterfaceOrdering::Ordered, source_span);
+        self.context.set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
+        self.context.set_variable_category(attributes, VariableCategory::AttributeList, has.clone().into())?;
 
         let constraint = self.constraints.add_constraint(has);
         Ok(constraint.as_has().unwrap())
@@ -344,7 +384,18 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         role_type: Variable,
         source_span: Option<Span>,
     ) -> Result<&Links<Variable>, Box<RepresentationError>> {
-        let links = Constraint::from(Links::new(relation, player, role_type, source_span));
+        self.add_links_with_ordering(relation, player, role_type, InterfaceOrdering::Unordered, source_span)
+    }
+
+    pub fn add_links_with_ordering(
+        &mut self,
+        relation: Variable,
+        player: Variable,
+        role_type: Variable,
+        ordering: InterfaceOrdering,
+        source_span: Option<Span>,
+    ) -> Result<&Links<Variable>, Box<RepresentationError>> {
+        let links = Constraint::from(Links::new(relation, player, role_type, ordering, source_span));
 
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
@@ -395,7 +446,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn add_builtin_function_binding(
         &mut self,
-        mut assigned: Vec<AssignedVariable>,
+        assigned: Vec<AssignedVariable>,
         builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
@@ -682,6 +733,32 @@ pub enum Constraint<ID> {
     Value(Value<ID>),
     LinksDeduplication(LinksDeduplication<ID>),
     Unsatisfiable(Unsatisfiable),
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
+pub enum InterfaceOrdering {
+    #[default]
+    Unordered,
+    Ordered,
+}
+
+impl StructuralEquality for InterfaceOrdering {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self))
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl fmt::Display for InterfaceOrdering {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Unordered => write!(f, ""),
+            Self::Ordered => write!(f, "[]"),
+        }
+    }
 }
 
 impl<ID: IrID> Constraint<ID> {
@@ -1785,15 +1862,23 @@ pub struct Links<ID> {
     relation: Vertex<ID>,
     player: Vertex<ID>,
     role_type: Vertex<ID>,
+    ordering: InterfaceOrdering,
     source_span: Option<Span>,
 }
 
 impl<ID> Links<ID> {
-    pub fn new(relation: ID, player: ID, role_type: ID, source_span: Option<Span>) -> Self {
+    pub fn new(
+        relation: ID,
+        player: ID,
+        role_type: ID,
+        ordering: InterfaceOrdering,
+        source_span: Option<Span>,
+    ) -> Self {
         Self {
             relation: Vertex::Variable(relation),
             player: Vertex::Variable(player),
             role_type: Vertex::Variable(role_type),
+            ordering,
             source_span,
         }
     }
@@ -1814,6 +1899,10 @@ impl<ID: IrID> Links<ID> {
 
     pub fn role_type(&self) -> &Vertex<ID> {
         &self.role_type
+    }
+
+    pub fn ordering(&self) -> InterfaceOrdering {
+        self.ordering
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> {
@@ -1838,6 +1927,7 @@ impl<ID: IrID> Links<ID> {
             relation: self.relation.map(mapping),
             player: self.player.map(mapping),
             role_type: self.role_type.map(mapping),
+            ordering: self.ordering,
             source_span: self.source_span,
         }
     }
@@ -1854,6 +1944,7 @@ impl<ID: Hash> Hash for Links<ID> {
         Hash::hash(&self.relation, state);
         Hash::hash(&self.player, state);
         Hash::hash(&self.role_type, state);
+        Hash::hash(&self.ordering, state);
     }
 }
 
@@ -1861,7 +1952,10 @@ impl<ID: PartialEq> Eq for Links<ID> {}
 
 impl<ID: PartialEq> PartialEq for Links<ID> {
     fn eq(&self, other: &Self) -> bool {
-        self.relation.eq(&other.relation) && self.player.eq(&other.player) && self.role_type.eq(&other.role_type)
+        self.relation.eq(&other.relation)
+            && self.player.eq(&other.player)
+            && self.role_type.eq(&other.role_type)
+            && self.ordering.eq(&other.ordering)
     }
 }
 
@@ -1871,6 +1965,7 @@ impl<ID: StructuralEquality> StructuralEquality for Links<ID> {
         self.relation.hash_into(&mut hasher);
         self.player.hash_into(&mut hasher);
         self.role_type.hash_into(&mut hasher);
+        self.ordering.hash_into(&mut hasher);
         hasher.finish()
     }
 
@@ -1878,12 +1973,13 @@ impl<ID: StructuralEquality> StructuralEquality for Links<ID> {
         self.relation.equals(&other.relation)
             && self.player.equals(&other.player)
             && self.role_type.equals(&other.role_type)
+            && self.ordering.equals(&other.ordering)
     }
 }
 
 impl<ID: IrID> fmt::Display for Links<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} links {} (role: {})", self.relation, self.player, self.role_type)
+        write!(f, "{} links {} (role: {}{})", self.relation, self.player, self.role_type, self.ordering)
     }
 }
 
@@ -2057,12 +2153,13 @@ impl<ID: IrID> From<IndexedRelation<ID>> for Constraint<ID> {
 pub struct Has<ID> {
     owner: Vertex<ID>,
     attribute: Vertex<ID>,
+    ordering: InterfaceOrdering,
     source_span: Option<Span>,
 }
 
 impl<ID> Has<ID> {
-    pub fn new(owner: ID, attribute: ID, source_span: Option<Span>) -> Self {
-        Has { owner: Vertex::Variable(owner), attribute: Vertex::Variable(attribute), source_span }
+    pub fn new(owner: ID, attribute: ID, ordering: InterfaceOrdering, source_span: Option<Span>) -> Self {
+        Has { owner: Vertex::Variable(owner), attribute: Vertex::Variable(attribute), ordering, source_span }
     }
 
     pub fn source_span(&self) -> Option<Span> {
@@ -2077,6 +2174,10 @@ impl<ID: IrID> Has<ID> {
 
     pub fn attribute(&self) -> &Vertex<ID> {
         &self.attribute
+    }
+
+    pub fn ordering(&self) -> InterfaceOrdering {
+        self.ordering
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> {
@@ -2096,7 +2197,12 @@ impl<ID: IrID> Has<ID> {
     }
 
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Has<T> {
-        Has { owner: self.owner.map(mapping), attribute: self.attribute.map(mapping), source_span: self.source_span }
+        Has {
+            owner: self.owner.map(mapping),
+            attribute: self.attribute.map(mapping),
+            ordering: self.ordering,
+            source_span: self.source_span,
+        }
     }
 }
 
@@ -2110,11 +2216,12 @@ impl<ID: Hash> Hash for Has<ID> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Hash::hash(&self.owner, state);
         Hash::hash(&self.attribute, state);
+        Hash::hash(&self.ordering, state);
     }
 }
 impl<ID: PartialEq> PartialEq for Has<ID> {
     fn eq(&self, other: &Self) -> bool {
-        self.owner.eq(&other.owner) && self.attribute.eq(&other.attribute)
+        self.owner.eq(&other.owner) && self.attribute.eq(&other.attribute) && self.ordering.eq(&other.ordering)
     }
 }
 
@@ -2125,17 +2232,20 @@ impl<ID: StructuralEquality> StructuralEquality for Has<ID> {
         let mut hasher = DefaultHasher::new();
         self.owner.hash_into(&mut hasher);
         self.attribute.hash_into(&mut hasher);
+        self.ordering.hash_into(&mut hasher);
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.owner.equals(&other.owner) && self.attribute.equals(&other.attribute)
+        self.owner.equals(&other.owner)
+            && self.attribute.equals(&other.attribute)
+            && self.ordering.equals(&other.ordering)
     }
 }
 
 impl<ID: IrID> fmt::Display for Has<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} has {}", self.owner, self.attribute)
+        write!(f, "{} has{} {}", self.owner, self.ordering, self.attribute)
     }
 }
 

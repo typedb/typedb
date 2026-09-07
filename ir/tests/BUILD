@@ -23,6 +23,7 @@ rust_test(
     deps = [
         "//answer",
         "//common/bytes",
+        "//common/error",
         "//encoding",
         "//ir:ir",
         "@typeql//rust:typeql",
