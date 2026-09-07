@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use answer::variable::Variable;
 use error::UnimplementedFeature;
 use typeql::{
-    Expression, Statement,
+    Expression, Statement, TypeRef,
     common::Spanned,
     query::stage::{
         Put,
@@ -29,7 +29,7 @@ use crate::{
     translation::{
         PipelineTranslationContext,
         constraints::{add_statement, add_typeql_isa, add_typeql_relation, register_typeql_var},
-        match_::{add_optional, add_patterns},
+        match_::add_optional,
         verify_variable_available,
     },
 };
@@ -39,7 +39,7 @@ pub fn translate_insert(
     value_parameters: &mut ParameterRegistry,
     insert: &typeql::query::stage::Insert,
 ) -> Result<Block, Box<RepresentationError>> {
-    validate_insert_patterns(&insert.patterns)?;
+    validate_insert_patterns(context, &insert.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
@@ -47,14 +47,20 @@ pub fn translate_insert(
     builder.finish()
 }
 
-fn validate_insert_patterns(insert_patterns: &[WritePattern]) -> Result<(), Box<RepresentationError>> {
+fn validate_insert_patterns(
+    context: &PipelineTranslationContext,
+    insert_patterns: &[WritePattern],
+) -> Result<(), Box<RepresentationError>> {
     for pattern in insert_patterns {
-        validate_insert_pattern(pattern)?;
+        validate_insert_pattern(context, pattern)?;
     }
     Ok(())
 }
 
-fn validate_insert_pattern(pattern: &WritePattern) -> Result<(), Box<RepresentationError>> {
+fn validate_insert_pattern(
+    context: &PipelineTranslationContext,
+    pattern: &WritePattern,
+) -> Result<(), Box<RepresentationError>> {
     match pattern {
         WritePattern::Optional(typeql::pattern::Optional { patterns, .. }) => {
             for pattern in patterns {
@@ -65,18 +71,9 @@ fn validate_insert_pattern(pattern: &WritePattern) -> Result<(), Box<Representat
                 }
             }
         }
-        WritePattern::If(WritePatternIf { statements, .. }) => {
-            for statement in statements {
-                if let Statement::Thing(thing_stmt) = statement {
-                    for constraint in &thing_stmt.constraints {
-                        if let Constraint::Iid(_) = constraint {
-                            return Err(Box::new(RepresentationError::IllegalStatementForInsert {
-                                source_span: thing_stmt.span(),
-                            }));
-                        }
-                    }
-                }
-            }
+        WritePattern::If(WritePatternIf { conditions, patterns, .. }) => {
+            validate_if_conditions(context, conditions)?;
+            validate_insert_patterns(context, patterns)?;
         }
         WritePattern::Statement(Statement::Thing(thing_stmt)) => {
             for constraint in &thing_stmt.constraints {
@@ -90,9 +87,34 @@ fn validate_insert_pattern(pattern: &WritePattern) -> Result<(), Box<Representat
                 }
             }
         }
-        WritePattern::Statement(Statement::IsSet(_)) => (),
         WritePattern::Statement(stmt) => {
             return Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: stmt.span() }));
+        }
+    }
+    Ok(())
+}
+
+fn validate_if_conditions(
+    context: &PipelineTranslationContext,
+    conditions: &[WriteCondition],
+) -> Result<(), Box<RepresentationError>> {
+    for condition in conditions {
+        match condition {
+            WriteCondition::Isa { variable, isa, .. } => {
+                verify_variable_available!(context, variable => IfConditionVariableUnavailable)?;
+                if let TypeRef::Variable(type_) = &isa.type_ {
+                    verify_variable_available!(context, type_ => IfConditionVariableUnavailable)?;
+                }
+            }
+            WriteCondition::Comparison(comparison) => {
+                validate_write_stage_expression_variables_availability(context, &comparison.lhs)?;
+                validate_write_stage_expression_variables_availability(context, &comparison.comparison.rhs)?;
+            }
+            WriteCondition::IsSet(is_set) => {
+                for variable in &is_set.variables {
+                    verify_variable_available!(context, variable => IfConditionVariableUnavailable)?;
+                }
+            }
         }
     }
     Ok(())
@@ -107,14 +129,12 @@ fn add_write_patterns(
         match pattern {
             WritePattern::Statement(statement) => add_statement(function_index, conjunction, statement)?,
             WritePattern::Optional(optional) => add_optional(function_index, conjunction, optional)?,
-            WritePattern::If(wif) => {
-                let mut optional_builder = conjunction.add_optional(wif.span)?;
-                for condition in &wif.conditions {
+            WritePattern::If(if_statement) => {
+                let mut optional_builder = conjunction.add_optional(if_statement.span)?;
+                for condition in &if_statement.conditions {
                     add_write_condition(function_index, &mut optional_builder, condition)?;
                 }
-                for statement in &wif.statements {
-                    add_statement(function_index, &mut optional_builder, statement)?;
-                }
+                add_write_patterns(function_index, &mut optional_builder, &if_statement.patterns)?;
             }
         }
     }
@@ -166,7 +186,7 @@ pub fn translate_put(
     value_parameters: &mut ParameterRegistry,
     put: &Put,
 ) -> Result<Block, Box<RepresentationError>> {
-    validate_insert_patterns(&put.patterns)?;
+    validate_insert_patterns(context, &put.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context_for_writes(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     let mut conjunction = builder.conjunction_mut();
@@ -322,9 +342,10 @@ fn validate_update_pattern(
                 }
             }
         }
-        WritePattern::If(WritePatternIf { statements, .. }) => {
-            for statement in statements {
-                validate_update_statement(context, statement)?;
+        WritePattern::If(WritePatternIf { conditions, patterns, .. }) => {
+            for pattern in patterns {
+                validate_if_conditions(context, conditions)?;
+                validate_update_pattern(context, pattern)?;
             }
         }
         WritePattern::Statement(statement) => validate_update_statement(context, statement)?,
@@ -352,10 +373,10 @@ fn validate_update_statement(
                         verify_variable_available!(context, variable => UpdateVariableUnavailable)?;
                     }
                     HasValue::Expression(expression) => {
-                        validate_update_expression_variables_availability(context, expression)?
+                        validate_write_stage_expression_variables_availability(context, expression)?
                     }
                     HasValue::Comparison(comparison) => {
-                        validate_update_expression_variables_availability(context, &comparison.rhs)?
+                        validate_write_stage_expression_variables_availability(context, &comparison.rhs)?
                     }
                 },
                 Constraint::Links(links_constraint) => {
@@ -372,16 +393,14 @@ fn validate_update_statement(
                 }
             }
         }
-    } else if let Statement::IsSet(_) = statement {
-        // Is set is allowed. Do nothing.
     } else {
         return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: statement.span() }));
     }
     Ok(())
 }
 
-fn validate_update_expression_variables_availability(
-    context: &mut PipelineTranslationContext,
+fn validate_write_stage_expression_variables_availability(
+    context: &PipelineTranslationContext,
     expression: &Expression,
 ) -> Result<(), Box<RepresentationError>> {
     match expression {
@@ -391,7 +410,7 @@ fn validate_update_expression_variables_availability(
         }
         Expression::ListIndex(list_index) => {
             verify_variable_available!(context, list_index.variable => DeleteVariableUnavailable)?;
-            validate_update_expression_variables_availability(context, &list_index.index)
+            validate_write_stage_expression_variables_availability(context, &list_index.index)
         }
         Expression::Value(value) => Ok(()),
         Expression::Function(function_call) => {
@@ -400,20 +419,21 @@ fn validate_update_expression_variables_availability(
             function_call
                 .args
                 .iter()
-                .try_fold((), |_, arg| validate_update_expression_variables_availability(context, arg))
+                .try_fold((), |_, arg| validate_write_stage_expression_variables_availability(context, arg))
         }
         Expression::Operation(operation) => {
-            validate_update_expression_variables_availability(context, &operation.left)?;
-            validate_update_expression_variables_availability(context, &operation.right)
+            validate_write_stage_expression_variables_availability(context, &operation.left)?;
+            validate_write_stage_expression_variables_availability(context, &operation.right)
         }
-        Expression::Paren(paren) => validate_update_expression_variables_availability(context, &paren.inner),
-        Expression::List(list) => {
-            list.items.iter().try_fold((), |_, item| validate_update_expression_variables_availability(context, item))
-        }
+        Expression::Paren(paren) => validate_write_stage_expression_variables_availability(context, &paren.inner),
+        Expression::List(list) => list
+            .items
+            .iter()
+            .try_fold((), |_, item| validate_write_stage_expression_variables_availability(context, item)),
         Expression::ListIndexRange(list_index_range) => {
             verify_variable_available!(context, list_index_range.var => DeleteVariableUnavailable)?;
-            validate_update_expression_variables_availability(context, &list_index_range.from)?;
-            validate_update_expression_variables_availability(context, &list_index_range.to)
+            validate_write_stage_expression_variables_availability(context, &list_index_range.from)?;
+            validate_write_stage_expression_variables_availability(context, &list_index_range.to)
         }
         Expression::ScopedLabel(_) => Ok(()),
         Expression::Label(_) => Ok(()),
