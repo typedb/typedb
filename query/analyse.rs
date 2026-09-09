@@ -146,7 +146,7 @@ pub fn build_pipeline_annotations(
     let mut pipeline_annotations = Vec::with_capacity(structure.parametrised_structure.conjunctions.len());
     pipeline_annotations.resize(structure.parametrised_structure.conjunctions.len(), BTreeMap::new());
     stages.iter().enumerate().for_each(|(index, stage)| match stage {
-        | AnnotatedStage::Match { block, block_annotations, .. }
+        AnnotatedStage::Match { block, block_annotations, .. }
         | AnnotatedStage::Put { block, match_annotations: block_annotations, .. }
         | AnnotatedStage::Insert { block, annotations: block_annotations, .. }
         | AnnotatedStage::Update { block, annotations: block_annotations, .. }
@@ -429,7 +429,7 @@ struct LastStageAnnotations<'a>(&'a [AnnotatedStage]);
 impl<'a> LastStageAnnotations<'a> {
     pub fn get(&self, vertex: &Vertex<Variable>) -> Option<Either<Arc<BTreeSet<Type>>, ExpressionValueType>> {
         self.0.iter().rev().find_map(|stage| match stage {
-            | AnnotatedStage::Match { block_annotations, block, .. }
+            AnnotatedStage::Match { block_annotations, block, .. }
             | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
             | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
             | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {

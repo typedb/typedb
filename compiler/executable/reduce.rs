@@ -56,7 +56,7 @@ impl<ID: IrID> ReduceInstruction<ID> {
         match *self {
             Self::Count => None,
 
-            | ReduceInstruction::CountVar(id)
+            ReduceInstruction::CountVar(id)
             | ReduceInstruction::SumInteger(id)
             | ReduceInstruction::MaxInteger(id)
             | ReduceInstruction::MinInteger(id)

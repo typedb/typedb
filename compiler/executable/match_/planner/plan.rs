@@ -321,7 +321,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             }
             let category = variable_registry.get_variable_category(variable).unwrap();
             match category {
-                | VariableCategory::Type
+                VariableCategory::Type
                 | VariableCategory::ThingType
                 | VariableCategory::AttributeType
                 | VariableCategory::RoleType => self.register_type_var(variable),

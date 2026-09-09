@@ -260,13 +260,13 @@ impl<T: ThingAPI> InstanceIDMapping<T> {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct PendingOwnership {
     attribute_original_id: String,
-    owner_iid: Vec<u8>,
+    owner_iid: IID,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct PendingRolePlayer {
     player_original_id: String,
-    relation_iid: Vec<u8>,
+    relation_iid: IID,
     role_type_id: TypeIDUInt,
 }
 
@@ -517,7 +517,7 @@ impl DatabaseImporter {
                     self.data_info
                         .attributes
                         .pending_ownerships
-                        .append(PendingOwnership { attribute_original_id: id, owner_iid: object.iid().to_vec() })?;
+                        .append(PendingOwnership { attribute_original_id: id, owner_iid: object.iid().into_array() })?;
                 }
             }
         }
@@ -651,7 +651,7 @@ impl DatabaseImporter {
                     None => {
                         self.data_info.objects.pending_role_players.append(PendingRolePlayer {
                             player_original_id: id,
-                            relation_iid: relation.iid().to_vec(),
+                            relation_iid: relation.iid().into_array(),
                             role_type_id: role_type.vertex().type_id_().as_u16(),
                         })?;
                     }

@@ -371,7 +371,7 @@ impl AnnotationRange {
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
         match value_type {
             Some(value_type) => match &value_type {
-                | ValueType::Boolean
+                ValueType::Boolean
                 | ValueType::Integer
                 | ValueType::Double
                 | ValueType::Decimal
@@ -380,7 +380,7 @@ impl AnnotationRange {
                 | ValueType::DateTimeTZ
                 | ValueType::String => true,
 
-                | ValueType::Duration | ValueType::Struct(_) => false,
+                ValueType::Duration | ValueType::Struct(_) => false,
             },
             None => false,
         }
@@ -485,7 +485,7 @@ impl AnnotationValues {
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
         match value_type {
             Some(value_type) => match &value_type {
-                | ValueType::Boolean
+                ValueType::Boolean
                 | ValueType::Integer
                 | ValueType::Double
                 | ValueType::Decimal
@@ -495,7 +495,7 @@ impl AnnotationValues {
                 | ValueType::Duration
                 | ValueType::String => true,
 
-                | ValueType::Struct(_) => false,
+                ValueType::Struct(_) => false,
             },
             None => false,
         }
@@ -703,7 +703,7 @@ impl AnnotationCategory {
             AnnotationCategory::Unique => !matches!(other, AnnotationCategory::Key),
             AnnotationCategory::Cardinality => !matches!(other, AnnotationCategory::Key),
             AnnotationCategory::Key => !matches!(other, AnnotationCategory::Unique | AnnotationCategory::Cardinality),
-            | AnnotationCategory::Abstract
+            AnnotationCategory::Abstract
             | AnnotationCategory::Distinct
             | AnnotationCategory::Independent
             | AnnotationCategory::Regex
@@ -717,14 +717,14 @@ impl AnnotationCategory {
 
     pub fn has_parameter(&self) -> bool {
         match self {
-            | AnnotationCategory::Abstract
+            AnnotationCategory::Abstract
             | AnnotationCategory::Key
             | AnnotationCategory::Unique
             | AnnotationCategory::Distinct
             | AnnotationCategory::Independent
             | AnnotationCategory::Cascade => false,
 
-            | AnnotationCategory::Cardinality
+            AnnotationCategory::Cardinality
             | AnnotationCategory::Regex
             | AnnotationCategory::Range
             | AnnotationCategory::Values
@@ -1137,7 +1137,7 @@ mod serialize_annotation {
 
     fn serialize_value(value: Value<'_>) -> Vec<u8> {
         match value.value_type().category() {
-            | ValueTypeCategory::Boolean
+            ValueTypeCategory::Boolean
             | ValueTypeCategory::Integer
             | ValueTypeCategory::Double
             | ValueTypeCategory::Decimal
@@ -1202,7 +1202,7 @@ mod serialize_annotation {
     fn serialize_annotation_range_value_field(value: Option<Value<'_>>) -> Option<Vec<u8>> {
         let value = value?;
         match value.value_type().category() {
-            | ValueTypeCategory::Boolean
+            ValueTypeCategory::Boolean
             | ValueTypeCategory::Integer
             | ValueTypeCategory::Double
             | ValueTypeCategory::Decimal
@@ -1221,7 +1221,7 @@ mod serialize_annotation {
     ) -> Option<Value<'static>> {
         let bytes = bytes_opt?;
         match &value_type_category {
-            | ValueTypeCategory::Boolean
+            ValueTypeCategory::Boolean
             | ValueTypeCategory::Integer
             | ValueTypeCategory::Double
             | ValueTypeCategory::Decimal
@@ -1405,7 +1405,7 @@ mod serialize_annotation {
         values
             .iter()
             .map(|value| match value {
-                | Value::Boolean(_)
+                Value::Boolean(_)
                 | Value::Integer(_)
                 | Value::Double(_)
                 | Value::Decimal(_)

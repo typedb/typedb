@@ -583,7 +583,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationMeta => {
                         Annotation::Meta(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
-                    | Infix::_PropertyAnnotationLast
+                    Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey
                     | Infix::PropertyLabel
@@ -683,7 +683,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationMeta => {
                         Annotation::Meta(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
                     }
-                    | Infix::_PropertyAnnotationLast
+                    Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationCascade
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType

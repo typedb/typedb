@@ -304,7 +304,7 @@ impl FunctionManager {
                         FunctionAnnotation::Meta(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
 
-                    | Infix::PropertyAnnotationAbstract
+                    Infix::PropertyAnnotationAbstract
                     | Infix::PropertyAnnotationDistinct
                     | Infix::PropertyAnnotationIndependent
                     | Infix::PropertyAnnotationCardinality
