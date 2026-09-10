@@ -937,8 +937,15 @@ impl CheckExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            if Checker::filter(&self.checks, context, &input_row, self.profile.storage_counters())
-                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
+            if Checker::filter(
+                &self.checks,
+                &input_row,
+                context.snapshot.as_ref(),
+                &context.thing_manager,
+                &context.parameters,
+                self.profile.storage_counters(),
+            )
+            .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {
                     row.copy_mapped(input_row, self.selected_variables.iter().map(|pos| (*pos, *pos)));
