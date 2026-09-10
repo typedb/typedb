@@ -640,7 +640,7 @@ features = {}
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			tag = "3.13.0-rc0"
+			rev = "5485e04a51c79ad1d29477db7532003c84983751"
 
 		[workspace.dependencies.unicase]
 			default-features = false

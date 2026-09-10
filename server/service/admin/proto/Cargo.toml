@@ -25,5 +25,5 @@ features = {}
 [build-dependencies]
 
 	[build-dependencies.tonic-build]
-		version = "^0.12"
+		version = "0.12"
 
