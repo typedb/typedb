@@ -18,7 +18,7 @@ use bytes::{
     util::{concat_bytes, increment},
 };
 use encoding::{
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    AsBytes, Decodable, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         Typed,
         thing::{
@@ -68,7 +68,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
 };
-use tracing::debug;
+use tracing::trace;
 
 use crate::{
     ConceptStatus,
@@ -2054,7 +2054,7 @@ impl ThingManager {
                     continue;
                 }
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
-                once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
+                once(&relation_type).chain(&subtypes).try_for_each(|type_| {
                     let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
                     if is_cascade {
                         let mut relations: InstanceIterator<Relation> = self.get_instances_in(
@@ -2150,7 +2150,7 @@ impl ThingManager {
                 continue;
             }
             let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
-            once(&attribute_type).chain(subtypes.into_iter()).try_for_each(|type_| {
+            once(&attribute_type).chain(&subtypes).try_for_each(|type_| {
                 let is_independent = type_.is_independent(snapshot, self.type_manager())?;
                 if let Some(value_type) = type_.get_value_type_without_source(snapshot, self.type_manager())? {
                     if !is_independent {
@@ -3029,63 +3029,96 @@ fn register_delete_in_cleanup_intervals(
     cleanup_intervals: &mut CleanupIntervals,
     key: StorageKeyArray<BUFFER_KEY_INLINE>,
 ) {
-    if let Some(object) = ObjectVertex::try_decode(key.bytes()) {
-        let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
-        cleanup_intervals.insert(
-            prefix.resize_to(),
-            StorageKey::Array(key).resize_to(),
-            ObjectVertex::FIXED_WIDTH_ENCODING,
-        );
-    } else if let Some(attr) = AttributeVertex::try_decode(key.bytes()) {
-        let prefix = AttributeVertex::build_prefix_type(attr.prefix(), attr.type_id_(), attr.keyspace());
-        cleanup_intervals.insert(
-            prefix.resize_to(),
-            StorageKey::Array(key).resize_to(),
-            AttributeVertex::FIXED_WIDTH_ENCODING,
-        );
-    } else if let Some(has) = ThingEdgeHas::try_decode(key.bytes()) {
-        let prefix = ThingEdgeHas::prefix_from_type(Object::new(has.from()).type_().vertex());
-        cleanup_intervals.insert(
-            prefix.resize_to(),
-            StorageKey::Array(key).resize_to(),
-            ThingEdgeHas::FIXED_WIDTH_ENCODING,
-        );
-    } else if let Some(reverse_has) = ThingEdgeHasReverse::try_decode(key.bytes()) {
-        let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
-            reverse_has.from().value_type_category(),
-            reverse_has.from().type_id_(),
-        );
-        cleanup_intervals.insert(
-            prefix.resize_to(),
-            StorageKey::Array(key).resize_to(),
-            ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
-        );
-    } else if let Some(links) = ThingEdgeLinks::try_decode(key.bytes()) {
-        let prefix = if links.is_reverse() {
-            ThingEdgeLinks::prefix_reverse_from_player_type(
-                Object::new(links.from()).type_().vertex().prefix(),
-                links.from().type_id_(),
-            )
-        } else {
-            ThingEdgeLinks::prefix_from_relation_type(links.from().type_id_())
-        };
-        cleanup_intervals.insert(
-            prefix.resize_to(),
-            StorageKey::Array(key).resize_to(),
-            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-        );
-    } else if let Some(links_index) = ThingEdgeIndexedRelation::try_decode(key.bytes()) {
-        let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
-            links_index.relation_type_id(),
-            Object::new(links_index.from()).type_().vertex().prefix(),
-            links_index.from().type_id_(),
-        );
-        cleanup_intervals.insert(
-            prefix.resize_to(),
-            StorageKey::Array(key).resize_to(),
-            ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
-        );
-    } else {
-        debug!("Unhandled delete when constructing compaction record!")
+    match Decodable::try_decode(key.bytes()) {
+        Some(Decodable::EntityVertex(object)) | Some(Decodable::RelationVertex(object)) => {
+            let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
+            cleanup_intervals.insert(
+                prefix.resize_to(),
+                StorageKey::Array(key).resize_to(),
+                ObjectVertex::FIXED_WIDTH_ENCODING,
+            );
+        }
+        Some(Decodable::AttributeVertex(attribute)) => {
+            let prefix =
+                AttributeVertex::build_prefix_type(attribute.prefix(), attribute.type_id_(), attribute.keyspace());
+            cleanup_intervals.insert(
+                prefix.resize_to(),
+                StorageKey::Array(key).resize_to(),
+                AttributeVertex::FIXED_WIDTH_ENCODING,
+            );
+        }
+
+        Some(Decodable::ThingEdgeHas(thing_edge_has)) => {
+            let prefix = ThingEdgeHas::prefix_from_type(Object::new(thing_edge_has.from()).type_().vertex());
+            cleanup_intervals.insert(
+                prefix.resize_to(),
+                StorageKey::Array(key).resize_to(),
+                ThingEdgeHas::FIXED_WIDTH_ENCODING,
+            );
+        }
+        Some(Decodable::ThingEdgeHasReverse(thing_edge_has_reverse)) => {
+            let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
+                thing_edge_has_reverse.from().value_type_category(),
+                thing_edge_has_reverse.from().type_id_(),
+            );
+            cleanup_intervals.insert(
+                prefix.resize_to(),
+                StorageKey::Array(key).resize_to(),
+                ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
+            );
+        }
+        Some(Decodable::ThingEdgeLinks(thing_edge_links)) => {
+            let prefix = if thing_edge_links.is_reverse() {
+                ThingEdgeLinks::prefix_reverse_from_player_type(
+                    Object::new(thing_edge_links.from()).type_().vertex().prefix(),
+                    thing_edge_links.from().type_id_(),
+                )
+            } else {
+                ThingEdgeLinks::prefix_from_relation_type(thing_edge_links.from().type_id_())
+            };
+            cleanup_intervals.insert(
+                prefix.resize_to(),
+                StorageKey::Array(key).resize_to(),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            );
+        }
+        Some(Decodable::ThingEdgeIndexedRelation(thing_edge_indexed_relation)) => {
+            let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
+                thing_edge_indexed_relation.relation_type_id(),
+                Object::new(thing_edge_indexed_relation.from()).type_().vertex().prefix(),
+                thing_edge_indexed_relation.from().type_id_(),
+            );
+            cleanup_intervals.insert(
+                prefix.resize_to(),
+                StorageKey::Array(key).resize_to(),
+                ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
+            );
+        }
+
+        None
+        | Some(Decodable::VertexEntityType(_))
+        | Some(Decodable::VertexRelationType(_))
+        | Some(Decodable::VertexAttributeType(_))
+        | Some(Decodable::VertexRoleType(_))
+        | Some(Decodable::DefinitionStruct(_))
+        | Some(Decodable::DefinitionFunction(_))
+        | Some(Decodable::TypeEdgeSub(_))
+        | Some(Decodable::TypeEdgeSubReverse(_))
+        | Some(Decodable::TypeEdgeOwns(_))
+        | Some(Decodable::TypeEdgeOwnsReverse(_))
+        | Some(Decodable::TypeEdgePlays(_))
+        | Some(Decodable::TypeEdgePlaysReverse(_))
+        | Some(Decodable::TypeEdgeRelates(_))
+        | Some(Decodable::TypeEdgeRelatesReverse(_))
+        | Some(Decodable::PropertyTypeVertex(_))
+        | Some(Decodable::PropertyTypeEdge(_))
+        | Some(Decodable::PropertyObjectVertex(_))
+        | Some(Decodable::PropertyFunction(_))
+        | Some(Decodable::IndexLabelToType(_))
+        | Some(Decodable::IndexNameToDefinitionStruct(_))
+        | Some(Decodable::IndexNameToDefinitionFunction(_))
+        | Some(Decodable::IndexValueToStruct(_)) => {
+            trace!("Unhandled delete when constructing compaction record!")
+        }
     }
 }

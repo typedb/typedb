@@ -13,17 +13,13 @@ use std::{
     time::Instant,
 };
 
-use bytes::Bytes;
 use durability::DurabilityRecordType;
-use encoding::graph::{
-    Typed,
-    thing::{
-        ThingVertex,
-        edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
-        vertex_attribute::AttributeVertex,
-        vertex_object::ObjectVertex,
+use encoding::{
+    Decodable,
+    graph::{
+        Typed,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     },
-    type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
 };
 use error::typedb_error;
 use resource::{
@@ -38,7 +34,7 @@ use storage::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     iterator::MVCCReadError,
-    key_value::{StorageKeyArray, StorageKeyReference},
+    key_value::StorageKeyArray,
     keyspace::IteratorPool,
     record::CommitType,
     recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
@@ -250,83 +246,116 @@ impl Statistics {
         for (key, write) in writes.operations.iterate_writes() {
             let delta =
                 write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
-            if ObjectVertex::is_entity_vertex(StorageKeyReference::from(&key)) {
-                let type_ = Entity::new(ObjectVertex::decode(key.bytes())).type_();
-                self.update_entities(type_, delta);
-                total_delta += delta;
-            } else if ObjectVertex::is_relation_vertex(StorageKeyReference::from(&key)) {
-                let type_ = Relation::new(ObjectVertex::decode(key.bytes())).type_();
-                self.update_relations(type_, delta);
-                total_delta += delta;
-            } else if AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)) {
-                let type_ = Attribute::new(AttributeVertex::decode(key.bytes())).type_();
-                self.update_attributes(type_, delta);
-            } else if ThingEdgeHas::is_has(&key) {
-                let edge = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
-                self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
-                total_delta += delta;
-            } else if ThingEdgeLinks::is_links(&key) {
-                let edge = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
-                let role_type = RoleType::build_from_type_id(edge.role_id());
-                self.update_role_player(
-                    Object::new(edge.to()).type_(),
-                    role_type,
-                    Relation::new(edge.from()).type_(),
-                    delta,
-                );
-                total_delta += delta;
-            } else if ThingEdgeIndexedRelation::is_index(&key) {
-                let edge = ThingEdgeIndexedRelation::decode(Bytes::Reference(key.bytes()));
-                self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
-                // note: don't update total count based on index
-            } else if EntityType::is_decodable_from_key(&key) {
-                if matches!(write, Write::Delete) {
-                    let type_ = EntityType::read_from(Bytes::Reference(key.bytes()).into_owned());
-                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
-                        this.entity_counts.remove(&type_);
-                        this.clear_object_type(ObjectType::Entity(type_));
-                    }));
+            match Decodable::try_decode(key.bytes()) {
+                Some(Decodable::EntityVertex(entity_vertex)) => {
+                    let type_ = Entity::new(entity_vertex).type_();
+                    self.update_entities(type_, delta);
+                    total_delta += delta;
                 }
-                // note: don't update total count based on type updates
-            } else if RelationType::is_decodable_from_key(&key) {
-                if matches!(write, Write::Delete) {
-                    let type_ = RelationType::read_from(Bytes::Reference(key.bytes()).into_owned());
-                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
-                        this.relation_counts.remove(&type_);
-                        this.relation_role_counts.remove(&type_);
-                        this.clear_object_type(ObjectType::Relation(type_));
-                    }));
+                Some(Decodable::RelationVertex(relation_vertex)) => {
+                    let type_ = Relation::new(relation_vertex).type_();
+                    self.update_relations(type_, delta);
+                    total_delta += delta;
                 }
-                // note: don't update total count based on type updates
-            } else if AttributeType::is_decodable_from_key(&key) {
-                if matches!(write, Write::Delete) {
-                    let type_ = AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned());
-                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
-                        this.attribute_counts.remove(&type_);
-                        this.attribute_owner_counts.remove(&type_);
-                        for map in this.has_attribute_counts.values_mut() {
-                            map.remove(&type_);
-                        }
-                        this.has_attribute_counts.retain(|_, map| !map.is_empty());
-                    }));
+                Some(Decodable::AttributeVertex(attribute_vertex)) => {
+                    let type_ = Attribute::new(attribute_vertex).type_();
+                    self.update_attributes(type_, delta);
                 }
-                // note: don't update total count based on type updates
-            } else if RoleType::is_decodable_from_key(&key) {
-                if matches!(write, Write::Delete) {
-                    let type_ = RoleType::read_from(Bytes::Reference(key.bytes()).into_owned());
-                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
-                        this.role_counts.remove(&type_);
-                        for map in this.role_player_counts.values_mut() {
-                            map.remove(&type_);
-                        }
-                        this.role_player_counts.retain(|_, map| !map.is_empty());
-                        for map in this.relation_role_counts.values_mut() {
-                            map.remove(&type_);
-                        }
-                        this.relation_role_counts.retain(|_, map| !map.is_empty());
-                    }));
+
+                Some(Decodable::ThingEdgeHas(has_edge)) => {
+                    self.update_has(Object::new(has_edge.from()).type_(), Attribute::new(has_edge.to()).type_(), delta);
+                    total_delta += delta;
                 }
-                // note: don't update total count based on type updates
+                Some(Decodable::ThingEdgeHasReverse(_)) => (),
+                Some(Decodable::ThingEdgeLinks(links_edge)) => {
+                    if !links_edge.is_reverse() {
+                        let role_type = RoleType::build_from_type_id(links_edge.role_id());
+                        self.update_role_player(
+                            Object::new(links_edge.to()).type_(),
+                            role_type,
+                            Relation::new(links_edge.from()).type_(),
+                            delta,
+                        );
+                        total_delta += delta;
+                    }
+                }
+                Some(Decodable::ThingEdgeIndexedRelation(edge)) => {
+                    self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
+                    // note: don't update total count based on index
+                }
+
+                Some(Decodable::VertexEntityType(entity_type_vertex)) => {
+                    if matches!(write, Write::Delete) {
+                        let type_ = EntityType::new(entity_type_vertex);
+                        deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                            this.entity_counts.remove(&type_);
+                            this.clear_object_type(ObjectType::Entity(type_));
+                        }));
+                    }
+                    // note: don't update total count based on type updates
+                }
+                Some(Decodable::VertexRelationType(relation_type_vertex)) => {
+                    if matches!(write, Write::Delete) {
+                        let type_ = RelationType::new(relation_type_vertex);
+                        deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                            this.relation_counts.remove(&type_);
+                            this.relation_role_counts.remove(&type_);
+                            this.clear_object_type(ObjectType::Relation(type_));
+                        }));
+                    }
+                    // note: don't update total count based on type updates
+                }
+                Some(Decodable::VertexAttributeType(attribute_type_vertex)) => {
+                    if matches!(write, Write::Delete) {
+                        let type_ = AttributeType::new(attribute_type_vertex);
+                        deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                            this.attribute_counts.remove(&type_);
+                            this.attribute_owner_counts.remove(&type_);
+                            for map in this.has_attribute_counts.values_mut() {
+                                map.remove(&type_);
+                            }
+                            this.has_attribute_counts.retain(|_, map| !map.is_empty());
+                        }));
+                    }
+                    // note: don't update total count based on type updates
+                }
+                Some(Decodable::VertexRoleType(role_type_vertex)) => {
+                    if matches!(write, Write::Delete) {
+                        let type_ = RoleType::new(role_type_vertex);
+                        deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                            this.role_counts.remove(&type_);
+                            for map in this.role_player_counts.values_mut() {
+                                map.remove(&type_);
+                            }
+                            this.role_player_counts.retain(|_, map| !map.is_empty());
+                            for map in this.relation_role_counts.values_mut() {
+                                map.remove(&type_);
+                            }
+                            this.relation_role_counts.retain(|_, map| !map.is_empty());
+                        }));
+                    }
+                    // note: don't update total count based on type updates
+                }
+
+                None
+                | Some(Decodable::DefinitionStruct(_))
+                | Some(Decodable::DefinitionFunction(_))
+                | Some(Decodable::TypeEdgeSub(_))
+                | Some(Decodable::TypeEdgeSubReverse(_))
+                | Some(Decodable::TypeEdgeOwns(_))
+                | Some(Decodable::TypeEdgeOwnsReverse(_))
+                | Some(Decodable::TypeEdgePlays(_))
+                | Some(Decodable::TypeEdgePlaysReverse(_))
+                | Some(Decodable::TypeEdgeRelates(_))
+                | Some(Decodable::TypeEdgeRelatesReverse(_))
+                | Some(Decodable::PropertyTypeVertex(_))
+                | Some(Decodable::PropertyTypeEdge(_))
+                | Some(Decodable::PropertyObjectVertex(_))
+                | Some(Decodable::PropertyFunction(_))
+                | Some(Decodable::IndexLabelToType(_))
+                | Some(Decodable::IndexNameToDefinitionStruct(_))
+                | Some(Decodable::IndexNameToDefinitionFunction(_))
+                | Some(Decodable::IndexValueToStruct(_)) => (),
             }
         }
 
