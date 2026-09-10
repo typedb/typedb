@@ -271,7 +271,7 @@ impl<T> Checker<T> {
                 &CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                     self.filter_links_dedup_fn(row, role1, player1, role2, player2)
                 }
-                CheckInstruction::NotNone { variables } => self.filter_not_none_fn(context, row, variables),
+                CheckInstruction::NotNone { variable } => self.filter_not_none_fn(context, row, *variable),
                 &CheckInstruction::Is { lhs, rhs } => self.filter_is_fn(row, lhs, rhs),
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     self.filter_comparison_fn(context, row, lhs, rhs, *comparator, storage_counters.clone())
@@ -622,11 +622,10 @@ impl<T> Checker<T> {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
-        variables: &[ExecutorVariable],
+        variable: ExecutorVariable,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let extractors: Vec<_> =
-            variables.iter().map(|var| self.make_extractor(&CheckVertex::Variable(*var), row, context)).collect();
-        Box::new(move |value: &T| Ok(extractors.iter().all(|extractor| !extractor(value).is_none())))
+        let extractor = self.make_extractor(&CheckVertex::Variable(variable), row, context);
+        Box::new(move |value: &T| Ok(!extractor(value).is_none()))
     }
 
     fn filter_comparison_fn(
@@ -745,7 +744,7 @@ impl Checker<()> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     Self::filter_comparison(context, row, lhs, rhs, *comparator, storage_counters.clone())?
                 }
-                CheckInstruction::NotNone { variables } => Self::filter_not_none(row, variables),
+                CheckInstruction::NotNone { variable } => Self::filter_not_none(row, *variable),
                 CheckInstruction::Unsatisfiable => false,
             };
             if !passes {
@@ -961,11 +960,10 @@ impl Checker<()> {
         !(role1 == role2 && player1 == player2)
     }
 
-    fn filter_not_none(row: &MaybeOwnedRow<'_>, variables: &[ExecutorVariable]) -> bool {
-        variables.iter().all(|var| {
-            let value = get_variable_value(Some(row), var);
-            !value.is_none()
-        })
+    fn filter_not_none(row: &MaybeOwnedRow<'_>, variable: ExecutorVariable) -> bool {
+        let ExecutorVariable::RowPosition(pos) = variable else { unreachable!() };
+        let value = row.get(pos);
+        !value.is_none()
     }
 
     fn filter_comparison(

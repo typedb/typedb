@@ -609,7 +609,7 @@ pub enum CheckInstruction<ID> {
         player2: ID,
     },
     NotNone {
-        variables: Vec<ID>,
+        variable: ID,
     },
     Comparison {
         lhs: CheckVertex<ID>,
@@ -668,9 +668,7 @@ impl<ID: IrID> CheckInstruction<ID> {
                 role2: mapping[&role2],
                 player2: mapping[&player2],
             },
-            Self::NotNone { variables } => {
-                CheckInstruction::NotNone { variables: variables.iter().map(|v| mapping[&v]).collect() }
-            }
+            Self::NotNone { variable } => CheckInstruction::NotNone { variable: variable.map(mapping) },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
@@ -721,7 +719,7 @@ impl<ID: IrID> CheckInstruction<ID> {
             CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                 Box::new([*role1, *player1, *role2, *player2].into_iter())
             }
-            CheckInstruction::NotNone { variables } => Box::new(variables.iter().copied()),
+            CheckInstruction::NotNone { variable } => Box::new([*variable].into_iter()),
             CheckInstruction::Comparison { lhs, rhs, .. } => {
                 Box::new(lhs.as_variable().into_iter().chain(rhs.as_variable().into_iter()))
             }
@@ -778,8 +776,8 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
                     "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_player}",
                 )?;
             }
-            Self::NotNone { variables } => {
-                write!(f, "[{variables:?}] not_none")?;
+            Self::NotNone { variable } => {
+                write!(f, "isset ({variable:?})")?;
             }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;

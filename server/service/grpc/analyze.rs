@@ -440,6 +440,13 @@ fn query_structure_constraint(
                 })),
             });
         }
+        Constraint::IsSet(is_set) => {
+            let variables = is_set.vertices().map(encode_structure_vertex_variable).collect::<Result<Vec<_>, _>>()?;
+            constraints.push(conjunction_proto::Constraint {
+                span,
+                constraint: Some(structure_constraint::Constraint::IsSet(structure_constraint::IsSet { variables })),
+            });
+        }
         Constraint::Iid(iid) => {
             let iid_bytes = Vec::from(context.get_parameter_iid(iid.iid().as_parameter().as_ref().unwrap()).unwrap());
             constraints.push(conjunction_proto::Constraint {
