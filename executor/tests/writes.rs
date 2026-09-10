@@ -288,7 +288,6 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         &block_annotations,
         &translation_context.variable_registry,
         &block,
-        None,
     )
     .unwrap();
 
