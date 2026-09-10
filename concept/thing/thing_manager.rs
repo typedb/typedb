@@ -18,7 +18,7 @@ use bytes::{
     util::{concat_bytes, increment},
 };
 use encoding::{
-    AsBytes, Decodable, EncodingKeyspace, Keyable, Prefixed,
+    AsBytes, DecodableKey, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         Typed,
         thing::{
@@ -3029,8 +3029,8 @@ fn register_delete_in_cleanup_intervals(
     cleanup_intervals: &mut CleanupIntervals,
     key: StorageKeyArray<BUFFER_KEY_INLINE>,
 ) {
-    match Decodable::try_decode(key.bytes()) {
-        Some(Decodable::EntityVertex(object)) | Some(Decodable::RelationVertex(object)) => {
+    match DecodableKey::try_decode(key.bytes()) {
+        Some(DecodableKey::EntityVertex(object)) | Some(DecodableKey::RelationVertex(object)) => {
             let prefix = ObjectVertex::build_prefix_type(object.prefix(), object.type_id_(), object.keyspace());
             cleanup_intervals.insert(
                 prefix.resize_to(),
@@ -3038,7 +3038,7 @@ fn register_delete_in_cleanup_intervals(
                 ObjectVertex::FIXED_WIDTH_ENCODING,
             );
         }
-        Some(Decodable::AttributeVertex(attribute)) => {
+        Some(DecodableKey::AttributeVertex(attribute)) => {
             let prefix =
                 AttributeVertex::build_prefix_type(attribute.prefix(), attribute.type_id_(), attribute.keyspace());
             cleanup_intervals.insert(
@@ -3048,7 +3048,7 @@ fn register_delete_in_cleanup_intervals(
             );
         }
 
-        Some(Decodable::ThingEdgeHas(thing_edge_has)) => {
+        Some(DecodableKey::ThingEdgeHas(thing_edge_has)) => {
             let prefix = ThingEdgeHas::prefix_from_type(Object::new(thing_edge_has.from()).type_().vertex());
             cleanup_intervals.insert(
                 prefix.resize_to(),
@@ -3056,7 +3056,7 @@ fn register_delete_in_cleanup_intervals(
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
             );
         }
-        Some(Decodable::ThingEdgeHasReverse(thing_edge_has_reverse)) => {
+        Some(DecodableKey::ThingEdgeHasReverse(thing_edge_has_reverse)) => {
             let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
                 thing_edge_has_reverse.from().value_type_category(),
                 thing_edge_has_reverse.from().type_id_(),
@@ -3067,7 +3067,7 @@ fn register_delete_in_cleanup_intervals(
                 ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
             );
         }
-        Some(Decodable::ThingEdgeLinks(thing_edge_links)) => {
+        Some(DecodableKey::ThingEdgeLinks(thing_edge_links)) => {
             let prefix = if thing_edge_links.is_reverse() {
                 ThingEdgeLinks::prefix_reverse_from_player_type(
                     Object::new(thing_edge_links.from()).type_().vertex().prefix(),
@@ -3082,7 +3082,7 @@ fn register_delete_in_cleanup_intervals(
                 ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             );
         }
-        Some(Decodable::ThingEdgeIndexedRelation(thing_edge_indexed_relation)) => {
+        Some(DecodableKey::ThingEdgeIndexedRelation(thing_edge_indexed_relation)) => {
             let prefix = ThingEdgeIndexedRelation::prefix_relation_type_start_type_parts(
                 thing_edge_indexed_relation.relation_type_id(),
                 Object::new(thing_edge_indexed_relation.from()).type_().vertex().prefix(),
@@ -3096,28 +3096,28 @@ fn register_delete_in_cleanup_intervals(
         }
 
         None
-        | Some(Decodable::VertexEntityType(_))
-        | Some(Decodable::VertexRelationType(_))
-        | Some(Decodable::VertexAttributeType(_))
-        | Some(Decodable::VertexRoleType(_))
-        | Some(Decodable::DefinitionStruct(_))
-        | Some(Decodable::DefinitionFunction(_))
-        | Some(Decodable::TypeEdgeSub(_))
-        | Some(Decodable::TypeEdgeSubReverse(_))
-        | Some(Decodable::TypeEdgeOwns(_))
-        | Some(Decodable::TypeEdgeOwnsReverse(_))
-        | Some(Decodable::TypeEdgePlays(_))
-        | Some(Decodable::TypeEdgePlaysReverse(_))
-        | Some(Decodable::TypeEdgeRelates(_))
-        | Some(Decodable::TypeEdgeRelatesReverse(_))
-        | Some(Decodable::PropertyTypeVertex(_))
-        | Some(Decodable::PropertyTypeEdge(_))
-        | Some(Decodable::PropertyObjectVertex(_))
-        | Some(Decodable::PropertyFunction(_))
-        | Some(Decodable::IndexLabelToType(_))
-        | Some(Decodable::IndexNameToDefinitionStruct(_))
-        | Some(Decodable::IndexNameToDefinitionFunction(_))
-        | Some(Decodable::IndexValueToStruct(_)) => {
+        | Some(DecodableKey::VertexEntityType(_))
+        | Some(DecodableKey::VertexRelationType(_))
+        | Some(DecodableKey::VertexAttributeType(_))
+        | Some(DecodableKey::VertexRoleType(_))
+        | Some(DecodableKey::DefinitionStruct(_))
+        | Some(DecodableKey::DefinitionFunction(_))
+        | Some(DecodableKey::TypeEdgeSub(_))
+        | Some(DecodableKey::TypeEdgeSubReverse(_))
+        | Some(DecodableKey::TypeEdgeOwns(_))
+        | Some(DecodableKey::TypeEdgeOwnsReverse(_))
+        | Some(DecodableKey::TypeEdgePlays(_))
+        | Some(DecodableKey::TypeEdgePlaysReverse(_))
+        | Some(DecodableKey::TypeEdgeRelates(_))
+        | Some(DecodableKey::TypeEdgeRelatesReverse(_))
+        | Some(DecodableKey::PropertyTypeVertex(_))
+        | Some(DecodableKey::PropertyTypeEdge(_))
+        | Some(DecodableKey::PropertyObjectVertex(_))
+        | Some(DecodableKey::PropertyFunction(_))
+        | Some(DecodableKey::IndexLabelToType(_))
+        | Some(DecodableKey::IndexNameToDefinitionStruct(_))
+        | Some(DecodableKey::IndexNameToDefinitionFunction(_))
+        | Some(DecodableKey::IndexValueToStruct(_)) => {
             trace!("Unhandled delete when constructing compaction record!")
         }
     }

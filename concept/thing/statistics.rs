@@ -15,7 +15,7 @@ use std::{
 
 use durability::DurabilityRecordType;
 use encoding::{
-    Decodable,
+    DecodableKey,
     graph::{
         Typed,
         type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
@@ -246,28 +246,28 @@ impl Statistics {
         for (key, write) in writes.operations.iterate_writes() {
             let delta =
                 write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
-            match Decodable::try_decode(key.bytes()) {
-                Some(Decodable::EntityVertex(entity_vertex)) => {
+            match DecodableKey::try_decode(key.bytes()) {
+                Some(DecodableKey::EntityVertex(entity_vertex)) => {
                     let type_ = Entity::new(entity_vertex).type_();
                     self.update_entities(type_, delta);
                     total_delta += delta;
                 }
-                Some(Decodable::RelationVertex(relation_vertex)) => {
+                Some(DecodableKey::RelationVertex(relation_vertex)) => {
                     let type_ = Relation::new(relation_vertex).type_();
                     self.update_relations(type_, delta);
                     total_delta += delta;
                 }
-                Some(Decodable::AttributeVertex(attribute_vertex)) => {
+                Some(DecodableKey::AttributeVertex(attribute_vertex)) => {
                     let type_ = Attribute::new(attribute_vertex).type_();
                     self.update_attributes(type_, delta);
                 }
 
-                Some(Decodable::ThingEdgeHas(has_edge)) => {
+                Some(DecodableKey::ThingEdgeHas(has_edge)) => {
                     self.update_has(Object::new(has_edge.from()).type_(), Attribute::new(has_edge.to()).type_(), delta);
                     total_delta += delta;
                 }
-                Some(Decodable::ThingEdgeHasReverse(_)) => (),
-                Some(Decodable::ThingEdgeLinks(links_edge)) => {
+                Some(DecodableKey::ThingEdgeHasReverse(_)) => (),
+                Some(DecodableKey::ThingEdgeLinks(links_edge)) => {
                     if !links_edge.is_reverse() {
                         let role_type = RoleType::build_from_type_id(links_edge.role_id());
                         self.update_role_player(
@@ -279,12 +279,12 @@ impl Statistics {
                         total_delta += delta;
                     }
                 }
-                Some(Decodable::ThingEdgeIndexedRelation(edge)) => {
+                Some(DecodableKey::ThingEdgeIndexedRelation(edge)) => {
                     self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                     // note: don't update total count based on index
                 }
 
-                Some(Decodable::VertexEntityType(entity_type_vertex)) => {
+                Some(DecodableKey::VertexEntityType(entity_type_vertex)) => {
                     if matches!(write, Write::Delete) {
                         let type_ = EntityType::new(entity_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
@@ -294,7 +294,7 @@ impl Statistics {
                     }
                     // note: don't update total count based on type updates
                 }
-                Some(Decodable::VertexRelationType(relation_type_vertex)) => {
+                Some(DecodableKey::VertexRelationType(relation_type_vertex)) => {
                     if matches!(write, Write::Delete) {
                         let type_ = RelationType::new(relation_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
@@ -305,7 +305,7 @@ impl Statistics {
                     }
                     // note: don't update total count based on type updates
                 }
-                Some(Decodable::VertexAttributeType(attribute_type_vertex)) => {
+                Some(DecodableKey::VertexAttributeType(attribute_type_vertex)) => {
                     if matches!(write, Write::Delete) {
                         let type_ = AttributeType::new(attribute_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
@@ -319,7 +319,7 @@ impl Statistics {
                     }
                     // note: don't update total count based on type updates
                 }
-                Some(Decodable::VertexRoleType(role_type_vertex)) => {
+                Some(DecodableKey::VertexRoleType(role_type_vertex)) => {
                     if matches!(write, Write::Delete) {
                         let type_ = RoleType::new(role_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
@@ -338,24 +338,24 @@ impl Statistics {
                 }
 
                 None
-                | Some(Decodable::DefinitionStruct(_))
-                | Some(Decodable::DefinitionFunction(_))
-                | Some(Decodable::TypeEdgeSub(_))
-                | Some(Decodable::TypeEdgeSubReverse(_))
-                | Some(Decodable::TypeEdgeOwns(_))
-                | Some(Decodable::TypeEdgeOwnsReverse(_))
-                | Some(Decodable::TypeEdgePlays(_))
-                | Some(Decodable::TypeEdgePlaysReverse(_))
-                | Some(Decodable::TypeEdgeRelates(_))
-                | Some(Decodable::TypeEdgeRelatesReverse(_))
-                | Some(Decodable::PropertyTypeVertex(_))
-                | Some(Decodable::PropertyTypeEdge(_))
-                | Some(Decodable::PropertyObjectVertex(_))
-                | Some(Decodable::PropertyFunction(_))
-                | Some(Decodable::IndexLabelToType(_))
-                | Some(Decodable::IndexNameToDefinitionStruct(_))
-                | Some(Decodable::IndexNameToDefinitionFunction(_))
-                | Some(Decodable::IndexValueToStruct(_)) => (),
+                | Some(DecodableKey::DefinitionStruct(_))
+                | Some(DecodableKey::DefinitionFunction(_))
+                | Some(DecodableKey::TypeEdgeSub(_))
+                | Some(DecodableKey::TypeEdgeSubReverse(_))
+                | Some(DecodableKey::TypeEdgeOwns(_))
+                | Some(DecodableKey::TypeEdgeOwnsReverse(_))
+                | Some(DecodableKey::TypeEdgePlays(_))
+                | Some(DecodableKey::TypeEdgePlaysReverse(_))
+                | Some(DecodableKey::TypeEdgeRelates(_))
+                | Some(DecodableKey::TypeEdgeRelatesReverse(_))
+                | Some(DecodableKey::PropertyTypeVertex(_))
+                | Some(DecodableKey::PropertyTypeEdge(_))
+                | Some(DecodableKey::PropertyObjectVertex(_))
+                | Some(DecodableKey::PropertyFunction(_))
+                | Some(DecodableKey::IndexLabelToType(_))
+                | Some(DecodableKey::IndexNameToDefinitionStruct(_))
+                | Some(DecodableKey::IndexNameToDefinitionFunction(_))
+                | Some(DecodableKey::IndexValueToStruct(_)) => (),
             }
         }
 

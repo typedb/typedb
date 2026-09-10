@@ -196,7 +196,7 @@ pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Clone {
     }
 }
 
-pub enum Decodable {
+pub enum DecodableKey {
     VertexEntityType(TypeVertex),
     VertexRelationType(TypeVertex),
     VertexAttributeType(TypeVertex),
@@ -233,7 +233,7 @@ pub enum Decodable {
     IndexValueToStruct(StructIndexEntryKey),
 }
 
-impl Decodable {
+impl DecodableKey {
     pub fn try_decode(bytes: &[u8]) -> Option<Self> {
         match Prefix::from_prefix_id(PrefixID::new(*bytes.first()?))? {
             Prefix::VertexEntityType => Some(Self::VertexEntityType(TypeVertex::try_decode(bytes)?)),
