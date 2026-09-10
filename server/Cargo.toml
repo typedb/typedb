@@ -3,17 +3,196 @@
 # Do not modify this file.
 
 
+[package]
+	edition = "2024"
+	name = "server"
+	version = "0.0.0"
+
 [features]
 	published = []
 
-[package]
-	name = "server"
-	edition = "2024"
-	version = "0.0.0"
-
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
+
+[dependencies]
+
+	[dependencies.answer]
+		workspace = true
+
+	[dependencies.async-trait]
+		workspace = true
+
+	[dependencies.axum]
+		workspace = true
+
+	[dependencies.axum-extra]
+		workspace = true
+
+	[dependencies.axum-server]
+		workspace = true
+
+	[dependencies.bytes]
+		workspace = true
+
+	[dependencies.chrono]
+		workspace = true
+
+	[dependencies.chrono-tz]
+		workspace = true
+
+	[dependencies.clap]
+		workspace = true
+
+	[dependencies.compiler]
+		workspace = true
+
+	[dependencies.concept]
+		workspace = true
+
+	[dependencies.concurrency]
+		workspace = true
+
+	[dependencies.database]
+		workspace = true
+
+	[dependencies.diagnostics]
+		workspace = true
+
+	[dependencies.durability]
+		workspace = true
+
+	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.erased-serde]
+		workspace = true
+
+	[dependencies.error]
+		workspace = true
+
+	[dependencies.executor]
+		workspace = true
+
+	[dependencies.function]
+		workspace = true
+
+	[dependencies.futures]
+		workspace = true
+
+	[dependencies.http]
+		workspace = true
+
+	[dependencies.hyper]
+		workspace = true
+
+	[dependencies.ir]
+		workspace = true
+
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.jsonwebtoken]
+		workspace = true
+
+	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.logger]
+		workspace = true
+
+	[dependencies.moka]
+		workspace = true
+
+	[dependencies.options]
+		workspace = true
+
+	[dependencies.prost]
+		workspace = true
+
+	[dependencies.pwhash]
+		workspace = true
+
+	[dependencies.query]
+		workspace = true
+
+	[dependencies.rand]
+		workspace = true
+
+	[dependencies.regex]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.rustls-pemfile]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.serde_json]
+		workspace = true
+
+	[dependencies.serde_with]
+		workspace = true
+
+	[dependencies.serde_yaml2]
+		workspace = true
+
+	[dependencies.server_admin_proto]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.system]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tokio-rustls]
+		workspace = true
+
+	[dependencies.tokio-stream]
+		workspace = true
+
+	[dependencies.tokio-util]
+		workspace = true
+
+	[dependencies.tonic]
+		workspace = true
+
+	[dependencies.tonic-types]
+		workspace = true
+
+	[dependencies.tower]
+		workspace = true
+
+	[dependencies.tower-http]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.typedb-protocol]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.user]
+		workspace = true
+
+	[dependencies.uuid]
+		workspace = true
+
+	[dependencies.xxhash-rust]
+		workspace = true
+
+	[dependencies.yaml-rust2]
+		workspace = true
 
 [dev-dependencies]
 
@@ -23,186 +202,7 @@
 	[dev-dependencies.typedb-admin]
 		workspace = true
 
-[dependencies]
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.uuid]
-		workspace = true
-
-	[dependencies.rand]
-		workspace = true
-
-	[dependencies.prost]
-		workspace = true
-
-	[dependencies.tokio-rustls]
-		workspace = true
-
-	[dependencies.executor]
-		workspace = true
-
-	[dependencies.rustls-pemfile]
-		workspace = true
-
-	[dependencies.function]
-		workspace = true
-
-	[dependencies.xxhash-rust]
-		workspace = true
-
-	[dependencies.options]
-		workspace = true
-
-	[dependencies.serde_with]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.hyper]
-		workspace = true
-
-	[dependencies.tower]
-		workspace = true
-
-	[dependencies.axum]
-		workspace = true
-
-	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.typedb-protocol]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.query]
-		workspace = true
-
-	[dependencies.durability]
-		workspace = true
-
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.encoding]
-		workspace = true
-
-	[dependencies.regex]
-		workspace = true
-
-	[dependencies.system]
-		workspace = true
-
-	[dependencies.axum-extra]
-		workspace = true
-
-	[dependencies.http]
-		workspace = true
-
-	[dependencies.tonic]
-		workspace = true
-
-	[dependencies.lending_iterator]
-		workspace = true
-
-	[dependencies.erased-serde]
-		workspace = true
-
-	[dependencies.yaml-rust2]
-		workspace = true
-
-	[dependencies.concept]
-		workspace = true
-
-	[dependencies.pwhash]
-		workspace = true
-
-	[dependencies.moka]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.error]
-		workspace = true
-
-	[dependencies.itertools]
-		workspace = true
-
-	[dependencies.jsonwebtoken]
-		workspace = true
-
-	[dependencies.database]
-		workspace = true
-
-	[dependencies.chrono-tz]
-		workspace = true
-
-	[dependencies.server_admin_proto]
-		workspace = true
-
-	[dependencies.async-trait]
-		workspace = true
-
-	[dependencies.compiler]
-		workspace = true
-
-	[dependencies.serde_yaml2]
-		workspace = true
-
-	[dependencies.tokio]
-		workspace = true
-
-	[dependencies.tokio-util]
-		workspace = true
-
-	[dependencies.tower-http]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.tokio-stream]
-		workspace = true
-
-	[dependencies.futures]
-		workspace = true
-
-	[dependencies.concurrency]
-		workspace = true
-
-	[dependencies.diagnostics]
-		workspace = true
-
-	[dependencies.tonic-types]
-		workspace = true
-
-	[dependencies.answer]
-		workspace = true
-
-	[dependencies.clap]
-		workspace = true
-
-	[dependencies.bytes]
-		workspace = true
-
-	[dependencies.axum-server]
-		workspace = true
-
-	[dependencies.chrono]
-		workspace = true
-
-	[dependencies.user]
-		workspace = true
-
-	[dependencies.serde_json]
-		workspace = true
-
 [[test]]
-	path = "service/admin/admin_service_test.rs"
 	name = "test_admin_service"
+	path = "service/admin/admin_service_test.rs"
 

@@ -5,36 +5,36 @@
 features = {}
 
 [package]
-	name = "cache"
 	edition = "2024"
+	name = "cache"
 	version = "0.0.0"
 
 [lib]
-	path = "cache.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
+	path = "cache.rs"
 
 [dependencies]
 
-	[dependencies.tracing]
+	[dependencies.bincode]
 		workspace = true
 
 	[dependencies.resource]
 		workspace = true
 
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.bincode]
-		workspace = true
-
 	[dependencies.rocksdb]
 		workspace = true
 
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
 	[dependencies.uuid]
+		workspace = true
+
+[dev-dependencies]
+
+	[dev-dependencies.test_utils]
 		workspace = true
 

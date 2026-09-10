@@ -5,70 +5,23 @@
 features = {}
 
 [package]
-	name = "query"
 	edition = "2024"
+	name = "query"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.rand]
-		workspace = true
-
-	[dev-dependencies.test_utils_encoding]
-		workspace = true
-
-	[dev-dependencies.criterion]
-		workspace = true
-
-	[dev-dependencies.bytes]
-		workspace = true
-
-	[dev-dependencies.durability]
-		workspace = true
-
-	[dev-dependencies.pprof]
-		workspace = true
-
-	[dev-dependencies.test_utils_concept]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.tokio]
+	[dependencies.answer]
 		workspace = true
 
-	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.structural_equality]
+	[dependencies.compiler]
 		workspace = true
 
 	[dependencies.concept]
-		workspace = true
-
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.paste]
-		workspace = true
-
-	[dependencies.moka]
-		workspace = true
-
-	[dependencies.storage]
 		workspace = true
 
 	[dependencies.encoding]
@@ -77,56 +30,103 @@ features = {}
 	[dependencies.error]
 		workspace = true
 
-	[dependencies.itertools]
-		workspace = true
-
-	[dependencies.answer]
-		workspace = true
-
 	[dependencies.executor]
 		workspace = true
 
 	[dependencies.function]
 		workspace = true
 
-	[dependencies.typeql]
+	[dependencies.ir]
 		workspace = true
 
-	[dependencies.compiler]
+	[dependencies.itertools]
 		workspace = true
 
 	[dependencies.lending_iterator]
 		workspace = true
 
+	[dependencies.moka]
+		workspace = true
+
+	[dependencies.paste]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.structural_equality]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+[dev-dependencies]
+
+	[dev-dependencies.bytes]
+		workspace = true
+
+	[dev-dependencies.criterion]
+		workspace = true
+
+	[dev-dependencies.durability]
+		workspace = true
+
+	[dev-dependencies.pprof]
+		workspace = true
+
+	[dev-dependencies.rand]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
+	[dev-dependencies.test_utils_concept]
+		workspace = true
+
+	[dev-dependencies.test_utils_encoding]
+		workspace = true
+
 [[bench]]
+	harness = false
 	name = "bench_insert_queries"
-	harness = false
 
 [[bench]]
-	name = "bench_insert_queries_multithreaded"
 	harness = false
+	name = "bench_insert_queries_multithreaded"
 
 [[test]]
-	path = "tests/pipeline_stages_limit.rs"
-	name = "test_pipeline_stages_limit"
-
-[[test]]
-	path = "tests/fetch.rs"
-	name = "test_fetch"
-
-[[test]]
-	path = "tests/unimplemented.rs"
-	name = "test_unimplemented"
-
-[[test]]
-	path = "tests/query_profile.rs"
-	name = "test_query_profile"
-
-[[test]]
-	path = "tests/query_cache.rs"
-	name = "test_query_cache"
-
-[[test]]
-	path = "tests/define.rs"
 	name = "test_define"
+	path = "tests/define.rs"
+
+[[test]]
+	name = "test_fetch"
+	path = "tests/fetch.rs"
+
+[[test]]
+	name = "test_pipeline_stages_limit"
+	path = "tests/pipeline_stages_limit.rs"
+
+[[test]]
+	name = "test_query_cache"
+	path = "tests/query_cache.rs"
+
+[[test]]
+	name = "test_query_profile"
+	path = "tests/query_profile.rs"
+
+[[test]]
+	name = "test_unimplemented"
+	path = "tests/unimplemented.rs"
 

@@ -5,22 +5,22 @@
 features = {}
 
 [package]
-	name = "structural_equality"
 	edition = "2024"
+	name = "structural_equality"
 	version = "0.0.0"
 
 [lib]
-	path = "structural_equality.rs"
 	crate-type = ["lib"]
+	path = "structural_equality.rs"
 
 [dependencies]
+
+	[dependencies.paste]
+		workspace = true
 
 	[dependencies.serde]
 		workspace = true
 
 	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.paste]
 		workspace = true
 

@@ -3,15 +3,15 @@
 # Do not modify this file.
 
 features = {}
-dev-dependencies = {}
 dependencies = {}
+dev-dependencies = {}
 
 [package]
-	name = "lending_iterator"
 	edition = "2024"
+	name = "lending_iterator"
 	version = "0.0.0"
 
 [lib]
-	path = "lending_iterator.rs"
 	crate-type = ["lib"]
+	path = "lending_iterator.rs"
 

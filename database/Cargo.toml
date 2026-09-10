@@ -5,70 +5,26 @@
 features = {}
 
 [package]
-	name = "database"
 	edition = "2024"
+	name = "database"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
-
-[dev-dependencies]
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.tokio]
-		workspace = true
-
-	[dev-dependencies.test_utils_storage]
-		workspace = true
-
-	[dev-dependencies.serde_json]
-		workspace = true
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.tracing]
+	[dependencies.bytes]
 		workspace = true
 
 	[dependencies.cache]
 		workspace = true
 
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.fail_point]
-		workspace = true
-
-	[dependencies.query]
+	[dependencies.compiler]
 		workspace = true
 
 	[dependencies.concept]
-		workspace = true
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.durability]
-		workspace = true
-
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.encoding]
-		workspace = true
-
-	[dependencies.error]
-		workspace = true
-
-	[dependencies.itertools]
 		workspace = true
 
 	[dependencies.concurrency]
@@ -77,56 +33,100 @@ features = {}
 	[dependencies.diagnostics]
 		workspace = true
 
+	[dependencies.durability]
+		workspace = true
+
+	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.error]
+		workspace = true
+
 	[dependencies.executor]
 		workspace = true
 
-	[dependencies.bytes]
+	[dependencies.fail_point]
 		workspace = true
 
 	[dependencies.function]
 		workspace = true
 
+	[dependencies.ir]
+		workspace = true
+
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.logger]
+		workspace = true
+
 	[dependencies.options]
+		workspace = true
+
+	[dependencies.query]
+		workspace = true
+
+	[dependencies.resource]
 		workspace = true
 
 	[dependencies.rocksdb]
 		workspace = true
 
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
 	[dependencies.typeql]
 		workspace = true
 
-	[dependencies.compiler]
+[dev-dependencies]
+
+	[dev-dependencies.serde_json]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
+	[dev-dependencies.test_utils_storage]
+		workspace = true
+
+	[dev-dependencies.tokio]
 		workspace = true
 
 [[test]]
-	path = "tests/database.rs"
-	name = "test_database"
-
-[[test]]
-	path = "tests/test_transaction_isolation.rs"
-	name = "test_transaction_isolation"
-
-[[test]]
-	path = "tests/transaction.rs"
-	name = "test_transaction"
-
-[[test]]
-	path = "tests/cleanup_records.rs"
 	name = "test_cleanup_records"
+	path = "tests/cleanup_records.rs"
 
 [[test]]
-	path = "tests/migration.rs"
-	name = "test_migration"
+	name = "test_database"
+	path = "tests/database.rs"
 
 [[test]]
-	path = "tests/statistics_synchronization.rs"
-	name = "test_statistics_synchronization"
-
-[[test]]
-	path = "tests/diagnostics_posthog_pii.rs"
 	name = "test_diagnostics_posthog_pii"
+	path = "tests/diagnostics_posthog_pii.rs"
 
 [[test]]
-	path = "tests/import.rs"
 	name = "test_import"
+	path = "tests/import.rs"
+
+[[test]]
+	name = "test_migration"
+	path = "tests/migration.rs"
+
+[[test]]
+	name = "test_statistics_synchronization"
+	path = "tests/statistics_synchronization.rs"
+
+[[test]]
+	name = "test_transaction"
+	path = "tests/transaction.rs"
+
+[[test]]
+	name = "test_transaction_isolation"
+	path = "tests/test_transaction_isolation.rs"
 

@@ -5,22 +5,22 @@
 features = {}
 
 [package]
-	name = "fail_point"
 	edition = "2024"
+	name = "fail_point"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
+
+	[dependencies.itertools]
+		workspace = true
 
 	[dependencies.rand]
 		workspace = true
 
 	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.itertools]
 		workspace = true
 

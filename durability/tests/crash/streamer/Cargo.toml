@@ -5,25 +5,25 @@
 features = {}
 
 [package]
-	name = "streamer"
 	edition = "2024"
+	name = "streamer"
 	version = "0.0.0"
 
 [dependencies]
 
-	[dependencies.durability]
-		workspace = true
-
 	[dependencies.bincode]
 		workspace = true
 
-	[dependencies.itertools]
+	[dependencies.durability]
 		workspace = true
 
 	[dependencies.durability_test_common]
 		workspace = true
 
+	[dependencies.itertools]
+		workspace = true
+
 [[bin]]
-	path = "streamer.rs"
 	name = "streamer"
+	path = "streamer.rs"
 

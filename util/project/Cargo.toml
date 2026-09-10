@@ -6,11 +6,11 @@ features = {}
 dependencies = {}
 
 [package]
-	name = "project"
 	edition = "2024"
+	name = "project"
 	version = "0.0.0"
 
 [lib]
-	path = "project.rs"
 	crate-type = ["lib"]
+	path = "project.rs"
 

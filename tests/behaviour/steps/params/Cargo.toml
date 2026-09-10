@@ -5,46 +5,46 @@
 features = {}
 
 [package]
-	name = "params"
 	edition = "2024"
+	name = "params"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.test_utils]
-		workspace = true
-
-	[dependencies.regex]
+	[dependencies.chrono]
 		workspace = true
 
 	[dependencies.chrono-tz]
 		workspace = true
 
-	[dependencies.cucumber]
-		workspace = true
-
 	[dependencies.concept]
 		workspace = true
 
-	[dependencies.ir]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.storage]
+	[dependencies.cucumber]
 		workspace = true
 
 	[dependencies.encoding]
 		workspace = true
 
-	[dependencies.chrono]
+	[dependencies.ir]
 		workspace = true
 
 	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.regex]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.test_utils]
+		workspace = true
+
+	[dependencies.typeql]
 		workspace = true
 

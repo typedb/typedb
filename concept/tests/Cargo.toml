@@ -5,25 +5,25 @@
 features = {}
 
 [package]
-	name = "test_utils_concept"
 	edition = "2024"
+	name = "test_utils_concept"
 	version = "0.0.0"
 
 [lib]
-	path = "test_utils_concept.rs"
 	crate-type = ["lib"]
+	path = "test_utils_concept.rs"
 
 [dependencies]
-
-	[dependencies.durability]
-		workspace = true
 
 	[dependencies.concept]
 		workspace = true
 
-	[dependencies.storage]
+	[dependencies.durability]
 		workspace = true
 
 	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.storage]
 		workspace = true
 
