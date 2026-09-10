@@ -129,8 +129,7 @@ impl ConditionalInsert {
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables =
-            RequiredVariablesForWrite::build(conjunction, variable_registry, variable_positions);
+        let required_input_variables = RequiredVariablesForWrite::build(conjunction, variable_positions);
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })

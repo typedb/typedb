@@ -118,7 +118,7 @@ pub fn translate_put(
             | crate::pattern::constraint::Constraint::Has(_)
             | crate::pattern::constraint::Constraint::Comparison(_)
             | crate::pattern::constraint::Constraint::LinksDeduplication(_)
-            | crate::pattern::constraint::Constraint::Value(_) => (),
+            | crate::pattern::constraint::Constraint::IsSet(_) => (),
             constraint => {
                 return Err(Box::new(RepresentationError::IllegalStatementForPut {
                     constraint_type: constraint.name().to_owned(),

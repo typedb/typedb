@@ -14,7 +14,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::todo_must_implement;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -22,8 +21,8 @@ use typeql::common::Span;
 use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
-        AssignedVariable, BindingMode, IrID, ParameterID, PatternVariableMode, PatternVariableModes, ScopeId,
-        ValueType, Vertex,
+        AssignedVariable, BindingMode, BindingOptionality, IrID, ParameterID, PatternVariableMode,
+        PatternVariableModes, ScopeId, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
@@ -98,7 +97,7 @@ impl Constraints {
                     Is::new(old_var, *var, None).into()
                 };
                 variable_mapping.insert(*var, old_var);
-                pattern_variables.0.insert(*var, PatternVariableMode::Binding);
+                pattern_variables.0.insert(*var, PatternVariableMode::Binding(VariableOptionality::Required));
                 check_collector.push(check);
             }
             Ok::<(), Box<RepresentationError>>(())
@@ -755,7 +754,7 @@ impl<ID: IrID> Constraint<ID> {
         fn _all_binding<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
         ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
-            Box::new(it.map(move |id| (id, BindingMode::AlwaysBinding)))
+            Box::new(it.map(move |id| (id, BindingMode::AlwaysBinding(BindingOptionality::NotNone))))
         }
         fn _all_required<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
@@ -780,7 +779,7 @@ impl<ID: IrID> Constraint<ID> {
 
             Constraint::Comparison(comparison) => _all_required(comparison.ids()),
             Constraint::Is(is) => _all_binding(is.ids()),
-            Constraint::IsSet(inner) => _all_required(inner.ids()),
+            Constraint::IsSet(is_set) => _all_required(is_set.ids()),
 
             Constraint::DeleteConcepts(inner) => _all_required(inner.ids()),
             Constraint::Unsatisfiable(inner) => _all_binding(inner.ids()),
@@ -940,7 +939,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_is_set(&self) -> Option<&IsSet<ID>> {
+    pub fn as_is_set(&self) -> Option<&IsSet<ID>> {
         match self {
             Constraint::IsSet(is_set) => Some(is_set),
             _ => None,
@@ -2233,7 +2232,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
-            .map(|id| (id, BindingMode::AlwaysBinding))
+            .map(|id| (id, BindingMode::AlwaysBinding(BindingOptionality::NotNone)))
             .chain(self.expression_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
@@ -2362,9 +2361,9 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
-        self.ids_assigned()
-            .filter(|id| !self.function_call.arguments().contains(id))
-            .map(|id| (id, BindingMode::AlwaysBinding))
+        self.assigned_optionalities()
+            .filter(|(id, _)| !self.function_call.arguments().contains(id))
+            .map(|(id, optionality)| (id, BindingMode::AlwaysBinding(optionality.into())))
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
@@ -2984,12 +2983,6 @@ pub struct DeleteConcepts<ID> {
     source_span: Option<Span>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct IsSet<ID> {
-    variables: Vec<Vertex<ID>>,
-    source_span: Option<Span>,
-}
-
 impl<ID: IrID> DeleteConcepts<ID> {
     pub fn new(variables: Vec<ID>, source_span: Option<Span>) -> Self {
         let variables = variables.into_iter().map(Vertex::Variable).collect();
@@ -3039,6 +3032,12 @@ impl<ID: IrID> fmt::Display for DeleteConcepts<ID> {
         let vars = self.variables.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(", ");
         write!(f, "delete {}", vars)
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct IsSet<ID> {
+    variables: Vec<Vertex<ID>>,
+    source_span: Option<Span>,
 }
 
 impl<ID: IrID> IsSet<ID> {
