@@ -15,7 +15,10 @@ use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
-    pattern::{Vertex, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, variable_category::VariableOptionality},
+    pattern::{
+        Vertex, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern,
+        variable_category::VariableOptionality,
+    },
     pipeline::{
         ParameterRegistry, VariableRegistry,
         block::Block,
