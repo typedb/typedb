@@ -510,7 +510,6 @@ impl fmt::Display for UnplannableConstraints {
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct BlockContext {
     input_variable_optionalities: HashMap<Variable, VariableOptionality>,
-    // variable_declaration: HashSet<Variable>,
 }
 
 // TODO: All private? Can we inline BlockContext then?
@@ -605,7 +604,6 @@ impl<'a> BlockBuilderContext<'a> {
     }
 
     pub(crate) fn input_variable_optionalities(&self) -> impl Iterator<Item = (Variable, VariableOptionality)> + '_ {
-        // TODO: Actually propagate per-stage optionality changes
         self.block_context.input_variable_optionalities()
     }
 
