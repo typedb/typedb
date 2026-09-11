@@ -283,7 +283,7 @@ typedb_error! {
         ),
         IllegalStatementForInsert(
             45,
-            "Illegal statement provided for an insert stage. Only 'has', 'links', 'isa' and 'isset' constraints are allowed.",
+            "Illegal statement provided for an insert stage. Only 'has', 'links' and 'isa' constraints are allowed.",
             source_span: Option<Span>,
         ),
         IllegalNestedPatternForInsert(
