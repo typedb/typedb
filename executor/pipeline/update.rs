@@ -29,8 +29,8 @@ use crate::{
     pipeline::{
         PipelineExecutionError, WrittenRowsIterator,
         insert::prepare_output_rows,
-        required_inputs_satisfied,
         stage::{ExecutionContext, StageAPI, StageIterator},
+        write_condition_satisfied,
     },
     row::Row,
     write::{WriteError, write_instruction::AsWriteInstruction},
@@ -72,7 +72,8 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Update pattern"));
-        let (concept_profiles, connection_profiles) = build_step_profiles(&executable, &pattern_profile);
+        let (condition_profiles, concept_profiles, connection_profiles) =
+            build_step_profiles(&executable, &pattern_profile);
 
         let input_output_mapping = executable
             .output_row_schema
@@ -101,6 +102,7 @@ where
                 &context.thing_manager,
                 &context.parameters,
                 &mut row,
+                &condition_profiles,
                 &concept_profiles,
                 &connection_profiles,
             ) {
@@ -125,22 +127,28 @@ where
 fn build_step_profiles(
     executable: &UpdateExecutable,
     pattern_profile: &PatternProfile,
-) -> (Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
+) -> (Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
     let mut next_subpattern: usize = 0;
+    let mut condition_profiles = Vec::with_capacity(executable.updates.len());
     let mut concept_profiles = Vec::with_capacity(executable.updates.len());
     let mut connection_profiles = Vec::with_capacity(executable.updates.len());
-    for (i, optional) in executable.updates.iter().enumerate() {
+    for (i, update) in executable.updates.iter().enumerate() {
+        let condition_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Update {i} condition"));
+        next_subpattern += 1;
+        condition_profiles.push(condition_subpattern.extend_or_get_step(0, || format!("{}", &update.condition)));
+
         let concept_subpattern =
             pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Update {i} concepts"));
         next_subpattern += 1;
-        concept_profiles.push(reserve_step_profiles(&concept_subpattern, &optional.concept_instructions));
+        concept_profiles.push(reserve_step_profiles(&concept_subpattern, &update.concept_instructions));
 
         let connection_subpattern =
             pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Update {i} connections"));
         next_subpattern += 1;
-        connection_profiles.push(reserve_step_profiles(&connection_subpattern, &optional.connection_instructions));
+        connection_profiles.push(reserve_step_profiles(&connection_subpattern, &update.connection_instructions));
     }
-    (concept_profiles, connection_profiles)
+    (condition_profiles, concept_profiles, connection_profiles)
 }
 
 fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
@@ -158,6 +166,7 @@ fn execute_update(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
+    condition_profiles: &[Arc<StepProfile>],
     concept_profiles: &[Vec<Arc<StepProfile>>],
     connection_profiles: &[Vec<Arc<StepProfile>>],
 ) -> Result<(), Box<WriteError>> {
@@ -168,12 +177,21 @@ fn execute_update(
 
     // First the concept instructions
     for (i, update) in executable.updates.iter().enumerate() {
-        may_execute_concept_instructions(&update, &concept_profiles[i], snapshot, thing_manager, parameters, row)?;
+        may_execute_concept_instructions(
+            &update,
+            &condition_profiles[i],
+            &concept_profiles[i],
+            snapshot,
+            thing_manager,
+            parameters,
+            row,
+        )?;
     }
     // Then the connection instructions
     for (i, update) in executable.updates.iter().enumerate() {
         may_execute_connection_instructions(
             &update,
+            &condition_profiles[i],
             &connection_profiles[i],
             snapshot,
             thing_manager,
@@ -186,13 +204,14 @@ fn execute_update(
 
 fn may_execute_concept_instructions(
     update: &ConditionalUpdate,
+    condition_profile: &StepProfile,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    if !required_inputs_satisfied(&update.required_input_variables, row) {
+    if !write_condition_satisfied(&update.condition, row, snapshot, thing_manager, parameters, condition_profile)? {
         return Ok(());
     }
 
@@ -214,13 +233,14 @@ fn may_execute_concept_instructions(
 
 fn may_execute_connection_instructions(
     update: &ConditionalUpdate,
+    condition_profile: &StepProfile,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    if !required_inputs_satisfied(&update.required_input_variables, row) {
+    if !write_condition_satisfied(&update.condition, row, snapshot, thing_manager, parameters, condition_profile)? {
         return Ok(());
     }
 
