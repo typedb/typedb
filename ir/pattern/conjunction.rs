@@ -187,7 +187,7 @@ impl ConjunctionBuilder {
 
     pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         let mut binding_modes = HashMap::new();
-        self.constraints.variable_binding_modes().for_each(|(id, mode)| {
+        self.constraints().iter().flat_map(|constraint| constraint.variable_binding_modes()).for_each(|(id, mode)| {
             *binding_modes.entry(id).or_default() &= mode;
         });
         for nested in self.nested_patterns.iter() {

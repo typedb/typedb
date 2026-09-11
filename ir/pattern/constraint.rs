@@ -70,10 +70,6 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub(crate) fn variable_binding_modes(&self) -> impl Iterator<Item = (Variable, BindingMode)> + '_ {
-        self.constraints().iter().flat_map(|constraint| constraint.variable_binding_modes())
-    }
-
     pub(super) fn make_variables_unique(
         &mut self,
         variable_registry: &mut VariableRegistry,
@@ -751,7 +747,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn variable_binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
+    pub(crate) fn variable_binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
         fn _all_binding<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
         ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
