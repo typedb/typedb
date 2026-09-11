@@ -248,7 +248,7 @@ impl VertexId {
 #[derive(Clone)]
 pub(super) struct ConjunctionPlanBuilder<'a> {
     required_inputs: Vec<Variable>,
-    unwrapped_variables: HashSet<Variable>,
+    checked_isset_variables: HashSet<Variable>,
     graph: Graph<'a>,
     local_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
@@ -269,7 +269,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             statistics,
             planner_statistics: PlannerStatistics::new(),
             required_inputs,
-            unwrapped_variables: HashSet::new(),
+            checked_isset_variables: HashSet::new(),
         }
     }
 
@@ -534,7 +534,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_is_set(&mut self, is_set: &'a IsSet<Variable>) {
-        self.unwrapped_variables.extend(is_set.ids());
+        self.checked_isset_variables.extend(is_set.ids());
     }
 
     fn register_links_deduplication(&mut self, links_deduplication: &'a LinksDeduplication<Variable>) {
@@ -712,12 +712,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { graph, unwrapped_variables, local_annotations: type_annotations, mut planner_statistics, .. } = self;
+        let Self {
+            graph, checked_isset_variables, local_annotations: type_annotations, mut planner_statistics, ..
+        } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {
             graph,
-            unwrapped_variables,
+            checked_isset_variables,
             local_annotations: type_annotations,
             ordering,
             metadata,
@@ -1259,7 +1261,7 @@ pub(crate) struct ConjunctionPlan<'a> {
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
     pub(crate) planner_statistics: PlannerStatistics,
-    unwrapped_variables: HashSet<Variable>,
+    checked_isset_variables: HashSet<Variable>,
 }
 
 impl fmt::Debug for ConjunctionPlan<'_> {
@@ -1283,7 +1285,7 @@ impl ConjunctionPlan<'_> {
             already_assigned_positions,
             selected_variables.clone(),
             input_variables.clone().into_iter().collect(),
-            self.unwrapped_variables.clone(),
+            self.checked_isset_variables.clone(),
             self.constraint_variables().collect(),
             self.planner_statistics,
         );
@@ -1989,7 +1991,7 @@ impl ConjunctionPlan<'_> {
     }
 
     fn may_make_is_set_check(&self, conjunction_builder: &mut ConjunctionExecutableBuilder, variable: Variable) {
-        if conjunction_builder.unwrapped_variables.contains(&variable) {
+        if conjunction_builder.checked_isset_variables.contains(&variable) {
             let variable = conjunction_builder.position(variable);
             conjunction_builder.push_check(CheckInstruction::IsSet { variable });
         }
