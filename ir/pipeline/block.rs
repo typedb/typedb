@@ -80,15 +80,9 @@ impl<'reg> BlockBuilder<'reg> {
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
         validate_expressions_assignments_are_unique(&self.conjunction, &self.context)?;
 
-        // Update names, optionalities get updated later.
-        // TODO: Try to move this down and use the pattern variables for the block.
-        // TODO: Actually, shouldn't the LocallyBinding be kept?
-        self.context
-            .variable_names_index
-            .retain(|_, var| block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild));
-        let mut conjunction = self
-            .conjunction
-            .finish(&PatternVariableModes::for_block(block_binding_modes, self.context.input_variables()));
+        let block_pattern_variables =
+            PatternVariableModes::for_block(block_binding_modes, self.context.input_variables());
+        let mut conjunction = self.conjunction.finish(&block_pattern_variables);
 
         let optional_modes = validate_all_optional_dereferences_are_safe(&mut conjunction, &self.context)?;
 
@@ -99,6 +93,7 @@ impl<'reg> BlockBuilder<'reg> {
         )?;
 
         // Update
+        self.context.variable_names_index.retain(|_, var| block_pattern_variables.is_variable_visible_referenced(var));
         for (v, mode) in optional_modes {
             let optionality = todo!("Omitted for diff / change of strategy downstream");
             self.context.variable_optionalities.insert(v, optionality);
