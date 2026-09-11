@@ -195,7 +195,7 @@ impl ConjunctionBuilder {
 
     pub(crate) fn finish(self, parent_modes: &PatternVariableModes) -> Conjunction {
         let pattern_variables =
-            PatternVariableModes::build(self.variable_binding_modes(), parent_modes, self.unwrapped_variables());
+            PatternVariableModes::build(self.variable_binding_modes(), parent_modes, self.checked_isset_variables());
         let Self { scope_id, constraints, nested_patterns } = self;
         let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&pattern_variables)).collect();
         Conjunction { scope_id, constraints, nested_patterns, pattern_variables }
@@ -224,7 +224,7 @@ impl ConjunctionBuilder {
                 *binding_modes.entry(var).or_default() &= mode;
             }
         }
-        self.unwrapped_variables().for_each(|id| {
+        self.checked_isset_variables().for_each(|id| {
             let mode = binding_modes.get_mut(&id).expect("set");
             if matches!(mode, BindingMode::AlwaysBinding(_)) {
                 *mode = BindingMode::AlwaysBinding(BindingOptionality::NotNone)
@@ -233,7 +233,7 @@ impl ConjunctionBuilder {
         binding_modes
     }
 
-    pub fn unwrapped_variables(&self) -> impl Iterator<Item = Variable> {
+    pub fn checked_isset_variables(&self) -> impl Iterator<Item = Variable> {
         self.constraints.iter().filter_map(|c| c.as_is_set()).flat_map(|is_set| is_set.ids())
     }
 
