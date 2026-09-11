@@ -271,8 +271,8 @@ fn validate_all_optional_dereferences_are_safe(
     let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
         let (id, _) = constraint
             .variable_binding_modes()
-            .filter(|(_, mode)| mode != &BindingMode::AlwaysBinding(BindingOptionality::MaybeNone))
-            .find(|(id, _)| conjunction.optionality(id) == VariableOptionality::Optional)?;
+            .filter(|(id, _)| conjunction.optionality(id) == VariableOptionality::Optional)
+            .find(|(_, mode)| mode != &BindingMode::AlwaysBinding(BindingOptionality::MaybeNone))?;
         Some((id, constraint.source_span()))
     });
     if let Some((id, source_span)) = bad_unwrap {
