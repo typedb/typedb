@@ -2296,7 +2296,7 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID> {
     assigned: Vec<Vertex<ID>>,
-    optionally_assigned: BTreeSet<ID>,
+    assigned_optionalities: Vec<VariableOptionality>,
     function_call: FunctionCall<ID>,
     is_stream: bool,
     source_span: Option<Span>,
@@ -2309,10 +2309,9 @@ impl FunctionCallBinding<Variable> {
         is_stream: bool,
         source_span: Option<Span>,
     ) -> Self {
-        let optionally_assigned =
-            left.iter().filter(|v| v.optionality == VariableOptionality::Optional).map(|a| a.variable).collect();
+        let assigned_optionalities = left.iter().map(|a| a.optionality).collect();
         let assigned = left.into_iter().map(|a| Vertex::Variable(a.variable)).collect();
-        Self { assigned, optionally_assigned, function_call, is_stream, source_span }
+        Self { assigned, assigned_optionalities, function_call, is_stream, source_span }
     }
 }
 
@@ -2346,7 +2345,8 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
-        self.assigned_optionalities()
+        self.ids_assigned()
+            .zip(self.assigned_optionalities.iter().copied())
             .filter(|(id, _)| !self.function_call.arguments().contains(id))
             .map(|(id, optionality)| (id, BindingMode::AlwaysBinding(optionality.into())))
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
@@ -2367,7 +2367,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
         FunctionCallBinding {
             assigned: self.assigned.into_iter().map(|v| v.map(mapping)).collect(),
-            optionally_assigned: self.optionally_assigned.into_iter().map(|v| v.map(mapping)).collect(),
+            assigned_optionalities: self.assigned_optionalities,
             function_call: self.function_call.map(mapping),
             is_stream: self.is_stream,
             source_span: self.source_span,
