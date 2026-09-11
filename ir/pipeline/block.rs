@@ -308,7 +308,7 @@ fn tmp__recheck_root_optional_dereference_if_write_stage(
     conjunction: &mut Conjunction,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
-    if context.is_write_stage {
+    if context.tmp__is_write_stage {
         let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
             let (id, _) = constraint
                 .variable_binding_modes()
@@ -572,7 +572,7 @@ pub struct BlockBuilderContext<'a> {
     block_context: BlockContext,
     scope_id_allocator: u16,
 
-    pub is_write_stage: bool,
+    pub(crate) tmp__is_write_stage: bool,
 }
 
 impl<'a> BlockBuilderContext<'a> {
@@ -591,7 +591,7 @@ impl<'a> BlockBuilderContext<'a> {
             parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             block_context,
-            is_write_stage: false,
+            tmp__is_write_stage: false,
         }
     }
 
