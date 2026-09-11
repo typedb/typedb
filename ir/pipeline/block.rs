@@ -83,7 +83,7 @@ impl<'reg> BlockBuilder<'reg> {
         let block_pattern_variables = PatternVariableModes::for_block(
             block_binding_modes,
             self.context.input_variable_optionalities(),
-            self.conjunction.unwrapped_variables(),
+            self.conjunction.checked_isset_variables(),
         );
         let mut conjunction = self.conjunction.finish(&block_pattern_variables);
 
