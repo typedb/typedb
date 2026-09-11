@@ -2297,7 +2297,7 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID> {
     assigned: Vec<Vertex<ID>>,
-    optionally_assigned: BTreeSet<ID>, // TODO: This might not be enough for `let $f, $f = one_opt_other_reqd()`;
+    optionally_assigned: BTreeSet<ID>,
     function_call: FunctionCall<ID>,
     is_stream: bool,
     source_span: Option<Span>,
@@ -2346,17 +2346,6 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         self.assigned.iter().filter_map(Vertex::as_variable)
     }
 
-    pub fn assigned_optionalities(&self) -> impl Iterator<Item = (ID, VariableOptionality)> + '_ {
-        self.ids_assigned().map(|id| {
-            let optionality = if self.optionally_assigned.contains(&id) {
-                VariableOptionality::Optional
-            } else {
-                VariableOptionality::Required
-            };
-            (id, optionality)
-        })
-    }
-
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
             .filter(|id| !self.function_call.arguments().contains(id))
@@ -2375,6 +2364,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         self.ids_assigned().for_each(|id| function(id));
         self.function_call.argument_ids().for_each(|id| function(id));
     }
+
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
         FunctionCallBinding {
             assigned: self.assigned.into_iter().map(|v| v.map(mapping)).collect(),
