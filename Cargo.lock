@@ -4253,6 +4253,7 @@ name = "resource"
 version = "0.0.0"
 dependencies = [
  "itertools 0.14.0",
+ "sysinfo",
 ]
 
 [[package]]
