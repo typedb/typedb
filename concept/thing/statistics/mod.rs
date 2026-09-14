@@ -46,7 +46,28 @@ use crate::{
 
 mod serialise;
 
-type StatisticsEncodingVersion = u64;
+#[derive(Debug, Clone, Copy)]
+#[repr(u64)]
+pub enum StatisticsEncodingVersion {
+    V0 = 0,
+}
+
+impl From<StatisticsEncodingVersion> for u64 {
+    fn from(value: StatisticsEncodingVersion) -> u64 {
+        value as u64
+    }
+}
+
+impl TryFrom<u64> for StatisticsEncodingVersion {
+    type Error = (); // TODO
+
+    fn try_from(u64: u64) -> Result<Self, ()> {
+        match u64 {
+            0 => Ok(Self::V0),
+            _ => Err(())
+        }
+    }
+}
 
 /// Thing statistics, reflecting a snapshot of statistics accurate as of a particular sequence number
 /// When types are undefined, we retain the last count of the instances of the type
@@ -86,7 +107,7 @@ pub struct Statistics {
 }
 
 impl Statistics {
-    const ENCODING_VERSION: StatisticsEncodingVersion = 0;
+    const ENCODING_VERSION: StatisticsEncodingVersion = StatisticsEncodingVersion::V0;
     const COMMIT_CONTEXT_SIZE: u64 = 8;
     const COMMIT_CONTEXT_MEMORY_LIMIT: usize = 1 << 30; // 1 GiB
 

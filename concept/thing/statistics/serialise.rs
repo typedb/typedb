@@ -11,7 +11,7 @@ use serde::{
 };
 
 use crate::{
-    thing::statistics::Statistics,
+    thing::statistics::{Statistics, StatisticsEncodingVersion},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
         role_type::RoleType,
@@ -197,6 +197,25 @@ impl From<AttributeType> for SerialisableType {
 impl From<RoleType> for SerialisableType {
     fn from(role_type: RoleType) -> Self {
         Self::Role(role_type.vertex().type_id_().as_u16())
+    }
+}
+
+impl Serialize for StatisticsEncodingVersion {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        u64::serialize(&(*self).into(), serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for StatisticsEncodingVersion {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let u64 = u64::deserialize(deserializer)?;
+        Self::try_from(u64).map_err(|_| de::Error::invalid_value(de::Unexpected::Unsigned(u64), &"0"))
     }
 }
 
