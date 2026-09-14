@@ -64,7 +64,7 @@ impl TryFrom<u64> for StatisticsEncodingVersion {
     fn try_from(u64: u64) -> Result<Self, ()> {
         match u64 {
             0 => Ok(Self::V0),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
