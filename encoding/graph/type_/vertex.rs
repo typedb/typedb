@@ -53,6 +53,15 @@ impl TypeVertex {
         be_bytes[1..].copy_from_slice(&bytes);
         Self { value: u32::from_be_bytes(be_bytes) }
     }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let mut be_bytes = [0; 4];
+        be_bytes[1..].copy_from_slice(&bytes);
+        Some(Self { value: u32::from_be_bytes(be_bytes) })
+    }
 }
 
 impl AsBytes<BUFFER_KEY_INLINE> for TypeVertex {

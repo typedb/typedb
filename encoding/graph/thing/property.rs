@@ -12,7 +12,11 @@ use storage::key_value::StorageKey;
 
 use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
-    graph::{Typed, thing::vertex_object::ObjectVertex, type_::vertex::TypeVertex},
+    graph::{
+        Typed,
+        thing::{ThingVertex, vertex_object::ObjectVertex},
+        type_::vertex::TypeVertex,
+    },
     layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
@@ -41,7 +45,7 @@ pub fn build_object_vertex_property_links_order(
 pub struct ObjectVertexProperty {
     object: ObjectVertex,
     infix: Infix,
-    suffix: Option<ByteArray<0>>,
+    suffix: ByteArray<0>,
 }
 
 impl ObjectVertexProperty {
@@ -52,8 +56,9 @@ impl ObjectVertexProperty {
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
+    #[expect(unused, reason = "symmetry")]
     fn new(object: ObjectVertex, infix: Infix) -> Self {
-        Self { object, infix, suffix: None }
+        Self { object, infix, suffix: ByteArray::empty() }
     }
 
     fn new_suffixed<const INLINE_BYTES: usize>(
@@ -61,7 +66,20 @@ impl ObjectVertexProperty {
         infix: Infix,
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
-        Self { object, infix, suffix: Some(ByteArray::copy(&suffix)) }
+        Self { object, infix, suffix: ByteArray::copy(&suffix) }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < Self::LENGTH_NO_SUFFIX {
+            return None;
+        }
+        if bytes[0] != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+        let object = ObjectVertex::try_decode(bytes.get(Self::range_object_vertex())?)?;
+        let infix = Infix::from_infix_id(InfixID::new(bytes.get(Self::range_infix())?.try_into().ok()?));
+        let suffix = ByteArray::copy(bytes.get(Self::range_suffix(bytes.len() - Self::LENGTH_NO_SUFFIX))?);
+        Some(Self { object, infix, suffix })
     }
 
     pub fn build_prefix() -> StorageKey<'static, { ObjectVertexProperty::LENGTH_PREFIX }> {
@@ -80,11 +98,11 @@ impl ObjectVertexProperty {
     }
 
     fn suffix_length(&self) -> usize {
-        self.suffix.as_ref().map(|s| s.len()).unwrap_or(0)
+        self.suffix.len()
     }
 
-    pub fn suffix(&self) -> Option<&[u8]> {
-        self.suffix.as_deref()
+    pub fn suffix(&self) -> &[u8] {
+        &self.suffix
     }
 
     const fn range_object_vertex() -> Range<usize> {
@@ -106,9 +124,7 @@ impl AsBytes<BUFFER_KEY_INLINE> for ObjectVertexProperty {
         array[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         array[Self::range_object_vertex()].copy_from_slice(&self.object.to_bytes());
         array[Self::range_infix()].copy_from_slice(&self.infix.infix_id().bytes());
-        if let Some(suffix) = self.suffix() {
-            array[Self::range_suffix(suffix.len())].copy_from_slice(suffix);
-        }
+        array[Self::range_suffix(self.suffix.len())].copy_from_slice(&self.suffix);
         Bytes::Array(array)
     }
 }
