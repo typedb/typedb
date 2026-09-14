@@ -204,6 +204,7 @@ pub(crate) fn create_executors_for_conjunction(
                         builtin_id,
                         function_call.arguments.clone(),
                         function_call.assigned.clone(),
+                        function_call.selected_variables.clone(),
                         function_call.output_width,
                         builtin_profile,
                     );
@@ -217,6 +218,7 @@ pub(crate) fn create_executors_for_conjunction(
                             function_call.function_id.clone(),
                             function_call.arguments.clone(),
                             function_call.assigned.clone(),
+                            function_call.selected_variables.clone(),
                             function_call.output_width,
                         );
                         steps.push(StepExecutors::TabledCall(executor))

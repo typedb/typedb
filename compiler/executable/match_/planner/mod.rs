@@ -161,7 +161,6 @@ struct FunctionCallBuilder {
     function_id: FunctionID,
     arguments: Vec<VariablePosition>,
     assigned: Vec<Option<VariablePosition>>,
-    output_width: u32,
 }
 
 #[derive(Debug)]
@@ -283,19 +282,15 @@ impl StepBuilder {
                 ))
             }
 
-            StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
-                function_id,
-                arguments,
-                assigned,
-                output_width,
-                ..
-            }) => ExecutionStep::FunctionCall(FunctionCallStep {
-                function_id,
-                arguments,
-                assigned,
-                selected_variables,
-                output_width,
-            }),
+            StepInstructionsBuilder::FunctionCall(FunctionCallBuilder { function_id, arguments, assigned, .. }) => {
+                ExecutionStep::FunctionCall(FunctionCallStep {
+                    function_id,
+                    arguments,
+                    assigned,
+                    selected_variables,
+                    output_width,
+                })
+            }
         }
     }
 }

@@ -1471,7 +1471,6 @@ impl ConjunctionPlan<'_> {
                         function_id: call_binding.function_call().function_id(),
                         arguments,
                         assigned,
-                        output_width: conjunction_builder.next_output.position,
                     });
                     conjunction_builder.push_step(&HashMap::new(), step_builder.into())
                 }
@@ -1509,7 +1508,6 @@ impl ConjunctionPlan<'_> {
                     function_id: call_binding.function_call().function_id(),
                     arguments,
                     assigned,
-                    output_width: conjunction_builder.next_output.position,
                 });
                 conjunction_builder.push_step(&HashMap::new(), step_builder.into());
             }
