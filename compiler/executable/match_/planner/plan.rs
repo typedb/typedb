@@ -934,6 +934,7 @@ impl PartialCostPlan {
             );
             let mut new_plan = self.clone();
             new_plan.add_to_stash(extension.pattern_id, graph);
+            new_plan.heuristic = extension.heuristic;
             new_plan
         } else {
             event!(
