@@ -32,13 +32,12 @@ pub mod core_metrics;
 pub mod error_metrics;
 pub mod file_metrics;
 pub mod histogram_metrics;
-mod system_sampler;
 pub mod transaction_metrics;
 pub use core_metrics::CoreMetrics;
 pub(crate) use error_metrics::ErrorMetrics;
 pub use file_metrics::FsyncMetrics;
 pub use histogram_metrics::{HistogramMetrics, HistogramSnapshot, HistogramUnit};
-use system_sampler::SystemSampler;
+use resource::system_info::SystemInfo;
 pub(crate) use transaction_metrics::TransactionLifecycleCounters;
 pub use transaction_metrics::{
     LoadKind, QueryType, ReadQueryMetrics, SchemaQueryMetrics, TransactionLifecycleSnapshot, TransactionMetrics,
@@ -119,7 +118,7 @@ pub(crate) struct ServerMetrics {
     os_version: String,
     version: String,
     data_directory: PathBuf,
-    sampler: Arc<SystemSampler>,
+    system_info_sampler: Arc<SystemInfo>,
     _sampler_refresh: IntervalRunner,
 }
 
@@ -128,8 +127,8 @@ impl ServerMetrics {
         let os_name = System::name().unwrap_or(UNKNOWN_STR.to_string());
         let os_arch = System::cpu_arch();
         let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_string());
-        let sampler = Arc::new(SystemSampler::new(data_directory.clone()));
-        let sampler_for_refresh = sampler.clone();
+        let system_info_sampler = Arc::new(SystemInfo::new(data_directory.clone()));
+        let sampler_for_refresh = system_info_sampler.clone();
         let _sampler_refresh =
             IntervalRunner::new(move || sampler_for_refresh.refresh(), SYSTEM_METRICS_REFRESH_INTERVAL);
         Self {
@@ -139,7 +138,7 @@ impl ServerMetrics {
             os_version,
             version,
             data_directory,
-            sampler,
+            system_info_sampler,
             _sampler_refresh,
         }
     }
@@ -153,10 +152,10 @@ impl ServerMetrics {
     }
 
     pub fn to_full_state_report(&self) -> ServerReport {
-        let total_memory = self.sampler.total_memory_bytes();
-        let available_memory = self.sampler.available_memory_bytes();
-        let disk_total = self.sampler.disk_total_bytes();
-        let disk_available = self.sampler.disk_available_bytes();
+        let total_memory = self.system_info_sampler.total_memory_bytes();
+        let available_memory = self.system_info_sampler.available_memory_bytes();
+        let disk_total = self.system_info_sampler.disk_total_bytes();
+        let disk_available = self.system_info_sampler.disk_available_bytes();
         ServerReport {
             version: self.version.clone(),
             sensitive_part: Some(ServerReportSensitivePart {
@@ -175,10 +174,10 @@ impl ServerMetrics {
                 disk_used_in_bytes: disk_total.saturating_sub(disk_available),
                 disk_available_in_bytes: disk_available,
                 process: ProcessReport {
-                    cpu_seconds_total: self.sampler.process_cpu_seconds_total(),
-                    resident_memory_bytes: self.sampler.process_resident_memory_bytes(),
-                    virtual_memory_bytes: self.sampler.process_virtual_memory_bytes(),
-                    start_time_unix_seconds: self.sampler.process_start_time_unix_seconds(),
+                    cpu_seconds_total: self.system_info_sampler.process_cpu_seconds_total(),
+                    resident_memory_bytes: self.system_info_sampler.process_resident_memory_bytes(),
+                    virtual_memory_bytes: self.system_info_sampler.process_virtual_memory_bytes(),
+                    start_time_unix_seconds: self.system_info_sampler.process_start_time_unix_seconds(),
                 },
             }),
         }

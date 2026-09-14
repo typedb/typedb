@@ -7,7 +7,14 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
+use std::{
+    fs,
+    future::Future,
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    pin::Pin,
+    sync::Arc,
+};
 
 use axum_server::{Handle, tls_rustls::RustlsConfig};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
@@ -16,7 +23,7 @@ use futures::future::try_join_all;
 use rand::prelude::SliceRandom;
 use resource::{
     constants::{
-        common::STUDIO_URL,
+        common::{GB, STUDIO_URL},
         server::{
             DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, HTTP_MAX_MESSAGE_SIZE,
             SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
@@ -24,13 +31,14 @@ use resource::{
     },
     distribution_info::DistributionInfo,
     server_info::{EndpointInfo, ServingInfo, print_serving_block},
+    system_info::SystemInfo,
 };
 use tokio::sync::watch::{Receiver, Sender, channel};
 use tracing::info;
 
 use crate::{
     error::ServerOpenError,
-    parameters::config::{Config, EncryptionConfig, ServerConfig, StorageConfig},
+    parameters::config::{Config, EncryptionConfig, StorageConfig},
     service::{
         admin::transport::{self, AdminPath},
         grpc, http,
@@ -268,7 +276,7 @@ impl Server {
         Self::print_hello(self.distribution_info, self.config.development_mode.enabled);
         let serve_result = Self::serve_all(
             self.distribution_info,
-            self.config.server.clone(),
+            self.config.clone(),
             self.server_state,
             self.shutdown_sender.clone(),
             self.shutdown_receiver,
@@ -283,7 +291,7 @@ impl Server {
 
     async fn serve_all(
         distribution_info: DistributionInfo,
-        server_config: ServerConfig,
+        config: Config,
         server_state: Arc<ServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
@@ -296,7 +304,7 @@ impl Server {
 
         let grpc_server = Self::serve_grpc(
             server_state.grpc_listen_address(),
-            &server_config.encryption,
+            &config.server.encryption,
             server_state.clone(),
             shutdown_receiver.clone(),
         );
@@ -305,7 +313,7 @@ impl Server {
         if let Some(http_listen_address) = server_state.http_listen_address() {
             let http_server = Self::serve_http(
                 http_listen_address,
-                &server_config.encryption,
+                &config.server.encryption,
                 server_state.clone(),
                 shutdown_receiver.clone(),
                 background_tasks_spawner.clone(),
@@ -330,10 +338,12 @@ impl Server {
             .status()
             .await
             .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?;
-        Self::print_serving_information(&server_status, &server_config.encryption);
+        Self::print_serving_information(&server_status, &config.server.encryption);
         if distribution_info.is_default_distribution() {
-            Self::print_ready();
+            Self::log_ready();
         }
+
+        Self::log_hardware_info(config.storage.data_directory);
 
         Self::spawn_shutdown_handler(shutdown_sender);
         try_join_all(servers).await.map(|_| ())
@@ -483,8 +493,20 @@ impl Server {
         println!();
     }
 
-    pub fn print_ready() {
-        info!("\nReady!");
+    pub fn log_ready() {
+        info!("\nReady!\n");
+    }
+
+    pub fn log_hardware_info(data_directory: PathBuf) {
+        let system_info = SystemInfo::new(data_directory);
+        info!(
+            "Hardware info - cpu: {}, memory: {} GB ({} GB free), data directory: {} GB ({} GB free)",
+            system_info.cpu_count(),
+            system_info.total_memory_bytes() / GB,
+            system_info.available_memory_bytes() / GB,
+            system_info.disk_total_bytes() / GB,
+            system_info.disk_available_bytes() / GB,
+        );
     }
 
     fn connect_address(advertise: Option<&str>, listen: Option<&str>) -> Option<String> {

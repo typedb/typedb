@@ -13,10 +13,14 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
-use sysinfo::{Disks, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
+use sysinfo::{
+    CpuRefreshKind, Disks, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System,
+};
 
 #[derive(Debug)]
-pub(crate) struct SystemSampler {
+pub struct SystemInfo {
+    cpu_count: usize,
+
     process_cpu_microseconds: AtomicU64,
     process_rss_bytes: AtomicU64,
     process_vsize_bytes: AtomicU64,
@@ -40,19 +44,21 @@ struct SamplerState {
     last_refresh_at: Option<Instant>,
 }
 
-impl SystemSampler {
-    pub(crate) fn new(data_directory: PathBuf) -> Self {
+impl SystemInfo {
+    pub fn new(data_directory: PathBuf) -> Self {
         let pid = sysinfo::get_current_pid().expect("Expected to resolve current PID");
         let process_start_time_unix_seconds =
             SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
         let system = System::new_with_specifics(
             RefreshKind::nothing()
                 .with_memory(MemoryRefreshKind::everything())
-                .with_processes(ProcessRefreshKind::everything()),
+                .with_processes(ProcessRefreshKind::everything())
+                .with_cpu(CpuRefreshKind::nothing()),
         );
         let disks = Disks::new_with_refreshed_list();
 
         let sampler = Self {
+            cpu_count: system.cpus().len(),
             process_cpu_microseconds: AtomicU64::new(0),
             process_rss_bytes: AtomicU64::new(0),
             process_vsize_bytes: AtomicU64::new(0),
@@ -69,7 +75,7 @@ impl SystemSampler {
         sampler
     }
 
-    pub(crate) fn refresh(&self) {
+    pub fn refresh(&self) {
         let mut state = self.state.lock().expect("Expected system sampler state lock acquisition");
 
         state.system.refresh_memory();
@@ -111,28 +117,39 @@ impl SystemSampler {
         }
     }
 
-    pub(crate) fn total_memory_bytes(&self) -> u64 {
+    pub fn cpu_count(&self) -> usize {
+        self.cpu_count
+    }
+
+    pub fn total_memory_bytes(&self) -> u64 {
         self.total_memory_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn available_memory_bytes(&self) -> u64 {
+
+    pub fn available_memory_bytes(&self) -> u64 {
         self.available_memory_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn disk_total_bytes(&self) -> u64 {
+
+    pub fn disk_total_bytes(&self) -> u64 {
         self.disk_total_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn disk_available_bytes(&self) -> u64 {
+
+    pub fn disk_available_bytes(&self) -> u64 {
         self.disk_available_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn process_cpu_seconds_total(&self) -> f64 {
+
+    pub fn process_cpu_seconds_total(&self) -> f64 {
         self.process_cpu_microseconds.load(Ordering::Relaxed) as f64 / 1_000_000.0
     }
-    pub(crate) fn process_resident_memory_bytes(&self) -> u64 {
+
+    pub fn process_resident_memory_bytes(&self) -> u64 {
         self.process_rss_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn process_virtual_memory_bytes(&self) -> u64 {
+
+    pub fn process_virtual_memory_bytes(&self) -> u64 {
         self.process_vsize_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn process_start_time_unix_seconds(&self) -> u64 {
+
+    pub fn process_start_time_unix_seconds(&self) -> u64 {
         self.process_start_time_unix_seconds
     }
 }
