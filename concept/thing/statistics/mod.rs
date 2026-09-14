@@ -14,13 +14,7 @@ use std::{
 };
 
 use durability::DurabilityRecordType;
-use encoding::{
-    DecodableKey,
-    graph::{
-        Typed,
-        type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
-    },
-};
+use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
 use error::typedb_error;
 use resource::{
     constants::{
@@ -29,7 +23,6 @@ use resource::{
     },
     profile::StorageCounters,
 };
-use serde::{Deserialize, Serialize};
 use storage::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
@@ -720,85 +713,6 @@ typedb_error!(
     }
 );
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
-enum SerialisableType {
-    Entity(TypeIDUInt),
-    Relation(TypeIDUInt),
-    Attribute(TypeIDUInt),
-    Role(TypeIDUInt),
-}
-
-impl SerialisableType {
-    pub(crate) fn into_entity_type(self) -> EntityType {
-        match self {
-            Self::Entity(id) => EntityType::build_from_type_id(TypeID::new(id)),
-            _ => panic!("Incompatible conversion."),
-        }
-    }
-
-    pub(crate) fn into_relation_type(self) -> RelationType {
-        match self {
-            Self::Relation(id) => RelationType::build_from_type_id(TypeID::new(id)),
-            _ => panic!("Incompatible conversion."),
-        }
-    }
-
-    pub(crate) fn into_object_type(self) -> ObjectType {
-        match self {
-            Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::new(id))),
-            Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::new(id))),
-            _ => panic!("Incompatible conversion."),
-        }
-    }
-
-    pub(crate) fn into_attribute_type(self) -> AttributeType {
-        match self {
-            Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::new(id)),
-            _ => panic!("Incompatible conversion."),
-        }
-    }
-
-    pub(crate) fn into_role_type(self) -> RoleType {
-        match self {
-            Self::Role(id) => RoleType::build_from_type_id(TypeID::new(id)),
-            _ => panic!("Incompatible conversion."),
-        }
-    }
-}
-
-impl From<ObjectType> for SerialisableType {
-    fn from(object: ObjectType) -> Self {
-        match object {
-            ObjectType::Entity(entity) => Self::from(entity),
-            ObjectType::Relation(relation) => Self::from(relation),
-        }
-    }
-}
-
-impl From<EntityType> for SerialisableType {
-    fn from(entity: EntityType) -> Self {
-        Self::Entity(entity.vertex().type_id_().as_u16())
-    }
-}
-
-impl From<RelationType> for SerialisableType {
-    fn from(relation: RelationType) -> Self {
-        Self::Relation(relation.vertex().type_id_().as_u16())
-    }
-}
-
-impl From<AttributeType> for SerialisableType {
-    fn from(attribute: AttributeType) -> Self {
-        Self::Attribute(attribute.vertex().type_id_().as_u16())
-    }
-}
-
-impl From<RoleType> for SerialisableType {
-    fn from(role_type: RoleType) -> Self {
-        Self::Role(role_type.vertex().type_id_().as_u16())
-    }
-}
-
 impl DurabilityRecord for Statistics {
     const RECORD_TYPE: DurabilityRecordType = 10;
     const RECORD_NAME: &'static str = "thing_statistics";
@@ -817,6 +731,10 @@ impl UnsequencedDurabilityRecord for Statistics {}
 mod serialise {
     use std::{collections::HashMap, fmt};
 
+    use encoding::graph::{
+        Typed,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
+    };
     use serde::{
         Deserialize, Deserializer, Serialize, Serializer, de,
         de::{MapAccess, SeqAccess, Visitor},
@@ -824,7 +742,7 @@ mod serialise {
     };
 
     use crate::{
-        thing::statistics::{SerialisableType, Statistics},
+        thing::statistics::Statistics,
         type_::{
             attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
             relation_type::RelationType, role_type::RoleType,
@@ -931,6 +849,85 @@ mod serialise {
                 "PlayerIndexCounts" => Some(Field::LinksIndexCounts),
                 _ => None,
             }
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+    enum SerialisableType {
+        Entity(TypeIDUInt),
+        Relation(TypeIDUInt),
+        Attribute(TypeIDUInt),
+        Role(TypeIDUInt),
+    }
+
+    impl SerialisableType {
+        pub(crate) fn into_entity_type(self) -> EntityType {
+            match self {
+                Self::Entity(id) => EntityType::build_from_type_id(TypeID::new(id)),
+                _ => panic!("Incompatible conversion."),
+            }
+        }
+
+        pub(crate) fn into_relation_type(self) -> RelationType {
+            match self {
+                Self::Relation(id) => RelationType::build_from_type_id(TypeID::new(id)),
+                _ => panic!("Incompatible conversion."),
+            }
+        }
+
+        pub(crate) fn into_object_type(self) -> ObjectType {
+            match self {
+                Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::new(id))),
+                Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::new(id))),
+                _ => panic!("Incompatible conversion."),
+            }
+        }
+
+        pub(crate) fn into_attribute_type(self) -> AttributeType {
+            match self {
+                Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::new(id)),
+                _ => panic!("Incompatible conversion."),
+            }
+        }
+
+        pub(crate) fn into_role_type(self) -> RoleType {
+            match self {
+                Self::Role(id) => RoleType::build_from_type_id(TypeID::new(id)),
+                _ => panic!("Incompatible conversion."),
+            }
+        }
+    }
+
+    impl From<ObjectType> for SerialisableType {
+        fn from(object: ObjectType) -> Self {
+            match object {
+                ObjectType::Entity(entity) => Self::from(entity),
+                ObjectType::Relation(relation) => Self::from(relation),
+            }
+        }
+    }
+
+    impl From<EntityType> for SerialisableType {
+        fn from(entity: EntityType) -> Self {
+            Self::Entity(entity.vertex().type_id_().as_u16())
+        }
+    }
+
+    impl From<RelationType> for SerialisableType {
+        fn from(relation: RelationType) -> Self {
+            Self::Relation(relation.vertex().type_id_().as_u16())
+        }
+    }
+
+    impl From<AttributeType> for SerialisableType {
+        fn from(attribute: AttributeType) -> Self {
+            Self::Attribute(attribute.vertex().type_id_().as_u16())
+        }
+    }
+
+    impl From<RoleType> for SerialisableType {
+        fn from(role_type: RoleType) -> Self {
+            Self::Role(role_type.vertex().type_id_().as_u16())
         }
     }
 
