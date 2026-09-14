@@ -6,7 +6,7 @@
 
 use std::{
     cmp::min,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, hash_map},
     fmt,
     hash::Hash,
     ops::Bound,
@@ -69,6 +69,29 @@ impl TryFrom<u64> for StatisticsEncodingVersion {
     }
 }
 
+type DoubleHashMap<K1, K2, V> = HashMap<K1, HashMap<K2, V>>;
+type TripleHashMap<K1, K2, K3, V> = DoubleHashMap<K1, K2, HashMap<K3, V>>;
+
+trait DoubleHashMapExt<K1, K2, V> {
+    fn double_entry(&mut self, k1: K1, k2: K2) -> hash_map::Entry<'_, K2, V>;
+}
+
+impl<K1: Eq + Hash, K2: Eq + Hash, V> DoubleHashMapExt<K1, K2, V> for DoubleHashMap<K1, K2, V> {
+    fn double_entry(&mut self, k1: K1, k2: K2) -> hash_map::Entry<'_, K2, V> {
+        self.entry(k1).or_default().entry(k2)
+    }
+}
+
+trait TripleHashMapExt<K1, K2, K3, V> {
+    fn triple_entry(&mut self, k1: K1, k2: K2, k3: K3) -> hash_map::Entry<'_, K3, V>;
+}
+
+impl<K1: Eq + Hash, K2: Eq + Hash, K3: Eq + Hash, V> TripleHashMapExt<K1, K2, K3, V> for TripleHashMap<K1, K2, K3, V> {
+    fn triple_entry(&mut self, k1: K1, k2: K2, k3: K3) -> hash_map::Entry<'_, K3, V> {
+        self.entry(k1).or_default().entry(k2).or_default().entry(k3)
+    }
+}
+
 /// Thing statistics, reflecting a snapshot of statistics accurate as of a particular sequence number
 /// When types are undefined, we retain the last count of the instances of the type
 /// Invariant: all undefined types are
@@ -94,15 +117,15 @@ pub struct Statistics {
     pub attribute_counts: HashMap<AttributeType, u64>,
     pub role_counts: HashMap<RoleType, u64>,
 
-    pub has_attribute_counts: HashMap<ObjectType, HashMap<AttributeType, u64>>,
-    pub attribute_owner_counts: HashMap<AttributeType, HashMap<ObjectType, u64>>,
-    pub role_player_counts: HashMap<ObjectType, HashMap<RoleType, u64>>,
-    pub relation_role_counts: HashMap<RelationType, HashMap<RoleType, u64>>,
-    pub relation_role_player_counts: HashMap<RelationType, HashMap<RoleType, HashMap<ObjectType, u64>>>,
-    pub player_role_relation_counts: HashMap<ObjectType, HashMap<RoleType, HashMap<RelationType, u64>>>,
+    pub has_attribute_counts: DoubleHashMap<ObjectType, AttributeType, u64>,
+    pub attribute_owner_counts: DoubleHashMap<AttributeType, ObjectType, u64>,
+    pub role_player_counts: DoubleHashMap<ObjectType, RoleType, u64>,
+    pub relation_role_counts: DoubleHashMap<RelationType, RoleType, u64>,
+    pub relation_role_player_counts: TripleHashMap<RelationType, RoleType, ObjectType, u64>,
+    pub player_role_relation_counts: TripleHashMap<ObjectType, RoleType, RelationType, u64>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
-    pub links_index_counts: HashMap<ObjectType, HashMap<ObjectType, u64>>,
+    pub links_index_counts: DoubleHashMap<ObjectType, ObjectType, u64>,
     // future: attribute value distributions, attribute value ownership distributions, etc.
 }
 
@@ -435,10 +458,9 @@ impl Statistics {
     }
 
     fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
-        let attribute_count =
-            self.has_attribute_counts.entry(owner_type).or_default().entry(attribute_type).or_default();
+        let attribute_count = self.has_attribute_counts.double_entry(owner_type, attribute_type).or_default();
         Self::saturating_add(attribute_count, delta, "has_attribute");
-        let owner_count = self.attribute_owner_counts.entry(attribute_type).or_default().entry(owner_type).or_default();
+        let owner_count = self.attribute_owner_counts.double_entry(attribute_type, owner_type).or_default();
         Self::saturating_add(owner_count, delta, "attribute_owner");
         Self::saturating_add(&mut self.total_has_count, delta, "total_has");
     }
@@ -453,38 +475,24 @@ impl Statistics {
         let role_count = self.role_counts.entry(role_type).or_default();
         Self::saturating_add(role_count, delta, "role");
         Self::saturating_add(&mut self.total_role_count, delta, "total_role");
-        let role_player_count = self.role_player_counts.entry(player_type).or_default().entry(role_type).or_default();
+        let role_player_count = self.role_player_counts.double_entry(player_type, role_type).or_default();
         Self::saturating_add(role_player_count, delta, "role_player");
-        let relation_role_count =
-            self.relation_role_counts.entry(relation_type).or_default().entry(role_type).or_default();
+        let relation_role_count = self.relation_role_counts.double_entry(relation_type, role_type).or_default();
         Self::saturating_add(relation_role_count, delta, "relation_role");
-        let relation_role_player_count = self
-            .relation_role_player_counts
-            .entry(relation_type)
-            .or_default()
-            .entry(role_type)
-            .or_default()
-            .entry(player_type)
-            .or_default();
+        let relation_role_player_count =
+            self.relation_role_player_counts.triple_entry(relation_type, role_type, player_type).or_default();
         Self::saturating_add(relation_role_player_count, delta, "relation_role_player");
-        let player_role_relation_count = self
-            .player_role_relation_counts
-            .entry(player_type)
-            .or_default()
-            .entry(role_type)
-            .or_default()
-            .entry(relation_type)
-            .or_default();
+        let player_role_relation_count =
+            self.player_role_relation_counts.triple_entry(player_type, role_type, relation_type).or_default();
         Self::saturating_add(player_role_relation_count, delta, "player_role_relation");
     }
 
     fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
-        let player_1_to_2_index_count =
-            self.links_index_counts.entry(player_1_type).or_default().entry(player_2_type).or_default();
+        let player_1_to_2_index_count = self.links_index_counts.double_entry(player_1_type, player_2_type).or_default();
         Self::saturating_add(player_1_to_2_index_count, delta, "player_1_to_2_index");
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =
-                self.links_index_counts.entry(player_2_type).or_default().entry(player_1_type).or_default();
+                self.links_index_counts.double_entry(player_2_type, player_1_type).or_default();
             Self::saturating_add(player_2_to_1_index_count, delta, "player_2_to_1_index");
         }
     }
