@@ -74,7 +74,7 @@ commands:
 
   install-brew-rosetta:
     steps:
-      - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/0f5b7666a65fc2d1a2615549f02771353c250f9a/install.sh)"
 
   test-assembly-unix:
     steps:
