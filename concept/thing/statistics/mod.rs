@@ -32,12 +32,15 @@ use storage::{
     record::CommitType,
     recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
     sequence_number::SequenceNumber,
-    snapshot::{buffer::OperationsBuffer, write::Write},
+    snapshot::{ReadableSnapshot, buffer::OperationsBuffer, write::Write},
 };
 use tracing::{Level, event};
 
 use crate::{
-    thing::{ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation},
+    error::ConceptReadError,
+    thing::{
+        ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation, thing_manager::ThingManager,
+    },
     type_::{
         TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
         relation_type::RelationType, role_type::RoleType,
@@ -159,6 +162,96 @@ impl Statistics {
             player_role_relation_counts: HashMap::new(),
             links_index_counts: HashMap::new(),
         }
+    }
+
+    pub fn read(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> Result<Self, Box<ConceptReadError>> {
+        let mut entity_counts = HashMap::new();
+        for entity in thing_manager.get_entities(snapshot, storage_counters.clone()) {
+            *entity_counts.entry(entity?.type_()).or_default() += 1;
+        }
+
+        let mut relation_counts = HashMap::new();
+        for relation in thing_manager.get_relations(snapshot, storage_counters.clone()) {
+            *relation_counts.entry(relation?.type_()).or_default() += 1;
+        }
+
+        let mut attribute_counts = HashMap::new();
+        for attribute in thing_manager.get_attributes(snapshot, storage_counters.clone())? {
+            *attribute_counts.entry(attribute?.type_()).or_default() += 1;
+        }
+
+        let mut has_attribute_counts = DoubleHashMap::new();
+        let mut attribute_owner_counts = DoubleHashMap::new();
+        for has in thing_manager.get_has(snapshot, storage_counters.clone()) {
+            let (has, _) = has?;
+            let owner = has.owner().type_();
+            let attribute = has.attribute().type_();
+            *has_attribute_counts.double_entry(owner, attribute).or_default() += 1;
+            *attribute_owner_counts.double_entry(attribute, owner).or_default() += 1;
+        }
+
+        let mut role_counts = HashMap::new();
+        let mut role_player_counts = DoubleHashMap::new();
+        let mut relation_role_counts = DoubleHashMap::new();
+        let mut relation_role_player_counts = TripleHashMap::new();
+        let mut player_role_relation_counts = TripleHashMap::new();
+        for links in thing_manager.get_links(snapshot, storage_counters.clone()) {
+            let (links, _) = links?;
+            let relation = links.relation().type_();
+            let role = links.role_type();
+            let player = links.player().type_();
+            *role_counts.entry(role).or_default() += 1;
+            *role_player_counts.double_entry(player, role).or_default() += 1;
+            *relation_role_counts.double_entry(relation, role).or_default() += 1;
+            *relation_role_player_counts.triple_entry(relation, role, player).or_default() += 1;
+            *player_role_relation_counts.triple_entry(player, role, relation).or_default() += 1;
+        }
+
+        let mut links_index_counts = DoubleHashMap::new();
+        for links_index in thing_manager.iterate_all_indexed_relations(snapshot, storage_counters)? {
+            let ((player1, player2, ..), _) = links_index?;
+            *links_index_counts.double_entry(player1.type_(), player2.type_()).or_default() += 1;
+        }
+
+        let total_entity_count = entity_counts.values().sum();
+        let total_relation_count = relation_counts.values().sum();
+        let total_attribute_count = attribute_counts.values().sum();
+        let total_thing_count = total_entity_count + total_relation_count + total_attribute_count;
+
+        let total_role_count = role_counts.values().sum();
+        let total_has_count = has_attribute_counts.values().flat_map(|x| x.values()).sum();
+
+        // attribute countrs and links index counts are not included in the total count
+        let total_count = total_entity_count + total_relation_count + total_has_count + total_role_count;
+
+        Ok(Self {
+            encoding_version: Self::ENCODING_VERSION,
+            sequence_number: snapshot.open_sequence_number(),
+            last_durable_write_sequence_number: SequenceNumber::MIN,
+            last_durable_write_total_count: 0,
+            total_count,
+            total_thing_count,
+            total_entity_count,
+            total_relation_count,
+            total_attribute_count,
+            total_role_count,
+            total_has_count,
+            entity_counts,
+            relation_counts,
+            attribute_counts,
+            role_counts,
+            has_attribute_counts,
+            attribute_owner_counts,
+            role_player_counts,
+            relation_role_counts,
+            relation_role_player_counts,
+            player_role_relation_counts,
+            links_index_counts,
+        })
     }
 
     pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {

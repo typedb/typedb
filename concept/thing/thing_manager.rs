@@ -784,6 +784,11 @@ impl ThingManager {
         Ok(has_exists)
     }
 
+    pub fn get_has(&self, snapshot: &impl ReadableSnapshot, storage_counters: StorageCounters) -> HasIterator {
+        let key_range = KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+    }
+
     pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1310,6 +1315,11 @@ impl ThingManager {
         snapshot.any_in_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
+    pub fn get_links(&self, snapshot: &impl ReadableSnapshot, storage_counters: StorageCounters) -> LinksIterator {
+        let key_range = &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        LinksIterator::new(snapshot.iterate_range(key_range, storage_counters))
+    }
+
     pub fn get_links_by_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1635,6 +1645,16 @@ impl ThingManager {
             relation.type_(),
             storage_counters,
         )
+    }
+
+    pub(crate) fn iterate_all_indexed_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+        let key_range =
+            KeyRange::new_within(ThingEdgeIndexedRelation::prefix(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+        Ok(IndexedRelationsIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
     fn iterate_indexed_relations<const INLINE_SIZE: usize>(

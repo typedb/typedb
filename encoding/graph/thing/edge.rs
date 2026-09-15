@@ -816,6 +816,7 @@ impl ThingEdgeIndexedRelation {
     const LENGTH: usize = Self::RANGE_END_ROLE_TYPE_ID.end;
     const RANGE_START_TYPE: Range<usize> =
         Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX: usize = Self::RANGE_RELATION_TYPE_ID.start;
     pub const LENGTH_PREFIX_REL_TYPE_ID: usize = Self::RANGE_RELATION_TYPE_ID.end;
     pub const LENGTH_PREFIX_REL_TYPE_ID_START_TYPE: usize =
         PrefixID::LENGTH + TypeID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
@@ -897,6 +898,12 @@ impl ThingEdgeIndexedRelation {
             role_id_from,
             role_id_to,
         ))
+    }
+
+    pub fn prefix() -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     pub fn prefix_relation_type(
