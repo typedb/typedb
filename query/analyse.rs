@@ -29,6 +29,7 @@ use concept::{
     type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType, type_manager::TypeManager},
 };
 use encoding::value::value_type::ValueType;
+use error::todo_must_implement;
 use ir::{
     pattern::{
         ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
@@ -245,7 +246,7 @@ fn enrich_annotations(
 ) -> ConjunctionAnnotations {
     variable_annotations
         .map(|(variable, annotations)| {
-            let is_optional = variable_registry.is_variable_optional(variable);
+            let is_optional = todo_must_implement!("variable_registry.is_variable_optional(variable)");
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })
         .collect()

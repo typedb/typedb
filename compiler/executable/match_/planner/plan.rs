@@ -22,7 +22,8 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable, Value,
+            IsSet, Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable,
+            Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -247,6 +248,7 @@ impl VertexId {
 #[derive(Clone)]
 pub(super) struct ConjunctionPlanBuilder<'a> {
     required_inputs: Vec<Variable>,
+    checked_isset_variables: HashSet<Variable>,
     graph: Graph<'a>,
     local_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
@@ -267,6 +269,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             statistics,
             planner_statistics: PlannerStatistics::new(),
             required_inputs,
+            checked_isset_variables: HashSet::new(),
         }
     }
 
@@ -394,6 +397,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::DeleteConcepts(_) => {
                     debug_assert!(false, "DeleteConcepts can only appear in delete blocks")
                 }
+                Constraint::IsSet(is_set) => self.register_is_set(&is_set),
             }
         }
     }
@@ -527,6 +531,10 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             self.local_annotations,
             self.statistics,
         ));
+    }
+
+    fn register_is_set(&mut self, is_set: &'a IsSet<Variable>) {
+        self.checked_isset_variables.extend(is_set.ids());
     }
 
     fn register_links_deduplication(&mut self, links_deduplication: &'a LinksDeduplication<Variable>) {
@@ -704,11 +712,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
+        let Self {
+            graph, checked_isset_variables, local_annotations: type_annotations, mut planner_statistics, ..
+        } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {
             graph,
+            checked_isset_variables,
             local_annotations: type_annotations,
             ordering,
             metadata,
@@ -1250,6 +1261,7 @@ pub(crate) struct ConjunctionPlan<'a> {
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
     pub(crate) planner_statistics: PlannerStatistics,
+    checked_isset_variables: HashSet<Variable>,
 }
 
 impl fmt::Debug for ConjunctionPlan<'_> {
@@ -1273,6 +1285,7 @@ impl ConjunctionPlan<'_> {
             already_assigned_positions,
             selected_variables.clone(),
             input_variables.clone().into_iter().collect(),
+            self.checked_isset_variables.clone(),
             self.constraint_variables().collect(),
             self.planner_statistics,
         );
@@ -1286,6 +1299,7 @@ impl ConjunctionPlan<'_> {
             match index {
                 VertexId::Variable(var) => {
                     self.may_make_variable_producing_step(&mut conjunction_builder, var, variable_registry)?;
+                    self.may_make_is_set_check(&mut conjunction_builder, self.graph.index_to_variable[&var]);
                 }
                 VertexId::Pattern(pattern) => {
                     for input in self.inputs_of_pattern(pattern) {
@@ -1974,28 +1988,12 @@ impl ConjunctionPlan<'_> {
         if pushed_any {
             conjunction_builder.finish_one();
         }
-        self.check_optional_inputs(conjunction_builder, input_variables, variable_registry);
     }
 
-    fn check_optional_inputs(
-        &self,
-        conjunction_builder: &mut ConjunctionExecutableBuilder,
-        input_variables: impl IntoIterator<Item = Variable>,
-        variable_registry: &VariableRegistry,
-    ) {
-        let mut optional_inputs_in_constraints = input_variables
-            .into_iter()
-            .filter(|&var| variable_registry.is_variable_optional(var))
-            .filter(|var| conjunction_builder.constraint_variables.contains(var))
-            .peekable();
-        if optional_inputs_in_constraints.peek().is_some() {
-            let instruction = CheckInstruction::NotNone {
-                variables: optional_inputs_in_constraints.map(|var| conjunction_builder.position(var)).collect(),
-            };
-            conjunction_builder.push_check(instruction);
-            conjunction_builder.finish_one();
-        } else {
-            drop(optional_inputs_in_constraints);
+    fn may_make_is_set_check(&self, conjunction_builder: &mut ConjunctionExecutableBuilder, variable: Variable) {
+        if conjunction_builder.checked_isset_variables.contains(&variable) {
+            let variable = conjunction_builder.position(variable);
+            conjunction_builder.push_check(CheckInstruction::IsSet { variable });
         }
     }
 }

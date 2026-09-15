@@ -80,6 +80,11 @@ pub(super) fn add_statement(
                 constraints.add_assignment(assigned.variable, expression, *span)?;
             }
         }
+        typeql::Statement::IsSet(is_set) => {
+            let variables =
+                is_set.variables.iter().map(|v| register_typeql_var(constraints, v)).collect::<Result<Vec<_>, _>>()?;
+            constraints.add_is_set(variables, is_set.span())?;
+        }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }

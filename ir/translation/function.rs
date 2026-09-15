@@ -111,12 +111,12 @@ fn translate_function_from(
     match (&signature.output, &body.return_operation) {
         (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars, _)) => {
             check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
-                context.variable_registry.is_variable_optional(*v)
+                context.is_variable_optional(*v)
             })?
         }
         (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars, _)) => {
             check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
-                context.variable_registry.is_variable_optional(*v)
+                context.is_variable_optional(*v)
             })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers, _)) => {
@@ -319,17 +319,11 @@ fn check_consistent_return<T>(
         .enumerate()
         .find_map(|(index, (declared, actual))| (declared != actual).then_some(index));
     if let Some(mismatch_index) = mismatching_index_opt {
-        // TODO: This has to wait till we finalize the spec
-        // use error::TypeDBError;
-        // tracing::warn!(
-        //     "Function has inconsistent return optionality. This will fail in the next version:\n{}",
-        //     FunctionRepresentationError::InconsistentReturnOptionality {
-        //         signature: signature.clone(),
-        //         return_: block.return_stmt.clone(),
-        //         mismatch_index,
-        //     }
-        //     .format_description()
-        // );
+        error::optional_usage_error!(FunctionRepresentationError::InconsistentReturnOptionality {
+            signature: signature.clone(),
+            return_: block.return_stmt.clone(),
+            mismatch_index,
+        });
     }
 
     Ok(())
