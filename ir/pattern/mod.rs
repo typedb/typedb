@@ -802,4 +802,8 @@ impl AssignedVariable {
     pub fn new_required(variable: Variable) -> Self {
         Self { variable, optionality: VariableOptionality::Required }
     }
+
+    pub(crate) fn new_inferred(variable: Variable) -> AssignedVariable {
+        Self::new_required(variable) // TODO: when we have optional assignments
+    }
 }

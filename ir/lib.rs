@@ -239,8 +239,14 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        MultipleAssignmentsForVariable(
+        UnsafeOptionalExpressionDereference(
             37,
+            "The expression '{identifier}' returns an optional value which may be empty. Use '?' to short-circuit and assign an empty result.",
+            identifier: String,
+            source_span: Option<Span>,
+        ),
+        MultipleAssignmentsForVariable(
+            38,
             "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
             variable: String,
             source_span: Option<Span>,
