@@ -815,38 +815,38 @@ impl DatabaseImporter {
                 let original_cardinality = owns
                     .get_cardinality(snapshot, type_manager)
                     .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                if original_cardinality != AnnotationCardinality::unchecked() {
-                    match owns
-                        .get_annotations_declared(snapshot, type_manager)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                        .iter()
-                        .find(|annotation| {
-                            matches!(annotation, OwnsAnnotation::Cardinality(_))
-                                || matches!(annotation, OwnsAnnotation::Key(_))
-                        }) {
-                        Some(annotation) => match annotation {
-                            OwnsAnnotation::Cardinality(cardinality) => {
-                                schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
-                            }
-                            OwnsAnnotation::Key(_) => {
-                                owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
-                                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                                schema_info.original_keys.insert(*owns);
-                            }
-                            _ => unreachable!("Expected a key or a cardinality annotation"),
-                        },
-                        None => {
-                            schema_info.original_cardinalities_owns.insert(*owns, None);
-                        }
-                    }
-                    owns.set_annotation(
-                        snapshot,
-                        type_manager,
-                        thing_manager,
-                        OwnsAnnotation::Cardinality(AnnotationCardinality::unchecked()),
-                    )
-                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                if original_cardinality.start() == 0 {
+                    continue;
                 }
+                match owns
+                    .get_annotations_declared(snapshot, type_manager)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                    .iter()
+                    .find(|annotation| {
+                        matches!(annotation, OwnsAnnotation::Cardinality(_))
+                            || matches!(annotation, OwnsAnnotation::Key(_))
+                    }) {
+                    Some(OwnsAnnotation::Cardinality(cardinality)) => {
+                        schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
+                    }
+                    Some(OwnsAnnotation::Key(_)) => {
+                        owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
+                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                        schema_info.original_keys.insert(*owns);
+                        continue;
+                    }
+                    Some(_) => unreachable!("Expected a key or a cardinality annotation"),
+                    None => {
+                        schema_info.original_cardinalities_owns.insert(*owns, None);
+                    }
+                }
+                owns.set_annotation(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    OwnsAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+                )
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
             }
 
             let all_plays = object_type
@@ -868,74 +868,68 @@ impl DatabaseImporter {
                 let original_cardinality = plays
                     .get_cardinality(snapshot, type_manager)
                     .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                if original_cardinality != AnnotationCardinality::unchecked() {
-                    match plays
-                        .get_annotations_declared(snapshot, type_manager)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                        .iter()
-                        .find(|annotation| matches!(annotation, PlaysAnnotation::Cardinality(_)))
-                    {
-                        Some(annotation) => match annotation {
-                            PlaysAnnotation::Cardinality(cardinality) => {
-                                schema_info.original_cardinalities_plays.insert(*plays, Some(*cardinality));
-                            }
-                            _ => unreachable!("Expected a cardinality annotation"),
-                        },
-                        None => {
-                            schema_info.original_cardinalities_plays.insert(*plays, None);
-                        }
-                    }
-                    plays
-                        .set_annotation(
-                            snapshot,
-                            type_manager,
-                            thing_manager,
-                            PlaysAnnotation::Cardinality(AnnotationCardinality::unchecked()),
-                        )
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                if original_cardinality.start() == 0 {
+                    continue;
                 }
+                match plays
+                    .get_annotations_declared(snapshot, type_manager)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                    .iter()
+                    .find(|annotation| matches!(annotation, PlaysAnnotation::Cardinality(_)))
+                {
+                    Some(PlaysAnnotation::Cardinality(cardinality)) => {
+                        schema_info.original_cardinalities_plays.insert(*plays, Some(*cardinality));
+                    }
+                    Some(_) => unreachable!("Expected a cardinality annotation"),
+                    None => {
+                        schema_info.original_cardinalities_plays.insert(*plays, None);
+                    }
+                }
+                plays
+                    .set_annotation(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        PlaysAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+                    )
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
             }
 
             match object_type {
                 ObjectType::Entity(_) => {}
                 ObjectType::Relation(relation_type) => {
                     let all_relates = relation_type
-                        .get_relates_declared(snapshot, type_manager)
+                        .get_relates_explicit_declared(snapshot, type_manager)
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
                     for relates in all_relates.iter() {
-                        // all relates are exclusive for each role type
-
                         let original_cardinality = relates
                             .get_cardinality(snapshot, type_manager)
                             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                        if original_cardinality != AnnotationCardinality::unchecked() {
-                            match relates
-                                .get_annotations_declared(snapshot, type_manager)
-                                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                                .iter()
-                                .find(|annotation| matches!(annotation, RelatesAnnotation::Cardinality(_)))
-                            {
-                                Some(annotation) => match annotation {
-                                    RelatesAnnotation::Cardinality(cardinality) => {
-                                        schema_info
-                                            .original_cardinalities_relates
-                                            .insert(*relates, Some(cardinality.clone()));
-                                    }
-                                    _ => unreachable!("Expected a cardinality annotation"),
-                                },
-                                None => {
-                                    schema_info.original_cardinalities_relates.insert(*relates, None);
-                                }
-                            }
-                            relates
-                                .set_annotation(
-                                    snapshot,
-                                    type_manager,
-                                    thing_manager,
-                                    RelatesAnnotation::Cardinality(AnnotationCardinality::unchecked()),
-                                )
-                                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                        if original_cardinality.start() == 0 {
+                            continue;
                         }
+                        match relates
+                            .get_annotations_declared(snapshot, type_manager)
+                            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                            .iter()
+                            .find(|annotation| matches!(annotation, RelatesAnnotation::Cardinality(_)))
+                        {
+                            Some(RelatesAnnotation::Cardinality(cardinality)) => {
+                                schema_info.original_cardinalities_relates.insert(*relates, Some(*cardinality));
+                            }
+                            Some(_) => unreachable!("Expected a cardinality annotation"),
+                            None => {
+                                schema_info.original_cardinalities_relates.insert(*relates, None);
+                            }
+                        }
+                        relates
+                            .set_annotation(
+                                snapshot,
+                                type_manager,
+                                thing_manager,
+                                RelatesAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+                            )
+                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
                     }
                 }
             }
@@ -978,6 +972,10 @@ impl DatabaseImporter {
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
         Ok(())
+    }
+
+    fn relaxed(cardinality: AnnotationCardinality) -> AnnotationCardinality {
+        AnnotationCardinality::new(0, cardinality.end())
     }
 
     fn restore_capabilities_and_cardinalities(
