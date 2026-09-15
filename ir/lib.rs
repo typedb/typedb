@@ -252,6 +252,12 @@ typedb_error! {
             source_span: Option<Span>,
             other_span: Option<Span>,
         ),
+        IfConditionVariableUnavailable(
+            38,
+            "The variable '{variable}' referenced in an 'if' condition in a write stage is unavailable. It should be bound in the previous stage.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",
