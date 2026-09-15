@@ -315,6 +315,7 @@ fn translate_inline_expression_single(
     let builder_context = BlockBuilderContext::new(
         &mut local_context.variable_registry,
         &mut local_context.last_stage_visible_variables,
+        &mut local_context.variable_optionalities,
         value_parameters,
     );
     let mut builder = Block::builder(builder_context);
@@ -401,6 +402,7 @@ fn translate_inline_function_call<'a>(
     let builder_context = BlockBuilderContext::new(
         &mut local_context.variable_registry,
         &mut local_context.last_stage_visible_variables,
+        &mut local_context.variable_optionalities,
         value_parameters,
     );
     let mut builder = Block::builder(builder_context);

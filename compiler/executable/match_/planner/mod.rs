@@ -297,6 +297,7 @@ impl StepBuilder {
 struct ConjunctionExecutableBuilder {
     selected_variables: HashSet<Variable>,
     input_variables: Vec<Variable>,
+    checked_isset_variables: HashSet<Variable>,
     constraint_variables: HashSet<Variable>,
 
     current_outputs: HashSet<Variable>,
@@ -319,6 +320,7 @@ impl ConjunctionExecutableBuilder {
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         selected_variables: HashSet<Variable>,
         input_variables: Vec<Variable>,
+        checked_isset_variables: HashSet<Variable>,
         constraint_variables: HashSet<Variable>,
         planner_statistics: PlannerStatistics,
     ) -> Self {
@@ -338,6 +340,7 @@ impl ConjunctionExecutableBuilder {
             branch_id,
             selected_variables,
             input_variables,
+            checked_isset_variables,
             constraint_variables,
             current_outputs,
             produced_so_far,

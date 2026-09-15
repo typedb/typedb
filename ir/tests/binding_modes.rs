@@ -59,6 +59,8 @@ macro_rules! assert_optionals {
 }
 
 fn get_optionals(variable_registry: &VariableRegistry) -> Vec<&'_ str> {
+    todo!(
+        r#" // GETS FIXED IN NEXT PR
     variable_registry
         .variable_names()
         .iter()
@@ -66,6 +68,8 @@ fn get_optionals(variable_registry: &VariableRegistry) -> Vec<&'_ str> {
         .map(|(_, name)| name.as_str())
         .sorted()
         .collect()
+    "#
+    );
 }
 
 #[test]

@@ -100,7 +100,7 @@ impl OptionalBuilder {
         self.conjunction
             .variable_binding_modes()
             .into_iter()
-            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::OptionallyBinding) } else { (v, mode) })
+            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::BoundInTry) } else { (v, mode) })
             .collect()
     }
 }

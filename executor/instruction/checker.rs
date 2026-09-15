@@ -243,7 +243,7 @@ fn all_checks_pass<Source, Var: ExtractFrom<Source>>(
                 *comparator,
                 storage_counters.clone(),
             )?,
-            CheckInstruction::NotNone { variables } => filter_not_none(source, variables),
+            CheckInstruction::IsSet { variable } => filter_isset(source, variable),
             CheckInstruction::Unsatisfiable => false,
         };
         if !passes {
@@ -457,11 +457,9 @@ fn filter_links_dedup<Source, Var: ExtractFrom<Source>>(
     !(role1 == role2 && player1 == player2)
 }
 
-fn filter_not_none<Source, Var: ExtractFrom<Source>>(source: &Source, variables: &[Var]) -> bool {
-    variables.iter().all(|var| {
-        let value = var.extract(source);
-        !value.is_none()
-    })
+fn filter_isset<Source, Var: ExtractFrom<Source>>(source: &Source, variable: &Var) -> bool {
+    let value = variable.extract(source);
+    !value.is_none()
 }
 
 fn filter_comparison<Source, Var: ExtractFrom<Source>>(
@@ -750,8 +748,8 @@ impl<'a, T> CheckMapper<'a, T> {
                     player2: self.map_var(player2),
                 }
             }
-            CheckInstruction::NotNone { variables } => {
-                CheckInstruction::NotNone { variables: variables.into_iter().map(|v| self.map_var(v)).collect() }
+            CheckInstruction::IsSet { variable } => {
+                CheckInstruction::IsSet { variable: self.map_var(variable) }
             }
             CheckInstruction::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: self.map(lhs), rhs: self.map(rhs), comparator }

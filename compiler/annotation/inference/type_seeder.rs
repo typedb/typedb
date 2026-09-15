@@ -202,6 +202,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
                 Constraint::Value(c) => c.apply(self, vertices)?,
                 | Constraint::Iid(_)
+                | Constraint::IsSet(_)
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
@@ -427,6 +428,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
             Constraint::Comparison(_) // Unlike in 2.x, We don't use comparisons to propagate.
             | Constraint::DeleteConcepts(_)
+            | Constraint::IsSet(_)
             | Constraint::Iid(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
@@ -546,6 +548,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
                 Constraint::DeleteConcepts(_)
                 | Constraint::Iid(_)
+                | Constraint::IsSet(_)
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
                 | Constraint::Kind(_)

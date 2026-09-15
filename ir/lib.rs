@@ -233,6 +233,19 @@ typedb_error! {
             "The variable '{variable_name}' cannot be declared as both a 'Value' and as a 'Attribute'. Consider using '==' for a value-only comparison instead.",
             variable_name: String,
         ),
+        UnsafeOptionalDereference(
+            36,
+            "The optional variable '{variable}' was used in a context where it may fail the branch if unset. Please acknowledge the optionality.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        MultipleAssignmentsForVariable(
+            37,
+            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
+            variable: String,
+            source_span: Option<Span>,
+            other_span: Option<Span>,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",
@@ -325,14 +338,6 @@ typedb_error! {
             unplannable_constraints: UnplannableConstraints,
             span: Option<Span>,
         ),
-        MultipleAssignmentsForVariable(
-            56,
-            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
-            variable: String,
-            source_span: Option<Span>,
-            other_span: Option<Span>,
-        ),
-
         InternalNotAValueBuiltin(
             100,
             "Attempted to translate function '{token}' as a builtin value function.",

@@ -44,25 +44,12 @@ pub fn compile(
     block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     block: &Block,
-    source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
     let mut deletes = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
 
     let root_delete =
         ConditionalDelete::new(block.conjunction(), block_annotations, variable_registry, input_variables)?;
     deletes.push(root_delete);
-
-    let unsafely_used_optional_variable = block
-        .conjunction()
-        .constraints()
-        .iter()
-        .flat_map(|constraint| constraint.ids())
-        .find(|var| variable_registry.is_variable_optional(*var));
-
-    if let Some(var) = unsafely_used_optional_variable {
-        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-        return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
-    }
 
     for nested_pattern in block.conjunction().nested_patterns() {
         let NestedPattern::Optional(optional) = nested_pattern else {
@@ -200,6 +187,7 @@ fn add_connection_deletes(
             }
             Constraint::LinksDeduplication(_) | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
             Constraint::DeleteConcepts(_) => (),                               // Is a ConceptInstruction
+            Constraint::IsSet(_) => (),
             Constraint::Iid(_)
             | Constraint::Isa(_)
             | Constraint::Kind(_)

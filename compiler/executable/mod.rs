@@ -54,7 +54,7 @@ impl RequiredVariablesForWrite {
                 .constraints()
                 .iter()
                 .flat_map(|constraint| constraint.ids())
-                .filter(|id| conjunction.is_input(id) && variable_registry.is_variable_optional(*id))
+                .filter(|id| conjunction.is_input(id) && todo!("conjunction.is_optional(*id)"))
                 .filter_map(|id| variable_positions.get(&id).copied())
                 .collect(),
         )
