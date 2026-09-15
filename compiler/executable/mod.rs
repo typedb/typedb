@@ -11,16 +11,20 @@ use std::{
 
 use answer::variable::Variable;
 use error::typedb_error;
-use ir::pattern::{Pattern, conjunction::Conjunction, constraint::Comparator};
+use ir::pattern::{Pattern, Vertex, conjunction::Conjunction, constraint::Comparator};
 use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{
     ExecutorVariable, VariablePosition,
+    annotation::type_annotations::TypeAnnotations,
     executable::{
         fetch::executable::FetchCompilationError,
         insert::TypeSource,
-        match_::{instructions::CheckInstruction, planner::ConjunctionCompilationError},
+        match_::{
+            instructions::{CheckInstruction, CheckVertex},
+            planner::ConjunctionCompilationError,
+        },
     },
 };
 
@@ -45,15 +49,20 @@ pub fn next_executable_id() -> u64 {
 pub struct WritePatternCondition(pub Vec<CheckInstruction<ExecutorVariable>>);
 
 impl WritePatternCondition {
-    pub fn build(conjunction: &Conjunction, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
+    pub fn build(
+        conjunction: &Conjunction,
+        variable_positions: &HashMap<Variable, VariablePosition>,
+        _type_annotations: &TypeAnnotations,
+    ) -> Self {
+        let mut checks = Vec::new();
+
         let required_variables =
             conjunction.constraints().iter().filter_map(|c| c.as_is_set()).flat_map(|is_set| is_set.ids());
         let required_variable_positions = required_variables.map(|v| variable_positions[&v]);
         let is_set_checks = required_variable_positions
-            .map(|pos| CheckInstruction::NotNone { variable: ExecutorVariable::RowPosition(pos) });
-
-        let mut checks = Vec::new();
+            .map(|pos| CheckInstruction::IsSet { variable: ExecutorVariable::RowPosition(pos) });
         checks.extend(is_set_checks);
+
         Self(checks)
     }
 }
