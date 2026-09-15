@@ -106,6 +106,43 @@ impl FixedBatch {
         let slice = &mut self.data[row_range(index as usize, self.width)];
         Row::new(slice, &mut self.multiplicities[index as usize], &mut self.provenance[index as usize])
     }
+
+    pub(crate) fn retain_rows<E>(
+        &mut self,
+        mut keep: impl FnMut(MaybeOwnedRow<'_>) -> Result<bool, E>,
+    ) -> Result<(), E> {
+        let width = self.width as usize;
+        let mut kept = 0usize;
+        for index in 0..self.entries as usize {
+            if keep(self.get_row(index as u32))? {
+                if index != kept {
+                    let (front, back) = self.data.split_at_mut(index * width);
+                    front[kept * width..(kept + 1) * width].swap_with_slice(&mut back[..width]);
+                    self.multiplicities[kept] = self.multiplicities[index];
+                    self.provenance[kept] = self.provenance[index];
+                }
+                kept += 1;
+            }
+        }
+        self.data[kept * width..self.entries as usize * width].fill(VariableValue::None);
+        self.entries = kept as u32;
+        Ok(())
+    }
+
+    pub(crate) fn narrow(&mut self, width: u32) {
+        debug_assert!(width <= self.width);
+        if width == self.width {
+            return;
+        }
+        let (old_width, new_width, entries) = (self.width as usize, width as usize, self.entries as usize);
+        for row in 1..entries {
+            for column in 0..new_width {
+                self.data.swap(row * new_width + column, row * old_width + column);
+            }
+        }
+        self.data[entries * new_width..entries * old_width].fill(VariableValue::None);
+        self.width = width;
+    }
 }
 
 impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
@@ -364,5 +401,142 @@ fn get_value<'a, T: ReadableSnapshot>(
 
         VariableValue::ThingList(_) => unimplemented_feature!(Lists),
         VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use answer::variable_value::VariableValue;
+    use compiler::VariablePosition;
+    use encoding::value::value::Value;
+
+    use super::FixedBatch;
+    use crate::Provenance;
+
+    fn integer(value: i64) -> VariableValue<'static> {
+        VariableValue::Value(Value::Integer(value))
+    }
+
+    /// Two-column batch: row i holds (values[i], 10 * values[i]) with multiplicity i + 1 and provenance 100 + i.
+    fn batch_of(values: &[i64]) -> FixedBatch {
+        let mut batch = FixedBatch::new(2);
+        for (index, &value) in values.iter().enumerate() {
+            batch.append(|mut row| {
+                row.set(VariablePosition::new(0), integer(value));
+                row.set(VariablePosition::new(1), integer(value * 10));
+                row.set_multiplicity(index as u64 + 1);
+                row.set_provenance(Provenance(index as u64 + 100));
+            });
+        }
+        batch
+    }
+
+    fn column(batch: &FixedBatch, position: u32) -> Vec<i64> {
+        (0..batch.len())
+            .map(|index| match batch.get_row(index).get(VariablePosition::new(position)) {
+                VariableValue::Value(Value::Integer(value)) => *value,
+                other => panic!("unexpected value {other:?}"),
+            })
+            .collect()
+    }
+
+    fn is_even(row: &super::MaybeOwnedRow<'_>) -> bool {
+        matches!(row.get(VariablePosition::new(0)), VariableValue::Value(Value::Integer(value)) if value % 2 == 0)
+    }
+
+    #[test]
+    fn retain_rows_compacts_in_order_and_moves_row_metadata() {
+        let mut batch = batch_of(&[1, 2, 3, 4, 5, 6]);
+        batch.retain_rows::<()>(|row| Ok(is_even(&row))).unwrap();
+        assert_eq!(batch.len(), 3);
+        assert_eq!(column(&batch, 0), vec![2, 4, 6]);
+        assert_eq!(column(&batch, 1), vec![20, 40, 60]);
+        // the rows for 2, 4, 6 were appended at indices 1, 3, 5
+        assert_eq!((0..3).map(|i| batch.get_row(i).multiplicity()).collect::<Vec<_>>(), vec![2, 4, 6]);
+        assert_eq!((0..3).map(|i| batch.get_row(i).provenance().0).collect::<Vec<_>>(), vec![101, 103, 105]);
+    }
+
+    #[test]
+    fn retain_rows_keeping_everything_leaves_the_batch_unchanged() {
+        let mut batch = batch_of(&[7, 8, 9]);
+        batch.retain_rows::<()>(|_| Ok(true)).unwrap();
+        assert_eq!(batch.len(), 3);
+        assert_eq!(column(&batch, 0), vec![7, 8, 9]);
+        assert_eq!((0..3).map(|i| batch.get_row(i).multiplicity()).collect::<Vec<_>>(), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn retain_rows_keeping_nothing_empties_the_batch() {
+        let mut batch = batch_of(&[1, 3, 5]);
+        batch.retain_rows::<()>(|_| Ok(false)).unwrap();
+        assert_eq!(batch.len(), 0);
+        assert!(batch.is_empty());
+    }
+
+    #[test]
+    fn retain_rows_on_a_full_batch() {
+        let values: Vec<i64> = (0..super::FIXED_BATCH_ROWS_MAX as i64).collect();
+        let mut batch = batch_of(&values);
+        assert!(batch.is_full());
+        batch.retain_rows::<()>(|row| Ok(is_even(&row))).unwrap();
+        assert_eq!(batch.len(), super::FIXED_BATCH_ROWS_MAX / 2);
+        assert!(!batch.is_full());
+        assert_eq!(column(&batch, 0), values.iter().copied().filter(|v| v % 2 == 0).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn retain_rows_leaves_no_values_beyond_the_kept_rows() {
+        let mut batch = batch_of(&[1, 2, 3, 4]);
+        batch.retain_rows::<()>(|row| Ok(is_even(&row))).unwrap();
+        assert!(batch.data[batch.len() as usize * 2..].iter().all(|value| *value == VariableValue::None));
+    }
+
+    #[test]
+    fn narrow_keeps_the_leading_columns_of_every_row() {
+        let mut batch = batch_of(&[1, 2, 3, 4, 5]);
+        batch.retain_rows::<()>(|row| Ok(!is_even(&row))).unwrap();
+        batch.narrow(1);
+        assert_eq!(batch.width(), 1);
+        assert_eq!(batch.len(), 3);
+        assert_eq!(column(&batch, 0), vec![1, 3, 5]);
+        assert_eq!((0..3).map(|i| batch.get_row(i).multiplicity()).collect::<Vec<_>>(), vec![1, 3, 5]);
+        assert!(batch.data[3..].iter().all(|value| *value == VariableValue::None));
+    }
+
+    #[test]
+    fn narrow_to_the_same_width_is_a_no_op() {
+        let mut batch = batch_of(&[7, 8]);
+        batch.narrow(2);
+        assert_eq!(batch.width(), 2);
+        assert_eq!(column(&batch, 1), vec![70, 80]);
+    }
+
+    #[test]
+    fn narrow_handles_empty_single_row_and_full_batches() {
+        let mut empty = FixedBatch::new(3);
+        empty.narrow(1);
+        assert_eq!((empty.width(), empty.len()), (1, 0));
+
+        let mut single = FixedBatch::from(super::MaybeOwnedRow::new_owned(
+            vec![integer(1), integer(2), integer(3)],
+            4,
+            crate::Provenance(9),
+        ));
+        single.narrow(2);
+        assert_eq!((single.width(), single.len()), (2, 1));
+        assert_eq!(column(&single, 1), vec![2]);
+        assert_eq!((single.get_row(0).multiplicity(), single.get_row(0).provenance().0), (4, 9));
+        assert!(single.data[2..].iter().all(|value| *value == VariableValue::None));
+
+        let values: Vec<i64> = (0..super::FIXED_BATCH_ROWS_MAX as i64).collect();
+        let mut full = batch_of(&values);
+        full.narrow(1);
+        assert_eq!(column(&full, 0), values);
+        assert!(full.data[values.len()..].iter().all(|value| *value == VariableValue::None));
+
+        let mut widthless = batch_of(&[5, 6]);
+        widthless.narrow(0);
+        assert_eq!((widthless.width(), widthless.len()), (0, 2));
+        assert!(widthless.data.iter().all(|value| *value == VariableValue::None));
     }
 }

@@ -371,6 +371,7 @@ impl fmt::Display for AssignmentStep {
 pub struct CheckStep {
     pub check_instructions: Vec<CheckInstruction<ExecutorVariable>>,
     pub selected_variables: Vec<VariablePosition>,
+    pub removed_positions: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
@@ -380,7 +381,11 @@ impl CheckStep {
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
-        Self { check_instructions, selected_variables, output_width }
+        let removed_positions = (0..output_width)
+            .map(VariablePosition::new)
+            .filter(|position| !selected_variables.contains(position))
+            .collect();
+        Self { check_instructions, selected_variables, removed_positions, output_width }
     }
 
     pub fn output_width(&self) -> u32 {
