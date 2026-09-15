@@ -76,8 +76,7 @@ pub(super) fn add_statement(
                     }));
                 };
                 let expression = build_expression(function_index, constraints, rhs)?;
-                debug_assert!(assigned.optionality == VariableOptionality::Required);
-                constraints.add_assignment(assigned.variable, expression, *span)?;
+                constraints.add_assignment(assigned, expression, *span)?;
             }
         }
         typeql::Statement::IsSet(is_set) => {
@@ -183,7 +182,7 @@ fn extend_from_inline_typeql_expression(
     } else {
         let expression = build_expression(function_index, constraints, typeql_expression)?;
         let assigned = constraints.create_anonymous_variable(typeql_expression.span())?;
-        constraints.add_assignment(assigned, expression, typeql_expression.span())?;
+        constraints.add_assignment(AssignedVariable::new_inferred(assigned), expression, typeql_expression.span())?;
         Ok(assigned)
     }
 }
@@ -643,7 +642,7 @@ pub(super) fn split_out_inline_expressions(
             expr => {
                 let variable = constraints.create_anonymous_variable(expr.span())?;
                 let expression = build_expression(function_index, constraints, expr)?;
-                constraints.add_assignment(variable, expression, expr.span())?;
+                constraints.add_assignment(AssignedVariable::new_inferred(variable), expression, expr.span())?;
                 Ok(variable)
             }
         })

@@ -12,8 +12,8 @@ use error::{needs_update_when_feature_is_implemented, unimplemented_feature};
 use ir::pattern::{
     ParameterID,
     expression::{
-        BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
-        ListIndexRange, Operation,
+        BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId,
+        ListConstructor, ListIndex, ListIndexRange, Operation,
     },
 };
 use typeql::common::Span;
@@ -23,7 +23,7 @@ use crate::annotation::expression::{
     compiled_expression::{ExecutableExpression, ExpressionValueType},
     instructions::{
         ExpressionInstruction, list_operations,
-        load::{LoadConstant, LoadVariable},
+        load::{LoadConstant, LoadVariable, MayShortCircuitList, MayShortCircuitValue},
         op_codes::ExpressionOpCode,
         operators,
         unary::{
@@ -75,11 +75,13 @@ impl<'this> ExpressionCompilationContext<'this> {
         match expression {
             Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
+            Expression::MayShortCircuitVariable(variable) => self.compile_may_short_circuit_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
             Expression::BuiltinValueFunctionCall(builtin) => self.compile_value_builtin(builtin),
             Expression::ListIndex(list_index) => self.compile_list_index(list_index),
             Expression::List(list_constructor) => self.compile_list_constructor(list_constructor),
             Expression::ListIndexRange(list_index_range) => self.compile_list_index_range(list_index_range),
+            Expression::MayShortCircuitOther(inner) => self.compile_may_short_circuit_other(*inner),
         }
     }
 
@@ -183,6 +185,33 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
 
         self.push_type_single(list_variable_type);
+        Ok(())
+    }
+
+    fn add_short_circuit_instruction(&mut self) -> Result<(), Box<ExpressionCompileError>> {
+        let Some(type_) = self.type_stack.last() else {
+            return Err(Box::new(ExpressionCompileError::InternalStackWasEmpty {}));
+        };
+        match type_ {
+            ExpressionValueType::Single(_) => self.append_instruction(MayShortCircuitValue::OP_CODE),
+            ExpressionValueType::List(_) => self.append_instruction(MayShortCircuitList::OP_CODE),
+        }
+        Ok(())
+    }
+
+    fn compile_may_short_circuit_variable(&mut self, variable: &Variable) -> Result<(), Box<ExpressionCompileError>> {
+        debug_assert!(self.variable_value_categories.contains_key(variable));
+        self.compile_variable(variable)?;
+        self.add_short_circuit_instruction()?;
+        Ok(())
+    }
+
+    fn compile_may_short_circuit_other(
+        &mut self,
+        inner_expression_id: ExpressionTreeNodeId,
+    ) -> Result<(), Box<ExpressionCompileError>> {
+        self.compile_recursive(self.expression_tree.get(inner_expression_id))?;
+        self.add_short_circuit_instruction()?;
         Ok(())
     }
 

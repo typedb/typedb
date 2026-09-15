@@ -19,7 +19,8 @@ use typeql::{common::Span, expression::NamespacedFunctionName};
 use crate::{
     RepresentationError,
     pattern::{
-        IrID, ParameterID,
+        IrID, ParameterID, Pattern,
+        conjunction::Conjunction,
         variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::function_signature::{FunctionID, FunctionSignature},
@@ -36,6 +37,21 @@ impl ExpressionTree<Variable> {
     pub(crate) fn empty() -> Self {
         Self { preorder_tree: Vec::new() }
     }
+
+    pub fn optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
+        let root_return_optionality = self.get_root().return_optionality(&conjunction);
+        let lazy_contains_short_circuit = || {
+            self.expression_tree_preorder().any(|expr| {
+                matches!(expr, Expression::MayShortCircuitVariable(_) | Expression::MayShortCircuitOther(_))
+            })
+        };
+
+        if root_return_optionality == VariableOptionality::Optional || lazy_contains_short_circuit() {
+            VariableOptionality::Optional
+        } else {
+            VariableOptionality::Required
+        }
+    }
 }
 
 impl<ID: IrID> ExpressionTree<ID> {
@@ -51,8 +67,12 @@ impl<ID: IrID> ExpressionTree<ID> {
         self.preorder_tree.iter()
     }
 
+    pub fn root_node_id(&self) -> ExpressionTreeNodeId {
+        self.preorder_tree.len() - 1
+    }
+
     pub fn get_root(&self) -> &Expression<ID> {
-        self.preorder_tree.last().unwrap()
+        self.get(self.root_node_id())
     }
 
     pub fn get(&self, expression_id: ExpressionTreeNodeId) -> &Expression<ID> {
@@ -67,12 +87,14 @@ impl<ID: IrID> ExpressionTree<ID> {
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.preorder_tree.iter().filter_map(|expr| match expr {
             &Expression::Variable(variable) => Some(variable),
+            &Expression::MayShortCircuitVariable(variable) => Some(variable),
             Expression::ListIndex(list_index) => Some(list_index.list_variable()),
             Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
             Expression::Constant(_)
             | Expression::Operation(_)
             | Expression::BuiltinValueFunctionCall(_)
-            | Expression::List(_) => None,
+            | Expression::List(_)
+            | Expression::MayShortCircuitOther(_) => None,
         })
     }
 
@@ -80,11 +102,13 @@ impl<ID: IrID> ExpressionTree<ID> {
         self.preorder_tree.iter().filter_map(|expr| match expr {
             Expression::Constant(parameter_id) => Some(parameter_id.clone()),
             Expression::Variable(_)
+            | Expression::MayShortCircuitVariable(_)
             | Expression::ListIndex(_)
             | Expression::ListIndexRange(_)
             | Expression::Operation(_)
             | Expression::BuiltinValueFunctionCall(_)
-            | Expression::List(_) => None,
+            | Expression::List(_)
+            | Expression::MayShortCircuitOther(_) => None,
         })
     }
 
@@ -94,6 +118,7 @@ impl<ID: IrID> ExpressionTree<ID> {
             .iter()
             .map(|node| match node {
                 Expression::Variable(var) => Expression::Variable(var.map(mapping)),
+                Expression::MayShortCircuitVariable(var) => Expression::MayShortCircuitVariable(var.map(mapping)),
                 Expression::ListIndex(list_index) => Expression::ListIndex(list_index.map(mapping)),
                 Expression::ListIndexRange(list_index_range) => {
                     Expression::ListIndexRange(list_index_range.map(mapping))
@@ -102,6 +127,7 @@ impl<ID: IrID> ExpressionTree<ID> {
                 Expression::Operation(inner) => Expression::Operation(inner.clone()),
                 Expression::BuiltinValueFunctionCall(inner) => Expression::BuiltinValueFunctionCall(inner.clone()),
                 Expression::List(inner) => Expression::List(inner.clone()),
+                Expression::MayShortCircuitOther(inner) => Expression::MayShortCircuitOther(*inner),
             })
             .collect::<Vec<Expression<T>>>();
         ExpressionTree { preorder_tree }
@@ -121,7 +147,10 @@ impl<ID: StructuralEquality> StructuralEquality for ExpressionTree<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression<ID> {
     Constant(ParameterID),
-    Variable(ID), // User-defined functions are re-written as an anonymous assignment.
+    Variable(ID),                // User-defined functions are re-written as an anonymous assignment.
+    MayShortCircuitVariable(ID), // With a ?. Separate for IR optionality check purposes
+    MayShortCircuitOther(ExpressionTreeNodeId), // For non-variables
+
     Operation(Operation),
     BuiltinValueFunctionCall(BuiltinValueFunctionCall),
     ListIndex(ListIndex<ID>),
@@ -130,17 +159,36 @@ pub enum Expression<ID> {
     ListIndexRange(ListIndexRange<ID>),
 }
 
+impl Expression<Variable> {
+    pub(crate) fn return_optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
+        error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalFunctions);
+        match self {
+            Expression::Variable(variable) => conjunction.optionality(variable),
+            Expression::ListIndex(inner) => conjunction.optionality(&inner.list_variable),
+            Expression::ListIndexRange(inner) => conjunction.optionality(&inner.list_variable),
+            Expression::BuiltinValueFunctionCall(builtin) => VariableOptionality::Required,
+            | Expression::Constant(_)
+            | Expression::List(_)
+            | Expression::Operation(_)
+            | Expression::MayShortCircuitVariable(_)
+            | Expression::MayShortCircuitOther(_) => VariableOptionality::Required,
+        }
+    }
+}
+
 impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
     fn hash(&self) -> u64 {
         StructuralEquality::hash(&mem::discriminant(self))
             ^ match self {
                 Expression::Constant(inner) => StructuralEquality::hash(inner),
                 Expression::Variable(inner) => StructuralEquality::hash(inner),
+                Expression::MayShortCircuitVariable(inner) => StructuralEquality::hash(inner),
                 Expression::Operation(inner) => StructuralEquality::hash(inner),
                 Expression::BuiltinValueFunctionCall(inner) => StructuralEquality::hash(inner),
                 Expression::ListIndex(inner) => StructuralEquality::hash(inner),
                 Expression::List(inner) => StructuralEquality::hash(inner),
                 Expression::ListIndexRange(inner) => StructuralEquality::hash(inner),
+                Expression::MayShortCircuitOther(inner) => StructuralEquality::hash(inner),
             }
     }
 
@@ -148,6 +196,9 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
         match (self, other) {
             (Self::Constant(inner), Self::Constant(other_inner)) => inner.equals(other_inner),
             (Self::Variable(inner), Self::Variable(other_inner)) => inner.equals(other_inner),
+            (Self::MayShortCircuitVariable(inner), Self::MayShortCircuitVariable(other_inner)) => {
+                inner.equals(other_inner)
+            }
             (Self::Operation(inner), Self::Operation(other_inner)) => inner.equals(other_inner),
             (Self::BuiltinValueFunctionCall(inner), Self::BuiltinValueFunctionCall(other_inner)) => {
                 inner.equals(other_inner)
@@ -155,14 +206,15 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             (Self::ListIndex(inner), Self::ListIndex(other_inner)) => inner.equals(other_inner),
             (Self::List(inner), Self::List(other_inner)) => inner.equals(other_inner),
             (Self::ListIndexRange(inner), Self::ListIndexRange(other_inner)) => inner.equals(other_inner),
+            (Self::MayShortCircuitOther(inner), Self::MayShortCircuitOther(other_inner)) => inner.equals(other_inner),
             // this structure forces us to update the match block when the variants change!
-            (Self::Constant(_), _)
-            | (Self::Variable(_), _)
+            (Self::Constant(_), _) | (Self::Variable(_), _) | (Self::MayShortCircuitVariable(_), _) => false,
             | (Self::Operation(_), _)
             | (Self::BuiltinValueFunctionCall(_), _)
             | (Self::ListIndex(_), _)
             | (Self::List(_), _)
-            | (Self::ListIndexRange(_), _) => false,
+            | (Self::ListIndexRange(_), _)
+            | (Self::MayShortCircuitOther(_), _) => false,
         }
     }
 }
@@ -312,7 +364,7 @@ macro_rules! function_id_enum {
                 }
             }
 
-            fn name(&self) -> &'static str {
+            pub fn name(&self) -> &'static str {
                 match self {
                     $( Self::$id => $name, )*
                 }
