@@ -45,7 +45,7 @@ pub(super) fn add_typeql_expression(
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable(rhs.span())?;
-        constraints.add_assignment(variable, expression, rhs.span())?;
+        constraints.add_assignment(AssignedVariable::new_inferred(variable), expression, rhs.span())?;
         Ok(Vertex::Variable(variable))
     }
 }
@@ -70,7 +70,18 @@ fn build_recursive(
         typeql::Expression::Paren(inner) => {
             return build_recursive(function_index, constraints, &inner.inner, tree);
         }
-        typeql::Expression::Variable(var) => Expression::Variable(register_typeql_var(constraints, var)?),
+        typeql::Expression::Variable(var) => {
+            let variable = register_typeql_var(constraints, var)?;
+            match var {
+                typeql::Variable::Named { optional, .. } | typeql::Variable::Anonymous { optional, .. } => {
+                    if optional.is_some() {
+                        Expression::MayShortCircuitVariable(variable)
+                    } else {
+                        Expression::Variable(variable)
+                    }
+                }
+            }
+        }
         typeql::Expression::ListIndex(list_index) => {
             let variable = register_typeql_var(constraints, &list_index.variable)?;
             let id = build_recursive(function_index, constraints, &list_index.index, tree)?;
@@ -229,7 +240,7 @@ fn build_function(
                 function_index,
                 constraints,
                 to_builtin_concept_function_id(builtin, &function_call.args)?,
-                vec![AssignedVariable::new_required(assign)],
+                vec![AssignedVariable::new_inferred(assign)],
                 &function_call.args,
                 function_call.span(),
             )?;
@@ -241,7 +252,7 @@ fn build_function(
                 function_index,
                 constraints,
                 checked_identifier(identifier)?,
-                vec![AssignedVariable::new_required(assign)],
+                vec![AssignedVariable::new_inferred(assign)],
                 &function_call.args,
                 function_call.span(),
             )?;

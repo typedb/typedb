@@ -540,15 +540,15 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_assignment(
         &mut self,
-        variable: Variable,
+        assigned: AssignedVariable,
         expression: ExpressionTree<Variable>,
         source_span: Option<Span>,
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
-        if self.context.is_block_input_variable(variable) {
-            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
+        if self.context.is_block_input_variable(assigned.variable) {
+            let variable = self.context.get_variable_name_or_unnamed(assigned.variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-        let binding = ExpressionBinding::new(variable, expression, source_span);
+        let binding = ExpressionBinding::new(assigned, expression, source_span);
         binding.validate(self.context).map_err(|typedb_source| RepresentationError::ExpressionRepresentationError {
             typedb_source,
             source_span,
@@ -557,7 +557,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let binding = Constraint::from(binding);
         // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
         // assume Value for now
-        self.context.set_variable_category(variable, VariableCategory::Value, binding.clone())?;
+        self.context.set_variable_category(assigned.variable, VariableCategory::Value, binding.clone())?;
 
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
@@ -783,6 +783,41 @@ impl<ID: IrID> Constraint<ID> {
 
             Constraint::ExpressionBinding(binding) => Box::new(binding.binding_modes()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.binding_modes()),
+        }
+    }
+
+    pub fn variable_reference_optionalities(&self) -> Box<dyn Iterator<Item = (ID, VariableOptionality)> + '_> {
+        fn _all_unwrapped<'a, ID1>(
+            it: impl Iterator<Item = ID1> + 'a,
+        ) -> Box<dyn Iterator<Item = (ID1, VariableOptionality)> + 'a> {
+            Box::new(it.map(move |id| (id, VariableOptionality::Required)))
+        }
+        let span = self.source_span();
+        match self {
+            Constraint::Kind(kind) => _all_unwrapped(kind.ids()),
+            Constraint::Label(label) => _all_unwrapped(label.ids()),
+            Constraint::RoleName(role_name) => _all_unwrapped(role_name.ids()),
+            Constraint::Sub(sub) => _all_unwrapped(sub.ids()),
+            Constraint::Isa(isa) => _all_unwrapped(isa.ids()),
+            Constraint::Iid(iid) => _all_unwrapped(iid.ids()),
+            Constraint::Links(rp) => _all_unwrapped(rp.ids()),
+            Constraint::IndexedRelation(indexed) => _all_unwrapped(indexed.ids()),
+            Constraint::Has(has) => _all_unwrapped(has.ids()),
+            Constraint::Owns(owns) => _all_unwrapped(owns.ids()),
+            Constraint::Relates(relates) => _all_unwrapped(relates.ids()),
+            Constraint::Plays(plays) => _all_unwrapped(plays.ids()),
+            Constraint::Value(value) => _all_unwrapped(value.ids()),
+
+            Constraint::Comparison(comparison) => _all_unwrapped(comparison.ids()),
+            Constraint::Is(is) => _all_unwrapped(is.ids()),
+            Constraint::IsSet(is_set) => _all_unwrapped(is_set.ids()),
+
+            Constraint::DeleteConcepts(inner) => _all_unwrapped(inner.ids()),
+            Constraint::Unsatisfiable(inner) => _all_unwrapped(inner.ids()),
+            Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
+
+            Constraint::ExpressionBinding(binding) => Box::new(binding.reference_optionalities()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.reference_optionalities()),
         }
     }
 
@@ -2187,23 +2222,30 @@ impl<ID: IrID> fmt::Display for Has<ID> {
 #[derive(Debug, Clone)]
 pub struct ExpressionBinding<ID> {
     left: Vertex<ID>,
+    left_optionality: VariableOptionality,
     expression: ExpressionTree<ID>,
     source_span: Option<Span>,
 }
 
-impl<ID> ExpressionBinding<ID> {
-    fn new(left: ID, expression: ExpressionTree<ID>, source_span: Option<Span>) -> Self {
-        Self { left: Vertex::Variable(left), expression, source_span }
-    }
-
-    pub fn source_span(&self) -> Option<Span> {
-        self.source_span
+impl ExpressionBinding<Variable> {
+    fn new(assigned: AssignedVariable, expression: ExpressionTree<Variable>, source_span: Option<Span>) -> Self {
+        let left = Vertex::Variable(assigned.variable);
+        let left_optionality = assigned.optionality;
+        Self { left, left_optionality, expression, source_span }
     }
 }
 
 impl<ID: IrID> ExpressionBinding<ID> {
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+
     pub fn left(&self) -> &Vertex<ID> {
         &self.left
+    }
+
+    pub fn left_optionality(&self) -> VariableOptionality {
+        self.left_optionality
     }
 
     pub fn expression(&self) -> &ExpressionTree<ID> {
@@ -2228,8 +2270,15 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
-            .map(|id| (id, BindingMode::AlwaysBinding(BindingOptionality::NotNone)))
+            .map(|id| (id, BindingMode::AlwaysBinding(self.left_optionality.into())))
             .chain(self.expression_ids().map(|id| (id, BindingMode::RequirePrebound)))
+    }
+
+    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, VariableOptionality)> + '_ {
+        // We treat ALL argument references as optional. It must be validated separately.
+        self.ids_assigned()
+            .map(|id| (id, self.left_optionality))
+            .chain(self.expression_ids().map(|id| (id, VariableOptionality::Optional)))
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -2247,6 +2296,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionBinding<T> {
         ExpressionBinding {
             left: self.left.map(mapping),
+            left_optionality: self.left_optionality,
             expression: self.expression.map(mapping),
             source_span: self.source_span,
         }
@@ -2350,6 +2400,15 @@ impl<ID: IrID> FunctionCallBinding<ID> {
             .filter(|(id, _)| !self.function_call.arguments().contains(id))
             .map(|(id, optionality)| (id, BindingMode::AlwaysBinding(optionality.into())))
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
+    }
+
+    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, VariableOptionality)> + '_ {
+        error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
+        self.ids_assigned()
+            .zip(self.assigned_optionalities.iter().copied())
+            .filter(|(id, _)| !self.function_call.arguments().contains(id))
+            .map(|(id, optionality)| (id, optionality.into()))
+            .chain(self.function_call_arg_ids().map(|id| (id, VariableOptionality::Required)))
     }
 
     pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {

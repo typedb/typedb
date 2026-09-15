@@ -95,7 +95,7 @@ fn translate_fetch_object(
             Ok(FetchObject::Entries(object, source_spans))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
-            let var = try_get_variable(parent_context, variable)?;
+            let var = try_get_variable_verify_optional_safety(parent_context, variable)?;
             Ok(FetchObject::Attributes(var, variable.span()))
         }
     }
@@ -125,7 +125,7 @@ fn translate_fetch_list(
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     match &list.stream {
         FetchStream::Attribute(fetch_attribute) => {
-            let owner = try_get_variable(parent_context, &fetch_attribute.owner)?;
+            let owner = try_get_variable_verify_optional_safety(parent_context, &fetch_attribute.owner)?;
             let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
             if is_list {
                 Err(Box::new(FetchRepresentationError::AttributeListInList { declaration: fetch_attribute.clone() }))
@@ -202,7 +202,7 @@ fn translate_fetch_single(
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     match single {
         FetchSingle::Attribute(fetch_attribute) => {
-            let owner = try_get_variable(parent_context, &fetch_attribute.owner)?;
+            let owner = try_get_variable_verify_optional_safety(parent_context, &fetch_attribute.owner)?;
             let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
             if is_list {
                 Ok(FetchSome::ListAttributesFromList(FetchListAttributeFromList { variable: owner, attribute }))
@@ -212,7 +212,7 @@ fn translate_fetch_single(
         }
         FetchSingle::Expression(expression) => match &expression {
             Expression::Variable(variable) => {
-                let var = try_get_variable(parent_context, variable)?;
+                let var = try_get_variable_verify_optional_safety(parent_context, variable)?;
                 Ok(FetchSome::SingleVar(var))
             }
             Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
@@ -421,7 +421,7 @@ fn translate_inline_function_call<'a>(
         function_index,
         &mut conjunction.constraints_mut(),
         function_name,
-        assign_vars.iter().map(|var| AssignedVariable::new_required(*var)).collect(),
+        assign_vars.iter().map(|var| AssignedVariable::new_inferred(*var)).collect(),
         &call.args,
         call.span(),
     )
@@ -449,7 +449,7 @@ fn add_expression(
         .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: err })?;
     let _ = conjunction
         .constraints_mut()
-        .add_assignment(assign_var, expression, typeql_expression.span())
+        .add_assignment(AssignedVariable::new_inferred(assign_var), expression, typeql_expression.span())
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     Ok(assign_var)
 }
@@ -511,19 +511,27 @@ fn find_sub_fetch_inputs(
     arguments
 }
 
-fn try_get_variable(
+fn try_get_variable_verify_optional_safety(
     context: &PipelineTranslationContext,
     variable: &TypeQLVariable,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
-    let name = match variable {
+    let (name, reference_optionality) = match variable {
         TypeQLVariable::Anonymous { .. } => {
             return Err(Box::new(AnonymousVariableEncountered { declaration: variable.clone() }));
         }
-        TypeQLVariable::Named { .. } => variable.name().unwrap(),
+        TypeQLVariable::Named { optional, .. } => (variable.name().unwrap(), optional),
     };
-    context
+    let translated_variable = context
         .get_variable(name)
-        .ok_or_else(|| Box::new(VariableNotAvailable { variable: name.to_owned(), declaration: variable.clone() }))
+        .ok_or_else(|| Box::new(VariableNotAvailable { variable: name.to_owned(), declaration: variable.clone() }))?;
+    if reference_optionality.is_none() && context.is_variable_optional(translated_variable) {
+        Err(Box::new(FetchRepresentationError::UnsafeOptionalVariableDereference {
+            variable: name.to_owned(),
+            source_span: variable.span(),
+        }))
+    } else {
+        Ok(translated_variable)
+    }
 }
 
 fn register_key(parameters: &mut ParameterRegistry, key: &StringLiteral, span: Span) -> ParameterID {
@@ -642,6 +650,12 @@ typedb_error! {
             "Encountered multiple mappings for one key {key} in a single object.\nSource:\n{declaration}",
             key: String,
             declaration: TypeQLFetchObject
+        ),
+        UnsafeOptionalVariableDereference(
+            22,
+            "The optional variable '{variable}' was used unsafely in a fetch statement. The empty case must be handled (e.g. using '?')",
+            variable: String,
+            source_span: Option<Span>,
         ),
     }
 }
