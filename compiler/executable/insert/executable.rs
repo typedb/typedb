@@ -29,7 +29,7 @@ use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
-        RequiredVariablesForWrite, WriteCompilationError,
+        WriteCompilationError, WritePatternCondition,
         insert::{
             ThingPosition, TypeSource, ValueSource, VariableSource,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
@@ -106,7 +106,7 @@ pub fn compile(
 pub struct ConditionalInsert {
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: RequiredVariablesForWrite,
+    pub condition: WritePatternCondition,
 }
 
 impl ConditionalInsert {
@@ -129,16 +129,16 @@ impl ConditionalInsert {
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables = RequiredVariablesForWrite::build(conjunction, variable_positions);
+        let required_input_variables = WritePatternCondition::build(conjunction, variable_positions);
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
-        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
+        Ok(Self { concept_instructions, connection_instructions, condition: required_input_variables })
     }
 }
 
 impl fmt::Display for ConditionalInsert {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Required variables: [{}]", self.required_input_variables.0.iter().join(", "))?;
+        writeln!(f, "Checks: [{}]", self.condition)?;
         writeln!(f, "Insert Vertex: [{}]", &self.concept_instructions.iter().join(", "))?;
         writeln!(f, "Insert Edges: [{}]", &self.connection_instructions.iter().join(", "))?;
         Ok(())
