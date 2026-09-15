@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{Bound, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
 use resource::profile::StorageCounters;
@@ -58,14 +58,10 @@ use encoding::{
     },
     layout::{infix::Infix, prefix::Prefix},
 };
-use iterator::minmax_or;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::StorageKey,
-    snapshot::write::Write,
-};
+use storage::{key_range::KeyRange, snapshot::write::Write};
 
 use crate::{
+    ConceptStatus,
     thing::{ThingAPI, attribute::Attribute},
     type_::{object_type::ObjectType, relation_type::RelationType, type_manager::TypeManager},
 };
@@ -128,10 +124,10 @@ macro_rules! validate_capability_cardinality_constraint {
 
 /*
 The cardinalities validation flow is the following:
-1. Collect instances affected by cardinalities changes (separately for 3 capabilities: owns, plays, relates)
+1. Find instances affected by cardinalities changes (separately for 3 capabilities: owns, plays, relates): instance writes are visited straight from the write buffer, grouped by its key order; a capability cardinality change is recorded per type and every instance of the type is visited.
 2. Validate only the affected instances to avoid rescanning the whole system (see validate_capability_cardinality_constraint). For each object,
-  2a. Count every capability instance it has (every has, every played role, every roleplayer)
-  2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once)
+  2a. Count every capability instance it has (every has, every played role, every roleplayer).
+  2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once).
   2c. Validate each constraint separately using the counts prepared in 2a. To validate a constraint, take its source type (where this constraint is declared), and count all instances of the source type and its subtypes.
 
 Let's consider the following example:
@@ -144,7 +140,7 @@ A query is being run:
   define person owns surname @card(1..10);
 
 It will be processed like:
-1. All instances of persons will be collected, the only surname attribute type saved as modified.
+1. person is recorded with surname as the only modified attribute type, and every instance of person is visited.
 2. For each instance of persons:
   2a. All names, surnames, and changed-surnames are counted (based on instances' explicit types).
   2b. surname's constraints will be taken: @card(1..) from name and @card(1..10) from surname.
@@ -163,305 +159,245 @@ We could potentially use the old version of storage (ignoring the snapshot), but
 Please keep these complexities in mind when modifying the collection stage in the following methods.
 */
 
-pub(crate) struct CardinalityChangeTracker {
-    // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized / removed from RAM!
-    modified_objects_attribute_types: HashMap<Object, HashSet<AttributeType>>,
-    has_modified_owns: bool,
-    modified_objects_role_types: HashMap<Object, HashSet<RoleType>>,
-    has_modified_plays: bool,
-    modified_relations_role_types: HashMap<Relation, HashSet<RoleType>>,
-    has_modified_relates: bool,
-    players_in_deleted_relations: HashMap<Relation, HashSet<Object>>,
+pub(crate) struct CardinalityChangeValidator {
+    modified_owns_by_type: HashMap<ObjectType, HashSet<AttributeType>>,
+    modified_plays_by_type: HashMap<ObjectType, HashSet<RoleType>>,
+    modified_relates_by_type: HashMap<RelationType, HashSet<RoleType>>,
 }
 
-impl CardinalityChangeTracker {
+impl CardinalityChangeValidator {
     pub(crate) fn build(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<Self, Box<ConceptReadError>> {
-        let mut modified_objects_attribute_types: HashMap<Object, HashSet<AttributeType>> = HashMap::new();
-        let mut has_modified_owns = false;
-        let mut modified_objects_role_types: HashMap<Object, HashSet<RoleType>> = HashMap::new();
-        let mut has_modified_plays = false;
-        let mut modified_relations_role_types: HashMap<Relation, HashSet<RoleType>> = HashMap::new();
-        let mut players_in_deleted_relations: HashMap<Relation, HashSet<Object>> = HashMap::new();
-        let mut has_modified_relates = false;
-
-        Self::collect_new_objects(
-            snapshot,
-            type_manager,
-            &mut modified_objects_attribute_types,
-            &mut modified_objects_role_types,
-            &mut modified_relations_role_types,
-        )?;
-
-        Self::collect_modified_has_objects(
-            snapshot,
-            thing_manager,
-            &mut modified_objects_attribute_types,
-            storage_counters.clone(),
-        )?;
-
-        Self::collect_modified_links_objects(
-            snapshot,
-            thing_manager,
-            &mut modified_relations_role_types,
-            &mut modified_objects_role_types,
-            &mut players_in_deleted_relations,
-            storage_counters.clone(),
-        )?;
-
-        Self::collect_modified_schema_capability_cardinalities_objects(
-            snapshot,
-            type_manager,
-            thing_manager,
-            &mut modified_objects_attribute_types,
-            &mut has_modified_owns,
-            &mut modified_objects_role_types,
-            &mut has_modified_plays,
-            &mut modified_relations_role_types,
-            &mut has_modified_relates,
-            storage_counters.clone(),
-        )?;
-
-        Ok(Self {
-            modified_objects_attribute_types,
-            has_modified_owns,
-            modified_objects_role_types,
-            has_modified_plays,
-            modified_relations_role_types,
-            players_in_deleted_relations,
-            has_modified_relates,
-        })
-    }
-
-    pub(crate) fn modified_objects_attribute_types(&self) -> &HashMap<Object, HashSet<AttributeType>> {
-        &self.modified_objects_attribute_types
-    }
-
-    pub(crate) fn has_modified_owns(&self) -> bool {
-        self.has_modified_owns
-    }
-
-    pub(crate) fn modified_objects_role_types(&self) -> &HashMap<Object, HashSet<RoleType>> {
-        &self.modified_objects_role_types
-    }
-
-    pub(crate) fn has_modified_plays(&self) -> bool {
-        self.has_modified_plays
-    }
-
-    pub(crate) fn modified_relations_role_types(&self) -> &HashMap<Relation, HashSet<RoleType>> {
-        &self.modified_relations_role_types
-    }
-
-    pub(crate) fn players_in_deleted_relations(&self) -> &HashMap<Relation, HashSet<Object>> {
-        &self.players_in_deleted_relations
-    }
-
-    pub(crate) fn has_modified_relates(&self) -> bool {
-        self.has_modified_relates
-    }
-
-    fn collect_new_objects(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
-        out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
-        out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
-    ) -> Result<(), Box<ConceptReadError>> {
-        for key in snapshot
-            .iterate_writes_range(&KeyRange::new_variable_width(
-                RangeStart::Inclusive(StorageKey::new(
-                    ObjectVertex::KEYSPACE,
-                    Bytes::<0>::reference(
-                        ObjectVertex::build_prefix_prefix(Prefix::VertexEntity, ObjectVertex::KEYSPACE).bytes(),
-                    ),
-                )),
-                RangeEnd::EndPrefixInclusive(StorageKey::new(
-                    ObjectVertex::KEYSPACE,
-                    Bytes::<0>::reference(
-                        ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE).bytes(),
-                    ),
-                )),
-            ))
-            .filter_map(|(key, write)| match write {
-                Write::Insert { .. } => Some(key),
-                Write::Delete => None,
-                Write::Put { .. } => unreachable!("Encountered a Put for an entity"),
-            })
-        {
-            let object = Object::new(ObjectVertex::decode(key.bytes()));
-            match &object {
-                Object::Entity(_) => {}
-                Object::Relation(relation) => {
-                    let updated_role_types = out_relation_role_types.entry(*relation).or_default();
-                    for relates in relation.type_().get_relates(snapshot, type_manager)?.into_iter() {
-                        updated_role_types.insert(relates.role());
-                    }
-                }
-            }
-
-            let updated_attribute_types = out_object_attribute_types.entry(object).or_default();
-            for owns in object.type_().get_owns(snapshot, type_manager)?.into_iter() {
-                updated_attribute_types.insert(owns.attribute());
-            }
-
-            let updated_role_types = out_object_role_types.entry(object).or_default();
-            for plays in object.type_().get_plays(snapshot, type_manager)?.into_iter() {
-                updated_role_types.insert(plays.role());
-            }
-        }
-        Ok(())
-    }
-
-    fn collect_modified_has_objects(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        for (key, _) in snapshot
-            .iterate_writes_range(&KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
-        {
-            let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
-            let owner = Object::new(edge.from());
-            let attribute = Attribute::new(edge.to());
-            if thing_manager.instance_exists(snapshot, &owner, storage_counters.clone())? {
-                let updated_attribute_types = out_object_attribute_types.entry(owner).or_default();
-                updated_attribute_types.insert(attribute.type_());
-            }
-        }
-
-        Ok(())
-    }
-
-    fn collect_modified_links_objects(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
-        out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
-        players_in_deleted_relations: &mut HashMap<Relation, HashSet<Object>>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        for (key, _) in snapshot
-            .iterate_writes_range(&KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING))
-        {
-            let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
-            let relation = Relation::new(edge.relation());
-            let player = Object::new(edge.player());
-            let role_type = RoleType::build_from_type_id(edge.role_id());
-
-            if thing_manager.instance_exists(snapshot, &relation, storage_counters.clone())? {
-                let updated_role_types = out_relation_role_types.entry(relation).or_default();
-                updated_role_types.insert(role_type);
-            } else {
-                let players_in_deleted = players_in_deleted_relations.entry(relation).or_default();
-                players_in_deleted.insert(player);
-            }
-
-            if thing_manager.instance_exists(snapshot, &player, storage_counters.clone())? {
-                let updated_role_types = out_object_role_types.entry(player).or_default();
-                updated_role_types.insert(role_type);
-            }
-        }
-
-        Ok(())
-    }
-
-    fn collect_modified_schema_capability_cardinalities_objects(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
-        out_has_modified_owns: &mut bool,
-        out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
-        out_has_modified_plays: &mut bool,
-        out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
-        out_has_modified_relates: &mut bool,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        let mut modified_owns = HashMap::new();
-        let mut modified_plays = HashMap::new();
-        let mut modified_relates = HashMap::new();
+        let mut modified_owns_by_type = HashMap::new();
+        let mut modified_plays_by_type = HashMap::new();
+        let mut modified_relates_by_type = HashMap::new();
         Self::collect_modified_schema_capability_cardinalities(
             snapshot,
             type_manager,
-            &mut modified_owns,
-            &mut modified_plays,
-            &mut modified_relates,
+            &mut modified_owns_by_type,
+            &mut modified_plays_by_type,
+            &mut modified_relates_by_type,
+            storage_counters,
+        )?;
+        Ok(Self { modified_owns_by_type, modified_plays_by_type, modified_relates_by_type })
+    }
+
+    pub(crate) fn modified_relates_by_type(&self) -> &HashMap<RelationType, HashSet<RoleType>> {
+        &self.modified_relates_by_type
+    }
+
+    pub(crate) fn validate<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Self::validate_new_objects(snapshot, thing_manager, out_errors, storage_counters.clone())?;
+        Self::validate_existing_owners_of_modified_has(snapshot, thing_manager, out_errors, storage_counters.clone())?;
+        Self::validate_existing_players_of_modified_links(
+            snapshot,
+            thing_manager,
+            out_errors,
             storage_counters.clone(),
         )?;
+        Self::validate_existing_relations_of_modified_links(
+            snapshot,
+            thing_manager,
+            out_errors,
+            storage_counters.clone(),
+        )?;
+        self.validate_instances_of_modified_types(snapshot, thing_manager, out_errors, storage_counters)
+    }
 
-        if !modified_owns.is_empty() {
-            *out_has_modified_owns = true;
-        }
-        if !modified_plays.is_empty() {
-            *out_has_modified_plays = true;
-        }
-        if !modified_relates.is_empty() {
-            *out_has_modified_relates = true;
-        }
-
-        for (relation_type, role_types) in modified_relates {
-            let (min, max) = minmax_or!(
-                TypeAPI::chain_types(
-                    relation_type,
-                    relation_type.get_subtypes_transitive(snapshot, type_manager)?.into_iter().cloned()
-                ),
-                unreachable!("Expected at least one object type")
-            );
-            let mut it = thing_manager.get_relations_in_range(
+    fn validate_new_objects<Snapshot: ReadableSnapshot>(
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let type_manager = thing_manager.type_manager();
+        thing_manager.for_each_new_object(snapshot, |snapshot, object| {
+            let attribute_types =
+                object.type_().get_owns(snapshot, type_manager)?.into_iter().map(|owns| owns.attribute()).collect();
+            CardinalityValidation::validate_object_has(
                 snapshot,
-                &(Bound::Included(min), Bound::Included(max)),
+                thing_manager,
+                object,
+                &attribute_types,
+                out_errors,
+                storage_counters.clone(),
+            )?;
+            let role_types =
+                object.type_().get_plays(snapshot, type_manager)?.into_iter().map(|plays| plays.role()).collect();
+            CardinalityValidation::validate_object_links(
+                snapshot,
+                thing_manager,
+                object,
+                &role_types,
+                out_errors,
+                storage_counters.clone(),
+            )?;
+            if let Object::Relation(relation) = object {
+                let role_types = relation
+                    .type_()
+                    .get_relates(snapshot, type_manager)?
+                    .into_iter()
+                    .map(|relates| relates.role())
+                    .collect();
+                CardinalityValidation::validate_relation_links(
+                    snapshot,
+                    thing_manager,
+                    relation,
+                    &role_types,
+                    out_errors,
+                    storage_counters.clone(),
+                )?;
+            }
+            Ok(())
+        })
+    }
+
+    fn validate_existing_owners_of_modified_has<Snapshot: ReadableSnapshot>(
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        thing_manager.for_each_owner_with_modified_has(
+            snapshot,
+            storage_counters.clone(),
+            |error| error,
+            |snapshot, modified| {
+                if modified.status == ConceptStatus::Persisted {
+                    CardinalityValidation::validate_object_has(
+                        snapshot,
+                        thing_manager,
+                        modified.owner,
+                        &modified.attribute_types,
+                        out_errors,
+                        storage_counters.clone(),
+                    )?;
+                }
+                Ok(())
+            },
+        )
+    }
+
+    fn validate_existing_players_of_modified_links<Snapshot: ReadableSnapshot>(
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        thing_manager.for_each_player_with_modified_links(
+            snapshot,
+            storage_counters.clone(),
+            |error| error,
+            |snapshot, modified| {
+                if modified.status == ConceptStatus::Persisted {
+                    CardinalityValidation::validate_object_links(
+                        snapshot,
+                        thing_manager,
+                        modified.player,
+                        &modified.role_types,
+                        out_errors,
+                        storage_counters.clone(),
+                    )?;
+                }
+                Ok(())
+            },
+        )
+    }
+
+    fn validate_existing_relations_of_modified_links<Snapshot: ReadableSnapshot>(
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        thing_manager.for_each_relation_with_modified_links(
+            snapshot,
+            storage_counters.clone(),
+            |error| error,
+            |snapshot, modified| {
+                if modified.status == ConceptStatus::Persisted {
+                    CardinalityValidation::validate_relation_links(
+                        snapshot,
+                        thing_manager,
+                        modified.relation,
+                        &modified.role_types,
+                        out_errors,
+                        storage_counters.clone(),
+                    )?;
+                }
+                Ok(())
+            },
+        )
+    }
+
+    fn validate_instances_of_modified_types(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let type_manager = thing_manager.type_manager();
+        for (object_type, attribute_types) in &self.modified_owns_by_type {
+            let mut objects = thing_manager.get_objects_in_range(
+                snapshot,
+                &object_type.range_with_subtypes_transitive(snapshot, type_manager)?,
                 storage_counters.clone(),
             );
-            while let Some(relation) = Iterator::next(&mut it).transpose()? {
-                let updated_role_types = out_relation_role_types.entry(relation).or_default();
-                updated_role_types.extend(role_types.iter());
+            while let Some(object) = Iterator::next(&mut objects).transpose()? {
+                CardinalityValidation::validate_object_has(
+                    snapshot,
+                    thing_manager,
+                    object,
+                    attribute_types,
+                    out_errors,
+                    storage_counters.clone(),
+                )?;
             }
         }
-
-        for (object_type, role_types) in modified_plays {
-            let (min, max) = minmax_or!(
-                TypeAPI::chain_types(
-                    object_type,
-                    object_type.get_subtypes_transitive(snapshot, type_manager,)?.into_iter().cloned()
-                ),
-                unreachable!("Expected at least one object type")
-            );
-            let mut it = thing_manager.get_objects_in_range(
+        for (object_type, role_types) in &self.modified_plays_by_type {
+            let mut objects = thing_manager.get_objects_in_range(
                 snapshot,
-                &(Bound::Included(min), Bound::Included(max)),
+                &object_type.range_with_subtypes_transitive(snapshot, type_manager)?,
                 storage_counters.clone(),
             );
-            while let Some(object) = Iterator::next(&mut it).transpose()? {
-                let updated_role_types = out_object_role_types.entry(object).or_default();
-                updated_role_types.extend(role_types.iter());
+            while let Some(object) = Iterator::next(&mut objects).transpose()? {
+                CardinalityValidation::validate_object_links(
+                    snapshot,
+                    thing_manager,
+                    object,
+                    role_types,
+                    out_errors,
+                    storage_counters.clone(),
+                )?;
             }
         }
-
-        for (object_type, attribute_types) in modified_owns {
-            let (min, max) = minmax_or!(
-                TypeAPI::chain_types(
-                    object_type,
-                    object_type.get_subtypes_transitive(snapshot, type_manager,)?.into_iter().cloned()
-                ),
-                unreachable!("Expected at least one object type")
-            );
-            let mut it = thing_manager.get_objects_in_range(
+        for (relation_type, role_types) in &self.modified_relates_by_type {
+            let mut relations = thing_manager.get_relations_in_range(
                 snapshot,
-                &(Bound::Included(min), Bound::Included(max)),
+                &relation_type.range_with_subtypes_transitive(snapshot, type_manager)?,
                 storage_counters.clone(),
             );
-            while let Some(object) = Iterator::next(&mut it).transpose()? {
-                let updated_attribute_types = out_object_attribute_types.entry(object).or_default();
-                updated_attribute_types.extend(attribute_types.iter());
+            while let Some(relation) = Iterator::next(&mut relations).transpose()? {
+                CardinalityValidation::validate_relation_links(
+                    snapshot,
+                    thing_manager,
+                    relation,
+                    role_types,
+                    out_errors,
+                    storage_counters.clone(),
+                )?;
             }
         }
-
         Ok(())
     }
 

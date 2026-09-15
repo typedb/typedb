@@ -4,7 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, fmt, fmt::Write, hash::Hash, iter, sync::Arc};
+use std::{
+    collections::{Bound, HashSet},
+    fmt,
+    fmt::Write,
+    hash::Hash,
+    iter,
+    sync::Arc,
+};
 
 use bytes::Bytes;
 use encoding::{
@@ -20,6 +27,7 @@ use encoding::{
     layout::infix::Infix,
     value::{label::Label, value_type::ValueType},
 };
+use iterator::minmax_or;
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{
@@ -181,6 +189,22 @@ pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
 
     fn chain_types<C: IntoIterator<Item = Self>>(first: Self, others: C) -> impl Iterator<Item = Self> {
         iter::once(first).chain(others)
+    }
+
+    fn range_with_subtypes_transitive(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(Bound<Self>, Bound<Self>), Box<ConceptReadError>>
+    where
+        Self: PartialOrd,
+    {
+        let subtypes = self.get_subtypes_transitive(snapshot, type_manager)?;
+        let (min, max) = minmax_or!(
+            Self::chain_types(*self, subtypes.into_iter().cloned()),
+            unreachable!("Expected at least one type")
+        );
+        Ok((Bound::Included(min), Bound::Included(max)))
     }
 
     fn next_possible(&self) -> Option<Self>;

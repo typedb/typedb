@@ -156,6 +156,7 @@ pub mod traversal {
 pub mod snapshot {
     pub const BUFFER_KEY_INLINE: usize = 40;
     pub const BUFFER_VALUE_INLINE: usize = 64;
+    pub const WRITE_BUFFER_READ_LIMIT: usize = 4096;
 }
 
 pub mod storage {

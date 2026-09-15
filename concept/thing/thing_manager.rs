@@ -87,7 +87,7 @@ use crate::{
         r#struct::StructIndexForAttributeTypeIterator,
         thing_manager::validation::{
             DataValidationError,
-            cardinality_validation::{CardinalityChangeTracker, CardinalityValidation, collect_errors},
+            cardinality_validation::{CardinalityChangeValidator, collect_errors},
             operation_time_validation::OperationTimeValidation,
         },
     },
@@ -105,6 +105,25 @@ use crate::{
 };
 
 pub mod validation;
+
+pub(crate) struct ModifiedOwnerHas {
+    pub owner: Object,
+    pub status: ConceptStatus,
+    pub attribute_types: HashSet<AttributeType>,
+}
+
+pub(crate) struct ModifiedRelationLinks {
+    pub relation: Relation,
+    pub status: ConceptStatus,
+    pub role_types: HashSet<RoleType>,
+    pub players: HashSet<Object>,
+}
+
+pub(crate) struct ModifiedPlayerLinks {
+    pub player: Object,
+    pub status: ConceptStatus,
+    pub role_types: HashSet<RoleType>,
+}
 
 #[derive(Debug)]
 pub struct ThingManager {
@@ -1651,6 +1670,129 @@ impl ThingManager {
             })
     }
 
+    pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
+        &self,
+        snapshot: &mut Snapshot,
+        mut visit: impl FnMut(&mut Snapshot, Object) -> Result<(), E>,
+    ) -> Result<(), E> {
+        snapshot.visit_writes_in_range(
+            ObjectVertex::build_prefix_prefix(Prefix::VertexEntity, ObjectVertex::KEYSPACE),
+            ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
+            false,
+            |snapshot, key, write| match write {
+                Write::Insert { .. } => visit(snapshot, Object::new(ObjectVertex::decode(key.bytes()))),
+                Write::Delete => Ok(()),
+                Write::Put { .. } => unreachable!("Encountered a Put for an object"),
+            },
+        )
+    }
+
+    pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(
+        &self,
+        snapshot: &mut Snapshot,
+        storage_counters: StorageCounters,
+        read_error: impl Fn(Box<ConceptReadError>) -> E,
+        mut visit: impl FnMut(&mut Snapshot, ModifiedOwnerHas) -> Result<(), E>,
+    ) -> Result<(), E> {
+        let mut group: Option<ModifiedOwnerHas> = None;
+        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedOwnerHas>| match group {
+            Some(modified) => visit(snapshot, modified),
+            None => Ok(()),
+        };
+        snapshot.visit_writes_in_range(
+            ThingEdgeHas::prefix(),
+            ThingEdgeHas::prefix(),
+            ThingEdgeHas::FIXED_WIDTH_ENCODING,
+            |snapshot, key, _| {
+                let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
+                let owner = Object::new(edge.from());
+                if !group.as_ref().is_some_and(|modified| modified.owner == owner) {
+                    flush(snapshot, group.take())?;
+                    let status = self
+                        .get_status(snapshot, owner.vertex().into_storage_key(), storage_counters.clone())
+                        .map_err(&read_error)?;
+                    group = Some(ModifiedOwnerHas { owner, status, attribute_types: HashSet::new() });
+                }
+                group.as_mut().unwrap().attribute_types.insert(Attribute::new(edge.to()).type_());
+                Ok(())
+            },
+        )?;
+        flush(snapshot, group.take())
+    }
+
+    pub(crate) fn for_each_relation_with_modified_links<Snapshot: ReadableSnapshot, E>(
+        &self,
+        snapshot: &mut Snapshot,
+        storage_counters: StorageCounters,
+        read_error: impl Fn(Box<ConceptReadError>) -> E,
+        mut visit: impl FnMut(&mut Snapshot, ModifiedRelationLinks) -> Result<(), E>,
+    ) -> Result<(), E> {
+        let mut group: Option<ModifiedRelationLinks> = None;
+        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedRelationLinks>| match group {
+            Some(modified) => visit(snapshot, modified),
+            None => Ok(()),
+        };
+        snapshot.visit_writes_in_range(
+            ThingEdgeLinks::prefix(),
+            ThingEdgeLinks::prefix(),
+            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            |snapshot, key, _| {
+                let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
+                let relation = Relation::new(edge.relation());
+                if !group.as_ref().is_some_and(|modified| modified.relation == relation) {
+                    flush(snapshot, group.take())?;
+                    let status = self
+                        .get_status(snapshot, relation.vertex().into_storage_key(), storage_counters.clone())
+                        .map_err(&read_error)?;
+                    group = Some(ModifiedRelationLinks {
+                        relation,
+                        status,
+                        role_types: HashSet::new(),
+                        players: HashSet::new(),
+                    });
+                }
+                let modified = group.as_mut().unwrap();
+                modified.role_types.insert(RoleType::build_from_type_id(edge.role_id()));
+                modified.players.insert(Object::new(edge.player()));
+                Ok(())
+            },
+        )?;
+        flush(snapshot, group.take())
+    }
+
+    pub(crate) fn for_each_player_with_modified_links<Snapshot: ReadableSnapshot, E>(
+        &self,
+        snapshot: &mut Snapshot,
+        storage_counters: StorageCounters,
+        read_error: impl Fn(Box<ConceptReadError>) -> E,
+        mut visit: impl FnMut(&mut Snapshot, ModifiedPlayerLinks) -> Result<(), E>,
+    ) -> Result<(), E> {
+        let mut group: Option<ModifiedPlayerLinks> = None;
+        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedPlayerLinks>| match group {
+            Some(modified) => visit(snapshot, modified),
+            None => Ok(()),
+        };
+        snapshot.visit_writes_in_range(
+            ThingEdgeLinks::prefix_reverse(),
+            ThingEdgeLinks::prefix_reverse(),
+            ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE,
+            |snapshot, key, _| {
+                let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
+                let player = Object::new(edge.player());
+                if !group.as_ref().is_some_and(|modified| modified.player == player) {
+                    flush(snapshot, group.take())?;
+                    let status = self
+                        .get_status(snapshot, player.vertex().into_storage_key(), storage_counters.clone())
+                        .map_err(&read_error)?;
+                    group = Some(ModifiedPlayerLinks { player, status, role_types: HashSet::new() });
+                }
+                group.as_mut().unwrap().role_types.insert(RoleType::build_from_type_id(edge.role_id()));
+                Ok(())
+            },
+        )?;
+        flush(snapshot, group.take())
+    }
+
     pub fn instance_exists(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1798,23 +1940,14 @@ impl ThingManager {
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<CleanupIntervals, Vec<ConceptWriteError>> {
-        let cardinality_change_tracker =
-            CardinalityChangeTracker::build(snapshot, self.type_manager(), self, storage_counters.clone())
+        let cardinality_validator =
+            CardinalityChangeValidator::build(snapshot, self.type_manager(), storage_counters.clone())
                 .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
-
-        self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
-
+        self.validate_cardinalities(snapshot, &cardinality_validator, storage_counters.clone())?;
         // For immutable schema, the indices are updated at operation time
         if !Snapshot::IMMUTABLE_SCHEMA {
-            // The cardinality change tracker collects modified_relations_role_types if card of a type changes.
-            // Otherwise we still have to update since we don't do operation time index-generation.
-            self.update_relation_indices_on_schema_commit(
-                snapshot,
-                cardinality_change_tracker.modified_relations_role_types(),
-                cardinality_change_tracker.players_in_deleted_relations(),
-                storage_counters.clone(),
-            )
-            .map_err(|err| vec![*err])?;
+            self.update_relation_indices_on_schema_commit(snapshot, &cardinality_validator, storage_counters.clone())
+                .map_err(|err| vec![*err])?;
         }
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
@@ -2177,47 +2310,12 @@ impl ThingManager {
     fn validate_cardinalities(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        change_tracker: &CardinalityChangeTracker,
+        cardinality_validator: &CardinalityChangeValidator,
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let mut errors = Vec::new();
-
-        for (object, modified_owns) in change_tracker.modified_objects_attribute_types() {
-            let res = CardinalityValidation::validate_object_has(
-                snapshot,
-                self,
-                *object,
-                modified_owns,
-                &mut errors,
-                storage_counters.clone(),
-            );
-            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
-        }
-
-        for (object, modified_plays) in change_tracker.modified_objects_role_types() {
-            let res = CardinalityValidation::validate_object_links(
-                snapshot,
-                self,
-                *object,
-                modified_plays,
-                &mut errors,
-                storage_counters.clone(),
-            );
-            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
-        }
-
-        for (relation, modified_relates) in change_tracker.modified_relations_role_types() {
-            let res = CardinalityValidation::validate_relation_links(
-                snapshot,
-                self,
-                *relation,
-                modified_relates,
-                &mut errors,
-                storage_counters.clone(),
-            );
-            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
-        }
-
+        let res = cardinality_validator.validate(snapshot, self, &mut errors, storage_counters);
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         if errors.is_empty() {
             Ok(())
         } else {
@@ -2228,47 +2326,136 @@ impl ThingManager {
         }
     }
 
+    // TODO: Revisit carefully
     fn update_relation_indices_on_schema_commit(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        modified_relations_role_types: &HashMap<Relation, HashSet<RoleType>>,
-        players_in_deleted_relations: &HashMap<Relation, HashSet<Object>>,
+        cardinality_validator: &CardinalityChangeValidator,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for (relation, modified_relates) in modified_relations_role_types {
-            let qualifies_for_relation_index = relation
-                .type_()
-                .schema_qualifies_for_relation_index(snapshot, self.type_manager())
-                .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
-            self.update_relation_index_on_schema_commit(
-                snapshot,
-                *relation,
-                modified_relates,
-                qualifies_for_relation_index,
-                storage_counters.clone(),
-            )?;
-        }
-        for (relation, players) in players_in_deleted_relations {
-            let qualifies_for_relation_index = relation
-                .type_()
-                .schema_qualifies_for_relation_index(snapshot, self.type_manager())
-                .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
-            if qualifies_for_relation_index {
-                for (p1, p2) in players.iter().cartesian_product(players.iter()) {
-                    let player_pair_for_relation = ThingEdgeIndexedRelation::prefix_start_end_relation(
-                        p1.vertex(),
-                        p2.vertex(),
-                        relation.vertex(),
-                    );
-                    let prefix_range =
-                        KeyRange::new_within(player_pair_for_relation, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-                    // Nuke all
-                    let collected = snapshot
-                        .iterate_range(&prefix_range, storage_counters.clone())
-                        .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
-                        .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
-                    collected.into_iter().for_each(|edge| snapshot.delete(edge));
+        self.update_relation_indices_of_modified_relations(snapshot, storage_counters.clone())?;
+        self.rebuild_relation_indices_across_threshold(
+            snapshot,
+            cardinality_validator.modified_relates_by_type(),
+            storage_counters,
+        )
+    }
+
+    fn update_relation_indices_of_modified_relations(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let read_error = |typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source });
+        let mut qualifying_types: HashMap<RelationType, bool> = HashMap::new();
+        self.for_each_relation_with_modified_links(
+            snapshot,
+            storage_counters.clone(),
+            read_error,
+            |snapshot, modified| {
+                let relation_type = modified.relation.type_();
+                let qualifies = match qualifying_types.get(&relation_type) {
+                    Some(qualifies) => *qualifies,
+                    None => {
+                        let qualifies = relation_type
+                            .schema_qualifies_for_relation_index(snapshot, self.type_manager())
+                            .map_err(read_error)?;
+                        qualifying_types.insert(relation_type, qualifies);
+                        qualifies
+                    }
+                };
+                if modified.status != ConceptStatus::Deleted {
+                    self.update_relation_index_on_schema_commit(
+                        snapshot,
+                        modified.relation,
+                        &modified.role_types,
+                        qualifies,
+                        storage_counters.clone(),
+                    )
+                } else if qualifies {
+                    self.remove_relation_index_of_deleted_relation(
+                        snapshot,
+                        modified.relation,
+                        &modified.players,
+                        storage_counters.clone(),
+                    )
+                } else {
+                    Ok(())
                 }
+            },
+        )
+    }
+
+    fn remove_relation_index_of_deleted_relation(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        players: &HashSet<Object>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        for (p1, p2) in players.iter().cartesian_product(players.iter()) {
+            let player_pair_for_relation =
+                ThingEdgeIndexedRelation::prefix_start_end_relation(p1.vertex(), p2.vertex(), relation.vertex());
+            let prefix_range =
+                KeyRange::new_within(player_pair_for_relation, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+            let collected = snapshot
+                .iterate_range(&prefix_range, storage_counters.clone())
+                .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
+                .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
+            collected.into_iter().for_each(|edge| snapshot.delete(edge));
+        }
+        Ok(())
+    }
+
+    fn rebuild_relation_indices_across_threshold(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let read_error = |typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source });
+        let type_manager = self.type_manager();
+        let mut crossing_types = Vec::new();
+        {
+            let before_writes = snapshot.read_snapshot_before_writes();
+            for relation_type in modified_relates_by_type.keys() {
+                let subtypes = relation_type.get_subtypes_transitive(snapshot, type_manager).map_err(read_error)?;
+                for relation_type in TypeAPI::chain_types(*relation_type, subtypes.into_iter().cloned()) {
+                    let qualifies = relation_type
+                        .schema_qualifies_for_relation_index(snapshot, type_manager)
+                        .map_err(read_error)?;
+                    let qualified = relation_type
+                        .schema_qualifies_for_relation_index(&before_writes, type_manager)
+                        .map_err(read_error)?;
+                    if qualifies != qualified {
+                        crossing_types.push((relation_type, qualifies));
+                    }
+                }
+            }
+        }
+        for (relation_type, qualifies) in crossing_types {
+            let role_types: HashSet<RoleType> = relation_type
+                .get_relates(snapshot, type_manager)
+                .map_err(read_error)?
+                .iter()
+                .map(|relates| relates.role())
+                .collect();
+            let relations: Vec<Relation> = self
+                .get_relations_in_range(
+                    snapshot,
+                    &(Bound::Included(relation_type), Bound::Included(relation_type)),
+                    storage_counters.clone(),
+                )
+                .collect::<Result<_, _>>()
+                .map_err(read_error)?;
+            for relation in relations {
+                self.update_relation_index_on_schema_commit(
+                    snapshot,
+                    relation,
+                    &role_types,
+                    qualifies,
+                    storage_counters.clone(),
+                )?;
             }
         }
         Ok(())
