@@ -245,13 +245,6 @@ typedb_error! {
             identifier: String,
             source_span: Option<Span>,
         ),
-        MultipleAssignmentsForVariable(
-            38,
-            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
-            variable: String,
-            source_span: Option<Span>,
-            other_span: Option<Span>,
-        ),
         IfConditionVariableUnavailable(
             38,
             "The variable '{variable}' referenced in an 'if' condition in a write stage is unavailable. It should be bound in the previous stage.",
@@ -314,6 +307,13 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
             existing_span: Option<Span>,
+        ),
+        MultipleAssignmentsForVariable(
+            49,
+            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
+            variable: String,
+            source_span: Option<Span>,
+            other_span: Option<Span>,
         ),
         RegexExpectedStringLiteral(
             50,
