@@ -2398,6 +2398,9 @@ impl ThingManager {
                         .flat_map(|(removed, counterpart)| [(*removed, *counterpart), (*counterpart, *removed)]);
                     self.remove_relation_index_entries(snapshot, modified.relation, pairs, storage_counters.clone())?;
                 }
+                if !qualification.indexed_before && !qualification.indexed_now {
+                    return Ok(());
+                }
                 self.update_relation_index_on_schema_commit(
                     snapshot,
                     modified.relation,
@@ -2468,12 +2471,15 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let read_error = |typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source });
         let type_manager = self.type_manager();
-        let mut crossing_types = Vec::new();
+        let mut crossing_types = HashMap::new();
         {
             let before_writes = snapshot.read_snapshot_before_writes();
             for relation_type in modified_relates_by_type.keys() {
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, type_manager).map_err(read_error)?;
                 for relation_type in TypeAPI::chain_types(*relation_type, subtypes.into_iter().cloned()) {
+                    if crossing_types.contains_key(&relation_type) {
+                        continue;
+                    }
                     let qualifies = relation_type
                         .schema_qualifies_for_relation_index(snapshot, type_manager)
                         .map_err(read_error)?;
@@ -2481,7 +2487,7 @@ impl ThingManager {
                         .schema_qualifies_for_relation_index(&before_writes, type_manager)
                         .map_err(read_error)?;
                     if qualifies != qualified {
-                        crossing_types.push((relation_type, qualifies));
+                        crossing_types.insert(relation_type, qualifies);
                     }
                 }
             }
