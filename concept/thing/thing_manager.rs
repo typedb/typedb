@@ -2259,7 +2259,7 @@ impl ThingManager {
                     ThingEdgeLinks::prefix(),
                     ThingEdgeLinks::FIXED_WIDTH_ENCODING,
                 ))
-                .filter(|(_, write)| matches!(write, Write::Delete))
+                .filter(|(_, write)| write.is_delete())
             {
                 let edge = ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref()));
                 let relation = Relation::new(edge.from());
@@ -2283,7 +2283,7 @@ impl ThingManager {
                     ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
                     ObjectVertex::FIXED_WIDTH_ENCODING,
                 ))
-                .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
+                .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
             {
                 let relation = Relation::new(ObjectVertex::decode(key.bytes()));
                 if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
@@ -2360,7 +2360,7 @@ impl ThingManager {
                 ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
             )),
         )
-        .filter(|(_, write)| matches!(write, Write::Delete));
+        .filter(|(_, write)| write.is_delete());
         for attribute_vertex in deleted_reverse_has
             .map(|(key, _)| ThingEdgeHasReverse::decode(Bytes::Reference(key.byte_array())).from())
             .dedup()
