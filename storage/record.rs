@@ -158,8 +158,7 @@ impl CommitRecord {
                         _ => (),
                     }
                 }
-                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
-                {
+                if write.is_delete() && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable)) {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
             }
@@ -176,7 +175,7 @@ impl CommitRecord {
                 }
             } else {
                 for (key, write) in predecessor_writes.iter() {
-                    if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
+                    if write.is_delete() && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
                         return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                     }
                 }

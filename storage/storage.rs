@@ -644,8 +644,7 @@ impl<Durability> MVCCStorage<Durability> {
 
                 let overwritten =
                     mvcc_key.sequence_number() < cleanup_until && last_seen.as_deref() == Some(mvcc_key.key());
-                let deleted = mvcc_key.sequence_number() <= cleanup_until
-                    && matches!(mvcc_key.operation(), StorageOperation::Delete);
+                let deleted = mvcc_key.sequence_number() <= cleanup_until && mvcc_key.operation().is_delete();
 
                 if overwritten || deleted {
                     batch.delete(k);
@@ -821,6 +820,22 @@ impl StorageOperation {
 
     const fn serialised_len() -> usize {
         Self::BYTES
+    }
+
+    /// Returns `true` if the storage operation is [`Insert`].
+    ///
+    /// [`Insert`]: StorageOperation::Insert
+    #[must_use]
+    fn is_insert(&self) -> bool {
+        matches!(self, Self::Insert)
+    }
+
+    /// Returns `true` if the storage operation is [`Delete`].
+    ///
+    /// [`Delete`]: StorageOperation::Delete
+    #[must_use]
+    fn is_delete(&self) -> bool {
+        matches!(self, Self::Delete)
     }
 }
 

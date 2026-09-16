@@ -68,15 +68,15 @@ impl PartialEq for Write {
 impl Eq for Write {}
 
 impl Write {
-    pub(crate) fn is_insert(&self) -> bool {
+    pub fn is_insert(&self) -> bool {
         matches!(self, Write::Insert { .. })
     }
 
-    pub(crate) fn is_put(&self) -> bool {
+    pub fn is_put(&self) -> bool {
         matches!(self, Write::Put { .. })
     }
 
-    pub(crate) fn is_delete(&self) -> bool {
+    pub fn is_delete(&self) -> bool {
         matches!(self, Write::Delete)
     }
 
