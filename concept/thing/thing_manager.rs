@@ -2275,7 +2275,7 @@ impl ThingManager {
                 Prefix::VertexAttribute.fixed_width_keys(),
             )),
         )
-        .filter(|(_, write)| matches!(write, Write::Put { .. }));
+        .filter(|(_, write)| write.is_put());
         for (key, _write) in new_attributes {
             let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
