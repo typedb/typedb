@@ -158,14 +158,14 @@ impl CommitRecord {
             }
 
             for (_key, write, predecessor_lock) in BTreeMapIntersectionIterator::new(writes, predecessor_locks) {
-                if matches!(write, Write::Delete) && matches!(predecessor_lock, LockType::Unmodifiable) {
+                if write.is_delete() && matches!(predecessor_lock, LockType::Unmodifiable) {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
             }
 
             // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
             for (_key, lock, predecessor_write) in BTreeMapIntersectionIterator::new(locks, predecessor_writes) {
-                if matches!(lock, LockType::Unmodifiable) && matches!(predecessor_write, Write::Delete) {
+                if matches!(lock, LockType::Unmodifiable) && predecessor_write.is_delete() {
                     return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                 }
             }
