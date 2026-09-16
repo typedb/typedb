@@ -75,7 +75,8 @@ fn build_recursive(
             match var {
                 typeql::Variable::Named { optional, .. } | typeql::Variable::Anonymous { optional, .. } => {
                     if optional.is_some() {
-                        Expression::MayShortCircuitVariable(variable)
+                        let inner_id = tree.add(Expression::Variable(variable));
+                        Expression::MayShortCircuit(inner_id)
                     } else {
                         Expression::Variable(variable)
                     }

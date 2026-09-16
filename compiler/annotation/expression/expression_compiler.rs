@@ -75,13 +75,12 @@ impl<'this> ExpressionCompilationContext<'this> {
         match expression {
             Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
-            Expression::MayShortCircuitVariable(variable) => self.compile_may_short_circuit_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
             Expression::BuiltinValueFunctionCall(builtin) => self.compile_value_builtin(builtin),
             Expression::ListIndex(list_index) => self.compile_list_index(list_index),
             Expression::List(list_constructor) => self.compile_list_constructor(list_constructor),
             Expression::ListIndexRange(list_index_range) => self.compile_list_index_range(list_index_range),
-            Expression::MayShortCircuitOther(inner) => self.compile_may_short_circuit_other(*inner),
+            Expression::MayShortCircuit(inner) => self.compile_may_short_circuit_other(*inner),
         }
     }
 
@@ -188,19 +187,18 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_may_short_circuit_variable(&mut self, variable: &Variable) -> Result<(), Box<ExpressionCompileError>> {
-        debug_assert!(self.variable_value_categories.contains_key(variable));
-        self.compile_variable(variable)?;
-        resolve_validate_append_short_circuit(self)?;
-        Ok(())
-    }
-
     fn compile_may_short_circuit_other(
         &mut self,
         inner_expression_id: ExpressionTreeNodeId,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(self.expression_tree.get(inner_expression_id))?;
-        resolve_validate_append_short_circuit(self)?;
+        let Some(type_) = self.type_stack.last() else {
+            return Err(Box::new(ExpressionCompileError::InternalStackWasEmpty {}));
+        };
+        match type_ {
+            ExpressionValueType::Single(_) => self.append_instruction(MayShortCircuitValue::OP_CODE),
+            ExpressionValueType::List(_) => self.append_instruction(MayShortCircuitList::OP_CODE),
+        }
         Ok(())
     }
 
@@ -374,17 +372,4 @@ impl<T: BinaryValueFunctionResolver> BuiltinValueFunctionResolver for BinaryValu
         }
         T::resolve_validate_append_binary(arg_1_category, arg_2_category, builder, builtin.source_span())
     }
-}
-
-fn resolve_validate_append_short_circuit(
-    builder: &mut ExpressionCompilationContext<'_>,
-) -> Result<(), Box<ExpressionCompileError>> {
-    let Some(type_) = builder.type_stack.last() else {
-        return Err(Box::new(ExpressionCompileError::InternalStackWasEmpty {}));
-    };
-    match type_ {
-        ExpressionValueType::Single(_) => builder.append_instruction(MayShortCircuitValue::OP_CODE),
-        ExpressionValueType::List(_) => builder.append_instruction(MayShortCircuitList::OP_CODE),
-    }
-    Ok(())
 }

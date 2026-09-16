@@ -629,7 +629,6 @@ fn validate_optional_expression_dereferences_safe(
     match at_expr {
         Expression::Constant(_) => (),
         Expression::Variable(_) => (),
-        Expression::MayShortCircuitVariable(_) => (),
         Expression::Operation(op) => {
             validate_optional_expression_dereferences_safe(context, conjunction, tree, op.left_expression_id(), true)?;
             validate_optional_expression_dereferences_safe(context, conjunction, tree, op.right_expression_id(), true)?;
@@ -667,7 +666,7 @@ fn validate_optional_expression_dereferences_safe(
                 true,
             )?;
         }
-        Expression::MayShortCircuitOther(inner_id) => {
+        Expression::MayShortCircuit(inner_id) => {
             // The only safe unwrap for now makes it false.
             validate_optional_expression_dereferences_safe(context, conjunction, tree, *inner_id, false)?;
         }

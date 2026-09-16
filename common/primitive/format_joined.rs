@@ -30,23 +30,15 @@ where
 #[cfg(test)]
 pub mod tests {
     use std::collections::BTreeSet;
+
     use crate::format_joined::FormatJoined;
 
     #[test]
     fn test_joined_write() {
         let empty: Vec<usize> = vec![];
-        assert_eq!(
-            format!("f({})", FormatJoined(&empty, ',')).as_str(),
-            "f()"
-        );
-        assert_eq!(
-            format!("f({})", FormatJoined(&[1], ',')).as_str(),
-            "f(1)"
-        );
-        assert_eq!(
-            format!("f({})", FormatJoined(&[1, 2, 3], ',')).as_str(),
-            "f(1, 2, 3)"
-        );
+        assert_eq!(format!("f({})", FormatJoined(&empty, ',')).as_str(), "f()");
+        assert_eq!(format!("f({})", FormatJoined(&[1], ',')).as_str(), "f(1)");
+        assert_eq!(format!("f({})", FormatJoined(&[1, 2, 3], ',')).as_str(), "f(1, 2, 3)");
 
         assert_eq!(
             format!("BTreeSet({})", FormatJoined(&BTreeSet::from(["Bob", "Alice"]), ',')).as_str(),
