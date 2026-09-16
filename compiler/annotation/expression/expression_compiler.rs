@@ -188,21 +188,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn add_short_circuit_instruction(&mut self) -> Result<(), Box<ExpressionCompileError>> {
-        let Some(type_) = self.type_stack.last() else {
-            return Err(Box::new(ExpressionCompileError::InternalStackWasEmpty {}));
-        };
-        match type_ {
-            ExpressionValueType::Single(_) => self.append_instruction(MayShortCircuitValue::OP_CODE),
-            ExpressionValueType::List(_) => self.append_instruction(MayShortCircuitList::OP_CODE),
-        }
-        Ok(())
-    }
-
     fn compile_may_short_circuit_variable(&mut self, variable: &Variable) -> Result<(), Box<ExpressionCompileError>> {
         debug_assert!(self.variable_value_categories.contains_key(variable));
         self.compile_variable(variable)?;
-        self.add_short_circuit_instruction()?;
+        resolve_validate_append_short_circuit(self)?;
         Ok(())
     }
 
@@ -211,7 +200,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         inner_expression_id: ExpressionTreeNodeId,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(self.expression_tree.get(inner_expression_id))?;
-        self.add_short_circuit_instruction()?;
+        resolve_validate_append_short_circuit(self)?;
         Ok(())
     }
 
@@ -385,4 +374,17 @@ impl<T: BinaryValueFunctionResolver> BuiltinValueFunctionResolver for BinaryValu
         }
         T::resolve_validate_append_binary(arg_1_category, arg_2_category, builder, builtin.source_span())
     }
+}
+
+fn resolve_validate_append_short_circuit(
+    builder: &mut ExpressionCompilationContext<'_>,
+) -> Result<(), Box<ExpressionCompileError>> {
+    let Some(type_) = builder.type_stack.last() else {
+        return Err(Box::new(ExpressionCompileError::InternalStackWasEmpty {}));
+    };
+    match type_ {
+        ExpressionValueType::Single(_) => builder.append_instruction(MayShortCircuitValue::OP_CODE),
+        ExpressionValueType::List(_) => builder.append_instruction(MayShortCircuitList::OP_CODE),
+    }
+    Ok(())
 }
