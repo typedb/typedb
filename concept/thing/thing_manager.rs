@@ -2417,31 +2417,6 @@ impl ThingManager {
         )
     }
 
-    fn relation_index_qualification(
-        &self,
-        snapshot: &impl WritableSnapshot,
-        relation_type: RelationType,
-    ) -> Result<RelationIndexQualification, Box<ConceptReadError>> {
-        let qualified_now = relation_type.schema_qualifies_for_relation_index(snapshot, self.type_manager())?;
-        let qualified_before = {
-            let before_writes = snapshot.read_snapshot_before_writes();
-            relation_type.schema_qualifies_for_relation_index(&before_writes, self.type_manager())?
-        };
-        Ok(RelationIndexQualification { qualified_now, qualified_before })
-    }
-
-    fn relation_role_players(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation: Relation,
-        storage_counters: StorageCounters,
-    ) -> Result<HashSet<(Object, RoleType)>, Box<ConceptReadError>> {
-        relation
-            .get_players(snapshot, self, storage_counters)
-            .map_ok(|(role_player, _)| (role_player.player(), role_player.role_type()))
-            .collect::<Result<HashSet<_>, _>>()
-    }
-
     fn rebuild_relation_indices_of_requalified_types(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2532,6 +2507,31 @@ impl ThingManager {
             }
         }
         Ok(())
+    }
+
+    fn relation_index_qualification(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<RelationIndexQualification, Box<ConceptReadError>> {
+        let qualified_now = relation_type.schema_qualifies_for_relation_index(snapshot, self.type_manager())?;
+        let qualified_before = {
+            let before_writes = snapshot.read_snapshot_before_writes();
+            relation_type.schema_qualifies_for_relation_index(&before_writes, self.type_manager())?
+        };
+        Ok(RelationIndexQualification { qualified_now, qualified_before })
+    }
+
+    fn relation_role_players(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation: Relation,
+        storage_counters: StorageCounters,
+    ) -> Result<HashSet<(Object, RoleType)>, Box<ConceptReadError>> {
+        relation
+            .get_players(snapshot, self, storage_counters)
+            .map_ok(|(role_player, _)| (role_player.player(), role_player.role_type()))
+            .collect::<Result<HashSet<_>, _>>()
     }
 
     pub fn create_entity(
