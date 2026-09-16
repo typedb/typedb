@@ -6,8 +6,10 @@
 
 #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
@@ -15,6 +17,7 @@ use encoding::{
 };
 use executor::{
     ExecutionInterrupt,
+    batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
 };
 use function::function_manager::FunctionManager;
@@ -609,4 +612,124 @@ fn test_require() {
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));
     }
+}
+
+fn setup_people() -> Context {
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_str = r#"
+       insert
+       $p isa person, has name 'John', has age 10, has age 11;
+       $q isa person, has age 20;
+       $r isa person, has name 'Harry';
+       $s isa person;
+       $o isa organisation;
+       membership (member: $p, group: $o);
+   "#;
+    let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &query,
+            None::<GivenRowsSimple>,
+            query_str,
+        )
+        .unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let _ = iterator.count();
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    context
+}
+
+fn read_rows(context: &Context, query: &str) -> (Batch, HashMap<String, VariablePosition>) {
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &match_,
+            None::<GivenRowsSimple>,
+            query,
+        )
+        .unwrap();
+    let positions = pipeline.rows_positions().unwrap().clone();
+    let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    (iterator.collect_owned().unwrap(), positions)
+}
+
+#[test]
+fn test_match_disjunction_branches_binding_the_same_variable() {
+    let context = setup_people();
+    let (batch, positions) = read_rows(&context, "match $p isa person; { $p has name $v; } or { $p has age $v; };");
+    let (person, value) = (positions["p"], positions["v"]);
+    assert_eq!(batch.len(), 5);
+    assert!(batch.iter().all(|row| !row.get(person).is_none() && !row.get(value).is_none()));
+    let mut rows_per_branch: HashMap<u64, usize> = HashMap::new();
+    for row in batch.iter() {
+        *rows_per_branch.entry(row.provenance().0).or_default() += 1;
+    }
+    let mut rows_per_branch: Vec<usize> = rows_per_branch.into_values().collect();
+    rows_per_branch.sort();
+    assert_eq!(rows_per_branch, vec![2, 3]);
+}
+
+#[test]
+fn test_match_disjunction_branch_with_anonymous_relation() {
+    let context = setup_people();
+    let (batch, positions) =
+        read_rows(&context, "match $p isa person; { membership (member: $p, group: $_); } or { $p has age 20; };");
+    let person = positions["p"];
+    assert_eq!(batch.len(), 2);
+    assert!(batch.iter().all(|row| !row.get(person).is_none()));
+    let provenances: Vec<u64> = batch.iter().map(|row| row.provenance().0).collect();
+    assert_ne!(provenances[0], provenances[1]);
+}
+
+#[test]
+fn test_match_disjunction_inside_function() {
+    let context = setup_people();
+    let (batch, positions) = read_rows(
+        &context,
+        concat!(
+            "with fun score($p: person) -> { integer }: ",
+            "match $p has name $n; { $p has age $a; let $s = $a * 2; } or { $n == \"Harry\"; let $s = 0; }; ",
+            "return { $s }; ",
+            "match $p isa person; let $s in score($p);"
+        ),
+    );
+    let score = positions["s"];
+    let mut scores: Vec<i64> = batch
+        .iter()
+        .map(|row| match row.get(score) {
+            VariableValue::Value(Value::Integer(score)) => *score,
+            other => panic!("unexpected score {other:?}"),
+        })
+        .collect();
+    scores.sort();
+    assert_eq!(scores, vec![0, 20, 22]);
+}
+
+#[test]
+fn test_match_optional_found_and_not_found() {
+    let context = setup_people();
+    let (batch, positions) = read_rows(&context, "match $p isa person; try { $p has age $a; };");
+    let age = positions["a"];
+    assert_eq!(batch.len(), 5);
+    let (found, not_found): (Vec<_>, Vec<_>) = batch.iter().partition(|row| !row.get(age).is_none());
+    assert_eq!(found.len(), 3);
+    assert_eq!(not_found.len(), 2);
+    let optional_branch = found[0].provenance().0;
+    assert_ne!(optional_branch, 0);
+    assert!(found.iter().all(|row| row.provenance().0 == optional_branch));
+    assert!(not_found.iter().all(|row| row.provenance().0 == 0));
 }
