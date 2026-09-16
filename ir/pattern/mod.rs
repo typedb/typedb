@@ -139,10 +139,13 @@ macro_rules! impl_pattern_from_pattern_variables {
 }
 pub(self) use impl_pattern_from_pattern_variables;
 
-use crate::pattern::{
-    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
-    constraint::Constraint,
-    disjunction::DisjunctionBuilder,
+use crate::{
+    pattern::{
+        conjunction::{ConjunctionBuilder, NestedPatternBuilder},
+        constraint::Constraint,
+        disjunction::DisjunctionBuilder,
+    },
+    pipeline::function_signature::FunctionSignatureIndex,
 };
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -802,15 +805,15 @@ pub struct AssignedVariable {
 }
 
 impl AssignedVariable {
+    pub(crate) fn new_with_optionality(variable: Variable, optionality: VariableOptionality) -> Self {
+        Self { variable, optionality }
+    }
+
     pub fn new_optional(variable: Variable) -> Self {
         Self { variable, optionality: VariableOptionality::Optional }
     }
 
     pub fn new_required(variable: Variable) -> Self {
         Self { variable, optionality: VariableOptionality::Required }
-    }
-
-    pub(crate) fn new_inferred(variable: Variable) -> AssignedVariable {
-        Self::new_required(variable) // TODO: when we have optional assignments
     }
 }

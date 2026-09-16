@@ -672,7 +672,11 @@ fn validate_optional_expression_dereferences_safe(
         }
     }
     if check_at && at_expr.return_optionality(conjunction) == VariableOptionality::Optional {
-        let identifier = format!("{}", at_expr);
+        let identifier = if let Expression::Variable(id) = at_expr {
+            format!("Variable({})", context.variable_registry.get_variable_name_or_unnamed(*id).to_owned())
+        } else {
+            format!("{}", at_expr)
+        };
         let source_span = at_expr.source_span();
         Err(Box::new(RepresentationError::UnsafeOptionalExpressionDereference { identifier, source_span }))
     } else {

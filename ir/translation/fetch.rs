@@ -41,7 +41,7 @@ use crate::{
     },
     translation::{
         PipelineTranslationContext,
-        expression::{add_function_call, build_expression},
+        expression::{add_function_call, build_expression, function_return_optionality},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
             VariableNotAvailable,
@@ -407,21 +407,22 @@ fn translate_inline_function_call<'a>(
     );
     let mut builder = Block::builder(builder_context);
     let mut conjunction = builder.conjunction_mut();
-    let mut assign_vars = Vec::new();
-    for _ in &signature.returns {
-        assign_vars.push(
-            conjunction
-                .constraints_mut()
-                .create_anonymous_variable(None)
-                .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?,
-        );
+    let mut assign_vars = Vec::with_capacity(signature.returns.len());
+    let mut assign_vars_only = Vec::with_capacity(signature.returns.len());
+    for (_, optionality) in &signature.returns {
+        let variable = conjunction
+            .constraints_mut()
+            .create_anonymous_variable(None)
+            .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
+        assign_vars_only.push(variable);
+        assign_vars.push(AssignedVariable::new_with_optionality(variable, *optionality));
     }
 
     add_function_call(
         function_index,
         &mut conjunction.constraints_mut(),
         function_name,
-        assign_vars.iter().map(|var| AssignedVariable::new_inferred(*var)).collect(),
+        assign_vars,
         &call.args,
         call.span(),
     )
@@ -431,8 +432,7 @@ fn translate_inline_function_call<'a>(
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     let stage = TranslatedStage::Match { block, source_span: call.span() };
-
-    Ok((local_context, stage, assign_vars, signature))
+    Ok((local_context, stage, assign_vars_only, signature))
 }
 
 fn add_expression(
@@ -445,11 +445,12 @@ fn add_expression(
         .constraints_mut()
         .create_anonymous_variable(None)
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
+    let assigned = AssignedVariable::new_optional(assign_var); // Because we can.
     let expression = build_expression(function_index, &mut conjunction.constraints_mut(), typeql_expression)
         .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: err })?;
     let _ = conjunction
         .constraints_mut()
-        .add_assignment(AssignedVariable::new_inferred(assign_var), expression, typeql_expression.span())
+        .add_assignment(assigned, expression, typeql_expression.span())
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     Ok(assign_var)
 }

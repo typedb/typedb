@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 use typeql::{
     common::{Span, Spanned},
-    expression::{BuiltinFunctionName, FunctionName, NamespacedFunctionName},
+    expression::{BuiltinFunctionName, FunctionCall, FunctionName, NamespacedFunctionName},
     token::{ArithmeticOperator, Function},
 };
 
@@ -21,6 +21,7 @@ use crate::{
             BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
             ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
+        variable_category::VariableOptionality,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
@@ -32,10 +33,19 @@ use crate::{
     },
 };
 
-pub(super) fn add_typeql_expression(
+pub(super) fn add_inline_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     rhs: &typeql::Expression,
+) -> Result<Vertex<Variable>, Box<RepresentationError>> {
+    add_inline_typeql_expression_with_optionality_hint(function_index, constraints, rhs, VariableOptionality::Required)
+}
+
+fn add_inline_typeql_expression_with_optionality_hint(
+    function_index: &impl FunctionSignatureIndex,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    rhs: &typeql::Expression,
+    optionality_hint: VariableOptionality,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     if let typeql::Expression::Value(literal) = rhs {
         let id = register_typeql_literal(constraints, literal)?;
@@ -45,7 +55,8 @@ pub(super) fn add_typeql_expression(
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable(rhs.span())?;
-        constraints.add_assignment(AssignedVariable::new_inferred(variable), expression, rhs.span())?;
+        let assigned_variable = AssignedVariable::new_with_optionality(variable, optionality_hint);
+        constraints.add_assignment(assigned_variable, expression, rhs.span())?;
         Ok(Vertex::Variable(variable))
     }
 }
@@ -236,24 +247,27 @@ fn build_function(
             )))
         }
         FunctionName::Builtin(builtin) => {
-            let assign = constraints.create_anonymous_variable(function_call.name.span())?;
+            let return_optionality = function_return_optionality(function_index, &function_call)?;
+            let assigned_variable = constraints.create_anonymous_variable(function_call.name.span())?;
+            let assigned = AssignedVariable::new_with_optionality(assigned_variable, return_optionality);
             add_builtin_function_call(
                 function_index,
                 constraints,
                 to_builtin_concept_function_id(builtin, &function_call.args)?,
-                vec![AssignedVariable::new_inferred(assign)],
+                vec![assigned],
                 &function_call.args,
                 function_call.span(),
             )?;
-            Ok(Expression::Variable(assign))
+            Ok(Expression::Variable(assigned_variable))
         }
         FunctionName::Identifier(identifier) => {
+            let return_optionality = function_return_optionality(function_index, &function_call)?;
             let assign = constraints.create_anonymous_variable(identifier.span())?;
             add_function_call(
                 function_index,
                 constraints,
                 checked_identifier(identifier)?,
-                vec![AssignedVariable::new_inferred(assign)],
+                vec![AssignedVariable::new_with_optionality(assign, return_optionality)],
                 &function_call.args,
                 function_call.span(),
             )?;
@@ -364,6 +378,44 @@ fn to_builtin_concept_function_id<T>(
             Ok(BuiltinConceptFunctionID::Label)
         }
         _ => Err(Box::new(RepresentationError::InternalNotAConceptBuiltin { token, source_span: typeql_id.span() })),
+    }
+}
+
+pub(super) fn function_argument_optionality() -> Result<VariableOptionality, Box<RepresentationError>> {
+    error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
+    Ok(VariableOptionality::Required)
+}
+
+pub(super) fn function_return_optionality(
+    function_index: &impl FunctionSignatureIndex,
+    function_call: &FunctionCall,
+) -> Result<VariableOptionality, Box<RepresentationError>> {
+    error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalBuiltinFunctions);
+    match &function_call.name {
+        FunctionName::Builtin(builtin) if is_builtin_value_function(builtin) => Ok(VariableOptionality::Required),
+        FunctionName::Builtin(builtin) => Ok(VariableOptionality::Required),
+        FunctionName::Namespaced(_) => Ok(VariableOptionality::Required),
+        FunctionName::Identifier(identifier) => {
+            let resolved_function = function_index
+                .get_function_signature(identifier.as_str_unchecked())
+                .map_err(|typedb_source| Box::new(RepresentationError::FunctionReadError { typedb_source }))?;
+            if let Some(signature) = &resolved_function {
+                if signature.returns.len() == 1 {
+                    Ok(signature.returns[0].1)
+                } else {
+                    Err(Box::new(RepresentationError::InlinedFunctionReturnedTuple {
+                        identifier: identifier.as_str_unchecked().to_owned(),
+                        actual_width: signature.returns.len(),
+                        source_span: function_call.span(),
+                    }))
+                }
+            } else {
+                Err(Box::new(RepresentationError::UnresolvedFunction {
+                    function_name: identifier.as_str_unchecked().to_owned(),
+                    source_span: identifier.span(),
+                }))
+            }
+        }
     }
 }
 

@@ -27,9 +27,11 @@ use crate::{
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         variable_category::VariableOptionality,
     },
-    pipeline::function_signature::FunctionSignatureIndex,
+    pipeline::function_signature::{FunctionSignature, FunctionSignatureIndex},
     translation::{
-        expression::{add_function_call, add_typeql_expression, build_expression},
+        expression::{
+            add_function_call, add_inline_typeql_expression, build_expression, function_argument_optionality,
+        },
         literal::translate_literal,
         parse_iid,
         tokens::{checked_identifier, translate_value_type},
@@ -53,8 +55,8 @@ pub(super) fn add_statement(
             add_typeql_iterable_binding(function_index, constraints, assigned, rhs)?
         }
         typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, span }) => {
-            let lhs_var = add_typeql_expression(function_index, constraints, lhs)?;
-            let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
+            let lhs_var = add_inline_typeql_expression(function_index, constraints, lhs)?;
+            let rhs_var = add_inline_typeql_expression(function_index, constraints, &comparison.rhs)?;
             let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                 Box::new(RepresentationError::LiteralParseError {
                     literal: comparison.comparator.to_string(),
@@ -170,21 +172,6 @@ fn add_type_statement(
         }
     }
     Ok(())
-}
-
-fn extend_from_inline_typeql_expression(
-    function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_, '_>,
-    typeql_expression: &typeql::Expression,
-) -> Result<Variable, Box<RepresentationError>> {
-    if let typeql::Expression::Variable(typeql_var) = typeql_expression {
-        register_typeql_var(constraints, typeql_var)
-    } else {
-        let expression = build_expression(function_index, constraints, typeql_expression)?;
-        let assigned = constraints.create_anonymous_variable(typeql_expression.span())?;
-        constraints.add_assignment(AssignedVariable::new_inferred(assigned), expression, typeql_expression.span())?;
-        Ok(assigned)
-    }
 }
 
 pub(crate) fn register_typeql_var(
@@ -398,7 +385,7 @@ fn add_typeql_isa(
                 )?;
             }
             IsaInstanceConstraint::Expression(expression) => {
-                let assigned_to = add_typeql_expression(function_index, constraints, expression)?;
+                let assigned_to = add_inline_typeql_expression(function_index, constraints, expression)?;
                 constraints.add_comparison(
                     Vertex::Variable(thing),
                     assigned_to,
@@ -407,7 +394,7 @@ fn add_typeql_isa(
                 )?;
             }
             IsaInstanceConstraint::Comparison(comparison) => {
-                let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
+                let rhs_var = add_inline_typeql_expression(function_index, constraints, &comparison.rhs)?;
                 let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                     Box::new(RepresentationError::LiteralParseError {
                         literal: comparison.comparator.to_string(),
@@ -449,7 +436,7 @@ fn add_typeql_has(
     let attribute = match &has.value {
         typeql::statement::thing::HasValue::Variable(var) => register_typeql_var(constraints, var)?,
         typeql::statement::thing::HasValue::Expression(typeql_expression) => {
-            let expression = add_typeql_expression(function_index, constraints, typeql_expression)?;
+            let expression = add_inline_typeql_expression(function_index, constraints, typeql_expression)?;
             let attribute = constraints.create_anonymous_variable(typeql_expression.span())?;
             constraints.add_comparison(
                 Vertex::Variable(attribute),
@@ -461,7 +448,7 @@ fn add_typeql_has(
         }
         typeql::statement::thing::HasValue::Comparison(comparison) => {
             let attribute = constraints.create_anonymous_variable(comparison.rhs.span())?;
-            let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
+            let rhs_var = add_inline_typeql_expression(function_index, constraints, &comparison.rhs)?;
             let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                 Box::new(RepresentationError::LiteralParseError {
                     literal: comparison.comparator.to_string(),
@@ -640,9 +627,11 @@ pub(super) fn split_out_inline_expressions(
                 Ok(type_variable)
             }
             expr => {
+                let arg_optionality_from_signature = function_argument_optionality()?;
                 let variable = constraints.create_anonymous_variable(expr.span())?;
                 let expression = build_expression(function_index, constraints, expr)?;
-                constraints.add_assignment(AssignedVariable::new_inferred(variable), expression, expr.span())?;
+                let assigned = AssignedVariable::new_with_optionality(variable, arg_optionality_from_signature);
+                constraints.add_assignment(assigned, expression, expr.span())?;
                 Ok(variable)
             }
         })

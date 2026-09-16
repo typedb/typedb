@@ -337,12 +337,18 @@ typedb_error! {
             "Given clauses must be the first clause in a query pipeline.",
             source_span: Option<Span>,
         ),
-
         UnplannableConjunction(
             55,
             "The required input variables for the following constraints could not be satisfied (there may be a circular dependency):\n{unplannable_constraints}",
             unplannable_constraints: UnplannableConstraints,
             span: Option<Span>,
+        ),
+        InlinedFunctionReturnedTuple(
+            56,
+            "The function '{identifier}' returns a tuple of width '{actual_width}'. To be used inline, it must return a scalar.",
+            identifier: String,
+            actual_width: usize,
+            source_span: Option<Span>,
         ),
         InternalNotAValueBuiltin(
             100,
