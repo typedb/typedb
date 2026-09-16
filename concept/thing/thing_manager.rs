@@ -127,8 +127,8 @@ pub(crate) struct ModifiedPlayerLinks {
 
 #[derive(Clone, Copy)]
 struct RelationIndexQualification {
-    indexed_before: bool,
-    indexed_now: bool,
+    qualified_before: bool,
+    qualified_now: bool,
 }
 
 #[derive(Debug)]
@@ -2371,13 +2371,13 @@ impl ThingManager {
                     }
                 };
                 if modified.status == ConceptStatus::Deleted {
-                    if qualification.indexed_before || qualification.indexed_now {
+                    if qualification.qualified_before {
                         let pairs = modified
                             .removed_role_players
                             .iter()
                             .cartesian_product(modified.removed_role_players.iter())
                             .map(|(start, end)| (*start, *end));
-                        self.remove_relation_index_entries(
+                        self.relation_index_player_pairs_remove(
                             snapshot,
                             modified.relation,
                             pairs,
@@ -2386,7 +2386,7 @@ impl ThingManager {
                     }
                     return Ok(());
                 }
-                if qualification.indexed_before && !modified.removed_role_players.is_empty() {
+                if qualification.qualified_before && !modified.removed_role_players.is_empty() {
                     let mut counterparts = self
                         .relation_role_players(snapshot, modified.relation, storage_counters.clone())
                         .map_err(read_error)?;
@@ -2396,16 +2396,21 @@ impl ThingManager {
                         .iter()
                         .cartesian_product(counterparts.iter())
                         .flat_map(|(removed, counterpart)| [(*removed, *counterpart), (*counterpart, *removed)]);
-                    self.remove_relation_index_entries(snapshot, modified.relation, pairs, storage_counters.clone())?;
+                    self.relation_index_player_pairs_remove(
+                        snapshot,
+                        modified.relation,
+                        pairs,
+                        storage_counters.clone(),
+                    )?;
                 }
-                if !qualification.indexed_before && !qualification.indexed_now {
+                if !qualification.qualified_before && !qualification.qualified_now {
                     return Ok(());
                 }
                 self.update_relation_index_on_schema_commit(
                     snapshot,
                     modified.relation,
                     &modified.role_types,
-                    qualification.indexed_now,
+                    qualification.qualified_now,
                     storage_counters.clone(),
                 )
             },
@@ -2417,12 +2422,12 @@ impl ThingManager {
         snapshot: &impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<RelationIndexQualification, Box<ConceptReadError>> {
-        let indexed_now = relation_type.schema_qualifies_for_relation_index(snapshot, self.type_manager())?;
-        let indexed_before = {
+        let qualified_now = relation_type.schema_qualifies_for_relation_index(snapshot, self.type_manager())?;
+        let qualified_before = {
             let before_writes = snapshot.read_snapshot_before_writes();
             relation_type.schema_qualifies_for_relation_index(&before_writes, self.type_manager())?
         };
-        Ok(RelationIndexQualification { indexed_now, indexed_before })
+        Ok(RelationIndexQualification { qualified_now, qualified_before })
     }
 
     fn relation_role_players(
@@ -2435,32 +2440,6 @@ impl ThingManager {
             .get_players(snapshot, self, storage_counters)
             .map_ok(|(role_player, _)| (role_player.player(), role_player.role_type()))
             .collect::<Result<HashSet<_>, _>>()
-    }
-
-    fn remove_relation_index_entries(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        relation: Relation,
-        role_player_pairs: impl Iterator<Item = ((Object, RoleType), (Object, RoleType))>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptWriteError>> {
-        for ((start, start_role), (end, end_role)) in role_player_pairs {
-            let index_edge = ThingEdgeIndexedRelation::new(
-                start.vertex(),
-                end.vertex(),
-                relation.vertex(),
-                start_role.vertex().type_id_(),
-                end_role.vertex().type_id_(),
-            );
-            let index_range =
-                KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-            let collected = snapshot
-                .iterate_range(&index_range, storage_counters.clone())
-                .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
-                .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
-            collected.into_iter().for_each(|edge| snapshot.delete(edge));
-        }
-        Ok(())
     }
 
     fn rebuild_relation_indices_across_threshold(
@@ -2480,19 +2459,19 @@ impl ThingManager {
                     if crossing_types.contains_key(&relation_type) {
                         continue;
                     }
-                    let qualifies = relation_type
+                    let qualified_now = relation_type
                         .schema_qualifies_for_relation_index(snapshot, type_manager)
                         .map_err(read_error)?;
-                    let qualified = relation_type
+                    let qualified_before = relation_type
                         .schema_qualifies_for_relation_index(&before_writes, type_manager)
                         .map_err(read_error)?;
-                    if qualifies != qualified {
-                        crossing_types.insert(relation_type, qualifies);
+                    if qualified_now != qualified_before {
+                        crossing_types.insert(relation_type, qualified_now);
                     }
                 }
             }
         }
-        for (relation_type, qualifies) in crossing_types {
+        for (relation_type, qualified_now) in crossing_types {
             let role_types: HashSet<RoleType> = relation_type
                 .get_relates(snapshot, type_manager)
                 .map_err(read_error)?
@@ -2512,7 +2491,7 @@ impl ThingManager {
                     snapshot,
                     relation,
                     &role_types,
-                    qualifies,
+                    qualified_now,
                     storage_counters.clone(),
                 )?;
             }
@@ -2525,14 +2504,14 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
         affected_role_types: &HashSet<RoleType>,
-        qualifies_for_relation_index: bool,
+        qualified_for_relation_index: bool,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for role_type in affected_role_types {
             for player in relation.get_players_by_role(snapshot, self, *role_type, storage_counters.clone()) {
                 let (player, count) =
                     player.map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
-                if qualifies_for_relation_index {
+                if qualified_for_relation_index {
                     self.relation_index_player_regenerate(
                         snapshot,
                         relation,
@@ -3253,6 +3232,32 @@ impl ThingManager {
                     snapshot.delete(index_reverse_array);
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn relation_index_player_pairs_remove(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        role_player_pairs: impl Iterator<Item = ((Object, RoleType), (Object, RoleType))>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        for ((start, start_role), (end, end_role)) in role_player_pairs {
+            let index_edge = ThingEdgeIndexedRelation::new(
+                start.vertex(),
+                end.vertex(),
+                relation.vertex(),
+                start_role.vertex().type_id_(),
+                end_role.vertex().type_id_(),
+            );
+            let index_range =
+                KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+            let collected = snapshot
+                .iterate_range(&index_range, storage_counters.clone())
+                .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
+                .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
+            collected.into_iter().for_each(|edge| snapshot.delete(edge));
         }
         Ok(())
     }
