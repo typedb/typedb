@@ -27,27 +27,37 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct GroupedReducer {
     rows_executable: Arc<ReduceRowsExecutable>, // for accessing input group positions
-    grouped_reductions: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,
+    groups: Vec<Group>,
+    group_index: HashMap<Vec<VariableValue<'static>>, usize>,
+    last_group: Option<usize>,
     reused_group: Vec<VariableValue<'static>>,
     // Clone for efficient instantiation of reducers for a new group
     uninitialised_reducer_executors: Vec<ReducerExecutor>,
+}
+
+#[derive(Debug)]
+struct Group {
+    key: Vec<VariableValue<'static>>,
+    reducers: Vec<ReducerExecutor>,
 }
 
 impl GroupedReducer {
     pub(crate) fn new(executable: Arc<ReduceRowsExecutable>) -> Self {
         let reducers: Vec<ReducerExecutor> = executable.reductions.iter().map(ReducerExecutor::build).collect();
         let reused_group = Vec::with_capacity(executable.input_group_positions.len());
-        let mut grouped_reductions = HashMap::new();
-        // Empty result sets behave different for an empty grouping
-        if executable.input_group_positions.is_empty() {
-            grouped_reductions.insert(Vec::new(), reducers.clone());
-        }
-        Self {
+        let mut grouped_reducer = Self {
             rows_executable: executable,
-            grouped_reductions,
+            groups: Vec::new(),
+            group_index: HashMap::new(),
+            last_group: None,
             reused_group,
             uninitialised_reducer_executors: reducers,
+        };
+        // Empty result sets behave different for an empty grouping
+        if grouped_reducer.rows_executable.input_group_positions.is_empty() {
+            grouped_reducer.insert_group(Vec::new());
         }
+        grouped_reducer
     }
 
     pub(crate) fn accept<Snapshot: ReadableSnapshot>(
@@ -60,31 +70,34 @@ impl GroupedReducer {
         for &pos in &self.rows_executable.input_group_positions {
             self.reused_group.push(row.get(pos).to_owned());
         }
-        if !self.grouped_reductions.contains_key(&self.reused_group) {
-            self.grouped_reductions.insert(self.reused_group.clone(), self.uninitialised_reducer_executors.clone());
-        }
-        let reducers = self.grouped_reductions.get_mut(&self.reused_group).unwrap();
-        for reducer in reducers {
+        let group = match self.last_group {
+            Some(last) if self.groups[last].key == self.reused_group => last,
+            _ => match self.group_index.get(&self.reused_group) {
+                Some(&existing) => existing,
+                None => self.insert_group(self.reused_group.clone()),
+            },
+        };
+        self.last_group = Some(group);
+        for reducer in &mut self.groups[group].reducers {
             reducer.accept(row, context, storage_counters);
         }
         Ok(())
     }
 
+    fn insert_group(&mut self, key: Vec<VariableValue<'static>>) -> usize {
+        let index = self.groups.len();
+        self.group_index.insert(key.clone(), index);
+        self.groups.push(Group { key, reducers: self.uninitialised_reducer_executors.clone() });
+        index
+    }
+
     pub(crate) fn finalise(self) -> Batch {
-        let Self {
-            rows_executable: executable,
-            uninitialised_reducer_executors: sample_reducers,
-            grouped_reductions,
-            ..
-        } = self;
-        let mut batch = Batch::new(
-            (executable.input_group_positions.len() + sample_reducers.len()) as u32,
-            grouped_reductions.len(),
-        );
-        for (group, reducers) in grouped_reductions.into_iter() {
+        let Self { rows_executable: executable, uninitialised_reducer_executors: sample_reducers, groups, .. } = self;
+        let mut batch =
+            Batch::new((executable.input_group_positions.len() + sample_reducers.len()) as u32, groups.len());
+        for Group { key, reducers } in groups {
             batch.append(|mut row| {
-                group
-                    .into_iter()
+                key.into_iter()
                     .chain(reducers.into_iter().map(|reducer| reducer.finalise().unwrap_or(VariableValue::None)))
                     .enumerate()
                     .for_each(|(index, value)| row.set(VariablePosition::new(index as u32), value));
@@ -102,7 +115,7 @@ trait ReducerAPI {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     );
 
     fn finalise(self) -> Option<VariableValue<'static>>;
@@ -112,7 +125,7 @@ fn extract_value<Snapshot: ReadableSnapshot>(
     row: &MaybeOwnedRow<'_>,
     position: VariablePosition,
     context: &ExecutionContext<Snapshot>,
-    storage_counters: StorageCounters,
+    storage_counters: &StorageCounters,
 ) -> Option<Value<'static>> {
     match row.get(position) {
         VariableValue::None => None,
@@ -120,7 +133,7 @@ fn extract_value<Snapshot: ReadableSnapshot>(
         VariableValue::Thing(Thing::Attribute(attribute)) => {
             // As long as these are trivial, it's safe to unwrap
             let snapshot: &Snapshot = &context.snapshot;
-            let value = attribute.get_value(snapshot, &context.thing_manager, storage_counters).unwrap();
+            let value = attribute.get_value(snapshot, &context.thing_manager, storage_counters.clone()).unwrap();
             Some(value.clone().into_owned())
         }
         _ => unreachable!(),
@@ -144,8 +157,8 @@ macro_rules! reducer_executor {
                     storage_counters: &StorageCounters,
                 ) {
                     match self {
-                        Self::$count(reducer) => reducer.accept(row, context, storage_counters.clone()),
-                        $(Self::$variant(reducer) => reducer.accept(row, context, storage_counters.clone())),*
+                        Self::$count(reducer) => reducer.accept(row, context, storage_counters),
+                        $(Self::$variant(reducer) => reducer.accept(row, context, storage_counters)),*
                     }
                 }
 
@@ -197,7 +210,7 @@ impl ReducerAPI for CountExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         _: &ExecutionContext<Snapshot>,
-        _: StorageCounters,
+        _: &StorageCounters,
     ) {
         self.count += row.multiplicity();
     }
@@ -223,7 +236,7 @@ impl ReducerAPI for CountVarExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         _: &ExecutionContext<Snapshot>,
-        _: StorageCounters,
+        _: &StorageCounters,
     ) {
         if &VariableValue::None != row.get(self.target) {
             self.count += row.multiplicity();
@@ -255,7 +268,7 @@ macro_rules! sum_reducer_executors {
                     &mut self,
                     row: &MaybeOwnedRow<'_>,
                     context: &ExecutionContext<Snapshot>,
-                    storage_counters: StorageCounters,
+                    storage_counters: &StorageCounters,
                 ) {
                     if let Some(value) = extract_value(row, self.target, context, storage_counters) {
                         self.sum += value.[< unwrap_ $ty:lower >]() * $u64_to_repr(row.multiplicity());
@@ -296,7 +309,7 @@ macro_rules! minmax_reducer_executors {
                     &mut self,
                     row: &MaybeOwnedRow<'_>,
                     context: &ExecutionContext<Snapshot>,
-                    storage_counters: StorageCounters,
+                    storage_counters: &StorageCounters,
                 ) {
                     if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.[< unwrap_ $lower >]()) {
                         if let Some(current) = self.min.as_ref() {
@@ -331,7 +344,7 @@ macro_rules! minmax_reducer_executors {
                     &mut self,
                     row: &MaybeOwnedRow<'_>,
                     context: &ExecutionContext<Snapshot>,
-                    storage_counters: StorageCounters,
+                    storage_counters: &StorageCounters,
                 ) {
                     if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.[< unwrap_ $lower >]()) {
                         if let Some(current) = self.max.as_ref() {
@@ -378,7 +391,7 @@ impl ReducerAPI for MinStringExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_string()) {
             if let Some(current) = self.min.as_ref() {
@@ -413,7 +426,7 @@ impl ReducerAPI for MaxStringExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_string()) {
             if let Some(current) = self.max.as_ref() {
@@ -449,7 +462,7 @@ impl ReducerAPI for MeanIntegerExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_integer() * row.multiplicity() as i64;
@@ -484,7 +497,7 @@ impl ReducerAPI for MeanDoubleExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_double() * row.multiplicity() as f64;
@@ -515,7 +528,7 @@ impl ReducerAPI for MeanDecimalExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_decimal() * row.multiplicity();
@@ -545,7 +558,7 @@ impl ReducerAPI for MedianIntegerExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.values.push(value.unwrap_integer())
@@ -585,7 +598,7 @@ impl ReducerAPI for MedianDoubleExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.values.push(value.unwrap_double())
@@ -625,7 +638,7 @@ impl ReducerAPI for MedianDecimalExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.values.push(value.unwrap_decimal())
@@ -667,7 +680,7 @@ impl ReducerAPI for StdIntegerExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             let unwrapped = value.unwrap_integer();
@@ -710,7 +723,7 @@ impl ReducerAPI for StdDoubleExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             let unwrapped = value.unwrap_double();
@@ -753,7 +766,7 @@ impl ReducerAPI for StdDecimalExecutor {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
+        storage_counters: &StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             let unwrapped = value.unwrap_decimal();

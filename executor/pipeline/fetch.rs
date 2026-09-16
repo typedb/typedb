@@ -263,7 +263,7 @@ fn execute_single_function(
     };
 
     // TODO: We could create an iterator over rows in a single call here instead
-    let mut row_iter = batch.into_iter();
+    let mut row_iter = batch.iter();
     let document = match exactly_one_or_return_err!(
         row_iter.next(),
         FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
@@ -348,8 +348,8 @@ fn execute_list_function(
         .compute_next_batch(&context, &mut interrupt, &mut tabled_functions)
         .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
     {
-        for row in batch {
-            for value in row {
+        for row in batch.iter() {
+            for value in row.row() {
                 nodes.push(variable_value_to_document(value.clone())?);
             }
         }

@@ -4,18 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    array,
-    borrow::Cow,
-    cmp::Ordering,
-    iter::{Map, Take, Zip},
-    vec,
-};
+use std::{borrow::Cow, cmp::Ordering};
 
 use answer::{Thing, variable_value::VariableValue};
 use encoding::value::value::Value;
 use error::unimplemented_feature;
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::{constants::traversal::FIXED_BATCH_ROWS_MAX, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -94,6 +87,10 @@ impl FixedBatch {
         self.row_internal_mut(index)
     }
 
+    pub(crate) fn iter(&self) -> impl Iterator<Item = MaybeOwnedRow<'_>> {
+        (0..self.len()).map(|index| self.get_row(index))
+    }
+
     pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
         debug_assert!(!self.is_full());
         let row = self.row_internal_mut(self.entries);
@@ -110,41 +107,13 @@ impl FixedBatch {
 
 impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
     fn from(row: MaybeOwnedRow<'a>) -> Self {
-        let width = row.len() as u32;
+        let (data, multiplicity, provenance) = row.into_owned_parts();
+        let width = data.len() as u32;
         let mut multiplicities = FixedBatch::INIT_MULTIPLICITIES;
-        multiplicities[0] = row.multiplicity();
+        multiplicities[0] = multiplicity;
         let mut branch_provenance = FixedBatch::INIT_PROVENANCES;
-        branch_provenance[0] = row.provenance();
-        FixedBatch { width, data: row.row().to_owned(), entries: 1, multiplicities, provenance: branch_provenance }
-    }
-}
-
-impl IntoIterator for FixedBatch {
-    type Item = MaybeOwnedRow<'static>;
-
-    type IntoIter = Map<
-        Take<
-            Zip<
-                vec::IntoIter<Vec<VariableValue<'static>>>,
-                Zip<
-                    array::IntoIter<u64, { FIXED_BATCH_ROWS_MAX as usize }>,
-                    array::IntoIter<Provenance, { FIXED_BATCH_ROWS_MAX as usize }>,
-                >,
-            >,
-        >,
-        fn((Vec<VariableValue<'static>>, (u64, Provenance))) -> MaybeOwnedRow<'static>,
-    >;
-
-    fn into_iter(self) -> Self::IntoIter {
-        let rows = if self.width == 0 {
-            vec![vec![]; self.entries as usize]
-        } else {
-            self.data.into_iter().chunks(self.width as usize).into_iter().map(|chunk| chunk.collect_vec()).collect_vec()
-        };
-        rows.into_iter()
-            .zip(self.multiplicities.into_iter().zip(self.provenance.into_iter()))
-            .take(self.entries as usize)
-            .map(|(row, (mult, provenance))| MaybeOwnedRow::new_owned(row, mult, provenance))
+        branch_provenance[0] = provenance;
+        FixedBatch { width, data, entries: 1, multiplicities, provenance: branch_provenance }
     }
 }
 

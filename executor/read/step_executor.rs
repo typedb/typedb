@@ -140,7 +140,7 @@ impl ReshapeForReturnExecutor {
 
     pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.0.len() as u32);
-        batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
+        batch.iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
         output_batch
     }
 

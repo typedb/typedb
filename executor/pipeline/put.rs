@@ -88,8 +88,13 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
     while let Some(input_row_result) = previous_iterator.next() {
         let input_row = input_row_result?;
         let size_before = output_batch.len();
-        let mut match_iterator =
-            match_iterator_for_row(context, interrupt, executable, function_registry.clone(), input_row.clone())?;
+        let mut match_iterator = match_iterator_for_row(
+            context,
+            interrupt,
+            executable,
+            function_registry.clone(),
+            input_row.as_reference(),
+        )?;
         match_iterator
             .try_for_each(|row_result| {
                 output_batch.append_row(row_result?);

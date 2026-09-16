@@ -204,7 +204,7 @@ impl CollectorTrait for ReduceCollector {
         batch: FixedBatch,
         storage_counters: &StorageCounters,
     ) {
-        for row in batch {
+        for row in batch.iter() {
             self.active_reducer.accept(&row, context, storage_counters).unwrap(); // TODO: potentially unsafe unwrap
         }
     }
@@ -272,7 +272,7 @@ impl CollectorTrait for SortCollector {
         batch: FixedBatch,
         _storage_counters: &StorageCounters,
     ) {
-        for row in batch {
+        for row in batch.iter() {
             self.collector.append_row(row);
         }
     }

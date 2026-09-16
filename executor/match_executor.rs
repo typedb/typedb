@@ -70,7 +70,7 @@ impl MatchExecutor {
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, Box<ReadExecutionError>> {
         if let Some(input) = self.input.take() {
-            self.entry.prepare(FixedBatch::from(input.into_owned()));
+            self.entry.prepare(FixedBatch::from(input));
         }
         self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions).map_err(|err| Box::new(err))
     }

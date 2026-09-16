@@ -750,3 +750,49 @@ fn return_check() {
         assert_eq!(rows[0].get(*positions.get("checked").unwrap()), &VariableValue::Value(Value::Boolean(false)));
     }
 }
+
+#[test]
+fn function_body_reduce_and_sort() {
+    let context = setup_common(COMMON_SCHEMA);
+    let insert_query_str = r#"insert
+        $p1 isa person, has name "Alice", has name "Ally", has age 2, has age 6;
+        $p2 isa person, has name "Bob", has age 1;
+        "#;
+    let (rows, _positions) = run_write_query(&context, insert_query_str).unwrap();
+    assert_eq!(1, rows.len());
+
+    {
+        let query = r#"
+            with
+            fun age_sum_and_count($p: person) -> integer, integer:
+            match
+                $p has name $n, has age $a;
+            return sum($a), count($n);
+
+            match
+                $p isa person, has name "Alice";
+                let $sum, $count = age_sum_and_count($p);
+        "#;
+        let (rows, positions) = run_read_query(&context, query).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get(positions["sum"]), &VariableValue::Value(Value::Integer(16)));
+        assert_eq!(rows[0].get(positions["count"]), &VariableValue::Value(Value::Integer(4)));
+    }
+    {
+        let query = r#"
+            with
+            fun oldest_age($p: person) -> { age }:
+            match
+                $p has age $a;
+            sort $a desc;
+            limit 1;
+            return { $a };
+
+            match
+                $p isa person;
+                let $a in oldest_age($p);
+        "#;
+        let (rows, _) = run_read_query(&context, query).unwrap();
+        assert_eq!(rows.len(), 2);
+    }
+}

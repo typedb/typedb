@@ -8,6 +8,7 @@
 
 use std::sync::Arc;
 
+use answer::variable_value::VariableValue;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
@@ -609,4 +610,121 @@ fn test_require() {
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));
     }
+}
+
+fn integer_outputs(context: &Context, query: &str, names: &[&str]) -> Vec<Vec<i64>> {
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &match_,
+            None::<GivenRowsSimple>,
+            query,
+        )
+        .unwrap();
+    let named_outputs = pipeline.rows_positions().unwrap().clone();
+    let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let batch = iterator.collect_owned().unwrap();
+    batch
+        .iter()
+        .map(|row| {
+            names
+                .iter()
+                .map(|name| match row.get(named_outputs[*name]) {
+                    VariableValue::Value(Value::Integer(value)) => *value,
+                    other => panic!("expected an integer for ${name}, got {other}"),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn insert_persons(context: &Context, insert_query_str: &str) {
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_structure().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &insert_query,
+            None::<GivenRowsSimple>,
+            insert_query_str,
+        )
+        .unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+}
+
+#[test]
+fn test_reduce_groupby() {
+    let context = setup_common();
+    insert_persons(
+        &context,
+        r#"insert
+        $alice isa person, has name "Alice", has age 2, has age 6;
+        $bob isa person, has name "Bob", has age 1, has age 4;
+        $chris isa person, has name "Chris", has age 3;"#,
+    );
+
+    let grouped = "reduce $count = count, $sum = sum($age) groupby $name;";
+    let groups_sorted = format!("match $p isa person, has name $name, has age $age; sort $name; {grouped}");
+    let groups_interleaved = format!("match $p isa person, has name $name, has age $age; sort $age; {grouped}");
+    assert_eq!(integer_outputs(&context, &groups_sorted, &["count", "sum"]), [[2, 8], [2, 5], [1, 3]]);
+    assert_eq!(integer_outputs(&context, &groups_interleaved, &["count", "sum"]), [[2, 5], [2, 8], [1, 3]]);
+
+    let ungrouped = "match $p isa person, has age $age; reduce $count = count, $sum = sum($age);";
+    assert_eq!(integer_outputs(&context, ungrouped, &["count", "sum"]), [[5, 16]]);
+    let ungrouped_empty = "match $p isa person, has age 100; reduce $count = count;";
+    assert_eq!(integer_outputs(&context, ungrouped_empty, &["count"]), [[0]]);
+}
+
+#[test]
+fn test_reduce_groupby_unbound_returning_and_distinct_keys() {
+    let context = setup_common();
+    insert_persons(
+        &context,
+        r#"insert
+        $alice isa person, has name "Alice", has age 2, has age 6;
+        $bob isa person, has name "Bob", has age 3;
+        $chris isa person, has name "Chris", has age 5;
+        $dana isa person, has name "Dana", has age 2;
+        $eve isa person, has name "Eve";
+        $frank isa person, has name "Frank";"#,
+    );
+    let sorted = |mut rows: Vec<Vec<i64>>| {
+        rows.sort();
+        rows
+    };
+
+    let by_name_and_age = "match $p isa person, has name $name; try { $p has age $age; }; \
+        reduce $c = count, $cv = count($age), $s = sum($age) groupby $name, $age;";
+    assert_eq!(
+        sorted(integer_outputs(&context, by_name_and_age, &["c", "cv", "s"])),
+        [[1, 0, 0], [1, 0, 0], [1, 1, 2], [1, 1, 2], [1, 1, 3], [1, 1, 5], [1, 1, 6]]
+    );
+    let by_age = "match $p isa person, has name $name; try { $p has age $age; }; \
+        reduce $c = count, $cv = count($age), $s = sum($age) groupby $age;";
+    assert_eq!(
+        sorted(integer_outputs(&context, by_age, &["c", "cv", "s"])),
+        [[1, 1, 3], [1, 1, 5], [1, 1, 6], [2, 0, 0], [2, 2, 4]]
+    );
+    let returning_key = "match $p isa person, has name $name, has age $age; sort $age desc, $name; \
+        reduce $c = count, $s = sum($age) groupby $name;";
+    assert_eq!(integer_outputs(&context, returning_key, &["c", "s"]), [[2, 8], [1, 5], [1, 3], [1, 2]]);
+    let after_distinct = "match $p isa person, has age $age; select $age; distinct; reduce $s = sum($age), $c = count;";
+    assert_eq!(integer_outputs(&context, after_distinct, &["s", "c"]), [[16, 4]]);
+    let without_distinct = "match $p isa person, has age $age; select $age; reduce $s = sum($age), $c = count;";
+    assert_eq!(integer_outputs(&context, without_distinct, &["s", "c"]), [[18, 5]]);
 }

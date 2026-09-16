@@ -136,9 +136,7 @@ impl PatternExecutor {
                     let NegationExecutor { inner } = &mut executors[*index].unwrap_negation();
                     let result = inner.compute_next_batch(context, interrupt, tabled_functions)?;
                     match result {
-                        None => {
-                            self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
-                        }
+                        None => self.push_next_instruction(context, index.next(), FixedBatch::from(input))?,
                         Some(batch) => {
                             debug_assert!(!batch.is_empty());
                             inner.reset()
