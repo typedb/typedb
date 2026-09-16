@@ -13,6 +13,7 @@ use std::{
 
 use answer::variable::Variable;
 use error::typedb_error;
+use primitive::format_joined::FormatJoined;
 use structural_equality::StructuralEquality;
 use typeql::{common::Span, expression::NamespacedFunctionName};
 
@@ -172,6 +173,20 @@ impl Expression<Variable> {
             | Expression::Operation(_)
             | Expression::MayShortCircuitVariable(_)
             | Expression::MayShortCircuitOther(_) => VariableOptionality::Required,
+        }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        match self {
+            Expression::Constant(inner) => Some(inner.source_span()),
+            Expression::Variable(_) => None,
+            Expression::MayShortCircuitVariable(_) => None,
+            Expression::MayShortCircuitOther(_) => None,
+            Expression::Operation(inner) => inner.source_span(),
+            Expression::BuiltinValueFunctionCall(inner) => inner.source_span(),
+            Expression::ListIndex(inner) => inner.source_span(),
+            Expression::List(inner) => inner.source_span(),
+            Expression::ListIndexRange(inner) => inner.source_span(),
         }
     }
 }
@@ -834,7 +849,52 @@ impl<ID: IrID> fmt::Display for ExpressionTree<ID> {
 
 impl<ID: IrID> fmt::Display for Expression<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
+        match self {
+            Expression::Constant(parameter_id) => {
+                write!(f, "Constant({})", parameter_id)
+            }
+            Expression::Variable(variable) => {
+                write!(f, "Variable({})", variable)
+            }
+            Expression::Operation(operation) => {
+                write!(
+                    f,
+                    "Operator({} {} {} )",
+                    operation.left_expression_id,
+                    operation.operator(),
+                    operation.right_expression_id
+                )
+            }
+            Expression::BuiltinValueFunctionCall(builtin) => {
+                write!(
+                    f,
+                    "FunctionCall({}({}))",
+                    builtin.function_id(),
+                    FormatJoined(&builtin.argument_expression_ids, ',')
+                )
+            }
+            Expression::ListIndex(inner) => {
+                write!(f, "ListIndex({}[{}])", inner.list_variable(), inner.index_expression_id)
+            }
+            Expression::List(list) => {
+                write!(f, "ListConstructor([{}])", FormatJoined(&list.item_expression_ids, ','))
+            }
+            Expression::ListIndexRange(list_range) => {
+                write!(
+                    f,
+                    "ListIndexRange({}[{}..{}])",
+                    list_range.list_variable(),
+                    list_range.from_expression_id,
+                    list_range.to_expression_id
+                )
+            }
+            Expression::MayShortCircuitVariable(variable) => {
+                write!(f, "MayShortCircuitVariable[{}]", variable)
+            }
+            Expression::MayShortCircuitOther(inner) => {
+                write!(f, "MayShortCircuitOther({})", inner)
+            }
+        }
     }
 }
 

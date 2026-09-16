@@ -673,45 +673,8 @@ fn validate_optional_expression_dereferences_safe(
         }
     }
     if check_at && at_expr.return_optionality(conjunction) == VariableOptionality::Optional {
-        let (identifier, source_span) = match at_expr {
-            Expression::Constant(parameter_id) => (
-                // Unreachable
-                format!("Constant[{}]", parameter_id),
-                None,
-            ),
-            Expression::Variable(variable) => {
-                (format!("Variable({})", context.variable_registry.get_variable_name_or_unnamed(*variable)), None)
-            }
-            Expression::Operation(operation) => {
-                (format!("Operator({})", operation.operator()), operation.source_span())
-            }
-            Expression::BuiltinValueFunctionCall(builtin) => {
-                (format!("FunctionCall[{}]", builtin.function_id().name()), builtin.source_span())
-            }
-            Expression::ListIndex(inner) => (
-                format!("ListIndex[{}]", context.variable_registry.get_variable_name_or_unnamed(inner.list_variable())),
-                inner.source_span(),
-            ),
-            Expression::List(list) => ("ListConstructor".to_owned(), list.source_span()),
-            Expression::ListIndexRange(list_range) => (
-                format!(
-                    "ListRange[{}]",
-                    context.variable_registry.get_variable_name_or_unnamed(list_range.list_variable())
-                ),
-                list_range.source_span(),
-            ),
-            Expression::MayShortCircuitVariable(variable) => (
-                format!(
-                    "MayShortCircuitVariable[{}]",
-                    context.variable_registry.get_variable_name_or_unnamed(*variable)
-                ),
-                None, // Unreachable
-            ),
-            Expression::MayShortCircuitOther(_inner) => (
-                "MayShortCircuitOther".to_owned(),
-                None, // Unreachable
-            ),
-        };
+        let identifier = format!("{}", at_expr);
+        let source_span = at_expr.source_span();
         Err(Box::new(RepresentationError::UnsafeOptionalExpressionDereference { identifier, source_span }))
     } else {
         Ok(())
