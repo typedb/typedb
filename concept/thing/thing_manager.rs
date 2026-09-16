@@ -2344,11 +2344,11 @@ impl ThingManager {
         modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.update_relation_indices_of_modified_relations(snapshot, storage_counters.clone())?;
-        self.rebuild_relation_indices_across_threshold(snapshot, modified_relates_by_type, storage_counters)
+        self.update_relation_indices_of_modified_links(snapshot, storage_counters.clone())?;
+        self.rebuild_relation_indices_of_requalified_types(snapshot, modified_relates_by_type, storage_counters)
     }
 
-    fn update_relation_indices_of_modified_relations(
+    fn update_relation_indices_of_modified_links(
         &self,
         snapshot: &mut impl WritableSnapshot,
         storage_counters: StorageCounters,
@@ -2406,7 +2406,7 @@ impl ThingManager {
                 if !qualification.qualified_before && !qualification.qualified_now {
                     return Ok(());
                 }
-                self.update_relation_index_on_schema_commit(
+                self.relation_index_players_update(
                     snapshot,
                     modified.relation,
                     &modified.role_types,
@@ -2442,7 +2442,7 @@ impl ThingManager {
             .collect::<Result<HashSet<_>, _>>()
     }
 
-    fn rebuild_relation_indices_across_threshold(
+    fn rebuild_relation_indices_of_requalified_types(
         &self,
         snapshot: &mut impl WritableSnapshot,
         modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
@@ -2487,7 +2487,7 @@ impl ThingManager {
                 .collect::<Result<_, _>>()
                 .map_err(read_error)?;
             for relation in relations {
-                self.update_relation_index_on_schema_commit(
+                self.relation_index_players_update(
                     snapshot,
                     relation,
                     &role_types,
@@ -2499,7 +2499,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn update_relation_index_on_schema_commit(
+    fn relation_index_players_update(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
