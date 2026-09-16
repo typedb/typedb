@@ -97,13 +97,13 @@ pub(crate) fn get_owns_doc(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
     let owner = &input_row[argument_positions[0].as_usize()];
     let attribute = &input_row[argument_positions[1].as_usize()];
     if let Some(owns) = get_owns(context, owner, attribute)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let doc_value = unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
             &**context.snapshot(),
             owns,
@@ -124,13 +124,13 @@ pub(crate) fn get_plays_doc(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
     let player = &input_row[argument_positions[0].as_usize()];
     let role = &input_row[argument_positions[1].as_usize()];
     if let Some(plays) = get_plays(context, player, role)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let doc_value = unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
             &**context.snapshot(),
             plays,
@@ -151,13 +151,13 @@ pub(crate) fn get_relates_doc(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
     let relation = &input_row[argument_positions[0].as_usize()];
     let role = &input_row[argument_positions[1].as_usize()];
     if let Some(relates) = get_relates(context, relation, role)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let doc_value = unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
             &**context.snapshot(),
             relates,
@@ -178,13 +178,13 @@ pub(crate) fn get_sub_doc(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
     let subtype = &input_row[argument_positions[0].as_usize()];
     let supertype = &input_row[argument_positions[1].as_usize()];
     if let Some(doc_value) = get_subtype_doc(context, subtype, supertype)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         output.append(|mut row| {
             row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
         });
@@ -223,15 +223,15 @@ pub(crate) fn get_owns_meta(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let owner = &input_row[argument_positions[1].as_usize()];
     let attribute = &input_row[argument_positions[2].as_usize()];
     if let Some(owns) = get_owns(context, owner, attribute)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let meta_value = unwrap_meta_value(context.type_manager().get_owns_annotation_declared_by_category(
             &**context.snapshot(),
             owns,
@@ -252,15 +252,15 @@ pub(crate) fn get_plays_meta(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let player = &input_row[argument_positions[1].as_usize()];
     let role = &input_row[argument_positions[2].as_usize()];
     if let Some(plays) = get_plays(context, player, role)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let meta_value = unwrap_meta_value(context.type_manager().get_plays_annotation_declared_by_category(
             &**context.snapshot(),
             plays,
@@ -281,15 +281,15 @@ pub(crate) fn get_relates_meta(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let relation = &input_row[argument_positions[1].as_usize()];
     let role = &input_row[argument_positions[2].as_usize()];
     if let Some(relates) = get_relates(context, relation, role)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let meta_value = unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
             &**context.snapshot(),
             relates,
@@ -310,14 +310,14 @@ pub(crate) fn get_sub_meta(
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
     let key = &input_row[argument_positions[0].as_usize()];
     let subtype = &input_row[argument_positions[1].as_usize()];
     let supertype = &input_row[argument_positions[2].as_usize()];
     if let Some(meta_value) = get_subtype_meta(context, key, subtype, supertype)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         output.append(|mut row| {
             row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
         });

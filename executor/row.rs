@@ -68,7 +68,6 @@ impl<'a> Row<'a> {
     ) {
         self.copy_mapped(input, selected.iter().map(|&pos| (pos, pos)));
         for (pos, value) in extension {
-            // TODO: Should this check `selected.contains(pos)` instead?
             if selected.contains(&pos) {
                 self.set(pos, value);
             }
