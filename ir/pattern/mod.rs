@@ -585,8 +585,15 @@ impl PatternVariableModes {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum BindingOptionality {
-    NotNone, // InAtleastOneBranch
+    NotNone,
     MaybeNone,
+}
+
+impl BitAnd for BindingOptionality {
+    type Output = Self;
+    fn bitand(self, other: Self) -> Self {
+        self.bitor(other) // Same implementation
+    }
 }
 
 impl BitOr for BindingOptionality {
@@ -652,7 +659,7 @@ impl BitAnd for BindingMode {
         // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
         match (self, rhs) {
             (Self::Absent, x) | (x, Self::Absent) => x,
-            (Self::AlwaysBinding(a), Self::AlwaysBinding(b)) => Self::AlwaysBinding(a | b), // Yes, or.
+            (Self::AlwaysBinding(a), Self::AlwaysBinding(b)) => Self::AlwaysBinding(a & b),
             (Self::AlwaysBinding(a), _) | (_, Self::AlwaysBinding(a)) => Self::AlwaysBinding(a),
             (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
             (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => Self::RequirePrebound,
