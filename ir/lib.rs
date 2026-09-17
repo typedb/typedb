@@ -235,7 +235,7 @@ typedb_error! {
         ),
         UnsafeOptionalDereference(
             36,
-            "The optional variable '{variable}' was used in a context where it may fail the branch if unset. Please acknowledge the optionality.",
+            "The optional variable '{variable}' was used in a context where optionals are not permitted. Use `isset` in the pattern to match only non-empty values. Expressions can use `?` to propagate the empty value to the result.",
             variable: String,
             source_span: Option<Span>,
         ),

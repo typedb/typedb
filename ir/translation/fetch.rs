@@ -656,7 +656,7 @@ typedb_error! {
         ),
         UnsafeOptionalVariableDereference(
             22,
-            "The optional variable '{variable}' was used unsafely in a fetch statement. The empty case must be handled (e.g. using '?')",
+            "The optional variable '{variable}' cannot be used in a fetch entry without '?'. Use '?' to propagate the empty optional into the fetch entry.",
             variable: String,
             source_span: Option<Span>,
         ),

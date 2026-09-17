@@ -52,16 +52,12 @@ pub fn translate_reduce(
                 optional.as_ref().map_or(VariableOptionality::Required, |_| VariableOptionality::Optional)
             }
         };
-        let mismatched_optionality_in_assignment =
-            AssignedVariable::new_with_optionality(assigned_var, assigned_optionality)
-                .validate_assignment_optionality_matches(
-                    || var_name.to_owned(),
-                    reduce_assign.variable.span(),
-                    returned_optionality,
-                );
-        if let Err(err) = mismatched_optionality_in_assignment {
-            error::optional_usage_error!(err)
-        }
+        AssignedVariable::new_with_optionality(assigned_var, assigned_optionality)
+            .validate_assignment_optionality_matches(
+                || var_name.to_owned(),
+                reduce_assign.variable.span(),
+                returned_optionality,
+            )?;
 
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }

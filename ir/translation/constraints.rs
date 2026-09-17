@@ -600,12 +600,12 @@ fn translate_assigned_var(
     var: &typeql::Variable,
 ) -> Result<AssignedVariable, Box<RepresentationError>> {
     let variable = register_typeql_var(constraints, var)?;
-    let optionality = match var {
+    let declared_optionality = match var {
         typeql::Variable::Anonymous { optional, .. } | typeql::Variable::Named { optional, .. } => {
             optional.as_ref().map_or(VariableOptionality::Required, |_o| VariableOptionality::Optional)
         }
     };
-    Ok(AssignedVariable { variable, optionality })
+    Ok(AssignedVariable::new_with_optionality(variable, declared_optionality))
 }
 
 pub(super) fn split_out_inline_expressions(

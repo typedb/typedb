@@ -801,21 +801,20 @@ impl BitOrAssign for AssignmentStatus {
 #[derive(Clone, Debug, Copy)]
 pub struct AssignedVariable {
     pub(crate) variable: Variable,
-    pub(crate) optionality: VariableOptionality,
+    pub(crate) declared_optionality: VariableOptionality,
 }
 
 impl AssignedVariable {
-    pub(crate) fn new_with_optionality(variable: Variable, optionality: VariableOptionality) -> Self {
-        // TODO: REVERT THE CHANGE that lead to the hint being needed
-        Self { variable, optionality }
+    pub(crate) fn new_with_optionality(variable: Variable, declared_optionality: VariableOptionality) -> Self {
+        Self { variable, declared_optionality }
     }
 
     pub fn new_optional(variable: Variable) -> Self {
-        Self { variable, optionality: VariableOptionality::Optional }
+        Self { variable, declared_optionality: VariableOptionality::Optional }
     }
 
     pub fn new_required(variable: Variable) -> Self {
-        Self { variable, optionality: VariableOptionality::Required }
+        Self { variable, declared_optionality: VariableOptionality::Required }
     }
 
     pub(crate) fn validate_assignment_optionality_matches(
@@ -824,17 +823,30 @@ impl AssignedVariable {
         source_span: Option<Span>,
         returned_optionality: VariableOptionality,
     ) -> Result<(), Box<RepresentationError>> {
-        use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
-        match (self.optionality, returned_optionality) {
-            (Optional, Optional) | (Required, Required) => Ok(()),
-            (Optional, Required) => Err(Box::new(RepresentationError::WronglyMarkedOptionalAssignment {
-                variable: var_name(),
-                source_span,
-            })),
-            (Required, Optional) => {
-                Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable: var_name(), source_span }))
+        #[cfg(debug_assertions)]
+        {
+            use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
+            let result = match (self.declared_optionality, returned_optionality) {
+                (Optional, Optional) | (Required, Required) => Ok(()),
+                (Optional, Required) => Err(Box::new(RepresentationError::WronglyMarkedOptionalAssignment {
+                    variable: var_name(),
+                    source_span,
+                })),
+                (Required, Optional) => {
+                    Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable: var_name(), source_span }))
+                }
+            };
+            if let Err(err) = result {
+                use error::TypeDBError;
+                tracing::debug!(
+                    r#"Detected a mismatch between the declared optionality of an assigned variable '{}' and the actual optionality.
+                    This is not a problem since we use the actual returned optionality for the variable: ---\n{}\n---"#,
+                    var_name(),
+                    err.format_description()
+                );
             }
         }
+        Ok(())
     }
 }
 
