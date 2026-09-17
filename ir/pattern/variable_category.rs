@@ -103,7 +103,7 @@ impl fmt::Display for VariableCategory {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum VariableOptionality {
     Required,
     Optional,
