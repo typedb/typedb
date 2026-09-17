@@ -18,7 +18,8 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableModes, ReferenceOptionality, ScopeId,
+        AssignmentStatus, BindingMode, BindingOptionality, BranchID, Pattern, PatternVariableModes,
+        ReferenceOptionality, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::{Constraint, IsSet},
         expression::{Expression, ExpressionTree, ExpressionTreeNodeId},
