@@ -592,17 +592,20 @@ fn assignment_typeql_vars_to_variables(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     vars: &[typeql::Variable],
 ) -> Result<Vec<AssignedVariable>, Box<RepresentationError>> {
-    vars.iter()
-        .map(|var| {
-            let variable = register_typeql_var(constraints, var)?;
-            let optionality = match var {
-                typeql::Variable::Anonymous { optional, .. } | typeql::Variable::Named { optional, .. } => {
-                    optional.as_ref().map_or(VariableOptionality::Required, |_o| VariableOptionality::Optional)
-                }
-            };
-            Ok(AssignedVariable { variable, optionality })
-        })
-        .collect()
+    vars.iter().map(|var| translate_assigned_var(constraints, var)).collect()
+}
+
+fn translate_assigned_var(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    var: &typeql::Variable,
+) -> Result<AssignedVariable, Box<RepresentationError>> {
+    let variable = register_typeql_var(constraints, var)?;
+    let optionality = match var {
+        typeql::Variable::Anonymous { optional, .. } | typeql::Variable::Named { optional, .. } => {
+            optional.as_ref().map_or(VariableOptionality::Required, |_o| VariableOptionality::Optional)
+        }
+    };
+    Ok(AssignedVariable { variable, optionality })
 }
 
 pub(super) fn split_out_inline_expressions(

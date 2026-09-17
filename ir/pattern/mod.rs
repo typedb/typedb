@@ -18,7 +18,7 @@ use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::{pattern::variable_category::VariableOptionality, pipeline::VariableRegistry};
+use crate::{RepresentationError, pattern::variable_category::VariableOptionality, pipeline::VariableRegistry};
 
 pub mod conjunction;
 pub mod constraint;
@@ -145,7 +145,7 @@ use crate::{
         constraint::Constraint,
         disjunction::DisjunctionBuilder,
     },
-    pipeline::function_signature::FunctionSignatureIndex,
+    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignatureIndex},
 };
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -806,6 +806,7 @@ pub struct AssignedVariable {
 
 impl AssignedVariable {
     pub(crate) fn new_with_optionality(variable: Variable, optionality: VariableOptionality) -> Self {
+        // TODO: REVERT THE CHANGE that lead to the hint being needed
         Self { variable, optionality }
     }
 
@@ -815,6 +816,26 @@ impl AssignedVariable {
 
     pub fn new_required(variable: Variable) -> Self {
         Self { variable, optionality: VariableOptionality::Required }
+    }
+
+    pub(crate) fn validate_assignment_optionality(
+        &self,
+        context: &BlockBuilderContext<'_>,
+        source_span: Option<Span>,
+        returned_optionality: VariableOptionality,
+    ) -> Result<(), RepresentationError> {
+        use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
+        match (self.optionality, returned_optionality) {
+            (Optional, Optional) | (Required, Required) => Ok(()),
+            (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
+                variable: context.get_variable_name_or_unnamed(self.variable).to_owned(),
+                source_span,
+            }),
+            (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
+                variable: context.get_variable_name_or_unnamed(self.variable).to_owned(),
+                source_span,
+            }),
+        }
     }
 }
 

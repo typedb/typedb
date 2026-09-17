@@ -46,8 +46,22 @@ impl ExpressionTree<Variable> {
         Self { preorder_tree: Vec::new() }
     }
 
-    pub fn optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
-        let root_return_optionality = self.get_root().return_optionality(&conjunction);
+    pub fn return_optionality(&self) -> VariableOptionality {
+        // Note, this is different from self.get_root().actual_result_optionality(&conjunction)
+        let root_return_optionality =
+            match self.get_root() {
+                Expression::MayShortCircuit(_) => VariableOptionality::Optional,
+                Expression::BuiltinValueFunctionCall(builtin) => builtin.function_id.optionality(),
+                // At the root, a variable is also required and must be short-circuited
+                Expression::Variable(variable)
+                | Expression::ListIndex(ListIndex { list_variable: variable, .. })
+                | Expression::ListIndexRange(ListIndexRange { list_variable: variable, .. }) => {
+                    if variable.checked_isset { VariableOptionality::Optional } else { VariableOptionality::Required }
+                }
+                Expression::Constant(_) | Expression::Operation(_) | Expression::List(_) => {
+                    VariableOptionality::Required
+                }
+            };
         let lazy_contains_short_circuit =
             || self.expression_tree_preorder().any(|expr| matches!(expr, Expression::MayShortCircuit(_)));
 
@@ -168,13 +182,22 @@ pub enum Expression<ID> {
 }
 
 impl Expression<Variable> {
-    pub(crate) fn return_optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
-        error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalFunctions);
+    pub(crate) fn actual_result_optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
+        fn of_var(conjunction: &Conjunction, variable: &ExpressionVariable<Variable>) -> VariableOptionality {
+            // A '?' checked variable is always bound.
+            match (variable.checked_isset, conjunction.optionality(&variable.variable)) {
+                (true, _) | (_, VariableOptionality::Required) => VariableOptionality::Required,
+                (false, VariableOptionality::Optional) => VariableOptionality::Optional,
+            }
+        }
         match self {
-            Expression::Variable(variable) => conjunction.optionality(variable),
-            Expression::ListIndex(inner) => conjunction.optionality(&inner.list_variable),
-            Expression::ListIndexRange(inner) => conjunction.optionality(&inner.list_variable),
-            Expression::BuiltinValueFunctionCall(builtin) => VariableOptionality::Required,
+            Expression::Variable(variable) => of_var(conjunction, variable),
+            Expression::ListIndex(inner) => of_var(conjunction, &inner.list_variable),
+            Expression::ListIndexRange(inner) => of_var(conjunction, &inner.list_variable),
+            Expression::BuiltinValueFunctionCall(builtin) => {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalFunctions);
+                VariableOptionality::Required
+            }
             | Expression::Constant(_)
             | Expression::List(_)
             | Expression::Operation(_)
@@ -439,6 +462,11 @@ macro_rules! function_id_enum {
                 match self {
                     $( Self::$id => $name, )*
                 }
+            }
+
+            pub fn optionality(&self) -> VariableOptionality {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalBuiltinFunctions);
+                VariableOptionality::Required
             }
         }
     };

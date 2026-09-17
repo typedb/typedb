@@ -421,18 +421,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let callee_signature = builtin_id.signature();
         let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
             |(assigned_var, (_, returned_optionality))| {
-                use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
-                match (assigned_var.optionality, returned_optionality) {
-                    (Optional, Optional) | (Required, Required) => Ok(()),
-                    (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                    (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                }
+                assigned_var.validate_assignment_optionality(&self.context, source_span, *returned_optionality)
             },
         );
         if let Err(err) = mismatched_optionality_in_assignment {
@@ -441,7 +430,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
-        let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
+        let assigned_optionalities = callee_signature.returns.iter().map(|(_, optionality)| *optionality).collect();
+        let binding = FunctionCallBinding::new(
+            assigned,
+            assigned_optionalities,
+            function_call,
+            callee_signature.return_is_stream,
+            source_span,
+        );
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
@@ -470,18 +466,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
         let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
             |(assigned_var, (_, returned_optionality))| {
-                use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
-                match (assigned_var.optionality, returned_optionality) {
-                    (Optional, Optional) | (Required, Required) => Ok(()),
-                    (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                    (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                }
+                assigned_var.validate_assignment_optionality(&self.context, source_span, *returned_optionality)
             },
         );
         if let Err(err) = mismatched_optionality_in_assignment {
@@ -493,7 +478,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         };
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;
-        let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
+        let assigned_optionalities = callee_signature.returns.iter().map(|(_, optionality)| *optionality).collect();
+        let binding = FunctionCallBinding::new(
+            assigned,
+            assigned_optionalities,
+            function_call,
+            callee_signature.return_is_stream,
+            source_span,
+        );
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
@@ -548,7 +540,17 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             let variable = self.context.get_variable_name_or_unnamed(assigned.variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-        let binding = ExpressionBinding::new(assigned, expression, source_span);
+        let binding = ExpressionBinding::new(assigned.clone(), expression, source_span);
+
+        let mismatched_optionality_in_assignment = assigned.validate_assignment_optionality(
+            &self.context,
+            source_span,
+            binding.expression().return_optionality(),
+        );
+        if let Err(err) = mismatched_optionality_in_assignment {
+            error::optional_usage_error!(err);
+        }
+
         binding.validate(self.context).map_err(|typedb_source| RepresentationError::ExpressionRepresentationError {
             typedb_source,
             source_span,
@@ -2230,7 +2232,7 @@ pub struct ExpressionBinding<ID> {
 impl ExpressionBinding<Variable> {
     fn new(assigned: AssignedVariable, expression: ExpressionTree<Variable>, source_span: Option<Span>) -> Self {
         let left = Vertex::Variable(assigned.variable);
-        let left_optionality = assigned.optionality;
+        let left_optionality = expression.return_optionality();
         Self { left, left_optionality, expression, source_span }
     }
 }
@@ -2275,7 +2277,6 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, ReferenceOptionality)> + '_ {
-        // We treat ALL argument references as optional. It must be validated separately.
         let left_optionality = self.left_optionality.into();
         self.ids_assigned().map(move |id| (id, left_optionality)).chain(self.expression.reference_optionalities())
     }
@@ -2288,7 +2289,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.expression().argument_ids().for_each(function);
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
+    pub(crate) fn validate(&self, context: &BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
         if self.expression().is_empty() { Err(ExpressionRepresentationError::EmptyExpressionTree {}) } else { Ok(()) }
     }
 
@@ -2354,11 +2355,11 @@ pub struct FunctionCallBinding<ID> {
 impl FunctionCallBinding<Variable> {
     fn new(
         left: Vec<AssignedVariable>,
+        assigned_optionalities: Vec<VariableOptionality>,
         function_call: FunctionCall<Variable>,
         is_stream: bool,
         source_span: Option<Span>,
     ) -> Self {
-        let assigned_optionalities = left.iter().map(|a| a.optionality).collect();
         let assigned = left.into_iter().map(|a| Vertex::Variable(a.variable)).collect();
         Self { assigned, assigned_optionalities, function_call, is_stream, source_span }
     }
