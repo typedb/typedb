@@ -18,7 +18,7 @@ use bytes::byte_array::ByteArray;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::{
-    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE, WRITE_BUFFER_READ_LIMIT},
     profile::{CommitProfile, StorageCounters},
 };
 
@@ -101,11 +101,41 @@ pub trait ReadableSnapshot {
 
     fn iterate_writes_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator;
 
-    fn iterate_storage_range<const PS: usize>(
+    fn iterate_writes_range_limited<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator;
+        limit: usize,
+    ) -> BufferRangeIterator;
+
+    /// Visits buffered writes in key order, cloning at most `WRITE_BUFFER_READ_LIMIT` of them out
+    /// of the buffer at a time.
+    fn visit_writes_in_range<const PS: usize, E>(
+        &mut self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        mut visit: impl FnMut(&mut Self, &StorageKeyArray<BUFFER_KEY_INLINE>, Write) -> Result<(), E>,
+    ) -> Result<(), E> {
+        let range = range.map(|key| key.resize_to::<BUFFER_KEY_INLINE>(), |fixed_width| fixed_width);
+        let end = match range.end() {
+            RangeEnd::WithinStartAsPrefix => RangeEnd::EndPrefixInclusive(range.start().get_value().clone()),
+            end => end.clone(),
+        };
+        let mut last_visited: Option<StorageKeyArray<BUFFER_KEY_INLINE>> = None;
+        loop {
+            let chunk = match last_visited.take() {
+                None => range.clone(),
+                Some(last) => {
+                    KeyRange::new(RangeStart::ExcludePrefix(StorageKey::Array(last)), end.clone(), range.fixed_width())
+                }
+            };
+            for (key, write) in self.iterate_writes_range_limited(&chunk, WRITE_BUFFER_READ_LIMIT) {
+                visit(self, &key, write)?;
+                last_visited = Some(key);
+            }
+            if last_visited.is_none() {
+                return Ok(());
+            }
+        }
+    }
 
     fn iterator_pool(&self) -> &IteratorPool;
 }
@@ -114,6 +144,8 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn operations(&self) -> &OperationsBuffer;
 
     fn operations_mut(&mut self) -> &mut OperationsBuffer;
+
+    fn read_snapshot_before_writes(&self) -> impl ReadableSnapshot;
 
     /// Insert a key with a new version
     fn insert(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
@@ -311,14 +343,12 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         BufferRangeIterator::new_empty()
     }
 
-    fn iterate_storage_range<const PS: usize>(
+    fn iterate_writes_range_limited<const PS: usize>(
         &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
+        _: &KeyRange<StorageKey<'_, PS>>,
+        _: usize,
+    ) -> BufferRangeIterator {
+        BufferRangeIterator::new_empty()
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
@@ -461,14 +491,14 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
             .iterate_range(range.map(|k| k.as_bytes(), |fixed| fixed))
     }
 
-    fn iterate_storage_range<const PS: usize>(
+    fn iterate_writes_range_limited<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
+        limit: usize,
+    ) -> BufferRangeIterator {
+        self.operations()
+            .writes_in(range.start().get_value().keyspace_id())
+            .iterate_range_limited(range.map(|k| k.as_bytes(), |fixed| fixed), limit)
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
@@ -483,6 +513,10 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 
     fn operations_mut(&mut self) -> &mut OperationsBuffer {
         &mut self.operations
+    }
+
+    fn read_snapshot_before_writes(&self) -> impl ReadableSnapshot {
+        self.storage.clone().open_snapshot_read_at(self.open_sequence_number)
     }
 }
 
@@ -640,14 +674,14 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
             .iterate_range(range.map(|k| k.as_bytes(), |fixed| fixed))
     }
 
-    fn iterate_storage_range<const PS: usize>(
+    fn iterate_writes_range_limited<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
+        limit: usize,
+    ) -> BufferRangeIterator {
+        self.operations()
+            .writes_in(range.start().get_value().keyspace_id())
+            .iterate_range_limited(range.map(|k| k.as_bytes(), |fixed| fixed), limit)
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
@@ -662,6 +696,10 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 
     fn operations_mut(&mut self) -> &mut OperationsBuffer {
         &mut self.operations
+    }
+
+    fn read_snapshot_before_writes(&self) -> impl ReadableSnapshot {
+        self.storage.clone().open_snapshot_read_at(self.open_sequence_number)
     }
 }
 
@@ -810,12 +848,12 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         BufferRangeIterator::new_empty()
     }
 
-    fn iterate_storage_range<const PS: usize>(
+    fn iterate_writes_range_limited<const PS: usize>(
         &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        self.iterate_range(range, storage_counters)
+        _: &KeyRange<StorageKey<'_, PS>>,
+        _: usize,
+    ) -> BufferRangeIterator {
+        BufferRangeIterator::new_empty()
     }
 
     fn iterator_pool(&self) -> &IteratorPool {

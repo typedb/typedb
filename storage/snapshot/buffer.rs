@@ -184,6 +184,14 @@ impl WriteBuffer {
     }
 
     pub(crate) fn iterate_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> BufferRangeIterator {
+        self.iterate_range_limited(range, usize::MAX)
+    }
+
+    pub(crate) fn iterate_range_limited<const INLINE: usize>(
+        &self,
+        range: KeyRange<Bytes<'_, INLINE>>,
+        limit: usize,
+    ) -> BufferRangeIterator {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
@@ -197,6 +205,7 @@ impl WriteBuffer {
         BufferRangeIterator::new(
             self.writes
                 .range::<[u8], _>((start_bytes, end))
+                .take(limit)
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
         )

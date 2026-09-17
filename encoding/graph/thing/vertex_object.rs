@@ -33,6 +33,9 @@ impl ObjectVertex {
     pub const MIN: Self = Self::MIN_ENTITY;
     pub const MIN_ENTITY: Self = Self::build_entity(TypeID::MIN, ObjectID::MIN);
     pub const MIN_RELATION: Self = Self::build_relation(TypeID::MIN, ObjectID::MIN);
+    pub const MAX: Self = Self::MAX_RELATION;
+    pub const MAX_ENTITY: Self = Self::build_entity(TypeID::MAX, ObjectID::MAX);
+    pub const MAX_RELATION: Self = Self::build_relation(TypeID::MAX, ObjectID::MAX);
 
     pub const fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
         Self { prefix: Prefix::VertexEntity, type_id, object_id }
@@ -144,6 +147,7 @@ pub struct ObjectID {
 impl ObjectID {
     pub(crate) const LENGTH: usize = 8;
     pub const MIN: Self = Self::new_const(0);
+    pub const MAX: Self = Self::new_const(u64::MAX);
 
     pub fn new(id: u64) -> Self {
         // TODO: mem::size_of_val isn't const yet
