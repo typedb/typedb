@@ -247,7 +247,7 @@ impl CardinalityValidation {
                         snapshot,
                         thing_manager,
                         modified.owner,
-                        &modified.attribute_types,
+                        &modified.modified_attribute_types,
                         out_errors,
                         storage_counters.clone(),
                     )?;
@@ -273,7 +273,7 @@ impl CardinalityValidation {
                         snapshot,
                         thing_manager,
                         modified.player,
-                        &modified.role_types,
+                        &modified.modified_role_types,
                         out_errors,
                         storage_counters.clone(),
                     )?;
@@ -299,7 +299,7 @@ impl CardinalityValidation {
                         snapshot,
                         thing_manager,
                         modified.relation,
-                        &modified.role_types,
+                        &modified.modified_role_types,
                         out_errors,
                         storage_counters.clone(),
                     )?;

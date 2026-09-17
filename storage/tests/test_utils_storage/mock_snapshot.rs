@@ -94,14 +94,6 @@ impl ReadableSnapshot for MockSnapshot {
         BufferRangeIterator::new_empty()
     }
 
-    fn iterate_storage_range<'this, const PS: usize>(
-        &'this self,
-        _: &KeyRange<StorageKey<'this, PS>>,
-        _: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        SnapshotRangeIterator::new_empty()
-    }
-
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }

@@ -109,20 +109,20 @@ pub mod validation;
 pub(crate) struct ModifiedOwnerHas {
     pub owner: Object,
     pub status: ConceptStatus,
-    pub attribute_types: HashSet<AttributeType>,
+    pub modified_attribute_types: HashSet<AttributeType>,
 }
 
 pub(crate) struct ModifiedRelationLinks {
     pub relation: Relation,
     pub status: ConceptStatus,
-    pub role_types: HashSet<RoleType>,
+    pub modified_role_types: HashSet<RoleType>,
     pub removed_role_players: HashSet<(Object, RoleType)>,
 }
 
 pub(crate) struct ModifiedPlayerLinks {
     pub player: Object,
     pub status: ConceptStatus,
-    pub role_types: HashSet<RoleType>,
+    pub modified_role_types: HashSet<RoleType>,
 }
 
 #[derive(Clone, Copy)]
@@ -1715,9 +1715,9 @@ impl ThingManager {
                     let status = self
                         .get_status(snapshot, owner.vertex().into_storage_key(), storage_counters.clone())
                         .map_err(&read_error)?;
-                    group = Some(ModifiedOwnerHas { owner, status, attribute_types: HashSet::new() });
+                    group = Some(ModifiedOwnerHas { owner, status, modified_attribute_types: HashSet::new() });
                 }
-                group.as_mut().unwrap().attribute_types.insert(Attribute::new(edge.to()).type_());
+                group.as_mut().unwrap().modified_attribute_types.insert(Attribute::new(edge.to()).type_());
                 Ok(())
             },
         )?;
@@ -1749,14 +1749,14 @@ impl ThingManager {
                     group = Some(ModifiedRelationLinks {
                         relation,
                         status,
-                        role_types: HashSet::new(),
+                        modified_role_types: HashSet::new(),
                         removed_role_players: HashSet::new(),
                     });
                 }
                 let player = Object::new(edge.player());
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 let modified = group.as_mut().unwrap();
-                modified.role_types.insert(role_type);
+                modified.modified_role_types.insert(role_type);
                 if matches!(write, Write::Delete) {
                     modified.removed_role_players.insert((player, role_type));
                 }
@@ -1788,9 +1788,9 @@ impl ThingManager {
                     let status = self
                         .get_status(snapshot, player.vertex().into_storage_key(), storage_counters.clone())
                         .map_err(&read_error)?;
-                    group = Some(ModifiedPlayerLinks { player, status, role_types: HashSet::new() });
+                    group = Some(ModifiedPlayerLinks { player, status, modified_role_types: HashSet::new() });
                 }
-                group.as_mut().unwrap().role_types.insert(RoleType::build_from_type_id(edge.role_id()));
+                group.as_mut().unwrap().modified_role_types.insert(RoleType::build_from_type_id(edge.role_id()));
                 Ok(())
             },
         )?;
@@ -2403,7 +2403,7 @@ impl ThingManager {
                 self.relation_index_players_update(
                     snapshot,
                     modified.relation,
-                    &modified.role_types,
+                    &modified.modified_role_types,
                     qualification.qualified_now,
                     storage_counters.clone(),
                 )

@@ -114,6 +114,7 @@ pub trait ReadableSnapshot {
         range: &KeyRange<StorageKey<'_, PS>>,
         mut visit: impl FnMut(&mut Self, &StorageKeyArray<BUFFER_KEY_INLINE>, Write) -> Result<(), E>,
     ) -> Result<(), E> {
+        let range = range.map(|key| key.resize_to::<BUFFER_KEY_INLINE>(), |fixed_width| fixed_width);
         let end = match range.end() {
             RangeEnd::WithinStartAsPrefix => RangeEnd::EndPrefixInclusive(range.start().get_value().clone()),
             end => end.clone(),
@@ -122,14 +123,9 @@ pub trait ReadableSnapshot {
         loop {
             let chunk = match last_visited.take() {
                 None => range.clone(),
-                Some(last) => KeyRange::new(
-                    RangeStart::ExcludePrefix(StorageKey::Array(StorageKeyArray::new_raw(
-                        last.keyspace_id(),
-                        ByteArray::copy(last.bytes()),
-                    ))),
-                    end.clone(),
-                    range.fixed_width(),
-                ),
+                Some(last) => {
+                    KeyRange::new(RangeStart::ExcludePrefix(StorageKey::Array(last)), end.clone(), range.fixed_width())
+                }
             };
             for (key, write) in self.iterate_writes_range_limited(&chunk, WRITE_BUFFER_READ_LIMIT) {
                 visit(self, &key, write)?;
@@ -140,12 +136,6 @@ pub trait ReadableSnapshot {
             }
         }
     }
-
-    fn iterate_storage_range<const PS: usize>(
-        &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator;
 
     fn iterator_pool(&self) -> &IteratorPool;
 }
@@ -361,16 +351,6 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         BufferRangeIterator::new_empty()
     }
 
-    fn iterate_storage_range<const PS: usize>(
-        &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
-    }
-
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
@@ -519,16 +499,6 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         self.operations()
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range_limited(range.map(|k| k.as_bytes(), |fixed| fixed), limit)
-    }
-
-    fn iterate_storage_range<const PS: usize>(
-        &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
@@ -714,16 +684,6 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
             .iterate_range_limited(range.map(|k| k.as_bytes(), |fixed| fixed), limit)
     }
 
-    fn iterate_storage_range<const PS: usize>(
-        &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
-    }
-
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
@@ -894,14 +854,6 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         _: usize,
     ) -> BufferRangeIterator {
         BufferRangeIterator::new_empty()
-    }
-
-    fn iterate_storage_range<const PS: usize>(
-        &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-        storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        self.iterate_range(range, storage_counters)
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
