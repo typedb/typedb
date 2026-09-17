@@ -80,6 +80,14 @@ impl Write {
         matches!(self, Write::Delete)
     }
 
+    pub fn intends_insert(&self) -> bool {
+        match self {
+            Write::Insert { .. } => true,
+            Write::Put { reinsert, .. } => reinsert.load(Ordering::Relaxed),
+            Write::Delete => false,
+        }
+    }
+
     pub(crate) fn into_value(self) -> ByteArray<BUFFER_VALUE_INLINE> {
         match self {
             Write::Insert { value } | Write::Put { value, .. } => value,

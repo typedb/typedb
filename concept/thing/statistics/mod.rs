@@ -47,6 +47,7 @@ use crate::{
     },
 };
 
+mod deltas;
 mod serialise;
 
 #[derive(Debug, Clone, Copy)]
