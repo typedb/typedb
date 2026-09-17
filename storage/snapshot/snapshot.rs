@@ -107,30 +107,35 @@ pub trait ReadableSnapshot {
         limit: usize,
     ) -> BufferRangeIterator;
 
+    /// Visits buffered writes in key order, cloning at most `WRITE_BUFFER_READ_LIMIT` of them out
+    /// of the buffer at a time.
     fn visit_writes_in_range<const PS: usize, E>(
         &mut self,
-        start: StorageKey<'_, PS>,
-        end_prefix: StorageKey<'_, PS>,
-        fixed_width_keys: bool,
-        mut visit: impl FnMut(&mut Self, StorageKeyArray<BUFFER_KEY_INLINE>, Write) -> Result<(), E>,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        mut visit: impl FnMut(&mut Self, &StorageKeyArray<BUFFER_KEY_INLINE>, Write) -> Result<(), E>,
     ) -> Result<(), E> {
+        let end = match range.end() {
+            RangeEnd::WithinStartAsPrefix => RangeEnd::EndPrefixInclusive(range.start().get_value().clone()),
+            end => end.clone(),
+        };
         let mut last_visited: Option<StorageKeyArray<BUFFER_KEY_INLINE>> = None;
         loop {
-            let range_start = match &last_visited {
-                None => RangeStart::Inclusive(start.clone()),
-                Some(last) => RangeStart::ExcludePrefix(StorageKey::Array(StorageKeyArray::new_raw(
-                    last.keyspace_id(),
-                    ByteArray::copy(last.bytes()),
-                ))),
+            let chunk = match last_visited.take() {
+                None => range.clone(),
+                Some(last) => KeyRange::new(
+                    RangeStart::ExcludePrefix(StorageKey::Array(StorageKeyArray::new_raw(
+                        last.keyspace_id(),
+                        ByteArray::copy(last.bytes()),
+                    ))),
+                    end.clone(),
+                    range.fixed_width(),
+                ),
             };
-            let range = KeyRange::new(range_start, RangeEnd::EndPrefixInclusive(end_prefix.clone()), fixed_width_keys);
-            let mut read_any = false;
-            for (key, write) in self.iterate_writes_range_limited(&range, WRITE_BUFFER_READ_LIMIT) {
-                read_any = true;
-                last_visited = Some(key.clone());
-                visit(self, key, write)?;
+            for (key, write) in self.iterate_writes_range_limited(&chunk, WRITE_BUFFER_READ_LIMIT) {
+                visit(self, &key, write)?;
+                last_visited = Some(key);
             }
-            if !read_any {
+            if last_visited.is_none() {
                 return Ok(());
             }
         }

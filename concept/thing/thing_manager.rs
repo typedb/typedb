@@ -1681,16 +1681,16 @@ impl ThingManager {
         snapshot: &mut Snapshot,
         mut visit: impl FnMut(&mut Snapshot, Object) -> Result<(), E>,
     ) -> Result<(), E> {
-        snapshot.visit_writes_in_range(
-            ObjectVertex::build_prefix_prefix(Prefix::VertexEntity, ObjectVertex::KEYSPACE),
-            ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
-            false,
-            |snapshot, key, write| match write {
-                Write::Insert { .. } => visit(snapshot, Object::new(ObjectVertex::decode(key.bytes()))),
-                Write::Delete => Ok(()),
-                Write::Put { .. } => unreachable!("Encountered a Put for an object"),
-            },
-        )
+        let objects = KeyRange::new(
+            RangeStart::Inclusive(ObjectVertex::MIN.into_storage_key()),
+            RangeEnd::EndPrefixInclusive(ObjectVertex::MAX.into_storage_key()),
+            ObjectVertex::FIXED_WIDTH_ENCODING,
+        );
+        snapshot.visit_writes_in_range(&objects, |snapshot, key, write| match write {
+            Write::Insert { .. } => visit(snapshot, Object::new(ObjectVertex::decode(key.bytes()))),
+            Write::Delete => Ok(()),
+            Write::Put { .. } => unreachable!("Encountered a Put for an object"),
+        })
     }
 
     pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(
@@ -1706,9 +1706,7 @@ impl ThingManager {
             None => Ok(()),
         };
         snapshot.visit_writes_in_range(
-            ThingEdgeHas::prefix(),
-            ThingEdgeHas::prefix(),
-            ThingEdgeHas::FIXED_WIDTH_ENCODING,
+            &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
             |snapshot, key, _| {
                 let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
                 let owner = Object::new(edge.from());
@@ -1739,9 +1737,7 @@ impl ThingManager {
             None => Ok(()),
         };
         snapshot.visit_writes_in_range(
-            ThingEdgeLinks::prefix(),
-            ThingEdgeLinks::prefix(),
-            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING),
             |snapshot, key, write| {
                 let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
                 let relation = Relation::new(edge.relation());
@@ -1783,9 +1779,7 @@ impl ThingManager {
             None => Ok(()),
         };
         snapshot.visit_writes_in_range(
-            ThingEdgeLinks::prefix_reverse(),
-            ThingEdgeLinks::prefix_reverse(),
-            ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE,
+            &KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
             |snapshot, key, _| {
                 let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
                 let player = Object::new(edge.player());
