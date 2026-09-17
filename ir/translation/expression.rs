@@ -19,7 +19,7 @@ use crate::{
         constraint::ConstraintsBuilder,
         expression::{
             BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
-            ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
+            ExpressionTreeNodeId, ExpressionVariable, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
         variable_category::VariableOptionality,
     },
@@ -81,21 +81,9 @@ fn build_recursive(
         typeql::Expression::Paren(inner) => {
             return build_recursive(function_index, constraints, &inner.inner, tree);
         }
-        typeql::Expression::Variable(var) => {
-            let variable = register_typeql_var(constraints, var)?;
-            match var {
-                typeql::Variable::Named { optional, .. } | typeql::Variable::Anonymous { optional, .. } => {
-                    if optional.is_some() {
-                        let inner_id = tree.add(Expression::Variable(variable));
-                        Expression::MayShortCircuit(inner_id)
-                    } else {
-                        Expression::Variable(variable)
-                    }
-                }
-            }
-        }
+        typeql::Expression::Variable(var) => Expression::Variable(translate_expression_variable(constraints, var)?),
         typeql::Expression::ListIndex(list_index) => {
-            let variable = register_typeql_var(constraints, &list_index.variable)?;
+            let variable = translate_expression_variable(constraints, &list_index.variable)?;
             let id = build_recursive(function_index, constraints, &list_index.index, tree)?;
             Expression::ListIndex(ListIndex::new(variable, id, list_index.span()))
         }
@@ -129,7 +117,7 @@ fn build_recursive(
             Expression::List(ListConstructor::new(items, len_id, list.span()))
         }
         typeql::Expression::ListIndexRange(range) => {
-            let list_variable = register_typeql_var(constraints, &range.var)?;
+            let list_variable = translate_expression_variable(constraints, &range.var)?;
             let left_id = build_recursive(function_index, constraints, &range.from, tree)?;
             let right_id = build_recursive(function_index, constraints, &range.to, tree)?;
             Expression::ListIndexRange(ListIndexRange::new(list_variable, left_id, right_id, range.span()))
@@ -138,16 +126,28 @@ fn build_recursive(
             let type_variable = constraints.create_anonymous_variable(label.span())?;
             let as_label = register_type_label(constraints, label)?;
             constraints.add_label(type_variable, as_label)?;
-            Expression::Variable(type_variable)
+            Expression::Variable(ExpressionVariable::new_unchecked(type_variable))
         }
         typeql::Expression::ScopedLabel(scoped_label) => {
             let type_variable = constraints.create_anonymous_variable(scoped_label.span())?;
             let as_label = register_type_scoped_label(constraints, scoped_label)?;
             constraints.add_label(type_variable, as_label)?;
-            Expression::Variable(type_variable)
+            Expression::Variable(ExpressionVariable::new_unchecked(type_variable))
         }
     };
     Ok(tree.add(expression))
+}
+
+fn translate_expression_variable(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    var: &typeql::Variable,
+) -> Result<ExpressionVariable<Variable>, Box<RepresentationError>> {
+    let variable = register_typeql_var(constraints, var)?;
+    match var {
+        typeql::Variable::Named { optional, .. } | typeql::Variable::Anonymous { optional, .. } => {
+            Ok(ExpressionVariable::new(variable, optional.is_some()))
+        }
+    }
 }
 
 fn register_typeql_literal(
@@ -258,7 +258,7 @@ fn build_function(
                 &function_call.args,
                 function_call.span(),
             )?;
-            Ok(Expression::Variable(assigned_variable))
+            Ok(Expression::Variable(ExpressionVariable::new_unchecked(assigned_variable)))
         }
         FunctionName::Identifier(identifier) => {
             let return_optionality = function_return_optionality(function_index, &function_call)?;
@@ -271,7 +271,7 @@ fn build_function(
                 &function_call.args,
                 function_call.span(),
             )?;
-            Ok(Expression::Variable(assign))
+            Ok(Expression::Variable(ExpressionVariable::new_unchecked(assign)))
         }
     }
 }

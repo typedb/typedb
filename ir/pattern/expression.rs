@@ -7,6 +7,7 @@
 use std::{
     collections::HashMap,
     fmt,
+    fmt::Formatter,
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
@@ -84,9 +85,9 @@ impl<ID: IrID> ExpressionTree<ID> {
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.preorder_tree.iter().filter_map(|expr| match expr {
-            &Expression::Variable(variable) => Some(variable),
-            Expression::ListIndex(list_index) => Some(list_index.list_variable()),
-            Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
+            Expression::Variable(variable) => Some(**variable),
+            Expression::ListIndex(list_index) => Some(**list_index.list_variable()),
+            Expression::ListIndexRange(list_index_range) => Some(**list_index_range.list_variable()),
             Expression::Constant(_)
             | Expression::Operation(_)
             | Expression::BuiltinValueFunctionCall(_)
@@ -142,7 +143,7 @@ impl<ID: StructuralEquality> StructuralEquality for ExpressionTree<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression<ID> {
     Constant(ParameterID),
-    Variable(ID), // User-defined functions are re-written as an anonymous assignment.
+    Variable(ExpressionVariable<ID>), // User-defined functions are re-written as an anonymous assignment.
     MayShortCircuit(ExpressionTreeNodeId), // For non-variables
 
     Operation(Operation),
@@ -218,6 +219,61 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             | (Self::ListIndexRange(_), _)
             | (Self::MayShortCircuit(_), _) => false,
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct ExpressionVariable<ID> {
+    variable: ID,
+    checked_isset: bool,
+}
+
+impl<ID> ExpressionVariable<ID> {
+    pub fn new(variable: ID, checked_isset: bool) -> Self {
+        Self { variable, checked_isset }
+    }
+
+    pub(crate) fn new_unchecked(variable: ID) -> Self {
+        Self::new(variable, false)
+    }
+}
+
+impl<ID: IrID> ExpressionVariable<ID> {
+    pub fn variable(&self) -> ID {
+        self.variable
+    }
+
+    pub fn checked_isset(&self) -> bool {
+        self.checked_isset
+    }
+
+    fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ExpressionVariable<T> {
+        ExpressionVariable::new(self.variable.map(mapping), self.checked_isset)
+    }
+}
+
+impl<ID> std::ops::Deref for ExpressionVariable<ID> {
+    type Target = ID;
+    fn deref(&self) -> &Self::Target {
+        &self.variable
+    }
+}
+impl<ID: StructuralEquality> StructuralEquality for ExpressionVariable<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.variable));
+        hasher.write_u64(StructuralEquality::hash(&self.checked_isset));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variable.equals(&other.variable) && self.checked_isset.equals(&other.checked_isset)
+    }
+}
+
+impl<ID: fmt::Display> fmt::Display for ExpressionVariable<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.variable, if self.checked_isset { "?" } else { "" })
     }
 }
 
@@ -603,14 +659,14 @@ impl fmt::Display for BuiltinConceptFunctionID {
 
 #[derive(Debug, Clone)]
 pub struct ListIndex<ID> {
-    list_variable: ID,
+    list_variable: ExpressionVariable<ID>,
     index_expression_id: ExpressionTreeNodeId,
     source_span: Option<Span>,
 }
 
 impl<ID> ListIndex<ID> {
     pub(crate) fn new(
-        list_variable: ID,
+        list_variable: ExpressionVariable<ID>,
         index_expression_id: ExpressionTreeNodeId,
         source_span: Option<Span>,
     ) -> ListIndex<ID> {
@@ -623,8 +679,8 @@ impl<ID> ListIndex<ID> {
 }
 
 impl<ID: IrID> ListIndex<ID> {
-    pub fn list_variable(&self) -> ID {
-        self.list_variable
+    pub fn list_variable(&self) -> &ExpressionVariable<ID> {
+        &self.list_variable
     }
 
     pub fn index_expression_id(&self) -> ExpressionTreeNodeId {
@@ -716,7 +772,7 @@ impl StructuralEquality for ListConstructor {
 }
 #[derive(Debug, Clone)]
 pub struct ListIndexRange<ID> {
-    list_variable: ID,
+    list_variable: ExpressionVariable<ID>,
     from_expression_id: ExpressionTreeNodeId,
     to_expression_id: ExpressionTreeNodeId,
     source_span: Option<Span>,
@@ -724,7 +780,7 @@ pub struct ListIndexRange<ID> {
 
 impl<ID> ListIndexRange<ID> {
     pub(crate) fn new(
-        list_variable: ID,
+        list_variable: ExpressionVariable<ID>,
         from_expression_id: ExpressionTreeNodeId,
         to_expression_id: ExpressionTreeNodeId,
         source_span: Option<Span>,
@@ -738,8 +794,8 @@ impl<ID> ListIndexRange<ID> {
 }
 
 impl<ID: IrID> ListIndexRange<ID> {
-    pub fn list_variable(&self) -> ID {
-        self.list_variable
+    pub fn list_variable(&self) -> &ExpressionVariable<ID> {
+        &self.list_variable
     }
 
     pub fn from_expression_id(&self) -> ExpressionTreeNodeId {
