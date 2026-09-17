@@ -128,7 +128,13 @@ fn add_write_patterns(
     for pattern in patterns {
         match pattern {
             WritePattern::Statement(statement) => add_statement(function_index, conjunction, statement)?,
-            WritePattern::Optional(optional) => add_optional(function_index, conjunction, optional)?,
+            WritePattern::Optional(optional) => {
+                tracing::warn!(
+                    "Deprecated usage of `try` block in write stage. This will fail in a future version:\n{}",
+                    RepresentationError::IllegalTryInWriteStage { source_span: optional.span }
+                );
+                add_optional(function_index, conjunction, optional)?
+            }
             WritePattern::If(if_statement) => {
                 let mut optional_builder = conjunction.add_optional(if_statement.span)?;
                 for condition in &if_statement.conditions {
