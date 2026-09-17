@@ -129,10 +129,9 @@ fn add_write_patterns(
         match pattern {
             WritePattern::Statement(statement) => add_statement(function_index, conjunction, statement)?,
             WritePattern::Optional(optional) => {
-                tracing::warn!(
-                    "Deprecated usage of `try` block in write stage. This will fail in a future version:\n{}",
-                    RepresentationError::IllegalTryInWriteStage { source_span: optional.span }
-                );
+                error::optional_usage_error!(RepresentationError::IllegalTryInWriteStage {
+                    source_span: optional.span
+                });
                 add_optional(function_index, conjunction, optional)?
             }
             WritePattern::If(if_statement) => {
