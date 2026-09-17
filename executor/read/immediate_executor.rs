@@ -108,10 +108,10 @@ impl ImmediateExecutor {
     }
 
     pub(crate) fn new_check(step: &CheckStep, step_profile: Arc<StepProfile>) -> Result<Self, Box<ConceptReadError>> {
-        let CheckStep { check_instructions, selected_variables, output_width } = step;
+        let CheckStep { check_instructions, removed_positions, output_width, .. } = step;
         Ok(Self::Check(CheckExecutor::new(
             check_instructions.clone(),
-            selected_variables.clone(),
+            removed_positions.clone(),
             *output_width,
             step_profile,
         )))
@@ -886,7 +886,7 @@ impl AssignExecutor {
 
 pub(crate) struct CheckExecutor {
     checks: Vec<CheckInstruction<ExecutorVariable>>,
-    selected_variables: Vec<VariablePosition>,
+    removed_positions: Vec<VariablePosition>,
     output_width: u32,
     input: Option<FixedBatch>,
     profile: Arc<StepProfile>,
@@ -901,11 +901,11 @@ impl fmt::Debug for CheckExecutor {
 impl CheckExecutor {
     fn new(
         checks: Vec<CheckInstruction<ExecutorVariable>>,
-        selected_variables: Vec<VariablePosition>,
+        removed_positions: Vec<VariablePosition>,
         output_width: u32,
         profile: Arc<StepProfile>,
     ) -> Self {
-        Self { checks, selected_variables, output_width, input: None, profile }
+        Self { checks, removed_positions, output_width, input: None, profile }
     }
 
     fn reset(&mut self) {
@@ -917,6 +917,7 @@ impl CheckExecutor {
         input_batch: FixedBatch,
         _context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
+        debug_assert!(input_batch.width() >= self.output_width);
         self.input = Some(input_batch);
         Ok(())
     }
@@ -926,27 +927,26 @@ impl CheckExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let Some(input_batch) = self.input.take() else {
+        let Some(mut batch) = self.input.take() else {
             return Ok(None);
         };
         let measurement = self.profile.start_measurement();
-        let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
-        debug_assert!(input.peek().is_some());
-
-        let mut output = FixedBatch::new(self.output_width);
-
-        while let Some(row) = input.next() {
-            let input_row = row.map_err(|err| err.clone())?;
-            if Checker::filter(&self.checks, context, &input_row, self.profile.storage_counters())
-                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
-            {
-                output.append(|mut row| {
-                    row.copy_mapped(input_row, self.selected_variables.iter().map(|pos| (*pos, *pos)));
-                })
+        batch.retain_rows(|row| {
+            Checker::filter(&self.checks, context, &row, self.profile.storage_counters())
+                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })
+        })?;
+        // Preserve expectation that unselected rows are unset
+        if !self.removed_positions.is_empty() {
+            for index in 0..batch.len() {
+                let mut row = batch.get_row_mut(index);
+                for &position in &self.removed_positions {
+                    row.unset(position);
+                }
             }
         }
-        measurement.end(&self.profile, 1, output.len() as u64);
-        if output.is_empty() { Ok(None) } else { Ok(Some(output)) }
+        batch.narrow(self.output_width);
+        measurement.end(&self.profile, 1, batch.len() as u64);
+        if batch.is_empty() { Ok(None) } else { Ok(Some(batch)) }
     }
 }
 
