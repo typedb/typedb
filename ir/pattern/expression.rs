@@ -21,7 +21,7 @@ use typeql::{common::Span, expression::NamespacedFunctionName};
 use crate::{
     RepresentationError,
     pattern::{
-        IrID, ParameterID, Pattern,
+        IrID, ParameterID, Pattern, ReferenceOptionality,
         conjunction::Conjunction,
         variable_category::{VariableCategory, VariableOptionality},
     },
@@ -29,6 +29,12 @@ use crate::{
 };
 
 pub type ExpressionTreeNodeId = usize;
+
+typedb_error! {
+    pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
+        EmptyExpressionTree(1, "Illegal empty expression."),
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionTree<ID> {
@@ -127,6 +133,13 @@ impl<ID: IrID> ExpressionTree<ID> {
             })
             .collect::<Vec<Expression<T>>>();
         ExpressionTree { preorder_tree }
+    }
+
+    pub(crate) fn reference_optionalities(&self) -> impl IntoIterator<Item = (ID, ReferenceOptionality)> {
+        let mut acc = HashMap::new();
+        // The root is always required.
+        collect_reference_optionalities(self, self.root_node_id(), ReferenceOptionality::Required, &mut acc);
+        acc.into_iter()
     }
 }
 
@@ -938,8 +951,53 @@ impl<ID: IrID> fmt::Display for Expression<ID> {
     }
 }
 
-typedb_error! {
-    pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
-        EmptyExpressionTree(1, "Illegal empty expression."),
+fn collect_reference_optionalities<ID1: IrID>(
+    tree: &ExpressionTree<ID1>,
+    at: ExpressionTreeNodeId,
+    context_optionality: ReferenceOptionality,
+    acc: &mut HashMap<ID1, ReferenceOptionality>,
+) {
+    let of_checked_isset = |variable: &ExpressionVariable<ID1>| match variable.checked_isset {
+        true => ReferenceOptionality::Optional,
+        false => ReferenceOptionality::Required,
+    };
+    match tree.get(at) {
+        Expression::Variable(variable) => {
+            let optionality = match context_optionality == ReferenceOptionality::Optional || variable.checked_isset {
+                true => ReferenceOptionality::Optional,
+                false => ReferenceOptionality::Required,
+            };
+            *acc.entry(**variable).or_insert(ReferenceOptionality::Optional) &= optionality;
+        }
+        Expression::MayShortCircuit(inner) => {
+            collect_reference_optionalities(tree, *inner, ReferenceOptionality::Optional, acc);
+        }
+        Expression::Operation(Operation { left_expression_id, right_expression_id, .. }) => {
+            collect_reference_optionalities(tree, *left_expression_id, ReferenceOptionality::Required, acc);
+            collect_reference_optionalities(tree, *right_expression_id, ReferenceOptionality::Required, acc);
+        }
+        Expression::BuiltinValueFunctionCall(BuiltinValueFunctionCall { argument_expression_ids, .. }) => {
+            for arg_id in argument_expression_ids {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
+                collect_reference_optionalities(tree, *arg_id, ReferenceOptionality::Required, acc);
+            }
+        }
+        Expression::ListIndex(ListIndex { list_variable, index_expression_id, .. }) => {
+            *acc.entry(**list_variable).or_insert(ReferenceOptionality::Optional) &= of_checked_isset(list_variable);
+        }
+        Expression::List(ListConstructor { item_expression_ids, .. }) => {
+            for item_id in item_expression_ids {
+                collect_reference_optionalities(tree, *item_id, ReferenceOptionality::Required, acc);
+            }
+        }
+        Expression::ListIndexRange(list_index) => {
+            *acc.entry(*list_index.list_variable).or_insert(ReferenceOptionality::Optional) &=
+                of_checked_isset(&list_index.list_variable);
+            collect_reference_optionalities(tree, list_index.from_expression_id, ReferenceOptionality::Required, acc);
+            collect_reference_optionalities(tree, list_index.to_expression_id, ReferenceOptionality::Required, acc);
+        }
+        Expression::Constant(_) => {
+            // No variables, no problems
+        }
     }
 }

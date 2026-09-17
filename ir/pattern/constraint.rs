@@ -22,7 +22,7 @@ use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
         AssignedVariable, BindingMode, BindingOptionality, IrID, ParameterID, PatternVariableMode,
-        PatternVariableModes, ScopeId, ValueType, Vertex,
+        PatternVariableModes, ReferenceOptionality, ScopeId, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
@@ -786,34 +786,34 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn variable_reference_optionalities(&self) -> Box<dyn Iterator<Item = (ID, VariableOptionality)> + '_> {
-        fn _all_unwrapped<'a, ID1>(
+    pub fn variable_reference_optionalities(&self) -> Box<dyn Iterator<Item = (ID, ReferenceOptionality)> + '_> {
+        fn _all_required<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
-        ) -> Box<dyn Iterator<Item = (ID1, VariableOptionality)> + 'a> {
-            Box::new(it.map(move |id| (id, VariableOptionality::Required)))
+        ) -> Box<dyn Iterator<Item = (ID1, ReferenceOptionality)> + 'a> {
+            Box::new(it.map(move |id| (id, ReferenceOptionality::Required)))
         }
         let span = self.source_span();
         match self {
-            Constraint::Kind(kind) => _all_unwrapped(kind.ids()),
-            Constraint::Label(label) => _all_unwrapped(label.ids()),
-            Constraint::RoleName(role_name) => _all_unwrapped(role_name.ids()),
-            Constraint::Sub(sub) => _all_unwrapped(sub.ids()),
-            Constraint::Isa(isa) => _all_unwrapped(isa.ids()),
-            Constraint::Iid(iid) => _all_unwrapped(iid.ids()),
-            Constraint::Links(rp) => _all_unwrapped(rp.ids()),
-            Constraint::IndexedRelation(indexed) => _all_unwrapped(indexed.ids()),
-            Constraint::Has(has) => _all_unwrapped(has.ids()),
-            Constraint::Owns(owns) => _all_unwrapped(owns.ids()),
-            Constraint::Relates(relates) => _all_unwrapped(relates.ids()),
-            Constraint::Plays(plays) => _all_unwrapped(plays.ids()),
-            Constraint::Value(value) => _all_unwrapped(value.ids()),
+            Constraint::Kind(kind) => _all_required(kind.ids()),
+            Constraint::Label(label) => _all_required(label.ids()),
+            Constraint::RoleName(role_name) => _all_required(role_name.ids()),
+            Constraint::Sub(sub) => _all_required(sub.ids()),
+            Constraint::Isa(isa) => _all_required(isa.ids()),
+            Constraint::Iid(iid) => _all_required(iid.ids()),
+            Constraint::Links(rp) => _all_required(rp.ids()),
+            Constraint::IndexedRelation(indexed) => _all_required(indexed.ids()),
+            Constraint::Has(has) => _all_required(has.ids()),
+            Constraint::Owns(owns) => _all_required(owns.ids()),
+            Constraint::Relates(relates) => _all_required(relates.ids()),
+            Constraint::Plays(plays) => _all_required(plays.ids()),
+            Constraint::Value(value) => _all_required(value.ids()),
 
-            Constraint::Comparison(comparison) => _all_unwrapped(comparison.ids()),
-            Constraint::Is(is) => _all_unwrapped(is.ids()),
-            Constraint::IsSet(is_set) => _all_unwrapped(is_set.ids()),
+            Constraint::Comparison(comparison) => _all_required(comparison.ids()),
+            Constraint::Is(is) => _all_required(is.ids()),
+            Constraint::IsSet(is_set) => _all_required(is_set.ids()),
 
-            Constraint::DeleteConcepts(inner) => _all_unwrapped(inner.ids()),
-            Constraint::Unsatisfiable(inner) => _all_unwrapped(inner.ids()),
+            Constraint::DeleteConcepts(inner) => _all_required(inner.ids()),
+            Constraint::Unsatisfiable(inner) => _all_required(inner.ids()),
             Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
 
             Constraint::ExpressionBinding(binding) => Box::new(binding.reference_optionalities()),
@@ -2274,11 +2274,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
             .chain(self.expression_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
-    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, VariableOptionality)> + '_ {
+    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, ReferenceOptionality)> + '_ {
         // We treat ALL argument references as optional. It must be validated separately.
-        self.ids_assigned()
-            .map(|id| (id, self.left_optionality))
-            .chain(self.expression_ids().map(|id| (id, VariableOptionality::Optional)))
+        let left_optionality = self.left_optionality.into();
+        self.ids_assigned().map(move |id| (id, left_optionality)).chain(self.expression.reference_optionalities())
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -2402,13 +2401,15 @@ impl<ID: IrID> FunctionCallBinding<ID> {
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
-    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, VariableOptionality)> + '_ {
+    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, ReferenceOptionality)> + '_ {
         error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
-        self.ids_assigned()
+        let of_assigned = self
+            .ids_assigned()
             .zip(self.assigned_optionalities.iter().copied())
-            .filter(|(id, _)| !self.function_call.arguments().contains(id))
-            .map(|(id, optionality)| (id, optionality.into()))
-            .chain(self.function_call_arg_ids().map(|id| (id, VariableOptionality::Required)))
+            .map(|(id, optionality)| (id, optionality.into()));
+        let of_arguments = self.function_call_arg_ids().map(|id| (id, ReferenceOptionality::Required));
+
+        of_assigned.chain(of_arguments)
     }
 
     pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {

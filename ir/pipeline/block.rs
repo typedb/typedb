@@ -17,7 +17,7 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableModes, ScopeId,
+        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableModes, ReferenceOptionality, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
         expression::{Expression, ExpressionTree, ExpressionTreeNodeId},
@@ -272,7 +272,7 @@ fn validate_all_optional_dereferences_are_safe(
     let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
         let (id, _) = constraint.variable_reference_optionalities().find(|(id, reference_optionality)| {
             conjunction.optionality(id) == VariableOptionality::Optional
-                && *reference_optionality == VariableOptionality::Required
+                && *reference_optionality == ReferenceOptionality::Required
         })?;
         Some((id, constraint.source_span()))
     });

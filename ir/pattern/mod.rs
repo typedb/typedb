@@ -817,3 +817,34 @@ impl AssignedVariable {
         Self { variable, optionality: VariableOptionality::Required }
     }
 }
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ReferenceOptionality {
+    Required,
+    Optional,
+}
+
+impl BitAnd for ReferenceOptionality {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::Required, _) | (_, Self::Required) => Self::Required,
+            (Self::Optional, Self::Optional) => Self::Optional,
+        }
+    }
+}
+
+impl BitAndAssign for ReferenceOptionality {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl From<VariableOptionality> for ReferenceOptionality {
+    fn from(value: VariableOptionality) -> Self {
+        match value {
+            VariableOptionality::Required => Self::Required,
+            VariableOptionality::Optional => Self::Optional,
+        }
+    }
+}
