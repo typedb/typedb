@@ -39,7 +39,8 @@ use tracing::{Level, event};
 use crate::{
     error::ConceptReadError,
     thing::{
-        ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation, thing_manager::ThingManager,
+        ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation,
+        statistics::deltas::CommitDeltas, thing_manager::ThingManager,
     },
     type_::{
         TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
@@ -253,6 +254,58 @@ impl Statistics {
             player_role_relation_counts,
             links_index_counts,
         })
+    }
+
+    pub fn update(&mut self, commit_deltas: &CommitDeltas) -> Result<i64, StatisticsError> {
+        let CommitDeltas {
+            commit_sequence_number,
+            entity_deltas,
+            relation_deltas,
+            attribute_deltas,
+            has_attribute_deltas,
+            relation_role_player_deltas,
+            links_index_deltas,
+        } = commit_deltas;
+
+        let mut total_delta = 0;
+
+        for (&entity_type, delta) in entity_deltas {
+            self.update_entities(entity_type, delta.net_change());
+            total_delta += delta.net_change();
+        }
+        for (&relation_type, delta) in relation_deltas {
+            self.update_relations(relation_type, delta.net_change());
+            total_delta += delta.net_change();
+        }
+        for (&attribute_type, delta) in attribute_deltas {
+            self.update_attributes(attribute_type, delta.net_change());
+        }
+
+        for (&owner_type, attribute_deltas) in has_attribute_deltas {
+            for (&attribute_type, delta) in attribute_deltas {
+                self.update_has(owner_type, attribute_type, delta.net_change());
+                total_delta += delta.net_change();
+            }
+        }
+
+        for (&relation_type, role_player_deltas) in relation_role_player_deltas {
+            for (&role_type, player_deltas) in role_player_deltas {
+                for (&player_type, delta) in player_deltas {
+                    self.update_role_player(player_type, role_type, relation_type, delta.net_change());
+                    total_delta += delta.net_change();
+                }
+            }
+        }
+
+        for (&player_1_type, player_2_type_deltas) in links_index_deltas {
+            for (&player_2_type, delta) in player_2_type_deltas {
+                self.update_indexed_player(player_1_type, player_2_type, delta.net_change());
+            }
+        }
+
+        self.sequence_number = *commit_sequence_number;
+
+        Ok(total_delta)
     }
 
     pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
