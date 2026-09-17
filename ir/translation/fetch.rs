@@ -28,7 +28,9 @@ use typeql::{
 
 use crate::{
     RepresentationError,
-    pattern::{AssignedVariable, ParameterID, expression::BuiltinConceptFunctionID},
+    pattern::{
+        AssignedVariable, ParameterID, expression::BuiltinConceptFunctionID, variable_category::VariableOptionality,
+    },
     pipeline::{
         FunctionReadError, FunctionRepresentationError, ParameterRegistry,
         block::{Block, BlockBuilder, BlockBuilderContext},
@@ -41,7 +43,7 @@ use crate::{
     },
     translation::{
         PipelineTranslationContext,
-        expression::{add_function_call, build_expression, function_return_optionality},
+        expression::{add_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
             VariableNotAvailable,
@@ -516,16 +518,16 @@ fn try_get_variable_verify_optional_safety(
     context: &PipelineTranslationContext,
     variable: &TypeQLVariable,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
-    let (name, reference_optionality) = match variable {
+    let (name, optionality_is_checked) = match variable {
         TypeQLVariable::Anonymous { .. } => {
             return Err(Box::new(AnonymousVariableEncountered { declaration: variable.clone() }));
         }
-        TypeQLVariable::Named { optional, .. } => (variable.name().unwrap(), optional),
+        TypeQLVariable::Named { optional, .. } => (variable.name().unwrap(), optional.is_some()),
     };
     let translated_variable = context
         .get_variable(name)
         .ok_or_else(|| Box::new(VariableNotAvailable { variable: name.to_owned(), declaration: variable.clone() }))?;
-    if reference_optionality.is_none() && context.is_variable_optional(translated_variable) {
+    if !optionality_is_checked && context.variable_optionality(translated_variable) == VariableOptionality::Optional {
         Err(Box::new(FetchRepresentationError::UnsafeOptionalVariableDereference {
             variable: name.to_owned(),
             source_span: variable.span(),
