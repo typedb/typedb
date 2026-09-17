@@ -414,7 +414,7 @@ impl Statistics {
                 }
 
                 Some(DecodableKey::VertexEntityType(entity_type_vertex)) => {
-                    if matches!(write, Write::Delete) {
+                    if write.is_delete() {
                         let type_ = EntityType::new(entity_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
                             this.entity_counts.remove(&type_);
@@ -424,7 +424,7 @@ impl Statistics {
                     // note: don't update total count based on type updates
                 }
                 Some(DecodableKey::VertexRelationType(relation_type_vertex)) => {
-                    if matches!(write, Write::Delete) {
+                    if write.is_delete() {
                         let type_ = RelationType::new(relation_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
                             this.relation_counts.remove(&type_);
@@ -435,7 +435,7 @@ impl Statistics {
                     // note: don't update total count based on type updates
                 }
                 Some(DecodableKey::VertexAttributeType(attribute_type_vertex)) => {
-                    if matches!(write, Write::Delete) {
+                    if write.is_delete() {
                         let type_ = AttributeType::new(attribute_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
                             this.attribute_counts.remove(&type_);
@@ -449,7 +449,7 @@ impl Statistics {
                     // note: don't update total count based on type updates
                 }
                 Some(DecodableKey::VertexRoleType(role_type_vertex)) => {
-                    if matches!(write, Write::Delete) {
+                    if write.is_delete() {
                         let type_ = RoleType::new(role_type_vertex);
                         deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
                             this.role_counts.remove(&type_);
