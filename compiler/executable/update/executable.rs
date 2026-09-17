@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use ir::{
-    pattern::{Pattern, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
+    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
@@ -111,8 +111,7 @@ impl ConditionalUpdate {
         let connection_instructions =
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
 
-        let required_input_variables =
-            RequiredVariablesForWrite::build(conjunction, variable_registry, variable_positions);
+        let required_input_variables = RequiredVariablesForWrite::build(conjunction, variable_positions);
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instruction_map);
 

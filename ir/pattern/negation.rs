@@ -75,7 +75,7 @@ impl NegationBuilder {
 
     pub(crate) fn finish(self, parent_modes: &PatternVariableModes) -> NestedPattern {
         let source_span = self.source_span;
-        let pattern_variables = PatternVariableModes::build(self.variable_binding_modes(), parent_modes);
+        let pattern_variables = PatternVariableModes::build(self.variable_binding_modes(), parent_modes, []);
         let conjunction = self.conjunction.finish(&pattern_variables);
         NestedPattern::Negation(Negation { conjunction, pattern_variables, source_span })
     }

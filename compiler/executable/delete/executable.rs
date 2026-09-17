@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
@@ -12,7 +12,6 @@ use ir::{
     pattern::{Vertex, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{VariableRegistry, block::Block},
 };
-use typeql::common::Span;
 
 use crate::{
     VariablePosition,
@@ -104,8 +103,7 @@ impl ConditionalDelete {
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables =
-            RequiredVariablesForWrite::build(conjunction, variable_registry, input_variables);
+        let required_input_variables = RequiredVariablesForWrite::build(conjunction, input_variables);
 
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })
     }

@@ -10,10 +10,7 @@ use std::{
 
 use answer::variable::Variable;
 use error::typedb_error;
-use ir::{
-    pattern::{Pattern, conjunction::Conjunction, constraint::Comparator},
-    pipeline::VariableRegistry,
-};
+use ir::pattern::{Pattern, conjunction::Conjunction, constraint::Comparator, variable_category::VariableOptionality};
 use typeql::common::Span;
 
 use crate::{
@@ -44,20 +41,10 @@ pub fn next_executable_id() -> u64 {
 pub struct RequiredVariablesForWrite(HashSet<VariablePosition>);
 
 impl RequiredVariablesForWrite {
-    pub fn build(
-        conjunction: &Conjunction,
-        variable_registry: &VariableRegistry,
-        variable_positions: &HashMap<Variable, VariablePosition>,
-    ) -> Self {
-        Self(
-            conjunction
-                .constraints()
-                .iter()
-                .flat_map(|constraint| constraint.ids())
-                .filter(|id| conjunction.is_input(id) && todo!("conjunction.is_optional(*id)"))
-                .filter_map(|id| variable_positions.get(&id).copied())
-                .collect(),
-        )
+    pub fn build(conjunction: &Conjunction, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
+        let required_variables =
+            conjunction.constraints().iter().filter_map(|c| c.as_is_set()).flat_map(|is_set| is_set.ids());
+        Self(required_variables.filter_map(|id| variable_positions.get(&id).copied()).collect())
     }
 }
 
