@@ -380,6 +380,11 @@ typedb_error! {
             offset: String,
             source_span: Option<Span>,
         ),
+        IllegalTryInWriteStage(
+            252,
+            "Try blocks are not supported in write stages. Use `if` statements instead.",
+            source_span: Option<Span>,
+        ),
         UnimplementedExpressionsInWrite(
             253,
             "Expressions are currently not supported in write stages. Please move it to a preceding match stage.",
