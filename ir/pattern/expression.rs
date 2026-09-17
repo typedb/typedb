@@ -48,22 +48,15 @@ impl ExpressionTree<Variable> {
 
     pub fn return_optionality(&self) -> VariableOptionality {
         // Note, this is different from self.get_root().actual_result_optionality(&conjunction)
-        let root_return_optionality =
-            match self.get_root() {
-                Expression::MayShortCircuit(_) => VariableOptionality::Optional,
-                Expression::BuiltinValueFunctionCall(builtin) => builtin.function_id.optionality(),
-                // At the root, a variable is also required and must be short-circuited
-                Expression::Variable(variable)
-                | Expression::ListIndex(ListIndex { list_variable: variable, .. })
-                | Expression::ListIndexRange(ListIndexRange { list_variable: variable, .. }) => {
-                    if variable.checked_isset { VariableOptionality::Optional } else { VariableOptionality::Required }
-                }
-                Expression::Constant(_) | Expression::Operation(_) | Expression::List(_) => {
-                    VariableOptionality::Required
-                }
-            };
-        let lazy_contains_short_circuit =
-            || self.expression_tree_preorder().any(|expr| matches!(expr, Expression::MayShortCircuit(_)));
+        let root_return_optionality = match self.get_root() {
+            Expression::MayShortCircuit(_) => VariableOptionality::Optional,
+            Expression::BuiltinValueFunctionCall(builtin) => builtin.function_id.optionality(),
+            // At the root, a variable is also required and must be short-circuited
+            Expression::Variable(_) => VariableOptionality::Required,
+            Expression::ListIndex(_) | Expression::ListIndexRange(_) => VariableOptionality::Required,
+            Expression::Constant(_) | Expression::Operation(_) | Expression::List(_) => VariableOptionality::Required,
+        };
+        let lazy_contains_short_circuit = || self.expression_tree_preorder().any(|expr| expr.may_short_circuit());
 
         if root_return_optionality == VariableOptionality::Optional || lazy_contains_short_circuit() {
             VariableOptionality::Optional
@@ -202,6 +195,19 @@ impl Expression<Variable> {
             | Expression::List(_)
             | Expression::Operation(_)
             | Expression::MayShortCircuit(_) => VariableOptionality::Required,
+        }
+    }
+
+    fn may_short_circuit(&self) -> bool {
+        match self {
+            Expression::MayShortCircuit(_) => true,
+            Expression::Variable(variable)
+            | Expression::ListIndex(ListIndex { list_variable: variable, .. })
+            | Expression::ListIndexRange(ListIndexRange { list_variable: variable, .. }) => variable.checked_isset,
+            Expression::Constant(_)
+            | Expression::Operation(_)
+            | Expression::BuiltinValueFunctionCall(_)
+            | Expression::List(_) => false,
         }
     }
 

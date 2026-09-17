@@ -38,15 +38,6 @@ pub(super) fn add_inline_typeql_expression(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     rhs: &typeql::Expression,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
-    add_inline_typeql_expression_with_optionality_hint(function_index, constraints, rhs, VariableOptionality::Required)
-}
-
-fn add_inline_typeql_expression_with_optionality_hint(
-    function_index: &impl FunctionSignatureIndex,
-    constraints: &mut ConstraintsBuilder<'_, '_>,
-    rhs: &typeql::Expression,
-    optionality_hint: VariableOptionality,
-) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     if let typeql::Expression::Value(literal) = rhs {
         let id = register_typeql_literal(constraints, literal)?;
         Ok(Vertex::Parameter(id))
@@ -55,7 +46,7 @@ fn add_inline_typeql_expression_with_optionality_hint(
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable(rhs.span())?;
-        let assigned_variable = AssignedVariable::new_with_optionality(variable, optionality_hint);
+        let assigned_variable = AssignedVariable::new_required(variable);
         constraints.add_assignment(assigned_variable, expression, rhs.span())?;
         Ok(Vertex::Variable(variable))
     }

@@ -421,7 +421,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let callee_signature = builtin_id.signature();
         let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
             |(assigned_var, (_, returned_optionality))| {
-                assigned_var.validate_assignment_optionality(&self.context, source_span, *returned_optionality)
+                assigned_var.validate_assignment_optionality_matches(&self.context, source_span, *returned_optionality)
             },
         );
         if let Err(err) = mismatched_optionality_in_assignment {
@@ -466,7 +466,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
         let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
             |(assigned_var, (_, returned_optionality))| {
-                assigned_var.validate_assignment_optionality(&self.context, source_span, *returned_optionality)
+                assigned_var.validate_assignment_optionality_matches(&self.context, source_span, *returned_optionality)
             },
         );
         if let Err(err) = mismatched_optionality_in_assignment {
@@ -542,7 +542,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
         let binding = ExpressionBinding::new(assigned.clone(), expression, source_span);
 
-        let mismatched_optionality_in_assignment = assigned.validate_assignment_optionality(
+        let mismatched_optionality_in_assignment = assigned.validate_assignment_optionality_matches(
             &self.context,
             source_span,
             binding.expression().return_optionality(),

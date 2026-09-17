@@ -818,23 +818,23 @@ impl AssignedVariable {
         Self { variable, optionality: VariableOptionality::Required }
     }
 
-    pub(crate) fn validate_assignment_optionality(
+    pub(crate) fn validate_assignment_optionality_matches(
         &self,
         context: &BlockBuilderContext<'_>,
         source_span: Option<Span>,
         returned_optionality: VariableOptionality,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
         match (self.optionality, returned_optionality) {
             (Optional, Optional) | (Required, Required) => Ok(()),
-            (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
+            (Optional, Required) => Err(Box::new(RepresentationError::WronglyMarkedOptionalAssignment {
                 variable: context.get_variable_name_or_unnamed(self.variable).to_owned(),
                 source_span,
-            }),
-            (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
+            })),
+            (Required, Optional) => Err(Box::new(RepresentationError::UnmarkedOptionalAssignment {
                 variable: context.get_variable_name_or_unnamed(self.variable).to_owned(),
                 source_span,
-            }),
+            })),
         }
     }
 }
