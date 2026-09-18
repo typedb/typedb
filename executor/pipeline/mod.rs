@@ -3,16 +3,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::sync::Arc;
 
-use compiler::executable::RequiredVariablesForWrite;
-use concept::error::ConceptReadError;
+use compiler::{
+    ExecutorVariable,
+    executable::{WritePatternCondition, match_::instructions::CheckInstruction},
+};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::typedb_error;
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
+use resource::profile::{StepProfile, StorageCounters};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     InterruptType,
     batch::Batch,
     error::ReadExecutionError,
+    instruction::checker::Checker,
     pipeline::{fetch::FetchExecutionError, stage::StageIterator},
     row::{MaybeOwnedRow, Row},
     write::WriteError,
@@ -57,8 +65,17 @@ impl LendingIterator for WrittenRowsIterator {
     }
 }
 
-fn required_inputs_satisfied(required_variables: &RequiredVariablesForWrite, row: &Row<'_>) -> bool {
-    required_variables.iter().all(|position| position.as_usize() < row.len() && !row.get(*position).is_none())
+fn write_condition_satisfied(
+    condition: &WritePatternCondition,
+    row: &Row<'_>,
+    snapshot: &impl ReadableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    profile: &StepProfile,
+) -> Result<bool, Box<WriteError>> {
+    let row = MaybeOwnedRow::new_from_row(row);
+    Checker::filter(&*condition, &row, snapshot, thing_manager, parameters, profile.storage_counters())
+        .map_err(|typedb_source| Box::new(WriteError::ConceptRead { typedb_source }))
 }
 
 impl StageIterator for WrittenRowsIterator {

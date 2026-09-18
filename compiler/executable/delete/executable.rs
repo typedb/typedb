@@ -20,7 +20,7 @@ use crate::{
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
     executable::{
-        RequiredVariablesForWrite, WriteCompilationError,
+        WriteCompilationError, WritePatternCondition,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             ThingPosition,
@@ -83,7 +83,7 @@ pub fn compile(
 pub struct ConditionalDelete {
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: RequiredVariablesForWrite,
+    pub condition: WritePatternCondition,
 }
 
 impl ConditionalDelete {
@@ -103,9 +103,9 @@ impl ConditionalDelete {
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
 
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables = RequiredVariablesForWrite::build(conjunction, input_variables);
+        let required_input_variables = WritePatternCondition::build(conjunction, input_variables);
 
-        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
+        Ok(Self { concept_instructions, connection_instructions, condition: required_input_variables })
     }
 }
 
