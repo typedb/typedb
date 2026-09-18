@@ -56,7 +56,7 @@ impl DurabilityRecord for LegacyCommitRecordV1 {
 
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        reader.read_to_end(&mut buf).map_err(bincode::ErrorKind::Io)?;
         bincode::deserialize(&buf)
     }
 }
@@ -149,8 +149,15 @@ impl CommitRecord {
             for (key, write) in writes.iter() {
                 if let Some(predecessor_write) = predecessor_writes.get(key) {
                     match (predecessor_write, write) {
-                        (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                        (
+                            Write::Insert { value: prev_value } | Write::Put { value: prev_value, .. },
+                            Write::Put { reinsert, value, .. },
+                        ) => {
+                            if value == prev_value {
+                                puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                            } else {
+                                puts_to_update.push(DependentPut::Overwritten { reinsert: reinsert.clone() });
+                            }
                         }
                         (Write::Delete, Write::Put { reinsert, .. }) => {
                             puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
@@ -215,7 +222,7 @@ impl DurabilityRecord for CommitRecord {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        reader.read_to_end(&mut buf).map_err(bincode::ErrorKind::Io)?;
         bincode::deserialize(&buf)
     }
 }
@@ -254,7 +261,7 @@ impl DurabilityRecord for StatusRecord {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        reader.read_to_end(&mut buf).map_err(bincode::ErrorKind::Io)?;
         bincode::deserialize(&buf)
     }
 }

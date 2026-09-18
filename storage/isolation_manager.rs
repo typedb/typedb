@@ -309,6 +309,7 @@ fn handle_dependency(commit_dependency: CommitDependency) -> Option<IsolationCon
 pub(crate) enum DependentPut {
     Deleted { reinsert: Arc<AtomicBool> },
     Inserted { reinsert: Arc<AtomicBool> },
+    Overwritten { reinsert: Arc<AtomicBool> },
 }
 
 impl DependentPut {
@@ -316,6 +317,7 @@ impl DependentPut {
         match self {
             DependentPut::Deleted { reinsert } => reinsert.store(true, Ordering::Release),
             DependentPut::Inserted { reinsert } => reinsert.store(false, Ordering::Release),
+            DependentPut::Overwritten { reinsert } => reinsert.store(true, Ordering::Release),
         }
     }
 }
