@@ -59,11 +59,20 @@ impl<'a> Row<'a> {
         *self.provenance = row.provenance()
     }
 
-    pub(crate) fn copy_from(&mut self, row: &[VariableValue<'static>], multiplicity: u64, provenance: Provenance) {
-        debug_assert!(self.len() == row.len());
-        self.row.clone_from_slice(row);
-        *self.multiplicity = multiplicity;
-        *self.provenance = provenance
+    pub(crate) fn merge_selected(
+        &mut self,
+        selected: &[VariablePosition],
+        input: MaybeOwnedRow<'_>,
+        extension: impl IntoIterator<Item = (VariablePosition, VariableValue<'static>)>,
+        extension_multiplicity: u64,
+    ) {
+        self.copy_mapped(input, selected.iter().map(|&pos| (pos, pos)));
+        for (pos, value) in extension {
+            if selected.contains(&pos) {
+                self.set(pos, value);
+            }
+        }
+        *self.multiplicity *= extension_multiplicity;
     }
 
     pub(crate) fn copy_mapped(

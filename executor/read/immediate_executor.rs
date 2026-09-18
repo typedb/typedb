@@ -941,7 +941,7 @@ impl CheckExecutor {
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {
-                    row.copy_mapped(input_row, self.selected_variables.iter().map(|pos| (*pos, *pos)));
+                    row.merge_selected(&self.selected_variables, input_row, [], 1);
                 })
             }
         }
@@ -954,6 +954,7 @@ pub(crate) struct BuiltinCallExecutor {
     builtin_id: BuiltinConceptFunctionID,
     argument_positions: Vec<VariablePosition>,
     assignment_positions: Vec<Option<VariablePosition>>,
+    selected_variables: Vec<VariablePosition>,
     output_width: u32,
     input: Option<FixedBatch>,
     profile: Arc<StepProfile>,
@@ -970,10 +971,19 @@ impl BuiltinCallExecutor {
         builtin_id: BuiltinConceptFunctionID,
         argument_positions: Vec<VariablePosition>,
         assignment_positions: Vec<Option<VariablePosition>>,
+        selected_variables: Vec<VariablePosition>,
         output_width: u32,
         profile: Arc<StepProfile>,
     ) -> Self {
-        Self { builtin_id, argument_positions, assignment_positions, output_width, input: None, profile }
+        Self {
+            builtin_id,
+            argument_positions,
+            assignment_positions,
+            selected_variables,
+            output_width,
+            input: None,
+            profile,
+        }
     }
 
     pub(crate) fn output_width(&self) -> u32 {
@@ -1024,7 +1034,14 @@ impl BuiltinCallExecutor {
     ) -> Result<(), Box<ConceptReadError>> {
         macro_rules! execute {
             ($id:ident) => {
-                builtin_function::$id(&self.assignment_positions, &self.argument_positions, context, input_row, output)
+                builtin_function::$id(
+                    &self.assignment_positions,
+                    &self.argument_positions,
+                    &self.selected_variables,
+                    context,
+                    input_row,
+                    output,
+                )
             };
         }
 

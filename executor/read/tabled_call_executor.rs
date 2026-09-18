@@ -28,6 +28,7 @@ pub(crate) struct TabledCallExecutor {
     argument_positions: Vec<VariablePosition>,
     assignment_positions: Vec<Option<VariablePosition>>,
     output_width: u32,
+    selected_variables: Vec<VariablePosition>,
     active_executor: Option<TabledCallExecutorState>,
 }
 
@@ -54,9 +55,17 @@ impl TabledCallExecutor {
         function_id: FunctionID,
         argument_positions: Vec<VariablePosition>,
         assignment_positions: Vec<Option<VariablePosition>>,
+        selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
-        Self { function_id, argument_positions, assignment_positions, output_width, active_executor: None }
+        Self {
+            function_id,
+            argument_positions,
+            assignment_positions,
+            output_width,
+            selected_variables,
+            active_executor: None,
+        }
     }
 
     pub(crate) fn output_width(&self) -> u32 {
@@ -94,21 +103,22 @@ impl TabledCallExecutor {
             .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?)))
             .filter(|(_, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::None)
             .collect(); // TODO: Can we move this to compilation?
-
         for return_index in 0..returned_batch.len() {
             // TODO: Deduplicate?
             let returned_row = returned_batch.get_row(return_index);
             if check_indices.iter().all(|(src, dst)| returned_row.get(*src) == input.get(*dst)) {
                 output_batch.append(|mut output_row| {
-                    output_row.copy_from_row(input.as_reference());
-                    output_row.copy_mapped(
-                        returned_row,
-                        self.assignment_positions
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?))),
+                    let assignments = self
+                        .assignment_positions
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(index, &dst)| Some((dst?, returned_row[index].clone())));
+                    output_row.merge_selected(
+                        &self.selected_variables,
+                        input.as_reference(),
+                        assignments,
+                        returned_row.multiplicity(),
                     );
-                    output_row.set_provenance(input.provenance())
                 });
             }
         }

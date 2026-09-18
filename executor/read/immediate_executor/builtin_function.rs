@@ -27,87 +27,91 @@ use ir::translation::function::FunctionAnnotation;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{Provenance, batch::FixedBatch, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
+use crate::{batch::FixedBatch, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 pub(crate) fn iid(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     _context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
     let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(()); // all concepts have IIDs
     };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let iid = input_row[argument_positions[0].as_usize()].as_thing().iid();
-    row[return_position.as_usize()] = VariableValue::Value(Value::String(Cow::Owned(format!("{iid:x}"))));
-    let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-    output.append(|mut row| row.copy_from_row(output_row));
+    let iid_value = VariableValue::Value(Value::String(Cow::Owned(format!("{iid:x}"))));
+    output.append(|mut row| {
+        row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, iid_value)], 1);
+    });
     Ok(())
 }
 
 pub(crate) fn label(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
     let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(()); // all types have labels
     };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let ty = input_row[argument_positions[0].as_usize()].as_type();
     let label = ty.get_label(&**context.snapshot(), context.type_manager())?;
-    row[return_position.as_usize()] = VariableValue::Value(Value::String(Cow::Owned(label.to_string())));
-    let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-    output.append(|mut row| row.copy_from_row(output_row));
+    let label_value = VariableValue::Value(Value::String(Cow::Owned(label.to_string())));
+    output.append(|mut row| {
+        row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, label_value)], 1);
+    });
     Ok(())
 }
 
 pub(crate) fn get_doc(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
     let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(()); // a missing doc is equivalent to @doc("")
     };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
-    row[return_position.as_usize()] = get_type_doc(context, &input_row[argument_positions[0].as_usize()])?;
-    let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-    output.append(|mut row| row.copy_from_row(output_row));
+    let doc_value = get_type_doc(context, &input_row[argument_positions[0].as_usize()])?;
+    output.append(|mut row| {
+        row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
+    });
     Ok(())
 }
 
 pub(crate) fn get_owns_doc(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let owner = &input_row[argument_positions[0].as_usize()];
     let attribute = &input_row[argument_positions[1].as_usize()];
     if let Some(owns) = get_owns(context, owner, attribute)? {
-        row[return_position.as_usize()] = unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
+        let doc_value = unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
             &**context.snapshot(),
             owns,
             &AnnotationCategory::Doc,
         )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
+        });
     }
     Ok(())
 }
@@ -115,26 +119,26 @@ pub(crate) fn get_owns_doc(
 pub(crate) fn get_plays_doc(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let player = &input_row[argument_positions[0].as_usize()];
     let role = &input_row[argument_positions[1].as_usize()];
     if let Some(plays) = get_plays(context, player, role)? {
-        row[return_position.as_usize()] =
-            unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
-                &**context.snapshot(),
-                plays,
-                &AnnotationCategory::Doc,
-            )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
+        let doc_value = unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
+            &**context.snapshot(),
+            plays,
+            &AnnotationCategory::Doc,
+        )?);
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
+        });
     }
     Ok(())
 }
@@ -142,26 +146,26 @@ pub(crate) fn get_plays_doc(
 pub(crate) fn get_relates_doc(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let relation = &input_row[argument_positions[0].as_usize()];
     let role = &input_row[argument_positions[1].as_usize()];
     if let Some(relates) = get_relates(context, relation, role)? {
-        row[return_position.as_usize()] =
-            unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
-                &**context.snapshot(),
-                relates,
-                &AnnotationCategory::Doc,
-            )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
+        let doc_value = unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
+            &**context.snapshot(),
+            relates,
+            &AnnotationCategory::Doc,
+        )?);
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
+        });
     }
     Ok(())
 }
@@ -169,21 +173,21 @@ pub(crate) fn get_relates_doc(
 pub(crate) fn get_sub_doc(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing doc is equivalent to @doc("")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let subtype = &input_row[argument_positions[0].as_usize()];
     let supertype = &input_row[argument_positions[1].as_usize()];
-    if let Some(a) = get_subtype_doc(context, subtype, supertype)? {
-        row[return_position.as_usize()] = a;
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+    if let Some(doc_value) = get_subtype_doc(context, subtype, supertype)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
+        });
     }
     Ok(())
 }
@@ -191,47 +195,51 @@ pub(crate) fn get_sub_doc(
 pub(crate) fn get_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
     let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
     };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
-    row[return_position.as_usize()] = get_type_meta(
+    let meta_value = get_type_meta(
         context,
         &input_row[argument_positions[0].as_usize()],
         &input_row[argument_positions[1].as_usize()],
     )?;
-    let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-    output.append(|mut row| row.copy_from_row(output_row));
+    output.append(|mut row| {
+        row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
+    });
     Ok(())
 }
 
 pub(crate) fn get_owns_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let owner = &input_row[argument_positions[1].as_usize()];
     let attribute = &input_row[argument_positions[2].as_usize()];
     if let Some(owns) = get_owns(context, owner, attribute)? {
-        row[return_position.as_usize()] = unwrap_meta_value(
-            context.type_manager().get_owns_annotation_declared_by_category(&**context.snapshot(), owns, category)?,
-        );
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
+        let meta_value = unwrap_meta_value(context.type_manager().get_owns_annotation_declared_by_category(
+            &**context.snapshot(),
+            owns,
+            category,
+        )?);
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
+        });
     }
     Ok(())
 }
@@ -239,25 +247,28 @@ pub(crate) fn get_owns_meta(
 pub(crate) fn get_plays_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let player = &input_row[argument_positions[1].as_usize()];
     let role = &input_row[argument_positions[2].as_usize()];
     if let Some(plays) = get_plays(context, player, role)? {
-        row[return_position.as_usize()] = unwrap_meta_value(
-            context.type_manager().get_plays_annotation_declared_by_category(&**context.snapshot(), plays, category)?,
-        );
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
+        let meta_value = unwrap_meta_value(context.type_manager().get_plays_annotation_declared_by_category(
+            &**context.snapshot(),
+            plays,
+            category,
+        )?);
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
+        });
     }
     Ok(())
 }
@@ -265,28 +276,28 @@ pub(crate) fn get_plays_meta(
 pub(crate) fn get_relates_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let relation = &input_row[argument_positions[1].as_usize()];
     let role = &input_row[argument_positions[2].as_usize()];
     if let Some(relates) = get_relates(context, relation, role)? {
-        row[return_position.as_usize()] =
-            unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
-                &**context.snapshot(),
-                relates,
-                category,
-            )?);
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
+        let meta_value = unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
+            &**context.snapshot(),
+            relates,
+            category,
+        )?);
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
+        });
     }
     Ok(())
 }
@@ -294,22 +305,22 @@ pub(crate) fn get_relates_meta(
 pub(crate) fn get_sub_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
-    let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
-        return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
-    };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let key = &input_row[argument_positions[0].as_usize()];
     let subtype = &input_row[argument_positions[1].as_usize()];
     let supertype = &input_row[argument_positions[2].as_usize()];
-    if let Some(variable_value) = get_subtype_meta(context, key, subtype, supertype)? {
-        row[return_position.as_usize()] = variable_value;
-        let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+    if let Some(meta_value) = get_subtype_meta(context, key, subtype, supertype)? {
+        let Some(return_position) = assignment_positions[0] else {
+            output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
+        output.append(|mut row| {
+            row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
+        });
     }
     Ok(())
 }
@@ -317,6 +328,7 @@ pub(crate) fn get_sub_meta(
 pub(crate) fn get_all_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
@@ -324,12 +336,13 @@ pub(crate) fn get_all_meta(
     let key_return_position = assignment_positions[0];
     let value_return_position = assignment_positions[1];
     let metas = get_type_all_meta(context, &input_row[argument_positions[0].as_usize()])?;
-    put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, selected_variables, metas)
 }
 
 pub(crate) fn get_owns_all_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
@@ -340,7 +353,14 @@ pub(crate) fn get_owns_all_meta(
     let attribute = &input_row[argument_positions[1].as_usize()];
     if let Some(owns) = get_owns(context, owner, attribute)? {
         let metas = get_owns_meta_annotations(context, owns)?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?;
+        put_all_metas_into_batch(
+            input_row,
+            output,
+            key_return_position,
+            value_return_position,
+            selected_variables,
+            metas,
+        )?;
     }
     Ok(())
 }
@@ -348,6 +368,7 @@ pub(crate) fn get_owns_all_meta(
 pub(crate) fn get_plays_all_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
@@ -358,7 +379,14 @@ pub(crate) fn get_plays_all_meta(
     let role = &input_row[argument_positions[1].as_usize()];
     if let Some(plays) = get_plays(context, player, role)? {
         let metas = get_plays_meta_annotations(context, plays)?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?;
+        put_all_metas_into_batch(
+            input_row,
+            output,
+            key_return_position,
+            value_return_position,
+            selected_variables,
+            metas,
+        )?;
     }
     Ok(())
 }
@@ -366,6 +394,7 @@ pub(crate) fn get_plays_all_meta(
 pub(crate) fn get_relates_all_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
@@ -376,7 +405,14 @@ pub(crate) fn get_relates_all_meta(
     let role = &input_row[argument_positions[1].as_usize()];
     if let Some(relates) = get_relates(context, relation, role)? {
         let metas = get_relates_meta_annotations(context, relates)?;
-        put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)?;
+        put_all_metas_into_batch(
+            input_row,
+            output,
+            key_return_position,
+            value_return_position,
+            selected_variables,
+            metas,
+        )?;
     }
     Ok(())
 }
@@ -384,6 +420,7 @@ pub(crate) fn get_relates_all_meta(
 pub(crate) fn get_sub_all_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
@@ -393,48 +430,49 @@ pub(crate) fn get_sub_all_meta(
     let subtype = &input_row[argument_positions[0].as_usize()];
     let supertype = &input_row[argument_positions[1].as_usize()];
     let metas = get_subtype_all_meta(context, subtype, supertype)?;
-    put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, selected_variables, metas)
 }
 
 pub(crate) fn get_fun_doc(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
     let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(()); // a missing doc is equivalent to @doc("")
     };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let function_name = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref();
     let function = context.function_manager().get_function_key(&**context.snapshot(), function_name).unwrap();
     let Some(function) = function else {
         return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
     };
-    row[return_position.as_usize()] = unwrap_doc(context.function_manager().get_function_annotation_by_category(
+    let doc_value = unwrap_doc(context.function_manager().get_function_annotation_by_category(
         &**context.snapshot(),
         function,
         &AnnotationCategory::Doc,
     )?);
-    let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-    output.append(|mut row| row.copy_from_row(output_row));
+    output.append(|mut row| {
+        row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, doc_value)], 1);
+    });
     Ok(())
 }
 
 pub(crate) fn get_fun_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
 ) -> Result<(), Box<ConceptReadError>> {
     let Some(return_position) = assignment_positions[0] else {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
     };
-    let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
     let key = input_row[argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
     let category = &AnnotationCategory::Meta(key);
     let function_name = input_row[argument_positions[1].as_usize()].as_value().unwrap_string_ref();
@@ -442,17 +480,21 @@ pub(crate) fn get_fun_meta(
     let Some(function) = function else {
         return Err(Box::new(ConceptReadError::FunctionNotFound { function_name: function_name.to_owned() }));
     };
-    row[return_position.as_usize()] = unwrap_meta_value(
-        context.function_manager().get_function_annotation_by_category(&**context.snapshot(), function, category)?,
-    );
-    let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
-    output.append(|mut row| row.copy_from_row(output_row));
+    let meta_value = unwrap_meta_value(context.function_manager().get_function_annotation_by_category(
+        &**context.snapshot(),
+        function,
+        category,
+    )?);
+    output.append(|mut row| {
+        row.merge_selected(selected_variables, input_row.as_reference(), [(return_position, meta_value)], 1);
+    });
     Ok(())
 }
 
 pub(crate) fn get_fun_all_meta(
     assignment_positions: &[Option<VariablePosition>],
     argument_positions: &[VariablePosition],
+    selected_variables: &[VariablePosition],
     context: &ExecutionContext<impl ReadableSnapshot>,
     input_row: &MaybeOwnedRow<'_>,
     output: &mut FixedBatch,
@@ -473,7 +515,7 @@ pub(crate) fn get_fun_all_meta(
             _ => None,
         })
         .collect_vec();
-    put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, metas)
+    put_all_metas_into_batch(input_row, output, key_return_position, value_return_position, selected_variables, metas)
 }
 
 pub(crate) fn put_all_metas_into_batch(
@@ -481,40 +523,26 @@ pub(crate) fn put_all_metas_into_batch(
     output: &mut FixedBatch,
     key_return_position: Option<VariablePosition>,
     value_return_position: Option<VariablePosition>,
+    selected_variables: &[VariablePosition],
     metas: Vec<AnnotationMeta>,
 ) -> Result<(), Box<ConceptReadError>> {
     if metas.is_empty() {
         return Ok(());
     } else if key_return_position.is_none() && value_return_position.is_none() {
-        output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+        output.append(|mut row| row.merge_selected(selected_variables, input_row.as_reference(), [], 1));
         return Ok(());
     }
 
-    let (mut row, multiplicity, provenance) =
-        row_into_parts_widened(input_row, Ord::max(key_return_position, value_return_position).unwrap());
     for anno in metas {
         let (key, value) = meta_to_tuple(anno);
-        if let Some(key_return_position) = key_return_position {
-            row[key_return_position.as_usize()] = key;
-        }
-        if let Some(value_return_position) = value_return_position {
-            row[value_return_position.as_usize()] = value;
-        }
-        let output_row = MaybeOwnedRow::new_owned(row.clone(), multiplicity, provenance);
-        output.append(|mut row| row.copy_from_row(output_row));
+        output.append(|mut row| {
+            let meta_key_and_value = [(key_return_position, key), (value_return_position, value)]
+                .into_iter()
+                .filter_map(|(pos, value)| Some((pos?, value)));
+            row.merge_selected(selected_variables, input_row.as_reference(), meta_key_and_value, 1);
+        });
     }
     Ok(())
-}
-
-pub(crate) fn row_into_parts_widened(
-    input_row: &MaybeOwnedRow<'_>,
-    index: VariablePosition,
-) -> (Vec<VariableValue<'static>>, u64, Provenance) {
-    let (mut row, multiplicity, provenance) = input_row.clone().into_owned_parts();
-    if row.len() <= index.as_usize() {
-        row.resize(index.as_usize() + 1, VariableValue::None);
-    }
-    (row, multiplicity, provenance)
 }
 
 pub(crate) fn get_owns(
