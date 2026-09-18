@@ -97,7 +97,7 @@ fn translate_fetch_object(
             Ok(FetchObject::Entries(object, source_spans))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
-            let var = try_get_variable_verify_optional_safety(parent_context, variable)?;
+            let var = try_get_variable_check_optionality(parent_context, variable)?;
             Ok(FetchObject::Attributes(var, variable.span()))
         }
     }
@@ -127,7 +127,7 @@ fn translate_fetch_list(
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     match &list.stream {
         FetchStream::Attribute(fetch_attribute) => {
-            let owner = try_get_variable_verify_optional_safety(parent_context, &fetch_attribute.owner)?;
+            let owner = try_get_variable_check_optionality(parent_context, &fetch_attribute.owner)?;
             let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
             if is_list {
                 Err(Box::new(FetchRepresentationError::AttributeListInList { declaration: fetch_attribute.clone() }))
@@ -204,7 +204,7 @@ fn translate_fetch_single(
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     match single {
         FetchSingle::Attribute(fetch_attribute) => {
-            let owner = try_get_variable_verify_optional_safety(parent_context, &fetch_attribute.owner)?;
+            let owner = try_get_variable_check_optionality(parent_context, &fetch_attribute.owner)?;
             let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
             if is_list {
                 Ok(FetchSome::ListAttributesFromList(FetchListAttributeFromList { variable: owner, attribute }))
@@ -214,7 +214,7 @@ fn translate_fetch_single(
         }
         FetchSingle::Expression(expression) => match &expression {
             Expression::Variable(variable) => {
-                let var = try_get_variable_verify_optional_safety(parent_context, variable)?;
+                let var = try_get_variable_check_optionality(parent_context, variable)?;
                 Ok(FetchSome::SingleVar(var))
             }
             Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
@@ -514,7 +514,7 @@ fn find_sub_fetch_inputs(
     arguments
 }
 
-fn try_get_variable_verify_optional_safety(
+fn try_get_variable_check_optionality(
     context: &PipelineTranslationContext,
     variable: &TypeQLVariable,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
