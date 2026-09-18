@@ -380,6 +380,12 @@ typedb_error! {
             offset: String,
             source_span: Option<Span>,
         ),
+        Tmp__OptionalVariableUsedOutsideTry(
+            251,
+            "A write stage uses the optional variable '{variable}' outside a 'try' block.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         IllegalTryInWriteStage(
             252,
             "Try blocks are not supported in write stages. Use `if` statements instead.",
