@@ -12,7 +12,7 @@ use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
 use tracing::{Level, event, trace};
 
 use crate::{
-    MVCCStorage,
+    CommitObserver, MVCCStorage, extract_owned_values,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
@@ -149,6 +149,7 @@ pub(crate) fn apply_recovered(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
+    commit_observer: Option<&Arc<dyn CommitObserver>>,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
     use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
@@ -162,9 +163,18 @@ pub(crate) fn apply_recovered(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                let write_batches = WriteBatches::from_operations(commit_sequence_number, commit_record.operations());
+                let write_batches = WriteBatches::from_operations(
+                    commit_sequence_number,
+                    commit_record.operations(),
+                    commit_observer.map(|observer| &**observer),
+                );
+                let owned_values =
+                    commit_observer.map(|observer| extract_owned_values(&**observer, commit_record.operations()));
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                if let (Some(observer), Some(owned)) = (commit_observer, owned_values) {
+                    observer.apply(commit_sequence_number, &owned);
+                }
                 fail_point!(RECOVERY_PARTIAL_WRITE);
                 isolation_manager
                     .applied(commit_sequence_number)
@@ -172,9 +182,16 @@ pub(crate) fn apply_recovered(
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
+                let owned_values =
+                    commit_observer.map(|observer| extract_owned_values(&**observer, commit_record.operations()));
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
-                    .validate_commit(commit_sequence_number, commit_record, durability_client)
+                    .validate_commit(
+                        commit_sequence_number,
+                        commit_record,
+                        durability_client,
+                        commit_observer.map(|observer| &**observer),
+                    )
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;
                 drop(read_guard);
                 match validated_commit {
@@ -182,6 +199,9 @@ pub(crate) fn apply_recovered(
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                        if let (Some(observer), Some(owned)) = (commit_observer, owned_values) {
+                            observer.apply(commit_sequence_number, &owned);
+                        }
                         fail_point!(RECOVERY_PARTIAL_WRITE);
                         isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {
                             name: Arc::<str>::from(database_name),

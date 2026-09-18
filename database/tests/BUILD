@@ -28,6 +28,28 @@ rust_test(
 )
 
 rust_test(
+    name = "test_vector_durability",
+    srcs = glob([
+        "vector_durability.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//concept",
+        "//database",
+        "//diagnostics",
+        "//encoding",
+        "//executor",
+        "//query",
+        "//resource",
+        "//storage",
+        "//storage/tests:test_utils_storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
+rust_test(
     name = "test_transaction",
     srcs = glob([
         "transaction.rs",

@@ -416,6 +416,7 @@ pub mod tests {
             thing_vertex_generator.clone(),
             type_manager.clone(),
             Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+            Arc::new(concept::thing::vector_store::VectorStore::new()),
         );
 
         (type_manager, thing_manager)

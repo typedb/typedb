@@ -89,6 +89,7 @@ use crate::{
             cardinality_validation::{CardinalityChangeTracker, CardinalityValidation, collect_errors},
             operation_time_validation::OperationTimeValidation,
         },
+        vector_store::VectorStore,
     },
     type_::{
         Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
@@ -110,6 +111,7 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
+    vector_store: Arc<VectorStore>,
 }
 
 impl ThingManager {
@@ -117,8 +119,9 @@ impl ThingManager {
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
+        vector_store: Arc<VectorStore>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics }
+        ThingManager { vertex_generator, type_manager, statistics, vector_store }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -127,6 +130,10 @@ impl ThingManager {
 
     pub fn type_manager(&self) -> &TypeManager {
         &self.type_manager
+    }
+
+    pub fn vector_store(&self) -> &Arc<VectorStore> {
+        &self.vector_store
     }
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
@@ -425,14 +432,23 @@ impl ThingManager {
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
             AttributeID::Vector(_id) => {
-                let vector = snapshot
+                // committed vector attributes have an empty KV value (existence only) - the value
+                // lives in the vector store; a non-empty value is this transaction's buffered write
+                let buffered = snapshot
                     .get_mapped(
                         attribute.vertex().into_storage_key().as_reference(),
-                        |bytes| VectorBytes::new(Bytes::<1>::Reference(bytes)).as_vector(),
+                        |bytes| (!bytes.is_empty()).then(|| VectorBytes::new(Bytes::<1>::Reference(bytes)).as_vector()),
                         storage_counters,
                     )
                     .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
+                let vector = match buffered {
+                    Some(vector) => vector,
+                    None => self
+                        .vector_store
+                        .get_vector(attribute.vertex())
+                        .ok_or(ConceptReadError::InternalMissingAttributeValue {})?,
+                };
                 Ok(Value::Vector(Cow::Owned(vector)))
             }
         }
@@ -502,10 +518,12 @@ impl ThingManager {
                 }
             }
             ValueType::Vector(_) => {
+                let type_id = attribute_type.vertex().type_id_();
                 match self.vertex_generator.find_attribute_id_vector(
-                    attribute_type.vertex().type_id_(),
+                    type_id,
                     value.encode_vector::<256>(),
                     snapshot,
+                    &|key| self.vector_store.get_by_key(type_id, key),
                 ) {
                     Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
@@ -2469,8 +2487,11 @@ impl ThingManager {
             }
             Value::Vector(ref vector) => {
                 let encoded_vector: VectorBytes<'static, BUFFER_KEY_INLINE> = VectorBytes::build(vector);
+                let type_id = attribute_type.vertex().type_id_();
                 self.vertex_generator
-                    .create_attribute_vector(attribute_type.vertex().type_id_(), encoded_vector, snapshot)
+                    .create_attribute_vector(type_id, encoded_vector, snapshot, &|key| {
+                        self.vector_store.get_by_key(type_id, key)
+                    })
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }
         };

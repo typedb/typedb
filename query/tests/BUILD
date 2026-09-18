@@ -65,6 +65,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_vector_search",
+    crate_root = "vector_search.rs",
+    srcs = ["vector_search.rs"],
+    deps = deps,
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
@@ -73,6 +80,7 @@ rustfmt_test(
         ":test_unimplemented",
         ":test_pipeline_stages_limit",
         ":test_query_profile",
+        ":test_vector_search",
     ],
     size = "small",
 )

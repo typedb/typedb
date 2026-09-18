@@ -10,10 +10,10 @@
 
 use std::{
     error::Error,
-    fs, io,
+    fmt, fs, io,
     path::{Path, PathBuf},
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicU64, Ordering},
     },
     thread::sleep,
@@ -33,7 +33,10 @@ use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::{
-    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    constants::{
+        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+        storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS,
+    },
     profile::{CommitProfile, StorageCounters},
 };
 use tracing::trace;
@@ -44,7 +47,7 @@ use crate::{
     isolation_manager::{IsolationManager, ValidatedCommit},
     iterator::MVCCRangeIterator,
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
@@ -56,7 +59,8 @@ use crate::{
     },
     sequence_number::SequenceNumber,
     snapshot::{
-        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, snapshot_id::SnapshotId, write::Write,
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, buffer::OperationsBuffer,
+        snapshot_id::SnapshotId, write::Write,
     },
 };
 
@@ -73,6 +77,52 @@ pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
 
+/// Observer for commits whose values live outside the KV store (e.g. vector attribute values in
+/// a vector index). Keys for which `owns_value` returns true are written to the KV store with an
+/// empty value; the real value is handed to `apply` after the KV write and before the watermark
+/// advances past `sequence_number`. That ordering guarantees a checkpoint taken at watermark W
+/// has observed every commit <= W, so recovery only ever replays the WAL tail.
+pub trait CommitObserver: Send + Sync {
+    fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
+    fn apply(&self, sequence_number: SequenceNumber, owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)]);
+    fn as_any_arc(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync>;
+}
+
+pub(crate) fn extract_owned_values(
+    observer: &dyn CommitObserver,
+    operations: &OperationsBuffer,
+) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> {
+    operations
+        .iterate_writes()
+        .filter_map(|(key, write)| {
+            let value = match write {
+                Write::Insert { value } => value,
+                Write::Put { value, .. } => value,
+                Write::Delete => return None,
+            };
+            observer.owns_value(key.keyspace_id(), key.bytes()).then(|| (key, value))
+        })
+        .collect()
+}
+
+pub(crate) struct CommitObserverCell(OnceLock<Arc<dyn CommitObserver>>);
+
+impl CommitObserverCell {
+    fn new() -> Self {
+        Self(OnceLock::new())
+    }
+
+    pub(crate) fn get(&self) -> Option<&Arc<dyn CommitObserver>> {
+        self.0.get()
+    }
+}
+
+impl fmt::Debug for CommitObserverCell {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "CommitObserverCell(set: {})", self.0.get().is_some())
+    }
+}
+
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
     name: Arc<str>,
@@ -81,6 +131,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
+    commit_observer: CommitObserverCell,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -117,6 +168,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            commit_observer: CommitObserverCell::new(),
         })
     }
 
@@ -136,6 +188,7 @@ impl<Durability> MVCCStorage<Durability> {
         mut durability_client: Durability,
         checkpoint: &Option<CheckpointReader>,
         rocks_resources: &RocksResources,
+        commit_observer: Option<Arc<dyn CommitObserver>>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -148,7 +201,13 @@ impl<Durability> MVCCStorage<Durability> {
         Self::register_durability_record_types(&mut durability_client);
         let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
             checkpoint
-                .recover_storage::<KS, _>(name, &storage_dir, &durability_client, rocks_resources)
+                .recover_storage::<KS, _>(
+                    name,
+                    &storage_dir,
+                    &durability_client,
+                    rocks_resources,
+                    commit_observer.as_ref(),
+                )
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
             match fs::remove_dir_all(&storage_dir) {
@@ -166,13 +225,17 @@ impl<Durability> MVCCStorage<Durability> {
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-            apply_recovered(name, commits, &durability_client, &keyspaces)
+            apply_recovered(name, commits, &durability_client, &keyspaces, commit_observer.as_ref())
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
             (keyspaces, next_sequence_number)
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
+        let observer_cell = CommitObserverCell::new();
+        if let Some(observer) = commit_observer {
+            let _ = observer_cell.0.set(observer);
+        }
         Ok(Self {
             name: Arc::<str>::from(name),
             path: storage_dir,
@@ -180,7 +243,19 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            commit_observer: observer_cell,
         })
+    }
+
+    /// Set the commit observer. Must be called before any commits are served; used after
+    /// `create` (which performs no recovery). For `load`, pass the observer into `load` itself so
+    /// it also observes commits replayed from the WAL during recovery.
+    pub fn set_commit_observer(&self, observer: Arc<dyn CommitObserver>) {
+        self.commit_observer.0.set(observer).unwrap_or_else(|_| panic!("commit observer already set"));
+    }
+
+    pub fn commit_observer(&self) -> Option<Arc<dyn CommitObserver>> {
+        self.commit_observer.get().cloned()
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
@@ -275,6 +350,9 @@ impl<Durability> MVCCStorage<Durability> {
 
         commit_profile.commit_size(commit_record.operations().len());
 
+        let owned_values =
+            self.commit_observer.get().map(|observer| extract_owned_values(&**observer, commit_record.operations()));
+
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)
@@ -284,8 +362,12 @@ impl<Durability> MVCCStorage<Durability> {
         fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
 
         let sync_notifier = self.durability_client.request_sync();
-        let validate_result =
-            self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
+        let validate_result = self.isolation_manager.validate_commit(
+            commit_sequence_number,
+            commit_record,
+            &self.durability_client,
+            self.commit_observer.get().map(|observer| &**observer),
+        );
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
@@ -299,6 +381,12 @@ impl<Durability> MVCCStorage<Durability> {
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
+
+                // Apply externally-owned values (e.g. vectors) before the watermark can advance
+                // past this commit, so checkpoints at watermark W always cover commits <= W.
+                if let (Some(observer), Some(owned)) = (self.commit_observer.get(), owned_values.as_ref()) {
+                    observer.apply(commit_sequence_number, owned);
+                }
 
                 fail_point!(COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS);
 
@@ -812,7 +900,7 @@ mod tests {
                 ))
                 .unwrap();
 
-            let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
+            let partial_commit = WriteBatches::from_operations(seq, &partial_operations, None);
             let resources = create_rocks_resources();
             let keyspaces = Keyspaces::open::<TestKeyspaceSet>(
                 storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME),
@@ -837,6 +925,7 @@ mod tests {
             durability_client,
             &None,
             &resources,
+            None,
         )
         .unwrap();
         assert_eq!(

@@ -460,6 +460,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
                 WALClient::new(wal),
                 &None,
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -481,6 +482,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
                 WALClient::new(wal),
                 &None,
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -551,6 +553,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
             WALClient::new(wal),
             &None,
             &resources,
+            None,
         )
         .unwrap(),
     );

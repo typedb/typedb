@@ -62,6 +62,6 @@ pub fn load_storage<KS: KeyspaceSet>(
     checkpoint: Option<CheckpointReader>,
 ) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
     let resources = create_rocks_resources();
-    let storage = MVCCStorage::load::<KS>("storage", path, WALClient::new(wal), &checkpoint, &resources)?;
+    let storage = MVCCStorage::load::<KS>("storage", path, WALClient::new(wal), &checkpoint, &resources, None)?;
     Ok(Arc::new(storage))
 }

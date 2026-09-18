@@ -23,6 +23,7 @@ use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
+    CommitObserver,
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
     sequence_number::SequenceNumber,
@@ -88,6 +89,7 @@ impl IsolationManager {
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
         durability_client: &impl DurabilityClient,
+        commit_observer: Option<&dyn CommitObserver>,
     ) -> Result<ValidatedCommit, DurabilityClientError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
@@ -106,7 +108,11 @@ impl IsolationManager {
                     CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
                     _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
                 };
-                Ok(ValidatedCommit::Write(WriteBatches::from_operations(sequence_number, commit_record.operations())))
+                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
+                    sequence_number,
+                    commit_record.operations(),
+                    commit_observer,
+                )))
             }
         }
     }

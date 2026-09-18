@@ -158,6 +158,7 @@ fn loading_storage_assigns_next_vertex() {
                 WALClient::new(wal),
                 &None,
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -179,6 +180,7 @@ fn loading_storage_assigns_next_vertex() {
                 WALClient::new(wal),
                 &None,
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -203,6 +205,7 @@ fn loading_storage_assigns_next_vertex() {
                     WALClient::new(wal),
                     &None,
                     &resources,
+                    None,
                 )
                 .unwrap(),
             ),
@@ -213,6 +216,7 @@ fn loading_storage_assigns_next_vertex() {
                     WALClient::new(wal),
                     &Some(checkpoint),
                     &resources,
+                    None,
                 )
                 .unwrap(),
             ),
@@ -240,6 +244,7 @@ fn loading_storage_assigns_next_vertex() {
                 WALClient::new(wal),
                 &None,
                 &resources,
+                None,
             )
             .unwrap(),
         );

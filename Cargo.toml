@@ -180,6 +180,11 @@ features = {}
 			version = "6.5.16"
 			default-features = false
 
+		[workspace.dependencies.usearch]
+			features = ["default"]
+			version = "2.26.2"
+			default-features = false
+
 		[workspace.dependencies.rpassword]
 			features = []
 			version = "7.5.3"
@@ -227,7 +232,7 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "82361cf09b2dcbf0836c4a5bc312ffbd4b26eade"
+			rev = "aafb485dccb171bb26f254758f9bb499f898e143"
 			git = "https://github.com/typedb/typeql"
 			default-features = false
 
