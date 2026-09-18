@@ -303,6 +303,7 @@ fn validate_update_expression_variables_availability(
         Expression::List(list) => {
             list.items.iter().try_fold((), |_, item| validate_update_expression_variables_availability(context, item))
         }
+        Expression::Vector(vector) => validate_update_expression_variables_availability(context, &vector.list),
         Expression::ListIndexRange(list_index_range) => {
             verify_variable_available!(context, list_index_range.var => DeleteVariableUnavailable)?;
             validate_update_expression_variables_availability(context, &list_index_range.from)?;

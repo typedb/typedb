@@ -307,6 +307,7 @@ pub fn encode_value_value(value: Value<'_>) -> serde_json::Value {
             json!(value.to_string())
         }
         Value::Struct(_) => unimplemented_feature!(Structs),
+        Value::Vector(elements) => json!(elements.as_ref()),
     }
 }
 
@@ -328,6 +329,7 @@ pub fn encode_value_type(
         ValueType::Struct(struct_definition_key) => {
             type_manager.get_struct_definition(snapshot, struct_definition_key)?.name.clone()
         }
+        value_type @ ValueType::Vector(_) => value_type.to_string(),
     };
     Ok(value_type)
 }

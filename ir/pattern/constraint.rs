@@ -171,6 +171,7 @@ impl Constraints {
                 | Constraint::RoleName(_)
                 | Constraint::Isa(_)
                 | Constraint::Iid(_)
+                | Constraint::VectorSearch(_)
                 | Constraint::Owns(_)
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
@@ -308,6 +309,31 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         let constraint = self.constraints.add_constraint(isa);
         Ok(constraint.as_isa().unwrap())
+    }
+
+    pub fn add_vector_search(
+        &mut self,
+        attribute: Variable,
+        attribute_type: Vertex<Variable>,
+        query: Vertex<Variable>,
+        threshold: ParameterID,
+        similarity: Variable,
+        source_span: Option<Span>,
+    ) -> Result<&VectorSearch<Variable>, Box<RepresentationError>> {
+        let type_var = attribute_type.as_variable();
+        let query_var = query.as_variable();
+        let search = VectorSearch::new(attribute, attribute_type, query, threshold, similarity, source_span);
+        self.context.set_variable_category(attribute, VariableCategory::Thing, search.clone().into())?;
+        self.context.set_variable_category(similarity, VariableCategory::Value, search.clone().into())?;
+        if let Some(query_var) = query_var {
+            self.context.set_variable_category(query_var, VariableCategory::Value, search.clone().into())?;
+        }
+        if let Some(type_) = type_var {
+            self.context.set_variable_category(type_, VariableCategory::ThingType, search.clone().into())?;
+        }
+        let constraint = self.constraints.add_constraint(search);
+        let Constraint::VectorSearch(search) = constraint else { unreachable!() };
+        Ok(search)
     }
 
     pub fn add_iid(
@@ -670,6 +696,7 @@ pub enum Constraint<ID> {
     Sub(Sub<ID>),
     Isa(Isa<ID>),
     Iid(Iid<ID>),
+    VectorSearch(VectorSearch<ID>),
     Links(Links<ID>),
     IndexedRelation(IndexedRelation<ID>),
     Has(Has<ID>),
@@ -693,6 +720,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
             Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
             Constraint::Iid(_) => typeql::token::Keyword::IID.as_str(),
+            Constraint::VectorSearch(_) => "vector-search",
             Constraint::Links(_) => typeql::token::Keyword::Links.as_str(),
             Constraint::IndexedRelation(_) => "indexed-relation",
             Constraint::Has(_) => typeql::token::Keyword::Has.as_str(),
@@ -719,6 +747,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
             Constraint::Iid(iid) => Box::new(iid.ids()),
+            Constraint::VectorSearch(search) => Box::new(search.ids()),
             Constraint::Links(rp) => Box::new(rp.ids()),
             Constraint::IndexedRelation(indexed) => Box::new(indexed.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
@@ -752,6 +781,13 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Sub(sub) => _all_binding(sub.ids()),
             Constraint::Isa(isa) => _all_binding(isa.ids()),
             Constraint::Iid(iid) => _all_binding(iid.ids()),
+            Constraint::VectorSearch(search) => Box::new(search.ids().map(|id| {
+                if search.query().as_variable() == Some(id) {
+                    (id, BindingMode::RequirePrebound)
+                } else {
+                    (id, BindingMode::AlwaysBinding)
+                }
+            })),
             Constraint::Links(rp) => _all_binding(rp.ids()),
             Constraint::IndexedRelation(indexed) => _all_binding(indexed.ids()),
             Constraint::Has(has) => _all_binding(has.ids()),
@@ -780,6 +816,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Sub(sub) => Box::new(sub.vertices()),
             Constraint::Isa(isa) => Box::new(isa.vertices()),
             Constraint::Iid(iid) => Box::new(iid.vertices()),
+            Constraint::VectorSearch(search) => Box::new(search.vertices()),
             Constraint::Links(rp) => Box::new(rp.vertices()),
             Constraint::IndexedRelation(indexed) => Box::new(indexed.vertices()),
             Constraint::Has(has) => Box::new(has.vertices()),
@@ -807,6 +844,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Sub(sub) => sub.ids_foreach(function),
             Self::Isa(isa) => isa.ids_foreach(function),
             Self::Iid(iid) => iid.ids_foreach(function),
+            Self::VectorSearch(search) => search.ids_foreach(function),
             Self::Links(rp) => rp.ids_foreach(function),
             Self::IndexedRelation(indexed) => indexed.ids_foreach(function),
             Self::Has(has) => has.ids_foreach(function),
@@ -831,6 +869,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Sub(inner) => Constraint::Sub(inner.map(mapping)),
             Self::Isa(inner) => Constraint::Isa(inner.map(mapping)),
             Self::Iid(inner) => Constraint::Iid(inner.map(mapping)),
+            Self::VectorSearch(inner) => Constraint::VectorSearch(inner.map(mapping)),
             Self::Links(inner) => Constraint::Links(inner.map(mapping)),
             Self::IndexedRelation(inner) => Constraint::IndexedRelation(inner.map(mapping)),
             Self::Has(inner) => Constraint::Has(inner.map(mapping)),
@@ -855,6 +894,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Sub(inner) => inner.source_span(),
             Constraint::Isa(inner) => inner.source_span(),
             Constraint::Iid(inner) => inner.source_span(),
+            Constraint::VectorSearch(inner) => inner.source_span(),
             Constraint::Links(inner) => inner.source_span(),
             Constraint::IndexedRelation(inner) => inner.source_span(),
             Constraint::Has(inner) => inner.source_span(),
@@ -1008,6 +1048,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Sub(inner) => inner.hash(),
                 Self::Isa(inner) => inner.hash(),
                 Self::Iid(inner) => inner.hash(),
+                Self::VectorSearch(inner) => inner.hash(),
                 Self::Links(inner) => inner.hash(),
                 Self::IndexedRelation(inner) => inner.hash(),
                 Self::Has(inner) => inner.hash(),
@@ -1032,6 +1073,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Sub(inner), Self::Sub(other_inner)) => inner.equals(other_inner),
             (Self::Isa(inner), Self::Isa(other_inner)) => inner.equals(other_inner),
             (Self::Iid(inner), Self::Iid(other_inner)) => inner.equals(other_inner),
+            (Self::VectorSearch(inner), Self::VectorSearch(other_inner)) => inner.equals(other_inner),
             (Self::Links(inner), Self::Links(other_inner)) => inner.equals(other_inner),
             (Self::IndexedRelation(inner), Self::IndexedRelation(other_inner)) => inner.equals(other_inner),
             (Self::Has(inner), Self::Has(other_inner)) => inner.equals(other_inner),
@@ -1052,6 +1094,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::Sub { .. }, _)
             | (Self::Isa { .. }, _)
             | (Self::Iid { .. }, _)
+            | (Self::VectorSearch { .. }, _)
             | (Self::Links { .. }, _)
             | (Self::IndexedRelation { .. }, _)
             | (Self::Has { .. }, _)
@@ -1078,6 +1121,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::Sub(constraint) => fmt::Display::fmt(constraint, f),
             Self::Isa(constraint) => fmt::Display::fmt(constraint, f),
             Self::Iid(constraint) => fmt::Display::fmt(constraint, f),
+            Self::VectorSearch(constraint) => fmt::Display::fmt(constraint, f),
             Self::Links(constraint) => fmt::Display::fmt(constraint, f),
             Self::IndexedRelation(constraint) => fmt::Display::fmt(constraint, f),
             Self::Has(constraint) => fmt::Display::fmt(constraint, f),
@@ -1657,6 +1701,156 @@ impl<ID: StructuralEquality> StructuralEquality for Isa<ID> {
 impl<ID: IrID> fmt::Display for Isa<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}{} {}", self.thing, typeql::token::Keyword::Isa, self.kind, self.type_)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct VectorSearch<ID> {
+    attribute: Vertex<ID>,
+    attribute_type: Vertex<ID>,
+    query: Vertex<ID>,
+    threshold: Vertex<ID>,
+    similarity: Vertex<ID>,
+    source_span: Option<Span>,
+}
+
+impl<ID> VectorSearch<ID> {
+    fn new(
+        attribute: ID,
+        attribute_type: Vertex<ID>,
+        query: Vertex<ID>,
+        threshold: ParameterID,
+        similarity: ID,
+        source_span: Option<Span>,
+    ) -> Self {
+        Self {
+            attribute: Vertex::Variable(attribute),
+            attribute_type,
+            query,
+            threshold: Vertex::Parameter(threshold),
+            similarity: Vertex::Variable(similarity),
+            source_span,
+        }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+}
+
+impl<ID: IrID> VectorSearch<ID> {
+    pub fn attribute(&self) -> &Vertex<ID> {
+        &self.attribute
+    }
+
+    pub fn attribute_type(&self) -> &Vertex<ID> {
+        &self.attribute_type
+    }
+
+    pub fn query(&self) -> &Vertex<ID> {
+        &self.query
+    }
+
+    pub fn threshold(&self) -> ParameterID {
+        self.threshold.as_parameter().unwrap().clone()
+    }
+
+    pub fn similarity(&self) -> &Vertex<ID> {
+        &self.similarity
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [
+            self.attribute.as_variable(),
+            self.attribute_type.as_variable(),
+            self.query.as_variable(),
+            self.similarity.as_variable(),
+        ]
+        .into_iter()
+        .flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.attribute, &self.attribute_type, &self.query, &self.threshold, &self.similarity].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID),
+    {
+        self.attribute.as_variable().inspect(|&id| function(id));
+        self.attribute_type.as_variable().inspect(|&id| function(id));
+        self.query.as_variable().inspect(|&id| function(id));
+        self.similarity.as_variable().inspect(|&id| function(id));
+    }
+
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> VectorSearch<T> {
+        VectorSearch {
+            attribute: self.attribute.map(mapping),
+            attribute_type: self.attribute_type.map(mapping),
+            query: self.query.map(mapping),
+            threshold: self.threshold.map(mapping),
+            similarity: self.similarity.map(mapping),
+            source_span: self.source_span,
+        }
+    }
+}
+
+impl<ID: IrID> From<VectorSearch<ID>> for Constraint<ID> {
+    fn from(val: VectorSearch<ID>) -> Self {
+        Constraint::VectorSearch(val)
+    }
+}
+
+impl<ID: Hash> Hash for VectorSearch<ID> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.attribute, state);
+        Hash::hash(&self.attribute_type, state);
+        Hash::hash(&self.query, state);
+        Hash::hash(&self.threshold, state);
+        Hash::hash(&self.similarity, state);
+    }
+}
+
+impl<ID: PartialEq> Eq for VectorSearch<ID> {}
+
+impl<ID: PartialEq> PartialEq for VectorSearch<ID> {
+    fn eq(&self, other: &Self) -> bool {
+        self.attribute.eq(&other.attribute)
+            && self.attribute_type.eq(&other.attribute_type)
+            && self.query.eq(&other.query)
+            && self.threshold.eq(&other.threshold)
+            && self.similarity.eq(&other.similarity)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for VectorSearch<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.attribute.hash_into(&mut hasher);
+        self.attribute_type.hash_into(&mut hasher);
+        self.query.hash_into(&mut hasher);
+        self.threshold.hash_into(&mut hasher);
+        self.similarity.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.attribute.equals(&other.attribute)
+            && self.attribute_type.equals(&other.attribute_type)
+            && self.query.equals(&other.query)
+            && self.threshold.equals(&other.threshold)
+            && self.similarity.equals(&other.similarity)
+    }
+}
+
+impl<ID: IrID> fmt::Display for VectorSearch<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "let {} in cosine_similarity_search({}, {}, {})",
+            self.attribute, self.attribute_type, self.query, self.threshold
+        )
     }
 }
 

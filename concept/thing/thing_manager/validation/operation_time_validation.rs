@@ -487,7 +487,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<ConceptWriteError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
+            Some(type_value_type) if value_type.is_trivially_castable_to_value_type(&type_value_type) => Ok(()),
             Some(type_value_type) => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
                     attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),

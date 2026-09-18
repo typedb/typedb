@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::borrow::Cow;
+
 use answer::variable::Variable;
-use encoding::value::label::Label;
+use encoding::value::{label::Label, value::Value};
 use error::UnimplementedFeature;
 use typeql::{
     ScopedLabel, TypeRef, TypeRefAny,
@@ -32,7 +34,7 @@ use crate::{
         expression::{add_function_call, add_typeql_expression, build_expression},
         literal::translate_literal,
         parse_iid,
-        tokens::{checked_identifier, translate_value_type},
+        tokens::{MAX_VECTOR_LENGTH, checked_identifier, resolve_vector_value_type, translate_value_type},
     },
 };
 
@@ -280,6 +282,16 @@ fn register_typeql_value_type(
         NamedType::Label(label) => Ok(ValueType::Struct(checked_identifier(&label.ident)?.to_owned())),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ValueType::Builtin(translate_value_type(token)))
+        }
+        NamedType::Vector(vector_type) => {
+            let value_type = resolve_vector_value_type(vector_type).map_err(|err| {
+                Box::new(RepresentationError::VectorLengthInvalid {
+                    length: err.length,
+                    max: err.max,
+                    source_span: vector_type.span(),
+                })
+            })?;
+            Ok(ValueType::Builtin(value_type))
         }
     }
 }
@@ -534,7 +546,12 @@ fn add_typeql_iterable_binding(
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
         typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, span }) => {
-            add_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args, *span)
+            let name = checked_identifier(identifier)?;
+            if name == VECTOR_SEARCH_FUNCTION_NAME {
+                add_vector_search_call(constraints, assigned, args, *span)
+            } else {
+                add_function_call(function_index, constraints, name, assigned, args, *span)
+            }
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
@@ -550,8 +567,86 @@ fn add_typeql_iterable_binding(
         | typeql::Expression::Operation(_)
         | typeql::Expression::Paren(_)
         | typeql::Expression::ScopedLabel(_)
+        | typeql::Expression::Vector(_)
         | typeql::Expression::Label(_) => unreachable!(),
     }
+}
+
+pub const VECTOR_SEARCH_FUNCTION_NAME: &str = "cosine_similarity_search";
+
+fn add_vector_search_call(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    assigned: Vec<AssignedVariable>,
+    args: &[typeql::Expression],
+    span: Option<Span>,
+) -> Result<(), Box<RepresentationError>> {
+    let invalid = |reason: &str| {
+        Box::new(RepresentationError::InvalidVectorSearchCall { reason: reason.to_owned(), source_span: span })
+    };
+    let [assigned_var] = &assigned[..] else {
+        return Err(invalid("expected exactly one assigned variable"));
+    };
+    let [type_arg, vector_arg, threshold_arg] = args else {
+        return Err(invalid("expected exactly 3 arguments"));
+    };
+
+    let attribute_type = match type_arg {
+        typeql::Expression::Label(label) => Vertex::Label(register_type_label(constraints, label)?),
+        _ => return Err(invalid("first argument must be an attribute type label")),
+    };
+
+    let query = match vector_arg {
+        typeql::Expression::Variable(var) => Vertex::Variable(register_typeql_var(constraints, var)?),
+        typeql::Expression::Vector(vector) => {
+            let typeql::Expression::List(list) = &vector.list else {
+                return Err(invalid("second argument must be a vector literal with inline elements"));
+            };
+            if list.items.is_empty() || list.items.len() > MAX_VECTOR_LENGTH as usize {
+                return Err(invalid("query vector length out of range"));
+            }
+            let elements = list
+                .items
+                .iter()
+                .map(|item| {
+                    let typeql::Expression::Value(literal) = item else { return None };
+                    match translate_literal(literal).ok()? {
+                        Value::Double(double) => Some(double as f32),
+                        Value::Integer(integer) => Some(integer as f32),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<f32>>>()
+                .ok_or_else(|| invalid("query vector elements must be numeric literals"))?;
+            Vertex::Parameter(constraints.parameters().register_value(
+                Value::Vector(Cow::Owned(elements)),
+                vector.span().expect("Parser did not provide Vector text range"),
+            ))
+        }
+        _ => return Err(invalid("second argument must be a vector literal or a variable")),
+    };
+
+    let typeql::Expression::Value(threshold_literal) = threshold_arg else {
+        return Err(invalid("third argument must be a numeric literal threshold"));
+    };
+    let threshold = match translate_literal(threshold_literal).map_err(|typedb_source| {
+        Box::new(RepresentationError::LiteralParseError {
+            literal: threshold_literal.to_string(),
+            source_span: threshold_literal.span(),
+            typedb_source,
+        })
+    })? {
+        Value::Double(double) => double,
+        Value::Integer(integer) => integer as f64,
+        _ => return Err(invalid("third argument must be a numeric literal threshold")),
+    };
+    let threshold_id = constraints.parameters().register_value(
+        Value::Double(threshold),
+        threshold_literal.span().expect("Parser did not provide literal text range"),
+    );
+
+    let similarity = constraints.create_anonymous_variable(span)?;
+    constraints.add_vector_search(assigned_var.variable, attribute_type, query, threshold_id, similarity, span)?;
+    Ok(())
 }
 
 // // Helpers

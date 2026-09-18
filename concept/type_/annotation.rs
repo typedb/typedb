@@ -380,7 +380,7 @@ impl AnnotationRange {
                 | ValueType::DateTimeTZ
                 | ValueType::String => true,
 
-                | ValueType::Duration | ValueType::Struct(_) => false,
+                | ValueType::Duration | ValueType::Struct(_) | ValueType::Vector(_) => false,
             },
             None => false,
         }
@@ -495,7 +495,7 @@ impl AnnotationValues {
                 | ValueType::Duration
                 | ValueType::String => true,
 
-                | ValueType::Struct(_) => false,
+                | ValueType::Struct(_) | ValueType::Vector(_) => false,
             },
             None => false,
         }
@@ -1147,6 +1147,7 @@ mod serialize_annotation {
             | ValueTypeCategory::Duration
             | ValueTypeCategory::String => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation serialization"),
+            ValueTypeCategory::Vector => unreachable!("Vectors are not supported in annotation serialization"),
         }
     }
 
@@ -1168,6 +1169,7 @@ mod serialize_annotation {
                 StringBytes::new(Bytes::<AD_HOC_BYTES_INLINE>::copy(bytes)).as_str().to_owned(),
             )),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation deserialization"),
+            ValueTypeCategory::Vector => unreachable!("Vectors are not supported in annotation deserialization"),
         }
     }
 
@@ -1212,6 +1214,7 @@ mod serialize_annotation {
             | ValueTypeCategory::String => Some(serialize_value(value.clone())),
             ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
             ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
+            ValueTypeCategory::Vector => unreachable!("Can't use vector for AnnotationRange"),
         }
     }
 
@@ -1231,6 +1234,7 @@ mod serialize_annotation {
             | ValueTypeCategory::String => Some(deserialize_value(bytes, value_type_category)),
             ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
             ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
+            ValueTypeCategory::Vector => unreachable!("Can't use vector for AnnotationRange"),
         }
     }
 
@@ -1415,6 +1419,7 @@ mod serialize_annotation {
                 | Value::String(_)
                 | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
                 Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
+                Value::Vector(_) => unreachable!("Can't use vector for AnnotationValues"),
             })
             .collect()
     }
