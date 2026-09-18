@@ -2765,8 +2765,6 @@ impl ThingManager {
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        // The unput must carry exactly the value the vertex generator put: inline IDs store no value,
-        // while hashed IDs (long strings and structs) store the encoded value.
         let key = attribute.vertex().into_storage_key();
         let value = if attribute.vertex().attribute_id().is_inline() {
             ByteArray::empty()
