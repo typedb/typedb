@@ -358,7 +358,6 @@ impl ThingVertexGenerator {
         let string = value.as_reference();
         if StringAttributeID::is_inlineable(string.as_reference()) {
             let inline_id = StringAttributeID::build_inline_id(string);
-            // the value is fully encoded in the ID: an idempotent put with no stored value and no lock
             let inlined_vertex = AttributeVertex::new(type_id, AttributeID::String(inline_id));
             snapshot.put(inlined_vertex.into_storage_key().into_owned_array());
             Ok(inlined_vertex)
@@ -402,7 +401,6 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        // We don't inline structs
         let hasher = &self.large_value_hasher;
         let hashed_vertex =
             match StructAttributeID::build_or_find_hashed_id(type_id, value.as_reference(), snapshot, hasher)? {
@@ -421,7 +419,7 @@ impl ThingVertexGenerator {
     }
 
     /// A concurrent delete of an existing hashed vertex would free its disambiguator tail for a colliding value,
-    /// so the vertex must remain unmodified while we re-put it. No exclusive lock is needed: the ID is already fixed.
+    /// so the vertex must remain unmodified while we re-put it.
     fn lock_existing_hashed_attribute(vertex: &AttributeVertex, snapshot: &mut impl WritableSnapshot) {
         vertex.lock_unmodifiable(snapshot);
     }

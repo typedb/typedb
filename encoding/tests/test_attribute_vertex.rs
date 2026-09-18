@@ -432,10 +432,6 @@ fn assert_commit_conflict(err: SnapshotError, expected: IsolationConflict) {
 
 #[test]
 fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
-    // Once a hashed (non-inline) string value exists, its ID is fixed: concurrent transactions that re-put the same
-    // value only require the vertex to stay unmodified, and must not conflict with each other.
-    // Contrast with `same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes`, where the value
-    // does not exist yet and both snapshots race to allocate the disambiguator, which must conflict.
     let (_tmp_dir, storage) = create_core_storage();
     let type_id = TypeID::new(0);
     let generator = ThingVertexGenerator::new();
@@ -463,8 +459,6 @@ fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
 
 #[test]
 fn existing_hashed_string_conflicts_with_concurrent_delete() {
-    // A transaction that re-puts an existing hashed value relies on that vertex (and so its disambiguator tail)
-    // staying in place. A concurrent delete of the vertex must conflict, in either commit order.
     let (_tmp_dir, storage) = create_core_storage();
     let type_id = TypeID::new(0);
     let generator = ThingVertexGenerator::new();
@@ -508,8 +502,6 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
 
 #[test]
 fn hash_bucket_holes_are_reused_across_transactions() {
-    // With a forced hash collision, values share a bucket and are told apart by the disambiguator tail.
-    // A tail freed by a committed delete is reused by a later transaction, and never collides with a live tail.
     const CONSTANT_HASH: u64 = 0;
     let (_tmp_dir, storage) = create_core_storage();
     let type_id = TypeID::new(0);
