@@ -45,6 +45,16 @@ impl TypeEdge {
         Self { prefix, from, to }
     }
 
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let prefix = Prefix::from_prefix_id(PrefixID::new(*bytes.get(Self::INDEX_PREFIX)?))?;
+        let from = TypeVertex::try_decode(bytes.get(Self::range_from())?)?;
+        let to = TypeVertex::try_decode(bytes.get(Self::range_to())?)?;
+        Some(Self { prefix, from, to })
+    }
+
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
         bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;

@@ -46,6 +46,16 @@ impl DefinitionKey {
         }
     }
 
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        Some(Self {
+            prefix: Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX]))?,
+            definition_id: DefinitionID::try_decode(&bytes[Self::RANGE_DEFINITION_ID])?,
+        })
+    }
+
     pub fn definition_id(&self) -> DefinitionID {
         self.definition_id
     }
@@ -96,6 +106,10 @@ impl DefinitionID {
 
     pub fn decode(bytes: [u8; Self::LENGTH]) -> DefinitionID {
         DefinitionID { id: DefinitionIDUInt::from_be_bytes(bytes) }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<DefinitionID> {
+        Some(Self::decode(bytes.try_into().ok()?))
     }
 
     pub fn new(id: DefinitionIDUInt) -> Self {
