@@ -40,6 +40,7 @@ use crate::{
         sub_reverse_executor::{SubReverseBoundedSortedSub, SubReverseUnboundedSortedSuper},
         tuple::{Tuple, TupleIndex, TupleOrderingFn, TuplePositions, TupleResult},
         type_list_executor::TypeIterator,
+        vector_search_executor::VectorSearchIterator,
     },
     row::Row,
 };
@@ -212,6 +213,8 @@ pub enum TupleIterator {
     IsaReverseUnbounded(SortedTupleIterator<IsaReverseUnboundedSortedType>),
     IsaReverseBounded(SortedTupleIterator<IsaReverseBoundedSortedThing>),
 
+    VectorSearch(SortedTupleIterator<VectorSearchIterator>),
+
     HasSingle(SortedTupleIterator<HasTupleIteratorSingle>),
     HasMerged(SortedTupleIterator<HasTupleIteratorMerged>),
 
@@ -277,6 +280,7 @@ impl Display for TupleIterator {
             TupleIterator::IsaBounded(_) => write!(f, "IsaBounded iterator"),
             TupleIterator::IsaReverseUnbounded(_) => write!(f, "IsaReverseUnbounded iterator"),
             TupleIterator::IsaReverseBounded(_) => write!(f, "IsaReverseBounded iterator"),
+            TupleIterator::VectorSearch(_) => write!(f, "VectorSearch iterator"),
             TupleIterator::HasSingle(_) => write!(f, "HasSingle iterator"),
             TupleIterator::HasMerged(_) => write!(f, "HasMerged iterator"),
             TupleIterator::HasReverseSingle(_) => write!(f, "HasReverseSingle iterator"),

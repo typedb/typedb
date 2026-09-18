@@ -101,6 +101,7 @@ fn check_type_combinations_for_write_conjunction(
             }
 
             Constraint::Isa(_)
+            | Constraint::VectorSearch(_)
             | Constraint::Kind(_)
             | Constraint::Label(_)
             | Constraint::RoleName(_)

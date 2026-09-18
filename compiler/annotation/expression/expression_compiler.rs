@@ -9,17 +9,18 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::{
     ValueEncodable,
-    value_type::{ValueType, ValueTypeCategory},
+    value_type::{ValueType, ValueTypeCategory, VectorTypeParameters},
 };
 use ir::{
     pattern::{
         ParameterID,
         expression::{
             BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
-            ListIndexRange, Operation, Operator,
+            ListIndexRange, Operation, Operator, VectorConstructor,
         },
     },
     pipeline::ParameterRegistry,
+    translation::tokens::MAX_VECTOR_LENGTH,
 };
 use typeql::common::Span;
 
@@ -96,6 +97,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             Expression::ListIndex(list_index) => self.compile_list_index(list_index),
             Expression::List(list_constructor) => self.compile_list_constructor(list_constructor),
             Expression::ListIndexRange(list_index_range) => self.compile_list_index_range(list_index_range),
+            Expression::Vector(vector_constructor) => self.compile_vector_constructor(vector_constructor),
         }
     }
 
@@ -152,6 +154,45 @@ impl<'this> ExpressionCompilationContext<'this> {
             })?;
         }
 
+        Ok(())
+    }
+
+    fn compile_vector_constructor(
+        &mut self,
+        vector_constructor: &VectorConstructor,
+    ) -> Result<(), Box<ExpressionCompileError>> {
+        for expression_id in vector_constructor.item_expression_ids().iter().rev() {
+            self.compile_recursive(self.expression_tree.get(*expression_id))?;
+        }
+
+        self.compile_constant(vector_constructor.len_id())?;
+        self.append_instruction(list_operations::VectorConstructor::OP_CODE);
+
+        if self.pop_type_single()?.category() != ValueTypeCategory::Integer {
+            Err(ExpressionCompileError::InternalListLengthMustBeInteger {})?;
+        }
+
+        let n_elements = vector_constructor.item_expression_ids().len();
+        if n_elements == 0 {
+            Err(ExpressionCompileError::EmptyVectorConstructor { source_span: vector_constructor.source_span() })?;
+        }
+        let length = u16::try_from(n_elements).map_err(|_| ExpressionCompileError::VectorLengthExceedsMaximum {
+            length: n_elements,
+            max: MAX_VECTOR_LENGTH,
+            source_span: vector_constructor.source_span(),
+        })?;
+
+        for _ in 0..n_elements {
+            let element_category = self.pop_type_single()?.category();
+            if !matches!(element_category, ValueTypeCategory::Integer | ValueTypeCategory::Double) {
+                Err(ExpressionCompileError::NonNumericVectorElement {
+                    category: element_category,
+                    source_span: vector_constructor.source_span(),
+                })?;
+            }
+        }
+
+        self.push_type_single(ValueType::Vector(VectorTypeParameters::new(length, vector_constructor.precision())));
         Ok(())
     }
 
@@ -219,6 +260,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             }
             ValueTypeCategory::String => self.compile_op_string(operator, right_expression, operation.source_span()),
             ValueTypeCategory::Struct => self.compile_op_struct(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::Vector => self.compile_op_vector(operator, right_expression, operation.source_span()),
         }
     }
 
@@ -502,6 +544,22 @@ impl<'this> ExpressionCompilationContext<'this> {
         Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
             left_category: ValueTypeCategory::Struct,
+            right_category,
+            source_span,
+        }))
+    }
+
+    fn compile_op_vector(
+        &mut self,
+        op: Operator,
+        right: &Expression<Variable>,
+        source_span: Option<Span>,
+    ) -> Result<(), Box<ExpressionCompileError>> {
+        self.compile_recursive(right)?;
+        let right_category = self.peek_type_single()?.category();
+        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+            op,
+            left_category: ValueTypeCategory::Vector,
             right_category,
             source_span,
         }))

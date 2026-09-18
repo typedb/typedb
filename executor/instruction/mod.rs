@@ -28,6 +28,7 @@ use crate::{
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
         sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
+        vector_search_executor::VectorSearchExecutor,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -54,6 +55,7 @@ mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
 mod type_list_executor;
+mod vector_search_executor;
 
 pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
@@ -77,6 +79,7 @@ pub(crate) enum InstructionExecutor {
 
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
+    VectorSearch(VectorSearchExecutor),
 
     Has(HasExecutor),
     HasReverse(HasReverseExecutor),
@@ -122,6 +125,9 @@ impl InstructionExecutor {
             ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
                 Ok(Self::IsaReverse(IsaReverseExecutor::new(isa_reverse, variable_modes, sort_by)))
+            }
+            ConstraintInstruction::VectorSearch(vector_search) => {
+                Ok(Self::VectorSearch(VectorSearchExecutor::new(vector_search, variable_modes, sort_by)))
             }
             ConstraintInstruction::Has(has) => {
                 Ok(Self::Has(HasExecutor::new(has, variable_modes, sort_by, snapshot, thing_manager)?))
@@ -169,6 +175,7 @@ impl InstructionExecutor {
             Self::PlaysReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Isa(executor) => executor.get_iterator(context, row, storage_counters),
             Self::IsaReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::VectorSearch(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Has(executor) => executor.get_iterator(context, row, storage_counters),
             Self::HasReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Links(executor) => executor.get_iterator(context, row, storage_counters),
@@ -183,6 +190,7 @@ impl InstructionExecutor {
             Self::Iid(_) => "iid",
             Self::Isa(_) => "isa",
             Self::IsaReverse(_) => "isa_reverse",
+            Self::VectorSearch(_) => "vector_search",
             Self::Has(_) => "has",
             Self::HasReverse(_) => "has_reverse",
             Self::Links(_) => "links",
@@ -217,6 +225,7 @@ impl fmt::Display for InstructionExecutor {
             InstructionExecutor::PlaysReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Isa(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::IsaReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::VectorSearch(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Has(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::HasReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),

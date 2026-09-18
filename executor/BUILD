@@ -36,6 +36,7 @@ rust_library(
         "@crates//:chrono",
         "@crates//:itertools",
         "@crates//:regex",
+        "@crates//:simsimd",
         "@crates//:smallvec",
         "@crates//:tracing",
         "@crates//:tokio",

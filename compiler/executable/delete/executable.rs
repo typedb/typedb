@@ -209,6 +209,7 @@ fn add_connection_deletes(
             Constraint::LinksDeduplication(_) | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
             Constraint::Iid(_)
             | Constraint::Isa(_)
+            | Constraint::VectorSearch(_)
             | Constraint::Kind(_)
             | Constraint::Label(_)
             | Constraint::Owns(_)
