@@ -608,3 +608,57 @@ fn unwrap_downstream() {
     assert_optionals!(&translated_pipeline.variable_registry, second_conjunction, []);
     assert_optionals!(&translated_pipeline.variable_registry, third_conjunction, []);
 }
+
+#[test]
+fn optionally_bound_in_one_branch() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    {
+        let query = r#"
+        match { $p isa person, has age $age; } or  { try { $p has name $name; }; };
+        match $p has age $other_age;
+    "#;
+        let parsed = typeql::parse_query(query).unwrap().into_structure();
+        let translation_error = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap_err();
+        assert!(match *translation_error {
+            RepresentationError::UnsafeOptionalDereference { variable, .. } => {
+                variable == "p"
+            }
+            _ => false,
+        });
+    }
+
+    let query = r#"
+        match { $p isa person, has age $age; } or  { try { $p has name $name; }; };
+        match isset $p; $p has age $other_age;
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let first_conjunction = first_block.conjunction();
+    let disjunction = first_conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
+    let b1 = &disjunction.conjunctions()[0];
+    let b2 = &disjunction.conjunctions()[1];
+    let optional = b2.nested_patterns().first().unwrap().as_optional().unwrap();
+    let conjunction_in_optional = optional.conjunction();
+    let second_conjunction = second_block.conjunction();
+    assert_vars!(&translated_pipeline.variable_registry, first_conjunction, Required[], Bound["p"]);
+    assert_vars!(&translated_pipeline.variable_registry, disjunction, Required[], Bound["p"]);
+    assert_vars!(&translated_pipeline.variable_registry, b1, Required[], Bound["p", "age"]);
+    assert_vars!(&translated_pipeline.variable_registry, b2, Required[], Bound["p", "name"]);
+    assert_vars!(&translated_pipeline.variable_registry, optional, Required[], Bound["p", "name"]);
+    assert_vars!(&translated_pipeline.variable_registry, conjunction_in_optional, Required[], Bound["p", "name"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_conjunction, Required["p"], Bound["other_age"]);
+
+    assert_optionals!(&translated_pipeline.variable_registry, first_conjunction, ["p"]);
+    assert_optionals!(&translated_pipeline.variable_registry, disjunction, ["p"]);
+    assert_optionals!(&translated_pipeline.variable_registry, b1, []);
+    assert_optionals!(&translated_pipeline.variable_registry, b2, ["p", "name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, optional, ["p", "name"]);
+    assert_optionals!(&translated_pipeline.variable_registry, conjunction_in_optional, []);
+    assert_optionals!(&translated_pipeline.variable_registry, second_conjunction, []);
+}
