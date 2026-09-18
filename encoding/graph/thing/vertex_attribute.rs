@@ -15,7 +15,8 @@ use storage::{
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
 };
-
+use storage::snapshot::WritableSnapshot;
+use crate::graph::common::ExistingOrNew;
 use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
@@ -205,6 +206,10 @@ impl ThingVertex for AttributeVertex {
             return None;
         }
         Some(Self::decode(bytes))
+    }
+
+    fn lock_unmodifiable(&self, snapshot: &mut impl WritableSnapshot) {
+        snapshot.unmodifiable_lock_add(self.clone().into_storage_key().into_owned_array())
     }
 }
 
@@ -687,20 +692,6 @@ impl StringAttributeID {
         StringBytes::new(Bytes::Array(bytes))
     }
 
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
-        type_id: TypeID,
-        string: StringBytes<INLINE_LENGTH>,
-        snapshot: &Snapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<Self, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        match Self::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
-            Either::First(hashed_id) | Either::Second(hashed_id) => Ok(hashed_id),
-        }
-    }
-
     pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
@@ -712,17 +703,17 @@ impl StringAttributeID {
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         match Self::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
-            Either::First(hashed_id) => Ok(Some(hashed_id)),
-            Either::Second(_) => Ok(None),
+            ExistingOrNew::Existing(hashed_id) => Ok(Some(hashed_id)),
+            ExistingOrNew::New(_) => Ok(None),
         }
     }
 
-    fn build_or_find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub(crate) fn build_or_find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<Either<Self, Self>, Arc<SnapshotIteratorError>>
+    ) -> Result<ExistingOrNew<Self>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -742,25 +733,18 @@ impl StringAttributeID {
             &attribute_bytes[0..prefix_length],
             string.bytes(),
         )?;
-        let string_id = match disambiguated_hash {
-            Either::First(disambiguated_hash) | Either::Second(disambiguated_hash) => {
-                debug_assert!(
-                    disambiguated_hash[Self::HASH_DISAMBIGUATOR_BYTE_INDEX]
-                        & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
-                        != 0
-                );
-                let mut string_id_bytes = [0; Self::LENGTH];
-                string_id_bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
-                string_id_bytes[Self::HASHED_PREFIX_RANGE]
-                    .copy_from_slice(&string.bytes()[0..Self::HASHED_PREFIX_LENGTH]);
-                string_id_bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&disambiguated_hash);
-                Self { bytes: string_id_bytes }
-            }
-        };
-        match disambiguated_hash {
-            Either::First(_) => Ok(Either::First(string_id)),
-            Either::Second(_) => Ok(Either::Second(string_id)),
-        }
+        let string_attribute_id = disambiguated_hash.map(|disambiguated_hash| {
+            debug_assert!(
+                disambiguated_hash[Self::HASH_DISAMBIGUATOR_BYTE_INDEX] & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+                    != 0
+            );
+            let mut string_id_bytes = [0; Self::LENGTH];
+            string_id_bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+            string_id_bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes()[0..Self::HASHED_PREFIX_LENGTH]);
+            string_id_bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&disambiguated_hash);
+            Self { bytes: string_id_bytes }
+        });
+        Ok(string_attribute_id)
     }
 
     // write the deterministic prefix of the hash ID, and return the length of the prefix written
@@ -876,7 +860,7 @@ impl StructAttributeID {
             struct_bytes.bytes(),
         )?;
 
-        let (Either::First(disambiguated_hash) | Either::Second(disambiguated_hash)) = existing_or_new;
+        let disambiguated_hash= existing_or_new.into_inner();
 
         let mut bytes = [0; Self::LENGTH];
         bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Struct.to_bytes());
@@ -907,7 +891,7 @@ impl StructAttributeID {
         )?;
 
         match existing_or_new {
-            Either::First(disambiguated_hash) => {
+            ExistingOrNew::Existing(disambiguated_hash) => {
                 debug_assert!(
                     disambiguated_hash[Self::HASH_DISAMBIGUATOR_BYTE_INDEX]
                         & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
@@ -918,7 +902,7 @@ impl StructAttributeID {
                 bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
                 Ok(Some(Self { bytes }))
             }
-            Either::Second(_) => Ok(None),
+            ExistingOrNew::New(_) => Ok(None),
         }
     }
 

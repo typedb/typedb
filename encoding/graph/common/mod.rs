@@ -6,3 +6,26 @@
 
 pub(crate) mod schema_id_allocator;
 pub(crate) mod value_hasher;
+
+pub enum ExistingOrNew<T> {
+    Existing(T),
+    New(T),
+}
+
+impl<T> ExistingOrNew<T> {
+    pub(crate) fn into_inner(self) -> T {
+        match self {
+            ExistingOrNew::Existing(inner) | ExistingOrNew::New(inner) => inner,
+        }
+    }
+
+    pub(crate) fn map<U, F>(self, mapper: F) -> ExistingOrNew<U>
+    where
+        F: Fn(T) -> U,
+    {
+        match self {
+            ExistingOrNew::Existing(existing) => ExistingOrNew::Existing(mapper(existing)),
+            ExistingOrNew::New(new) => ExistingOrNew::New(mapper(new)),
+        }
+    }
+}

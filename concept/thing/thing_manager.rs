@@ -1932,11 +1932,11 @@ impl ThingManager {
 
 impl ThingManager {
     pub(crate) fn lock_existing_object(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI) {
-        snapshot.unmodifiable_lock_add(object.vertex().into_storage_key().into_owned_array())
+        object.vertex().lock_unmodifiable(snapshot);
     }
 
     pub(crate) fn lock_existing_attribute(&self, snapshot: &mut impl WritableSnapshot, attribute: &Attribute) {
-        snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
+        attribute.vertex().lock_unmodifiable(snapshot);
     }
 
     pub fn finalise<Snapshot: WritableSnapshot>(

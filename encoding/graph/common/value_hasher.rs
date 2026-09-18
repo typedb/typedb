@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
-use primitive::either::Either;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     key_range::KeyRange,
@@ -17,6 +16,7 @@ use storage::{
 };
 
 use crate::EncodingKeyspace;
+use crate::graph::common::ExistingOrNew;
 
 pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;
@@ -38,7 +38,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         keyspace: EncodingKeyspace,
         key_without_hash: &[u8],
         value_bytes: &[u8],
-    ) -> Result<Either<[u8; DISAMBIGUATED_HASH_LENGTH], [u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
+    ) -> Result<ExistingOrNew<[u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -51,10 +51,8 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             value_bytes,
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
-        match Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_bytes)? {
-            Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
-            Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
-        }
+        Ok(Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_bytes)?
+            .map(|tail| Self::concat_hash_and_tail(hash_bytes, tail)))
     }
 
     fn concat_hash_and_tail(hash_bytes: &[u8], tail: u8) -> [u8; DISAMBIGUATED_HASH_LENGTH] {
@@ -64,13 +62,12 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         bytes
     }
 
-    /// return Either<Existing tail, newly allocated tail>
     fn disambiguate<Snapshot>(
         snapshot: &Snapshot,
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],
         value_bytes: &[u8],
-    ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
+    ) -> Result<ExistingOrNew<u8>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -89,7 +86,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         while let Some((key, value)) = next {
             let key_tail = key.bytes()[tail_byte_index];
             if &*value == value_bytes {
-                return Ok(Either::First(key_tail));
+                return Ok(ExistingOrNew::Existing(key_tail));
             } else if next_tail != key_tail {
                 // found unused tail ID. This could be a hole. We have to complete iteration.
                 first_unused_tail = Some(next_tail);
@@ -100,6 +97,6 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             next_tail += 1;
             next = iter.next().transpose()?;
         }
-        Ok(Either::Second(first_unused_tail.unwrap_or(next_tail)))
+        Ok(ExistingOrNew::New(first_unused_tail.unwrap_or(next_tail)))
     }
 }

@@ -7,7 +7,7 @@
 use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
-
+use storage::snapshot::WritableSnapshot;
 use self::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use crate::{
     EncodingKeyspace, Keyable, Prefixed,
@@ -60,4 +60,6 @@ pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + 
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         THING_VERTEX_LENGTH_PREFIX_TYPE
     }
+
+    fn lock_unmodifiable(&self, snapshot: &mut impl WritableSnapshot);
 }
