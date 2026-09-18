@@ -6,7 +6,7 @@
 
 use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
+use storage::{key_value::StorageKey, snapshot::WritableSnapshot};
 
 use self::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use crate::{
@@ -29,7 +29,9 @@ const fn max(lhs: usize, rhs: usize) -> usize {
 
 pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVertex::MAX_LENGTH);
 
-pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + Keyable<BUFFER_KEY_INLINE> {
+pub trait ThingVertex:
+    Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + Keyable<BUFFER_KEY_INLINE> + Clone
+{
     const FIXED_WIDTH_ENCODING: bool;
 
     fn decode(bytes: &[u8]) -> Self;
@@ -59,5 +61,9 @@ pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + 
         bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         THING_VERTEX_LENGTH_PREFIX_TYPE
+    }
+
+    fn lock_unmodifiable(&self, snapshot: &mut impl WritableSnapshot) {
+        snapshot.unmodifiable_lock_add(self.clone().into_storage_key().into_owned_array())
     }
 }

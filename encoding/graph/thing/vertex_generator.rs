@@ -27,6 +27,7 @@ use crate::{
     error::EncodingError,
     graph::{
         Typed,
+        common::ExistingOrNew,
         thing::{
             ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex, IntegerAttributeID, StringAttributeID},
@@ -336,8 +337,9 @@ impl ThingVertexGenerator {
 
     ///
     /// We create a unique attribute ID representing the string value.
-    /// We guarantee that the same value will map the same ID as long as the value remains mapped, and concurrent creation
-    ///   will lead to an isolation error to maintain this invariant. The user should retry.
+    /// We guarantee that the same value will map the same ID as long as the value remains mapped. Concurrent creation
+    ///   of a value that does not yet exist will lead to an isolation error to maintain this invariant (the user should
+    ///   retry); concurrently re-putting an already existing value does not conflict.
     ///
     /// If the value is fully removed and recreated it is possible to get a different tail of the ID.
     ///
@@ -353,30 +355,27 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
-        let vertex = AttributeVertex::new(type_id, AttributeID::String(string_attribute_id));
-        snapshot.put_val(vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
-        Ok(vertex)
-    }
-
-    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, Snapshot>(
-        &self,
-        type_id: TypeID,
-        string: StringBytes<INLINE_LENGTH>,
-        snapshot: &mut Snapshot,
-    ) -> Result<StringAttributeID, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: WritableSnapshot,
-    {
+        let string = value.as_reference();
         if StringAttributeID::is_inlineable(string.as_reference()) {
-            Ok(StringAttributeID::build_inline_id(string))
+            let inline_id = StringAttributeID::build_inline_id(string);
+            let inlined_vertex = AttributeVertex::new(type_id, AttributeID::String(inline_id));
+            snapshot.put(inlined_vertex.into_storage_key().into_owned_array());
+            Ok(inlined_vertex)
         } else {
-            let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
-            let hash = id.get_hash_hash();
-            let lock =
-                ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().to_bytes(), &type_id.to_bytes(), &hash]);
-            snapshot.exclusive_lock_add(lock);
-            Ok(id)
+            let hasher = &self.large_value_hasher;
+            let hashed_vertex = match StringAttributeID::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
+                ExistingOrNew::Existing(hashed_id) => {
+                    let vertex = AttributeVertex::new(type_id, AttributeID::String(hashed_id));
+                    Self::lock_existing_hashed_attribute(&vertex, snapshot);
+                    vertex
+                }
+                ExistingOrNew::New(hashed_id) => {
+                    Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
+                    AttributeVertex::new(type_id, AttributeID::String(hashed_id))
+                }
+            };
+            snapshot.put_val(hashed_vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+            Ok(hashed_vertex)
         }
     }
 
@@ -402,28 +401,34 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
-        let vertex = AttributeVertex::new(type_id, AttributeID::Struct(struct_attribute_id));
-        snapshot.put_val(vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
-        Ok(vertex)
+        let hasher = &self.large_value_hasher;
+        let hashed_vertex =
+            match StructAttributeID::build_or_find_hashed_id(type_id, value.as_reference(), snapshot, hasher)? {
+                ExistingOrNew::Existing(hashed_id) => {
+                    let vertex = AttributeVertex::new(type_id, AttributeID::Struct(hashed_id));
+                    Self::lock_existing_hashed_attribute(&vertex, snapshot);
+                    vertex
+                }
+                ExistingOrNew::New(hashed_id) => {
+                    Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
+                    AttributeVertex::new(type_id, AttributeID::Struct(hashed_id))
+                }
+            };
+        snapshot.put_val(hashed_vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        Ok(hashed_vertex)
     }
 
-    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
-        &self,
-        type_id: TypeID,
-        struct_bytes: StructBytes<'_, INLINE_LENGTH>,
-        snapshot: &mut Snapshot,
-    ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: WritableSnapshot,
-    {
-        // We don't inline structs
-        let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
-        let hash = id.get_hash_hash();
-        let lock =
-            ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().to_bytes(), &type_id.to_bytes(), &hash]);
+    /// A concurrent delete of an existing hashed vertex would free its disambiguator tail for a colliding value,
+    /// so the vertex must remain unmodified while we re-put it.
+    fn lock_existing_hashed_attribute(vertex: &AttributeVertex, snapshot: &mut impl WritableSnapshot) {
+        vertex.lock_unmodifiable(snapshot);
+    }
+
+    /// A newly allocated disambiguator tail is chosen from the bucket contents visible in this snapshot,
+    /// so concurrent transactions allocating in the same (type, hash) bucket must conflict.
+    fn lock_hash_bucket(type_id: TypeID, hash: &[u8], snapshot: &mut impl WritableSnapshot) {
+        let lock = ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().to_bytes(), &type_id.to_bytes(), hash]);
         snapshot.exclusive_lock_add(lock);
-        Ok(id)
     }
 
     pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(

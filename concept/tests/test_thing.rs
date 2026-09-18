@@ -40,8 +40,10 @@ use encoding::{
 use itertools::Itertools;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
+    StorageCommitError,
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
+    isolation_manager::IsolationConflict,
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -2179,6 +2181,168 @@ fn attribute_string_write_read_delete_with_has() {
             )
             .unwrap();
         assert_eq!(None, read_long_string);
+    }
+}
+
+fn setup_string_owner_schema(
+    storage: &std::sync::Arc<storage::MVCCStorage<WALClient>>,
+    type_manager: &TypeManager,
+    thing_manager: &concept::thing::thing_manager::ThingManager,
+) -> (concept::type_::entity_type::EntityType, concept::type_::attribute_type::AttributeType) {
+    let owner_label = Label::build("test_owner", None);
+    let attr_label = Label::build("test_string_attr", None);
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    let owner_type = type_manager.create_entity_type(&mut snapshot, &owner_label).unwrap();
+    let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
+    attr_type.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
+    let owns = owner_type
+        .set_owns(&mut snapshot, type_manager, thing_manager, attr_type, Ordering::Unordered, StorageCounters::DISABLED)
+        .unwrap();
+    owns.set_annotation(
+        &mut snapshot,
+        type_manager,
+        thing_manager,
+        OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+    )
+    .unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    (owner_type, attr_type)
+}
+
+fn assert_commit_conflict(err: SnapshotError, expected: IsolationConflict) {
+    match err {
+        SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { conflict, .. } } => {
+            assert_eq!(conflict, expected)
+        }
+        other => panic!("Expected isolation conflict {expected:?}, got: {other:?}"),
+    }
+}
+
+#[test]
+fn attribute_string_unput_in_same_transaction() {
+    // Attributes put in a transaction are unput (rather than deleted) when removed again in the same transaction,
+    // both by an explicit delete and by finalise cleaning up an attribute that lost its last owner.
+    // The unput must match what was stored: nothing for inline (short) strings, the value for hashed (long) strings.
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (owner_type, attr_type) = setup_string_owner_schema(&storage, &type_manager, &thing_manager);
+
+    let short_string = "short".to_owned();
+    let long_string = "this string is 33 characters long".to_owned();
+
+    for string in [&short_string, &long_string] {
+        // explicit delete of the attribute after it was put and attached
+        {
+            let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+            let owner = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
+            let attr = thing_manager
+                .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(string.as_str())))
+                .unwrap();
+            owner.set_has_unordered(&mut snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
+            attr.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
+            thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        }
+        assert_attribute_absent(&storage, &thing_manager, attr_type, string);
+
+        // unset the only ownership: finalise must clean the attribute up
+        {
+            let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+            let owner = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
+            let attr = thing_manager
+                .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(string.as_str())))
+                .unwrap();
+            owner.set_has_unordered(&mut snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
+            owner.unset_has_unordered(&mut snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
+            thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        }
+        assert_attribute_absent(&storage, &thing_manager, attr_type, string);
+    }
+}
+
+fn assert_attribute_absent(
+    storage: &std::sync::Arc<storage::MVCCStorage<WALClient>>,
+    thing_manager: &concept::thing::thing_manager::ThingManager,
+    attr_type: concept::type_::attribute_type::AttributeType,
+    string: &str,
+) {
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let read = thing_manager
+        .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(string)), StorageCounters::DISABLED)
+        .unwrap();
+    assert_eq!(None, read, "attribute '{string}' should not exist");
+}
+
+#[test]
+fn attribute_string_concurrent_has_writers() {
+    // Two transactions attaching the same string value to different owners:
+    //   - an inline (short) string never conflicts
+    //   - a hashed (long) string that already exists never conflicts
+    //   - a hashed (long) string that does not exist yet conflicts: only one may allocate its ID
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (owner_type, attr_type) = setup_string_owner_schema(&storage, &type_manager, &thing_manager);
+
+    let short_string = "short".to_owned();
+    let existing_long_string = "this string is 33 characters long".to_owned();
+    let new_long_string = "this is another string of 36 chars".to_owned();
+
+    // persisted owners, and the existing long string attached to a third owner so that it is retained
+    let (owner_1, owner_2) = {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let owner_1 = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
+        let owner_2 = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
+        let owner_3 = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
+        let existing_long_attr = thing_manager
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(existing_long_string.as_str())))
+            .unwrap();
+        owner_3
+            .set_has_unordered(&mut snapshot, &thing_manager, &existing_long_attr, StorageCounters::DISABLED)
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        (owner_1, owner_2)
+    };
+
+    let attach = |snapshot: &mut WriteSnapshot<WALClient>, owner: Entity, string: &str| {
+        let attr = thing_manager.create_attribute(snapshot, attr_type, Value::String(Cow::Borrowed(string))).unwrap();
+        owner.set_has_unordered(snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
+        thing_manager.finalise(snapshot, StorageCounters::DISABLED).unwrap();
+    };
+
+    for string in [&short_string, &existing_long_string] {
+        let mut snapshot_1: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        attach(&mut snapshot_1, owner_1, string);
+        attach(&mut snapshot_2, owner_2, string);
+        snapshot_1.commit(&mut CommitProfile::DISABLED).expect("first writer should commit");
+        snapshot_2
+            .commit(&mut CommitProfile::DISABLED)
+            .unwrap_or_else(|err| panic!("concurrent writer of '{string}' should commit, got: {err:?}"));
+    }
+
+    {
+        let mut snapshot_1: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        attach(&mut snapshot_1, owner_1, &new_long_string);
+        attach(&mut snapshot_2, owner_2, &new_long_string);
+        snapshot_1.commit(&mut CommitProfile::DISABLED).expect("first creator of a new hashed value should commit");
+        let err = snapshot_2.commit(&mut CommitProfile::DISABLED).expect_err("concurrent creator should conflict");
+        assert_commit_conflict(err, IsolationConflict::ExclusiveLock);
+    }
+
+    // after the conflict, the value exists: re-attaching it no longer conflicts
+    {
+        let mut snapshot_1: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        attach(&mut snapshot_1, owner_1, &new_long_string);
+        attach(&mut snapshot_2, owner_2, &new_long_string);
+        snapshot_1.commit(&mut CommitProfile::DISABLED).expect("re-put should commit");
+        snapshot_2.commit(&mut CommitProfile::DISABLED).expect("concurrent re-put of an existing value should commit");
     }
 }
 

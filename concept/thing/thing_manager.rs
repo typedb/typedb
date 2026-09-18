@@ -1932,11 +1932,11 @@ impl ThingManager {
 
 impl ThingManager {
     pub(crate) fn lock_existing_object(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI) {
-        snapshot.unmodifiable_lock_add(object.vertex().into_storage_key().into_owned_array())
+        object.vertex().lock_unmodifiable(snapshot);
     }
 
     pub(crate) fn lock_existing_attribute(&self, snapshot: &mut impl WritableSnapshot, attribute: &Attribute) {
-        snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
+        attribute.vertex().lock_unmodifiable(snapshot);
     }
 
     pub fn finalise<Snapshot: WritableSnapshot>(
@@ -2765,12 +2765,16 @@ impl ThingManager {
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let value = match attribute.get_value(snapshot, self, storage_counters)? {
-            Value::String(string) => ByteArray::copy(string.as_bytes()),
-            _ => ByteArray::empty(),
+        let key = attribute.vertex().into_storage_key();
+        let value = if attribute.vertex().attribute_id().is_inline() {
+            ByteArray::empty()
+        } else {
+            snapshot
+                .get_mapped(key.as_reference(), ByteArray::copy, storage_counters)
+                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                .ok_or_else(|| Box::new(ConceptReadError::InternalMissingAttributeValue {}))?
         };
-        let key = attribute.vertex().into_storage_key().into_owned_array();
-        snapshot.unput_val(key, value);
+        snapshot.unput_val(key.into_owned_array(), value);
         Ok(())
     }
 
