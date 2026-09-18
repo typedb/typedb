@@ -70,8 +70,6 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     where
         Snapshot: ReadableSnapshot,
     {
-        const FLAG: u8 = 0b1000_0000;
-        debug_assert_eq!(FLAG, Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG);
         let tail_byte_index = key_without_tail_byte.len();
         let range = KeyRange::new_within(
             StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
@@ -80,17 +78,19 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         // occupied tails, indexed by the tail with the hash flag stripped
         let mut occupied_tails = [false; 1 << 7];
 
+        // search for visible/live keys in the 128 slots in the bucket
         let mut iter = snapshot.iterate_range(&range, StorageCounters::DISABLED);
         while let Some((key, value)) = iter.next().transpose()? {
             let key_tail = key.bytes()[tail_byte_index];
-            if key_tail & FLAG == 0 {
-                // an inlined ID that happens to share the hashed prefix bytes: not part of this bucket
+            if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG == 0 {
+                // an inlined ID that happens to share the hashed prefix bytes: not part of this bucket - at most one
                 continue;
             }
             if &*value == value_bytes {
+                // found existing matching value
                 return Ok(ExistingOrNew::Existing(key_tail));
             }
-            occupied_tails[(key_tail & !FLAG) as usize] = true;
+            occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;
         }
 
         // Keys deleted in this transaction are hidden by the iteration above, but their tails must not be reused
@@ -99,14 +99,14 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         for (key, write) in snapshot.iterate_writes_range(&range) {
             if matches!(write, Write::Delete) {
                 let key_tail = key.bytes()[tail_byte_index];
-                if key_tail & FLAG != 0 {
-                    occupied_tails[(key_tail & !FLAG) as usize] = true;
+                if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0 {
+                    occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;
                 }
             }
         }
 
         match occupied_tails.iter().position(|occupied| !occupied) {
-            Some(free_tail) => Ok(ExistingOrNew::New(FLAG | free_tail as u8)),
+            Some(free_tail) => Ok(ExistingOrNew::New(Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG | free_tail as u8)),
             None => panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte),
         }
     }
