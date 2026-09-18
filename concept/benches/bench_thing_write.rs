@@ -61,7 +61,12 @@ fn write_entity_attributes(
             type_vertex_generator.clone(),
             Some(schema_cache),
         ));
-        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone(), statistics);
+        let thing_manager = ThingManager::new(
+            thing_vertex_generator.clone(),
+            type_manager.clone(),
+            statistics,
+            Arc::new(concept::thing::vector_store::VectorStore::new()),
+        );
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();

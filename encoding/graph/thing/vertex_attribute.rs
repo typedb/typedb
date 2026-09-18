@@ -8,9 +8,11 @@ use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
 
 use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use error::unimplemented_feature;
+use lending_iterator::LendingIterator;
 use primitive::either::Either;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
@@ -98,6 +100,15 @@ impl AttributeVertex {
 
     pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         Self::is_valid_keyspace(storage_key.keyspace_id()) && Self::is_attribute_bytes(storage_key.bytes())
+    }
+
+    /// Cheap byte-level test whether a raw storage key is a vector attribute vertex.
+    pub fn is_vector_attribute_vertex(keyspace_id: KeyspaceId, bytes: &[u8]) -> bool {
+        Self::keyspace_for_category(ValueTypeCategory::Vector).id() == keyspace_id
+            && bytes.len() == THING_VERTEX_LENGTH_PREFIX_TYPE + VectorAttributeID::LENGTH
+            && bytes[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte
+            && bytes[Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ValueTypeBytes::CATEGORY_LENGTH]
+                == ValueTypeCategory::Vector.to_bytes()
     }
 
     fn is_attribute_bytes(bytes: &[u8]) -> bool {
@@ -981,16 +992,17 @@ impl VectorAttributeID {
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
+        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
-        let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
+        let existing_or_new = Self::find_existing_or_next_disambiguated_hash_vector(
             snapshot,
             hasher,
-            AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector),
             &Self::key_prefix(type_id),
             vector_bytes.bytes(),
+            committed_vector,
         )?;
 
         let (Either::First(disambiguated_hash) | Either::Second(disambiguated_hash)) = existing_or_new;
@@ -1002,16 +1014,17 @@ impl VectorAttributeID {
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
+        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
-        let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
+        let existing_or_new = Self::find_existing_or_next_disambiguated_hash_vector(
             snapshot,
             hasher,
-            AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector),
             &Self::key_prefix(type_id),
             vector_bytes.bytes(),
+            committed_vector,
         )?;
 
         match existing_or_new {
@@ -1025,6 +1038,72 @@ impl VectorAttributeID {
             }
             Either::Second(_) => Ok(None),
         }
+    }
+
+    /// Same tail-byte disambiguation as [`HashedID::find_existing_or_next_disambiguated_hash`],
+    /// except value comparison is fetcher-aware: committed vector attributes have an empty value
+    /// in the KV store (the value lives in the vector store), so equal-hash candidates with an
+    /// empty stored value are compared against the vector fetched via `committed_vector` (keyed
+    /// by the candidate's 8-byte [hash|tail], see [`Self::as_vector_index_key`]).
+    fn find_existing_or_next_disambiguated_hash_vector<Snapshot>(
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        key_without_hash: &[u8],
+        value_bytes: &[u8],
+        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+    ) -> Result<Either<[u8; Self::HASH_LENGTH + 1], [u8; Self::HASH_LENGTH + 1]>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
+        let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
+            ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
+        key_without_tail_byte[0..key_without_hash.len()].copy_from_slice(key_without_hash);
+        let hash_length = Self::write_hash(
+            &mut key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
+            hasher,
+            value_bytes,
+        );
+        let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_length];
+
+        let target_vector = VectorBytes::new(Bytes::<1>::Reference(value_bytes)).as_vector();
+        let tail_byte_index = key_without_tail_byte.len();
+        let mut iter = snapshot.iterate_range(
+            &KeyRange::new_within(
+                StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, &key_without_tail_byte),
+                <Self as HashedID<{ Self::HASH_LENGTH + 1 }>>::FIXED_WIDTH_KEYS,
+            ),
+            StorageCounters::DISABLED,
+        );
+        let mut next = iter.next().transpose()?;
+        let mut first_unused_tail: Option<u8> = None;
+
+        let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
+        while let Some((key, value)) = next {
+            let key_tail = key.bytes()[tail_byte_index];
+            let value_matches = if value.is_empty() {
+                let index_key =
+                    u64::from_be_bytes(key.bytes()[key.bytes().len() - (Self::HASH_LENGTH + 1)..].try_into().unwrap());
+                let vector = committed_vector(index_key).unwrap_or_else(|| {
+                    panic!("vector attribute exists in storage but its value is missing from the vector store")
+                });
+                vector == target_vector
+            } else {
+                &*value == value_bytes
+            };
+            if value_matches {
+                return Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, key_tail)));
+            } else if next_tail != key_tail {
+                // found unused tail ID. This could be a hole. We have to complete iteration.
+                first_unused_tail = Some(next_tail);
+            }
+            if next_tail == u8::MAX {
+                panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte);
+            }
+            next_tail += 1;
+            next = iter.next().transpose()?;
+        }
+        Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, first_unused_tail.unwrap_or(next_tail))))
     }
 
     fn key_prefix(type_id: TypeID) -> ByteArray<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }> {
@@ -1070,6 +1149,16 @@ impl VectorAttributeID {
 
     pub fn deterministic_bytes_ref(&self) -> &[u8] {
         &self.bytes[0..Self::TAIL_INDEX]
+    }
+
+    /// The disambiguated hash ([7: hash][1: tail]) is exactly 8 bytes: a unique-per-type u64 used
+    /// as the vector index key, derivable from the ID with no side table.
+    pub fn as_vector_index_key(&self) -> u64 {
+        u64::from_be_bytes(self.bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].try_into().unwrap())
+    }
+
+    pub fn from_vector_index_key(key: u64) -> Self {
+        Self::from_disambiguated_hash(key.to_be_bytes())
     }
 }
 

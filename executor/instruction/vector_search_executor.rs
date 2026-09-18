@@ -4,16 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, iter, sync::Arc, vec};
+use std::{
+    collections::{BTreeSet, HashMap},
+    fmt, iter,
+    sync::Arc,
+    vec,
+};
 
 use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::thing::VectorSearchInstruction};
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
+use concept::{
+    error::ConceptReadError,
+    thing::{ThingAPI, attribute::Attribute, thing_manager::ThingManager},
+    type_::TypeAPI,
+};
+use encoding::{
+    AsBytes, Keyable,
+    graph::{
+        Typed,
+        thing::vertex_attribute::{AttributeID, AttributeVertex},
+        type_::vertex::TypeVertexEncoding,
+    },
+    value::{ValueEncodable, value::Value, value_type::ValueType},
+};
 use ir::pattern::{ParameterID, constraint::VectorSearch};
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
-use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::{ReadableSnapshot, write::Write};
 
 use crate::{
     instruction::{
@@ -175,21 +192,68 @@ impl VectorSearchExecutor {
             )));
         }
         for type_ in self.types.iter() {
-            let mut iterator =
-                thing_manager.get_attributes_in(snapshot, type_.as_attribute_type(), storage_counters.clone())?;
-            while let Some(result) = iterator.next() {
-                match result {
-                    Ok(attribute) => {
-                        let value = attribute.get_value(snapshot, thing_manager, storage_counters.clone())?;
-                        if let Value::Vector(vector) = &value {
-                            let similarity = cosine_similarity(&query, vector.as_ref());
-                            if similarity >= threshold {
-                                matching
-                                    .push(Ok((VariableValue::Thing(Thing::Attribute(attribute.clone())), similarity)));
-                            }
-                        }
+            let attribute_type = type_.as_attribute_type();
+            let type_id = attribute_type.vertex().type_id_();
+            let vector_store = thing_manager.vector_store();
+
+            // candidate set deduplicates index hits against this transaction's buffered writes
+            // (a put of an already-committed vector appears in both)
+            // BTreeSet: downstream tuple iterators require attribute-sorted yield order
+            let mut candidates: BTreeSet<AttributeVertex> = BTreeSet::new();
+
+            // 1) committed vectors: ANN search on the vector store index.
+            // ponytail: threshold-only semantics on a top-k index via k-widening; replace with a
+            // planner-provided k when TypeQL exposes one
+            let total = vector_store.indexed_vector_count(type_id);
+            if total > 0 {
+                let mut k = 128.min(total);
+                loop {
+                    let results = vector_store.search(type_id, &query, k);
+                    let tail_above_threshold =
+                        results.iter().all(|&(_, distance)| 1.0 - distance as f64 >= threshold);
+                    let exhausted = results.len() >= total || k >= total;
+                    if !tail_above_threshold || exhausted {
+                        candidates.extend(
+                            results
+                                .into_iter()
+                                .map(|(id, _)| AttributeVertex::new(type_id, AttributeID::Vector(id))),
+                        );
+                        break;
                     }
-                    Err(err) => matching.push(Err(err)),
+                    k = (k * 4).min(total);
+                }
+            }
+
+            // 2) this transaction's buffered vector writes: not yet in the index
+            for (key, write) in snapshot.iterate_writes() {
+                if matches!(write, Write::Delete)
+                    || !AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes())
+                {
+                    continue;
+                }
+                let vertex = AttributeVertex::decode(key.bytes());
+                if vertex.type_id_() == type_id {
+                    candidates.insert(vertex);
+                }
+            }
+
+            for vertex in candidates {
+                // MVCC re-check: the vector store is versionless; whether the attribute exists
+                // for this snapshot is decided by the KV key (delete tombstones, visibility)
+                let exists = snapshot
+                    .get_mapped(vertex.into_storage_key().as_reference(), |_| (), storage_counters.clone())
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                    .is_some();
+                if !exists {
+                    continue;
+                }
+                let attribute = Attribute::new(vertex);
+                let value = attribute.get_value(snapshot, thing_manager, storage_counters.clone())?;
+                if let Value::Vector(vector) = &value {
+                    let similarity = cosine_similarity(&query, vector.as_ref());
+                    if similarity >= threshold {
+                        matching.push(Ok((VariableValue::Thing(Thing::Attribute(attribute)), similarity)));
+                    }
                 }
             }
         }

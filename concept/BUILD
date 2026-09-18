@@ -58,6 +58,7 @@ rust_library(
         "@crates//:sentry",
         "@crates//:serde",
         "@crates//:tracing",
+        "@crates//:usearch",
     ],
     proc_macro_deps = [
         "@crates//:paste",

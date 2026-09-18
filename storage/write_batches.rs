@@ -14,6 +14,7 @@ use rocksdb::WriteBatch;
 
 use super::{MVCCKey, StorageOperation};
 use crate::{
+    CommitObserver,
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
@@ -24,20 +25,31 @@ pub(crate) struct WriteBatches {
 }
 
 impl WriteBatches {
-    pub(crate) fn from_operations(seq: SequenceNumber, operations: &OperationsBuffer) -> Self {
+    pub(crate) fn from_operations(
+        seq: SequenceNumber,
+        operations: &OperationsBuffer,
+        commit_observer: Option<&dyn CommitObserver>,
+    ) -> Self {
         let mut write_batches = Self::default();
 
         for (index, buffer) in operations.write_buffers().enumerate() {
             let writes = buffer.writes();
             if !writes.is_empty() {
+                let keyspace_id = buffer.keyspace_id;
                 let write_batch = write_batches[index].insert(WriteBatch::default());
                 for (key, write) in writes {
+                    // externally-owned values (e.g. vectors) are not materialised in the KV store:
+                    // the key is written with an empty value; the value lives with the CommitObserver
+                    let value_owned_externally =
+                        commit_observer.is_some_and(|observer| observer.owns_value(keyspace_id, key));
                     match write {
                         Write::Insert { value } => {
+                            let value: &[u8] = if value_owned_externally { &[] } else { value };
                             write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                         }
                         Write::Put { value, reinsert, .. } => {
                             if reinsert.load(Ordering::SeqCst) {
+                                let value: &[u8] = if value_owned_externally { &[] } else { value };
                                 write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }

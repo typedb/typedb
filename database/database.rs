@@ -17,7 +17,10 @@ use std::{
 };
 
 use concept::{
-    thing::statistics::{Statistics, StatisticsError},
+    thing::{
+        statistics::{Statistics, StatisticsError},
+        vector_store::VectorStore,
+    },
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -86,6 +89,7 @@ pub struct Database<D> {
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
+    pub(super) vector_store: Arc<VectorStore>,
 
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
@@ -109,6 +113,10 @@ impl<D> Database<D> {
 
     pub fn name_arc(&self) -> Arc<str> {
         self.name.clone()
+    }
+
+    pub fn vector_store(&self) -> &Arc<VectorStore> {
+        &self.vector_store
     }
 
     // Must be called before serving write transactions in case the storage was modified with
@@ -295,6 +303,8 @@ impl Database<WALClient> {
             MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
                 .map_err(|error| StorageOpen { typedb_source: error })?,
         );
+        let vector_store = Arc::new(VectorStore::new());
+        storage.set_commit_observer(vector_store.clone());
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
@@ -326,7 +336,13 @@ impl Database<WALClient> {
             schema_txn_lock.clone(),
             query_cache.clone(),
         );
-        let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(
+            name.to_owned(),
+            path.to_owned(),
+            SequenceNumber::MIN,
+            storage.clone(),
+            vector_store.clone(),
+        );
 
         Ok(Database::<WALClient> {
             name: Arc::<str>::from(name),
@@ -335,6 +351,7 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
+            vector_store,
             schema,
             query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
@@ -379,9 +396,26 @@ impl Database<WALClient> {
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
+        // the vector store must be loaded BEFORE storage recovery: recovery replays the WAL tail
+        // through the commit observer, layering post-checkpoint vector writes onto the loaded store
+        let vector_store = match &checkpoint {
+            Some(reader) => match reader.get_additional_data::<VectorStore>() {
+                Ok(store) => Arc::new(store),
+                Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => Arc::new(VectorStore::new()),
+                Err(err) => return Err(CheckpointLoad { name: name.to_string(), typedb_source: err }),
+            },
+            None => Arc::new(VectorStore::new()),
+        };
         let storage = Arc::new(
-            MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint, rocks_resources)
-                .map_err(|error| StorageOpen { typedb_source: error })?,
+            MVCCStorage::load::<EncodingKeyspace>(
+                &name,
+                path,
+                wal_client,
+                &checkpoint,
+                rocks_resources,
+                Some(vector_store.clone()),
+            )
+            .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
@@ -441,8 +475,13 @@ impl Database<WALClient> {
             schema_txn_lock.clone(),
             query_cache.clone(),
         );
-        let checkpoint_fn =
-            make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(
+            name.to_owned(),
+            path.to_owned(),
+            checkpoint_sequence_number,
+            storage.clone(),
+            vector_store.clone(),
+        );
 
         let database = Database::<WALClient> {
             name: Arc::<str>::from(name),
@@ -451,6 +490,7 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
+            vector_store,
             schema,
             query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
@@ -472,7 +512,7 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        checkpoint_storage(&self.name, &self.path, &self.storage)
+        checkpoint_storage(&self.name, &self.path, &self.storage, &self.vector_store)
     }
 
     #[allow(clippy::drop_non_drop)]
@@ -528,6 +568,7 @@ impl Database<WALClient> {
             None => return Err(CorruptionPartialResetThingVertexGeneratorInUse {}),
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
+        self.vector_store.clear();
 
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.snapshot_watermark());
@@ -560,11 +601,12 @@ fn make_checkpoint_fn(
     path: PathBuf,
     mut prev_checkpoint: SequenceNumber,
     storage: Arc<MVCCStorage<WALClient>>,
+    vector_store: Arc<VectorStore>,
 ) -> impl FnMut() {
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
-            checkpoint_storage(&database_name, &path, &storage).unwrap();
+            checkpoint_storage(&database_name, &path, &storage, &vector_store).unwrap();
             prev_checkpoint = watermark;
         }
     }
@@ -574,10 +616,14 @@ fn checkpoint_storage(
     database_name: &str,
     path: &Path,
     storage: &MVCCStorage<WALClient>,
+    vector_store: &VectorStore,
 ) -> Result<(), CheckpointCreateError> {
     debug!("Starting checkpoint for database {database_name}");
     let checkpoint = CheckpointWriter::new(path)?;
     storage.checkpoint(&checkpoint)?;
+    // dumped after the storage watermark is read: commits apply to the vector store before the
+    // watermark advances, so the dump is a superset of the checkpoint - never missing anything
+    checkpoint.add_extension(vector_store)?;
     fail_point!(UNFINISHED_CHECKPOINT);
     checkpoint.finish()?;
     debug!("Finished checkpoint for database {database_name}");

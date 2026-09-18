@@ -62,6 +62,9 @@ features = {}
 	[dependencies.storage]
 		workspace = true
 
+	[dependencies.usearch]
+		workspace = true
+
 	[dependencies.encoding]
 		workspace = true
 

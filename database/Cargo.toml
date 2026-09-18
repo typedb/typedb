@@ -115,3 +115,7 @@ features = {}
 	path = "tests/diagnostics_posthog_pii.rs"
 	name = "test_diagnostics_posthog_pii"
 
+[[test]]
+	path = "tests/vector_durability.rs"
+	name = "test_vector_durability"
+
