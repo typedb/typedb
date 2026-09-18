@@ -5954,7 +5954,6 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 name = "typeql"
 version = "0.0.0"
 source = "git+https://github.com/typedb/typeql?rev=3a73e4714a4be83377c7b21546e1dc6fdc296c6f#3a73e4714a4be83377c7b21546e1dc6fdc296c6f"
->>>>>>> 59d02bee67 (Squash: Introduce if stages in writes)
 dependencies = [
  "chrono",
  "itertools 0.14.0",
