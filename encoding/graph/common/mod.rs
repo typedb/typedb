@@ -7,7 +7,7 @@
 pub(crate) mod schema_id_allocator;
 pub(crate) mod value_hasher;
 
-pub enum ExistingOrNew<T> {
+pub(crate) enum ExistingOrNew<T> {
     Existing(T),
     New(T),
 }
@@ -21,7 +21,7 @@ impl<T> ExistingOrNew<T> {
 
     pub(crate) fn map<U, F>(self, mapper: F) -> ExistingOrNew<U>
     where
-        F: Fn(T) -> U,
+        F: FnOnce(T) -> U,
     {
         match self {
             ExistingOrNew::Existing(existing) => ExistingOrNew::Existing(mapper(existing)),

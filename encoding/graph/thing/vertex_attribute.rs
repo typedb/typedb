@@ -15,13 +15,12 @@ use storage::{
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
 };
-use storage::snapshot::WritableSnapshot;
-use crate::graph::common::ExistingOrNew;
+
 use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         Typed,
-        common::value_hasher::HashedID,
+        common::{ExistingOrNew, value_hasher::HashedID},
         thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
         type_::vertex::TypeID,
     },
@@ -206,10 +205,6 @@ impl ThingVertex for AttributeVertex {
             return None;
         }
         Some(Self::decode(bytes))
-    }
-
-    fn lock_unmodifiable(&self, snapshot: &mut impl WritableSnapshot) {
-        snapshot.unmodifiable_lock_add(self.clone().into_storage_key().into_owned_array())
     }
 }
 
@@ -838,36 +833,6 @@ impl StructAttributeID {
         Self { bytes }
     }
 
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
-        type_id: TypeID,
-        struct_bytes: StructBytes<'_, INLINE_LENGTH>,
-        snapshot: &Snapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<Self, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Struct);
-        let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);
-        let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
-            snapshot,
-            hasher,
-            keyspace,
-            &ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
-                attribute_prefix.bytes(),
-                &ValueTypeCategory::Struct.to_bytes(),
-            ]),
-            struct_bytes.bytes(),
-        )?;
-
-        let disambiguated_hash= existing_or_new.into_inner();
-
-        let mut bytes = [0; Self::LENGTH];
-        bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Struct.to_bytes());
-        bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
-        Ok(Self { bytes })
-    }
-
     pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
@@ -877,6 +842,21 @@ impl StructAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
+        match Self::build_or_find_hashed_id(type_id, struct_bytes, snapshot, hasher)? {
+            ExistingOrNew::Existing(hashed_id) => Ok(Some(hashed_id)),
+            ExistingOrNew::New(_) => Ok(None),
+        }
+    }
+
+    pub(crate) fn build_or_find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        struct_bytes: StructBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<ExistingOrNew<Self>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
         let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Struct);
         let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
@@ -890,20 +870,16 @@ impl StructAttributeID {
             struct_bytes.bytes(),
         )?;
 
-        match existing_or_new {
-            ExistingOrNew::Existing(disambiguated_hash) => {
-                debug_assert!(
-                    disambiguated_hash[Self::HASH_DISAMBIGUATOR_BYTE_INDEX]
-                        & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
-                        != 0
-                );
-                let mut bytes = [0; Self::LENGTH];
-                bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Struct.to_bytes());
-                bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
-                Ok(Some(Self { bytes }))
-            }
-            ExistingOrNew::New(_) => Ok(None),
-        }
+        Ok(existing_or_new.map(|disambiguated_hash| {
+            debug_assert!(
+                disambiguated_hash[Self::HASH_DISAMBIGUATOR_BYTE_INDEX] & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+                    != 0
+            );
+            let mut bytes = [0; Self::LENGTH];
+            bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Struct.to_bytes());
+            bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
+            Self { bytes }
+        }))
     }
 
     // write the deterministic ID prefix for the provided struct value, and return the length of the prefix written

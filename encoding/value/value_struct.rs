@@ -318,7 +318,8 @@ impl StructIndexEntry<'_> {
                     Self::KEYSPACE,
                     &prefix_key,
                     string_bytes.bytes(),
-                )?.into_inner();
+                )?
+                .into_inner();
             buf.extend_from_slice(&disambiguated_hash_bytes);
         }
         Ok(())

@@ -15,8 +15,7 @@ use storage::{
     snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
 };
 
-use crate::EncodingKeyspace;
-use crate::graph::common::ExistingOrNew;
+use crate::{EncodingKeyspace, graph::common::ExistingOrNew};
 
 pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;

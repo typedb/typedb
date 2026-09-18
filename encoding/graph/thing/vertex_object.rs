@@ -9,7 +9,7 @@ use std::{fmt, mem, ops::Range};
 use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_value::StorageKeyReference, keyspace::KeyspaceSet};
-use storage::snapshot::WritableSnapshot;
+
 use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
@@ -136,10 +136,6 @@ impl ThingVertex for ObjectVertex {
 
         // all byte patterns beyond the prefix are valid for object vertices
         Some(Self::decode(bytes))
-    }
-
-    fn lock_unmodifiable(&self, snapshot: &mut impl WritableSnapshot) {
-        snapshot.unmodifiable_lock_add(self.clone().into_storage_key().into_owned_array())
     }
 }
 

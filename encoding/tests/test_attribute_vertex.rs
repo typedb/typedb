@@ -12,7 +12,7 @@ use bytes::{Bytes, byte_array::ByteArray};
 use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
+    EncodingKeyspace, Keyable,
     graph::{
         Typed,
         thing::{
@@ -28,7 +28,7 @@ use storage::{
     MVCCStorage, StorageCommitError,
     durability_client::WALClient,
     isolation_manager::IsolationConflict,
-    snapshot::{CommittableSnapshot, SnapshotError},
+    snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
@@ -418,6 +418,91 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
                 ));
             }
         }
+    }
+}
+
+fn assert_commit_conflict(err: SnapshotError, expected: IsolationConflict) {
+    match err {
+        SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { conflict, .. } } => {
+            assert_eq!(conflict, expected)
+        }
+        other => panic!("Expected isolation conflict {expected:?}, got: {other:?}"),
+    }
+}
+
+#[test]
+fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
+    // Once a hashed (non-inline) string value exists, its ID is fixed: concurrent transactions that re-put the same
+    // value only require the vertex to stay unmodified, and must not conflict with each other.
+    // Contrast with `same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes`, where the value
+    // does not exist yet and both snapshots race to allocate the disambiguator, which must conflict.
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+    let generator = ThingVertexGenerator::new();
+    let s = "Hello world, this is a long attribute string to be encoded.";
+    let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
+
+    let existing_vertex = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).expect("Initial creation should succeed");
+        vertex
+    };
+    assert!(!existing_vertex.attribute_id().unwrap_string().is_inline());
+
+    let mut snapshot_a = storage.clone().open_snapshot_write();
+    let mut snapshot_b = storage.clone().open_snapshot_write();
+    let vertex_a = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a).unwrap();
+    let vertex_b = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b).unwrap();
+    assert_eq!(vertex_a, existing_vertex);
+    assert_eq!(vertex_b, existing_vertex);
+
+    snapshot_a.commit(&mut CommitProfile::DISABLED).expect("Re-putting an existing value should commit");
+    snapshot_b.commit(&mut CommitProfile::DISABLED).expect("Concurrently re-putting an existing value should commit");
+}
+
+#[test]
+fn existing_hashed_string_conflicts_with_concurrent_delete() {
+    // A transaction that re-puts an existing hashed value relies on that vertex (and so its disambiguator tail)
+    // staying in place. A concurrent delete of the vertex must conflict, in either commit order.
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+    let generator = ThingVertexGenerator::new();
+    let s = "Hello world, this is a long attribute string to be encoded.";
+    let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
+
+    let existing_vertex = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).expect("Initial creation should succeed");
+        vertex
+    };
+    let vertex_key = existing_vertex.into_storage_key().into_owned_array();
+
+    // put commits first: the later delete must fail, since the put required the key to remain
+    {
+        let mut snapshot_put = storage.clone().open_snapshot_write();
+        let mut snapshot_delete = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put).unwrap();
+        assert_eq!(vertex, existing_vertex);
+        snapshot_delete.delete(vertex_key.clone());
+
+        snapshot_put.commit(&mut CommitProfile::DISABLED).expect("Re-putting an existing value should commit");
+        let err = snapshot_delete.commit(&mut CommitProfile::DISABLED).expect_err("Delete should conflict");
+        assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
+    }
+
+    // delete commits first: the later put must fail, since the key it required was deleted
+    {
+        let mut snapshot_put = storage.clone().open_snapshot_write();
+        let mut snapshot_delete = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put).unwrap();
+        assert_eq!(vertex, existing_vertex);
+        snapshot_delete.delete(vertex_key.clone());
+
+        snapshot_delete.commit(&mut CommitProfile::DISABLED).expect("Delete should commit");
+        let err = snapshot_put.commit(&mut CommitProfile::DISABLED).expect_err("Put should conflict");
+        assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
     }
 }
 
