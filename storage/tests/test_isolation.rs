@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+
 use std::{path::Path, sync::Arc};
 
 use bytes::byte_array::ByteArray;
@@ -114,7 +116,6 @@ fn g0_update_conflicts_fail() {
     );
 }
 
-#[ignore] // TODO: This currently fails because of the behaviour flagged in typedb#7033
 #[test]
 fn g0_dirty_writes() {
     // With snapshots, all writes happen together at commit time.
@@ -140,25 +141,17 @@ fn g0_dirty_writes() {
     let result_2 = snapshot_2.commit(&mut CommitProfile::disabled());
 
     // Check state
-    match result_2 {
-        Ok(_) => {
-            let reader_after_2 = storage.clone().open_snapshot_read();
-            assert_eq!(
-                *reader_after_2
-                    .get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED)
-                    .unwrap()
-                    .unwrap(),
-                *value_12
-            );
-            assert_eq!(
-                *reader_after_2
-                    .get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED)
-                    .unwrap()
-                    .unwrap(),
-                *value_22
-            );
-        }
-        Err(_) => panic!(),
+    {
+        result_2.unwrap();
+        let reader_after_2 = storage.clone().open_snapshot_read();
+        assert_eq!(
+            *reader_after_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap().unwrap(),
+            *value_12
+        );
+        assert_eq!(
+            *reader_after_2.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED).unwrap().unwrap(),
+            *value_22
+        );
     }
 
     // Continue
@@ -175,7 +168,6 @@ fn g0_dirty_writes() {
             *reader_after_1.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED).unwrap().unwrap(),
             *value_21
         );
-        // reader_after_1.close();
     }
 }
 

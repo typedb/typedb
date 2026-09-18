@@ -365,13 +365,13 @@ impl<Durability> MVCCStorage<Durability> {
                 match known_to_exist {
                     KnownToExist::Exists => {
                         debug_assert!(
-                            self.get::<0>(
+                            self.get::<BUFFER_VALUE_INLINE>(
                                 snapshot.iterator_pool(),
                                 wrapped,
                                 snapshot.open_sequence_number(),
                                 storage_counters.clone()
                             )
-                            .is_ok_and(|opt| opt.is_some())
+                            .is_ok_and(|opt| opt.is_some_and(|bytes| &bytes == value))
                         );
                         reinsert.store(false, Ordering::Release);
                     }
