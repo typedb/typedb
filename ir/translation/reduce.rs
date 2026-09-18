@@ -13,7 +13,10 @@ use typeql::{
 
 use crate::{
     RepresentationError,
-    pattern::variable_category::VariableCategory,
+    pattern::{
+        AssignedVariable,
+        variable_category::{VariableCategory, VariableOptionality},
+    },
     pipeline::reduce::{AssignedReduction, Reduce, Reducer},
     translation::{PipelineTranslationContext, verify_variable_available},
 };
@@ -33,34 +36,29 @@ pub fn translate_reduce(
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
-        let (category, returned_is_optional) = resolve_category_optionality(&reducer);
+        let (category, returned_optionality) = resolve_category_optionality(&reducer);
         let var_name = reduce_assign.variable.name().ok_or_else(|| {
             Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: reduce_assign.variable.span() })
         })?;
-        let assigned_is_optional = match &reduce_assign.variable {
-            Variable::Anonymous { optional, .. } | Variable::Named { optional, .. } => optional.is_some(),
-        };
-        let optionality_mismatch_check = match (assigned_is_optional, returned_is_optional) {
-            (true, true) | (false, false) => Ok(()),
-            (true, false) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
-                variable: var_name.to_owned(),
-                source_span: reduce_assign.variable.span(),
-            }),
-            (false, true) => Err(RepresentationError::UnmarkedOptionalAssignment {
-                variable: var_name.to_owned(),
-                source_span: reduce_assign.variable.span(),
-            }),
-        };
-        if let Err(err) = optionality_mismatch_check {
-            error::optional_usage_error!(err);
-        }
         let assigned_var = context.register_reduced_variable(
             var_name,
             category,
-            returned_is_optional,
+            returned_optionality,
             reduce_assign.variable.span(),
             reducer,
         )?;
+        let assigned_optionality = match &reduce_assign.variable {
+            Variable::Anonymous { optional, .. } | Variable::Named { optional, .. } => {
+                optional.as_ref().map_or(VariableOptionality::Required, |_| VariableOptionality::Optional)
+            }
+        };
+        AssignedVariable::new_with_optionality(assigned_var, assigned_optionality)
+            .validate_assignment_optionality_matches(
+                || var_name.to_owned(),
+                reduce_assign.variable.span(),
+                returned_optionality,
+            )?;
+
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
@@ -70,16 +68,16 @@ pub fn translate_reduce(
     Ok(Reduce::new(reductions, group, typeql_reduce.span()))
 }
 
-pub(super) fn resolve_category_optionality(reduce: &Reducer) -> (VariableCategory, bool) {
+pub(super) fn resolve_category_optionality(reduce: &Reducer) -> (VariableCategory, VariableOptionality) {
     match reduce {
-        Reducer::Count => (VariableCategory::Value, false),
-        Reducer::CountVar(_) => (VariableCategory::Value, false),
-        Reducer::Sum(_) => (VariableCategory::Value, false),
-        Reducer::Max(_) => (VariableCategory::Value, true),
-        Reducer::Mean(_) => (VariableCategory::Value, true),
-        Reducer::Median(_) => (VariableCategory::Value, true),
-        Reducer::Min(_) => (VariableCategory::Value, true),
-        Reducer::Std(_) => (VariableCategory::Value, true),
+        Reducer::Count => (VariableCategory::Value, VariableOptionality::Required),
+        Reducer::CountVar(_) => (VariableCategory::Value, VariableOptionality::Required),
+        Reducer::Sum(_) => (VariableCategory::Value, VariableOptionality::Required),
+        Reducer::Max(_) => (VariableCategory::Value, VariableOptionality::Optional),
+        Reducer::Mean(_) => (VariableCategory::Value, VariableOptionality::Optional),
+        Reducer::Median(_) => (VariableCategory::Value, VariableOptionality::Optional),
+        Reducer::Min(_) => (VariableCategory::Value, VariableOptionality::Optional),
+        Reducer::Std(_) => (VariableCategory::Value, VariableOptionality::Optional),
     }
 }
 

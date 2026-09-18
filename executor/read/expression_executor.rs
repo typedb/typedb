@@ -22,7 +22,7 @@ use compiler::{
                 CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDecimal, CastUnaryIntegerToDouble, ImplicitCast,
             },
             list_operations::{ListConstructor, ListIndex, ListIndexRange},
-            load::{LoadConstant, LoadVariable},
+            load::{LoadConstant, LoadVariable, MayShortCircuitList, MayShortCircuitValue},
             op_codes::ExpressionOpCode,
             operators::{
                 OpDateSubtractDate, OpDateTimeAddDuration, OpDateTimeSubtractDate, OpDateTimeSubtractDateTime,
@@ -53,6 +53,7 @@ use crate::pipeline::stage::ExecutionContext;
 pub enum ExpressionValue {
     Single(Value<'static>),
     List(Arc<[Value<'static>]>),
+    None,
 }
 
 impl ExpressionValue {
@@ -84,6 +85,7 @@ impl ExpressionValue {
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ExpressionValue::List(as_value_list.into()))
             }
+            VariableValue::None => Ok(ExpressionValue::None),
             other => Err(ExpressionEvaluationError::CastFailed {
                 description: format!("can only get values from {}", other.variant_name()),
             }),
@@ -96,6 +98,7 @@ impl From<ExpressionValue> for VariableValue<'static> {
         match value {
             ExpressionValue::Single(value) => VariableValue::Value(value),
             ExpressionValue::List(values) => VariableValue::ValueList(values),
+            ExpressionValue::None => VariableValue::None,
         }
     }
 }
@@ -107,10 +110,13 @@ pub struct ExpressionExecutorState<'this> {
     constants: &'this [ParameterID],
     next_constant_index: usize,
     parameter_registry: &'this ParameterRegistry,
+    instructions: &'this [ExpressionOpCode],
+    instruction_pointer: usize,
 }
 
 impl<'this> ExpressionExecutorState<'this> {
     fn new(
+        instructions: &'this [ExpressionOpCode],
         variables: Box<[ExpressionValue]>,
         constants: &'this [ParameterID],
         parameter_registry: &'this ParameterRegistry,
@@ -122,7 +128,25 @@ impl<'this> ExpressionExecutorState<'this> {
             constants,
             next_constant_index: 0,
             parameter_registry,
+            instructions,
+            instruction_pointer: 0,
         }
+    }
+
+    fn next_instruction(&mut self) -> Option<ExpressionOpCode> {
+        if self.instruction_pointer < self.instructions.len() {
+            let op_code = self.instructions[self.instruction_pointer].clone();
+            self.instruction_pointer += 1;
+            Some(op_code)
+        } else {
+            None
+        }
+    }
+
+    fn short_circuit(&mut self) {
+        self.instruction_pointer = self.instructions.len();
+        self.stack.clear();
+        self.push_none();
     }
 
     fn push_value(&mut self, value: Value<'static>) {
@@ -133,17 +157,57 @@ impl<'this> ExpressionExecutorState<'this> {
         self.stack.push(ExpressionValue::List(value_list))
     }
 
-    fn pop_value(&mut self) -> Value<'static> {
+    fn push_none(&mut self) {
+        self.stack.push(ExpressionValue::None)
+    }
+
+    fn pop_value(&mut self) -> Result<Value<'static>, ExpressionEvaluationError> {
         match self.stack.pop().unwrap() {
-            ExpressionValue::Single(value) => value,
-            _ => unreachable!(),
+            ExpressionValue::Single(value) => Ok(value),
+            ExpressionValue::List(_) => Err(ExpressionEvaluationError::InternalPoppedCategoryMismatch {
+                expected: "Single".to_owned(),
+                actual: "List".to_owned(),
+            }),
+            ExpressionValue::None => Err(ExpressionEvaluationError::InternalPoppedCategoryMismatch {
+                expected: "Single".to_owned(),
+                actual: "None".to_owned(),
+            }),
         }
     }
 
-    fn pop_list(&mut self) -> Arc<[Value<'static>]> {
+    fn pop_list(&mut self) -> Result<Arc<[Value<'static>]>, ExpressionEvaluationError> {
         match self.stack.pop().unwrap() {
-            ExpressionValue::List(value_list) => value_list,
-            _ => unreachable!(),
+            ExpressionValue::List(value_list) => Ok(value_list),
+            ExpressionValue::Single(_) => Err(ExpressionEvaluationError::InternalPoppedCategoryMismatch {
+                expected: "List".to_owned(),
+                actual: "Single".to_owned(),
+            }),
+            ExpressionValue::None => Err(ExpressionEvaluationError::InternalPoppedCategoryMismatch {
+                expected: "List".to_owned(),
+                actual: "None".to_owned(),
+            }),
+        }
+    }
+
+    pub(crate) fn pop_value_or_none(&mut self) -> Result<Option<Value<'static>>, ExpressionEvaluationError> {
+        match self.stack.pop().unwrap() {
+            ExpressionValue::Single(value) => Ok(Some(value)),
+            ExpressionValue::None => Ok(None),
+            ExpressionValue::List(_) => Err(ExpressionEvaluationError::InternalPoppedCategoryMismatch {
+                expected: "Value or None".to_owned(),
+                actual: "List".to_owned(),
+            }),
+        }
+    }
+
+    pub(crate) fn pop_list_or_none(&mut self) -> Result<Option<Arc<[Value<'static>]>>, ExpressionEvaluationError> {
+        match self.stack.pop().unwrap() {
+            ExpressionValue::List(value_list) => Ok(Some(value_list)),
+            ExpressionValue::None => Ok(None),
+            ExpressionValue::Single(_) => Err(ExpressionEvaluationError::InternalPoppedCategoryMismatch {
+                expected: "List or None".to_owned(),
+                actual: "Single".to_owned(),
+            }),
         }
     }
 
@@ -170,9 +234,14 @@ pub fn evaluate_expression<ID: Hash + Eq>(
         variables.push(input.get(v).unwrap().clone());
     }
 
-    let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants(), parameters);
-    for instr in compiled.instructions() {
-        evaluate_instruction(instr, &mut state)?;
+    let mut state = ExpressionExecutorState::new(
+        compiled.instructions(),
+        variables.into_boxed_slice(),
+        compiled.constants(),
+        parameters,
+    );
+    while let Some(instr) = state.next_instruction() {
+        evaluate_instruction(&instr, &mut state)?;
     }
     Ok(state.stack.pop().unwrap())
 }
@@ -197,8 +266,8 @@ pub trait ExpressionEvaluation {
 
 impl<'a, E: BinaryExpression<'a>> ExpressionEvaluation for Binary<'a, E> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a2: E::T2 = E::T2::from_db_value(state.pop_value()).unwrap();
-        let a1: E::T1 = E::T1::from_db_value(state.pop_value()).unwrap();
+        let a2: E::T2 = E::T2::from_db_value(state.pop_value()?).unwrap();
+        let a1: E::T1 = E::T1::from_db_value(state.pop_value()?).unwrap();
         state.push_value(E::evaluate(a1, a2)?.to_db_value());
         Ok(())
     }
@@ -206,8 +275,8 @@ impl<'a, E: BinaryExpression<'a>> ExpressionEvaluation for Binary<'a, E> {
 
 impl ExpressionEvaluation for ListConstructor {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let n_elements = state.pop_value().unwrap_integer() as usize;
-        let elements: Arc<[Value<'static>]> = (0..n_elements).map(|_| state.pop_value()).collect();
+        let n_elements = state.pop_value()?.unwrap_integer() as usize;
+        let elements: Arc<[Value<'static>]> = (0..n_elements).map(|_| state.pop_value()).collect::<Result<_, _>>()?;
         state.push_list(elements);
         Ok(())
     }
@@ -215,8 +284,8 @@ impl ExpressionEvaluation for ListConstructor {
 
 impl ExpressionEvaluation for ListIndex {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let list = state.pop_list();
-        let index = state.pop_value().unwrap_integer();
+        let list = state.pop_list()?;
+        let index = state.pop_value()?.unwrap_integer();
         if index >= 0 {
             if let Some(value) = list.get(index as usize) {
                 state.push_value(value.clone()); // Should we avoid cloning?
@@ -232,9 +301,9 @@ impl ExpressionEvaluation for ListIndex {
 
 impl ExpressionEvaluation for ListIndexRange {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let list = state.pop_list();
-        let to_index = state.pop_value().unwrap_integer();
-        let from_index = state.pop_value().unwrap_integer();
+        let list = state.pop_list()?;
+        let to_index = state.pop_value()?.unwrap_integer();
+        let from_index = state.pop_value()?.unwrap_integer();
         if to_index < 0 {
             return Err(ExpressionEvaluationError::ListIndexNegative { index: to_index });
         } else if from_index < 0 {
@@ -253,6 +322,7 @@ impl ExpressionEvaluation for LoadVariable {
         match state.next_variable() {
             ExpressionValue::Single(single) => state.push_value(single),
             ExpressionValue::List(list) => state.push_list(list),
+            ExpressionValue::None => state.push_none(),
         }
         Ok(())
     }
@@ -266,11 +336,33 @@ impl ExpressionEvaluation for LoadConstant {
     }
 }
 
+impl ExpressionEvaluation for MayShortCircuitValue {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
+        if let Some(value) = state.pop_value_or_none()? {
+            state.push_value(value);
+        } else {
+            state.short_circuit();
+        }
+        Ok(())
+    }
+}
+
+impl ExpressionEvaluation for MayShortCircuitList {
+    fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
+        if let Some(list) = state.pop_list_or_none()? {
+            state.push_list(list);
+        } else {
+            state.short_circuit();
+        }
+        Ok(())
+    }
+}
+
 impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionEvaluation
     for CastUnary<'a, From, To>
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let value_before = From::from_db_value(state.pop_value()).unwrap();
+        let value_before = From::from_db_value(state.pop_value()?).unwrap();
         let value_after = To::cast(value_before)?.to_db_value();
         state.push_value(value_after);
         Ok(())
@@ -281,8 +373,8 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
     for CastBinaryLeft<'a, From, To>
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let right = state.pop_value();
-        let left_before = From::from_db_value(state.pop_value()).unwrap();
+        let right = state.pop_value()?;
+        let left_before = From::from_db_value(state.pop_value()?).unwrap();
         let left_after = To::cast(left_before)?.to_db_value();
         state.push_value(left_after);
         state.push_value(right);
@@ -294,7 +386,7 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
     for CastBinaryRight<'a, From, To>
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let right_before = From::from_db_value(state.pop_value()).unwrap();
+        let right_before = From::from_db_value(state.pop_value()?).unwrap();
         let right_after = To::cast(right_before)?.to_db_value();
         state.push_value(right_after);
         Ok(())
@@ -303,7 +395,7 @@ impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> Expressio
 
 impl<'a, E: UnaryExpression<'a>> ExpressionEvaluation for Unary<'a, E> {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let a1: E::T1 = E::T1::from_db_value(state.pop_value()).unwrap();
+        let a1: E::T1 = E::T1::from_db_value(state.pop_value()?).unwrap();
         state.push_value(E::evaluate(a1)?.to_db_value());
         Ok(())
     }
