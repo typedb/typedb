@@ -85,8 +85,8 @@ fn build_with_functions() {
 fn optional_writes() {
     let query = r#"
         match $p isa person; try { $p has name $name; };
-        delete try { isset $name; has $name of $p; };
-        insert $q isa person; try { isset $name; $q has $name; };
+        delete if { isset $name; } then { has $name of $p; };
+        insert $q isa person; if { isset $name; } then { $q has $name; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -96,7 +96,7 @@ fn optional_writes() {
 
     let query = r#"
         insert try { $p isa person; };
-        delete try { isset $p; $p; };
+        delete if { isset $p; } then { $p; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -106,8 +106,8 @@ fn optional_writes() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        delete try { isset $name; has $name of $p; }; try { isset $age; has $age of $p; };
-        insert $q isa person; try { isset $name; $q has $name; }; try { isset $age; $q has $age; };
+        delete if { isset $name; } then {has $name of $p; }; if { isset $age; } then { has $age of $p; };
+        insert $q isa person; if { isset $name; } then { $q has $name; }; if { isset $age; } then { $q has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -117,7 +117,7 @@ fn optional_writes() {
 
     let query = r#"
         match $p isa person; try { $p has name $name; };
-        put $q isa person; try { isset $name; $q has $name; };
+        put $q isa person; if { isset $name; } then { $q has $name; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -127,7 +127,7 @@ fn optional_writes() {
 
     let query = r#"
         match $p isa person; try { $p has name $name; };
-        update try { isset $name; $p has $name; };
+        update if { isset $name; } then { $p has $name; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -140,7 +140,7 @@ fn optional_writes() {
 fn multiple_optional_writes_in_a_block() {
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        delete try { isset $name, $age; has $name of $p; has $age of $p; };
+        delete if { isset $name, $age; } then { has $name of $p; has $age of $p; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -150,7 +150,7 @@ fn multiple_optional_writes_in_a_block() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        insert $q isa person; try { isset $name, $age; $q has $name; $q has $age; };
+        insert $q isa person; if { isset $name, $age; } then { $q has $name; $q has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -160,7 +160,7 @@ fn multiple_optional_writes_in_a_block() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        insert $q isa person; try { isset $name, $age; $q has $name, has $age; };
+        insert $q isa person; if { isset $name, $age; } then { $q has $name, has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -170,7 +170,7 @@ fn multiple_optional_writes_in_a_block() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        put $q isa person; try { isset $name, $age; $q has $name; $q has $age; };
+        put $q isa person; if { isset $name, $age; } then { $q has $name; $q has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -180,7 +180,7 @@ fn multiple_optional_writes_in_a_block() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        put $q isa person; try { isset $name, $age; $q has $name, has $age; };
+        put $q isa person; if { isset $name, $age; } then { $q has $name, has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -190,7 +190,7 @@ fn multiple_optional_writes_in_a_block() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        update try { isset $name, $age; $p has $name; $p has $age; };
+        update if { isset $name, $age; } then { $p has $name; $p has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -200,7 +200,7 @@ fn multiple_optional_writes_in_a_block() {
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
-        update try { isset $name, $age; $p has $name, has $age; };
+        update if { isset $name, $age; } then { $p has $name, has $age; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
@@ -211,6 +211,7 @@ fn multiple_optional_writes_in_a_block() {
 
 #[test]
 fn nested_optional_blocks_in_write() {
+    // These remain try, because nested if are supported.
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
         delete try { has $name of $p; try { has $age of $p; }; };
