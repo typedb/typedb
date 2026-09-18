@@ -339,6 +339,23 @@ impl AttributeID {
         }
     }
 
+    /// Whether this ID fully encodes its value, so the vertex stores no value. Hashed IDs (long strings, structs)
+    /// store the encoded value alongside the vertex.
+    pub fn is_inline(&self) -> bool {
+        match self {
+            | AttributeID::Boolean(_)
+            | AttributeID::Integer(_)
+            | AttributeID::Double(_)
+            | AttributeID::Decimal(_)
+            | AttributeID::Date(_)
+            | AttributeID::DateTime(_)
+            | AttributeID::DateTimeTZ(_)
+            | AttributeID::Duration(_) => true,
+            AttributeID::String(string_id) => string_id.is_inline(),
+            AttributeID::Struct(_) => false,
+        }
+    }
+
     pub fn bytes(&self) -> &[u8] {
         match self {
             AttributeID::Boolean(boolean_id) => boolean_id.bytes_ref(),

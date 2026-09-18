@@ -2765,30 +2765,19 @@ impl ThingManager {
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        // The unput must carry exactly the value the vertex generator put, which is derived from the ID:
-        // inlined IDs (all non-string types and short strings) encode the value in the key and store nothing,
+        // The unput must carry exactly the value the vertex generator put: inline IDs store no value,
         // while hashed IDs (long strings and structs) store the encoded value.
         let key = attribute.vertex().into_storage_key();
-        let value = match attribute.vertex().attribute_id() {
-            AttributeID::String(id) if !id.is_inline() => {
-                Self::get_stored_attribute_value(snapshot, key.as_reference(), storage_counters)?
-            }
-            AttributeID::Struct(_) => Self::get_stored_attribute_value(snapshot, key.as_reference(), storage_counters)?,
-            _ => ByteArray::empty(),
+        let value = if attribute.vertex().attribute_id().is_inline() {
+            ByteArray::empty()
+        } else {
+            snapshot
+                .get_mapped(key.as_reference(), ByteArray::copy, storage_counters)
+                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                .ok_or_else(|| Box::new(ConceptReadError::InternalMissingAttributeValue {}))?
         };
         snapshot.unput_val(key.into_owned_array(), value);
         Ok(())
-    }
-
-    fn get_stored_attribute_value(
-        snapshot: &impl ReadableSnapshot,
-        key: StorageKeyReference<'_>,
-        storage_counters: StorageCounters,
-    ) -> Result<ByteArray<BUFFER_VALUE_INLINE>, Box<ConceptReadError>> {
-        snapshot
-            .get_mapped(key, ByteArray::copy, storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-            .ok_or_else(|| Box::new(ConceptReadError::InternalMissingAttributeValue {}))
     }
 
     pub(crate) fn set_has_unordered(
