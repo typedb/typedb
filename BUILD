@@ -680,6 +680,8 @@ checkstyle_test(
         ".bazel-remote-cache.rc",
         ".bazel-cache-credential.json",
         ".git",
+        # Generated Nix lockfile (see flake.nix); hashes are content, not source.
+        "flake.lock",
         "LICENSE",
         "MODULE.bazel.lock",
         "VERSION",
