@@ -5,6 +5,14 @@
 { pkgs, ... }:
 let
   version = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ../VERSION);
+  # Full protocol tree: its build script compiles ../../proto/*.proto,
+  # which subdirectory vendoring drops. Patched in as a path dependency;
+  # hash recomputed whenever Cargo.lock moves the rev.
+  protocolFull = builtins.fetchGit {
+    url = "https://github.com/typedb/typedb-protocol.git";
+    rev = "310fef4e4ed2e735ed0fb2dc3248b4a35e604806";
+    narHash = "sha256-h3FzTYDvAnj/ma/rqT4nnvAqnKSMKNsKj5KDvnNFqp4=";
+  };
 in
 pkgs.rustPlatform.buildRustPackage {
   pname = "typedb";
@@ -39,13 +47,23 @@ pkgs.rustPlatform.buildRustPackage {
     snappy
   ];
 
+  # The git protocol dep cannot build from a subdirectory vendor copy, so
+  # it is patched to the full tree above. The lock updates offline (path
+  # sources are local); --locked is not enforced. Re-verify against remote
+  # builds; see nix/README.md.
+  postPatch = ''
+    cat >> Cargo.toml <<EOF
+    [patch."https://github.com/typedb/typedb-protocol"]
+    typedb-protocol = { path = "${protocolFull}/grpc/rust" }
+    EOF
+  '';
+
   # Unit tests only for the build gate: lib/bins are hermetic, while the
   # integration suites (assembly, behaviour, crash recovery) start server
   # processes and need excluded infrastructure. Narrowed with evidence from
   # remote builds; see nix/README.md.
   doCheck = true;
   checkFlags = [
-    "--locked"
     "--lib"
     "--bins"
   ];
