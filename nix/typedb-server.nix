@@ -58,12 +58,19 @@ pkgs.rustPlatform.buildRustPackage {
     EOF
   '';
 
-  # Unit tests only for the build gate: lib/bins are hermetic, while the
-  # integration suites (assembly, behaviour, crash recovery) start server
-  # processes and need excluded infrastructure. Narrowed with evidence from
-  # remote builds; see nix/README.md.
+  # Unit suites only: member libs are hermetic. Excluded: the root binary
+  # (covered by the smoke checks), and the steps/http_steps behaviour-test
+  # helpers, whose `bdd` imports postdate the pinned protocol (upstream
+  # tests those through Bazel, not cargo). Re-verify against remote builds.
   doCheck = true;
   checkFlags = [
+    "--workspace"
+    "--exclude"
+    "typedb_server_bin"
+    "--exclude"
+    "steps"
+    "--exclude"
+    "http_steps"
     "--lib"
     "--bins"
   ];
