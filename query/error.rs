@@ -41,7 +41,7 @@ typedb_error! {
         GivenRowsMissingRequiredVariable(23, "The given rows are missing the required variable '{variable}'.", variable: String),
         ErrorDecodingGivenRowEntry(
             24,
-            "An error occured while decoding the given rows.",
+            "An error occurred while decoding the given rows.",
             typedb_source: Box<GivenRowDecodeError>,
         ),
     }
