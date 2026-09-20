@@ -29,15 +29,18 @@ The shell provides the Rust toolchain plus the native build inputs
 
 ```sh
 nix run .#typedb-server -- \
+  --config ./server/config.yml \
   --storage.data-directory ./data \
   --server.listen-address 127.0.0.1:1729
 ```
 
 A reference `server/config.yml` ships as
-`$out/share/typedb/config.yml.example`. The server never writes to the
-Nix store: point `--storage.data-directory` (and logging `directory`) at a
-writable path. See `server/config.yml` for every option, also settable as
-`--dotted.path` CLI flags.
+`$out/share/typedb/config.yml.example`. The server mandates a config file
+(a bare `config.yml` resolves against the executable directory, so pass
+`--config` explicitly outside a checkout); CLI flags override file values.
+The server never writes to the Nix store: point `--storage.data-directory`
+(and logging `directory`) at a writable path. See `server/config.yml` for
+every option, also settable as `--dotted.path` CLI flags.
 
 ## Checks
 
