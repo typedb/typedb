@@ -61,9 +61,11 @@ pkgs.rustPlatform.buildRustPackage {
   # Unit suites only: member libs are hermetic. Excluded: the root binary
   # (covered by the smoke checks), and the steps/http_steps behaviour-test
   # helpers, whose `bdd` imports postdate the pinned protocol (upstream
-  # tests those through Bazel, not cargo). Re-verify against remote builds.
+  # tests those through Bazel, not cargo). cargoTestFlags (not checkFlags:
+  # those land after `--` as test-binary args). Re-verify against remote
+  # builds.
   doCheck = true;
-  checkFlags = [
+  cargoTestFlags = [
     "--workspace"
     "--exclude"
     "typedb_server_bin"
