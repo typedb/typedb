@@ -71,114 +71,66 @@ impl CommitDeltas {
         let mut links_index_deltas = DoubleHashMap::<_, _, Delta>::new();
 
         for (key, write) in commit_record.operations().iterate_writes() {
-            if write.is_delete() {
-                match DecodableKey::try_decode(key.bytes()) {
-                    Some(DecodableKey::EntityVertex(entity_vertex)) => {
-                        entity_deltas.entry(Entity::new(entity_vertex).type_()).or_default().deletes += 1;
-                    }
-                    Some(DecodableKey::RelationVertex(relation_vertex)) => {
-                        relation_deltas.entry(Relation::new(relation_vertex).type_()).or_default().deletes += 1;
-                    }
-                    Some(DecodableKey::AttributeVertex(attribute_vertex)) => {
-                        attribute_deltas.entry(Attribute::new(attribute_vertex).type_()).or_default().deletes += 1;
-                    }
-                    Some(DecodableKey::ThingEdgeHas(has_edge)) => {
-                        let owner = Object::new(has_edge.from()).type_();
-                        let attribute = Attribute::new(has_edge.to()).type_();
-                        has_attribute_deltas.double_entry(owner, attribute).or_default().deletes += 1;
-                    }
-                    Some(DecodableKey::ThingEdgeHasReverse(_)) => (), // handled above
-                    Some(DecodableKey::ThingEdgeLinks(links_edge)) if !links_edge.is_reverse() => {
-                        let relation = Relation::new(links_edge.from()).type_();
-                        let role = RoleType::build_from_type_id(links_edge.role_id());
-                        let player = Object::new(links_edge.to()).type_();
-                        relation_role_player_deltas.triple_entry(relation, role, player).or_default().deletes += 1;
-                    }
-                    Some(DecodableKey::ThingEdgeLinks(_)) => (), // handled above
-                    Some(DecodableKey::ThingEdgeIndexedRelation(index_relation_edge)) => {
-                        let player1 = Object::new(index_relation_edge.from()).type_();
-                        let player2 = Object::new(index_relation_edge.to()).type_();
-                        links_index_deltas.double_entry(player1, player2).or_default().deletes += 1;
-                    }
-
-                    Some(DecodableKey::VertexEntityType(_))
-                    | Some(DecodableKey::VertexRelationType(_))
-                    | Some(DecodableKey::VertexAttributeType(_))
-                    | Some(DecodableKey::VertexRoleType(_))
-                    | Some(DecodableKey::PropertyTypeVertex(_))
-                    | Some(DecodableKey::PropertyTypeEdge(_))
-                    | Some(DecodableKey::PropertyObjectVertex(_))
-                    | Some(DecodableKey::PropertyFunction(_))
-                    | Some(DecodableKey::IndexLabelToType(_))
-                    | Some(DecodableKey::IndexNameToDefinitionStruct(_))
-                    | Some(DecodableKey::IndexNameToDefinitionFunction(_))
-                    | Some(DecodableKey::IndexValueToStruct(_))
-                    | Some(DecodableKey::DefinitionStruct(_))
-                    | Some(DecodableKey::DefinitionFunction(_))
-                    | Some(DecodableKey::TypeEdgeSub(_))
-                    | Some(DecodableKey::TypeEdgeSubReverse(_))
-                    | Some(DecodableKey::TypeEdgeOwns(_))
-                    | Some(DecodableKey::TypeEdgeOwnsReverse(_))
-                    | Some(DecodableKey::TypeEdgePlays(_))
-                    | Some(DecodableKey::TypeEdgePlaysReverse(_))
-                    | Some(DecodableKey::TypeEdgeRelates(_))
-                    | Some(DecodableKey::TypeEdgeRelatesReverse(_))
-                    | None => (),
+            let update = |delta: &mut Delta| {
+                if write.is_delete() {
+                    delta.deletes += 1
+                } else if write.intends_insert() {
+                    delta.inserts += 1
                 }
-            } else if write.intends_insert() {
-                match DecodableKey::try_decode(key.bytes()) {
-                    Some(DecodableKey::EntityVertex(entity_vertex)) => {
-                        entity_deltas.entry(Entity::new(entity_vertex).type_()).or_default().inserts += 1;
-                    }
-                    Some(DecodableKey::RelationVertex(relation_vertex)) => {
-                        relation_deltas.entry(Relation::new(relation_vertex).type_()).or_default().inserts += 1;
-                    }
-                    Some(DecodableKey::AttributeVertex(attribute_vertex)) => {
-                        attribute_deltas.entry(Attribute::new(attribute_vertex).type_()).or_default().inserts += 1;
-                    }
-                    Some(DecodableKey::ThingEdgeHas(has_edge)) => {
-                        let owner = Object::new(has_edge.from()).type_();
-                        let attribute = Attribute::new(has_edge.to()).type_();
-                        has_attribute_deltas.double_entry(owner, attribute).or_default().inserts += 1;
-                    }
-                    Some(DecodableKey::ThingEdgeHasReverse(_)) => (), // handled above
-                    Some(DecodableKey::ThingEdgeLinks(links_edge)) if !links_edge.is_reverse() => {
-                        let relation = Relation::new(links_edge.from()).type_();
-                        let role = RoleType::build_from_type_id(links_edge.role_id());
-                        let player = Object::new(links_edge.to()).type_();
-                        relation_role_player_deltas.triple_entry(relation, role, player).or_default().inserts += 1;
-                    }
-                    Some(DecodableKey::ThingEdgeLinks(_)) => (), // handled above
-                    Some(DecodableKey::ThingEdgeIndexedRelation(index_relation_edge)) => {
-                        let player1 = Object::new(index_relation_edge.from()).type_();
-                        let player2 = Object::new(index_relation_edge.to()).type_();
-                        links_index_deltas.double_entry(player1, player2).or_default().inserts += 1;
-                    }
+            };
 
-                    Some(DecodableKey::VertexEntityType(_))
-                    | Some(DecodableKey::VertexRelationType(_))
-                    | Some(DecodableKey::VertexAttributeType(_))
-                    | Some(DecodableKey::VertexRoleType(_))
-                    | Some(DecodableKey::PropertyTypeVertex(_))
-                    | Some(DecodableKey::PropertyTypeEdge(_))
-                    | Some(DecodableKey::PropertyObjectVertex(_))
-                    | Some(DecodableKey::PropertyFunction(_))
-                    | Some(DecodableKey::IndexLabelToType(_))
-                    | Some(DecodableKey::IndexNameToDefinitionStruct(_))
-                    | Some(DecodableKey::IndexNameToDefinitionFunction(_))
-                    | Some(DecodableKey::IndexValueToStruct(_))
-                    | Some(DecodableKey::DefinitionStruct(_))
-                    | Some(DecodableKey::DefinitionFunction(_))
-                    | Some(DecodableKey::TypeEdgeSub(_))
-                    | Some(DecodableKey::TypeEdgeSubReverse(_))
-                    | Some(DecodableKey::TypeEdgeOwns(_))
-                    | Some(DecodableKey::TypeEdgeOwnsReverse(_))
-                    | Some(DecodableKey::TypeEdgePlays(_))
-                    | Some(DecodableKey::TypeEdgePlaysReverse(_))
-                    | Some(DecodableKey::TypeEdgeRelates(_))
-                    | Some(DecodableKey::TypeEdgeRelatesReverse(_))
-                    | None => (),
+            match DecodableKey::try_decode(key.bytes()) {
+                Some(DecodableKey::EntityVertex(entity_vertex)) => {
+                    update(entity_deltas.entry(Entity::new(entity_vertex).type_()).or_default());
                 }
+                Some(DecodableKey::RelationVertex(relation_vertex)) => {
+                    update(relation_deltas.entry(Relation::new(relation_vertex).type_()).or_default());
+                }
+                Some(DecodableKey::AttributeVertex(attribute_vertex)) => {
+                    update(attribute_deltas.entry(Attribute::new(attribute_vertex).type_()).or_default());
+                }
+                Some(DecodableKey::ThingEdgeHas(has_edge)) => {
+                    let owner = Object::new(has_edge.from()).type_();
+                    let attribute = Attribute::new(has_edge.to()).type_();
+                    update(has_attribute_deltas.double_entry(owner, attribute).or_default());
+                }
+                Some(DecodableKey::ThingEdgeHasReverse(_)) => (), // handled above
+                Some(DecodableKey::ThingEdgeLinks(links_edge)) if !links_edge.is_reverse() => {
+                    let relation = Relation::new(links_edge.from()).type_();
+                    let role = RoleType::build_from_type_id(links_edge.role_id());
+                    let player = Object::new(links_edge.to()).type_();
+                    update(relation_role_player_deltas.triple_entry(relation, role, player).or_default());
+                }
+                Some(DecodableKey::ThingEdgeLinks(_)) => (), // handled above
+                Some(DecodableKey::ThingEdgeIndexedRelation(index_relation_edge)) => {
+                    let player1 = Object::new(index_relation_edge.from()).type_();
+                    let player2 = Object::new(index_relation_edge.to()).type_();
+                    update(links_index_deltas.double_entry(player1, player2).or_default());
+                }
+
+                Some(DecodableKey::VertexEntityType(_))
+                | Some(DecodableKey::VertexRelationType(_))
+                | Some(DecodableKey::VertexAttributeType(_))
+                | Some(DecodableKey::VertexRoleType(_))
+                | Some(DecodableKey::PropertyTypeVertex(_))
+                | Some(DecodableKey::PropertyTypeEdge(_))
+                | Some(DecodableKey::PropertyObjectVertex(_))
+                | Some(DecodableKey::PropertyFunction(_))
+                | Some(DecodableKey::IndexLabelToType(_))
+                | Some(DecodableKey::IndexNameToDefinitionStruct(_))
+                | Some(DecodableKey::IndexNameToDefinitionFunction(_))
+                | Some(DecodableKey::IndexValueToStruct(_))
+                | Some(DecodableKey::DefinitionStruct(_))
+                | Some(DecodableKey::DefinitionFunction(_))
+                | Some(DecodableKey::TypeEdgeSub(_))
+                | Some(DecodableKey::TypeEdgeSubReverse(_))
+                | Some(DecodableKey::TypeEdgeOwns(_))
+                | Some(DecodableKey::TypeEdgeOwnsReverse(_))
+                | Some(DecodableKey::TypeEdgePlays(_))
+                | Some(DecodableKey::TypeEdgePlaysReverse(_))
+                | Some(DecodableKey::TypeEdgeRelates(_))
+                | Some(DecodableKey::TypeEdgeRelatesReverse(_))
+                | None => (),
             }
         }
 
