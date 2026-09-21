@@ -14,7 +14,7 @@ use std::{
     fmt,
     sync::{
         Arc, OnceLock, RwLock,
-        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
+        atomic::{AtomicU8, AtomicU64, Ordering},
     },
 };
 
@@ -26,6 +26,7 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
     sequence_number::SequenceNumber,
+    snapshot::write::{INSERT, NOP, OVERWRITE},
     write_batches::WriteBatches,
 };
 
@@ -307,17 +308,17 @@ fn handle_dependency(commit_dependency: CommitDependency) -> Option<IsolationCon
 
 #[derive(Debug, Clone)]
 pub(crate) enum DependentPut {
-    Deleted { reinsert: Arc<AtomicBool> },
-    Inserted { reinsert: Arc<AtomicBool> },
-    Overwritten { reinsert: Arc<AtomicBool> },
+    Deleted { reinsert: Arc<AtomicU8> },
+    Inserted { reinsert: Arc<AtomicU8> },
+    Overwritten { reinsert: Arc<AtomicU8> },
 }
 
 impl DependentPut {
     fn apply(self) {
         match self {
-            DependentPut::Deleted { reinsert } => reinsert.store(true, Ordering::Release),
-            DependentPut::Inserted { reinsert } => reinsert.store(false, Ordering::Release),
-            DependentPut::Overwritten { reinsert } => reinsert.store(true, Ordering::Release),
+            DependentPut::Deleted { reinsert } => reinsert.store(INSERT, Ordering::Release),
+            DependentPut::Inserted { reinsert } => reinsert.store(NOP, Ordering::Release),
+            DependentPut::Overwritten { reinsert } => reinsert.store(OVERWRITE, Ordering::Release),
         }
     }
 }
