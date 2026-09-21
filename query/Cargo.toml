@@ -115,6 +115,10 @@ features = {}
 	name = "test_fetch"
 
 [[test]]
+	path = "tests/vector_search.rs"
+	name = "test_vector_search"
+
+[[test]]
 	path = "tests/unimplemented.rs"
 	name = "test_unimplemented"
 

@@ -180,11 +180,6 @@ features = {}
 			version = "6.5.16"
 			default-features = false
 
-		[workspace.dependencies.usearch]
-			features = ["default"]
-			version = "2.26.2"
-			default-features = false
-
 		[workspace.dependencies.rpassword]
 			features = []
 			version = "7.5.3"
@@ -374,6 +369,11 @@ features = {}
 		[workspace.dependencies.url]
 			features = ["default", "serde", "std"]
 			version = "2.5.8"
+			default-features = false
+
+		[workspace.dependencies.usearch]
+			features = []
+			version = "2.26.2"
 			default-features = false
 
 		[workspace.dependencies.concurrency]
