@@ -260,7 +260,7 @@ impl Statistics {
         })
     }
 
-    pub fn update(&mut self, commit_deltas: &CommitDeltas) -> Result<i64, StatisticsError> {
+    pub fn update(&mut self, commit_deltas: &CommitDeltas) -> i64 {
         let CommitDeltas {
             commit_sequence_number,
             entity_deltas,
@@ -309,7 +309,7 @@ impl Statistics {
 
         self.sequence_number = *commit_sequence_number;
 
-        Ok(total_delta)
+        total_delta
     }
 
     pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {

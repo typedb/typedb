@@ -338,6 +338,7 @@ impl Database<WALClient> {
             schema.clone(),
             schema_txn_lock.clone(),
             query_cache.clone(),
+            commit_deltas_queue.clone(),
         );
 
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
@@ -467,6 +468,7 @@ impl Database<WALClient> {
             schema.clone(),
             schema_txn_lock.clone(),
             query_cache.clone(),
+            commit_deltas_queue.clone(),
         );
         let checkpoint_fn =
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
@@ -638,13 +640,24 @@ fn make_update_statistics_fn(
     schema: Arc<RwLock<Schema>>,
     schema_txn_lock: Arc<RwLock<()>>,
     query_cache: Arc<QueryCache>,
+    commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 ) -> impl Fn() {
     move || {
-        if storage.snapshot_watermark() > schema.read().unwrap().thing_statistics.sequence_number {
+        let watermark = storage.snapshot_watermark();
+        if watermark > schema.read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+
+            let range = {
+                let mut queue = commit_deltas_queue.write().unwrap();
+                let tail_including_watermark = queue.split_off(&watermark);
+                mem::replace(&mut *queue, tail_including_watermark)
+            };
+
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
-            new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
+            for (_seq, commit_deltas) in range {
+                new_statistics.update(&commit_deltas);
+            }
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
