@@ -6,16 +6,12 @@
 
 #![deny(unused_must_use)]
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-    sync::Arc,
-};
+use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use concept::{
     thing::{ThingAPI, object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
-        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+        Ordering, OwnerAPI, PlayerAPI,
         annotation::{AnnotationCardinality, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
         relates::RelatesAnnotation,
@@ -24,10 +20,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
-    MVCCStorage,
-    durability_client::WALClient,
-    sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadableSnapshot},
+    MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -161,9 +154,9 @@ fn create_entity() {
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let commit_sequence_number = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut manually_tracked = Statistics::new(commit_sequence_number);
+    let mut manually_tracked = Statistics::new(commit.sequence_number);
     manually_tracked.total_thing_count += 1;
     manually_tracked.total_entity_count += 1;
     *manually_tracked.entity_counts.entry(person_type).or_default() += 1;
@@ -304,9 +297,9 @@ fn put_plays() {
         .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     friendship
         .add_player(&mut snapshot, &thing_manager, friend_role, person_2.into_object(), StorageCounters::DISABLED)
@@ -347,9 +340,9 @@ fn unset_has() {
     let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();
     person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     person.unset_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
@@ -382,9 +375,9 @@ fn delete_attribute() {
         .unwrap();
     let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     name.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
@@ -428,9 +421,9 @@ fn delete_relation() {
         .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     friendship.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
@@ -474,9 +467,9 @@ fn remove_player() {
         .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     friendship
         .remove_player_single(
             &mut snapshot,
@@ -538,9 +531,9 @@ fn relation_index_counts() {
         .set_plays(&mut snapshot, &type_manager, &thing_manager, trainee_role, StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let schema_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(schema_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let bob = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let mentorship = thing_manager.create_relation(&mut snapshot, mentorship_type).unwrap();
