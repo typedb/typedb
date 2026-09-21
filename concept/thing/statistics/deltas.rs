@@ -76,6 +76,11 @@ impl CommitDeltas {
                     delta.deletes += 1
                 } else if write.intends_insert() {
                     delta.inserts += 1
+                } else if write.is_overwrite() {
+                    delta.overwrites += 1
+                } else {
+                    #[cfg(debug_assertions)]
+                    unreachable!("Not a delete, insert, or an overwrite: {write:?}");
                 }
             };
 

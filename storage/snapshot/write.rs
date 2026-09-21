@@ -92,6 +92,14 @@ impl Write {
         }
     }
 
+    pub fn is_overwrite(&self) -> bool {
+        match self {
+            Write::Put { reinsert, .. } => reinsert.load(Ordering::Relaxed) == OVERWRITE,
+            Write::Insert { .. } => false,
+            Write::Delete => false,
+        }
+    }
+
     pub(crate) fn into_value(self) -> ByteArray<BUFFER_VALUE_INLINE> {
         match self {
             Write::Insert { value } | Write::Put { value, .. } => value,
