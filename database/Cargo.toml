@@ -100,6 +100,10 @@ features = {}
 	name = "test_database"
 
 [[test]]
+	path = "tests/vector_durability.rs"
+	name = "test_vector_durability"
+
+[[test]]
 	path = "tests/test_transaction_isolation.rs"
 	name = "test_transaction_isolation"
 
@@ -114,8 +118,4 @@ features = {}
 [[test]]
 	path = "tests/diagnostics_posthog_pii.rs"
 	name = "test_diagnostics_posthog_pii"
-
-[[test]]
-	path = "tests/vector_durability.rs"
-	name = "test_vector_durability"
 
