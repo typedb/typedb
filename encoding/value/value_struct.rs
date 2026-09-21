@@ -14,7 +14,6 @@ use std::{
 
 use bytes::{Bytes, byte_array::ByteArray};
 use itertools::Itertools;
-use primitive::either::Either;
 use resource::constants::{
     encoding::StructFieldIDUInt,
     snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -313,16 +312,14 @@ impl StructIndexEntry<'_> {
             buf.extend_from_slice(&string_bytes.bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
             let prefix_key: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::reference(buf.as_slice());
             let disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_HASHID_LENGTH] =
-                match Self::find_existing_or_next_disambiguated_hash(
+                Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
                     Self::KEYSPACE,
                     &prefix_key,
                     string_bytes.bytes(),
-                )? {
-                    Either::First(hash) => hash,
-                    Either::Second(hash) => hash,
-                };
+                )?
+                .into_inner();
             buf.extend_from_slice(&disambiguated_hash_bytes);
         }
         Ok(())

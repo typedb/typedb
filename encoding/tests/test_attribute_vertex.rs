@@ -12,7 +12,7 @@ use bytes::{Bytes, byte_array::ByteArray};
 use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
+    EncodingKeyspace, Keyable,
     graph::{
         Typed,
         thing::{
@@ -28,7 +28,7 @@ use storage::{
     MVCCStorage, StorageCommitError,
     durability_client::WALClient,
     isolation_manager::IsolationConflict,
-    snapshot::{CommittableSnapshot, SnapshotError},
+    snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
@@ -418,6 +418,181 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
                 ));
             }
         }
+    }
+}
+
+fn assert_commit_conflict(err: SnapshotError, expected: IsolationConflict) {
+    match err {
+        SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { conflict, .. } } => {
+            assert_eq!(conflict, expected)
+        }
+        other => panic!("Expected isolation conflict {expected:?}, got: {other:?}"),
+    }
+}
+
+#[test]
+fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+    let generator = ThingVertexGenerator::new();
+    let s = "Hello world, this is a long attribute string to be encoded.";
+    let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
+
+    let existing_vertex = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).expect("Initial creation should succeed");
+        vertex
+    };
+    assert!(!existing_vertex.attribute_id().unwrap_string().is_inline());
+
+    let mut snapshot_a = storage.clone().open_snapshot_write();
+    let mut snapshot_b = storage.clone().open_snapshot_write();
+    let vertex_a = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a).unwrap();
+    let vertex_b = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b).unwrap();
+    assert_eq!(vertex_a, existing_vertex);
+    assert_eq!(vertex_b, existing_vertex);
+
+    snapshot_a.commit(&mut CommitProfile::DISABLED).expect("Re-putting an existing value should commit");
+    snapshot_b.commit(&mut CommitProfile::DISABLED).expect("Concurrently re-putting an existing value should commit");
+}
+
+#[test]
+fn existing_hashed_string_conflicts_with_concurrent_delete() {
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+    let generator = ThingVertexGenerator::new();
+    let s = "Hello world, this is a long attribute string to be encoded.";
+    let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
+
+    let existing_vertex = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).expect("Initial creation should succeed");
+        vertex
+    };
+    let vertex_key = existing_vertex.into_storage_key().into_owned_array();
+
+    // put commits first: the later delete must fail, since the put required the key to remain
+    {
+        let mut snapshot_put = storage.clone().open_snapshot_write();
+        let mut snapshot_delete = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put).unwrap();
+        assert_eq!(vertex, existing_vertex);
+        snapshot_delete.delete(vertex_key.clone());
+
+        snapshot_put.commit(&mut CommitProfile::DISABLED).expect("Re-putting an existing value should commit");
+        let err = snapshot_delete.commit(&mut CommitProfile::DISABLED).expect_err("Delete should conflict");
+        assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
+    }
+
+    // delete commits first: the later put must fail, since the key it required was deleted
+    {
+        let mut snapshot_put = storage.clone().open_snapshot_write();
+        let mut snapshot_delete = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put).unwrap();
+        assert_eq!(vertex, existing_vertex);
+        snapshot_delete.delete(vertex_key.clone());
+
+        snapshot_delete.commit(&mut CommitProfile::DISABLED).expect("Delete should commit");
+        let err = snapshot_put.commit(&mut CommitProfile::DISABLED).expect_err("Put should conflict");
+        assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
+    }
+}
+
+#[test]
+fn hash_bucket_holes_are_reused_across_transactions() {
+    const CONSTANT_HASH: u64 = 0;
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+    let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
+    let strings = [
+        "Hello world, this is using the same prefix - alpha branch.",
+        "Hello world, this is using the same prefix - bravo branch.",
+        "Hello world, this is using the same prefix - charlie branch.",
+        "Hello world, this is using the same prefix - delta branch.",
+    ];
+    let bytes = |s: &str| -> StringBytes<BUFFER_KEY_INLINE> { StringBytes::build_ref(s) };
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let vertices: Vec<_> = strings[..3]
+        .iter()
+        .map(|s| generator.create_attribute_string(type_id, bytes(s).as_reference(), &mut snapshot).unwrap())
+        .collect();
+    let tails: Vec<u8> = vertices.iter().map(|v| v.attribute_id().unwrap_string().get_hash_disambiguator()).collect();
+    assert_eq!(tails, vec![0, 1, 2]);
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    snapshot.delete(vertices[0].into_storage_key().into_owned_array());
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let delta = generator.create_attribute_string(type_id, bytes(strings[3]).as_reference(), &mut snapshot).unwrap();
+    assert_eq!(delta.attribute_id().unwrap_string().get_hash_disambiguator(), 0, "freed tail should be reused");
+    let bravo = generator.create_attribute_string(type_id, bytes(strings[1]).as_reference(), &mut snapshot).unwrap();
+    assert_eq!(bravo, vertices[1], "existing values keep their tails");
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+}
+
+#[test]
+fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
+    // A transaction that deletes a hashed vertex and then allocates a colliding value must not reuse the freed tail:
+    // doing so would replace its own buffered delete with a put, hiding the delete from a concurrent transaction
+    // that re-put the original value and relies on that vertex remaining unmodified.
+    const CONSTANT_HASH: u64 = 0;
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+    let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
+    let alpha: StringBytes<BUFFER_KEY_INLINE> =
+        StringBytes::build_ref("Hello world, this is using the same prefix - alpha branch.");
+    let bravo: StringBytes<BUFFER_KEY_INLINE> =
+        StringBytes::build_ref("Hello world, this is using the same prefix - bravo branch.");
+
+    let alpha_vertex = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let vertex = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        vertex
+    };
+    assert_eq!(alpha_vertex.attribute_id().unwrap_string().get_hash_disambiguator(), 0);
+    let alpha_key = alpha_vertex.into_storage_key().into_owned_array();
+
+    let delete_then_allocate = |snapshot: &mut storage::snapshot::WriteSnapshot<WALClient>| {
+        snapshot.delete(alpha_key.clone());
+        let bravo_vertex = generator.create_attribute_string(type_id, bravo.as_reference(), snapshot).unwrap();
+        assert_ne!(bravo_vertex, alpha_vertex);
+        assert_eq!(bravo_vertex.attribute_id().unwrap_string().get_hash_disambiguator(), 1);
+        // even the same value gets a fresh tail once its vertex was deleted in this transaction
+        let alpha_again = generator.create_attribute_string(type_id, alpha.as_reference(), snapshot).unwrap();
+        assert_ne!(alpha_again, alpha_vertex);
+        assert_eq!(alpha_again.attribute_id().unwrap_string().get_hash_disambiguator(), 2);
+    };
+
+    // the re-put commits first: the deleting transaction must fail
+    {
+        let mut snapshot_delete = storage.clone().open_snapshot_write();
+        let mut snapshot_reput = storage.clone().open_snapshot_write();
+        delete_then_allocate(&mut snapshot_delete);
+        let reput = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput).unwrap();
+        assert_eq!(reput, alpha_vertex);
+
+        snapshot_reput.commit(&mut CommitProfile::DISABLED).expect("Re-put of existing value should commit");
+        let err = snapshot_delete.commit(&mut CommitProfile::DISABLED).expect_err("Delete should conflict");
+        assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
+    }
+
+    // the deleting transaction commits first: the re-put must fail
+    {
+        let mut snapshot_delete = storage.clone().open_snapshot_write();
+        let mut snapshot_reput = storage.clone().open_snapshot_write();
+        delete_then_allocate(&mut snapshot_delete);
+        let reput = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput).unwrap();
+        assert_eq!(reput, alpha_vertex);
+
+        snapshot_delete.commit(&mut CommitProfile::DISABLED).expect("Delete and allocate should commit");
+        let err = snapshot_reput.commit(&mut CommitProfile::DISABLED).expect_err("Re-put should conflict");
+        assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
     }
 }
 

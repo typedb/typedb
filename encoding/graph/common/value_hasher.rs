@@ -8,15 +8,14 @@ use std::sync::Arc;
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
-use primitive::either::Either;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
+    snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError, write::Write},
 };
 
-use crate::EncodingKeyspace;
+use crate::{EncodingKeyspace, graph::common::ExistingOrNew};
 
 pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;
@@ -38,7 +37,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         keyspace: EncodingKeyspace,
         key_without_hash: &[u8],
         value_bytes: &[u8],
-    ) -> Result<Either<[u8; DISAMBIGUATED_HASH_LENGTH], [u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
+    ) -> Result<ExistingOrNew<[u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -51,10 +50,8 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             value_bytes,
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
-        match Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_bytes)? {
-            Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
-            Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
-        }
+        Ok(Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_bytes)?
+            .map(|tail| Self::concat_hash_and_tail(hash_bytes, tail)))
     }
 
     fn concat_hash_and_tail(hash_bytes: &[u8], tail: u8) -> [u8; DISAMBIGUATED_HASH_LENGTH] {
@@ -64,42 +61,53 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         bytes
     }
 
-    /// return Either<Existing tail, newly allocated tail>
     fn disambiguate<Snapshot>(
         snapshot: &Snapshot,
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],
         value_bytes: &[u8],
-    ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
+    ) -> Result<ExistingOrNew<u8>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
         let tail_byte_index = key_without_tail_byte.len();
-        let mut iter = snapshot.iterate_range(
-            &KeyRange::new_within(
-                StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
-                Self::FIXED_WIDTH_KEYS,
-            ),
-            StorageCounters::DISABLED,
+        let range = KeyRange::new_within(
+            StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
+            Self::FIXED_WIDTH_KEYS,
         );
-        let mut next = iter.next().transpose()?;
-        let mut first_unused_tail: Option<u8> = None;
+        // occupied tails, indexed by the tail with the hash flag stripped
+        let mut occupied_tails = [false; 1 << 7];
 
-        let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
-        while let Some((key, value)) = next {
+        // search for visible/live keys in the 128 slots in the bucket
+        let mut iter = snapshot.iterate_range(&range, StorageCounters::DISABLED);
+        while let Some((key, value)) = iter.next().transpose()? {
             let key_tail = key.bytes()[tail_byte_index];
+            if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG == 0 {
+                // an inlined ID that happens to share the hashed prefix bytes: not part of this bucket - at most one
+                continue;
+            }
             if &*value == value_bytes {
-                return Ok(Either::First(key_tail));
-            } else if next_tail != key_tail {
-                // found unused tail ID. This could be a hole. We have to complete iteration.
-                first_unused_tail = Some(next_tail);
+                // found existing matching value
+                return Ok(ExistingOrNew::Existing(key_tail));
             }
-            if next_tail == u8::MAX {
-                panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte);
-            }
-            next_tail += 1;
-            next = iter.next().transpose()?;
+            occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;
         }
-        Ok(Either::Second(first_unused_tail.unwrap_or(next_tail)))
+
+        // Keys deleted in this transaction are hidden by the iteration above, but their tails must not be reused
+        // within the same transaction: a concurrent transaction may hold the deleted vertex as unmodifiable,
+        // and re-putting its key here would replace our buffered delete and hide the conflict.
+        for (key, write) in snapshot.iterate_writes_range(&range) {
+            if matches!(write, Write::Delete) {
+                let key_tail = key.bytes()[tail_byte_index];
+                if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0 {
+                    occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;
+                }
+            }
+        }
+
+        match occupied_tails.iter().position(|occupied| !occupied) {
+            Some(free_tail) => Ok(ExistingOrNew::New(Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG | free_tail as u8)),
+            None => panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte),
+        }
     }
 }
