@@ -9,7 +9,7 @@ use std::{
     fmt::Formatter,
     sync::{
         Arc,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicU8, Ordering},
     },
 };
 
@@ -25,7 +25,7 @@ pub enum Write {
     // Insert KeyValue with a new version. Never conflicts. May represent a brand new key or re-inserting an existing key blindly
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: KnownToExist },
+    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicU8>, known_to_exist: KnownToExist },
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
@@ -71,6 +71,10 @@ impl PartialEq for Write {
 
 impl Eq for Write {}
 
+pub const NOP: u8 = 0;
+pub const INSERT: u8 = 1;
+pub const OVERWRITE: u8 = 2;
+
 impl Write {
     pub fn is_insert(&self) -> bool {
         matches!(self, Write::Insert { .. })
@@ -87,7 +91,7 @@ impl Write {
     pub fn intends_insert(&self) -> bool {
         match self {
             Write::Insert { .. } => true,
-            Write::Put { reinsert, .. } => reinsert.load(Ordering::Relaxed),
+            Write::Put { reinsert, .. } => reinsert.load(Ordering::Relaxed) == INSERT,
             Write::Delete => false,
         }
     }
