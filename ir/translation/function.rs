@@ -111,12 +111,12 @@ fn translate_function_from(
     match (&signature.output, &body.return_operation) {
         (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars, _)) => {
             check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
-                context.is_variable_optional(*v)
+                context.variable_optionality(*v)
             })?
         }
         (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars, _)) => {
             check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
-                context.is_variable_optional(*v)
+                context.variable_optionality(*v)
             })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers, _)) => {
@@ -125,7 +125,7 @@ fn translate_function_from(
             })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceCheck(_)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &[false], |x| *x)?
+            check_consistent_return(signature, block, &declared_vars.types, &[VariableOptionality::Required], |x| *x)?
         }
         (Output::Single(declared_vars), ReturnOperation::Stream(..)) => {
             Err(Box::new(FunctionRepresentationError::DeclaresSingleReturnsStream {
@@ -302,7 +302,7 @@ fn check_consistent_return<T>(
     block: &FunctionBlock,
     declared_types: &[NamedTypeAny],
     actual_return: &[T],
-    is_optional: impl Fn(&T) -> bool,
+    is_optional: impl Fn(&T) -> VariableOptionality,
 ) -> Result<(), Box<FunctionRepresentationError>> {
     if declared_types.len() != actual_return.len() {
         return Err(Box::new(FunctionRepresentationError::InconsistentReturnLengths {
@@ -314,7 +314,7 @@ fn check_consistent_return<T>(
     }
     let mismatching_index_opt = declared_types
         .iter()
-        .map(|t| named_type_any_to_category_and_optionality(t).1 == VariableOptionality::Optional)
+        .map(|t| named_type_any_to_category_and_optionality(t).1)
         .zip(actual_return.iter().map(is_optional))
         .enumerate()
         .find_map(|(index, (declared, actual))| (declared != actual).then_some(index));

@@ -385,7 +385,7 @@ pub enum UnimplementedFeature {
     BuiltinFunction(String),
     LetInBuiltinCall,
     Subkey,
-    OptionalFunctions,
+    OptionalBuiltinFunctions,
     OptionalArguments,
 
     UnsortedJoin,

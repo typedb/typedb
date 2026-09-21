@@ -17,9 +17,10 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        AssignmentStatus, BindingMode, BindingOptionality, BranchID, Pattern, PatternVariableModes, ScopeId,
+        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableModes, ReferenceOptionality, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
+        expression::{Expression, ExpressionTree, ExpressionTreeNodeId},
         nested_pattern::NestedPattern,
         variable_category::{VariableCategory, VariableOptionality},
     },
@@ -269,16 +270,21 @@ fn validate_all_optional_dereferences_are_safe(
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
     let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
-        let (id, _) = constraint
-            .variable_binding_modes()
-            .filter(|(id, _)| conjunction.optionality(id) == VariableOptionality::Optional)
-            .find(|(_, mode)| mode != &BindingMode::AlwaysBinding(BindingOptionality::MaybeNone))?;
+        let (id, _) = constraint.variable_reference_optionalities().find(|(id, reference_optionality)| {
+            conjunction.optionality(id) == VariableOptionality::Optional
+                && *reference_optionality == ReferenceOptionality::Required
+        })?;
         Some((id, constraint.source_span()))
     });
     if let Some((id, source_span)) = bad_unwrap {
         let variable = context.get_variable_name_or_unnamed(id).to_owned();
         return Err(Box::new(RepresentationError::UnsafeOptionalDereference { variable, source_span }));
     }
+
+    conjunction.constraints().iter().filter_map(|c| c.as_expression_binding()).try_for_each(|binding| {
+        validate_optional_expression_dereferences_safe_(context, conjunction, binding.expression())
+    })?;
+
     conjunction
         .nested_patterns_flattened()
         .try_for_each(|nested| validate_all_optional_dereferences_are_safe(nested, context))?;
@@ -593,5 +599,102 @@ impl<'a> BlockBuilderContext<'a> {
 
     pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
         self.parameters
+    }
+}
+fn validate_optional_expression_dereferences_safe_(
+    context: &BlockBuilderContext<'_>,
+    conjunction: &Conjunction,
+    tree: &ExpressionTree<Variable>,
+) -> Result<(), Box<RepresentationError>> {
+    let result = validate_optional_expression_dereferences_safe_impl(
+        context,
+        conjunction,
+        tree,
+        tree.root_node_id(),
+        tree.return_optionality() == VariableOptionality::Required,
+    );
+
+    if let Err(bad_expr) = result {
+        let identifier = if let Expression::Variable(id) = bad_expr {
+            format!("Variable({})", context.variable_registry.get_variable_name_or_unnamed(**id).to_owned())
+        } else {
+            format!("{}", bad_expr)
+        };
+        let source_span = bad_expr.source_span();
+        Err(Box::new(RepresentationError::UnsafeOptionalExpressionDereference { identifier, source_span }))
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_optional_expression_dereferences_safe_impl<'a>(
+    context: &BlockBuilderContext<'_>,
+    conjunction: &Conjunction,
+    tree: &'a ExpressionTree<Variable>,
+    at_id: ExpressionTreeNodeId,
+    check_at: bool,
+) -> Result<(), &'a Expression<Variable>> {
+    let at_expr = tree.get(at_id);
+    match at_expr {
+        Expression::Constant(_) => (),
+        Expression::Variable(_) => (),
+        Expression::Operation(op) => {
+            validate_optional_expression_dereferences_safe_impl(
+                context,
+                conjunction,
+                tree,
+                op.left_expression_id(),
+                true,
+            )?;
+            validate_optional_expression_dereferences_safe_impl(
+                context,
+                conjunction,
+                tree,
+                op.right_expression_id(),
+                true,
+            )?;
+        }
+        Expression::BuiltinValueFunctionCall(call) => call.argument_expression_ids().iter().try_for_each(|arg_id| {
+            validate_optional_expression_dereferences_safe_impl(context, conjunction, tree, *arg_id, true)
+        })?,
+        Expression::ListIndex(list_index) => {
+            validate_optional_expression_dereferences_safe_impl(
+                context,
+                conjunction,
+                tree,
+                list_index.index_expression_id(),
+                true,
+            )?;
+        }
+        Expression::List(list_constructor) => {
+            list_constructor.item_expression_ids().iter().try_for_each(|item_id| {
+                validate_optional_expression_dereferences_safe_impl(context, conjunction, tree, *item_id, true)
+            })?;
+        }
+        Expression::ListIndexRange(list_index_range) => {
+            validate_optional_expression_dereferences_safe_impl(
+                context,
+                conjunction,
+                tree,
+                list_index_range.from_expression_id(),
+                true,
+            )?;
+            validate_optional_expression_dereferences_safe_impl(
+                context,
+                conjunction,
+                tree,
+                list_index_range.to_expression_id(),
+                true,
+            )?;
+        }
+        Expression::MayShortCircuit(inner_id) => {
+            // The only safe unwrap for now makes it false.
+            validate_optional_expression_dereferences_safe_impl(context, conjunction, tree, *inner_id, false)?;
+        }
+    }
+    if check_at && at_expr.actual_result_optionality(conjunction) == VariableOptionality::Optional {
+        Err(at_expr)
+    } else {
+        Ok(())
     }
 }

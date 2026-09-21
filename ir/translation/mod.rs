@@ -99,7 +99,7 @@ impl PipelineTranslationContext {
         &mut self,
         name: &str,
         variable_category: VariableCategory,
-        is_optional: bool,
+        optionality: VariableOptionality,
         source_span: Option<Span>,
         reducer: Reducer,
     ) -> Result<Variable, Box<RepresentationError>> {
@@ -116,7 +116,6 @@ impl PipelineTranslationContext {
             source_span,
             reducer,
         )?;
-        let optionality = if is_optional { VariableOptionality::Optional } else { VariableOptionality::Required };
         self.variable_optionalities.insert(variable, optionality);
         self.last_stage_visible_variables.insert(name.to_owned(), variable);
         Ok(variable)
@@ -126,11 +125,8 @@ impl PipelineTranslationContext {
         self.last_stage_visible_variables.get(variable).cloned()
     }
 
-    pub fn is_variable_optional(&self, variable: Variable) -> bool {
-        match self.variable_optionalities.get(&variable).unwrap_or(&VariableOptionality::Required) {
-            VariableOptionality::Required => false,
-            VariableOptionality::Optional => true,
-        }
+    pub fn variable_optionality(&self, variable: Variable) -> VariableOptionality {
+        *self.variable_optionalities.get(&variable).unwrap_or(&VariableOptionality::Required)
     }
 }
 

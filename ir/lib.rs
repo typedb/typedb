@@ -235,12 +235,18 @@ typedb_error! {
         ),
         UnsafeOptionalDereference(
             36,
-            "The optional variable '{variable}' was used in a context where it may fail the branch if unset. Please acknowledge the optionality.",
+            "The optional variable '{variable}' was used in a context where optionals are not permitted. Use `isset` in the pattern to match only non-empty values. Expressions can use `?` to propagate the empty value to the result.",
             variable: String,
             source_span: Option<Span>,
         ),
-        MultipleAssignmentsForVariable(
+        UnsafeOptionalExpressionDereference(
             37,
+            "The expression '{identifier}' returns an optional value which may be empty. Use '?' to short-circuit and assign an empty result.",
+            identifier: String,
+            source_span: Option<Span>,
+        ),
+        MultipleAssignmentsForVariable(
+            38,
             "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
             variable: String,
             source_span: Option<Span>,
@@ -331,12 +337,18 @@ typedb_error! {
             "Given clauses must be the first clause in a query pipeline.",
             source_span: Option<Span>,
         ),
-
         UnplannableConjunction(
             55,
             "The required input variables for the following constraints could not be satisfied (there may be a circular dependency):\n{unplannable_constraints}",
             unplannable_constraints: UnplannableConstraints,
             span: Option<Span>,
+        ),
+        InlinedFunctionReturnedTuple(
+            56,
+            "The function '{identifier}' returns a tuple of width '{actual_width}'. To be used inline, it must return a scalar.",
+            identifier: String,
+            actual_width: usize,
+            source_span: Option<Span>,
         ),
         InternalNotAValueBuiltin(
             100,

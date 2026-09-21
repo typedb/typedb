@@ -18,7 +18,7 @@ use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::{pattern::variable_category::VariableOptionality, pipeline::VariableRegistry};
+use crate::{RepresentationError, pattern::variable_category::VariableOptionality, pipeline::VariableRegistry};
 
 pub mod conjunction;
 pub mod constraint;
@@ -139,10 +139,13 @@ macro_rules! impl_pattern_from_pattern_variables {
 }
 pub(self) use impl_pattern_from_pattern_variables;
 
-use crate::pattern::{
-    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
-    constraint::Constraint,
-    disjunction::DisjunctionBuilder,
+use crate::{
+    pattern::{
+        conjunction::{ConjunctionBuilder, NestedPatternBuilder},
+        constraint::Constraint,
+        disjunction::DisjunctionBuilder,
+    },
+    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignatureIndex},
 };
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -798,15 +801,82 @@ impl BitOrAssign for AssignmentStatus {
 #[derive(Clone, Debug, Copy)]
 pub struct AssignedVariable {
     pub(crate) variable: Variable,
-    pub(crate) optionality: VariableOptionality,
+    pub(crate) declared_optionality: VariableOptionality,
 }
 
 impl AssignedVariable {
+    pub(crate) fn new_with_optionality(variable: Variable, declared_optionality: VariableOptionality) -> Self {
+        Self { variable, declared_optionality }
+    }
+
     pub fn new_optional(variable: Variable) -> Self {
-        Self { variable, optionality: VariableOptionality::Optional }
+        Self { variable, declared_optionality: VariableOptionality::Optional }
     }
 
     pub fn new_required(variable: Variable) -> Self {
-        Self { variable, optionality: VariableOptionality::Required }
+        Self { variable, declared_optionality: VariableOptionality::Required }
+    }
+
+    pub(crate) fn validate_assignment_optionality_matches(
+        &self,
+        var_name: impl Fn() -> String,
+        source_span: Option<Span>,
+        returned_optionality: VariableOptionality,
+    ) -> Result<(), Box<RepresentationError>> {
+        #[cfg(debug_assertions)]
+        {
+            use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
+            let result = match (self.declared_optionality, returned_optionality) {
+                (Optional, Optional) | (Required, Required) => Ok(()),
+                (Optional, Required) => Err(Box::new(RepresentationError::WronglyMarkedOptionalAssignment {
+                    variable: var_name(),
+                    source_span,
+                })),
+                (Required, Optional) => {
+                    Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable: var_name(), source_span }))
+                }
+            };
+            if let Err(err) = result {
+                use error::TypeDBError;
+                tracing::debug!(
+                    r#"Detected a mismatch between the declared optionality of an assigned variable '{}' and the actual optionality.
+                    This is not a problem since we use the actual returned optionality for the variable: ---\n{}\n---"#,
+                    var_name(),
+                    err.format_description()
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ReferenceOptionality {
+    Required,
+    Optional,
+}
+
+impl BitAnd for ReferenceOptionality {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::Required, _) | (_, Self::Required) => Self::Required,
+            (Self::Optional, Self::Optional) => Self::Optional,
+        }
+    }
+}
+
+impl BitAndAssign for ReferenceOptionality {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl From<VariableOptionality> for ReferenceOptionality {
+    fn from(value: VariableOptionality) -> Self {
+        match value {
+            VariableOptionality::Required => Self::Required,
+            VariableOptionality::Optional => Self::Optional,
+        }
     }
 }

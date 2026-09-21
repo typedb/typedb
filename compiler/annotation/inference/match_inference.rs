@@ -482,6 +482,7 @@ impl<'this> TypeInferenceExpression<'this> {
             .args
             .iter()
             .map(|arg| {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::Lists);
                 match &vertices[arg] {
                     VertexTypeAnnotations::Concept(types) => {
                         self.attribute_value_types(types).unique().exactly_one().map_err(|_| ())

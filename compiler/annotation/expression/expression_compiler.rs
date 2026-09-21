@@ -8,12 +8,12 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use answer::variable::Variable;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
-use error::{needs_update_when_feature_is_implemented, unimplemented_feature};
+use error::{needs_update_when_feature_is_implemented, todo_must_implement, unimplemented_feature};
 use ir::pattern::{
     ParameterID,
     expression::{
-        BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
-        ListIndexRange, Operation,
+        BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId,
+        ExpressionVariable, ListConstructor, ListIndex, ListIndexRange, Operation,
     },
 };
 use typeql::common::Span;
@@ -23,7 +23,7 @@ use crate::annotation::expression::{
     compiled_expression::{ExecutableExpression, ExpressionValueType},
     instructions::{
         ExpressionInstruction, list_operations,
-        load::{LoadConstant, LoadVariable},
+        load::{LoadConstant, LoadVariable, MayShortCircuitList, MayShortCircuitValue},
         op_codes::ExpressionOpCode,
         operators,
         unary::{
@@ -80,6 +80,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             Expression::ListIndex(list_index) => self.compile_list_index(list_index),
             Expression::List(list_constructor) => self.compile_list_constructor(list_constructor),
             Expression::ListIndexRange(list_index_range) => self.compile_list_index_range(list_index_range),
+            Expression::MayShortCircuit(inner) => self.compile_may_short_circuit(*inner),
         }
     }
 
@@ -97,16 +98,16 @@ impl<'this> ExpressionCompilationContext<'this> {
         Ok(())
     }
 
-    fn compile_variable(&mut self, variable: &Variable) -> Result<(), Box<ExpressionCompileError>> {
+    fn compile_variable(&mut self, variable: &ExpressionVariable<Variable>) -> Result<(), Box<ExpressionCompileError>> {
         debug_assert!(self.variable_value_categories.contains_key(variable));
-
-        self.variable_stack.push(*variable);
+        self.variable_stack.push(**variable);
         self.append_instruction(LoadVariable::OP_CODE);
         // TODO: We need a way to know if a variable is a list or a single
         match self.variable_value_categories.get(variable).unwrap() {
             ExpressionValueType::Single(value_type) => self.push_type_single(value_type.clone()),
             ExpressionValueType::List(value_type) => self.push_type_list(value_type.clone()),
         }
+        resolve_validate_append_short_circuit(self)?;
         Ok(())
     }
 
@@ -165,7 +166,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         list_index_range: &ListIndexRange<Variable>,
     ) -> Result<(), Box<ExpressionCompileError>> {
-        debug_assert!(self.variable_value_categories.contains_key(&list_index_range.list_variable()));
+        debug_assert!(self.variable_value_categories.contains_key(&*list_index_range.list_variable()));
         self.compile_recursive(self.expression_tree.get(list_index_range.from_expression_id()))?;
         self.compile_recursive(self.expression_tree.get(list_index_range.to_expression_id()))?;
         self.compile_variable(&list_index_range.list_variable())?;
@@ -183,6 +184,15 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
 
         self.push_type_single(list_variable_type);
+        Ok(())
+    }
+
+    fn compile_may_short_circuit(
+        &mut self,
+        inner_expression_id: ExpressionTreeNodeId,
+    ) -> Result<(), Box<ExpressionCompileError>> {
+        self.compile_recursive(self.expression_tree.get(inner_expression_id))?;
+        resolve_validate_append_short_circuit(self)?;
         Ok(())
     }
 
@@ -283,6 +293,19 @@ impl<'this> ExpressionCompilationContext<'this> {
     pub(crate) fn append_instruction(&mut self, op_code: ExpressionOpCode) {
         self.instructions.push(op_code)
     }
+}
+
+fn resolve_validate_append_short_circuit(
+    builder: &mut ExpressionCompilationContext<'_>,
+) -> Result<(), Box<ExpressionCompileError>> {
+    let Some(type_) = builder.type_stack.last() else {
+        return Err(Box::new(ExpressionCompileError::InternalStackWasEmpty {}));
+    };
+    match type_ {
+        ExpressionValueType::Single(_) => builder.append_instruction(MayShortCircuitValue::OP_CODE),
+        ExpressionValueType::List(_) => builder.append_instruction(MayShortCircuitList::OP_CODE),
+    }
+    Ok(())
 }
 
 // Helpers for the function resolution
