@@ -295,16 +295,13 @@ impl<Durability> MVCCStorage<Durability> {
         fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
 
         let sync_notifier = self.durability_client.request_sync();
-        let validate_result = self.isolation_manager.validate_commit(
-            commit_sequence_number,
-            commit_record.clone(), // TODO: commit deltas only needs a ref, reuse the Arc<CommitRecord>
-            &self.durability_client,
-        );
+        let validate_result =
+            self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
         let result = match validate_result {
-            Ok(ValidatedCommit::Write(write_batches)) => {
+            Ok(ValidatedCommit::Write(write_batches, commit_record)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                 // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
@@ -850,7 +847,7 @@ impl StorageOperation {
 #[derive(Debug)]
 pub struct CommitData {
     pub sequence_number: SequenceNumber,
-    pub record: CommitRecord,
+    pub record: Arc<CommitRecord>,
 }
 
 #[cfg(test)]

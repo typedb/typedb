@@ -63,7 +63,7 @@ impl DurabilityRecord for LegacyCommitRecordV1 {
 
 impl SequencedDurabilityRecord for LegacyCommitRecordV1 {}
 
-#[derive(Serialize, Deserialize, Clone)] // TODO remove Clone
+#[derive(Serialize, Deserialize)]
 pub struct CommitRecord {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
