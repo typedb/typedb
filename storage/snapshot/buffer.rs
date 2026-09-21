@@ -10,7 +10,7 @@ use std::{
     collections::{BTreeMap, Bound},
     fmt,
     iter::{IntoIterator, Peekable},
-    sync::{Arc, atomic::AtomicBool},
+    sync::{Arc, atomic::AtomicU8},
 };
 
 use bytes::{Bytes, byte_array::ByteArray, util::increment};
@@ -25,7 +25,10 @@ use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKeyArray,
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
-    snapshot::{lock::LockType, write::Write},
+    snapshot::{
+        lock::LockType,
+        write::{NOP, Write},
+    },
 };
 
 #[derive(Debug, Clone)] // TODO remove Clone
@@ -152,12 +155,7 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes
-            .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: false });
-    }
-
-    pub(crate) fn put_existing(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: true });
+        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicU8::new(NOP)), known_to_exist: false });
     }
 
     pub(crate) fn unput(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, expected_value: ByteArray<BUFFER_VALUE_INLINE>) {

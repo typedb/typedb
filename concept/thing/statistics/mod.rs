@@ -32,7 +32,11 @@ use storage::{
     record::CommitType,
     recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
     sequence_number::SequenceNumber,
-    snapshot::{ReadableSnapshot, buffer::OperationsBuffer, write::Write},
+    snapshot::{
+        ReadableSnapshot,
+        buffer::OperationsBuffer,
+        write::{NOP, Write},
+    },
 };
 use tracing::{Level, event};
 
@@ -797,7 +801,7 @@ fn write_to_delta<D>(
                 }
             } else {
                 // no concurrent commit could have occurred - fall back to the flag
-                if reinsert.load(std::sync::atomic::Ordering::Relaxed) { Ok(1) } else { Ok(0) }
+                if reinsert.load(std::sync::atomic::Ordering::Relaxed) != NOP { Ok(1) } else { Ok(0) }
             }
         }
     }
