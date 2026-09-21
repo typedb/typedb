@@ -62,6 +62,20 @@ impl TypeVertexProperty {
         Self { type_, infix, suffix }
     }
 
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < Self::LENGTH_NO_SUFFIX {
+            return None;
+        }
+        if bytes[Self::INDEX_PREFIX] != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+
+        let type_ = TypeVertex::try_decode(bytes.get(Self::range_type_vertex())?)?;
+        let infix = Infix::from_infix_id(InfixID::new((bytes.get(Self::range_infix())?).try_into().ok()?));
+        let suffix = ByteArray::copy(bytes.get(Self::LENGTH_NO_SUFFIX..)?);
+        Some(Self { type_, infix, suffix })
+    }
+
     pub fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
@@ -168,6 +182,20 @@ impl TypeEdgeProperty {
         let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
         let suffix = ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]);
         Self { edge, infix, suffix }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < Self::LENGTH_NO_SUFFIX {
+            return None;
+        }
+        if bytes[Self::INDEX_PREFIX] != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+
+        let edge = TypeEdge::try_decode(bytes.get(Self::range_type_edge())?)?;
+        let infix = Infix::from_infix_id(InfixID::new((bytes.get(Self::range_infix())?).try_into().ok()?));
+        let suffix = ByteArray::copy(bytes.get(Self::LENGTH_NO_SUFFIX..)?);
+        Some(Self { edge, infix, suffix })
     }
 
     pub fn build_prefix() -> StorageKey<'static, { TypeEdgeProperty::LENGTH_PREFIX }> {
@@ -280,6 +308,20 @@ impl FunctionProperty {
         let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
         let suffix = ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]);
         Self { function_id, infix, suffix }
+    }
+
+    pub fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < Self::LENGTH_NO_SUFFIX {
+            return None;
+        }
+        if bytes[Self::INDEX_PREFIX] != Self::PREFIX.prefix_id().byte {
+            return None;
+        }
+
+        let function_id = DefinitionKey::try_decode(bytes.get(Self::range_function_id())?)?;
+        let infix = Infix::from_infix_id(InfixID::new((bytes.get(Self::range_infix())?).try_into().ok()?));
+        let suffix = ByteArray::copy(bytes.get(Self::LENGTH_NO_SUFFIX..)?);
+        Some(Self { function_id, infix, suffix })
     }
 
     pub fn build_prefix() -> StorageKey<'static, { FunctionProperty::LENGTH_PREFIX }> {
