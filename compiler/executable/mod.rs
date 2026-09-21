@@ -50,7 +50,7 @@ impl WritePatternCondition {
             conjunction.constraints().iter().filter_map(|c| c.as_is_set()).flat_map(|is_set| is_set.ids());
         let required_variable_positions = required_variables.map(|v| variable_positions[&v]);
         let is_set_checks = required_variable_positions
-            .map(|pos| CheckInstruction::NotNone { variable: ExecutorVariable::RowPosition(pos) });
+            .map(|pos| CheckInstruction::IsSet { variable: ExecutorVariable::RowPosition(pos) });
 
         let mut checks = Vec::new();
         checks.extend(is_set_checks);
