@@ -118,10 +118,11 @@ impl IsolationManager {
                     CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
                     _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
                 };
-                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
-                    sequence_number,
-                    commit_record.get().operations(),
-                )))
+                let commit_record = commit_record.get();
+                Ok(ValidatedCommit::Write(
+                    WriteBatches::from_operations(sequence_number, commit_record.operations()),
+                    commit_record,
+                ))
             }
         }
     }
@@ -263,7 +264,7 @@ impl IsolationManager {
 
 pub(crate) enum ValidatedCommit {
     Conflict(IsolationConflict),
-    Write(WriteBatches),
+    Write(WriteBatches, Arc<CommitRecord>),
 }
 
 fn resolve_concurrent(
