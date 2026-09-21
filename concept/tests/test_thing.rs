@@ -2289,7 +2289,7 @@ fn attribute_string_concurrent_has_writers() {
 
     let short_string = "short".to_owned();
     let existing_long_string = "this string is 33 characters long".to_owned();
-    let new_long_string = "this is another string of 36 chars".to_owned();
+    let new_long_string = "this is another string of 34 chars".to_owned();
 
     // persisted owners, and the existing long string attached to a third owner so that it is retained
     let (owner_1, owner_2) = {
