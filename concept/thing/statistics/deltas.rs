@@ -158,11 +158,11 @@ impl DurabilityRecord for CommitDeltas {
     const RECORD_NAME: &'static str = "commit_deltas";
 
     fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
-        todo!()
+        bincode::serialize_into(writer, self)
     }
 
     fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
-        todo!()
+        bincode::deserialize_from(reader)
     }
 }
 
