@@ -271,7 +271,7 @@ impl<Durability> MVCCStorage<Durability> {
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
         commit_profile: &mut CommitProfile,
-    ) -> Result<SequenceNumber, StorageCommitError>
+    ) -> Result<CommitData, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
@@ -295,8 +295,11 @@ impl<Durability> MVCCStorage<Durability> {
         fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
 
         let sync_notifier = self.durability_client.request_sync();
-        let validate_result =
-            self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
+        let validate_result = self.isolation_manager.validate_commit(
+            commit_sequence_number,
+            commit_record.clone(), // TODO: commit deltas only needs a ref, reuse the Arc<CommitRecord>
+            &self.durability_client,
+        );
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
@@ -322,7 +325,7 @@ impl<Durability> MVCCStorage<Durability> {
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
-                Ok(commit_sequence_number)
+                Ok(CommitData { sequence_number: commit_sequence_number, record: commit_record })
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();
@@ -845,6 +848,12 @@ impl StorageOperation {
     fn is_delete(&self) -> bool {
         matches!(self, Self::Delete)
     }
+}
+
+#[derive(Debug)]
+pub struct CommitData {
+    pub sequence_number: SequenceNumber,
+    pub record: CommitRecord,
 }
 
 #[cfg(test)]

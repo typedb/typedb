@@ -31,7 +31,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)] // TODO remove Clone
 pub struct OperationsBuffer {
     write_buffers: [WriteBuffer; KEYSPACE_MAXIMUM_COUNT],
     locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType>,
@@ -122,7 +122,7 @@ impl<'a> IntoIterator for &'a OperationsBuffer {
 //       3) We would benefit hugely from a table where writes are never moved, so we can freely
 //          take references to existing writes without having to Clone them out every time... This
 //          might lead us to a RocksDB-like Buffer+Index structure
-#[derive(Debug)]
+#[derive(Debug, Clone)] // TODO remove Clone
 pub struct WriteBuffer {
     pub(crate) keyspace_id: KeyspaceId,
     writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>,
