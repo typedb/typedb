@@ -12,6 +12,9 @@ macro_rules! for_each_opcode {
         $macro! {
             LoadConstant,
             LoadVariable,
+            MayShortCircuitValue,
+            MayShortCircuitList,
+
             ListConstructor,
             ListIndex,
             ListIndexRange,

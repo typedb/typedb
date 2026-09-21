@@ -8,6 +8,8 @@ use crate::annotation::expression::instructions::{ExpressionInstruction, op_code
 
 pub struct LoadVariable;
 pub struct LoadConstant;
+pub struct MayShortCircuitValue;
+pub struct MayShortCircuitList;
 
 impl ExpressionInstruction for LoadVariable {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadVariable;
@@ -15,4 +17,12 @@ impl ExpressionInstruction for LoadVariable {
 
 impl ExpressionInstruction for LoadConstant {
     const OP_CODE: ExpressionOpCode = ExpressionOpCode::LoadConstant;
+}
+
+impl ExpressionInstruction for MayShortCircuitValue {
+    const OP_CODE: ExpressionOpCode = ExpressionOpCode::MayShortCircuitValue;
+}
+
+impl ExpressionInstruction for MayShortCircuitList {
+    const OP_CODE: ExpressionOpCode = ExpressionOpCode::MayShortCircuitList;
 }

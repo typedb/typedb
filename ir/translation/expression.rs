@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 use typeql::{
     common::{Span, Spanned},
-    expression::{BuiltinFunctionName, FunctionName, NamespacedFunctionName},
+    expression::{BuiltinFunctionName, FunctionCall, FunctionName, NamespacedFunctionName},
     token::{ArithmeticOperator, Function},
 };
 
@@ -19,8 +19,9 @@ use crate::{
         constraint::ConstraintsBuilder,
         expression::{
             BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
-            ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
+            ExpressionTreeNodeId, ExpressionVariable, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
+        variable_category::VariableOptionality,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
@@ -32,7 +33,7 @@ use crate::{
     },
 };
 
-pub(super) fn add_typeql_expression(
+pub(super) fn add_inline_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     rhs: &typeql::Expression,
@@ -45,7 +46,8 @@ pub(super) fn add_typeql_expression(
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable(rhs.span())?;
-        constraints.add_assignment(variable, expression, rhs.span())?;
+        let assigned_variable = AssignedVariable::new_required(variable);
+        constraints.add_assignment(assigned_variable, expression, rhs.span())?;
         Ok(Vertex::Variable(variable))
     }
 }
@@ -70,9 +72,9 @@ fn build_recursive(
         typeql::Expression::Paren(inner) => {
             return build_recursive(function_index, constraints, &inner.inner, tree);
         }
-        typeql::Expression::Variable(var) => Expression::Variable(register_typeql_var(constraints, var)?),
+        typeql::Expression::Variable(var) => Expression::Variable(translate_expression_variable(constraints, var)?),
         typeql::Expression::ListIndex(list_index) => {
-            let variable = register_typeql_var(constraints, &list_index.variable)?;
+            let variable = translate_expression_variable(constraints, &list_index.variable)?;
             let id = build_recursive(function_index, constraints, &list_index.index, tree)?;
             Expression::ListIndex(ListIndex::new(variable, id, list_index.span()))
         }
@@ -106,7 +108,7 @@ fn build_recursive(
             Expression::List(ListConstructor::new(items, len_id, list.span()))
         }
         typeql::Expression::ListIndexRange(range) => {
-            let list_variable = register_typeql_var(constraints, &range.var)?;
+            let list_variable = translate_expression_variable(constraints, &range.var)?;
             let left_id = build_recursive(function_index, constraints, &range.from, tree)?;
             let right_id = build_recursive(function_index, constraints, &range.to, tree)?;
             Expression::ListIndexRange(ListIndexRange::new(list_variable, left_id, right_id, range.span()))
@@ -115,16 +117,28 @@ fn build_recursive(
             let type_variable = constraints.create_anonymous_variable(label.span())?;
             let as_label = register_type_label(constraints, label)?;
             constraints.add_label(type_variable, as_label)?;
-            Expression::Variable(type_variable)
+            Expression::Variable(ExpressionVariable::new_unchecked(type_variable))
         }
         typeql::Expression::ScopedLabel(scoped_label) => {
             let type_variable = constraints.create_anonymous_variable(scoped_label.span())?;
             let as_label = register_type_scoped_label(constraints, scoped_label)?;
             constraints.add_label(type_variable, as_label)?;
-            Expression::Variable(type_variable)
+            Expression::Variable(ExpressionVariable::new_unchecked(type_variable))
         }
     };
     Ok(tree.add(expression))
+}
+
+fn translate_expression_variable(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    var: &typeql::Variable,
+) -> Result<ExpressionVariable<Variable>, Box<RepresentationError>> {
+    let variable = register_typeql_var(constraints, var)?;
+    match var {
+        typeql::Variable::Named { optional, .. } | typeql::Variable::Anonymous { optional, .. } => {
+            Ok(ExpressionVariable::new(variable, optional.is_some()))
+        }
+    }
 }
 
 fn register_typeql_literal(
@@ -224,28 +238,31 @@ fn build_function(
             )))
         }
         FunctionName::Builtin(builtin) => {
-            let assign = constraints.create_anonymous_variable(function_call.name.span())?;
+            let return_optionality = function_return_optionality(function_index, &function_call)?;
+            let assigned_variable = constraints.create_anonymous_variable(function_call.name.span())?;
+            let assigned = AssignedVariable::new_with_optionality(assigned_variable, return_optionality);
             add_builtin_function_call(
                 function_index,
                 constraints,
                 to_builtin_concept_function_id(builtin, &function_call.args)?,
-                vec![AssignedVariable::new_required(assign)],
+                vec![assigned],
                 &function_call.args,
                 function_call.span(),
             )?;
-            Ok(Expression::Variable(assign))
+            Ok(Expression::Variable(ExpressionVariable::new_unchecked(assigned_variable)))
         }
         FunctionName::Identifier(identifier) => {
+            let return_optionality = function_return_optionality(function_index, &function_call)?;
             let assign = constraints.create_anonymous_variable(identifier.span())?;
             add_function_call(
                 function_index,
                 constraints,
                 checked_identifier(identifier)?,
-                vec![AssignedVariable::new_required(assign)],
+                vec![AssignedVariable::new_with_optionality(assign, return_optionality)],
                 &function_call.args,
                 function_call.span(),
             )?;
-            Ok(Expression::Variable(assign))
+            Ok(Expression::Variable(ExpressionVariable::new_unchecked(assign)))
         }
     }
 }
@@ -352,6 +369,44 @@ fn to_builtin_concept_function_id<T>(
             Ok(BuiltinConceptFunctionID::Label)
         }
         _ => Err(Box::new(RepresentationError::InternalNotAConceptBuiltin { token, source_span: typeql_id.span() })),
+    }
+}
+
+pub(super) fn function_argument_optionality() -> Result<VariableOptionality, Box<RepresentationError>> {
+    error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
+    Ok(VariableOptionality::Required)
+}
+
+pub(super) fn function_return_optionality(
+    function_index: &impl FunctionSignatureIndex,
+    function_call: &FunctionCall,
+) -> Result<VariableOptionality, Box<RepresentationError>> {
+    error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalBuiltinFunctions);
+    match &function_call.name {
+        FunctionName::Builtin(builtin) if is_builtin_value_function(builtin) => Ok(VariableOptionality::Required),
+        FunctionName::Builtin(builtin) => Ok(VariableOptionality::Required),
+        FunctionName::Namespaced(_) => Ok(VariableOptionality::Required),
+        FunctionName::Identifier(identifier) => {
+            let resolved_function = function_index
+                .get_function_signature(identifier.as_str_unchecked())
+                .map_err(|typedb_source| Box::new(RepresentationError::FunctionReadError { typedb_source }))?;
+            if let Some(signature) = &resolved_function {
+                if signature.returns.len() == 1 {
+                    Ok(signature.returns[0].1)
+                } else {
+                    Err(Box::new(RepresentationError::InlinedFunctionReturnedTuple {
+                        identifier: identifier.as_str_unchecked().to_owned(),
+                        actual_width: signature.returns.len(),
+                        source_span: function_call.span(),
+                    }))
+                }
+            } else {
+                Err(Box::new(RepresentationError::UnresolvedFunction {
+                    function_name: identifier.as_str_unchecked().to_owned(),
+                    source_span: identifier.span(),
+                }))
+            }
+        }
     }
 }
 

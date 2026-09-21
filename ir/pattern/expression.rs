@@ -7,25 +7,34 @@
 use std::{
     collections::HashMap,
     fmt,
+    fmt::Formatter,
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
 
 use answer::variable::Variable;
 use error::typedb_error;
+use primitive::format_joined::FormatJoined;
 use structural_equality::StructuralEquality;
 use typeql::{common::Span, expression::NamespacedFunctionName};
 
 use crate::{
     RepresentationError,
     pattern::{
-        IrID, ParameterID,
+        IrID, ParameterID, Pattern, ReferenceOptionality,
+        conjunction::Conjunction,
         variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::function_signature::{FunctionID, FunctionSignature},
 };
 
 pub type ExpressionTreeNodeId = usize;
+
+typedb_error! {
+    pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
+        EmptyExpressionTree(1, "Illegal empty expression."),
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionTree<ID> {
@@ -35,6 +44,25 @@ pub struct ExpressionTree<ID> {
 impl ExpressionTree<Variable> {
     pub(crate) fn empty() -> Self {
         Self { preorder_tree: Vec::new() }
+    }
+
+    pub fn return_optionality(&self) -> VariableOptionality {
+        // Note, this is different from self.get_root().actual_result_optionality(&conjunction)
+        let root_return_optionality = match self.get_root() {
+            Expression::MayShortCircuit(_) => VariableOptionality::Optional,
+            Expression::BuiltinValueFunctionCall(builtin) => builtin.function_id.optionality(),
+            // At the root, a variable is also required and must be short-circuited
+            Expression::Variable(_) => VariableOptionality::Required,
+            Expression::ListIndex(_) | Expression::ListIndexRange(_) => VariableOptionality::Required,
+            Expression::Constant(_) | Expression::Operation(_) | Expression::List(_) => VariableOptionality::Required,
+        };
+        let lazy_contains_short_circuit = || self.expression_tree_preorder().any(|expr| expr.may_short_circuit());
+
+        if root_return_optionality == VariableOptionality::Optional || lazy_contains_short_circuit() {
+            VariableOptionality::Optional
+        } else {
+            VariableOptionality::Required
+        }
     }
 }
 
@@ -51,8 +79,12 @@ impl<ID: IrID> ExpressionTree<ID> {
         self.preorder_tree.iter()
     }
 
+    pub fn root_node_id(&self) -> ExpressionTreeNodeId {
+        self.preorder_tree.len() - 1
+    }
+
     pub fn get_root(&self) -> &Expression<ID> {
-        self.preorder_tree.last().unwrap()
+        self.get(self.root_node_id())
     }
 
     pub fn get(&self, expression_id: ExpressionTreeNodeId) -> &Expression<ID> {
@@ -66,13 +98,14 @@ impl<ID: IrID> ExpressionTree<ID> {
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.preorder_tree.iter().filter_map(|expr| match expr {
-            &Expression::Variable(variable) => Some(variable),
-            Expression::ListIndex(list_index) => Some(list_index.list_variable()),
-            Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
+            Expression::Variable(variable) => Some(**variable),
+            Expression::ListIndex(list_index) => Some(**list_index.list_variable()),
+            Expression::ListIndexRange(list_index_range) => Some(**list_index_range.list_variable()),
             Expression::Constant(_)
             | Expression::Operation(_)
             | Expression::BuiltinValueFunctionCall(_)
-            | Expression::List(_) => None,
+            | Expression::List(_)
+            | Expression::MayShortCircuit(_) => None,
         })
     }
 
@@ -84,7 +117,8 @@ impl<ID: IrID> ExpressionTree<ID> {
             | Expression::ListIndexRange(_)
             | Expression::Operation(_)
             | Expression::BuiltinValueFunctionCall(_)
-            | Expression::List(_) => None,
+            | Expression::List(_)
+            | Expression::MayShortCircuit(_) => None,
         })
     }
 
@@ -102,9 +136,17 @@ impl<ID: IrID> ExpressionTree<ID> {
                 Expression::Operation(inner) => Expression::Operation(inner.clone()),
                 Expression::BuiltinValueFunctionCall(inner) => Expression::BuiltinValueFunctionCall(inner.clone()),
                 Expression::List(inner) => Expression::List(inner.clone()),
+                Expression::MayShortCircuit(inner) => Expression::MayShortCircuit(*inner),
             })
             .collect::<Vec<Expression<T>>>();
         ExpressionTree { preorder_tree }
+    }
+
+    pub(crate) fn reference_optionalities(&self) -> impl IntoIterator<Item = (ID, ReferenceOptionality)> {
+        let mut acc = HashMap::new();
+        // The root is always required.
+        collect_reference_optionalities(self, self.root_node_id(), ReferenceOptionality::Required, &mut acc);
+        acc.into_iter()
     }
 }
 
@@ -121,13 +163,66 @@ impl<ID: StructuralEquality> StructuralEquality for ExpressionTree<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression<ID> {
     Constant(ParameterID),
-    Variable(ID), // User-defined functions are re-written as an anonymous assignment.
+    Variable(ExpressionVariable<ID>), // User-defined functions are re-written as an anonymous assignment.
+    MayShortCircuit(ExpressionTreeNodeId), // For non-variables
+
     Operation(Operation),
     BuiltinValueFunctionCall(BuiltinValueFunctionCall),
     ListIndex(ListIndex<ID>),
 
     List(ListConstructor),
     ListIndexRange(ListIndexRange<ID>),
+}
+
+impl Expression<Variable> {
+    pub(crate) fn actual_result_optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
+        fn of_var(conjunction: &Conjunction, variable: &ExpressionVariable<Variable>) -> VariableOptionality {
+            // A '?' checked variable is always bound.
+            match (variable.checked_isset, conjunction.optionality(&variable.variable)) {
+                (true, _) | (_, VariableOptionality::Required) => VariableOptionality::Required,
+                (false, VariableOptionality::Optional) => VariableOptionality::Optional,
+            }
+        }
+        match self {
+            Expression::Variable(variable) => of_var(conjunction, variable),
+            Expression::ListIndex(inner) => of_var(conjunction, &inner.list_variable),
+            Expression::ListIndexRange(inner) => of_var(conjunction, &inner.list_variable),
+            Expression::BuiltinValueFunctionCall(builtin) => {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalFunctions);
+                VariableOptionality::Required
+            }
+            | Expression::Constant(_)
+            | Expression::List(_)
+            | Expression::Operation(_)
+            | Expression::MayShortCircuit(_) => VariableOptionality::Required,
+        }
+    }
+
+    fn may_short_circuit(&self) -> bool {
+        match self {
+            Expression::MayShortCircuit(_) => true,
+            Expression::Variable(variable)
+            | Expression::ListIndex(ListIndex { list_variable: variable, .. })
+            | Expression::ListIndexRange(ListIndexRange { list_variable: variable, .. }) => variable.checked_isset,
+            Expression::Constant(_)
+            | Expression::Operation(_)
+            | Expression::BuiltinValueFunctionCall(_)
+            | Expression::List(_) => false,
+        }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        match self {
+            Expression::Constant(inner) => Some(inner.source_span()),
+            Expression::Variable(_) => None,
+            Expression::MayShortCircuit(_) => None,
+            Expression::Operation(inner) => inner.source_span(),
+            Expression::BuiltinValueFunctionCall(inner) => inner.source_span(),
+            Expression::ListIndex(inner) => inner.source_span(),
+            Expression::List(inner) => inner.source_span(),
+            Expression::ListIndexRange(inner) => inner.source_span(),
+        }
+    }
 }
 
 impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
@@ -141,6 +236,7 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
                 Expression::ListIndex(inner) => StructuralEquality::hash(inner),
                 Expression::List(inner) => StructuralEquality::hash(inner),
                 Expression::ListIndexRange(inner) => StructuralEquality::hash(inner),
+                Expression::MayShortCircuit(inner) => StructuralEquality::hash(inner),
             }
     }
 
@@ -155,15 +251,71 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             (Self::ListIndex(inner), Self::ListIndex(other_inner)) => inner.equals(other_inner),
             (Self::List(inner), Self::List(other_inner)) => inner.equals(other_inner),
             (Self::ListIndexRange(inner), Self::ListIndexRange(other_inner)) => inner.equals(other_inner),
+            (Self::MayShortCircuit(inner), Self::MayShortCircuit(other_inner)) => inner.equals(other_inner),
             // this structure forces us to update the match block when the variants change!
-            (Self::Constant(_), _)
-            | (Self::Variable(_), _)
+            (Self::Constant(_), _) | (Self::Variable(_), _) => false,
             | (Self::Operation(_), _)
             | (Self::BuiltinValueFunctionCall(_), _)
             | (Self::ListIndex(_), _)
             | (Self::List(_), _)
-            | (Self::ListIndexRange(_), _) => false,
+            | (Self::ListIndexRange(_), _)
+            | (Self::MayShortCircuit(_), _) => false,
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct ExpressionVariable<ID> {
+    variable: ID,
+    checked_isset: bool,
+}
+
+impl<ID> ExpressionVariable<ID> {
+    pub fn new(variable: ID, checked_isset: bool) -> Self {
+        Self { variable, checked_isset }
+    }
+
+    pub(crate) fn new_unchecked(variable: ID) -> Self {
+        Self::new(variable, false)
+    }
+}
+
+impl<ID: IrID> ExpressionVariable<ID> {
+    pub fn variable(&self) -> ID {
+        self.variable
+    }
+
+    pub fn checked_isset(&self) -> bool {
+        self.checked_isset
+    }
+
+    fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ExpressionVariable<T> {
+        ExpressionVariable::new(self.variable.map(mapping), self.checked_isset)
+    }
+}
+
+impl<ID> std::ops::Deref for ExpressionVariable<ID> {
+    type Target = ID;
+    fn deref(&self) -> &Self::Target {
+        &self.variable
+    }
+}
+impl<ID: StructuralEquality> StructuralEquality for ExpressionVariable<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.variable));
+        hasher.write_u64(StructuralEquality::hash(&self.checked_isset));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variable.equals(&other.variable) && self.checked_isset.equals(&other.checked_isset)
+    }
+}
+
+impl<ID: fmt::Display> fmt::Display for ExpressionVariable<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.variable, if self.checked_isset { "?" } else { "" })
     }
 }
 
@@ -312,10 +464,15 @@ macro_rules! function_id_enum {
                 }
             }
 
-            fn name(&self) -> &'static str {
+            pub fn name(&self) -> &'static str {
                 match self {
                     $( Self::$id => $name, )*
                 }
+            }
+
+            pub fn optionality(&self) -> VariableOptionality {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalBuiltinFunctions);
+                VariableOptionality::Required
             }
         }
     };
@@ -549,14 +706,14 @@ impl fmt::Display for BuiltinConceptFunctionID {
 
 #[derive(Debug, Clone)]
 pub struct ListIndex<ID> {
-    list_variable: ID,
+    list_variable: ExpressionVariable<ID>,
     index_expression_id: ExpressionTreeNodeId,
     source_span: Option<Span>,
 }
 
 impl<ID> ListIndex<ID> {
     pub(crate) fn new(
-        list_variable: ID,
+        list_variable: ExpressionVariable<ID>,
         index_expression_id: ExpressionTreeNodeId,
         source_span: Option<Span>,
     ) -> ListIndex<ID> {
@@ -569,8 +726,8 @@ impl<ID> ListIndex<ID> {
 }
 
 impl<ID: IrID> ListIndex<ID> {
-    pub fn list_variable(&self) -> ID {
-        self.list_variable
+    pub fn list_variable(&self) -> &ExpressionVariable<ID> {
+        &self.list_variable
     }
 
     pub fn index_expression_id(&self) -> ExpressionTreeNodeId {
@@ -662,7 +819,7 @@ impl StructuralEquality for ListConstructor {
 }
 #[derive(Debug, Clone)]
 pub struct ListIndexRange<ID> {
-    list_variable: ID,
+    list_variable: ExpressionVariable<ID>,
     from_expression_id: ExpressionTreeNodeId,
     to_expression_id: ExpressionTreeNodeId,
     source_span: Option<Span>,
@@ -670,7 +827,7 @@ pub struct ListIndexRange<ID> {
 
 impl<ID> ListIndexRange<ID> {
     pub(crate) fn new(
-        list_variable: ID,
+        list_variable: ExpressionVariable<ID>,
         from_expression_id: ExpressionTreeNodeId,
         to_expression_id: ExpressionTreeNodeId,
         source_span: Option<Span>,
@@ -684,8 +841,8 @@ impl<ID> ListIndexRange<ID> {
 }
 
 impl<ID: IrID> ListIndexRange<ID> {
-    pub fn list_variable(&self) -> ID {
-        self.list_variable
+    pub fn list_variable(&self) -> &ExpressionVariable<ID> {
+        &self.list_variable
     }
 
     pub fn from_expression_id(&self) -> ExpressionTreeNodeId {
@@ -782,12 +939,99 @@ impl<ID: IrID> fmt::Display for ExpressionTree<ID> {
 
 impl<ID: IrID> fmt::Display for Expression<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
+        match self {
+            Expression::Constant(parameter_id) => {
+                write!(f, "Constant({})", parameter_id)
+            }
+            Expression::Variable(variable) => {
+                write!(f, "Variable({})", variable)
+            }
+            Expression::Operation(operation) => {
+                write!(
+                    f,
+                    "Operator({} {} {} )",
+                    operation.left_expression_id,
+                    operation.operator(),
+                    operation.right_expression_id
+                )
+            }
+            Expression::BuiltinValueFunctionCall(builtin) => {
+                write!(
+                    f,
+                    "FunctionCall({}({}))",
+                    builtin.function_id(),
+                    FormatJoined(&builtin.argument_expression_ids, ',')
+                )
+            }
+            Expression::ListIndex(inner) => {
+                write!(f, "ListIndex({}[{}])", inner.list_variable(), inner.index_expression_id)
+            }
+            Expression::List(list) => {
+                write!(f, "ListConstructor([{}])", FormatJoined(&list.item_expression_ids, ','))
+            }
+            Expression::ListIndexRange(list_range) => {
+                write!(
+                    f,
+                    "ListIndexRange({}[{}..{}])",
+                    list_range.list_variable(),
+                    list_range.from_expression_id,
+                    list_range.to_expression_id
+                )
+            }
+            Expression::MayShortCircuit(inner) => {
+                write!(f, "MayShortCircuitOther({})", inner)
+            }
+        }
     }
 }
 
-typedb_error! {
-    pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
-        EmptyExpressionTree(1, "Illegal empty expression."),
+fn collect_reference_optionalities<ID1: IrID>(
+    tree: &ExpressionTree<ID1>,
+    at: ExpressionTreeNodeId,
+    context_optionality: ReferenceOptionality,
+    acc: &mut HashMap<ID1, ReferenceOptionality>,
+) {
+    let of_checked_isset = |variable: &ExpressionVariable<ID1>| match variable.checked_isset {
+        true => ReferenceOptionality::Optional,
+        false => ReferenceOptionality::Required,
+    };
+    match tree.get(at) {
+        Expression::Variable(variable) => {
+            let optionality = match context_optionality == ReferenceOptionality::Optional || variable.checked_isset {
+                true => ReferenceOptionality::Optional,
+                false => ReferenceOptionality::Required,
+            };
+            *acc.entry(**variable).or_insert(ReferenceOptionality::Optional) &= optionality;
+        }
+        Expression::MayShortCircuit(inner) => {
+            collect_reference_optionalities(tree, *inner, ReferenceOptionality::Optional, acc);
+        }
+        Expression::Operation(Operation { left_expression_id, right_expression_id, .. }) => {
+            collect_reference_optionalities(tree, *left_expression_id, ReferenceOptionality::Required, acc);
+            collect_reference_optionalities(tree, *right_expression_id, ReferenceOptionality::Required, acc);
+        }
+        Expression::BuiltinValueFunctionCall(BuiltinValueFunctionCall { argument_expression_ids, .. }) => {
+            for arg_id in argument_expression_ids {
+                error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
+                collect_reference_optionalities(tree, *arg_id, ReferenceOptionality::Required, acc);
+            }
+        }
+        Expression::ListIndex(ListIndex { list_variable, index_expression_id, .. }) => {
+            *acc.entry(**list_variable).or_insert(ReferenceOptionality::Optional) &= of_checked_isset(list_variable);
+        }
+        Expression::List(ListConstructor { item_expression_ids, .. }) => {
+            for item_id in item_expression_ids {
+                collect_reference_optionalities(tree, *item_id, ReferenceOptionality::Required, acc);
+            }
+        }
+        Expression::ListIndexRange(list_index) => {
+            *acc.entry(*list_index.list_variable).or_insert(ReferenceOptionality::Optional) &=
+                of_checked_isset(&list_index.list_variable);
+            collect_reference_optionalities(tree, list_index.from_expression_id, ReferenceOptionality::Required, acc);
+            collect_reference_optionalities(tree, list_index.to_expression_id, ReferenceOptionality::Required, acc);
+        }
+        Expression::Constant(_) => {
+            // No variables, no problems
+        }
     }
 }
