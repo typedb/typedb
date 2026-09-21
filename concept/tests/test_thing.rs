@@ -2311,7 +2311,10 @@ fn attribute_string_concurrent_has_writers() {
     let attach = |snapshot: &mut WriteSnapshot<WALClient>, owner: Entity, string: &str| {
         let attr = thing_manager.create_attribute(snapshot, attr_type, Value::String(Cow::Borrowed(string))).unwrap();
         owner.set_has_unordered(snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
-        thing_manager.finalise(snapshot, StorageCounters::DISABLED).unwrap();
+    };
+    let finalise_and_commit = |mut snapshot: WriteSnapshot<WALClient>| {
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED)
     };
 
     for string in [&short_string, &existing_long_string] {
@@ -2319,9 +2322,8 @@ fn attribute_string_concurrent_has_writers() {
         let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         attach(&mut snapshot_1, owner_1, string);
         attach(&mut snapshot_2, owner_2, string);
-        snapshot_1.commit(&mut CommitProfile::DISABLED).expect("first writer should commit");
-        snapshot_2
-            .commit(&mut CommitProfile::DISABLED)
+        finalise_and_commit(snapshot_1).expect("first writer should commit");
+        finalise_and_commit(snapshot_2)
             .unwrap_or_else(|err| panic!("concurrent writer of '{string}' should commit, got: {err:?}"));
     }
 
@@ -2330,8 +2332,8 @@ fn attribute_string_concurrent_has_writers() {
         let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         attach(&mut snapshot_1, owner_1, &new_long_string);
         attach(&mut snapshot_2, owner_2, &new_long_string);
-        snapshot_1.commit(&mut CommitProfile::DISABLED).expect("first creator of a new hashed value should commit");
-        let err = snapshot_2.commit(&mut CommitProfile::DISABLED).expect_err("concurrent creator should conflict");
+        finalise_and_commit(snapshot_1).expect("first creator of a new hashed value should commit");
+        let err = finalise_and_commit(snapshot_2).expect_err("concurrent creator should conflict");
         assert_commit_conflict(err, IsolationConflict::ExclusiveLock);
     }
 
@@ -2341,8 +2343,8 @@ fn attribute_string_concurrent_has_writers() {
         let mut snapshot_2: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         attach(&mut snapshot_1, owner_1, &new_long_string);
         attach(&mut snapshot_2, owner_2, &new_long_string);
-        snapshot_1.commit(&mut CommitProfile::DISABLED).expect("re-put should commit");
-        snapshot_2.commit(&mut CommitProfile::DISABLED).expect("concurrent re-put of an existing value should commit");
+        finalise_and_commit(snapshot_1).expect("re-put should commit");
+        finalise_and_commit(snapshot_2).expect("concurrent re-put of an existing value should commit");
     }
 }
 
