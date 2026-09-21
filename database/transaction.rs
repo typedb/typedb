@@ -12,7 +12,10 @@ use std::{
 pub use concept::thing::cleanup::{CleanupIntervals, CleanupRecord};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{statistics::StatisticsError, thing_manager::ThingManager},
+    thing::{
+        statistics::{StatisticsError, deltas::CommitDeltas},
+        thing_manager::ThingManager,
+    },
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -27,6 +30,7 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
 use serde::{Deserialize, Serialize};
 use storage::{
+    CommitData,
     durability_client::{DurabilityClient, DurabilityClientError},
     isolation_manager::WriteSnapshotDropGuard,
     record::CommitRecord,
@@ -497,18 +501,24 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        let sequence_number = match self.write_snapshot.commit(commit_profile) {
+        let commit_data = match self.write_snapshot.commit(commit_profile) {
             Ok(sequence_number) => sequence_number,
             Err(typedb_source) => return Err(DataCommitError::SnapshotError { typedb_source }),
         };
-        if let Some(sequence_number) = sequence_number {
+        if let Some(CommitData { sequence_number, record }) = commit_data {
             let database = &self.database_drop_guard;
-            database
-                .storage
-                .durability()
+            let durability = database.storage.durability();
+
+            durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
             database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
+
+            let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
+            durability
+                .unsequenced_write(&commit_deltas)
+                .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
         }
         Ok(())
     }
@@ -577,18 +587,24 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         }
         commit_profile.schema_update_statistics_durably_written();
 
-        let sequence_number = match self.schema_snapshot.commit(commit_profile) {
+        let commit_data = match self.schema_snapshot.commit(commit_profile) {
             Ok(sequence_number) => sequence_number,
             Err(typedb_source) => return Err(SchemaCommitError::SnapshotError { typedb_source }),
         };
 
-        if let Some(sequence_number) = sequence_number {
-            database
-                .storage
-                .durability()
+        if let Some(CommitData { sequence_number, record }) = commit_data {
+            let durability = database.storage.durability();
+
+            durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
             database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
+
+            let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
+            durability
+                .unsequenced_write(&commit_deltas)
+                .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
 
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {

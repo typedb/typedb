@@ -19,7 +19,7 @@ use std::{
 use concept::{
     thing::{
         cleanup::{CleanupIntervals, CleanupRecord},
-        statistics::{Statistics, StatisticsError},
+        statistics::{Statistics, StatisticsError, deltas::CommitDeltas},
     },
     type_::type_manager::{
         TypeManager,
@@ -95,6 +95,7 @@ pub struct Database<D> {
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
+    pub(super) _commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
@@ -330,6 +331,7 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new());
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
@@ -354,6 +356,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
+            _commit_deltas_queue: commit_deltas_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
@@ -457,6 +460,7 @@ impl Database<WALClient> {
         };
 
         let query_cache = Arc::new(QueryCache::new());
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
@@ -494,6 +498,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
+            _commit_deltas_queue: commit_deltas_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(

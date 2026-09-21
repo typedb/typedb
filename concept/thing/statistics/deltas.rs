@@ -7,7 +7,11 @@
 use std::collections::HashMap;
 
 use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
-use storage::{record::CommitRecord, sequence_number::SequenceNumber};
+use storage::{
+    durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
+    record::CommitRecord,
+    sequence_number::SequenceNumber,
+};
 
 use crate::{
     thing::{
@@ -27,6 +31,7 @@ use crate::{
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Delta {
     inserts: u64,
+    overwrites: u64,
     deletes: u64,
 }
 
@@ -185,6 +190,46 @@ impl CommitDeltas {
             has_attribute_deltas,
             relation_role_player_deltas,
             links_index_deltas,
+        }
+    }
+}
+
+impl DurabilityRecord for CommitDeltas {
+    const RECORD_TYPE: u8 = 20;
+
+    const RECORD_NAME: &'static str = "commit_deltas";
+
+    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
+        todo!()
+    }
+
+    fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
+        todo!()
+    }
+}
+
+impl UnsequencedDurabilityRecord for CommitDeltas {}
+
+mod serialize {
+    use serde::{Deserialize, Serialize};
+
+    use super::*;
+
+    impl Serialize for CommitDeltas {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            todo!()
+        }
+    }
+
+    impl<'de> Deserialize<'de> for CommitDeltas {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            todo!()
         }
     }
 }
