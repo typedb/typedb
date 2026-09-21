@@ -262,6 +262,7 @@ impl Statistics {
 
     pub fn update(&mut self, commit_deltas: &CommitDeltas) -> i64 {
         let CommitDeltas {
+            encoding_version: _,
             commit_sequence_number,
             entity_deltas,
             relation_deltas,

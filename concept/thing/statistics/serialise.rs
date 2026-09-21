@@ -128,7 +128,7 @@ impl Field {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
-enum SerialisableType {
+pub(super) enum SerialisableType {
     Entity(TypeIDUInt),
     Relation(TypeIDUInt),
     Attribute(TypeIDUInt),
@@ -278,45 +278,52 @@ impl Serialize for Statistics {
     }
 }
 
-fn to_serialisable_map_map<Type1: Into<SerialisableType> + Clone, Type2: Into<SerialisableType> + Clone>(
-    map: &HashMap<Type1, HashMap<Type2, u64>>,
-) -> HashMap<SerialisableType, HashMap<SerialisableType, u64>> {
+pub(super) fn to_serialisable_map_map<Type1, Type2, Value>(
+    map: &HashMap<Type1, HashMap<Type2, Value>>,
+) -> HashMap<SerialisableType, HashMap<SerialisableType, Value>>
+where
+    Type1: Into<SerialisableType> + Clone,
+    Type2: Into<SerialisableType> + Clone,
+    Value: Copy,
+{
     map.iter().map(|(type_, value)| (type_.clone().into(), to_serialisable_map(value))).collect()
 }
 
-fn to_serialisable_map_map_map<
+pub(super) fn to_serialisable_map_map_map<Type1, Type2, Type3, Value>(
+    map: &HashMap<Type1, HashMap<Type2, HashMap<Type3, Value>>>,
+) -> HashMap<SerialisableType, HashMap<SerialisableType, HashMap<SerialisableType, Value>>>
+where
     Type1: Into<SerialisableType> + Clone,
     Type2: Into<SerialisableType> + Clone,
     Type3: Into<SerialisableType> + Clone,
->(
-    map: &HashMap<Type1, HashMap<Type2, HashMap<Type3, u64>>>,
-) -> HashMap<SerialisableType, HashMap<SerialisableType, HashMap<SerialisableType, u64>>> {
+    Value: Copy,
+{
     map.iter().map(|(type_, value)| (type_.clone().into(), to_serialisable_map_map(value))).collect()
 }
 
-fn to_serialisable_map<Type_: Into<SerialisableType> + Clone>(
-    map: &HashMap<Type_, u64>,
-) -> HashMap<SerialisableType, u64> {
+pub(super) fn to_serialisable_map<Type_: Into<SerialisableType> + Clone, Value: Copy>(
+    map: &HashMap<Type_, Value>,
+) -> HashMap<SerialisableType, Value> {
     map.iter().map(|(type_, value)| (type_.clone().into(), *value)).collect()
 }
 
-fn into_entity_map(map: HashMap<SerialisableType, u64>) -> HashMap<EntityType, u64> {
+pub(super) fn into_entity_map<Value: Copy>(map: HashMap<SerialisableType, Value>) -> HashMap<EntityType, Value> {
     map.into_iter().map(|(type_, value)| (type_.into_entity_type(), value)).collect()
 }
 
-fn into_relation_map(map: HashMap<SerialisableType, u64>) -> HashMap<RelationType, u64> {
+pub(super) fn into_relation_map<Value: Copy>(map: HashMap<SerialisableType, Value>) -> HashMap<RelationType, Value> {
     map.into_iter().map(|(type_, value)| (type_.into_relation_type(), value)).collect()
 }
 
-fn into_attribute_map(map: HashMap<SerialisableType, u64>) -> HashMap<AttributeType, u64> {
+pub(super) fn into_attribute_map<Value: Copy>(map: HashMap<SerialisableType, Value>) -> HashMap<AttributeType, Value> {
     map.into_iter().map(|(type_, value)| (type_.into_attribute_type(), value)).collect()
 }
 
-fn into_role_map(map: HashMap<SerialisableType, u64>) -> HashMap<RoleType, u64> {
+pub(super) fn into_role_map<Value: Copy>(map: HashMap<SerialisableType, Value>) -> HashMap<RoleType, Value> {
     map.into_iter().map(|(type_, value)| (type_.into_role_type(), value)).collect()
 }
 
-fn into_object_map(map: HashMap<SerialisableType, u64>) -> HashMap<ObjectType, u64> {
+pub(super) fn into_object_map<Value: Copy>(map: HashMap<SerialisableType, Value>) -> HashMap<ObjectType, Value> {
     map.into_iter().map(|(type_, value)| (type_.into_object_type(), value)).collect()
 }
 
