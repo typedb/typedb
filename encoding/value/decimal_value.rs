@@ -387,10 +387,10 @@ impl fmt::Debug for DecimalParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ParseIntegerPart { value, .. } => {
-                write!(f, "An error occured while parsing the integer part of the decimal '{value}'")
+                write!(f, "An error occurred while parsing the integer part of the decimal '{value}'")
             }
             Self::ParseFractionalPart { value, .. } => {
-                write!(f, "An error occured while parsing the fractional part of the decimal '{value}'")
+                write!(f, "An error occurred while parsing the fractional part of the decimal '{value}'")
             }
             Self::PrecisionExceeded { value, .. } => {
                 write!(f, "The provided decimal '{value}' cannot be parsed without a loss of precision ")
