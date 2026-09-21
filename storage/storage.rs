@@ -65,7 +65,7 @@ use crate::{
     snapshot::{
         CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
         snapshot_id::SnapshotId,
-        write::{KnownToExist, Write},
+        write::{INSERT, KnownToExist, NOP, OVERWRITE, Write},
     },
 };
 
@@ -376,21 +376,24 @@ impl<Durability> MVCCStorage<Durability> {
                             )
                             .is_ok_and(|opt| opt.is_some_and(|bytes| &bytes == value))
                         );
-                        reinsert.store(false, Ordering::Release);
+                        reinsert.store(NOP, Ordering::Release);
                     }
                     KnownToExist::Unknown => {
-                        let existing_stored = self
-                            .get::<BUFFER_VALUE_INLINE>(
-                                snapshot.iterator_pool(),
-                                wrapped,
-                                snapshot.open_sequence_number(),
-                                storage_counters.clone(),
-                            )?
-                            .is_some_and(|reference| &reference == value);
-                        reinsert.store(!existing_stored, Ordering::Release);
+                        let byte_array = self.get::<BUFFER_VALUE_INLINE>(
+                            snapshot.iterator_pool(),
+                            wrapped,
+                            snapshot.open_sequence_number(),
+                            storage_counters.clone(),
+                        )?;
+                        let operation = match byte_array {
+                            Some(stored) if &stored == value => NOP,
+                            Some(_) => OVERWRITE,
+                            None => INSERT,
+                        };
+                        reinsert.store(operation, Ordering::Release);
                     }
                     KnownToExist::NonExistent => {
-                        reinsert.store(true, Ordering::Release);
+                        reinsert.store(INSERT, Ordering::Release);
                     }
                 }
             }

@@ -10,7 +10,7 @@ use std::{
     collections::{BTreeMap, Bound},
     fmt,
     iter::{IntoIterator, Peekable},
-    sync::{Arc, atomic::AtomicBool},
+    sync::{Arc, atomic::AtomicU8},
 };
 
 use bytes::{Bytes, byte_array::ByteArray, util::increment};
@@ -27,7 +27,7 @@ use crate::{
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{
         lock::LockType,
-        write::{KnownToExist, Write},
+        write::{KnownToExist, NOP, Write},
     },
 };
 
@@ -168,7 +168,7 @@ impl WriteBuffer {
         known_to_exist: KnownToExist,
     ) {
         let reinsert = known_to_exist == KnownToExist::NonExistent;
-        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(reinsert)), known_to_exist });
+        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicU8::new(NOP)), known_to_exist });
     }
 
     pub(crate) fn unput(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, expected_value: ByteArray<BUFFER_VALUE_INLINE>) {
