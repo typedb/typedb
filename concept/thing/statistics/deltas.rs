@@ -39,6 +39,7 @@ impl Delta {
     pub fn net_change(self) -> i64 {
         let inserts = self.inserts;
         let deletes = self.deletes;
+        // overwrites shadow an existing key without affecting overall count
         inserts
             .checked_signed_diff(deletes)
             .unwrap_or_else(|| panic!("{inserts} inserts - {deletes} deletes overflows i64!"))
