@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
 use storage::{
@@ -58,13 +58,27 @@ impl From<CommitDeltasEncodingVersion> for u64 {
     }
 }
 
-impl TryFrom<u64> for CommitDeltasEncodingVersion {
-    type Error = (); // TODO
+pub struct UnknownCommitDeltasEncodingVersion(pub u64);
 
-    fn try_from(u64: u64) -> Result<Self, ()> {
+impl fmt::Display for UnknownCommitDeltasEncodingVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Unknown commit deltas encoding version: {}", self.0)
+    }
+}
+
+impl fmt::Debug for UnknownCommitDeltasEncodingVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
+
+impl TryFrom<u64> for CommitDeltasEncodingVersion {
+    type Error = UnknownCommitDeltasEncodingVersion;
+
+    fn try_from(u64: u64) -> Result<Self, Self::Error> {
         match u64 {
             0 => Ok(Self::V0),
-            _ => Err(()),
+            other => Err(UnknownCommitDeltasEncodingVersion(other)),
         }
     }
 }
