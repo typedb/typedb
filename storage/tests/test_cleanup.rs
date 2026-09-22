@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use bytes::{Bytes, byte_array::ByteArray};
 use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
