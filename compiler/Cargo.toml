@@ -38,10 +38,13 @@ features = {}
 	[dependencies.tracing]
 		workspace = true
 
-	[dependencies.resource]
+	[dependencies.primitive]
 		workspace = true
 
 	[dependencies.serde]
+		workspace = true
+
+	[dependencies.resource]
 		workspace = true
 
 	[dependencies.concept]
@@ -50,10 +53,10 @@ features = {}
 	[dependencies.ir]
 		workspace = true
 
-	[dependencies.storage]
+	[dependencies.paste]
 		workspace = true
 
-	[dependencies.paste]
+	[dependencies.storage]
 		workspace = true
 
 	[dependencies.encoding]

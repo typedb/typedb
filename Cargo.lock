@@ -920,6 +920,7 @@ dependencies = [
  "ir",
  "itertools 0.14.0",
  "paste",
+ "primitive",
  "resource",
  "serde",
  "storage",
