@@ -566,7 +566,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
-        use SchemaCommitError::{StatisticsError, TypeCacheUpdateError};
+        use SchemaCommitError::{DurabilityError, StatisticsError, TypeCacheUpdateError};
         let database = &self.database_drop_guard;
 
         // Schema commits must wait for all other data operations to finish. No new read or write
@@ -583,7 +583,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
 
         // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
-            return Err(StatisticsError { typedb_source });
+            return Err(DurabilityError { typedb_source });
         }
         commit_profile.schema_update_statistics_durably_written();
 
@@ -597,13 +597,11 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
 
             durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
-                .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
+                .map_err(|typedb_source| DurabilityError { typedb_source })?;
             database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
 
             let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
-            durability
-                .unsequenced_write(&commit_deltas)
-                .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
+            durability.unsequenced_write(&commit_deltas).map_err(|typedb_source| DurabilityError { typedb_source })?;
             database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
 
             // replace schema cache

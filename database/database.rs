@@ -430,7 +430,7 @@ impl Database<WALClient> {
         if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
             thing_statistics
                 .durably_write(storage.durability())
-                .map_err(|err| StatisticsInitialise { typedb_source: err })?;
+                .map_err(|err| DatabaseOpenError::StatisticsPersist { typedb_source: err })?;
         }
         event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
@@ -658,7 +658,9 @@ fn make_update_statistics_fn(
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
             for (_seq, commit_deltas) in range {
-                new_statistics.update(&commit_deltas);
+                if let Err(err) = new_statistics.update(&commit_deltas, storage.durability()) {
+                    error!("Statistics update failed: {err:?}");
+                }
             }
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
@@ -746,6 +748,7 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        StatisticsPersist(18, "Error persisting statistics at startup.", typedb_source: DurabilityClientError),
     }
 }
 
