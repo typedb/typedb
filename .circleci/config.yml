@@ -540,23 +540,6 @@ jobs:
               -c ${CIRCLE_SHA1} -delete $(cat VERSION)
 
 
-  sync-to-typedb-benchmark:
-    machine:
-      image: ubuntu-2204:2024.11.1
-    steps:
-      - run:
-          name: "Sync this commit to TypeDB Benchmark"
-          command: |
-            git clone https://typedb-bot:$REPO_GITHUB_TOKEN@github.com/typedb/typedb-benchmark.git
-            cd typedb-benchmark
-            git config user.name "TypeDB Bot"
-            git config user.email "bot@typedb.com"
-            ./tool/update-typedb-core-version.sh "$CIRCLE_SHA1"
-            git add .
-            git commit -m "Update TypeDB Core version to $CIRCLE_SHA1"
-            git push origin development
-
-
   # distribution tests
   test-distribution-apt-snapshot-x86_64:
     machine:
@@ -771,13 +754,6 @@ workflows:
               only: [ master ]
           requires:
             - deploy-docker-snapshot-multiarch
-
-      - sync-to-typedb-benchmark:
-          filters:
-            branches:
-              only: [ master ]
-          requires:
-            - test-deploy-snapshot-linux-x86_64
 
   release:
     jobs:
