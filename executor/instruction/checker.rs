@@ -159,15 +159,17 @@ impl<T> Checker<T> {
 impl Checker<()> {
     pub(crate) fn filter(
         checks: &[CheckInstruction<ExecutorVariable>],
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         all_checks_pass(
             checks,
-            context.snapshot.as_ref(),
-            context.thing_manager.as_ref(),
-            &context.parameters,
+            snapshot,
+            thing_manager,
+            parameters,
             row,
             storage_counters,
         )

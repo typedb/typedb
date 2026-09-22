@@ -20,8 +20,9 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     ExecutionInterrupt,
     pipeline::{
-        PipelineExecutionError, StageIterator, WrittenRowsIterator, required_inputs_satisfied,
+        PipelineExecutionError, StageIterator, WrittenRowsIterator,
         stage::{ExecutionContext, StageAPI},
+        write_condition_satisfied,
     },
     row::Row,
     write::{WriteError, write_instruction::AsWriteInstruction},
@@ -64,7 +65,8 @@ where
         // TODO: all write stages will have the same block below: we could merge them
         let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Delete"));
-        let (connection_profiles, concept_profiles) = build_step_profiles(&self.executable, &pattern_profile);
+        let (condition_profiles, connection_profiles, concept_profiles) =
+            build_step_profiles(&self.executable, &pattern_profile);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot = Arc::get_mut(&mut context.snapshot).unwrap();
@@ -75,6 +77,7 @@ where
             for (i, delete) in self.executable.deletes.iter().enumerate() {
                 if let Err(typedb_source) = may_execute_delete_connections(
                     delete,
+                    &condition_profiles[i],
                     &connection_profiles[i],
                     snapshot,
                     &context.thing_manager,
@@ -99,6 +102,7 @@ where
             for (i, delete) in self.executable.deletes.iter().enumerate() {
                 if let Err(typedb_source) = may_execute_delete_concepts(
                     &delete,
+                    &condition_profiles[i],
                     &concept_profiles[i],
                     snapshot,
                     &context.thing_manager,
@@ -128,22 +132,28 @@ where
 fn build_step_profiles(
     executable: &DeleteExecutable,
     pattern_profile: &PatternProfile,
-) -> (Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
+) -> (Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
     let mut next_subpattern: usize = 0;
+    let mut condition_profiles = Vec::with_capacity(executable.deletes.len());
     let mut connection_profiles = Vec::with_capacity(executable.deletes.len());
     let mut concept_profiles = Vec::with_capacity(executable.deletes.len());
     for (i, delete) in executable.deletes.iter().enumerate() {
+        let condition_subpattern =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Deletes {i} condition"));
+        next_subpattern += 1;
+        condition_profiles.push(condition_subpattern.extend_or_get_step(0, || format!("{}", &delete.condition)));
+
         let connection_subpattern =
             pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Deletes {i} connections"));
         next_subpattern += 1;
         connection_profiles.push(reserve_step_profiles(&connection_subpattern, &delete.connection_instructions));
+
         let concept_subpattern =
             pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Deletes {i} concepts"));
         next_subpattern += 1;
         concept_profiles.push(reserve_step_profiles(&concept_subpattern, &delete.concept_instructions));
     }
-
-    (connection_profiles, concept_profiles)
+    (condition_profiles, connection_profiles, concept_profiles)
 }
 
 fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
@@ -156,13 +166,21 @@ fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions:
 
 pub fn may_execute_delete_connections(
     delete: &ConditionalDelete,
+    condition_profile: &StepProfile,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    if !required_inputs_satisfied(&delete.required_input_variables, input_output_row) {
+    if !write_condition_satisfied(
+        &delete.condition,
+        input_output_row,
+        snapshot,
+        thing_manager,
+        parameters,
+        condition_profile,
+    )? {
         return Ok(());
     }
 
@@ -186,13 +204,21 @@ pub fn may_execute_delete_connections(
 
 pub fn may_execute_delete_concepts(
     delete: &ConditionalDelete,
+    condition_profile: &StepProfile,
     step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    if !required_inputs_satisfied(&delete.required_input_variables, input_output_row) {
+    if !write_condition_satisfied(
+        &delete.condition,
+        input_output_row,
+        snapshot,
+        thing_manager,
+        parameters,
+        condition_profile,
+    )? {
         return Ok(());
     }
 

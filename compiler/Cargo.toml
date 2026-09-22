@@ -36,6 +36,9 @@
 	[dependencies.paste]
 		workspace = true
 
+	[dependencies.primitive]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
