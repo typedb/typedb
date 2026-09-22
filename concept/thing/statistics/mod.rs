@@ -260,7 +260,11 @@ impl Statistics {
         })
     }
 
-    pub fn update(&mut self, commit_deltas: &CommitDeltas) -> i64 {
+    pub fn update(
+        &mut self,
+        commit_deltas: &CommitDeltas,
+        durability: &impl DurabilityClient,
+    ) -> Result<(), DurabilityClientError> {
         let CommitDeltas {
             encoding_version: _,
             commit_sequence_number,
@@ -271,6 +275,10 @@ impl Statistics {
             relation_role_player_deltas,
             links_index_deltas,
         } = commit_deltas;
+
+        if *commit_sequence_number <= self.sequence_number {
+            return Ok(());
+        }
 
         let mut total_delta = 0;
 
@@ -308,13 +316,17 @@ impl Statistics {
             }
         }
 
+        self.total_count = self.total_count.checked_add_signed(total_delta).unwrap();
+
         self.sequence_number = *commit_sequence_number;
 
-        total_delta
+        self.may_durably_write(durability)?;
+
+        Ok(())
     }
 
     pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
-        use StatisticsError::{DataRead, ReloadCommitData};
+        use StatisticsError::{DataRead, DurablyWrite, ReloadCommitData};
 
         let storage_watermark = storage.snapshot_watermark();
         debug_assert!(self.sequence_number <= storage_watermark);
@@ -357,7 +369,8 @@ impl Statistics {
                                 if self.last_durable_write_sequence_number.next() < seq {
                                     self.update_writes(&data_commits, storage)
                                         .map_err(|err| DataRead { source: err })?;
-                                    self.durably_write(storage.durability())?;
+                                    self.durably_write(storage.durability())
+                                        .map_err(|err| DurablyWrite { typedb_source: err })?;
                                 }
                                 self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
                                     .map_err(|err| DataRead { source: err })?;
@@ -375,16 +388,7 @@ impl Statistics {
 
         self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
 
-        // checkpoint statistics on a huge change/a few large commits, or worst case on K commits
-        // TODO: ideally, we'd want to check if the total number of changes in absolute terms is large or K commits
-        let count_change_since_last_durable_write =
-            self.total_count as i64 - self.last_durable_write_total_count as i64;
-        let sequence_numbers_since_last_durable_write = self.sequence_number - self.last_durable_write_sequence_number;
-        if count_change_since_last_durable_write.abs() > STATISTICS_DURABLE_WRITE_CHANGE_COUNT as i64
-            || sequence_numbers_since_last_durable_write > STATISTICS_DURABLE_WRITE_SEQ_NUMBERS
-        {
-            self.durably_write(storage.durability())?;
-        }
+        self.may_durably_write(storage.durability()).map_err(|err| DurablyWrite { typedb_source: err })?;
 
         if let Some(last_included) = last_included {
             self.sequence_number = last_included;
@@ -401,9 +405,22 @@ impl Statistics {
         Ok(())
     }
 
-    pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), StatisticsError> {
-        use StatisticsError::DurablyWrite;
-        durability.unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
+    fn may_durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
+        let count_change_since_last_durable_write =
+            u64::abs_diff(self.total_count, self.last_durable_write_total_count);
+        let sequence_numbers_since_last_durable_write = self.sequence_number - self.last_durable_write_sequence_number;
+
+        if count_change_since_last_durable_write > STATISTICS_DURABLE_WRITE_CHANGE_COUNT
+            || sequence_numbers_since_last_durable_write > STATISTICS_DURABLE_WRITE_SEQ_NUMBERS
+        {
+            self.durably_write(durability)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
+        durability.unsequenced_write(self)?;
         self.last_durable_write_sequence_number = self.sequence_number;
         self.last_durable_write_total_count = self.total_count;
         Ok(())
