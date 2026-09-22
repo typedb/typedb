@@ -20,6 +20,7 @@ use axum_server::{Handle, tls_rustls::RustlsConfig};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::database_manager::ImportOwnership;
 use futures::future::try_join_all;
+use logger::safe_println;
 use rand::prelude::SliceRandom;
 use resource::{
     constants::{
@@ -30,7 +31,7 @@ use resource::{
         },
     },
     distribution_info::DistributionInfo,
-    server_info::{EndpointInfo, ServingInfo, print_serving_block},
+    server_info::{EndpointInfo, ServingInfo},
     system_info::SystemInfo,
 };
 use tokio::sync::watch::{Receiver, Sender, channel};
@@ -443,12 +444,12 @@ impl Server {
     }
 
     fn print_hello(distribution_info: DistributionInfo, is_development_mode_enabled: bool) {
-        println!("{}", distribution_info.logo); // very important
+        safe_println!("{}", distribution_info.logo); // very important
         let version = distribution_info.version.trim();
         if is_development_mode_enabled {
-            println!("Running {} {} in development mode.", distribution_info.distribution, version);
+            safe_println!("Running {} {} in development mode.", distribution_info.distribution, version);
         } else {
-            println!("Running {} {}.", distribution_info.distribution, version);
+            safe_println!("Running {} {}.", distribution_info.distribution, version);
         }
     }
 
@@ -465,15 +466,15 @@ impl Server {
             admin: server_status.admin_address().map(str::to_string),
             monitoring: server_status.monitoring_address().map(str::to_string),
         };
-        print_serving_block(&info);
+        safe_println!("{info}");
 
         if encryption_config.enabled {
-            println!("TLS: enabled");
-            println!("  Drivers must also be configured to use TLS.");
+            safe_println!("TLS: enabled");
+            safe_println!("  Drivers must also be configured to use TLS.");
         } else {
-            println!("TLS: disabled");
-            println!("  WARNING: TLS NOT ENABLED. Credentials are transmitted unencrypted in plaintext.");
-            println!("  Drivers must be configured to connect *without TLS*.");
+            safe_println!("TLS: disabled");
+            safe_println!("  WARNING: TLS NOT ENABLED. Credentials are transmitted unencrypted in plaintext.");
+            safe_println!("  Drivers must be configured to connect *without TLS*.");
         }
 
         let grpc_connect_address =
@@ -481,16 +482,16 @@ impl Server {
         let http_connect_address =
             Self::connect_address(server_status.http_advertise_address(), server_status.http_listen_address());
         if grpc_connect_address.is_some() || http_connect_address.is_some() {
-            println!("\nTo connect:");
+            safe_println!("\nTo connect:");
             if let Some(http_connect_address) = http_connect_address.as_deref() {
-                println!("  Studio:  {}", Self::studio_connect_link(http_connect_address, encryption_config));
+                safe_println!("  Studio:  {}", Self::studio_connect_link(http_connect_address, encryption_config));
             }
             if let Some(grpc_connect_address) = grpc_connect_address.as_deref() {
-                println!("  Console: {}", Self::console_connect_command(grpc_connect_address, encryption_config));
+                safe_println!("  Console: {}", Self::console_connect_command(grpc_connect_address, encryption_config));
             }
         }
 
-        println!();
+        safe_println!();
     }
 
     pub fn log_ready() {
@@ -549,7 +550,7 @@ impl Server {
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
         tokio::spawn(async move {
             let initial_signal = Self::wait_for_shutdown_signal().await;
-            println!("\nReceived {initial_signal}. Initiating shutdown...");
+            safe_println!("\nReceived {initial_signal}. Initiating shutdown...");
             shutdown_sender.send(()).expect("Expected a successful shutdown signal");
 
             tokio::spawn(Self::forced_shutdown_handler());
@@ -558,7 +559,7 @@ impl Server {
 
     async fn forced_shutdown_handler() {
         let forced_signal = Self::wait_for_shutdown_signal().await;
-        println!("\nReceived {forced_signal}. Forcing shutdown...");
+        safe_println!("\nReceived {forced_signal}. Forcing shutdown...");
         std::process::exit(1);
     }
 

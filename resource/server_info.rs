@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt;
+
 const DISABLED: &str = "disabled";
 const UNKNOWN: &str = "<UNKNOWN ADDRESS>";
 
@@ -26,23 +28,25 @@ pub struct ServingInfo {
     pub monitoring: Option<String>,
 }
 
-pub fn print_serving_block(info: &ServingInfo) {
-    println!("Serving:");
-    println!("  gRPC:       {}", endpoint_display(&info.grpc));
-    match &info.http {
-        Some(http) => println!("  HTTP:       {}", endpoint_display(http)),
-        None => println!("  HTTP:       {DISABLED}"),
-    }
-    match &info.admin {
-        Some(admin) => println!("  Admin:      {admin} ({ADMIN_TRANSPORT_LABEL})"),
-        None => println!("  Admin:      {DISABLED}"),
-    }
-    match &info.monitoring {
-        Some(monitoring) => {
-            println!("  Monitoring: http://{monitoring}/diagnostics (Prometheus scrape)");
-            println!("              http://{monitoring}/diagnostics?format=json (JSON)");
+impl fmt::Display for ServingInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Serving:")?;
+        writeln!(f, "  gRPC:       {}", endpoint_display(&self.grpc))?;
+        match &self.http {
+            Some(http) => writeln!(f, "  HTTP:       {}", endpoint_display(http))?,
+            None => writeln!(f, "  HTTP:       {DISABLED}")?,
         }
-        None => println!("  Monitoring: {DISABLED}"),
+        match &self.admin {
+            Some(admin) => writeln!(f, "  Admin:      {admin} ({ADMIN_TRANSPORT_LABEL})")?,
+            None => writeln!(f, "  Admin:      {DISABLED}")?,
+        }
+        match &self.monitoring {
+            Some(monitoring) => {
+                writeln!(f, "  Monitoring: http://{monitoring}/diagnostics (Prometheus scrape)")?;
+                write!(f, "              http://{monitoring}/diagnostics?format=json (JSON)")
+            }
+            None => write!(f, "  Monitoring: {DISABLED}"),
+        }
     }
 }
 

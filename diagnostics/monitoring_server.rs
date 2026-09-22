@@ -15,6 +15,7 @@ use hyper::{
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
     service::{make_service_fn, service_fn},
 };
+use logger::warn;
 use tokio::task;
 
 use crate::Diagnostics;
@@ -48,14 +49,11 @@ impl MonitoringServer {
             match Server::try_bind(&address) {
                 Ok(server) => {
                     if let Err(e) = server.serve(make_svc).await {
-                        eprintln!("WARNING: Diagnostics monitoring server error: '{}'", e);
+                        warn!("Diagnostics monitoring server error: '{}'", e);
                     }
                 }
                 Err(e) => {
-                    eprintln!(
-                        "WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'",
-                        address, e
-                    )
+                    warn!("Diagnostics monitoring server could not get initialised on {}: '{}'", address, e)
                 }
             }
         });

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use resource::server_info::{EndpointInfo, ServingInfo, print_serving_block};
+use resource::server_info::{EndpointInfo, ServingInfo};
 use server_admin_proto as admin_proto;
 
 use crate::{
@@ -53,7 +53,7 @@ async fn server_status(client: &mut AdminClient) -> CommandResult {
         monitoring: res.monitoring_address,
     };
     println!("Status: running");
-    print_serving_block(&info);
+    println!("{info}");
     Ok(())
 }
 
