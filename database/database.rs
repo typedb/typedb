@@ -302,6 +302,7 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
         wal_client.register_record_type::<CleanupRecord>();
+        wal_client.register_record_type::<CommitDeltas>();
 
         let storage = Arc::new(
             MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
@@ -399,6 +400,7 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
         wal_client.register_record_type::<CleanupRecord>();
+        wal_client.register_record_type::<CommitDeltas>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
