@@ -44,11 +44,11 @@ use crate::{
     row::Row,
 };
 
-pub(crate) trait TupleSeekable {
+pub trait TupleSeekable {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>>;
 }
 
-pub(crate) struct NaiiveSeekable<I: LendingIterator> {
+pub struct NaiiveSeekable<I: LendingIterator> {
     iter: Peekable<I>,
 }
 
@@ -304,7 +304,7 @@ pub(crate) trait TupleIteratorAPI {
     fn positions(&self) -> &TuplePositions;
 }
 
-pub(crate) struct SortedTupleIterator<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable> {
+pub struct SortedTupleIterator<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable> {
     iterator: Peekable<Inspect<It, Box<dyn FnMut(&TupleResult<'_>)>>>,
     positions: TuplePositions,
     tuple_length: usize,
