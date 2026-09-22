@@ -71,9 +71,9 @@ fn validate_insert_pattern(
                 }
             }
         }
-        WritePattern::If(WritePatternIf { conditions, patterns, .. }) => {
+        WritePattern::If(WritePatternIf { conditions, then, .. }) => {
             validate_if_conditions(context, conditions)?;
-            validate_insert_patterns(context, patterns)?;
+            validate_insert_patterns(context, then)?;
         }
         WritePattern::Statement(Statement::Thing(thing_stmt)) => {
             for constraint in &thing_stmt.constraints {
@@ -139,7 +139,7 @@ fn add_write_patterns(
                 for condition in &if_statement.conditions {
                     add_write_condition(function_index, &mut optional_builder, condition)?;
                 }
-                add_write_patterns(function_index, &mut optional_builder, &if_statement.patterns)?;
+                add_write_patterns(function_index, &mut optional_builder, &if_statement.then)?;
             }
         }
     }
@@ -353,11 +353,9 @@ fn validate_update_pattern(
                 }
             }
         }
-        WritePattern::If(WritePatternIf { conditions, patterns, .. }) => {
-            for pattern in patterns {
-                validate_if_conditions(context, conditions)?;
-                validate_update_pattern(context, pattern)?;
-            }
+        WritePattern::If(WritePatternIf { conditions, then, .. }) => {
+            validate_if_conditions(context, conditions)?;
+            validate_update_patterns(context, then)?;
         }
         WritePattern::Statement(statement) => validate_update_statement(context, statement)?,
     }
