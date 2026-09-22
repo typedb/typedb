@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
 use bytes::{Bytes, byte_array::ByteArray};
 use lending_iterator::LendingIterator;
@@ -46,14 +46,14 @@ fn cleanup_test() {
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
     snapshot.put(key_4.clone());
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log();
 
     assert_eq!(count_keys(&storage), 4);
 
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.delete(key_1.clone());
     snapshot.delete(key_2.clone());
-    let seq = snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log().unwrap();
+    let seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log().unwrap();
 
     assert_eq!(count_keys(&storage), 6);
 
@@ -92,7 +92,7 @@ fn concurrent_reader_cleanup_test() {
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
     snapshot.put(key_4.clone());
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log();
 
     assert_eq!(count_keys(&storage), 4);
 
@@ -102,7 +102,7 @@ fn concurrent_reader_cleanup_test() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.delete(key_1.clone());
         snapshot.delete(key_2.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log().unwrap()
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log().unwrap()
     };
 
     assert_eq!(count_keys(&storage), 6);

@@ -36,7 +36,7 @@ fn define_schema(
     query_manager
         .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, &schema_query, query_str)
         .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn insert_data(
@@ -62,7 +62,7 @@ fn insert_data(
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 #[test]

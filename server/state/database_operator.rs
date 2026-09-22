@@ -110,7 +110,7 @@ fn import_commit<I: CommitIntent>(
     intent: I,
     map_err: impl FnOnce(I::Error) -> LocalServerStateError,
 ) -> Result<(), ImportHandlerError> {
-    let mut commit_profile = CommitProfile::DISABLED;
+    let mut commit_profile = CommitProfile::disabled();
     intent.commit(&mut commit_profile).map_err(|typedb_source| Arc::new(map_err(typedb_source)) as _)
 }
 

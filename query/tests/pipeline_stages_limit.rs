@@ -46,7 +46,7 @@ fn setup() -> (
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, schema)
         .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     (tmp_dir, storage, type_manager, thing_manager, function_manager, query_manager)

@@ -90,7 +90,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn translate_and_annotate(

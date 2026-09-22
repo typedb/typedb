@@ -69,12 +69,12 @@ fn populate_storage(storage: Arc<MVCCStorage<WALClient>>, keyspace: TestKeyspace
     let mut snapshot = storage.clone().open_snapshot_write();
     for i in 0..key_count {
         if i % BATCH_SIZE == 0 {
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap();
             snapshot = storage.clone().open_snapshot_write();
         }
         snapshot.put(random_key_24(keyspace));
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace, &[0_u8]));
@@ -115,7 +115,7 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WALClient>>, keyspace: Test
     for _ in 0..batch_size {
         snapshot.put(random_key_24(keyspace));
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALClient>> {

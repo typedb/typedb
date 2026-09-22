@@ -147,7 +147,7 @@ fn setup_schema(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .unwrap();
 
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn setup_has_data(storage: &Arc<MVCCStorage<WALClient>>) {
@@ -176,7 +176,7 @@ fn setup_has_data(storage: &Arc<MVCCStorage<WALClient>>) {
     }
 
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn setup_links_data(storage: &Arc<MVCCStorage<WALClient>>) {
@@ -202,7 +202,7 @@ fn setup_links_data(storage: &Arc<MVCCStorage<WALClient>>) {
     }
 
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 struct BenchVars {

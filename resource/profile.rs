@@ -61,7 +61,7 @@ impl TransactionProfile {
     }
 
     pub fn take_commit_profile(&mut self) -> CommitProfile {
-        std::mem::replace(&mut self.commit_profile, CommitProfile::DISABLED)
+        std::mem::replace(&mut self.commit_profile, CommitProfile::disabled())
     }
 
     pub fn set_commit_profile(&mut self, commit_profile: CommitProfile) {
@@ -150,7 +150,9 @@ impl Display for CommitProfile {
 }
 
 impl CommitProfile {
-    pub const DISABLED: Self = Self { data: None };
+    pub fn disabled() -> Self {
+        Self { data: None }
+    }
 
     pub fn new(enabled: bool) -> Self {
         match enabled {

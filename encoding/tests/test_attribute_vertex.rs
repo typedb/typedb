@@ -363,8 +363,8 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         assert!(!id_a.is_inline() && !id_b.is_inline());
         assert_eq!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
 
-        snapshot_a.commit(&mut CommitProfile::DISABLED).expect("First commit should succeed");
-        match snapshot_b.commit(&mut CommitProfile::DISABLED) {
+        snapshot_a.commit(&mut CommitProfile::disabled()).expect("First commit should succeed");
+        match snapshot_b.commit(&mut CommitProfile::disabled()) {
             Ok(_) => panic!("Expected hash collision to cause isolation error"),
             Err(err) => {
                 assert!(matches!(
@@ -406,8 +406,8 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
             "hash-collided strings encoded in independent snapshots must agree on deterministic_bytes"
         );
 
-        snapshot_a.commit(&mut CommitProfile::DISABLED).expect("First commit should succeed");
-        match snapshot_b.commit(&mut CommitProfile::DISABLED) {
+        snapshot_a.commit(&mut CommitProfile::disabled()).expect("First commit should succeed");
+        match snapshot_b.commit(&mut CommitProfile::disabled()) {
             Ok(_) => panic!("Expected hash collision to cause isolation error"),
             Err(err) => {
                 assert!(matches!(
@@ -441,7 +441,7 @@ fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
     let existing_vertex = {
         let mut snapshot = storage.clone().open_snapshot_write();
         let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).expect("Initial creation should succeed");
+        snapshot.commit(&mut CommitProfile::disabled()).expect("Initial creation should succeed");
         vertex
     };
     assert!(!existing_vertex.attribute_id().unwrap_string().is_inline());
@@ -453,8 +453,8 @@ fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
     assert_eq!(vertex_a, existing_vertex);
     assert_eq!(vertex_b, existing_vertex);
 
-    snapshot_a.commit(&mut CommitProfile::DISABLED).expect("Re-putting an existing value should commit");
-    snapshot_b.commit(&mut CommitProfile::DISABLED).expect("Concurrently re-putting an existing value should commit");
+    snapshot_a.commit(&mut CommitProfile::disabled()).expect("Re-putting an existing value should commit");
+    snapshot_b.commit(&mut CommitProfile::disabled()).expect("Concurrently re-putting an existing value should commit");
 }
 
 #[test]
@@ -468,7 +468,7 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
     let existing_vertex = {
         let mut snapshot = storage.clone().open_snapshot_write();
         let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).expect("Initial creation should succeed");
+        snapshot.commit(&mut CommitProfile::disabled()).expect("Initial creation should succeed");
         vertex
     };
     let vertex_key = existing_vertex.into_storage_key().into_owned_array();
@@ -481,8 +481,8 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
         assert_eq!(vertex, existing_vertex);
         snapshot_delete.delete(vertex_key.clone());
 
-        snapshot_put.commit(&mut CommitProfile::DISABLED).expect("Re-putting an existing value should commit");
-        let err = snapshot_delete.commit(&mut CommitProfile::DISABLED).expect_err("Delete should conflict");
+        snapshot_put.commit(&mut CommitProfile::disabled()).expect("Re-putting an existing value should commit");
+        let err = snapshot_delete.commit(&mut CommitProfile::disabled()).expect_err("Delete should conflict");
         assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
     }
 
@@ -494,8 +494,8 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
         assert_eq!(vertex, existing_vertex);
         snapshot_delete.delete(vertex_key.clone());
 
-        snapshot_delete.commit(&mut CommitProfile::DISABLED).expect("Delete should commit");
-        let err = snapshot_put.commit(&mut CommitProfile::DISABLED).expect_err("Put should conflict");
+        snapshot_delete.commit(&mut CommitProfile::disabled()).expect("Delete should commit");
+        let err = snapshot_put.commit(&mut CommitProfile::disabled()).expect_err("Put should conflict");
         assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
     }
 }
@@ -521,18 +521,18 @@ fn hash_bucket_holes_are_reused_across_transactions() {
         .collect();
     let tails: Vec<u8> = vertices.iter().map(|v| v.attribute_id().unwrap_string().get_hash_disambiguator()).collect();
     assert_eq!(tails, vec![0, 1, 2]);
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.delete(vertices[0].into_storage_key().into_owned_array());
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let delta = generator.create_attribute_string(type_id, bytes(strings[3]).as_reference(), &mut snapshot).unwrap();
     assert_eq!(delta.attribute_id().unwrap_string().get_hash_disambiguator(), 0, "freed tail should be reused");
     let bravo = generator.create_attribute_string(type_id, bytes(strings[1]).as_reference(), &mut snapshot).unwrap();
     assert_eq!(bravo, vertices[1], "existing values keep their tails");
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 #[test]
@@ -552,7 +552,7 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
     let alpha_vertex = {
         let mut snapshot = storage.clone().open_snapshot_write();
         let vertex = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         vertex
     };
     assert_eq!(alpha_vertex.attribute_id().unwrap_string().get_hash_disambiguator(), 0);
@@ -577,8 +577,8 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
         let reput = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput).unwrap();
         assert_eq!(reput, alpha_vertex);
 
-        snapshot_reput.commit(&mut CommitProfile::DISABLED).expect("Re-put of existing value should commit");
-        let err = snapshot_delete.commit(&mut CommitProfile::DISABLED).expect_err("Delete should conflict");
+        snapshot_reput.commit(&mut CommitProfile::disabled()).expect("Re-put of existing value should commit");
+        let err = snapshot_delete.commit(&mut CommitProfile::disabled()).expect_err("Delete should conflict");
         assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
     }
 
@@ -590,8 +590,8 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
         let reput = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput).unwrap();
         assert_eq!(reput, alpha_vertex);
 
-        snapshot_delete.commit(&mut CommitProfile::DISABLED).expect("Delete and allocate should commit");
-        let err = snapshot_reput.commit(&mut CommitProfile::DISABLED).expect_err("Re-put should conflict");
+        snapshot_delete.commit(&mut CommitProfile::disabled()).expect("Delete and allocate should commit");
+        let err = snapshot_reput.commit(&mut CommitProfile::disabled()).expect_err("Re-put should conflict");
         assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
     }
 }
@@ -622,7 +622,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
         let relation_type_vertex = generator.create_relation_type(&mut snapshot).unwrap();
         debug_assert_eq!(type_id, relation_type_vertex.type_id_());
 
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     for i in 0..5 {
@@ -643,7 +643,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
         let vertex = generator.create_entity(type_id, &mut snapshot);
         assert_eq!(type_id, vertex.type_id_());
         assert_eq!(i as u64, vertex.object_id().as_u64());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     for i in 0..5 {
@@ -664,7 +664,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
         let vertex = generator.create_relation(type_id, &mut snapshot);
         assert_eq!(type_id, vertex.type_id_());
         assert_eq!(i as u64, vertex.object_id().as_u64());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 }
 
@@ -690,7 +690,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
         let type_generator = TypeVertexGenerator::new();
         type_generator.create_entity_type(&mut snapshot).unwrap();
         type_generator.create_relation_type(&mut snapshot).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         let primary_generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let mut snapshot = storage.clone().open_snapshot_write();
@@ -700,7 +700,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
         for _ in 0..4 {
             primary_generator.create_relation(type_id, &mut snapshot);
         }
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         let stale_generator = ThingVertexGenerator::new();
         stale_generator.sync_from_storage(storage.clone()).unwrap();
@@ -712,7 +712,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
         for _ in 0..2 {
             primary_generator.create_relation(type_id, &mut snapshot);
         }
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         stale_generator
     };
@@ -776,7 +776,7 @@ fn sync_from_storage_never_lowers_a_counter() {
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_generator = TypeVertexGenerator::new();
     type_generator.create_entity_type(&mut snapshot).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
     // Commit 3 entities so storage has IIDs 0, 1, 2.
@@ -784,7 +784,7 @@ fn sync_from_storage_never_lowers_a_counter() {
     for _ in 0..3 {
         generator.create_entity(type_id, &mut snapshot);
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // Allocate another 5 in memory without committing — counter goes to 8.
     let mut snapshot = storage.clone().open_snapshot_write();

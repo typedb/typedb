@@ -80,7 +80,7 @@ fn write_entity_attributes(
         person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     }
 
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
@@ -111,7 +111,7 @@ fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
             StorageCounters::DISABLED,
         )
         .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

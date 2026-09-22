@@ -81,7 +81,7 @@ fn test_struct_definition() {
         let read_1_definition = get_struct_definition(&snapshot, &read_1_key);
         assert_eq!(struct_1_definition, read_1_definition);
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // Read back commmitted
     {

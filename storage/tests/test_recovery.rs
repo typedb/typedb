@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
 use std::fs;
 
@@ -38,7 +38,7 @@ fn wal_and_checkpoint_ok() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         (checkpoint_storage(&storage), storage.snapshot_watermark())
     };
@@ -88,7 +88,7 @@ fn wal_and_no_checkpoint_ok() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         storage.snapshot_watermark()
     };
@@ -126,7 +126,7 @@ fn no_wal_and_checkpoint_illegal() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         (checkpoint_storage(&storage), storage.path().parent().unwrap().to_owned())
     };
@@ -155,7 +155,7 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     };
 
     // delete wal
@@ -182,7 +182,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     };
 
     // delete wal

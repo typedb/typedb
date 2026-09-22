@@ -326,7 +326,7 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
 
 #[cfg(test)]
 pub mod tests {
-    #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+    #![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
     use std::sync::Arc;
 
@@ -546,7 +546,7 @@ pub mod tests {
             cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear, StorageCounters::DISABLED).unwrap();
             dog.set_plays(&mut snapshot, type_manager, thing_manager, is_feared, StorageCounters::DISABLED).unwrap();
 
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
             (
                 (TypeAnnotation::Entity(animal), TypeAnnotation::Entity(cat), TypeAnnotation::Entity(dog)),

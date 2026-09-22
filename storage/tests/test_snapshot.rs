@@ -5,7 +5,7 @@
  */
 
 #![deny(unused_must_use)]
-#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
@@ -33,7 +33,7 @@ test_keyspace_set! {
 #[test]
 fn snapshot_generated_new_id() {
     init_logging();
-    let mut profile = CommitProfile::DISABLED;
+    let mut profile = CommitProfile::disabled();
     let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
@@ -158,7 +158,7 @@ fn snapshot_read_through() {
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
     snapshot.put(key_4.clone());
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap_or_log();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log();
 
     let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x2, 0x0]));
 
@@ -201,7 +201,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_1.clone());
         snapshot.put(key_2.clone());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     {
@@ -249,7 +249,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
                 )
                 .count()
         );
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 }
 
@@ -265,12 +265,12 @@ fn snapshot_delete_reinserted() {
 
     let mut snapshot_0 = storage.clone().open_snapshot_write();
     snapshot_0.put_val(key_1.clone(), value_0);
-    snapshot_0.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot_0.commit(&mut CommitProfile::disabled()).unwrap();
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.clone(), value_1);
     snapshot_1.delete(key_1.clone());
-    snapshot_1.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot_1.commit(&mut CommitProfile::disabled()).unwrap();
 
     let snapshot_2 = storage.open_snapshot_read();
     assert_eq!(
@@ -308,7 +308,7 @@ fn preloaded_snapshot_matches_source_over_mixed_writes() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(committed_key.clone(), val_committed.clone());
         snapshot.put_val(committed_then_deleted.clone(), ByteArray::copy(&[9, 9]));
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     let buffered_put = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x10, 0xCC]));
@@ -446,11 +446,11 @@ fn preloaded_snapshot_load_from_at_sequence_number() {
 
     let mut snap_t0 = storage.clone().open_snapshot_write();
     snap_t0.put_val(key_at_t0.clone(), ByteArray::copy(&[0]));
-    let seq_t0 = snap_t0.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+    let seq_t0 = snap_t0.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut snap_t1 = storage.clone().open_snapshot_write();
     snap_t1.put_val(key_at_t1.clone(), ByteArray::copy(&[1]));
-    snap_t1.commit(&mut CommitProfile::DISABLED).unwrap();
+    snap_t1.commit(&mut CommitProfile::disabled()).unwrap();
 
     let preloaded = PreloadedRangesSnapshot::load_from(
         &storage.clone().open_snapshot_read_at(seq_t0),
