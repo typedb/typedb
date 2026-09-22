@@ -66,13 +66,27 @@ impl From<StatisticsEncodingVersion> for u64 {
     }
 }
 
-impl TryFrom<u64> for StatisticsEncodingVersion {
-    type Error = (); // TODO
+pub struct UnknownStatisticsEncodingVersion(pub u64);
 
-    fn try_from(u64: u64) -> Result<Self, ()> {
+impl fmt::Display for UnknownStatisticsEncodingVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Unknown statistics encoding version: {}", self.0)
+    }
+}
+
+impl fmt::Debug for UnknownStatisticsEncodingVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
+
+impl TryFrom<u64> for StatisticsEncodingVersion {
+    type Error = UnknownStatisticsEncodingVersion;
+
+    fn try_from(u64: u64) -> Result<Self, Self::Error> {
         match u64 {
             0 => Ok(Self::V0),
-            _ => Err(()),
+            other => Err(UnknownStatisticsEncodingVersion(other)),
         }
     }
 }
