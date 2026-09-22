@@ -18,7 +18,7 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::OperationsBuffer,
-        write::{NOP, Write},
+        write::{PutAction, Write},
     },
 };
 
@@ -39,8 +39,8 @@ impl WriteBatches {
                         Write::Insert { value } => {
                             write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                         }
-                        Write::Put { value, reinsert, .. } => {
-                            if reinsert.load(Ordering::SeqCst) != NOP {
+                        Write::Put { value, action, .. } => {
+                            if action.load(Ordering::SeqCst) != PutAction::Nop {
                                 write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }

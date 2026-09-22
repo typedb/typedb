@@ -65,7 +65,7 @@ use crate::{
     snapshot::{
         CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
         snapshot_id::SnapshotId,
-        write::{INSERT, NOP, OVERWRITE, Write},
+        write::{PutAction, Write},
     },
 };
 
@@ -357,10 +357,10 @@ impl<Durability> MVCCStorage<Durability> {
         for buffer in snapshot.operations() {
             let writes = buffer.writes();
             let puts = writes.iter().filter_map(|(key, write)| match write {
-                Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
+                Write::Put { value, action, known_to_exist } => Some((key, value, action, *known_to_exist)),
                 _ => None,
             });
-            for (key, value, reinsert, known_to_exist) in puts {
+            for (key, value, action, known_to_exist) in puts {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
                     debug_assert!(
@@ -372,7 +372,7 @@ impl<Durability> MVCCStorage<Durability> {
                         )
                         .is_ok_and(|opt| opt.is_some_and(|bytes| &bytes == value))
                     );
-                    reinsert.store(NOP, Ordering::Release);
+                    action.store(PutAction::Nop, Ordering::Release);
                 } else {
                     let byte_array = self.get::<BUFFER_VALUE_INLINE>(
                         snapshot.iterator_pool(),
@@ -381,11 +381,11 @@ impl<Durability> MVCCStorage<Durability> {
                         storage_counters.clone(),
                     )?;
                     let operation = match byte_array {
-                        Some(stored) if &stored == value => NOP,
-                        Some(_) => OVERWRITE,
-                        None => INSERT,
+                        Some(stored) if &stored == value => PutAction::Nop,
+                        Some(_) => PutAction::Overwrite,
+                        None => PutAction::Insert,
                     };
-                    reinsert.store(operation, Ordering::Release);
+                    action.store(operation, Ordering::Release);
                 }
             }
         }

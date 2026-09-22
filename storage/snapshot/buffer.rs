@@ -10,7 +10,7 @@ use std::{
     collections::{BTreeMap, Bound},
     fmt,
     iter::{IntoIterator, Peekable},
-    sync::{Arc, atomic::AtomicU8},
+    sync::Arc,
 };
 
 use bytes::{Bytes, byte_array::ByteArray, util::increment};
@@ -27,7 +27,7 @@ use crate::{
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{
         lock::LockType,
-        write::{NOP, Write},
+        write::{AtomicPutAction, PutAction, Write},
     },
 };
 
@@ -155,7 +155,10 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicU8::new(NOP)), known_to_exist: false });
+        self.writes.insert(
+            key,
+            Write::Put { value, action: Arc::new(AtomicPutAction::new(PutAction::Nop)), known_to_exist: false },
+        );
     }
 
     pub(crate) fn unput(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, expected_value: ByteArray<BUFFER_VALUE_INLINE>) {

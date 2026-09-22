@@ -151,16 +151,16 @@ impl CommitRecord {
                     match (predecessor_write, write) {
                         (
                             Write::Insert { value: prev_value } | Write::Put { value: prev_value, .. },
-                            Write::Put { reinsert, value, .. },
+                            Write::Put { action, value, .. },
                         ) => {
                             if value == prev_value {
-                                puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                                puts_to_update.push(DependentPut::Inserted { action: action.clone() });
                             } else {
-                                puts_to_update.push(DependentPut::Overwritten { reinsert: reinsert.clone() });
+                                puts_to_update.push(DependentPut::Overwritten { action: action.clone() });
                             }
                         }
-                        (Write::Delete, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                        (Write::Delete, Write::Put { action, .. }) => {
+                            puts_to_update.push(DependentPut::Deleted { action: action.clone() });
                         }
                         _ => (),
                     }

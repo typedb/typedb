@@ -35,7 +35,7 @@ use storage::{
     snapshot::{
         ReadableSnapshot,
         buffer::OperationsBuffer,
-        write::{NOP, Write},
+        write::{PutAction, Write},
     },
 };
 use tracing::{Level, event};
@@ -766,7 +766,7 @@ fn write_to_delta<D>(
                 Ok(-1)
             }
         }
-        Write::Put { reinsert, .. } => {
+        Write::Put { action, .. } => {
             // PUT operation which we may have a concurrent commit and may or may not be inserted in the end
             // The easiest way to check whether it was ultimately committed or not is to open the storage at
             // CommitSequenceNumber - 1, and check if it exists. If it exists, we don't count. If it does, we do.
@@ -802,7 +802,7 @@ fn write_to_delta<D>(
                 }
             } else {
                 // no concurrent commit could have occurred - fall back to the flag
-                if reinsert.load(std::sync::atomic::Ordering::Relaxed) != NOP { Ok(1) } else { Ok(0) }
+                if action.load(std::sync::atomic::Ordering::Relaxed) != PutAction::Nop { Ok(1) } else { Ok(0) }
             }
         }
     }
