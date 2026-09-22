@@ -32,5 +32,5 @@ fn basic() {
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, query_str)
         .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }

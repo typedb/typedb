@@ -577,7 +577,6 @@ impl<Snapshot: ReadableSnapshot> FunctionSignatureIndex for ReadThroughFunctionS
 
 #[cfg(test)]
 pub mod tests {
-    #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
     use std::{collections::BTreeSet, sync::Arc};
 
@@ -689,7 +688,7 @@ pub mod tests {
                     .as_str()
             );
             function_manager.finalise(&snapshot, &type_manager).unwrap();
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap()
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap()
         };
 
         {
@@ -846,7 +845,7 @@ pub mod tests {
             )
             .unwrap();
 
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
             (
                 (TypeAnnotation::Entity(animal), TypeAnnotation::Entity(cat), TypeAnnotation::Entity(dog)),

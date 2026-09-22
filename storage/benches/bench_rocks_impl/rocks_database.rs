@@ -151,7 +151,7 @@ mod typedb_database {
         }
 
         fn commit(self) -> Result<(), Self::CommitError> {
-            self.snapshot.commit(&mut CommitProfile::DISABLED)?;
+            self.snapshot.commit(&mut CommitProfile::disabled())?;
             Ok(())
         }
     }

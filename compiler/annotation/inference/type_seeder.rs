@@ -1791,7 +1791,7 @@ pub mod tests {
                     StorageCounters::DISABLED,
                 )
                 .unwrap();
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap();
             (TypeAnnotation::Entity(type_owner), TypeAnnotation::Attribute(type_age))
         };
 

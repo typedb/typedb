@@ -105,7 +105,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type, StorageCounters::DISABLED)
         .unwrap();
 
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
 fn execute_insert<Snapshot: WritableSnapshot + 'static>(
@@ -195,7 +195,7 @@ fn multi_threaded_inserts() {
                     &format!("insert $p isa person, has age {age};"),
                 )
                 .unwrap();
-                snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+                snapshot.commit(&mut CommitProfile::disabled()).unwrap();
             }
         })
     });

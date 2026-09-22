@@ -944,7 +944,7 @@ mod tests {
         }
 
         init_logging();
-        let mut profile = CommitProfile::DISABLED;
+        let mut profile = CommitProfile::disabled();
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client =

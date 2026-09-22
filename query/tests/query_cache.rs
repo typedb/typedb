@@ -52,7 +52,7 @@ fn setup() -> Context {
     QueryManager::new(None)
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, SCHEMA)
         .unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let cache = Arc::new(QueryCache::new());
     let query_manager = QueryManager::new(Some(cache.clone()));

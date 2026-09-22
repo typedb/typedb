@@ -78,7 +78,7 @@ fn entity_type_vertexes_are_reused() {
             let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(i, vertex.type_id_().as_u16());
         }
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     {
@@ -90,7 +90,7 @@ fn entity_type_vertexes_are_reused() {
                 // TODO: replace with type api call.
             }
         }
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     {
@@ -117,7 +117,7 @@ fn max_entity_type_vertexes() {
             let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(i, vertex.type_id_().as_u16());
         }
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     {
@@ -166,7 +166,7 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_entity_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     for i in 0..create_till {
@@ -187,7 +187,7 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_attribute_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     // try with checkpoints
@@ -223,7 +223,7 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_relation_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
         let check = CheckpointWriter::new(&storage_path).unwrap();
         storage.checkpoint(&check).unwrap();
@@ -248,6 +248,6 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_role_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 }

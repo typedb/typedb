@@ -68,7 +68,7 @@ fn thing_create_iterate() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -131,7 +131,7 @@ fn attribute_create() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -230,7 +230,7 @@ fn has() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -387,7 +387,7 @@ fn get_has_reverse_in_range() {
         company_1.set_has_unordered(&mut snapshot, &thing_manager, &name_hashed, StorageCounters::DISABLED).unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -546,7 +546,7 @@ fn attribute_cleanup_on_concurrent_detach() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // two concurrent snapshots delete the independent ownerships
     let mut snapshot_1: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
@@ -624,8 +624,8 @@ fn attribute_cleanup_on_concurrent_detach() {
         let finalise_result = thing_manager.finalise(&mut snapshot_2, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot_1.commit(&mut CommitProfile::DISABLED).unwrap();
-    snapshot_2.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot_1.commit(&mut CommitProfile::disabled()).unwrap();
+    snapshot_2.commit(&mut CommitProfile::disabled()).unwrap();
 
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -797,7 +797,7 @@ fn role_player_distinct() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // Write transaction
     {
@@ -1006,7 +1006,7 @@ fn role_player_duplicates_unordered() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // Write transaction
     {
@@ -1266,7 +1266,7 @@ fn role_player_duplicates_ordered_default_card() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // Write transaction
     {
@@ -1516,7 +1516,7 @@ fn role_player_duplicates_ordered_small_card() {
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     // Write transaction
     {
@@ -1716,7 +1716,7 @@ fn schema_transactions_generate_role_player_indices() {
         group_type
             .set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type, StorageCounters::DISABLED)
             .unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         (collection_type, resource_type, group_type, owner_type, entry_type)
     };
 
@@ -1787,7 +1787,7 @@ fn schema_transactions_generate_role_player_indices() {
         );
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     // Read transaction
@@ -1871,7 +1871,7 @@ fn schema_transactions_generate_role_player_indices() {
         collection_1.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     // Read transaction
@@ -1954,7 +1954,7 @@ fn attribute_string_write_read_delete() {
             .unwrap();
 
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         attr_type
     };
 
@@ -1967,7 +1967,7 @@ fn attribute_string_write_read_delete() {
             .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     };
 
     // read them back by type
@@ -2022,7 +2022,7 @@ fn attribute_string_write_read_delete() {
         read_short_string.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
         read_long_string.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     // read them back by value with None results
@@ -2085,7 +2085,7 @@ fn attribute_string_write_read_delete_with_has() {
             .unwrap();
 
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         (owner_type, attr_type)
     };
 
@@ -2101,7 +2101,7 @@ fn attribute_string_write_read_delete_with_has() {
         owner.set_has_unordered(&mut snapshot, &thing_manager, &short_attr, StorageCounters::DISABLED).unwrap();
         owner.set_has_unordered(&mut snapshot, &thing_manager, &long_attr, StorageCounters::DISABLED).unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     };
 
     // read them back by type
@@ -2157,7 +2157,7 @@ fn attribute_string_write_read_delete_with_has() {
         read_long_string.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
 
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
 
     // read them back by value with None results
@@ -2206,7 +2206,7 @@ fn setup_string_owner_schema(
     )
     .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     (owner_type, attr_type)
 }
 
@@ -2243,7 +2243,7 @@ fn attribute_string_unput_in_same_transaction() {
             owner.set_has_unordered(&mut snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
             attr.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
             thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         }
         assert_attribute_absent(&storage, &thing_manager, attr_type, string);
 
@@ -2257,7 +2257,7 @@ fn attribute_string_unput_in_same_transaction() {
             owner.set_has_unordered(&mut snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
             owner.unset_has_unordered(&mut snapshot, &thing_manager, &attr, StorageCounters::DISABLED).unwrap();
             thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         }
         assert_attribute_absent(&storage, &thing_manager, attr_type, string);
     }
@@ -2304,7 +2304,7 @@ fn attribute_string_concurrent_has_writers() {
             .set_has_unordered(&mut snapshot, &thing_manager, &existing_long_attr, StorageCounters::DISABLED)
             .unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         (owner_1, owner_2)
     };
 
@@ -2314,7 +2314,7 @@ fn attribute_string_concurrent_has_writers() {
     };
     let finalise_and_commit = |mut snapshot: WriteSnapshot<WALClient>| {
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED)
+        snapshot.commit(&mut CommitProfile::disabled())
     };
 
     for string in [&short_string, &existing_long_string] {
@@ -2382,7 +2382,7 @@ fn attribute_struct_write_read() {
             .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
             .unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         struct_key
     };
 
@@ -2402,7 +2402,7 @@ fn attribute_struct_write_read() {
             .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))
             .unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         (attr_instance, struct_value)
     };
 
@@ -2448,7 +2448,7 @@ fn read_attribute_struct_by_field() {
     let nested_struct_key = {
         let mut snapshot = storage.clone().open_snapshot_write();
         let nested_struct_key = define_struct(&mut snapshot, &type_manager, nested_struct_spec.0, nested_struct_spec.1);
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         nested_struct_key
     };
 
@@ -2473,7 +2473,7 @@ fn read_attribute_struct_by_field() {
             )
             .unwrap();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         (attr_type, struct_key.clone(), struct_def)
     };
 
@@ -2537,7 +2537,7 @@ fn attribute_struct_errors() {
             HashMap::from([("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false))]),
         );
         let struct_key = define_struct(&mut snapshot, &type_manager, struct_spec.0, struct_spec.1);
-        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         (struct_key, nested_struct_key)
     };
 

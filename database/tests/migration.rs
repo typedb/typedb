@@ -57,11 +57,11 @@ impl DatabaseImportHandler for TestImportHandler {
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportHandlerError> {
-        intent.commit(&mut CommitProfile::DISABLED).map_err(|error| Arc::new(error) as _)
+        intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
     }
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportHandlerError> {
-        intent.commit(&mut CommitProfile::DISABLED).map_err(|error| Arc::new(error) as _)
+        intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
     }
 
     fn finalise(self: Box<Self>) -> Result<(), ImportHandlerError> {
