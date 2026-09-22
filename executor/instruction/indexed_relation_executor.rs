@@ -630,7 +630,7 @@ impl FixedIndexedRelationBounds {
     }
 }
 
-pub(super) struct IndexedRelationTupleIterator<Iter: LendingIterator> {
+pub struct IndexedRelationTupleIterator<Iter: LendingIterator> {
     inner: Iter,
     filter_map: Arc<IndexedRelationFilterMapFn>,
     tuple_positions: TuplePositions,

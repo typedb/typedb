@@ -85,7 +85,7 @@ impl StreamModifierExecutor {
         }
     }
 
-    pub(crate) fn create_mapper(&self) -> StreamModifierResultMapper {
+    pub(super) fn create_mapper(&self) -> StreamModifierResultMapper {
         match self {
             Self::Select { removed_positions, .. } => {
                 StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()))
