@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{Bound, HashMap, HashSet, VecDeque};
 
 use encoding::{
     graph::{
@@ -13,6 +13,7 @@ use encoding::{
     },
     value::{label::Label, value_type::ValueType},
 };
+use iterator::minmax_or;
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
@@ -3164,8 +3165,9 @@ impl OperationTimeValidation {
             "At least one constraint should exist otherwise we don't need to iterate"
         );
 
-        // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized / removed from RAM!
-        let mut unique_values = HashMap::new();
+        let (owner_type_min, owner_type_max) =
+            minmax_or!(object_types.iter().copied(), unreachable!("Expected at least one object type"));
+        let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
@@ -3285,17 +3287,18 @@ impl OperationTimeValidation {
                         )
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                         {
-                            let previous_owner = unique_values.insert(value.clone().into_owned(), object);
-                            if previous_owner.unwrap_or(object) != object {
-                                return Err(DataValidation::create_data_validation_uniqueness_error(
-                                    snapshot,
-                                    type_manager,
-                                    unique_constraint,
-                                    object,
-                                    attribute_type,
-                                    value,
-                                ));
-                            }
+                            DataValidation::validate_owns_unique_constraint(
+                                snapshot,
+                                type_manager,
+                                thing_manager,
+                                unique_constraint,
+                                object,
+                                object_types,
+                                &owner_type_range,
+                                attribute_types.iter().copied(),
+                                value.clone(),
+                                storage_counters.clone(),
+                            )?;
                         }
                     }
 
