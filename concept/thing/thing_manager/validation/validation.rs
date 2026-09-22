@@ -43,7 +43,7 @@ pub(crate) fn get_label_or_data_err(
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone())
-        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))
+        .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))
 }
 
 macro_rules! create_data_validation_type_abstractness_error_methods {
@@ -334,18 +334,26 @@ impl DataValidation {
         thing_manager: &ThingManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
-        owner_types: &HashSet<ObjectType>,
+        additional_owner_types: impl IntoIterator<Item = ObjectType>,
         attribute_types: impl IntoIterator<Item = AttributeType>,
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
+        let root_owner_type = constraint.source().owner();
+        let root_owner_subtypes = root_owner_type
+            .get_subtypes_transitive(snapshot, thing_manager.type_manager())
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?;
+        let owner_types: HashSet<ObjectType> =
+            TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
+                .chain(additional_owner_types)
+                .collect();
         let (owner_type_min, owner_type_max) =
             minmax_or!(owner_types.iter().copied(), unreachable!("Expected at least one object type"));
         let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));
         for attribute_type in attribute_types {
             let Some(attribute) = thing_manager
                 .get_attribute_with_value(snapshot, attribute_type, value.clone(), storage_counters.clone())
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
             else {
                 continue;
             };
@@ -360,7 +368,7 @@ impl DataValidation {
             while let Some((has, _)) = has_iterator
                 .next()
                 .transpose()
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
             {
                 // The type range can hold owner types outside the hierarchy -> check owner_types
                 if has.owner() != owner && owner_types.contains(&has.owner().type_()) {

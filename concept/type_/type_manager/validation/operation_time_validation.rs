@@ -3302,22 +3302,13 @@ impl OperationTimeValidation {
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
                     if let Some(unique_constraint) = &unique_constraint {
-                        if Self::is_suitable_capability_constraint(
-                            snapshot,
-                            type_manager,
-                            unique_constraint,
-                            owns,
-                            attribute_type,
-                            new_attribute_supertypes,
-                        )
-                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        {
+                        if unique_attribute_types.contains(&attribute_type) {
                             DataValidation::validate_owns_unique_constraint(
                                 snapshot,
                                 thing_manager,
                                 unique_constraint,
                                 object,
-                                object_types,
+                                object_types.iter().copied(),
                                 unique_attribute_types.iter().copied(),
                                 value.clone(),
                                 storage_counters.clone(),
