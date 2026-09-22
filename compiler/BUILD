@@ -17,6 +17,7 @@ rust_library(
     ]),
     deps = [
         "//common/error",
+        "//common/primitive",
         "//answer",
         "//concept",
         "//encoding",

@@ -13,6 +13,7 @@ use answer::variable::Variable;
 use error::typedb_error;
 use ir::pattern::{Pattern, conjunction::Conjunction, constraint::Comparator};
 use itertools::Itertools;
+use primitive::format_joined::FormatJoined;
 use typeql::common::Span;
 
 use crate::{
@@ -42,7 +43,7 @@ pub fn next_executable_id() -> u64 {
 }
 
 #[derive(Debug)]
-pub struct WritePatternCondition(pub Vec<CheckInstruction<ExecutorVariable>>);
+pub struct WritePatternCondition(Vec<CheckInstruction<ExecutorVariable>>);
 
 impl WritePatternCondition {
     pub fn build(conjunction: &Conjunction, variable_positions: &HashMap<Variable, VariablePosition>) -> Self {
@@ -67,12 +68,7 @@ impl std::ops::Deref for WritePatternCondition {
 
 impl fmt::Display for WritePatternCondition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[")?;
-        for check in &self.0 {
-            write!(f, "{check}, ")?;
-        }
-        writeln!(f, "]")?;
-        Ok(())
+        write!(f, "WriteCondition[{}]", FormatJoined(&self.0, ';'))
     }
 }
 

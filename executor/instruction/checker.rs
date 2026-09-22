@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{Bound, HashMap},
-    marker::PhantomData,
-};
+use std::collections::{Bound, HashMap};
 
 use answer::{Thing, Type, variable_value::VariableValue};
 use bytes::byte_array::ByteArray;
