@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{Bound, HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use encoding::{
     graph::{
@@ -13,7 +13,6 @@ use encoding::{
     },
     value::{label::Label, value_type::ValueType},
 };
-use iterator::minmax_or;
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
@@ -3165,10 +3164,6 @@ impl OperationTimeValidation {
             "At least one constraint should exist otherwise we don't need to iterate"
         );
 
-        let (object_type_min, object_type_max) =
-            minmax_or!(object_types.iter().copied(), unreachable!("Expected at least one object type"));
-        let object_type_range = (Bound::Included(object_type_min), Bound::Included(object_type_max));
-
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
             while let Some(object) = object_iterator
@@ -3294,7 +3289,6 @@ impl OperationTimeValidation {
                                 unique_constraint,
                                 object,
                                 object_types,
-                                &object_type_range,
                                 attribute_types.iter().copied(),
                                 value.clone(),
                                 storage_counters.clone(),

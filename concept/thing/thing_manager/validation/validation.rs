@@ -8,6 +8,7 @@ use std::collections::{Bound, HashSet};
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value};
+use iterator::minmax_or;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -335,12 +336,13 @@ impl DataValidation {
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
         owner_types: &HashSet<ObjectType>,
-        owner_type_range: &(Bound<ObjectType>, Bound<ObjectType>),
         attribute_types: impl IntoIterator<Item = AttributeType>,
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
-        debug_assert!(constraint.description().unwrap_unique().is_ok());
+        let (owner_type_min, owner_type_max) =
+            minmax_or!(owner_types.iter().copied(), unreachable!("Expected at least one object type"));
+        let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));
         for attribute_type in attribute_types {
             let Some(attribute) = thing_manager
                 .get_attribute_with_value(snapshot, attribute_type, value.clone(), storage_counters.clone())
@@ -352,7 +354,7 @@ impl DataValidation {
             let mut has_iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                 snapshot,
                 &attribute,
-                owner_type_range,
+                &owner_type_range,
                 storage_counters.clone(),
             );
 
@@ -361,7 +363,7 @@ impl DataValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             {
-                // Iterator can return types outside the list based on the storage specifics
+                // The type range can hold owner types outside the hierarchy -> check owner_types
                 if has.owner() != owner && owner_types.contains(&has.owner().type_()) {
                     return Err(Self::create_data_validation_uniqueness_error(
                         snapshot,

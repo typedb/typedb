@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, Bound, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
-use iterator::minmax_or;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -428,11 +427,6 @@ impl OperationTimeValidation {
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
             let owner_and_subtypes: HashSet<ObjectType> =
                 TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
-            let (owner_type_min, owner_type_max) = minmax_or!(
-                TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()),
-                unreachable!("Expected at least one object type")
-            );
-            let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));
 
             let root_attribute_type = constraint.source().attribute();
             let root_attribute_subtypes = root_attribute_type
@@ -448,7 +442,6 @@ impl OperationTimeValidation {
                 &constraint,
                 owner.into_object(),
                 &owner_and_subtypes,
-                &owner_type_range,
                 attribute_and_subtypes,
                 value,
                 storage_counters,
