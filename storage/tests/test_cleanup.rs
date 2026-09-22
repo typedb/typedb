@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
 use bytes::{Bytes, byte_array::ByteArray};
 use lending_iterator::LendingIterator;

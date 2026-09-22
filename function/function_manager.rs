@@ -577,7 +577,6 @@ impl<Snapshot: ReadableSnapshot> FunctionSignatureIndex for ReadThroughFunctionS
 
 #[cfg(test)]
 pub mod tests {
-    #![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
     use std::{collections::BTreeSet, sync::Arc};
 

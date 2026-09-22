@@ -326,7 +326,6 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
 
 #[cfg(test)]
 pub mod tests {
-    #![allow(const_item_mutation, reason = "`&mut CommitProfile::disabled()` is a dummy")]
 
     use std::sync::Arc;
 

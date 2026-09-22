@@ -394,7 +394,6 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
-    #[allow(const_item_mutation, reason = "it's not expected to mutate the const")]
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
 
