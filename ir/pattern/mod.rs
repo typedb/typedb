@@ -446,18 +446,18 @@ impl PatternVariableModes {
     pub(crate) fn for_block(
         block_binding_modes: HashMap<Variable, BindingMode>,
         input_variables: impl Iterator<Item = (Variable, VariableOptionality)>,
-        root_unwrapped_vars: impl Iterator<Item = Variable>,
+        root_checked_isset_vars: impl Iterator<Item = Variable>,
     ) -> Self {
         let input_modes = input_variables
             .map(|(variable, optionality)| (variable, PatternVariableMode::RequiredInput(optionality)))
             .collect();
-        PatternVariableModes::build(block_binding_modes, &PatternVariableModes(input_modes), root_unwrapped_vars)
+        PatternVariableModes::build(block_binding_modes, &PatternVariableModes(input_modes), root_checked_isset_vars)
     }
 
     pub(crate) fn build(
         pattern_modes: HashMap<Variable, BindingMode>,
         parent_modes: &PatternVariableModes,
-        unwrapped_vars: impl IntoIterator<Item = Variable>,
+        checked_isset_vars: impl IntoIterator<Item = Variable>,
     ) -> Self {
         let mut pattern_variables: HashMap<Variable, PatternVariableMode> = pattern_modes
             .into_iter()
@@ -517,7 +517,7 @@ impl PatternVariableModes {
                 Some((var, mode))
             })
             .collect();
-        unwrapped_vars.into_iter().for_each(|id| {
+        checked_isset_vars.into_iter().for_each(|id| {
             if let Some(mode) = pattern_variables.get_mut(&id) {
                 match mode {
                     PatternVariableMode::Binding(o) => *o = VariableOptionality::Required,
@@ -549,17 +549,17 @@ impl PatternVariableModes {
             .filter_map(|(v, required)| matches!(required, PatternVariableMode::RequiredInput(_)).then_some(*v))
     }
 
-    pub(crate) fn bound_by_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub(crate) fn bound(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| {
             (matches!(*required, PatternVariableMode::BoundByTry | PatternVariableMode::Binding(_))).then_some(*v)
         })
     }
 
-    pub(crate) fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub(crate) fn bound_by_try(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == PatternVariableMode::BoundByTry).then_some(*v))
     }
 
-    pub(crate) fn bound_outside_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub(crate) fn bound_outside_try(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (matches!(*required, PatternVariableMode::Binding(_))).then_some(*v))
     }
 
