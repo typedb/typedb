@@ -651,8 +651,8 @@ fn make_update_statistics_fn(
 
             let range = {
                 let mut queue = commit_deltas_queue.write().unwrap();
-                let tail_including_watermark = queue.split_off(&watermark);
-                mem::replace(&mut *queue, tail_including_watermark)
+                let tail_excluding_watermark = queue.split_off(&watermark.next());
+                mem::replace(&mut *queue, tail_excluding_watermark)
             };
 
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
