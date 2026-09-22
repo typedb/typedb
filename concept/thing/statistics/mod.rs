@@ -642,11 +642,6 @@ impl Statistics {
     fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
         let player_1_to_2_index_count = self.links_index_counts.double_entry(player_1_type, player_2_type).or_default();
         Self::saturating_add(player_1_to_2_index_count, delta, "player_1_to_2_index");
-        if player_1_type != player_2_type {
-            let player_2_to_1_index_count =
-                self.links_index_counts.double_entry(player_2_type, player_1_type).or_default();
-            Self::saturating_add(player_2_to_1_index_count, delta, "player_2_to_1_index");
-        }
     }
 
     /// Compute the largest fractional difference of any individual statistic
