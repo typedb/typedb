@@ -331,7 +331,6 @@ impl DataValidation {
 
     pub(crate) fn validate_owns_unique_constraint(
         snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
         thing_manager: &ThingManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
@@ -367,7 +366,7 @@ impl DataValidation {
                 if has.owner() != owner && owner_types.contains(&has.owner().type_()) {
                     return Err(Self::create_data_validation_uniqueness_error(
                         snapshot,
-                        type_manager,
+                        thing_manager.type_manager(),
                         constraint,
                         owner,
                         attribute_type,

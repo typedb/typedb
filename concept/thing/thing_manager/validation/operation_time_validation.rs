@@ -437,7 +437,6 @@ impl OperationTimeValidation {
 
             DataValidation::validate_owns_unique_constraint(
                 snapshot,
-                thing_manager.type_manager(),
                 thing_manager,
                 &constraint,
                 owner.into_object(),

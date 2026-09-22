@@ -3085,25 +3085,38 @@ impl OperationTimeValidation {
             | ConstraintScope::AllInstancesOfTypeOrSubtypes => (),
         }
 
+        Self::is_interface_type_under_constraint_source(
+            snapshot,
+            type_manager,
+            constraint,
+            interface_type,
+            new_interface_supertypes,
+        )
+    }
+
+    fn is_interface_type_under_constraint_source<CAP: Capability>(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        constraint: &CapabilityConstraint<CAP>,
+        interface_type: CAP::InterfaceType,
+        new_interface_supertypes: &HashMap<CAP::InterfaceType, Option<CAP::InterfaceType>>,
+    ) -> Result<bool, Box<ConceptReadError>> {
         let source_interface_type = constraint.source().interface();
-
-        if source_interface_type == interface_type {
-            return Ok(true);
-        }
-
-        for (subtype, supertype) in new_interface_supertypes {
-            if interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, *subtype)? {
-                return Ok(match supertype {
-                    None => false,
-                    Some(supertype) => {
-                        source_interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, *supertype)?
-                    }
-                });
+        let mut visited = HashSet::new();
+        let mut current = Some(interface_type);
+        while let Some(type_) = current {
+            if type_ == source_interface_type {
+                return Ok(true);
             }
+            if !visited.insert(type_) {
+                return Ok(false);
+            }
+            current = match new_interface_supertypes.get(&type_) {
+                Some(new_supertype) => *new_supertype,
+                None => type_.get_supertype(snapshot, type_manager)?,
+            };
         }
-
-        // Not affected by new_interface_supertypes, can use storage
-        interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, source_interface_type)
+        Ok(false)
     }
 
     fn validate_owns_instances_against_constraints(
@@ -3163,6 +3176,28 @@ impl OperationTimeValidation {
                 || unique_constraint.is_some(),
             "At least one constraint should exist otherwise we don't need to iterate"
         );
+
+        let mut unique_attribute_types: HashSet<AttributeType> = HashSet::new();
+        if let Some(unique_constraint) = &unique_constraint {
+            debug_assert_eq!(
+                unique_constraint.scope(),
+                ConstraintScope::AllInstancesOfTypeOrSubtypes,
+                "Reconsider the algorithm if constraint scope is changed!"
+            );
+            for attribute_type in attribute_types {
+                if Self::is_interface_type_under_constraint_source(
+                    snapshot,
+                    type_manager,
+                    unique_constraint,
+                    *attribute_type,
+                    new_attribute_supertypes,
+                )
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+                {
+                    unique_attribute_types.insert(*attribute_type);
+                }
+            }
+        }
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
@@ -3267,11 +3302,6 @@ impl OperationTimeValidation {
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
                     if let Some(unique_constraint) = &unique_constraint {
-                        debug_assert_eq!(
-                            unique_constraint.scope(),
-                            ConstraintScope::AllInstancesOfTypeOrSubtypes,
-                            "Reconsider the algorithm if constraint scope is changed!"
-                        );
                         if Self::is_suitable_capability_constraint(
                             snapshot,
                             type_manager,
@@ -3284,12 +3314,11 @@ impl OperationTimeValidation {
                         {
                             DataValidation::validate_owns_unique_constraint(
                                 snapshot,
-                                type_manager,
                                 thing_manager,
                                 unique_constraint,
                                 object,
                                 object_types,
-                                attribute_types.iter().copied(),
+                                unique_attribute_types.iter().copied(),
                                 value.clone(),
                                 storage_counters.clone(),
                             )?;
