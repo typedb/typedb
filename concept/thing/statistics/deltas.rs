@@ -107,7 +107,12 @@ impl CommitDeltas {
                     delta.overwrites += 1
                 } else {
                     #[cfg(debug_assertions)]
-                    unreachable!("Not a delete, insert, or an overwrite: {write:?}");
+                    match write {
+                        storage::snapshot::write::Write::Put { action, .. }
+                            if action.load(std::sync::atomic::Ordering::Relaxed)
+                                == storage::snapshot::write::PutAction::Nop => {}
+                        write => unreachable!("Not a delete, insert, an overwrite, or a no-op: {write:?}"),
+                    }
                 }
             };
 
