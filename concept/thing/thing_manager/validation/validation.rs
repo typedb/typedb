@@ -4,20 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::{Bound, HashSet};
+
 use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value};
+use iterator::minmax_or;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     thing::{
-        ThingAPI, attribute::Attribute, object::Object, relation::Relation,
-        thing_manager::validation::DataValidationError,
+        ThingAPI,
+        attribute::Attribute,
+        object::Object,
+        relation::Relation,
+        thing_manager::{ThingManager, validation::DataValidationError},
     },
     type_::{
         Capability, TypeAPI,
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, ConstraintError, TypeConstraint},
         entity_type::EntityType,
+        object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
@@ -35,7 +43,7 @@ pub(crate) fn get_label_or_data_err(
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone())
-        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))
+        .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))
 }
 
 macro_rules! create_data_validation_type_abstractness_error_methods {
@@ -319,6 +327,55 @@ impl DataValidation {
         fn create_data_validation_owns_abstractness_error(Owns, Object) -> OwnsConstraintViolated = owner_iid + owner_type + attribute_type;
         fn create_data_validation_plays_abstractness_error(Plays, Object) -> PlaysConstraintViolated = player_iid + player_type + role_type;
         fn create_data_validation_relates_abstractness_error(Relates, Relation) -> RelatesConstraintViolated = relation_iid + relation_type + role_type;
+    }
+
+    pub(crate) fn validate_owns_unique_constraint(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        constraint: &CapabilityConstraint<Owns>,
+        owner: Object,
+        owner_types: &HashSet<ObjectType>,
+        attribute_types: impl IntoIterator<Item = AttributeType>,
+        value: Value<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<DataValidationError>> {
+        let (owner_type_min, owner_type_max) =
+            minmax_or!(owner_types.iter().copied(), unreachable!("Expected at least one object type"));
+        let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));
+        for attribute_type in attribute_types {
+            let Some(attribute) = thing_manager
+                .get_attribute_with_value(snapshot, attribute_type, value.clone(), storage_counters.clone())
+                .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
+            else {
+                continue;
+            };
+
+            let mut has_iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
+                snapshot,
+                &attribute,
+                &owner_type_range,
+                storage_counters.clone(),
+            );
+
+            while let Some((has, _)) = has_iterator
+                .next()
+                .transpose()
+                .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
+            {
+                // The type range can hold owner types outside the hierarchy -> check owner_types
+                if has.owner() != owner && owner_types.contains(&has.owner().type_()) {
+                    return Err(Self::create_data_validation_uniqueness_error(
+                        snapshot,
+                        thing_manager.type_manager(),
+                        constraint,
+                        owner,
+                        attribute_type,
+                        value,
+                    ));
+                }
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn create_data_validation_uniqueness_error(

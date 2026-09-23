@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, Bound, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
-use iterator::minmax_or;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -421,7 +420,6 @@ impl OperationTimeValidation {
             .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
-            let owner = owner.into_object();
             let root_owner_type = constraint.source().owner();
             let root_owner_subtypes =
                 root_owner_type
@@ -429,11 +427,6 @@ impl OperationTimeValidation {
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
             let owner_and_subtypes: HashSet<ObjectType> =
                 TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
-            let (owner_type_min, owner_type_max) = minmax_or!(
-                TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()),
-                unreachable!("Expected at least one object type")
-            );
-            let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));
 
             let root_attribute_type = constraint.source().attribute();
             let root_attribute_subtypes = root_attribute_type
@@ -442,37 +435,16 @@ impl OperationTimeValidation {
             let attribute_and_subtypes =
                 TypeAPI::chain_types(root_attribute_type, root_attribute_subtypes.into_iter().cloned());
 
-            for attribute_type in attribute_and_subtypes {
-                if let Some(attribute) = thing_manager
-                    .get_attribute_with_value(snapshot, attribute_type, value.clone(), storage_counters.clone())
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                {
-                    let mut has_iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
-                        snapshot,
-                        &attribute,
-                        &owner_type_range,
-                        storage_counters.clone(),
-                    );
-
-                    while let Some((has, _)) = has_iterator
-                        .next()
-                        .transpose()
-                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                    {
-                        // Iterator can return types outside the list based on the storage specifics
-                        if has.owner() != owner && owner_and_subtypes.contains(&has.owner().type_()) {
-                            return Err(DataValidation::create_data_validation_uniqueness_error(
-                                snapshot,
-                                thing_manager.type_manager(),
-                                &constraint,
-                                owner.into_object(),
-                                attribute_type,
-                                value,
-                            ));
-                        }
-                    }
-                }
-            }
+            DataValidation::validate_owns_unique_constraint(
+                snapshot,
+                thing_manager,
+                &constraint,
+                owner.into_object(),
+                &owner_and_subtypes,
+                attribute_and_subtypes,
+                value,
+                storage_counters,
+            )?;
         }
 
         Ok(())
