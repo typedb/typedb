@@ -78,7 +78,7 @@ impl CollectingStageExecutor {
         self.pattern_mut().prepare(batch)
     }
 
-    pub(crate) fn create_collector(&self) -> CollectorEnum {
+    pub(super) fn create_collector(&self) -> CollectorEnum {
         match self {
             CollectingStageExecutor::Reduce { reduce_rows_executable, .. } => {
                 CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable.clone()))

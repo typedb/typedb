@@ -251,7 +251,7 @@ fn enrich_annotations(
         .collect()
 }
 
-pub fn build_fetch_annotations(
+pub(crate) fn build_fetch_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     parameters: Arc<ParameterRegistry>,
@@ -425,7 +425,7 @@ fn build_leaf_annotations(
         .collect::<Result<BTreeSet<_>, _>>()
 }
 
-struct LastStageAnnotations<'a>(&'a [AnnotatedStage]);
+pub(crate) struct LastStageAnnotations<'a>(&'a [AnnotatedStage]);
 impl<'a> LastStageAnnotations<'a> {
     pub fn get(&self, vertex: &Vertex<Variable>) -> Option<Either<Arc<BTreeSet<Type>>, ExpressionValueType>> {
         self.0.iter().rev().find_map(|stage| match stage {

@@ -340,7 +340,7 @@ pub(crate) enum FixedHasBounds {
     Attribute(Attribute),
 }
 
-pub(super) struct HasTupleIterator<Iter: LendingIterator> {
+pub struct HasTupleIterator<Iter: LendingIterator> {
     inner: Iter,
     filter_map: Arc<HasFilterMapFn>,
     to_tuple_fn: HasToTupleFn,

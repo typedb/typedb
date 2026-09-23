@@ -262,7 +262,7 @@ impl Context {
         self.http_context.auth_token()
     }
 
-    pub fn randomize_auth_token_if_needed(&mut self, token_mode: TokenMode) {
+    pub(crate) fn randomize_auth_token_if_needed(&mut self, token_mode: TokenMode) {
         match token_mode {
             TokenMode::Saved => {}
             TokenMode::Wrong => self.randomize_auth_token(),
@@ -273,7 +273,7 @@ impl Context {
         self.http_context.last_random_auth_token = Some(random_uuid());
     }
 
-    pub fn auth_token_by_mode(&self, token_mode: TokenMode) -> Option<&String> {
+    pub(crate) fn auth_token_by_mode(&self, token_mode: TokenMode) -> Option<&String> {
         match token_mode {
             TokenMode::Saved => self.http_context.auth_token(),
             TokenMode::Wrong => self.http_context.last_random_auth_token.as_ref(),

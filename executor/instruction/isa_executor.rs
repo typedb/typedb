@@ -177,7 +177,7 @@ impl fmt::Display for IsaExecutor {
     }
 }
 
-pub(super) struct IsaUnboundedSortedThing {
+pub struct IsaUnboundedSortedThing {
     inner: MultipleTypeIsaIterator,
     filter_map: Box<IsaFilterMapFn>,
 }
@@ -308,7 +308,7 @@ impl Iterator for MultipleTypeIsaIterator {
     }
 }
 
-struct IsaObjectIterator {
+pub(crate) struct IsaObjectIterator {
     objects: InstanceIterator<Object>,
     iterator_type: Type,
     types: Vec<Type>,
@@ -384,7 +384,7 @@ impl Iterator for IsaObjectIterator {
     }
 }
 
-struct IsaAttributeIterator {
+pub(crate) struct IsaAttributeIterator {
     attributes: AttributeIterator<InstanceIterator<Attribute>>,
     iterator_type: Type,
     types: Vec<Type>,

@@ -329,14 +329,14 @@ impl fmt::Display for LinksExecutor {
     }
 }
 
-pub(super) enum FixedLinksBounds {
+pub(crate) enum FixedLinksBounds {
     None,
     Relation(Relation),
     Player(Object),
     RelationAndPlayer(Relation, Object),
 }
 
-pub(super) struct LinksTupleIterator<Iter: LendingIterator> {
+pub struct LinksTupleIterator<Iter: LendingIterator> {
     inner: Iter,
     filter_map: Arc<LinksFilterMapFn>,
     to_tuple_fn: LinksToTupleFn,

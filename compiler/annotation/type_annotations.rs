@@ -250,7 +250,7 @@ impl LinksAnnotations {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct IndexedRelationAnnotations {
+pub struct IndexedRelationAnnotations {
     // player 1 to relation to player 2
     pub(crate) player_1_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
     pub(crate) relation_to_player_2: Arc<BTreeMap<Type, Vec<Type>>>,
