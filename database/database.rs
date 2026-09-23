@@ -649,15 +649,17 @@ fn make_update_statistics_fn(
         if watermark > schema.read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
 
-            let range = {
-                let mut queue = commit_deltas_queue.write().unwrap();
-                let tail_excluding_watermark = queue.split_off(&watermark.next());
-                mem::replace(&mut *queue, tail_excluding_watermark)
-            };
-
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
-            for (_seq, commit_deltas) in range {
+            loop {
+                let commit_deltas = {
+                    let mut queue = commit_deltas_queue.write().unwrap();
+                    let Some((&seq, _)) = queue.first_key_value() else { break };
+                    if seq != new_statistics.sequence_number.next() {
+                        break;
+                    }
+                    queue.pop_first().unwrap().1
+                };
                 if let Err(err) = new_statistics.update(&commit_deltas, storage.durability()) {
                     error!("Statistics update failed: {err:?}");
                 }

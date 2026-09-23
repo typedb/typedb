@@ -83,7 +83,7 @@ impl TryFrom<u64> for CommitDeltasEncodingVersion {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CommitDeltas {
     pub(crate) encoding_version: CommitDeltasEncodingVersion,
     pub commit_sequence_number: SequenceNumber,
