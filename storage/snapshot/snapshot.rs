@@ -23,7 +23,7 @@ use resource::{
 };
 
 use crate::{
-    MVCCStorage, StorageCommitError,
+    CommitData, MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
     isolation_manager::{ReadSnapshotDropGuard, WriteSnapshotDropGuard},
     iterator::MVCCReadError,
@@ -246,7 +246,7 @@ pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
-    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitData>, SnapshotError>;
 
     fn into_commit_record(self) -> (WriteSnapshotDropGuard, CommitRecord);
 
@@ -521,7 +521,7 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
-    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitData>, SnapshotError> {
         if self.has_changes() {
             self.storage
                 .clone()
@@ -704,7 +704,7 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
-    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitData>, SnapshotError> {
         if self.has_changes() {
             self.storage
                 .clone()

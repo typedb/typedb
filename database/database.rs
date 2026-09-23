@@ -19,7 +19,7 @@ use std::{
 use concept::{
     thing::{
         cleanup::{CleanupIntervals, CleanupRecord},
-        statistics::{Statistics, StatisticsError},
+        statistics::{Statistics, StatisticsError, deltas::CommitDeltas},
     },
     type_::type_manager::{
         TypeManager,
@@ -95,6 +95,7 @@ pub struct Database<D> {
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
+    pub(super) _commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
@@ -301,6 +302,7 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
         wal_client.register_record_type::<CleanupRecord>();
+        wal_client.register_record_type::<CommitDeltas>();
 
         let storage = Arc::new(
             MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
@@ -330,12 +332,14 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new());
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
             schema_txn_lock.clone(),
             query_cache.clone(),
+            commit_deltas_queue.clone(),
         );
 
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
@@ -354,6 +358,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
+            _commit_deltas_queue: commit_deltas_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
@@ -395,6 +400,7 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
         wal_client.register_record_type::<CleanupRecord>();
+        wal_client.register_record_type::<CommitDeltas>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
@@ -424,7 +430,7 @@ impl Database<WALClient> {
         if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
             thing_statistics
                 .durably_write(storage.durability())
-                .map_err(|err| StatisticsInitialise { typedb_source: err })?;
+                .map_err(|err| DatabaseOpenError::StatisticsPersist { typedb_source: err })?;
         }
         event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
@@ -457,12 +463,14 @@ impl Database<WALClient> {
         };
 
         let query_cache = Arc::new(QueryCache::new());
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
             schema_txn_lock.clone(),
             query_cache.clone(),
+            commit_deltas_queue.clone(),
         );
         let checkpoint_fn =
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
@@ -494,6 +502,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
+            _commit_deltas_queue: commit_deltas_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
@@ -633,13 +642,28 @@ fn make_update_statistics_fn(
     schema: Arc<RwLock<Schema>>,
     schema_txn_lock: Arc<RwLock<()>>,
     query_cache: Arc<QueryCache>,
+    commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 ) -> impl Fn() {
     move || {
-        if storage.snapshot_watermark() > schema.read().unwrap().thing_statistics.sequence_number {
+        let watermark = storage.snapshot_watermark();
+        if watermark > schema.read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
-            new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
+            loop {
+                let commit_deltas = {
+                    let mut queue = commit_deltas_queue.write().unwrap();
+                    let Some((&seq, _)) = queue.first_key_value() else { break };
+                    if seq != new_statistics.sequence_number.next() {
+                        break;
+                    }
+                    queue.pop_first().unwrap().1
+                };
+                if let Err(err) = new_statistics.update(&commit_deltas, storage.durability()) {
+                    error!("Statistics update failed: {err:?}");
+                }
+            }
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
@@ -726,6 +750,7 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        StatisticsPersist(18, "Error persisting statistics at startup.", typedb_source: DurabilityClientError),
     }
 }
 

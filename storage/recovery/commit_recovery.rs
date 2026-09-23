@@ -179,7 +179,7 @@ pub(crate) fn apply_recovered(
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;
                 drop(read_guard);
                 match validated_commit {
-                    ValidatedCommit::Write(write_batches) => {
+                    ValidatedCommit::Write(write_batches, _commit_record) => {
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;

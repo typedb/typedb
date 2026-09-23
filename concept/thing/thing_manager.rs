@@ -784,6 +784,11 @@ impl ThingManager {
         Ok(has_exists)
     }
 
+    pub fn get_has(&self, snapshot: &impl ReadableSnapshot, storage_counters: StorageCounters) -> HasIterator {
+        let key_range = KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+    }
+
     pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1310,6 +1315,11 @@ impl ThingManager {
         snapshot.any_in_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
+    pub fn get_links(&self, snapshot: &impl ReadableSnapshot, storage_counters: StorageCounters) -> LinksIterator {
+        let key_range = &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        LinksIterator::new(snapshot.iterate_range(key_range, storage_counters))
+    }
+
     pub fn get_links_by_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1635,6 +1645,16 @@ impl ThingManager {
             relation.type_(),
             storage_counters,
         )
+    }
+
+    pub(crate) fn iterate_all_indexed_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+        let key_range =
+            KeyRange::new_within(ThingEdgeIndexedRelation::prefix(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+        Ok(IndexedRelationsIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
     fn iterate_indexed_relations<const INLINE_SIZE: usize>(
@@ -2131,7 +2151,7 @@ impl ThingManager {
                     ThingEdgeLinks::prefix(),
                     ThingEdgeLinks::FIXED_WIDTH_ENCODING,
                 ))
-                .filter(|(_, write)| matches!(write, Write::Delete))
+                .filter(|(_, write)| write.is_delete())
             {
                 let edge = ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref()));
                 let relation = Relation::new(edge.from());
@@ -2155,7 +2175,7 @@ impl ThingManager {
                     ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
                     ObjectVertex::FIXED_WIDTH_ENCODING,
                 ))
-                .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
+                .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
             {
                 let relation = Relation::new(ObjectVertex::decode(key.bytes()));
                 if !relation.has_players(snapshot, self, storage_counters.clone())? {
@@ -2229,7 +2249,7 @@ impl ThingManager {
                 ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
             )),
         )
-        .filter(|(_, write)| matches!(write, Write::Delete));
+        .filter(|(_, write)| write.is_delete());
         for attribute_vertex in deleted_reverse_has
             .map(|(key, _)| ThingEdgeHasReverse::decode(Bytes::Reference(key.byte_array())).from())
             .dedup()
@@ -2255,7 +2275,7 @@ impl ThingManager {
                 Prefix::VertexAttribute.fixed_width_keys(),
             )),
         )
-        .filter(|(_, write)| matches!(write, Write::Put { .. }));
+        .filter(|(_, write)| write.is_put());
         for (key, _write) in new_attributes {
             let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;

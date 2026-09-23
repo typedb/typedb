@@ -20,8 +20,10 @@ This file should comprise a set of low-level tests relating to MVCC.
    before a specific time (it should be able to binary search its WAL log files and check the dates on them to find this information).
    After cleanup is run, we should get a good error if a version that is too-old is opened.
    After cleanup is run, if we iterate directly on the storage layer, we should be able to confirm the keys are actually not present anymore (Rocks may defer the disk delete till compaction, but to us they are "gone").
-
  */
+
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+
 use TestKeyspaceSet::Keyspace;
 use bytes::byte_array::ByteArray;
 use resource::profile::{CommitProfile, StorageCounters};
@@ -115,7 +117,7 @@ fn test_conflicting_update_fails() {
     snapshot_write_0.put_val(key_1.clone().into_owned_array(), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit(&mut CommitProfile::disabled()).unwrap();
 
-    let watermark_after_initial_write = storage.snapshot_watermark();
+    let _watermark_after_initial_write = storage.snapshot_watermark();
 
     {
         let mut snapshot_write_11 = storage.clone().open_snapshot_write();
@@ -132,13 +134,14 @@ fn test_conflicting_update_fails() {
     // TODO: uncomment when open_snapshot_write_at supports historical positions.
     // {
     //     // Try the same, with the snapshot opened in the past
-    //     let mut snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write);
+    //     let mut snapshot_write_at_0 = storage.open_snapshot_write_at(_watermark_after_initial_write);
     //     snapshot_write_at_0.get_required(key_1.clone(), StorageCounters::DISABLED).unwrap();
     //     snapshot_write_at_0.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2));
     //     let result_write_at_0 = snapshot_write_at_0.commit(&mut CommitProfile::disabled());
     //     assert!(result_write_at_0.is_err());
     // }
 }
+
 #[test]
 fn test_concurrent_writes_to_same_key() {
     init_logging();
@@ -162,6 +165,5 @@ fn test_concurrent_writes_to_same_key() {
     snapshot_write_1.commit(&mut CommitProfile::disabled()).unwrap();
 
     let snapshot_read_1 = storage.open_snapshot_read();
-    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
-    // FIXME: value overwrite currently unsupported
+    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_1);
 }

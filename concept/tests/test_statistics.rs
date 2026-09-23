@@ -6,16 +6,12 @@
 
 #![deny(unused_must_use)]
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-    sync::Arc,
-};
+use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use concept::{
     thing::{ThingAPI, object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
-        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+        Ordering, OwnerAPI, PlayerAPI,
         annotation::{AnnotationCardinality, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
         relates::RelatesAnnotation,
@@ -24,10 +20,7 @@ use concept::{
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
-    MVCCStorage,
-    durability_client::WALClient,
-    sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadableSnapshot},
+    MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -146,95 +139,7 @@ macro_rules! assert_statistics_eq {
 
 fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingManager) -> Statistics {
     let snapshot = storage.clone().open_snapshot_read();
-
-    let mut statistics = Statistics::new(snapshot.open_sequence_number());
-
-    let entity_iter = thing_manager.get_entities(&snapshot, StorageCounters::DISABLED);
-    for entity in entity_iter {
-        let entity = entity.unwrap();
-        statistics.total_entity_count += 1;
-        *statistics.entity_counts.entry(entity.type_()).or_default() += 1;
-        let owner_type = entity.type_().into_object_type();
-        let has_iter = entity.get_has_unordered(&snapshot, thing_manager, StorageCounters::DISABLED).unwrap();
-        for has in has_iter {
-            let (has, count) = has.unwrap();
-            let attribute = has.attribute();
-            *statistics.has_attribute_counts.entry(owner_type).or_default().entry(attribute.type_()).or_default() +=
-                count;
-            *statistics.attribute_owner_counts.entry(attribute.type_()).or_default().entry(owner_type).or_default() +=
-                count;
-        }
-    }
-
-    let relation_iter = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED);
-    for relation in relation_iter {
-        let relation = relation.unwrap();
-        statistics.total_relation_count += 1;
-        *statistics.relation_counts.entry(relation.type_()).or_default() += 1;
-        let owner_type = relation.type_().into_object_type();
-        let has_iter = relation.get_has_unordered(&snapshot, thing_manager, StorageCounters::DISABLED).unwrap();
-        for has in has_iter {
-            let (has, count) = has.unwrap();
-            let attribute = has.attribute();
-            *statistics.has_attribute_counts.entry(owner_type).or_default().entry(attribute.type_()).or_default() +=
-                count;
-            *statistics.attribute_owner_counts.entry(attribute.type_()).or_default().entry(owner_type).or_default() +=
-                count;
-        }
-        let relates_iter = relation.get_players(&snapshot, thing_manager, StorageCounters::DISABLED);
-        let mut this_relation_players = BTreeMap::<_, u64>::new();
-        for relates in relates_iter {
-            let (roleplayer, count) = relates.unwrap();
-            let role = roleplayer.role_type();
-            let player = roleplayer.player();
-            *statistics.role_counts.entry(role).or_default() += count;
-            *statistics.relation_role_counts.entry(relation.type_()).or_default().entry(role).or_default() += count;
-            *statistics.role_player_counts.entry(player.type_()).or_default().entry(role).or_default() += count;
-            *statistics
-                .relation_role_player_counts
-                .entry(relation.type_())
-                .or_default()
-                .entry(role)
-                .or_default()
-                .entry(player.type_())
-                .or_default() += count;
-            *statistics
-                .player_role_relation_counts
-                .entry(player.type_())
-                .or_default()
-                .entry(role)
-                .or_default()
-                .entry(relation.type_())
-                .or_default() += count;
-            *this_relation_players.entry(player.type_()).or_default() += 1;
-        }
-        if relation.type_().relation_index_available(&snapshot, thing_manager.type_manager()).unwrap() {
-            for (player_1, count_1) in &this_relation_players {
-                for (player_2, count_2) in &this_relation_players {
-                    let link_count = if player_1 == player_2 { count_1 * (count_2 - 1) } else { count_1 * count_2 };
-                    if link_count == 0 {
-                        continue;
-                    }
-                    *statistics.links_index_counts.entry(*player_1).or_default().entry(*player_2).or_default() +=
-                        link_count;
-                }
-            }
-        }
-    }
-
-    let attribute_iter = thing_manager.get_attributes(&snapshot, StorageCounters::DISABLED).unwrap();
-    for attribute in attribute_iter {
-        let attribute = attribute.unwrap();
-        statistics.total_attribute_count += 1;
-        *statistics.attribute_counts.entry(attribute.type_()).or_default() += 1;
-    }
-
-    statistics.total_thing_count =
-        statistics.total_entity_count + statistics.total_relation_count + statistics.total_attribute_count;
-    statistics.total_has_count = statistics.has_attribute_counts.values().map(|map| map.len() as u64).sum();
-    statistics.total_role_count = statistics.role_counts.values().sum();
-
-    statistics
+    Statistics::read(&snapshot, thing_manager, StorageCounters::DISABLED).unwrap()
 }
 
 #[test]
@@ -249,9 +154,9 @@ fn create_entity() {
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let commit_sequence_number = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut manually_tracked = Statistics::new(commit_sequence_number);
+    let mut manually_tracked = Statistics::new(commit.sequence_number);
     manually_tracked.total_thing_count += 1;
     manually_tracked.total_entity_count += 1;
     *manually_tracked.entity_counts.entry(person_type).or_default() += 1;
@@ -392,9 +297,9 @@ fn put_plays() {
         .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     friendship
         .add_player(&mut snapshot, &thing_manager, friend_role, person_2.into_object(), StorageCounters::DISABLED)
@@ -435,9 +340,9 @@ fn unset_has() {
     let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();
     person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     person.unset_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
@@ -470,9 +375,9 @@ fn delete_attribute() {
         .unwrap();
     let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     name.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
@@ -516,9 +421,9 @@ fn delete_relation() {
         .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     friendship.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
@@ -562,9 +467,9 @@ fn remove_player() {
         .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let create_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     friendship
         .remove_player_single(
             &mut snapshot,
@@ -626,9 +531,9 @@ fn relation_index_counts() {
         .set_plays(&mut snapshot, &type_manager, &thing_manager, trainee_role, StorageCounters::DISABLED)
         .unwrap();
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    let schema_commit_seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
-    let mut snapshot = storage.clone().open_snapshot_write_at(schema_commit_seq);
+    let mut snapshot = storage.clone().open_snapshot_write_at(commit.sequence_number);
     let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let bob = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let mentorship = thing_manager.create_relation(&mut snapshot, mentorship_type).unwrap();
