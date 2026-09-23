@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    iter,
-};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
@@ -423,6 +420,14 @@ impl OperationTimeValidation {
             .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
+            let root_owner_type = constraint.source().owner();
+            let root_owner_subtypes =
+                root_owner_type
+                    .get_subtypes_transitive(snapshot, thing_manager.type_manager())
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+            let owner_and_subtypes: HashSet<ObjectType> =
+                TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
+
             let root_attribute_type = constraint.source().attribute();
             let root_attribute_subtypes = root_attribute_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())
@@ -435,7 +440,7 @@ impl OperationTimeValidation {
                 thing_manager,
                 &constraint,
                 owner.into_object(),
-                iter::empty(), // additional_owner_types
+                &owner_and_subtypes,
                 attribute_and_subtypes,
                 value,
                 storage_counters,

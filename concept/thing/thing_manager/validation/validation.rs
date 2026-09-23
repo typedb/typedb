@@ -334,19 +334,11 @@ impl DataValidation {
         thing_manager: &ThingManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
-        additional_owner_types: impl IntoIterator<Item = ObjectType>,
+        owner_types: &HashSet<ObjectType>,
         attribute_types: impl IntoIterator<Item = AttributeType>,
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
-        let root_owner_type = constraint.source().owner();
-        let root_owner_subtypes = root_owner_type
-            .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?;
-        let owner_types: HashSet<ObjectType> =
-            TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
-                .chain(additional_owner_types)
-                .collect();
         let (owner_type_min, owner_type_max) =
             minmax_or!(owner_types.iter().copied(), unreachable!("Expected at least one object type"));
         let owner_type_range = (Bound::Included(owner_type_min), Bound::Included(owner_type_max));

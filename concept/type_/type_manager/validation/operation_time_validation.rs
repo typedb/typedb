@@ -3178,6 +3178,7 @@ impl OperationTimeValidation {
         );
 
         let mut unique_attribute_types: HashSet<AttributeType> = HashSet::new();
+        let mut unique_owner_types: HashSet<ObjectType> = HashSet::new();
         if let Some(unique_constraint) = &unique_constraint {
             debug_assert_eq!(
                 unique_constraint.scope(),
@@ -3197,6 +3198,14 @@ impl OperationTimeValidation {
                     unique_attribute_types.insert(*attribute_type);
                 }
             }
+
+            let root_owner_type = unique_constraint.source().owner();
+            let root_owner_subtypes = root_owner_type
+                .get_subtypes_transitive(snapshot, type_manager)
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+            unique_owner_types = TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
+                .chain(object_types.iter().copied())
+                .collect();
         }
 
         for object_type in object_types {
@@ -3308,7 +3317,7 @@ impl OperationTimeValidation {
                                 thing_manager,
                                 unique_constraint,
                                 object,
-                                object_types.iter().copied(),
+                                &unique_owner_types,
                                 unique_attribute_types.iter().copied(),
                                 value.clone(),
                                 storage_counters.clone(),
