@@ -396,8 +396,8 @@ pub enum UnimplementedFeature {
     QueryingAnnotations,
 
     NestedOptionalWrites,
-    ComparisonInIfStatements,
-    IsaInIfStatements,
+    IfConditionComparison,
+    IfConditionIsa,
 }
 
 impl std::fmt::Display for UnimplementedFeature {
@@ -469,7 +469,7 @@ macro_rules! needs_update_when_feature_is_implemented {
 macro_rules! optional_usage_error {
     ($err:expr) => {
         tracing::warn!(
-            "Deprecated usage of optional variable. This will fail in the next version:\n{}",
+            "Deprecated usage of optional variable or try blocks. This will fail in the next version:\n{}",
             <_ as error::TypeDBError>::format_description(&$err)
         );
     };
