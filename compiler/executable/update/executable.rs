@@ -100,6 +100,8 @@ impl ConditionalUpdate {
         variable_registry: &VariableRegistry,
         stage_source_span: Option<Span>,
     ) -> Result<Self, Box<WriteCompilationError>> {
+        let conjunction_annotations =
+            block_annotations.type_annotations_of(conjunction).expect("update must have type annotations");
         let concept_instruction_map = add_inserted_concepts(
             conjunction,
             block_annotations,
@@ -111,7 +113,7 @@ impl ConditionalUpdate {
         let connection_instructions =
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
 
-        let condition = WritePatternCondition::build(conjunction, variable_positions);
+        let condition = WritePatternCondition::build(conjunction, variable_positions, conjunction_annotations);
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instruction_map);
 
