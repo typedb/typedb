@@ -27,9 +27,7 @@ pub struct TxTimingRow {
     pub p95_query_us: f64,
     pub p99_query_us: f64,
     pub commit_us: f64,
-    pub commit_types_validation_us: f64,
     pub commit_things_finalise_us: f64,
-    pub commit_functions_finalise_us: f64,
     pub commit_snapshot_put_statuses_check_us: f64,
     pub commit_snapshot_commit_record_create_us: f64,
     pub commit_snapshot_durable_write_data_submit_us: f64,
@@ -38,9 +36,6 @@ pub struct TxTimingRow {
     pub commit_snapshot_storage_write_us: f64,
     pub commit_snapshot_isolation_manager_notify_us: f64,
     pub commit_snapshot_durable_write_commit_status_submit_us: f64,
-    pub commit_schema_update_statistics_durable_write_us: f64,
-    pub commit_schema_update_caches_update_us: f64,
-    pub commit_schema_update_statistics_update_us: f64,
 }
 
 // --- Summary stats across transactions ---
@@ -84,10 +79,20 @@ impl From<MultiTxMultiQueryProfile> for MultiQueryTxProfileReport {
 
 impl MultiQueryTxProfileReport {
     pub fn from_ref(profile: &MultiTxMultiQueryProfile) -> Self {
-        let mut per_txn = Vec::with_capacity(profile.profiles.len());
-        let mut wall_us_all = Vec::with_capacity(profile.profiles.len());
-        let mut mean_query_us_all = Vec::with_capacity(profile.profiles.len());
-        let mut commit_us_all = Vec::with_capacity(profile.profiles.len());
+        let n = profile.profiles.len();
+        let mut per_txn = Vec::with_capacity(n);
+        let mut wall_us_all = Vec::with_capacity(n);
+        let mut mean_query_us_all = Vec::with_capacity(n);
+        let mut commit_us_all = Vec::with_capacity(n);
+        let mut phase_things_finalise = Vec::with_capacity(n);
+        let mut phase_snapshot_put_statuses_check = Vec::with_capacity(n);
+        let mut phase_snapshot_commit_record_create = Vec::with_capacity(n);
+        let mut phase_snapshot_durable_write_data_submit = Vec::with_capacity(n);
+        let mut phase_snapshot_isolation_validate = Vec::with_capacity(n);
+        let mut phase_snapshot_durable_write_data_confirm = Vec::with_capacity(n);
+        let mut phase_snapshot_storage_write = Vec::with_capacity(n);
+        let mut phase_snapshot_isolation_manager_notify = Vec::with_capacity(n);
+        let mut phase_snapshot_durable_write_commit_status_submit = Vec::with_capacity(n);
 
         for (i, tx) in profile.profiles.iter().enumerate() {
             let driver_wall_us = dur_us(tx.time_elapsed);
@@ -115,9 +120,7 @@ impl MultiQueryTxProfileReport {
                 p95_query_us: pct_q(95.0),
                 p99_query_us: pct_q(99.0),
                 commit_us,
-                commit_types_validation_us: z.map_or(0.0, |p| dur_us(p.types_validation)),
                 commit_things_finalise_us: z.map_or(0.0, |p| dur_us(p.things_finalise)),
-                commit_functions_finalise_us: z.map_or(0.0, |p| dur_us(p.functions_finalise)),
                 commit_snapshot_put_statuses_check_us: z.map_or(0.0, |p| dur_us(p.snapshot_put_statuses_check)),
                 commit_snapshot_commit_record_create_us: z.map_or(0.0, |p| dur_us(p.snapshot_commit_record_create)),
                 commit_snapshot_durable_write_data_submit_us: z
@@ -130,21 +133,35 @@ impl MultiQueryTxProfileReport {
                     .map_or(0.0, |p| dur_us(p.snapshot_isolation_manager_notify)),
                 commit_snapshot_durable_write_commit_status_submit_us: z
                     .map_or(0.0, |p| dur_us(p.snapshot_durable_write_commit_status_submit)),
-                commit_schema_update_statistics_durable_write_us: z
-                    .map_or(0.0, |p| dur_us(p.schema_update_statistics_durable_write)),
-                commit_schema_update_caches_update_us: z.map_or(0.0, |p| dur_us(p.schema_update_caches_update)),
-                commit_schema_update_statistics_update_us: z.map_or(0.0, |p| dur_us(p.schema_update_statistics_update)),
             });
 
             wall_us_all.push(driver_wall_us);
             mean_query_us_all.push(mean_query_us);
             commit_us_all.push(commit_us);
+            phase_things_finalise.push(z.map_or(0.0, |p| dur_us(p.things_finalise)));
+            phase_snapshot_put_statuses_check.push(z.map_or(0.0, |p| dur_us(p.snapshot_put_statuses_check)));
+            phase_snapshot_commit_record_create.push(z.map_or(0.0, |p| dur_us(p.snapshot_commit_record_create)));
+            phase_snapshot_durable_write_data_submit.push(z.map_or(0.0, |p| dur_us(p.snapshot_durable_write_data_submit)));
+            phase_snapshot_isolation_validate.push(z.map_or(0.0, |p| dur_us(p.snapshot_isolation_validate)));
+            phase_snapshot_durable_write_data_confirm.push(z.map_or(0.0, |p| dur_us(p.snapshot_durable_write_data_confirm)));
+            phase_snapshot_storage_write.push(z.map_or(0.0, |p| dur_us(p.snapshot_storage_write)));
+            phase_snapshot_isolation_manager_notify.push(z.map_or(0.0, |p| dur_us(p.snapshot_isolation_manager_notify)));
+            phase_snapshot_durable_write_commit_status_submit.push(z.map_or(0.0, |p| dur_us(p.snapshot_durable_write_commit_status_submit)));
         }
 
         let summary = vec![
             TimingStats::compute("driver_wall", wall_us_all),
             TimingStats::compute("mean_query", mean_query_us_all),
             TimingStats::compute("commit", commit_us_all),
+            TimingStats::compute("commit::things_finalise", phase_things_finalise),
+            TimingStats::compute("commit::snapshot_put_statuses_check", phase_snapshot_put_statuses_check),
+            TimingStats::compute("commit::snapshot_commit_record_create", phase_snapshot_commit_record_create),
+            TimingStats::compute("commit::snapshot_durable_write_data_submit", phase_snapshot_durable_write_data_submit),
+            TimingStats::compute("commit::snapshot_isolation_validate", phase_snapshot_isolation_validate),
+            TimingStats::compute("commit::snapshot_durable_write_data_confirm", phase_snapshot_durable_write_data_confirm),
+            TimingStats::compute("commit::snapshot_storage_write", phase_snapshot_storage_write),
+            TimingStats::compute("commit::snapshot_isolation_manager_notify", phase_snapshot_isolation_manager_notify),
+            TimingStats::compute("commit::snapshot_durable_write_commit_status_submit", phase_snapshot_durable_write_commit_status_submit),
         ];
 
         Self { per_txn, summary }
@@ -300,5 +317,5 @@ fn write_csv<T: Serialize>(path: impl AsRef<Path>, rows: &[T]) -> std::io::Resul
 }
 
 fn dur_us(d: Duration) -> f64 {
-    d.as_nanos() as f64 / 1_000.0
+    (d.as_nanos() as f64 / 1_000.0 * 1_000.0).round() / 1_000.0
 }
