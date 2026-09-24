@@ -15,6 +15,9 @@
 	[dependencies.answer]
 		workspace = true
 
+	[dependencies.clap]
+		workspace = true
+
 	[dependencies.compiler]
 		workspace = true
 
@@ -22,6 +25,9 @@
 		workspace = true
 
 	[dependencies.criterion]
+		workspace = true
+
+	[dependencies.csv]
 		workspace = true
 
 	[dependencies.database]
@@ -64,6 +70,9 @@
 		workspace = true
 
 	[dependencies.resource]
+		workspace = true
+
+	[dependencies.serde]
 		workspace = true
 
 	[dependencies.storage]

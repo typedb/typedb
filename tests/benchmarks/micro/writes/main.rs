@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use clap::Parser;
 use criterion::Criterion;
-use itertools::Itertools;
 use lib_benchmark::{
     profiler::FlamegraphProfiler,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
@@ -27,22 +27,25 @@ fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.summary();
 }
 
-fn criterion_runner() -> Criterion {
-    Criterion::default().with_profiler(FlamegraphProfiler::new(100)).configure_from_args()
+#[derive(Parser)]
+struct Args {
+    #[command(subcommand)]
+    mode: Mode,
 }
 
-fn simple_runner() -> SimpleRunner {
-    let args = std::env::args().collect::<Vec<_>>();
-    debug_assert!(args.len() > 2 && args[1].as_str() == "--simple");
-    let filter = args.get(2).cloned().unwrap_or_else(|| "".to_owned());
-    SimpleRunner::new(filter)
+#[derive(clap::Subcommand)]
+enum Mode {
+    /// Run with the simple (non-criterion) runner.
+    Simple(SimpleRunner),
+    /// Run with criterion (default benchmarking mode).
+    Criterion,
 }
 
 fn main() {
-    // TODO: Can switch between others
-    if Some("--simple") == std::env::args().skip(1).next().as_ref().map(|x| x.as_str()) {
-        run_benchmarks(simple_runner())
-    } else {
-        run_benchmarks(criterion_runner())
-    };
+    match Args::parse().mode {
+        Mode::Simple(runner) => run_benchmarks(runner),
+        Mode::Criterion => run_benchmarks(
+            Criterion::default().with_profiler(FlamegraphProfiler::new(100)).configure_from_args(),
+        ),
+    }
 }

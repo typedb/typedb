@@ -173,6 +173,11 @@
 			features = ["cargo_bench_support", "default", "plotters", "rayon"]
 			version = "0.5.1"
 
+		[workspace.dependencies.csv]
+			default-features = false
+			features = []
+			version = "1.4.0"
+
 		[workspace.dependencies.cucumber]
 			default-features = false
 			features = ["default", "macros"]
