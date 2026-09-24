@@ -5,20 +5,14 @@
  */
 
 use clap::Parser;
-use criterion::Criterion;
-use lib_benchmark::{
-    profiler::FlamegraphProfiler,
-    runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
-    templates::{SimpleBenchmark, TxQueryProfile, TypeDBMicroBenchmark, sanity_check},
-};
+use lib_benchmark::runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner};
+use lib_benchmark::templates::{SimpleBenchmark, TxQueryProfile, TypeDBMicroBenchmark, sanity_check};
 use query::given_rows::GivenRowsSimple;
 
 mod heavy_inserts;
 // mod match_reads;
 mod parallel_heavy_inserts;
 mod simple_inserts;
-
-pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
 
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.new_group("sanity_check").run_benchmark(sanity_check());
@@ -30,25 +24,6 @@ fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.summary();
 }
 
-#[derive(Parser)]
-struct Args {
-    #[command(subcommand)]
-    mode: Mode,
-}
-
-#[derive(clap::Subcommand)]
-enum Mode {
-    /// Run with the simple (non-criterion) runner.
-    Simple(SimpleRunner),
-    /// Run with criterion (default benchmarking mode).
-    Criterion,
-}
-
 fn main() {
-    match Args::parse().mode {
-        Mode::Simple(runner) => run_benchmarks(runner),
-        Mode::Criterion => {
-            run_benchmarks(Criterion::default().with_profiler(FlamegraphProfiler::new(100)).configure_from_args())
-        }
-    }
+    run_benchmarks(SimpleRunner::parse());
 }

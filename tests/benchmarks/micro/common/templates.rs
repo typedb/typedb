@@ -6,8 +6,8 @@
 use std::{sync::Arc, time::Duration};
 
 use database::{
+    transaction::TransactionWrite,
     Database,
-    transaction::{TransactionRead, TransactionWrite},
 };
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
@@ -15,15 +15,16 @@ use resource::profile::{QueryProfile, TransactionProfile};
 use storage::durability_client::WALClient;
 
 use crate::{
-    Config, Context, QueryAnswer, commit,
-    datagen::RandomDataGen,
-    execute_read_query_in, execute_write_query_in,
-    utils::{CountResults, unpack_result},
+    commit, datagen::RandomDataGen, execute_write_query_in, utils::{unpack_result, CountResults},
+    Config
+    , Context,
+    QueryAnswer,
 };
+use crate::reports::SimpleReport;
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
-    type IterInput;
+    type RunInput;
     type IterOutput: SimpleReport;
 
     /// Create given_rows if needed
@@ -44,14 +45,14 @@ pub trait SimpleBenchmark {
     fn prepare_database(&self, context: &Context, database: Arc<Database<WALClient>>);
 
     /// Create given_rows if needed
-    fn prepare_iter(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::IterInput;
+    fn prepare_run(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput;
 
     /// The actual iteration which gets timed over and over again.
     fn run_iter(
         &self,
         context: &Context,
         database: Arc<Database<WALClient>>,
-        input: Self::IterInput,
+        input: Self::RunInput,
     ) -> Self::IterOutput;
 }
 
@@ -59,28 +60,16 @@ pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
 pub type PrepareIterFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 
-pub trait SimpleReport {
-    fn report(reports: &[Self])
-    where
-        Self: Sized;
-}
-
-impl SimpleReport for () {
-    fn report(_reports: &[Self]) {
-        println!("DONE. [Report was (), which is a nop dummy].")
-    }
-}
-
 pub struct TypeDBMicroBenchmark<IN, OUT: SimpleReport> {
     pub name: &'static str,
     pub schema: &'static str,
     pub preload_data_fn: Option<PreloadDataFn>,
-    pub prepare_iter_fn: PrepareIterFn<IN>,
+    pub prepare_run_fn: PrepareIterFn<IN>,
     pub benchmark_fn: BenchmarkedFn<IN, OUT>,
 }
 
 impl<IN, OUT: SimpleReport> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT> {
-    type IterInput = IN;
+    type RunInput = IN;
     type IterOutput = OUT;
 
     fn name(&self) -> &'_ str {
@@ -94,15 +83,15 @@ impl<IN, OUT: SimpleReport> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT> {
         }
     }
 
-    fn prepare_iter(&self, _context: &Context, database: Arc<Database<WALClient>>) -> Self::IterInput {
-        (self.prepare_iter_fn)(database)
+    fn prepare_run(&self, _context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput {
+        (self.prepare_run_fn)(database)
     }
 
     fn run_iter(
         &self,
         _context: &Context,
         database: Arc<Database<WALClient>>,
-        input: Self::IterInput,
+        input: Self::RunInput,
     ) -> Self::IterOutput {
         (self.benchmark_fn)(database, input)
     }
@@ -114,18 +103,28 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
         name: "sanity_check",
         schema: "define entity person;",
         preload_data_fn: Some(Box::new(|_| std::thread::sleep(Duration::from_millis(40)))),
-        prepare_iter_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
+        prepare_run_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
         benchmark_fn: Box::new(|_, _| std::thread::sleep(Duration::from_millis(10))),
     }
 }
 
 // Util return
+pub struct WorkLoad {
+    pub query_descriptor: QueryDescriptor,
+    pub run_descriptor: RunDescriptor,
+}
+
+pub struct QueryDescriptor {
+    pub query: &'static str,
+    pub variables: Vec<String>,
+    pub given_row_producer: Box<dyn Fn() -> Option<GivenRowsSimple>>,
+}
+
 #[derive(Clone)]
 pub struct RunDescriptor {
     pub total_txns: usize,
     pub n_queries_per_tx: usize,
     pub n_rows_per_query: usize,
-    pub query: &'static str,
 }
 
 impl RunDescriptor {
@@ -157,7 +156,7 @@ pub fn no_initial_data() -> Option<PreloadDataFn> {
     None
 }
 
-// prepare_iter
+// prepare_run
 pub fn no_given_rows() -> PrepareIterFn<Option<GivenRowsSimple>> {
     Box::new(|_: Arc<Database<WALClient>>| None)
 }
@@ -184,26 +183,6 @@ pub fn given_rows_with(
         rows.resize_with(n_rows, gen_row);
         Some(GivenRowsSimple { variables, rows })
     })
-}
-
-// SimpleReport implementations
-impl SimpleReport for TxQueryProfile {
-    fn report(reports: &[Self]) {
-        for (i, r) in reports.iter().enumerate() {
-            let name = format!("tx_query_profile_{i}");
-            crate::reports::TxQueryProfileReport::from(r).write_and_print(&name);
-        }
-    }
-}
-
-impl SimpleReport for MultiTxMultiQueryProfile {
-    fn report(reports: &[Self]) {
-        // Reports is a &[Self] but From consumes — clone timing data out into one merged report.
-        // For simplicity, report each benchmark sample separately; typically there is only one.
-        for r in reports.iter() {
-            crate::reports::MultiQueryTxProfileReport::from_ref(r).write_and_print(r.name);
-        }
-    }
 }
 
 pub fn query_in_write_tx(query: &str) -> BenchmarkedFn<Option<GivenRowsSimple>, TxQueryProfile> {

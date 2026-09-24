@@ -7,8 +7,10 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     templates::{given_rows_with, n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx},
 };
+use lib_benchmark::templates::{TxQueryProfile, TypeDBMicroBenchmark};
+use query::given_rows::GivenRowsSimple;
 
-use crate::TransactionInsertBenchmark;
+pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("simple_inserts");
@@ -31,7 +33,7 @@ fn entities_one() -> TransactionInsertBenchmark {
         name: "simple_inserts__entities_one",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: no_given_rows(),
+        prepare_run_fn: no_given_rows(),
         benchmark_fn: query_in_write_tx("insert $x isa person;"),
     }
 }
@@ -41,7 +43,7 @@ fn entities_thousand() -> TransactionInsertBenchmark {
         name: "simple_inserts__entities_thousand",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: n_empty_given_rows(N_ROWS),
+        prepare_run_fn: n_empty_given_rows(N_ROWS),
         benchmark_fn: query_in_write_tx("given ; insert $x isa person;"),
     }
 }
@@ -51,7 +53,7 @@ fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
         name: "simple_inserts__ownerships_thousand_short_names",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(5)]),
+        prepare_run_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(5)]),
         benchmark_fn: query_in_write_tx("given $name: string; insert $x isa person, has name == $name;"),
     }
 }
@@ -61,7 +63,7 @@ fn ownerships_thousand_names_long() -> TransactionInsertBenchmark {
         name: "simple_inserts__ownerships_thousand_long_names",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(50)]),
+        prepare_run_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(50)]),
         benchmark_fn: query_in_write_tx("given $name: string; insert $x isa person, has name == $name;"),
     }
 }
