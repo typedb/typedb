@@ -12,29 +12,29 @@ use tabled::Tabled;
 
 use crate::templates::{MultiTxMultiQueryProfile, TxQueryProfile};
 
-/// Wraps a Duration: displays as µs with 3dp, serializes as f64 µs for CSV.
+/// Wraps a Duration: displays as ms with 3dp, serializes as f64 ms for CSV.
 #[derive(Clone, Copy)]
-pub struct DurationUs(pub Duration);
+pub struct DurationMs(pub Duration);
 
-impl fmt::Display for DurationUs {
+impl fmt::Display for DurationMs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:.3}", self.0.as_nanos() as f64 / 1_000.0)
+        write!(f, "{:.3}", self.0.as_nanos() as f64 / 1_000_000.0)
     }
 }
 
-impl Serialize for DurationUs {
+impl Serialize for DurationMs {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_f64(self.0.as_nanos() as f64 / 1_000.0)
+        s.serialize_f64(self.0.as_nanos() as f64 / 1_000_000.0)
     }
 }
 
-impl tabled::Tabled for DurationUs {
+impl tabled::Tabled for DurationMs {
     const LENGTH: usize = 1;
     fn fields(&self) -> Vec<std::borrow::Cow<'_, str>> {
         vec![format!("{self}").into()]
     }
     fn headers() -> Vec<std::borrow::Cow<'static, str>> {
-        vec!["us".into()]
+        vec!["ms".into()]
     }
 }
 
@@ -47,21 +47,21 @@ impl tabled::Tabled for DurationUs {
 #[derive(Tabled, Serialize)]
 pub struct TxTimingRow {
     pub txn_index: usize,
-    pub driver_wall_us: DurationUs,
-    pub mean_query_us: DurationUs,
-    pub p50_query_us: DurationUs,
-    pub p95_query_us: DurationUs,
-    pub p99_query_us: DurationUs,
-    pub commit_us: DurationUs,
-    pub commit_things_finalise_us: DurationUs,
-    pub commit_snapshot_put_statuses_check_us: DurationUs,
-    pub commit_snapshot_commit_record_create_us: DurationUs,
-    pub commit_snapshot_durable_write_data_submit_us: DurationUs,
-    pub commit_snapshot_isolation_validate_us: DurationUs,
-    pub commit_snapshot_durable_write_data_confirm_us: DurationUs,
-    pub commit_snapshot_storage_write_us: DurationUs,
-    pub commit_snapshot_isolation_manager_notify_us: DurationUs,
-    pub commit_snapshot_durable_write_commit_status_submit_us: DurationUs,
+    pub driver_wall_ms: DurationMs,
+    pub mean_query_ms: DurationMs,
+    pub p50_query_ms: DurationMs,
+    pub p95_query_ms: DurationMs,
+    pub p99_query_ms: DurationMs,
+    pub commit_ms: DurationMs,
+    pub commit_things_finalise_ms: DurationMs,
+    pub commit_snapshot_put_statuses_check_ms: DurationMs,
+    pub commit_snapshot_commit_record_create_ms: DurationMs,
+    pub commit_snapshot_durable_write_data_submit_ms: DurationMs,
+    pub commit_snapshot_isolation_validate_ms: DurationMs,
+    pub commit_snapshot_durable_write_data_confirm_ms: DurationMs,
+    pub commit_snapshot_storage_write_ms: DurationMs,
+    pub commit_snapshot_isolation_manager_notify_ms: DurationMs,
+    pub commit_snapshot_durable_write_commit_status_submit_ms: DurationMs,
 }
 
 // --- Summary stats across transactions ---
@@ -70,24 +70,29 @@ pub struct TxTimingRow {
 pub struct TimingStats {
     pub metric: String,
     pub n: usize,
-    pub mean_us: DurationUs,
-    pub p50_us: DurationUs,
-    pub p95_us: DurationUs,
-    pub p99_us: DurationUs,
+    pub mean_ms: DurationMs,
+    pub p50_ms: DurationMs,
+    pub p95_ms: DurationMs,
+    pub p99_ms: DurationMs,
+    pub pct_of_outer: String,
 }
 
 impl TimingStats {
-    fn compute(metric: impl Into<String>, mut values: Vec<Duration>) -> Self {
+    fn compute(metric: impl Into<String>, mut values: Vec<Duration>, outer_total: Option<Duration>) -> Self {
         let metric = metric.into();
         let n = values.len();
         if n == 0 {
-            let z = DurationUs(Duration::ZERO);
-            return Self { metric, n: 0, mean_us: z, p50_us: z, p95_us: z, p99_us: z };
+            let z = DurationMs(Duration::ZERO);
+            return Self { metric, n: 0, mean_ms: z, p50_ms: z, p95_ms: z, p99_ms: z, pct_of_outer: "—".into() };
         }
-        let mean = values.iter().sum::<Duration>() / n as u32;
+        let total: Duration = values.iter().sum();
+        let mean = total / n as u32;
         values.sort();
-        let pct = |p: f64| DurationUs(values[((p / 100.0) * (n - 1) as f64).round() as usize]);
-        Self { metric, n, mean_us: DurationUs(mean), p50_us: pct(50.0), p95_us: pct(95.0), p99_us: pct(99.0) }
+        let pct = |p: f64| DurationMs(values[((p / 100.0) * (n - 1) as f64).round() as usize]);
+        let pct_of_outer = outer_total
+            .filter(|&o| !o.is_zero())
+            .map_or("—".into(), |o| format!("{:.1}%", total.as_nanos() as f64 / o.as_nanos() as f64 * 100.0));
+        Self { metric, n, mean_ms: DurationMs(mean), p50_ms: pct(50.0), p95_ms: pct(95.0), p99_ms: pct(99.0), pct_of_outer }
     }
 }
 
@@ -129,8 +134,8 @@ impl MultiQueryTxProfileReport {
             query_durations.sort();
             let n_q = query_durations.len();
             let mean_q = if n_q > 0 { query_durations.iter().sum::<Duration>() / n_q as u32 } else { Duration::ZERO };
-            let pct_q = |p: f64| -> DurationUs {
-                DurationUs(if n_q == 0 {
+            let pct_q = |p: f64| -> DurationMs {
+                DurationMs(if n_q == 0 {
                     Duration::ZERO
                 } else {
                     query_durations[((p / 100.0) * (n_q - 1) as f64).round() as usize]
@@ -141,23 +146,23 @@ impl MultiQueryTxProfileReport {
             let zd = |f: fn(&_) -> Duration| z.map_or(Duration::ZERO, |p| f(p));
             per_txn.push(TxTimingRow {
                 txn_index: i,
-                driver_wall_us: DurationUs(tx.time_elapsed),
-                mean_query_us: DurationUs(mean_q),
-                p50_query_us: pct_q(50.0),
-                p95_query_us: pct_q(95.0),
-                p99_query_us: pct_q(99.0),
-                commit_us: DurationUs(commit_total),
-                commit_things_finalise_us: DurationUs(zd(|p| p.things_finalise)),
-                commit_snapshot_put_statuses_check_us: DurationUs(zd(|p| p.snapshot_put_statuses_check)),
-                commit_snapshot_commit_record_create_us: DurationUs(zd(|p| p.snapshot_commit_record_create)),
-                commit_snapshot_durable_write_data_submit_us: DurationUs(zd(|p| p.snapshot_durable_write_data_submit)),
-                commit_snapshot_isolation_validate_us: DurationUs(zd(|p| p.snapshot_isolation_validate)),
-                commit_snapshot_durable_write_data_confirm_us: DurationUs(zd(|p| {
+                driver_wall_ms: DurationMs(tx.time_elapsed),
+                mean_query_ms: DurationMs(mean_q),
+                p50_query_ms: pct_q(50.0),
+                p95_query_ms: pct_q(95.0),
+                p99_query_ms: pct_q(99.0),
+                commit_ms: DurationMs(commit_total),
+                commit_things_finalise_ms: DurationMs(zd(|p| p.things_finalise)),
+                commit_snapshot_put_statuses_check_ms: DurationMs(zd(|p| p.snapshot_put_statuses_check)),
+                commit_snapshot_commit_record_create_ms: DurationMs(zd(|p| p.snapshot_commit_record_create)),
+                commit_snapshot_durable_write_data_submit_ms: DurationMs(zd(|p| p.snapshot_durable_write_data_submit)),
+                commit_snapshot_isolation_validate_ms: DurationMs(zd(|p| p.snapshot_isolation_validate)),
+                commit_snapshot_durable_write_data_confirm_ms: DurationMs(zd(|p| {
                     p.snapshot_durable_write_data_confirm
                 })),
-                commit_snapshot_storage_write_us: DurationUs(zd(|p| p.snapshot_storage_write)),
-                commit_snapshot_isolation_manager_notify_us: DurationUs(zd(|p| p.snapshot_isolation_manager_notify)),
-                commit_snapshot_durable_write_commit_status_submit_us: DurationUs(zd(|p| {
+                commit_snapshot_storage_write_ms: DurationMs(zd(|p| p.snapshot_storage_write)),
+                commit_snapshot_isolation_manager_notify_ms: DurationMs(zd(|p| p.snapshot_isolation_manager_notify)),
+                commit_snapshot_durable_write_commit_status_submit_ms: DurationMs(zd(|p| {
                     p.snapshot_durable_write_commit_status_submit
                 })),
             });
@@ -177,28 +182,20 @@ impl MultiQueryTxProfileReport {
                 .push(zd(|p| p.snapshot_durable_write_commit_status_submit));
         }
 
+        let commit_total: Duration = commit.iter().sum();
         let summary = vec![
-            TimingStats::compute("driver_wall", wall),
-            TimingStats::compute("mean_query", mean_query),
-            TimingStats::compute("commit", commit),
-            TimingStats::compute("commit::things_finalise", phase_things_finalise),
-            TimingStats::compute("commit::snapshot_put_statuses_check", phase_snapshot_put_statuses_check),
-            TimingStats::compute("commit::snapshot_commit_record_create", phase_snapshot_commit_record_create),
-            TimingStats::compute(
-                "commit::snapshot_durable_write_data_submit",
-                phase_snapshot_durable_write_data_submit,
-            ),
-            TimingStats::compute("commit::snapshot_isolation_validate", phase_snapshot_isolation_validate),
-            TimingStats::compute(
-                "commit::snapshot_durable_write_data_confirm",
-                phase_snapshot_durable_write_data_confirm,
-            ),
-            TimingStats::compute("commit::snapshot_storage_write", phase_snapshot_storage_write),
-            TimingStats::compute("commit::snapshot_isolation_manager_notify", phase_snapshot_isolation_manager_notify),
-            TimingStats::compute(
-                "commit::snapshot_durable_write_commit_status_submit",
-                phase_snapshot_durable_write_commit_status_submit,
-            ),
+            TimingStats::compute("driver_wall", wall, None),
+            TimingStats::compute("mean_query", mean_query, None),
+            TimingStats::compute("commit", commit, None),
+            TimingStats::compute("commit::things_finalise", phase_things_finalise, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_put_statuses_check", phase_snapshot_put_statuses_check, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_commit_record_create", phase_snapshot_commit_record_create, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_durable_write_data_submit", phase_snapshot_durable_write_data_submit, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_isolation_validate", phase_snapshot_isolation_validate, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_durable_write_data_confirm", phase_snapshot_durable_write_data_confirm, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_storage_write", phase_snapshot_storage_write, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_isolation_manager_notify", phase_snapshot_isolation_manager_notify, Some(commit_total)),
+            TimingStats::compute("commit::snapshot_durable_write_commit_status_submit", phase_snapshot_durable_write_commit_status_submit, Some(commit_total)),
         ];
 
         Self { per_txn, summary }
@@ -238,20 +235,20 @@ impl MultiQueryTxProfileReport {
 pub struct QueryStepRow {
     pub stage_id: u64,
     pub step_description: String,
-    pub total_us: DurationUs,
+    pub total_ms: DurationMs,
     pub batches: u64,
     pub rows: u64,
-    pub us_per_row: DurationUs,
+    pub us_per_row: DurationMs,
 }
 
 pub struct TxQueryProfileReport {
     pub steps: Vec<QueryStepRow>,
-    pub total_query: DurationUs,
+    pub total_query: DurationMs,
 }
 
 impl From<&TxQueryProfile> for TxQueryProfileReport {
     fn from(profile: &TxQueryProfile) -> Self {
-        let total_query = DurationUs(profile.query_profile.total_duration());
+        let total_query = DurationMs(profile.query_profile.total_duration());
         let mut steps = Vec::new();
         collect_steps(&profile.query_profile, &mut steps);
         Self { steps, total_query }
@@ -278,7 +275,7 @@ impl TxQueryProfileReport {
     }
 
     fn print_steps_table(&self) {
-        println!("Total query time: {} µs", self.total_query);
+        println!("Total query time: {} ms", self.total_query);
         println!("{}", tabled::Table::new(&self.steps));
     }
 }
@@ -294,9 +291,9 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
         for substep in pattern.substeps().read().unwrap().iter() {
             match substep {
                 SubstepProfile::StepProfile(step) => {
-                    let total = DurationUs(Duration::from_nanos(step.total_nanos()));
+                    let total = DurationMs(Duration::from_nanos(step.total_nanos()));
                     let rows = step.rows();
-                    let us_per_row = DurationUs(if rows > 0 {
+                    let us_per_row = DurationMs(if rows > 0 {
                         Duration::from_nanos(step.total_nanos() / rows)
                     } else {
                         Duration::ZERO
@@ -304,7 +301,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                     out.push(QueryStepRow {
                         stage_id,
                         step_description: step.description().unwrap_or("").to_owned(),
-                        total_us: total,
+                        total_ms: total,
                         batches: step.batches(),
                         rows,
                         us_per_row,
@@ -314,19 +311,19 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                     out.push(QueryStepRow {
                         stage_id,
                         step_description: format!("[fn] {description}"),
-                        total_us: DurationUs(profile.total_duration()),
+                        total_ms: DurationMs(profile.total_duration()),
                         batches: 0,
                         rows: 0,
-                        us_per_row: DurationUs(Duration::ZERO),
+                        us_per_row: DurationMs(Duration::ZERO),
                     });
                     collect_steps(profile, out);
                 }
                 SubstepProfile::PatternProfile(pattern) => {
                     for substep in pattern.substeps().read().unwrap().iter() {
                         if let SubstepProfile::StepProfile(step) = substep {
-                            let total = DurationUs(Duration::from_nanos(step.total_nanos()));
+                            let total = DurationMs(Duration::from_nanos(step.total_nanos()));
                             let rows = step.rows();
-                            let us_per_row = DurationUs(if rows > 0 {
+                            let us_per_row = DurationMs(if rows > 0 {
                                 Duration::from_nanos(step.total_nanos() / rows)
                             } else {
                                 Duration::ZERO
@@ -334,7 +331,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                             out.push(QueryStepRow {
                                 stage_id,
                                 step_description: step.description().unwrap_or("").to_owned(),
-                                total_us: total,
+                                total_ms: total,
                                 batches: step.batches(),
                                 rows,
                                 us_per_row,
