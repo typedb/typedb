@@ -5,10 +5,10 @@
  */
 
 use clap::Parser;
-use lib_benchmark::runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner};
-use lib_benchmark::templates::{SimpleBenchmark, TxQueryProfile, TypeDBMicroBenchmark, sanity_check};
-use query::given_rows::GivenRowsSimple;
-
+use lib_benchmark::{
+    benchmark::{SimpleBenchmark, sanity_check},
+    runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+};
 mod heavy_inserts;
 // mod match_reads;
 mod parallel_heavy_inserts;
