@@ -75,6 +75,7 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("parallel_inserts");
     group.run_benchmark(parallel_many_small_tx());
     group.run_benchmark(parallel_many_average_tx());
+    group.run_benchmark(parallel_many_large_tx());
 }
 
 fn parametrised_insert(
@@ -186,6 +187,20 @@ fn parallel_many_average_tx() -> HeavyInsertBenchmark {
     )
 }
 
+fn parallel_many_large_tx() -> HeavyInsertBenchmark {
+    parametrised_insert(
+        "parallel_many_large_tx",
+        SIMPLE_SCHEMA,
+        no_initial_data(),
+        8,
+        1_000,
+        1,
+        10_000,
+        "given; insert $x isa person;",
+        |_| vec![],
+    )
+}
+
 fn parallel_binary_relation() -> HeavyInsertBenchmark {
     let schema = r#"
     define
@@ -196,17 +211,17 @@ fn parallel_binary_relation() -> HeavyInsertBenchmark {
     parametrised_insert(
         "parallel_binary_relation",
         schema,
-        no_initial_data(),
+        todo!(),
         8,
         1_000,
         1,
-        100,
+        10000,
         r#"
         given $e1:e1, $e2: e2, $e2_2: e2;
         insert
             $r isa r1, links (e1: $e1, e2: $e2);
             $r2 isa r1, links (e1: $e1, e2: $e2_2);
        "#,
-        |_| vec![],
+        todo!(),
     )
 }
