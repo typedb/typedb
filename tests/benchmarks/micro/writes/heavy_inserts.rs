@@ -10,8 +10,8 @@ use lib_benchmark::{
     QueryAnswer, commit, execute_write_query_in,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     templates::{
-        MultiQueryTxProfile, MultiTxMultiQueryProfile, TypeDBMicroBenchmark, given_rows_with,
-        n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx,
+        MultiQueryTxProfile, MultiTxMultiQueryProfile, TypeDBMicroBenchmark, given_rows_with, n_empty_given_rows,
+        no_given_rows, no_initial_data, query_in_write_tx,
     },
     utils::{CountResults, unpack_result},
 };

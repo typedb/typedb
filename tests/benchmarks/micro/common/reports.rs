@@ -92,7 +92,15 @@ impl TimingStats {
         let pct_of_outer = outer_total
             .filter(|&o| !o.is_zero())
             .map_or("—".into(), |o| format!("{:.1}%", total.as_nanos() as f64 / o.as_nanos() as f64 * 100.0));
-        Self { metric, n, mean_ms: DurationMs(mean), p50_ms: pct(50.0), p95_ms: pct(95.0), p99_ms: pct(99.0), pct_of_outer }
+        Self {
+            metric,
+            n,
+            mean_ms: DurationMs(mean),
+            p50_ms: pct(50.0),
+            p95_ms: pct(95.0),
+            p99_ms: pct(99.0),
+            pct_of_outer,
+        }
     }
 }
 
@@ -188,14 +196,42 @@ impl MultiQueryTxProfileReport {
             TimingStats::compute("mean_query", mean_query, None),
             TimingStats::compute("commit", commit, None),
             TimingStats::compute("commit::things_finalise", phase_things_finalise, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_put_statuses_check", phase_snapshot_put_statuses_check, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_commit_record_create", phase_snapshot_commit_record_create, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_durable_write_data_submit", phase_snapshot_durable_write_data_submit, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_isolation_validate", phase_snapshot_isolation_validate, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_durable_write_data_confirm", phase_snapshot_durable_write_data_confirm, Some(commit_total)),
+            TimingStats::compute(
+                "commit::snapshot_put_statuses_check",
+                phase_snapshot_put_statuses_check,
+                Some(commit_total),
+            ),
+            TimingStats::compute(
+                "commit::snapshot_commit_record_create",
+                phase_snapshot_commit_record_create,
+                Some(commit_total),
+            ),
+            TimingStats::compute(
+                "commit::snapshot_durable_write_data_submit",
+                phase_snapshot_durable_write_data_submit,
+                Some(commit_total),
+            ),
+            TimingStats::compute(
+                "commit::snapshot_isolation_validate",
+                phase_snapshot_isolation_validate,
+                Some(commit_total),
+            ),
+            TimingStats::compute(
+                "commit::snapshot_durable_write_data_confirm",
+                phase_snapshot_durable_write_data_confirm,
+                Some(commit_total),
+            ),
             TimingStats::compute("commit::snapshot_storage_write", phase_snapshot_storage_write, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_isolation_manager_notify", phase_snapshot_isolation_manager_notify, Some(commit_total)),
-            TimingStats::compute("commit::snapshot_durable_write_commit_status_submit", phase_snapshot_durable_write_commit_status_submit, Some(commit_total)),
+            TimingStats::compute(
+                "commit::snapshot_isolation_manager_notify",
+                phase_snapshot_isolation_manager_notify,
+                Some(commit_total),
+            ),
+            TimingStats::compute(
+                "commit::snapshot_durable_write_commit_status_submit",
+                phase_snapshot_durable_write_commit_status_submit,
+                Some(commit_total),
+            ),
         ];
 
         Self { per_txn, summary }
