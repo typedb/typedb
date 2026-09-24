@@ -13,12 +13,24 @@ use std::{
     time::Instant,
 };
 
+use database::{
+    Database,
+    transaction::{TransactionRead, TransactionWrite},
+};
 use encoding::graph::type_::vertex::TypeID;
-use database::{Database, transaction::TransactionWrite};
-use lib_benchmark::{QueryAnswer, commit, datagen::RandomDataGen, execute_write_query_in, profiler::transaction_options_with_profiling, runner::{BenchmarkRunner, BenchmarkRunnerGroup}, templates::{
-    MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark,
-    no_initial_data,
-}, utils::{CountResults, unpack_result}, read_all_instance_types};
+use lib_benchmark::{
+    QueryAnswer, commit,
+    datagen::RandomDataGen,
+    execute_read_query_in, execute_write_query_in,
+    profiler::transaction_options_with_profiling,
+    read_all_instance_types,
+    runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    templates::{
+        MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark,
+        no_initial_data,
+    },
+    utils::{CountResults, unpack_result},
+};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use storage::durability_client::WALClient;
@@ -78,13 +90,14 @@ impl GivenRowBatchProducer {
             let mut rng = RandomDataGen::new();
             let mut remaining = n_total_rows;
             while remaining > 0 {
-                let this_batch = n_rows_per_query.max(remaining);
+                let this_batch = n_rows_per_query.min(remaining);
                 remaining -= this_batch;
                 let rows = (0..this_batch).map(|_| produce_row(&mut rng)).collect();
                 let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
                 let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-                let (_, tx) =
+                let (result, tx) =
                     unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
+                let QueryAnswer { answer: n_rows, .. } = result.unwrap();
                 commit(tx).unwrap();
             }
         })
@@ -173,9 +186,13 @@ fn parametrised_insert(
         preload_data_fn,
         prepare_iter_fn: Box::new(move |_| {
             // Yes, a new one per iter.
-            Arc::new(
-                GivenRowBatchProducer::new(query, variables.clone(), produce_row, n_rows_per_query, n_txns * n_query_per_txn)
-            )
+            Arc::new(GivenRowBatchProducer::new(
+                query,
+                variables.clone(),
+                produce_row,
+                n_rows_per_query,
+                n_txns * n_query_per_txn,
+            ))
         }),
         benchmark_fn,
     }
@@ -227,7 +244,7 @@ fn parallel_many_large_tx() -> ParallelHeavyInsertBenchmark {
 }
 
 fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
-    const N_ENTITIES: usize = 10_000_000;
+    const N_ENTITIES: usize = 100_000;
     let schema = r#"
     define
         relation r1, relates e1, relates e2;
@@ -235,7 +252,7 @@ fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
         entity e2, plays r1:e2;
     "#;
     let preload_data_fn = GivenRowBatchProducer::make_preload_data_fn(
-        "given; insert $_ isa e1; $_ isa e1;",
+        "given; insert $_ isa e1; $_ isa e2;",
         vec![],
         |_| vec![],
         N_ENTITIES,
@@ -244,18 +261,18 @@ fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
 
     let produce_row = |rng: &mut RandomDataGen| {
         vec![
-            rng.entry_entity_raw_in(TypeID::new(0), 0, N_ENTITIES-1 as u64),
-            rng.entry_entity_raw_in(TypeID::new(1), 0, N_ENTITIES-1 as u64),
+            rng.entry_entity_raw_in(TypeID::new(0), 0, (N_ENTITIES - 1) as u64),
+            rng.entry_entity_raw_in(TypeID::new(1), 0, (N_ENTITIES - 1) as u64),
         ]
     };
     parametrised_insert(
         "parallel_binary_relation",
         schema,
         Some(preload_data_fn),
-        8,
+        16,
         1_000,
         1,
-        10_000,
+        1_000,
         r#"
         given $e1:e1, $e2: e2;
         insert
