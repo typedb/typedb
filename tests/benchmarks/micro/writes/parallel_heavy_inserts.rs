@@ -13,16 +13,12 @@ use std::{
     time::Instant,
 };
 
+use encoding::graph::type_::vertex::TypeID;
 use database::{Database, transaction::TransactionWrite};
-use lib_benchmark::{
-    QueryAnswer, commit,
-    datagen::RandomDataGen,
-    execute_write_query_in,
-    profiler::transaction_options_with_profiling,
-    runner::{BenchmarkRunner, BenchmarkRunnerGroup},
-    templates::{MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark, no_initial_data},
-    utils::{CountResults, unpack_result},
-};
+use lib_benchmark::{QueryAnswer, commit, datagen::RandomDataGen, execute_write_query_in, profiler::transaction_options_with_profiling, runner::{BenchmarkRunner, BenchmarkRunnerGroup}, templates::{
+    MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark,
+    no_initial_data,
+}, utils::{CountResults, unpack_result}, read_all_instance_types};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use storage::durability_client::WALClient;
@@ -78,7 +74,6 @@ impl GivenRowBatchProducer {
         n_total_rows: usize,
         n_rows_per_query: usize,
     ) -> PreloadDataFn {
-        let n_txns = n_total_rows.div_ceil(n_rows_per_query);
         Box::new(move |database: Arc<Database<WALClient>>| {
             let mut rng = RandomDataGen::new();
             let mut remaining = n_total_rows;
@@ -103,6 +98,7 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(parallel_many_small_tx());
     group.run_benchmark(parallel_many_average_tx());
     group.run_benchmark(parallel_many_large_tx());
+    group.run_benchmark(parallel_binary_relation());
 }
 
 fn parametrised_insert(
@@ -117,12 +113,8 @@ fn parametrised_insert(
     variables: Vec<String>,
     produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
 ) -> ParallelHeavyInsertBenchmark {
-    let run_descriptor = RunDescriptor {
-        total_txns: n_txns,
-        n_queries_per_tx: n_query_per_txn,
-        n_rows_per_query,
-        query,
-    };
+    let run_descriptor =
+        RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query, query };
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<GivenRowBatchProducer>| {
         let overestimate_txns_per_thread: usize = ((1.5 * n_txns as f64 / n_parallel as f64).ceil() as usize).max(2);
         let very_beginning = Instant::now();
@@ -167,16 +159,24 @@ fn parametrised_insert(
             .collect();
 
         let profiles = handles.into_iter().flat_map(|h| h.join().expect("benchmark thread panicked")).collect();
-        MultiTxMultiQueryProfile { name, profiles, run_descriptor: run_descriptor.clone(), total_wall_time: very_beginning.elapsed() }
+        MultiTxMultiQueryProfile {
+            name,
+            profiles,
+            run_descriptor: run_descriptor.clone(),
+            total_wall_time: very_beginning.elapsed(),
+        }
     });
 
-    let iter_input_producer =
-        Arc::new(GivenRowBatchProducer::new(query, variables, produce_row, n_rows_per_query, n_txns * n_query_per_txn));
     TypeDBMicroBenchmark {
         name,
         schema,
         preload_data_fn,
-        prepare_iter_fn: Box::new(move |_| iter_input_producer.clone()),
+        prepare_iter_fn: Box::new(move |_| {
+            // Yes, a new one per iter.
+            Arc::new(
+                GivenRowBatchProducer::new(query, variables.clone(), produce_row, n_rows_per_query, n_txns * n_query_per_txn)
+            )
+        }),
         benchmark_fn,
     }
 }
@@ -227,6 +227,7 @@ fn parallel_many_large_tx() -> ParallelHeavyInsertBenchmark {
 }
 
 fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
+    const N_ENTITIES: usize = 10_000_000;
     let schema = r#"
     define
         relation r1, relates e1, relates e2;
@@ -237,9 +238,16 @@ fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
         "given; insert $_ isa e1; $_ isa e1;",
         vec![],
         |_| vec![],
-        10_000_000,
+        N_ENTITIES,
         10_000,
     );
+
+    let produce_row = |rng: &mut RandomDataGen| {
+        vec![
+            rng.entry_entity_raw_in(TypeID::new(0), 0, N_ENTITIES-1 as u64),
+            rng.entry_entity_raw_in(TypeID::new(1), 0, N_ENTITIES-1 as u64),
+        ]
+    };
     parametrised_insert(
         "parallel_binary_relation",
         schema,
@@ -254,6 +262,6 @@ fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
             $r isa r1, links (e1: $e1, e2: $e2);
        "#,
         vec!["e1".to_owned(), "e2".to_owned()],
-        todo!(),
+        produce_row,
     )
 }

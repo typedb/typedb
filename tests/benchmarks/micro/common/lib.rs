@@ -13,16 +13,19 @@ pub mod templates;
 mod transaction;
 pub mod utils;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use answer::Type;
+use concept::type_::TypeAPI;
 use database::{
     Database,
     database::DatabaseCreateError,
     database_manager::{DatabaseManager, ImportOwnership},
     query::execute_schema_query,
-    transaction::{CommitIntent, TransactionSchema},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
+use encoding::graph::type_::vertex::{TypeVertex, TypeVertexEncoding};
 use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
@@ -88,6 +91,22 @@ pub fn create_schema(database: Arc<Database<WALClient>>, schema: &str) {
 
 pub fn commit(tx: impl UnifiedTransactionView) -> Result<TransactionProfile, CommitError> {
     tx.commit()
+}
+
+pub fn read_all_instance_types(database: Arc<Database<WALClient>>) -> HashMap<String, Type> {
+    let tx = TransactionRead::open(database, TransactionOptions::default()).unwrap();
+    let snapshot = tx.snapshot.as_ref();
+    let type_manager = &tx.type_manager;
+    let mut map = HashMap::new();
+    for entity_type in type_manager.get_entity_types(snapshot).unwrap() {
+        let label = entity_type.get_label(snapshot, type_manager).unwrap();
+        map.insert(label.scoped_name().as_str().to_owned(), Type::Entity(entity_type));
+    }
+    for relation_type in type_manager.get_relation_types(snapshot).unwrap() {
+        let label = relation_type.get_label(snapshot, type_manager).unwrap();
+        map.insert(label.scoped_name().as_str().to_owned(), Type::Relation(relation_type));
+    }
+    map
 }
 
 pub trait AnswerConsumer {

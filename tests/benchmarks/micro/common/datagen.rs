@@ -3,9 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::borrow::Cow;
+use std::{any::Any, borrow::Cow};
 
-use encoding::value::value::Value;
+use answer::Thing;
+use concept::{
+    thing::{ThingAPI, entity::Entity, relation::Relation},
+    type_::{TypeAPI, entity_type::EntityType, relation_type::RelationType},
+};
+use encoding::{
+    graph::{
+        Typed,
+        thing::vertex_object::{ObjectID, ObjectVertex},
+        type_::vertex::{TypeID, TypeVertexEncoding},
+    },
+    value::value::Value,
+};
 use query::given_rows::GivenRowEntry;
 use rand::{Rng, SeedableRng, prelude::SmallRng, thread_rng};
 
@@ -41,5 +53,25 @@ impl RandomDataGen {
 
     pub fn entry_integer(&mut self) -> GivenRowEntry {
         GivenRowEntry::Value(Value::Integer(self.integer()))
+    }
+
+    pub fn entry_entity_in(&mut self, entity_type: EntityType, min: u64, max: u64) -> GivenRowEntry {
+        self.entry_entity_raw_in(entity_type.vertex().type_id_(), min, max)
+    }
+
+    pub fn entry_relation_in(&mut self, relation_type: RelationType, min: u64, max: u64) -> GivenRowEntry {
+        self.entry_entity_raw_in(relation_type.vertex().type_id_(), min, max)
+    }
+
+    pub fn entry_entity_raw_in(&mut self, type_id: TypeID, min: u64, max: u64) -> GivenRowEntry {
+        let instance_id = self.rng.gen_range(min..=max);
+        let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(instance_id));
+        GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
+    }
+
+    pub fn entry_relation_raw_in(&mut self, type_id: TypeID, min: u64, max: u64) -> GivenRowEntry {
+        let instance_id = self.rng.gen_range(min..=max);
+        let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(instance_id));
+        GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
     }
 }

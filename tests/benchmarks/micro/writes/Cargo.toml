@@ -26,6 +26,9 @@
 	[dependencies.diagnostics]
 		workspace = true
 
+	[dependencies.encoding]
+		workspace = true
+
 	[dependencies.executor]
 		workspace = true
 
