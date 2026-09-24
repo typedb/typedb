@@ -10,7 +10,7 @@ use resource::profile::{QueryProfile, StageProfile, SubstepProfile};
 use serde::Serialize;
 use tabled::Tabled;
 
-use crate::templates::{MultiTxMultiQueryProfile, TxQueryProfile};
+use crate::templates::{MultiTxMultiQueryProfile, RunDescriptor, TxQueryProfile};
 
 /// Wraps a Duration: displays as ms with 3dp, serializes as f64 ms for CSV.
 #[derive(Clone, Copy)]
@@ -109,6 +109,8 @@ impl TimingStats {
 pub struct MultiQueryTxProfileReport {
     pub per_txn: Vec<TxTimingRow>,
     pub summary: Vec<TimingStats>,
+    pub run_descriptor: RunDescriptor,
+    pub total_wall_time: DurationMs,
 }
 
 impl From<MultiTxMultiQueryProfile> for MultiQueryTxProfileReport {
@@ -233,8 +235,8 @@ impl MultiQueryTxProfileReport {
                 Some(commit_total),
             ),
         ];
-
-        Self { per_txn, summary }
+        let total_wall_time = DurationMs(profile.total_wall_time);
+        Self { per_txn, summary, run_descriptor: profile.run_descriptor.clone(), total_wall_time }
     }
 }
 
@@ -246,6 +248,15 @@ impl MultiQueryTxProfileReport {
             Err(e) => eprintln!("Failed to write report: {e}"),
         }
         self.print_summary_table();
+        let total_rows = self.run_descriptor.total_rows();
+        let rows_per_sec = total_rows as f64 / self.total_wall_time.0.as_secs_f64();
+        let n_q = self.run_descriptor.n_queries_per_tx as f64;
+        let sum_txn_wall: f64 = self.per_txn.iter().map(|r| r.commit_ms.0.as_secs_f64() + n_q * r.mean_query_ms.0.as_secs_f64()).sum();
+        let parallelism_utilisation = sum_txn_wall / self.total_wall_time.0.as_secs_f64();
+        println!(
+            "E2E took: {} ms for {} rows = {:.0} rows/s | parallelism utilisation: {:.2}x",
+            self.total_wall_time, total_rows, rows_per_sec, parallelism_utilisation
+        );
     }
 
     fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {

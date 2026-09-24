@@ -20,7 +20,7 @@ use lib_benchmark::{
     execute_write_query_in,
     profiler::transaction_options_with_profiling,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
-    templates::{MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, TypeDBMicroBenchmark, no_initial_data},
+    templates::{MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark, no_initial_data},
     utils::{CountResults, unpack_result},
 };
 use options::TransactionOptions;
@@ -117,8 +117,15 @@ fn parametrised_insert(
     variables: Vec<String>,
     produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
 ) -> ParallelHeavyInsertBenchmark {
+    let run_descriptor = RunDescriptor {
+        total_txns: n_txns,
+        n_queries_per_tx: n_query_per_txn,
+        n_rows_per_query,
+        query,
+    };
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<GivenRowBatchProducer>| {
         let overestimate_txns_per_thread: usize = ((1.5 * n_txns as f64 / n_parallel as f64).ceil() as usize).max(2);
+        let very_beginning = Instant::now();
         let handles: Vec<_> = (0..n_parallel)
             .map(|_thread_id| {
                 let db = database.clone();
@@ -160,8 +167,7 @@ fn parametrised_insert(
             .collect();
 
         let profiles = handles.into_iter().flat_map(|h| h.join().expect("benchmark thread panicked")).collect();
-
-        MultiTxMultiQueryProfile { name, profiles }
+        MultiTxMultiQueryProfile { name, profiles, run_descriptor: run_descriptor.clone(), total_wall_time: very_beginning.elapsed() }
     });
 
     let iter_input_producer =
@@ -241,7 +247,7 @@ fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
         8,
         1_000,
         1,
-        10000,
+        10_000,
         r#"
         given $e1:e1, $e2: e2;
         insert

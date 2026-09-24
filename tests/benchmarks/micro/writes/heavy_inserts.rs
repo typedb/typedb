@@ -10,8 +10,8 @@ use lib_benchmark::{
     QueryAnswer, commit, execute_write_query_in,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     templates::{
-        MultiQueryTxProfile, MultiTxMultiQueryProfile, TypeDBMicroBenchmark, given_rows_with, n_empty_given_rows,
-        no_given_rows, no_initial_data, query_in_write_tx,
+        MultiQueryTxProfile, MultiTxMultiQueryProfile, RunDescriptor, TypeDBMicroBenchmark, given_rows_with,
+        n_empty_given_rows, no_given_rows, no_initial_data, query_in_write_tx,
     },
     utils::{CountResults, unpack_result},
 };
@@ -37,9 +37,16 @@ fn parametrised_entity_insert(
 ) -> HeavyInsertBenchmark {
     let query = "given; insert $x isa person;";
     let query_owned = query.to_owned();
+    let run_descriptor = RunDescriptor {
+        total_txns: n_txns,
+        n_queries_per_tx: n_query_per_txn,
+        n_rows_per_query: n_entities_per_query,
+        query,
+    };
     let benchmark_fn =
         Box::new(move |database: Arc<Database<WALClient>>, given_rows_to_clone: Option<GivenRowsSimple>| {
             let mut profiles = Vec::with_capacity(n_txns);
+            let very_beginning = Instant::now();
             for _ in 0..n_txns {
                 let start = Instant::now();
                 let mut query_profiles = Vec::with_capacity(n_query_per_txn);
@@ -63,7 +70,7 @@ fn parametrised_entity_insert(
                 let time_elapsed = start.elapsed();
                 profiles.push(MultiQueryTxProfile { tx_profile, query_profiles, time_elapsed });
             }
-            MultiTxMultiQueryProfile { name, profiles }
+            MultiTxMultiQueryProfile { name, profiles, run_descriptor: run_descriptor.clone(), total_wall_time: very_beginning.elapsed() }
         });
     TypeDBMicroBenchmark {
         name,
