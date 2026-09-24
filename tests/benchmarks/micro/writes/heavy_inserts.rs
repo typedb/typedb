@@ -7,16 +7,18 @@ use std::{sync::Arc, time::Instant};
 
 use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
-    QueryAnswer,
-    benchmark::{RunDescriptor, TypeDBMicroBenchmark, given_rows_with, no_initial_data},
-    commit, execute_write_query_in,
-    profiling::{MultiQueryTxProfile, MultiTxMultiQueryProfile},
+    QueryAnswer, commit, execute_write_query_in,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    profiling::{
+        MultiQueryTxProfile, MultiTxMultiQueryProfile,
+    },
     utils::{CountResults, unpack_result},
 };
+use lib_benchmark::benchmark::{RunDescriptor, TypeDBMicroBenchmark};
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
+use crate::{given_rows_with, no_initial_data};
 
 type HeavyInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, MultiTxMultiQueryProfile>;
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
@@ -79,7 +81,7 @@ fn parametrised_entity_insert(
     TypeDBMicroBenchmark {
         name,
         schema: crate::simple_inserts::SCHEMA,
-        warmup_fn: todo!(),
+        warmup_fn: None, // TODO
         preload_data_fn: no_initial_data(),
         prepare_run_fn: given_rows_with(n_entities_per_query, vec![], |_| vec![]),
         benchmark_fn,
