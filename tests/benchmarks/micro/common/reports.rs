@@ -98,8 +98,7 @@ impl MultiQueryTxProfileReport {
                 tx.query_profiles.iter().map(|q| dur_us(q.total_duration())).collect();
             query_durations_us.sort_by(f64::total_cmp);
             let n_q = query_durations_us.len();
-            let mean_query_us =
-                if n_q > 0 { query_durations_us.iter().sum::<f64>() / n_q as f64 } else { 0.0 };
+            let mean_query_us = if n_q > 0 { query_durations_us.iter().sum::<f64>() / n_q as f64 } else { 0.0 };
             let pct_q = |p: f64| -> f64 {
                 if n_q == 0 {
                     return 0.0;
@@ -119,14 +118,11 @@ impl MultiQueryTxProfileReport {
                 commit_types_validation_us: z.map_or(0.0, |p| dur_us(p.types_validation)),
                 commit_things_finalise_us: z.map_or(0.0, |p| dur_us(p.things_finalise)),
                 commit_functions_finalise_us: z.map_or(0.0, |p| dur_us(p.functions_finalise)),
-                commit_snapshot_put_statuses_check_us: z
-                    .map_or(0.0, |p| dur_us(p.snapshot_put_statuses_check)),
-                commit_snapshot_commit_record_create_us: z
-                    .map_or(0.0, |p| dur_us(p.snapshot_commit_record_create)),
+                commit_snapshot_put_statuses_check_us: z.map_or(0.0, |p| dur_us(p.snapshot_put_statuses_check)),
+                commit_snapshot_commit_record_create_us: z.map_or(0.0, |p| dur_us(p.snapshot_commit_record_create)),
                 commit_snapshot_durable_write_data_submit_us: z
                     .map_or(0.0, |p| dur_us(p.snapshot_durable_write_data_submit)),
-                commit_snapshot_isolation_validate_us: z
-                    .map_or(0.0, |p| dur_us(p.snapshot_isolation_validate)),
+                commit_snapshot_isolation_validate_us: z.map_or(0.0, |p| dur_us(p.snapshot_isolation_validate)),
                 commit_snapshot_durable_write_data_confirm_us: z
                     .map_or(0.0, |p| dur_us(p.snapshot_durable_write_data_confirm)),
                 commit_snapshot_storage_write_us: z.map_or(0.0, |p| dur_us(p.snapshot_storage_write)),
@@ -136,10 +132,8 @@ impl MultiQueryTxProfileReport {
                     .map_or(0.0, |p| dur_us(p.snapshot_durable_write_commit_status_submit)),
                 commit_schema_update_statistics_durable_write_us: z
                     .map_or(0.0, |p| dur_us(p.schema_update_statistics_durable_write)),
-                commit_schema_update_caches_update_us: z
-                    .map_or(0.0, |p| dur_us(p.schema_update_caches_update)),
-                commit_schema_update_statistics_update_us: z
-                    .map_or(0.0, |p| dur_us(p.schema_update_statistics_update)),
+                commit_schema_update_caches_update_us: z.map_or(0.0, |p| dur_us(p.schema_update_caches_update)),
+                commit_schema_update_statistics_update_us: z.map_or(0.0, |p| dur_us(p.schema_update_statistics_update)),
             });
 
             wall_us_all.push(driver_wall_us);
@@ -168,10 +162,8 @@ impl MultiQueryTxProfileReport {
     }
 
     fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
+        let timestamp =
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
         let folder = output_dir.join(format!("{}_{}", timestamp, name));
         std::fs::create_dir_all(&folder)?;
         write_csv(folder.join("per_txn.csv"), &self.per_txn)?;
@@ -223,10 +215,8 @@ impl TxQueryProfileReport {
     }
 
     fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
+        let timestamp =
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
         let folder = output_dir.join(format!("{}_{}", timestamp, name));
         std::fs::create_dir_all(&folder)?;
         write_csv(folder.join("query_steps.csv"), &self.steps)?;

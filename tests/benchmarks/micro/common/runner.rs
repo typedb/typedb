@@ -96,10 +96,8 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
         b.prepare_database(&mut context, database.clone());
         let input = b.prepare_iter(&context, database.clone());
 
-        let guard = self
-            .runner
-            .flamegraph
-            .then(|| pprof::ProfilerGuard::new(100).expect("failed to start pprof profiler"));
+        let guard =
+            self.runner.flamegraph.then(|| pprof::ProfilerGuard::new(100).expect("failed to start pprof profiler"));
 
         let iter_result = b.run_iter(&context, database.clone(), input);
 
