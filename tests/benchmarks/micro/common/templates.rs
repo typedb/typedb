@@ -5,7 +5,10 @@
  */
 use std::{sync::Arc, time::Duration};
 
-use database::{Database, transaction::{TransactionRead, TransactionWrite}};
+use database::{
+    Database,
+    transaction::{TransactionRead, TransactionWrite},
+};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use resource::profile::{QueryProfile, TransactionProfile};
@@ -166,9 +169,8 @@ impl SimpleReport for TxQueryProfile {
         if reports.is_empty() {
             return;
         }
-
     }
- }
+}
 
 // fn stats_mean(values: &[f64]) -> f64 {
 //     if values.is_empty() {

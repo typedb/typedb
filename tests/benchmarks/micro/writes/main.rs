@@ -14,7 +14,7 @@ use lib_benchmark::{
 use query::given_rows::GivenRowsSimple;
 
 mod heavy_inserts;
-mod match_reads;
+// mod match_reads;
 mod simple_inserts;
 
 pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
