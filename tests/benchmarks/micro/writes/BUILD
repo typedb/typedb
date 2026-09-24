@@ -19,6 +19,7 @@ rust_binary(
         "//compiler",
         "//database",
         "//diagnostics",
+        "//encoding",
         "//executor",
         "//query",
         "//storage",

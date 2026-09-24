@@ -18,37 +18,19 @@ features = {}
 	[dependencies.test_utils]
 		workspace = true
 
-	[dependencies.tabled]
-		workspace = true
-
 	[dependencies.criterion]
 		workspace = true
 
 	[dependencies.primitive]
 		workspace = true
 
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.clap]
-		workspace = true
-
 	[dependencies.csv]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.query]
 		workspace = true
 
 	[dependencies.concept]
 		workspace = true
 
 	[dependencies.storage]
-		workspace = true
-
-	[dependencies.encoding]
 		workspace = true
 
 	[dependencies.itertools]
@@ -58,12 +40,6 @@ features = {}
 		workspace = true
 
 	[dependencies.database]
-		workspace = true
-
-	[dependencies.diagnostics]
-		workspace = true
-
-	[dependencies.answer]
 		workspace = true
 
 	[dependencies.executor]
@@ -82,6 +58,30 @@ features = {}
 		workspace = true
 
 	[dependencies.compiler]
+		workspace = true
+
+	[dependencies.tabled]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.query]
+		workspace = true
+
+	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.diagnostics]
+		workspace = true
+
+	[dependencies.answer]
+		workspace = true
+
+	[dependencies.clap]
 		workspace = true
 
 	[dependencies.rand_core]
