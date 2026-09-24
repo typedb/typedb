@@ -41,7 +41,6 @@ fn parametrised_entity_insert(
         total_txns: n_txns,
         n_queries_per_tx: n_query_per_txn,
         n_rows_per_query: n_entities_per_query,
-        query,
     };
     let benchmark_fn =
         Box::new(move |database: Arc<Database<WALClient>>, given_rows_to_clone: Option<GivenRowsSimple>| {
@@ -81,7 +80,7 @@ fn parametrised_entity_insert(
         name,
         schema: crate::simple_inserts::SCHEMA,
         preload_data_fn: no_initial_data(),
-        prepare_iter_fn: given_rows_with(n_entities_per_query, vec![], |_| vec![]),
+        prepare_run_fn: given_rows_with(n_entities_per_query, vec![], |_| vec![]),
         benchmark_fn,
     }
 }

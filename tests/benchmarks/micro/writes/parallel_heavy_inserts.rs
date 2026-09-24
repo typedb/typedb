@@ -127,7 +127,7 @@ fn parametrised_insert(
     produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
 ) -> ParallelHeavyInsertBenchmark {
     let run_descriptor =
-        RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query, query };
+        RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query };
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<GivenRowBatchProducer>| {
         let overestimate_txns_per_thread: usize = ((1.5 * n_txns as f64 / n_parallel as f64).ceil() as usize).max(2);
         let very_beginning = Instant::now();
@@ -184,7 +184,7 @@ fn parametrised_insert(
         name,
         schema,
         preload_data_fn,
-        prepare_iter_fn: Box::new(move |_| {
+        prepare_run_fn: Box::new(move |_| {
             // Yes, a new one per iter.
             Arc::new(GivenRowBatchProducer::new(
                 query,
