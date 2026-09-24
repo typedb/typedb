@@ -35,6 +35,9 @@ features = {}
 	[dependencies.storage]
 		workspace = true
 
+	[dependencies.encoding]
+		workspace = true
+
 	[dependencies.itertools]
 		workspace = true
 
@@ -45,6 +48,9 @@ features = {}
 		workspace = true
 
 	[dependencies.diagnostics]
+		workspace = true
+
+	[dependencies.clap]
 		workspace = true
 
 	[dependencies.executor]

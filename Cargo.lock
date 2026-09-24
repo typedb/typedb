@@ -2842,6 +2842,7 @@ name = "lib_benchmark"
 version = "0.0.0"
 dependencies = [
  "answer",
+ "clap",
  "compiler",
  "concept",
  "criterion",
@@ -3051,11 +3052,13 @@ dependencies = [
 name = "microbench_writes"
 version = "0.0.0"
 dependencies = [
+ "clap",
  "compiler",
  "criterion",
  "csv",
  "database",
  "diagnostics",
+ "encoding",
  "executor",
  "itertools 0.14.0",
  "lib_benchmark",
