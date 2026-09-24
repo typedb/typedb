@@ -26,10 +26,13 @@ rust_binary(
 
         "@typeql//rust:typeql",
 
+        "@crates//:clap",
         "@crates//:rand",
         "@crates//:criterion",
         "@crates//:itertools",
         "@crates//:pprof",
+        "@crates//:csv",
+        "@crates//:tabled",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
 #     use_libtest_harness = False,

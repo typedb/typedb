@@ -180,6 +180,11 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.csv]
+			features = []
+			version = "1.4.0"
+			default-features = false
+
 		[workspace.dependencies.rpassword]
 			features = []
 			version = "7.5.3"
@@ -207,7 +212,7 @@ features = {}
 
 		[workspace.dependencies.tokio-rustls]
 			features = ["logging", "ring", "tls12"]
-			version = "0.26.4"
+			version = "0.26.5"
 			default-features = false
 
 		[workspace.dependencies.executor]
@@ -229,6 +234,11 @@ features = {}
 			features = []
 			git = "https://github.com/typedb/typeql"
 			tag = "3.13.4"
+			default-features = false
+
+		[workspace.dependencies.tabled]
+			features = ["assert", "default", "derive", "macros", "std", "tabled_derive", "testing_table"]
+			version = "0.22.0"
 			default-features = false
 
 		[workspace.dependencies.cache]
@@ -388,7 +398,7 @@ features = {}
 
 		[workspace.dependencies.clap]
 			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-			version = "4.6.1"
+			version = "4.6.7"
 			default-features = false
 
 		[workspace.dependencies.async-std]
@@ -478,7 +488,7 @@ features = {}
 
 		[workspace.dependencies.serde_with]
 			features = ["alloc", "default", "macros", "std"]
-			version = "3.20.0"
+			version = "3.23.0"
 			default-features = false
 
 		[workspace.dependencies.hyper]
@@ -664,7 +674,7 @@ features = {}
 
 		[workspace.dependencies.smallvec]
 			features = ["const_generics", "const_new"]
-			version = "1.15.1"
+			version = "1.16.1"
 			default-features = false
 
 		[workspace.dependencies.bytes]

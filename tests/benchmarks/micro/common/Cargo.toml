@@ -18,6 +18,9 @@ features = {}
 	[dependencies.test_utils]
 		workspace = true
 
+	[dependencies.tabled]
+		workspace = true
+
 	[dependencies.criterion]
 		workspace = true
 
@@ -27,6 +30,15 @@ features = {}
 	[dependencies.resource]
 		workspace = true
 
+	[dependencies.clap]
+		workspace = true
+
+	[dependencies.csv]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
 	[dependencies.query]
 		workspace = true
 
@@ -34,6 +46,9 @@ features = {}
 		workspace = true
 
 	[dependencies.storage]
+		workspace = true
+
+	[dependencies.encoding]
 		workspace = true
 
 	[dependencies.itertools]
@@ -64,9 +79,6 @@ features = {}
 		workspace = true
 
 	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.encoding]
 		workspace = true
 
 	[dependencies.compiler]

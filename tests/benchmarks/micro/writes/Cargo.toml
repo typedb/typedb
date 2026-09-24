@@ -17,10 +17,16 @@ features = {}
 	[dependencies.test_utils]
 		workspace = true
 
+	[dependencies.tabled]
+		workspace = true
+
 	[dependencies.criterion]
 		workspace = true
 
 	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.csv]
 		workspace = true
 
 	[dependencies.query]
