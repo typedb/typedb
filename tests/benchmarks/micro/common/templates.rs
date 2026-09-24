@@ -66,7 +66,7 @@ pub trait SimpleReport {
 }
 
 impl SimpleReport for () {
-    fn report(reports: &[Self]) {
+    fn report(_reports: &[Self]) {
         println!("DONE. [Report was (), which is a nop dummy].")
     }
 }
