@@ -89,6 +89,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
         drop(schema);
 
+        let enable_transaction_profiling = transaction_options.tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
@@ -97,7 +98,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             query_manager,
             database: DatabaseDropGuard::new(database),
             transaction_options,
-            profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
+            profile: TransactionProfile::new(enable_transaction_profiling),
         })
     }
 
@@ -157,6 +158,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         let query_manager = Arc::new(QueryManager::new(Some(database.query_cache.clone())));
         drop(schema);
 
+        let enable_transaction_profiling = transaction_options.tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
@@ -165,7 +167,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             query_manager,
             database: DatabaseDropGuard::new_with_fn(database, Database::release_write_transaction),
             transaction_options,
-            profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
+            profile: TransactionProfile::new(enable_transaction_profiling),
         })
     }
 
@@ -270,6 +272,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let function_manager = Arc::new(FunctionManager::new(database.definition_key_generator.clone(), None));
         let query_manager = Arc::new(QueryManager::new(None));
 
+        let enable_transaction_profiling = transaction_options.tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
@@ -278,7 +281,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             query_manager,
             database: DatabaseDropGuard::new_with_fn(database, Database::release_schema_transaction),
             transaction_options,
-            profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
+            profile: TransactionProfile::new(enable_transaction_profiling),
         })
     }
 
