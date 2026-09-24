@@ -4,13 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, io::Read};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt, io::Read};
+
+use bytes::byte_array::ByteArray;
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use serde::{Deserialize, Serialize};
-use typeql::Pattern::Disjunction;
-use bytes::byte_array::ByteArray;
+
 use crate::{
     durability_client::{DurabilityRecord, SequencedDurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::{CommitDependency, DependentPut, IsolationConflict},
@@ -173,14 +173,15 @@ impl CommitRecord {
                             _ => (),
                         }
                     }
-                    if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
+                    if matches!(write, Write::Delete)
+                        && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
                     {
                         return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                     }
                 }
             }
 
-            if !(!Self::disjoint(locks, predecessor_writes)) {
+            if !Self::disjoint(locks, predecessor_writes) {
                 if locks.len() <= predecessor_writes.len() {
                     // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
                     // Iterate the smaller collection and point-lookup into the larger one.
@@ -203,7 +204,9 @@ impl CommitRecord {
 
         if !Self::disjoint(locks, predecessor_locks) {
             for (key, lock) in locks.iter() {
-                if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
+                if matches!(lock, LockType::Exclusive)
+                    && matches!(predecessor_locks.get(key), Some(LockType::Exclusive))
+                {
                     return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
                 }
             }
