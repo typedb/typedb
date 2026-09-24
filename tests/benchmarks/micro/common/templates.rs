@@ -120,6 +120,20 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
 }
 
 // Util return
+#[derive(Clone)]
+pub struct RunDescriptor {
+    pub total_txns: usize,
+    pub n_queries_per_tx: usize,
+    pub n_rows_per_query: usize,
+    pub query: &'static str,
+}
+
+impl RunDescriptor {
+    pub fn total_rows(&self) -> usize {
+        self.total_txns * self.n_queries_per_tx * self.n_rows_per_query
+    }
+}
+
 pub struct TxQueryProfile {
     pub tx_profile: Option<TransactionProfile>,
     pub query_profile: Arc<QueryProfile>,
@@ -134,6 +148,8 @@ pub struct MultiQueryTxProfile {
 pub struct MultiTxMultiQueryProfile {
     pub name: &'static str,
     pub profiles: Vec<MultiQueryTxProfile>,
+    pub run_descriptor: RunDescriptor,
+    pub total_wall_time: Duration,
 }
 
 // Initial data
