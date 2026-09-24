@@ -31,22 +31,26 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
 fn parametrised_entity_insert(
     name: &'static str,
     n_txns: usize,
-    n_query_per_txn: usize,
+    n_queries_per_tx: usize,
     n_entities_per_query: usize,
 ) -> HeavyInsertBenchmark {
     let query = "given; insert $x isa person;";
     let query_owned = query.to_owned();
-    let run_descriptor =
-        RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query: n_entities_per_query };
+    let run_descriptor = RunDescriptor {
+        parallelism: 1,
+        total_txns: n_txns,
+        n_queries_per_tx,
+        n_rows_per_query: n_entities_per_query
+    };
     let benchmark_fn =
         Box::new(move |database: Arc<Database<WALClient>>, given_rows_to_clone: Option<GivenRowsSimple>| {
             let mut profiles = Vec::with_capacity(n_txns);
             let very_beginning = Instant::now();
             for _ in 0..n_txns {
                 let start = Instant::now();
-                let mut query_profiles = Vec::with_capacity(n_query_per_txn);
+                let mut query_profiles = Vec::with_capacity(n_queries_per_tx);
                 let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-                for _ in 0..n_query_per_txn {
+                for _ in 0..n_queries_per_tx {
                     let given_rows = given_rows_to_clone
                         .as_ref()
                         .map(|g| GivenRowsSimple { variables: g.variables.clone(), rows: g.rows.clone() });
