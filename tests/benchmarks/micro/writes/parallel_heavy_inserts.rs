@@ -88,7 +88,8 @@ impl GivenRowBatchProducer {
                 let rows = (0..this_batch).map(|_| produce_row(&mut rng)).collect();
                 let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
                 let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-                let (_, tx) = unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
+                let (_, tx) =
+                    unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
                 commit(tx).unwrap();
             }
         })
@@ -146,7 +147,11 @@ fn parametrised_insert(
                         }
                         if !query_profiles.is_empty() {
                             let tx_profile = commit(tx).unwrap();
-                            local_profiles.push(MultiQueryTxProfile { tx_profile, query_profiles, time_elapsed: start.elapsed() });
+                            local_profiles.push(MultiQueryTxProfile {
+                                tx_profile,
+                                query_profiles,
+                                time_elapsed: start.elapsed(),
+                            });
                         }
                     }
                     local_profiles
@@ -159,13 +164,8 @@ fn parametrised_insert(
         MultiTxMultiQueryProfile { name, profiles }
     });
 
-    let iter_input_producer = Arc::new(GivenRowBatchProducer::new(
-        query,
-        variables,
-        produce_row,
-        n_rows_per_query,
-        n_txns * n_query_per_txn,
-    ));
+    let iter_input_producer =
+        Arc::new(GivenRowBatchProducer::new(query, variables, produce_row, n_rows_per_query, n_txns * n_query_per_txn));
     TypeDBMicroBenchmark {
         name,
         schema,
