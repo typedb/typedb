@@ -12,6 +12,12 @@ use std::{fs::File, os::raw::c_int, path::Path};
 use criterion::profiler::Profiler;
 use pprof::ProfilerGuard;
 
+pub fn transaction_options_with_profiling() -> options::TransactionOptions {
+    let mut tx_options = options::TransactionOptions::default();
+    tx_options.tmp_enable_profiling = Some(true);
+    tx_options
+}
+
 pub struct FlamegraphProfiler<'a> {
     frequency: c_int,
     active_profiler: Option<ProfilerGuard<'a>>,
