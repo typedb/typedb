@@ -6,8 +6,7 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
-# To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //tests/benchmarks/micro:microbench_<whatever> -- --bench [substring_filter]
+#   bazel run --compilation_mode=opt //tests/benchmarks/micro/writes:microbench_writes -- simple [substring_filter]
 rust_binary(
     name = "microbench_writes",
     srcs = glob(["*.rs"]),
@@ -29,11 +28,7 @@ rust_binary(
 
         "@crates//:clap",
         "@crates//:rand",
-        "@crates//:criterion",
         "@crates//:itertools",
-        "@crates//:pprof",
-        "@crates//:csv",
-        "@crates//:tabled",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
 #     use_libtest_harness = False,

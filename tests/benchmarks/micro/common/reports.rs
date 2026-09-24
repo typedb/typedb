@@ -404,3 +404,35 @@ fn write_csv<T: Serialize>(path: impl AsRef<Path>, rows: &[T]) -> std::io::Resul
     wtr.flush()?;
     Ok(())
 }
+
+pub trait SimpleReport {
+    fn report(reports: &[Self])
+    where
+        Self: Sized;
+}
+
+impl SimpleReport for () {
+    fn report(_reports: &[Self]) {
+        println!("DONE. [Report was (), which is a nop dummy].")
+    }
+}
+
+// SimpleReport implementations
+impl SimpleReport for TxQueryProfile {
+    fn report(reports: &[Self]) {
+        for (i, r) in reports.iter().enumerate() {
+            let name = format!("tx_query_profile_{i}");
+            TxQueryProfileReport::from(r).write_and_print(&name);
+        }
+    }
+}
+
+impl SimpleReport for MultiTxMultiQueryProfile {
+    fn report(reports: &[Self]) {
+        // Reports is a &[Self] but From consumes — clone timing data out into one merged report.
+        // For simplicity, report each benchmark sample separately; typically there is only one.
+        for r in reports.iter() {
+            MultiQueryTxProfileReport::from_ref(r).write_and_print(r.name);
+        }
+    }
+}
