@@ -7,6 +7,7 @@
 pub mod datagen;
 mod pipelines;
 pub mod profiler;
+pub mod reports;
 pub mod runner;
 pub mod templates;
 mod transaction;
@@ -17,14 +18,14 @@ use std::sync::Arc;
 use database::{
     Database,
     database::DatabaseCreateError,
-    database_manager::DatabaseManager,
+    database_manager::{DatabaseManager, ImportOwnership},
     query::execute_schema_query,
     transaction::{CommitIntent, TransactionSchema},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
-use options::{TransactionOptions, byte_size::ByteSize};
+use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use query::{error::QueryError, given_rows::GivenRowsSimple};
 use resource::profile::{QueryProfile, TransactionProfile};
 use storage::durability_client::WALClient;
@@ -60,12 +61,14 @@ impl Context {
             Arc::new(DiagnosticsManager::new_disabled()),
             config.rocksdb_cache_size,
             config.rocksdb_write_buffers_limit,
+            ImportOwnership::Exclusive,
+            MvccCleanupStrategy::Disabled,
         )
         .unwrap();
         Self { config, _tmp_dir: tmp_dir, database_manager }
     }
 
-    pub fn recreate_database(&self, name: &str) -> Result<Arc<Database<WALClient>>, DatabaseCreateError> {
+    pub fn recreate_database(&self, name: &str) -> Result<Arc<Database<WALClient>>, Box<DatabaseCreateError>> {
         if self.database_manager.database(name).is_some() {
             self.database_manager.delete_database(name).unwrap();
         }

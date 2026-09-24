@@ -63,7 +63,7 @@ fn parametrised_entity_insert(
                 let time_elapsed = start.elapsed();
                 profiles.push(MultiQueryTxProfile { tx_profile, query_profiles, time_elapsed });
             }
-            MultiTxMultiQueryProfile { profiles }
+            MultiTxMultiQueryProfile { name, profiles }
         });
     TypeDBMicroBenchmark {
         name,

@@ -60,6 +60,10 @@ impl TransactionProfile {
         &mut self.commit_profile
     }
 
+    pub fn commit_profile_ref(&self) -> &CommitProfile {
+        &self.commit_profile
+    }
+
     pub fn take_commit_profile(&mut self) -> CommitProfile {
         std::mem::replace(&mut self.commit_profile, CommitProfile::disabled())
     }
@@ -373,6 +377,42 @@ impl CommitProfile {
             Some(data) => data.counters.clone(),
         }
     }
+
+    pub fn phases(&self) -> Option<CommitPhases> {
+        self.data.as_ref().map(|d| CommitPhases {
+            types_validation: d.types_validation,
+            things_finalise: d.things_finalise,
+            functions_finalise: d.functions_finalise,
+            schema_update_statistics_durable_write: d.schema_update_statistics_durable_write,
+            snapshot_put_statuses_check: d.snapshot_put_statuses_check,
+            snapshot_commit_record_create: d.snapshot_commit_record_create,
+            snapshot_durable_write_data_submit: d.snapshot_durable_write_data_submit,
+            snapshot_isolation_validate: d.snapshot_isolation_validate,
+            snapshot_durable_write_data_confirm: d.snapshot_durable_write_data_confirm,
+            snapshot_storage_write: d.snapshot_storage_write,
+            snapshot_isolation_manager_notify: d.snapshot_isolation_manager_notify,
+            snapshot_durable_write_commit_status_submit: d.snapshot_durable_write_commit_status_submit,
+            schema_update_caches_update: d.schema_update_caches_update,
+            schema_update_statistics_update: d.schema_update_statistics_update,
+        })
+    }
+}
+
+pub struct CommitPhases {
+    pub types_validation: Duration,
+    pub things_finalise: Duration,
+    pub functions_finalise: Duration,
+    pub schema_update_statistics_durable_write: Duration,
+    pub snapshot_put_statuses_check: Duration,
+    pub snapshot_commit_record_create: Duration,
+    pub snapshot_durable_write_data_submit: Duration,
+    pub snapshot_isolation_validate: Duration,
+    pub snapshot_durable_write_data_confirm: Duration,
+    pub snapshot_storage_write: Duration,
+    pub snapshot_isolation_manager_notify: Duration,
+    pub snapshot_durable_write_commit_status_submit: Duration,
+    pub schema_update_caches_update: Duration,
+    pub schema_update_statistics_update: Duration,
 }
 
 /// Record the time different stages of a commit.
@@ -470,6 +510,10 @@ impl QueryProfile {
 
     pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
         &self.stage_profiles
+    }
+
+    pub fn total_duration(&self) -> Duration {
+        Duration::from_nanos(self.total_nanos())
     }
 
     fn total_nanos(&self) -> u64 {
@@ -854,6 +898,18 @@ impl StepProfile {
 
     pub fn storage_counters(&self) -> StorageCounters {
         if let Some(data) = self.data.as_ref() { data.storage.clone() } else { StorageCounters::DISABLED }
+    }
+
+    pub fn batches(&self) -> u64 {
+        self.data.as_ref().map_or(0, |d| d.batches.load(Ordering::SeqCst))
+    }
+
+    pub fn rows(&self) -> u64 {
+        self.data.as_ref().map_or(0, |d| d.rows.load(Ordering::SeqCst))
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.data.as_ref().map(|d| d.description.as_str())
     }
 
     pub fn total_nanos(&self) -> u64 {

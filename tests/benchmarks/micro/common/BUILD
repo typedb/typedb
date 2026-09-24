@@ -38,6 +38,10 @@ rust_library(
         "@crates//:pprof",
         "@crates//:rand",
         "@crates//:rand_core",
+        "@crates//:clap",
+        "@crates//:csv",
+        "@crates//:serde",
+        "@crates//:tabled",
     ]
 )
 
