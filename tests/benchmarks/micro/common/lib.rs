@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod benchmark;
 pub mod datagen;
 mod pipelines;
-pub mod profiler;
+pub mod profiling;
 pub mod reports;
 pub mod runner;
-pub mod templates;
 mod transaction;
 pub mod utils;
 

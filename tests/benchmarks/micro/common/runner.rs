@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use clap::Parser;
-use crate::reports::SimpleReport;
-use crate::templates::SimpleBenchmark;
+
+use crate::{benchmark::SimpleBenchmark, reports::SimpleReport};
 
 pub trait BenchmarkRunnerGroup {
     fn run_benchmark<T: SimpleBenchmark>(&mut self, b: T) -> Vec<T::IterOutput>;
@@ -15,7 +15,6 @@ pub trait BenchmarkRunner {
     fn new_group(&mut self, name: &str) -> impl BenchmarkRunnerGroup;
     fn summary(&mut self);
 }
-
 
 #[derive(Parser)]
 pub struct SimpleRunner {
@@ -59,7 +58,7 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
         let guard =
             self.runner.flamegraph.then(|| pprof::ProfilerGuard::new(100).expect("failed to start pprof profiler"));
 
-        let iter_result = b.run_iter(&context, database.clone(), input);
+        let iter_result = b.run_benchmark(&context, database.clone(), input);
 
         if let Some(guard) = guard {
             if let Ok(report) = guard.report().build() {

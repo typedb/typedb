@@ -3,24 +3,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{sync::Arc, time::Duration};
-
-use database::{
-    transaction::TransactionWrite,
-    Database,
+use std::{
+    cell::UnsafeCell,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
 };
+
+use database::{Database, transaction::TransactionWrite};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
-use resource::profile::{QueryProfile, TransactionProfile};
 use storage::durability_client::WALClient;
 
 use crate::{
-    commit, datagen::RandomDataGen, execute_write_query_in, utils::{unpack_result, CountResults},
-    Config
-    , Context,
-    QueryAnswer,
+    Config, Context, QueryAnswer, commit,
+    datagen::RandomDataGen,
+    execute_write_query_in,
+    profiling::TxQueryProfile,
+    reports::SimpleReport,
+    utils::{CountResults, unpack_result},
 };
-use crate::reports::SimpleReport;
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
@@ -44,11 +48,12 @@ pub trait SimpleBenchmark {
     /// Load schema & data
     fn prepare_database(&self, context: &Context, database: Arc<Database<WALClient>>);
 
+    fn warm_up(&self, context: &Context, database: Arc<Database<WALClient>>);
     /// Create given_rows if needed
     fn prepare_run(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput;
 
     /// The actual iteration which gets timed over and over again.
-    fn run_iter(
+    fn run_benchmark(
         &self,
         context: &Context,
         database: Arc<Database<WALClient>>,
@@ -57,14 +62,16 @@ pub trait SimpleBenchmark {
 }
 
 pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
-pub type PrepareIterFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
+pub type WarmupFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
+pub type PrepareRunFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 
 pub struct TypeDBMicroBenchmark<IN, OUT: SimpleReport> {
     pub name: &'static str,
     pub schema: &'static str,
     pub preload_data_fn: Option<PreloadDataFn>,
-    pub prepare_run_fn: PrepareIterFn<IN>,
+    pub warmup_fn: Option<WarmupFn>,
+    pub prepare_run_fn: PrepareRunFn<IN>,
     pub benchmark_fn: BenchmarkedFn<IN, OUT>,
 }
 
@@ -83,11 +90,17 @@ impl<IN, OUT: SimpleReport> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT> {
         }
     }
 
+    fn warm_up(&self, _context: &Context, database: Arc<Database<WALClient>>) {
+        if let Some(warmup_fn) = &self.warmup_fn {
+            warmup_fn(database.clone())
+        }
+    }
+
     fn prepare_run(&self, _context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput {
         (self.prepare_run_fn)(database)
     }
 
-    fn run_iter(
+    fn run_benchmark(
         &self,
         _context: &Context,
         database: Arc<Database<WALClient>>,
@@ -103,6 +116,7 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
         name: "sanity_check",
         schema: "define entity person;",
         preload_data_fn: Some(Box::new(|_| std::thread::sleep(Duration::from_millis(40)))),
+        warmup_fn: None,
         prepare_run_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
         benchmark_fn: Box::new(|_, _| std::thread::sleep(Duration::from_millis(10))),
     }
@@ -114,10 +128,17 @@ pub struct WorkLoad {
     pub run_descriptor: RunDescriptor,
 }
 
+impl WorkLoad {
+    fn instantiate(&self) -> WorkloadInstance {
+        WorkloadInstance::build(&self.query_descriptor, &self.run_descriptor)
+    }
+}
+
 pub struct QueryDescriptor {
     pub query: &'static str,
     pub variables: Vec<String>,
-    pub given_row_producer: Box<dyn Fn() -> Option<GivenRowsSimple>>,
+    pub produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
+    //Box<dyn Fn(&mut RandomDataGen) -> Option<GivenRowsSimple>>,
 }
 
 #[derive(Clone)]
@@ -133,22 +154,75 @@ impl RunDescriptor {
     }
 }
 
-pub struct TxQueryProfile {
-    pub tx_profile: Option<TransactionProfile>,
-    pub query_profile: Arc<QueryProfile>,
+/// Pre-generated batches consumed work-stealing style.
+/// Each slot is claimed by exactly one thread via fetch_add, so no locking needed.
+pub struct WorkloadInstance {
+    query: &'static str,
+    variables: Vec<String>,
+
+    batches: Vec<UnsafeCell<Option<GivenRowsSimple>>>,
+    next_index: AtomicUsize,
 }
 
-pub struct MultiQueryTxProfile {
-    pub tx_profile: TransactionProfile,
-    pub query_profiles: Vec<Arc<QueryProfile>>,
-    pub time_elapsed: Duration,
-}
+// Safety: each index is claimed by exactly one thread (fetch_add ensures uniqueness).
+unsafe impl Sync for WorkloadInstance {}
 
-pub struct MultiTxMultiQueryProfile {
-    pub name: &'static str,
-    pub profiles: Vec<MultiQueryTxProfile>,
-    pub run_descriptor: RunDescriptor,
-    pub total_wall_time: Duration,
+impl WorkloadInstance {
+    fn build(query: &QueryDescriptor, run: &RunDescriptor) -> Self {
+        let mut rng = RandomDataGen::new();
+        let batches = (0..(run.total_txns * run.n_queries_per_tx))
+            .map(|_| {
+                let rows = (0..run.n_rows_per_query).map(|_| (query.produce_row)(&mut rng)).collect();
+                UnsafeCell::new(Some(GivenRowsSimple { variables: query.variables.clone(), rows }))
+            })
+            .collect();
+        Self { query: query.query, variables: query.variables.clone(), batches, next_index: AtomicUsize::new(0) }
+    }
+
+    pub fn query(&self) -> &str {
+        self.query
+    }
+
+    pub fn variables(&self) -> &Vec<String> {
+        &self.variables
+    }
+
+    pub fn has_remaining(&self) -> bool {
+        self.next_index.load(Ordering::Relaxed) < self.batches.len()
+    }
+
+    pub fn take_next_batch(&self) -> Option<GivenRowsSimple> {
+        let idx = self.next_index.fetch_add(1, Ordering::Relaxed);
+        if idx >= self.batches.len() {
+            return None;
+        }
+        // Safety: idx is unique — no other thread will ever access this slot.
+        unsafe { (*self.batches[idx].get()).take() }
+    }
+
+    pub fn make_preload_data_fn(
+        query: &'static str,
+        variables: Vec<String>,
+        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
+        n_total_rows: usize,
+        n_rows_per_query: usize,
+    ) -> PreloadDataFn {
+        Box::new(move |database: Arc<Database<WALClient>>| {
+            let mut rng = RandomDataGen::new();
+            let mut remaining = n_total_rows;
+            while remaining > 0 {
+                let this_batch = n_rows_per_query.min(remaining);
+                remaining -= this_batch;
+                let rows = (0..this_batch).map(|_| produce_row(&mut rng)).collect();
+                let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
+                let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+                let (result, tx) =
+                    unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
+                let QueryAnswer { answer: n_rows, .. } = result.unwrap();
+                commit(tx).unwrap();
+            }
+        })
+    }
 }
 
 // Initial data
@@ -157,11 +231,11 @@ pub fn no_initial_data() -> Option<PreloadDataFn> {
 }
 
 // prepare_run
-pub fn no_given_rows() -> PrepareIterFn<Option<GivenRowsSimple>> {
+pub fn no_given_rows() -> PrepareRunFn<Option<GivenRowsSimple>> {
     Box::new(|_: Arc<Database<WALClient>>| None)
 }
 
-pub fn n_empty_given_rows(n: usize) -> PrepareIterFn<Option<GivenRowsSimple>> {
+pub fn n_empty_given_rows(n: usize) -> PrepareRunFn<Option<GivenRowsSimple>> {
     Box::new(move |_: Arc<Database<WALClient>>| {
         let variables = Vec::new();
         let mut rows = Vec::with_capacity(n);
@@ -174,7 +248,7 @@ pub fn given_rows_with(
     n_rows: usize,
     variables: Vec<String>,
     gen_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
-) -> PrepareIterFn<Option<GivenRowsSimple>> {
+) -> PrepareRunFn<Option<GivenRowsSimple>> {
     Box::new(move |_: Arc<Database<WALClient>>| {
         let variables = variables.clone();
         let mut rows = Vec::with_capacity(n_rows);

@@ -4,107 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cell::UnsafeCell,
-    sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::Instant,
-};
+use std::{sync::Arc, time::Instant};
 
-use database::{
-    Database,
-    transaction::{TransactionRead, TransactionWrite},
-};
+use database::{Database, transaction::TransactionWrite};
 use encoding::graph::type_::vertex::TypeID;
 use lib_benchmark::{
-    QueryAnswer, commit,
+    QueryAnswer,
+    benchmark::{PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark, WorkloadInstance, no_initial_data},
+    commit,
     datagen::RandomDataGen,
-    execute_read_query_in, execute_write_query_in,
-    profiler::transaction_options_with_profiling,
-    read_all_instance_types,
+    execute_write_query_in,
+    profiling::{MultiQueryTxProfile, MultiTxMultiQueryProfile, transaction_options_with_profiling},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
-    templates::{
-        MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, RunDescriptor, TypeDBMicroBenchmark,
-        no_initial_data,
-    },
     utils::{CountResults, unpack_result},
 };
-use options::TransactionOptions;
-use query::given_rows::{GivenRowEntry, GivenRowsSimple};
+use query::given_rows::GivenRowEntry;
 use storage::durability_client::WALClient;
 
 use crate::simple_inserts::SCHEMA as SIMPLE_SCHEMA;
 
-/// Pre-generated batches consumed work-stealing style.
-/// Each slot is claimed by exactly one thread via fetch_add, so no locking needed.
-pub(crate) struct GivenRowBatchProducer {
-    pub query: &'static str,
-    batches: Vec<UnsafeCell<Option<GivenRowsSimple>>>,
-    next_index: AtomicUsize,
-}
-
-// Safety: each index is claimed by exactly one thread (fetch_add ensures uniqueness).
-unsafe impl Sync for GivenRowBatchProducer {}
-
-impl GivenRowBatchProducer {
-    pub fn new(
-        query: &'static str,
-        variables: Vec<String>,
-        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
-        n_rows_per_query: usize,
-        n_total_txns: usize,
-    ) -> Self {
-        let mut rng = RandomDataGen::new();
-        let batches = (0..n_total_txns)
-            .map(|_| {
-                let rows = (0..n_rows_per_query).map(|_| produce_row(&mut rng)).collect();
-                UnsafeCell::new(Some(GivenRowsSimple { variables: variables.clone(), rows }))
-            })
-            .collect();
-        Self { query, batches, next_index: AtomicUsize::new(0) }
-    }
-
-    pub fn has_remaining(&self) -> bool {
-        self.next_index.load(Ordering::Relaxed) < self.batches.len()
-    }
-
-    pub fn take_next_batch(&self) -> Option<GivenRowsSimple> {
-        let idx = self.next_index.fetch_add(1, Ordering::Relaxed);
-        if idx >= self.batches.len() {
-            return None;
-        }
-        // Safety: idx is unique — no other thread will ever access this slot.
-        unsafe { (*self.batches[idx].get()).take() }
-    }
-
-    pub fn make_preload_data_fn(
-        query: &'static str,
-        variables: Vec<String>,
-        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
-        n_total_rows: usize,
-        n_rows_per_query: usize,
-    ) -> PreloadDataFn {
-        Box::new(move |database: Arc<Database<WALClient>>| {
-            let mut rng = RandomDataGen::new();
-            let mut remaining = n_total_rows;
-            while remaining > 0 {
-                let this_batch = n_rows_per_query.min(remaining);
-                remaining -= this_batch;
-                let rows = (0..this_batch).map(|_| produce_row(&mut rng)).collect();
-                let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
-                let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-                let (result, tx) =
-                    unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
-                let QueryAnswer { answer: n_rows, .. } = result.unwrap();
-                commit(tx).unwrap();
-            }
-        })
-    }
-}
-
-type ParallelHeavyInsertBenchmark = TypeDBMicroBenchmark<Arc<GivenRowBatchProducer>, MultiTxMultiQueryProfile>;
+type ParallelHeavyInsertBenchmark = TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile>;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("parallel_inserts");
@@ -126,9 +45,8 @@ fn parametrised_insert(
     variables: Vec<String>,
     produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
 ) -> ParallelHeavyInsertBenchmark {
-    let run_descriptor =
-        RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query };
-    let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<GivenRowBatchProducer>| {
+    let run_descriptor = RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query };
+    let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>| {
         let overestimate_txns_per_thread: usize = ((1.5 * n_txns as f64 / n_parallel as f64).ceil() as usize).max(2);
         let very_beginning = Instant::now();
         let handles: Vec<_> = (0..n_parallel)
@@ -180,22 +98,7 @@ fn parametrised_insert(
         }
     });
 
-    TypeDBMicroBenchmark {
-        name,
-        schema,
-        preload_data_fn,
-        prepare_run_fn: Box::new(move |_| {
-            // Yes, a new one per iter.
-            Arc::new(GivenRowBatchProducer::new(
-                query,
-                variables.clone(),
-                produce_row,
-                n_rows_per_query,
-                n_txns * n_query_per_txn,
-            ))
-        }),
-        benchmark_fn,
-    }
+    TypeDBMicroBenchmark { name, schema, preload_data_fn, warmup_fn: todo!(), prepare_run_fn: todo!(), benchmark_fn }
 }
 
 fn parallel_many_small_tx() -> ParallelHeavyInsertBenchmark {
@@ -251,7 +154,7 @@ fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
         entity e1, plays r1:e1;
         entity e2, plays r1:e2;
     "#;
-    let preload_data_fn = GivenRowBatchProducer::make_preload_data_fn(
+    let preload_data_fn = WorkloadInstance::make_preload_data_fn(
         "given; insert $_ isa e1; $_ isa e2;",
         vec![],
         |_| vec![],
