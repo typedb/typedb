@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, io::Read};
+use std::{collections::BTreeMap, fmt, io::Read};
 
+use bytes::byte_array::ByteArray;
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use serde::{Deserialize, Serialize};
@@ -133,8 +134,21 @@ impl CommitRecord {
         bincode::deserialize_from(reader).unwrap_or_log()
     }
 
+    fn disjoint<const BYTES: usize, V, U>(
+        first: &BTreeMap<ByteArray<BYTES>, V>,
+        second: &BTreeMap<ByteArray<BYTES>, U>,
+    ) -> bool {
+        let (Some((first_min, _)), Some((first_max, _))) = (first.first_key_value(), first.last_key_value()) else {
+            return true;
+        };
+        let (Some((second_min, _)), Some((second_max, _))) = (second.first_key_value(), second.last_key_value()) else {
+            return true;
+        };
+        first_max < second_min || second_max < first_min
+    }
+
     pub(crate) fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
-        // TODO: this can be optimised by some kind of bit-wise AND of two bloom filter-like data
+        // TODO: this can be further optimised by some kind of bit-wise AND of two bloom filter-like data
         // structures first, since we assume few clashes this should mostly succeed
         // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
 
@@ -146,46 +160,55 @@ impl CommitRecord {
             let writes = write_buffer.writes();
             let predecessor_writes = pred_write_buffer.writes();
 
-            for (key, write) in writes.iter() {
-                if let Some(predecessor_write) = predecessor_writes.get(key) {
-                    match (predecessor_write, write) {
-                        (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+            if !Self::disjoint(writes, predecessor_writes) || !Self::disjoint(writes, predecessor_locks) {
+                for (key, write) in writes.iter() {
+                    if let Some(predecessor_write) = predecessor_writes.get(key) {
+                        match (predecessor_write, write) {
+                            (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
+                                puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                            }
+                            (Write::Delete, Write::Put { reinsert, .. }) => {
+                                puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                            }
+                            _ => (),
                         }
-                        (Write::Delete, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
-                        }
-                        _ => (),
                     }
-                }
-                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
-                {
-                    return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
+                    if matches!(write, Write::Delete)
+                        && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
+                    {
+                        return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
+                    }
                 }
             }
 
-            // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
-            // Iterate the smaller collection and point-lookup into the larger one.
-            if locks.len() <= predecessor_writes.len() {
-                for (key, lock) in locks.iter() {
-                    if matches!(lock, LockType::Unmodifiable)
-                        && matches!(predecessor_writes.get(key), Some(Write::Delete))
-                    {
-                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+            if !Self::disjoint(locks, predecessor_writes) {
+                if locks.len() <= predecessor_writes.len() {
+                    // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
+                    // Iterate the smaller collection and point-lookup into the larger one.
+                    for (key, lock) in locks.iter() {
+                        if matches!(lock, LockType::Unmodifiable)
+                            && matches!(predecessor_writes.get(key), Some(Write::Delete))
+                        {
+                            return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+                        }
                     }
-                }
-            } else {
-                for (key, write) in predecessor_writes.iter() {
-                    if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
-                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+                } else {
+                    for (key, write) in predecessor_writes.iter() {
+                        if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
+                            return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+                        }
                     }
                 }
             }
         }
 
-        for (key, lock) in locks.iter() {
-            if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
-                return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
+        if !Self::disjoint(locks, predecessor_locks) {
+            for (key, lock) in locks.iter() {
+                if matches!(lock, LockType::Exclusive)
+                    && matches!(predecessor_locks.get(key), Some(LockType::Exclusive))
+                {
+                    return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
+                }
             }
         }
 
