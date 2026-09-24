@@ -10,7 +10,10 @@ use resource::profile::{QueryProfile, StageProfile, SubstepProfile};
 use serde::Serialize;
 use tabled::Tabled;
 
-use crate::templates::{MultiTxMultiQueryProfile, RunDescriptor, TxQueryProfile};
+use crate::{
+    benchmark::RunDescriptor,
+    profiling::{MultiTxMultiQueryProfile, TxQueryProfile},
+};
 
 /// Wraps a Duration: displays as ms with 3dp, serializes as f64 ms for CSV.
 #[derive(Clone, Copy)]
