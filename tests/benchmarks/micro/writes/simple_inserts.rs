@@ -10,6 +10,7 @@ use lib_benchmark::{
     profiling::TxQueryProfile,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
 };
+use lib_benchmark::benchmark::{QueryDescriptor, RunDescriptor, WorkLoad};
 use query::given_rows::GivenRowsSimple;
 
 pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
@@ -17,9 +18,9 @@ pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimpl
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("simple_inserts");
     group.run_benchmark(entities_one());
-    group.run_benchmark(entities_thousand());
-    group.run_benchmark(ownerships_thousand_names_short());
-    group.run_benchmark(ownerships_thousand_names_long());
+    group.run_benchmark(entities_many());
+    group.run_benchmark(ownerships_many_names_short());
+    group.run_benchmark(ownerships_many_names_long());
 }
 
 pub(crate) const SCHEMA: &'static str = r#"
@@ -30,20 +31,43 @@ define
 
 const N_ROWS: usize = 100_000;
 
+fn simple_insert_workload(query_descriptor: QueryDescriptor) ->  {
+
+    let run_descriptor = RunDescriptor {
+        parallelism: 1,
+        total_txns: 1,
+        n_queries_per_tx: 1,
+        n_rows_per_query: N_ROWS,
+    };
+    let workload = WorkLoad { query_descriptor, run_descriptor };
+}
+
 fn entities_one() -> TransactionInsertBenchmark {
+    let query_descriptor = QueryDescriptor {
+        query: "insert $x isa person;",
+        variables: vec![],
+        produce_row: None,
+    };
+    let run_descriptor = RunDescriptor {
+        parallelism: 1,
+        total_txns: 1,
+        n_queries_per_tx: 1,
+        n_rows_per_query: N_ROWS,
+    };
+    let workload = WorkLoad { query_descriptor, run_descriptor };
     TransactionInsertBenchmark {
         name: "simple_inserts__entities_one",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
-        warmup_fn: None,
-        prepare_run_fn: no_given_rows(),
-        benchmark_fn: query_in_write_tx("insert $x isa person;"),
+        warmup_fn: workload.for_warmup(),
+        prepare_run_fn: workload.prepare_fn(),
+        benchmark_fn: workload.runner(),
     }
 }
 
-fn entities_thousand() -> TransactionInsertBenchmark {
+fn entities_many() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__entities_thousand",
+        name: "simple_inserts__entities_many",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
         warmup_fn: None,
@@ -52,9 +76,9 @@ fn entities_thousand() -> TransactionInsertBenchmark {
     }
 }
 
-fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
+fn ownerships_many_names_short() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__ownerships_thousand_short_names",
+        name: "simple_inserts__ownerships_many_short_names",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
         warmup_fn: None,
@@ -63,9 +87,9 @@ fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
     }
 }
 
-fn ownerships_thousand_names_long() -> TransactionInsertBenchmark {
+fn ownerships_many_names_long() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__ownerships_thousand_long_names",
+        name: "simple_inserts__ownerships_many_long_names",
         schema: SCHEMA,
         preload_data_fn: no_initial_data(),
         warmup_fn: None,

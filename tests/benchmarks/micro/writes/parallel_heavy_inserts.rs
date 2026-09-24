@@ -37,7 +37,7 @@ fn parametrised_insert(
     name: &'static str,
     schema: &'static str,
     preload_data_fn: Option<PreloadDataFn>,
-    n_parallel: usize,
+    parallelism: usize,
     n_txns: usize,
     n_query_per_txn: usize,
     n_rows_per_query: usize,
@@ -45,7 +45,7 @@ fn parametrised_insert(
     variables: Vec<String>,
     produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
 ) -> ParallelHeavyInsertBenchmark {
-    let run_descriptor = RunDescriptor { total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query };
+    let run_descriptor = RunDescriptor { parallelism, total_txns: n_txns, n_queries_per_tx: n_query_per_txn, n_rows_per_query };
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>| {
         let overestimate_txns_per_thread: usize = ((1.5 * n_txns as f64 / n_parallel as f64).ceil() as usize).max(2);
         let very_beginning = Instant::now();
