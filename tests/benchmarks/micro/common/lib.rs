@@ -25,7 +25,6 @@ use database::{
     transaction::{CommitIntent, TransactionRead, TransactionSchema},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use encoding::graph::type_::vertex::{TypeVertex, TypeVertexEncoding};
 use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};

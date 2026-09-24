@@ -11,7 +11,7 @@ use std::{
     },
     time::Duration,
 };
-
+use std::time::Instant;
 use database::{Database, transaction::TransactionWrite};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
@@ -25,6 +25,7 @@ use crate::{
     reports::SimpleReport,
     utils::{CountResults, unpack_result},
 };
+use crate::profiling::{transaction_options_with_profiling, MultiQueryTxProfile, MultiTxMultiQueryProfile};
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
@@ -122,6 +123,71 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
     }
 }
 
+pub type TypeDBWorkloadBenchmark = TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile>;
+
+impl TypeDBWorkloadBenchmark {
+    fn new(name: &'static str, schema: &'static str, preload_data_fn: Option<PreloadDataFn>, query_descriptor: QueryDescriptor, run_descriptor: RunDescriptor) -> Self {
+        let warmup_fn = query_descriptor.for_warmup();
+        let workload = WorkLoad { query_descriptor, run_descriptor };
+        let prepare_run_fn = workload.prepare_fn();
+        let benchmark_fn = workload.runner(name);
+        Self {
+            name,
+            schema,
+            preload_data_fn,
+            warmup_fn,
+            prepare_run_fn,
+            benchmark_fn,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct QueryDescriptor {
+    pub query: &'static str,
+    pub variables: Vec<String>,
+    pub produce_row: Option<fn(&mut RandomDataGen) -> Vec<GivenRowEntry>>,
+    //Box<dyn Fn(&mut RandomDataGen) -> Option<GivenRowsSimple>>,
+}
+
+impl QueryDescriptor {
+
+    pub fn for_warmup(&self) -> Option<WarmupFn> {
+        let warmup_workload = self.create_workload(RunDescriptor::WARMUP.clone());
+        let runner = warmup_workload.runner("_warmup");
+        let prepare_fn = warmup_workload.prepare_fn();
+        Some(Box::new(move |db| {
+            let db_clone = db.clone();
+            runner(db, prepare_fn(db_clone));
+        }))
+    }
+
+    pub fn create_workload(&self, run_descriptor: RunDescriptor) -> WorkLoad {
+        WorkLoad { query_descriptor: self.clone(), run_descriptor }
+    }
+}
+
+#[derive(Clone)]
+pub struct RunDescriptor {
+    pub parallelism: usize,
+    pub total_txns: usize,
+    pub n_queries_per_tx: usize,
+    pub n_rows_per_query: usize,
+}
+
+impl RunDescriptor {
+    const WARMUP: RunDescriptor = RunDescriptor {
+        parallelism: 1,
+        total_txns: 10,
+        n_queries_per_tx: 1,
+        n_rows_per_query: 1,
+    };
+
+    pub fn total_rows(&self) -> usize {
+        self.total_txns * self.n_queries_per_tx * self.n_rows_per_query
+    }
+}
+
 // Util return
 pub struct WorkLoad {
     pub query_descriptor: QueryDescriptor,
@@ -129,28 +195,72 @@ pub struct WorkLoad {
 }
 
 impl WorkLoad {
-    fn instantiate(&self) -> WorkloadInstance {
-        WorkloadInstance::build(&self.query_descriptor, &self.run_descriptor)
+    pub fn prepare_fn(&self) -> PrepareRunFn<Arc<WorkloadInstance>> {
+        let query_descriptor = self.query_descriptor.clone();
+        let run_descriptor = self.run_descriptor.clone();
+        Box::new(move |_| WorkloadInstance::build(&query_descriptor, &run_descriptor))
     }
-}
 
-pub struct QueryDescriptor {
-    pub query: &'static str,
-    pub variables: Vec<String>,
-    pub produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
-    //Box<dyn Fn(&mut RandomDataGen) -> Option<GivenRowsSimple>>,
-}
+    pub fn runner(&self, name: &'static str) -> BenchmarkedFn<Arc<WorkloadInstance>, MultiTxMultiQueryProfile> {
+        let query = self.query_descriptor.query;
+        let run_descriptor = self.run_descriptor.clone();
+        Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>| {
+            let very_beginning = Instant::now();
+            let handles: Vec<_> = (0..run_descriptor.parallelism)
+                .map(|_thread_id| {
+                    let database = database.clone();
+                    let producer = producer.clone();
+                    let run_descriptor = run_descriptor.clone();
+                    std::thread::spawn(Self::new_runner_thread(database, producer, query, run_descriptor))
+                })
+                .collect();
 
-#[derive(Clone)]
-pub struct RunDescriptor {
-    pub total_txns: usize,
-    pub n_queries_per_tx: usize,
-    pub n_rows_per_query: usize,
-}
+            let profiles = handles.into_iter().flat_map(|h| h.join().expect("benchmark thread panicked")).collect();
+            MultiTxMultiQueryProfile {
+                name,
+                profiles,
+                run_descriptor: run_descriptor.clone(),
+                total_wall_time: very_beginning.elapsed(),
+            }
+        })
+    }
 
-impl RunDescriptor {
-    pub fn total_rows(&self) -> usize {
-        self.total_txns * self.n_queries_per_tx * self.n_rows_per_query
+    fn new_runner_thread(database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>, query: &'static str, run_descriptor: RunDescriptor) -> impl FnOnce() -> Vec<MultiQueryTxProfile>{
+        let overestimate_txns_per_thread: usize =
+            ((1.5 * run_descriptor.total_txns as f64 / run_descriptor.parallelism as f64).ceil() as usize).max(2);
+        let local_profiles = Vec::with_capacity(overestimate_txns_per_thread);
+        move || {
+            let mut local_profiles = local_profiles;
+            while producer.has_remaining() {
+                let mut query_profiles = Vec::with_capacity(run_descriptor.n_queries_per_tx);
+                let mut tx = TransactionWrite::open(database.clone(), transaction_options_with_profiling()).unwrap();
+                let start = Instant::now();
+                for _ in 0..run_descriptor.n_queries_per_tx {
+                    let Some(given_rows) = producer.take_next_batch() else {
+                        break;
+                    };
+                    let (query_result, tx_returned) = unpack_result(execute_write_query_in::<_, CountResults>(
+                        tx,
+                        query,
+                        Some(given_rows),
+                        true,
+                    ));
+                    tx = tx_returned;
+                    let QueryAnswer { profile: query_profile, answer: rows } = query_result.unwrap();
+                    assert_eq!(rows, run_descriptor.n_rows_per_query);
+                    query_profiles.push(query_profile);
+                }
+                if !query_profiles.is_empty() {
+                    let tx_profile = commit(tx).unwrap();
+                    local_profiles.push(MultiQueryTxProfile {
+                        tx_profile,
+                        query_profiles,
+                        time_elapsed: start.elapsed(),
+                    });
+                }
+            }
+            local_profiles
+        }
     }
 }
 
@@ -168,15 +278,20 @@ pub struct WorkloadInstance {
 unsafe impl Sync for WorkloadInstance {}
 
 impl WorkloadInstance {
-    fn build(query: &QueryDescriptor, run: &RunDescriptor) -> Self {
+    fn build(query: &QueryDescriptor, run: &RunDescriptor) -> Arc<Self> {
         let mut rng = RandomDataGen::new();
         let batches = (0..(run.total_txns * run.n_queries_per_tx))
             .map(|_| {
-                let rows = (0..run.n_rows_per_query).map(|_| (query.produce_row)(&mut rng)).collect();
-                UnsafeCell::new(Some(GivenRowsSimple { variables: query.variables.clone(), rows }))
+                let given_rows_opt = query.produce_row.map(|produce| {
+                    let rows = (0..run.n_rows_per_query).map(|_| produce(&mut rng)).collect();
+                    GivenRowsSimple { variables: query.variables.clone(), rows }
+                });
+                UnsafeCell::new(given_rows_opt)
             })
             .collect();
-        Self { query: query.query, variables: query.variables.clone(), batches, next_index: AtomicUsize::new(0) }
+        Arc::new(
+            Self { query: query.query, variables: query.variables.clone(), batches, next_index: AtomicUsize::new(0) }
+        )
     }
 
     pub fn query(&self) -> &str {
