@@ -15,6 +15,7 @@ use query::given_rows::GivenRowsSimple;
 
 mod heavy_inserts;
 // mod match_reads;
+mod parallel_heavy_inserts;
 mod simple_inserts;
 
 pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
@@ -23,7 +24,9 @@ fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.new_group("sanity_check").run_benchmark(sanity_check());
     simple_inserts::run_all(&mut runner);
     heavy_inserts::run_all(&mut runner);
+    parallel_heavy_inserts::run_all(&mut runner);
     // match_reads::run_all(&mut runner);
+
     runner.summary();
 }
 
@@ -44,8 +47,8 @@ enum Mode {
 fn main() {
     match Args::parse().mode {
         Mode::Simple(runner) => run_benchmarks(runner),
-        Mode::Criterion => run_benchmarks(
-            Criterion::default().with_profiler(FlamegraphProfiler::new(100)).configure_from_args(),
-        ),
+        Mode::Criterion => {
+            run_benchmarks(Criterion::default().with_profiler(FlamegraphProfiler::new(100)).configure_from_args())
+        }
     }
 }
