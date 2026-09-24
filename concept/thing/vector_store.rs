@@ -22,8 +22,11 @@
 
 use std::{
     collections::HashMap,
-    fmt,
-    io::{Read, Write},
+    fmt, fs,
+    fs::File,
+    io,
+    io::Write,
+    path::Path,
     sync::{Arc, RwLock},
 };
 
@@ -37,7 +40,6 @@ use encoding::{
     value::vector_bytes::VectorBytes,
 };
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use serde::{Deserialize, Serialize};
 use storage::{
     CommitObserver, key_value::StorageKeyArray, keyspace::KeyspaceId, recovery::checkpoint::CheckpointAdditionalData,
     sequence_number::SequenceNumber,
@@ -195,51 +197,93 @@ impl CommitObserver for VectorStore {
     }
 }
 
-/// Checkpoint format: our own versioned envelope around usearch's serialisation (usearch's header
-/// is unverified on load, and we need dimensions to reconstruct the index options).
-#[derive(Serialize, Deserialize)]
-struct VectorStoreCheckpointData {
-    format_version: u32,
-    // (type id, dimensions, serialised usearch index)
-    indexes: Vec<(u16, u64, Vec<u8>)>,
+/// Checkpoint format: a directory of plain usearch index files — one per attribute type, named
+/// `{type id hex}-{metric}.usearch`, each exactly usearch's own on-disk format (openable with any
+/// usearch tooling) — plus a text `MANIFEST`. The manifest carries what usearch's unverified file
+/// header can't be trusted for: a format version, the dimensions needed to reconstruct index
+/// options, and each file's byte length as a torn-file guard. One line per index:
+/// `{type id hex} {metric} {dimensions} {file length}`.
+const MANIFEST_FILE_NAME: &str = "MANIFEST";
+const MANIFEST_VERSION_LINE: &str = "version 1";
+const METRIC_NAME: &str = "cosine";
+
+fn index_file_name(type_id: u16) -> String {
+    format!("{type_id:#06x}-{METRIC_NAME}.usearch")
 }
 
-const VECTOR_STORE_CHECKPOINT_FORMAT_VERSION: u32 = 1;
+fn invalid_data(message: String) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, message)
+}
 
 impl CheckpointAdditionalData for VectorStore {
     const NAME: &'static str = "VECTOR_STORE";
 
-    fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()> {
+    fn save_into_dir(&self, dir: &Path) -> io::Result<()> {
         let indexes = self.indexes.read().unwrap();
-        let mut serialised = Vec::with_capacity(indexes.len());
+        let mut manifest = format!("{MANIFEST_VERSION_LINE}\n");
         for (type_id, type_index) in indexes.iter() {
+            let type_id = u16::from_be_bytes(type_id.to_bytes());
+            let file_name = index_file_name(type_id);
+            let path = dir.join(&file_name);
             let index = type_index.index.read().unwrap();
-            let mut buffer = vec![0u8; index.serialized_length()];
-            index.save_to_buffer(&mut buffer).unwrap_or_else(|err| panic!("failed to serialise vector index: {err}"));
-            serialised.push((u16::from_be_bytes(type_id.to_bytes()), index.dimensions() as u64, buffer));
+            index
+                .save(path.to_str().unwrap())
+                .map_err(|err| io::Error::other(format!("failed to save vector index {file_name}: {err}")))?;
+            // usearch's save is fwrite+fclose with no fsync
+            let file = File::open(&path)?;
+            file.sync_all()?;
+            let file_length = file.metadata()?.len();
+            manifest.push_str(&format!("{type_id:#06x} {METRIC_NAME} {} {file_length}\n", index.dimensions()));
         }
-        drop(indexes);
-        let data =
-            VectorStoreCheckpointData { format_version: VECTOR_STORE_CHECKPOINT_FORMAT_VERSION, indexes: serialised };
-        bincode::serialize_into(writer, &data)
+        let mut manifest_file = File::create(dir.join(MANIFEST_FILE_NAME))?;
+        manifest_file.write_all(manifest.as_bytes())?;
+        manifest_file.sync_all()?;
+        Ok(())
     }
 
-    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
-        let data: VectorStoreCheckpointData = bincode::deserialize_from(reader)?;
-        assert_eq!(
-            data.format_version, VECTOR_STORE_CHECKPOINT_FORMAT_VERSION,
-            "unsupported vector store checkpoint format version"
-        );
+    fn load_from_dir(dir: &Path) -> io::Result<Self> {
+        let manifest = fs::read_to_string(dir.join(MANIFEST_FILE_NAME))?;
+        let mut lines = manifest.lines();
+        let version_line = lines.next().unwrap_or("");
+        if version_line != MANIFEST_VERSION_LINE {
+            return Err(invalid_data(format!("unsupported vector store manifest version: '{version_line}'")));
+        }
         let store = VectorStore::new();
         let mut indexes = store.indexes.write().unwrap();
-        for (type_id, dimensions, buffer) in data.indexes {
-            let type_index = TypeVectorIndex::new(dimensions as usize);
+        for line in lines {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            let &[type_id, metric, dimensions, file_length] = parts.as_slice() else {
+                return Err(invalid_data(format!("malformed vector store manifest line: '{line}'")));
+            };
+            let type_id = type_id
+                .strip_prefix("0x")
+                .and_then(|hex| u16::from_str_radix(hex, 16).ok())
+                .ok_or_else(|| invalid_data(format!("malformed type id in vector store manifest: '{line}'")))?;
+            if metric != METRIC_NAME {
+                return Err(invalid_data(format!("unsupported vector index metric: '{metric}'")));
+            }
+            let dimensions: usize = dimensions
+                .parse()
+                .map_err(|_| invalid_data(format!("malformed dimensions in vector store manifest: '{line}'")))?;
+            let file_length: u64 = file_length
+                .parse()
+                .map_err(|_| invalid_data(format!("malformed file length in vector store manifest: '{line}'")))?;
+
+            let file_name = index_file_name(type_id);
+            let path = dir.join(&file_name);
+            let actual_length = fs::metadata(&path)?.len();
+            if actual_length != file_length {
+                return Err(invalid_data(format!(
+                    "vector index file {file_name} is {actual_length} bytes, manifest says {file_length}"
+                )));
+            }
+            let type_index = TypeVectorIndex::new(dimensions);
             type_index
                 .index
                 .write()
                 .unwrap()
-                .load_from_buffer(&buffer)
-                .unwrap_or_else(|err| panic!("failed to load vector index from checkpoint: {err}"));
+                .load(path.to_str().unwrap())
+                .map_err(|err| invalid_data(format!("failed to load vector index {file_name}: {err}")))?;
             indexes.insert(TypeID::decode(type_id.to_be_bytes()), Arc::new(type_index));
         }
         drop(indexes);
@@ -282,11 +326,26 @@ mod test {
         store.add(vertex(1, 100), &[1.0, 0.0]);
         store.add(vertex(7, 200), &[0.0, 1.0, 0.0, 0.0]);
 
-        let mut buffer = Vec::new();
-        store.serialise_into(&mut buffer).unwrap();
-        let loaded = VectorStore::deserialise_from(&mut buffer.as_slice()).unwrap();
+        let dir = std::env::temp_dir().join(format!("vector_store_checkpoint_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        store.save_into_dir(&dir).unwrap();
 
+        // the on-disk files are plain usearch indexes plus a text manifest
+        assert!(dir.join("0x0001-cosine.usearch").exists());
+        assert!(dir.join("0x0007-cosine.usearch").exists());
+        assert!(fs::read_to_string(dir.join(MANIFEST_FILE_NAME)).unwrap().starts_with(MANIFEST_VERSION_LINE));
+
+        let loaded = VectorStore::load_from_dir(&dir).unwrap();
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0, 0.0, 0.0]));
+
+        // a truncated index file must be rejected by the manifest's length check
+        let index_file = dir.join("0x0001-cosine.usearch");
+        let bytes = fs::read(&index_file).unwrap();
+        fs::write(&index_file, &bytes[..bytes.len() - 1]).unwrap();
+        assert!(VectorStore::load_from_dir(&dir).is_err());
+
+        fs::remove_dir_all(&dir).unwrap();
     }
 }

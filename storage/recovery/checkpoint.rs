@@ -8,7 +8,7 @@ use std::{
     error::Error,
     fmt,
     fs::{self, File},
-    io::{self, Read, Write},
+    io::{self, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -57,20 +57,14 @@ impl CheckpointReader {
     }
 
     pub fn get_additional_data<T: CheckpointAdditionalData>(&self) -> Result<T, CheckpointLoadError> {
-        use CheckpointLoadError::{AdditionalDataDeserialise, AdditionalDataIO, AdditionalDataNotFound};
+        use CheckpointLoadError::{AdditionalDataDeserialise, AdditionalDataNotFound};
 
-        let file_name = T::NAME;
-        let path = self.directory.join(file_name);
-        if !path.exists() {
+        let dir = self.directory.join(T::NAME);
+        if !dir.exists() {
             return Err(AdditionalDataNotFound { name: T::NAME.to_string() });
         }
-
-        let mut file =
-            File::open(path).map_err(|err| AdditionalDataIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
-        let deserialised = T::deserialise_from(&mut file)
-            .map_err(|err| AdditionalDataDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
-        Ok(deserialised)
+        T::load_from_dir(&dir)
+            .map_err(|err| AdditionalDataDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })
     }
 
     pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityClient>(
@@ -258,24 +252,18 @@ impl CheckpointWriter {
     }
 
     pub fn add_extension<T: CheckpointAdditionalData>(&self, data: &T) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO, ExtensionSerialise};
-        let file_name = T::NAME;
-        let path = self.temporary_directory.join(file_name);
-        if path.exists() {
+        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO};
+        let io_err = |err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) };
+
+        let dir = self.temporary_directory.join(T::NAME);
+        if dir.exists() {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
-
-        let tmp = path.with_extension(TEMP_FILE_EXTENSION);
-        {
-            let mut file =
-                File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-            data.serialise_into(&mut file)
-                .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
-            // fsync before rename: without it, power loss can leave a final-named but torn file
-            file.sync_all().map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-        }
-        fs::rename(&tmp, &path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
+        fs::create_dir(&dir).map_err(io_err)?;
+        data.save_into_dir(&dir).map_err(io_err)?;
+        // fsync the directory entries: save_into_dir syncs file contents, but the names must
+        // also survive power loss before the whole-checkpoint rename makes them visible
+        File::open(&dir).and_then(|d| d.sync_all()).map_err(io_err)?;
         Ok(())
     }
 
@@ -331,10 +319,13 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Additional data rides the checkpoint as a subdirectory named `NAME`. Implementations lay out
+/// their own files inside it and must fsync everything they write; atomicity comes for free from
+/// the whole-checkpoint-directory rename in [`CheckpointWriter::finish`].
 pub trait CheckpointAdditionalData: Sized {
     const NAME: &'static str;
-    fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
-    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
+    fn save_into_dir(&self, dir: &Path) -> io::Result<()>;
+    fn load_from_dir(dir: &Path) -> io::Result<Self>;
 }
 
 #[derive(Debug, Clone)]
@@ -351,7 +342,6 @@ pub enum CheckpointCreateError {
 
     ExtensionDuplicate { name: String },
     ExtensionIO { name: String, source: Arc<io::Error> },
-    ExtensionSerialise { name: String, source: Arc<bincode::Error> },
 
     OldCheckpointRemove { dir: PathBuf, source: Arc<io::Error> },
 }
@@ -373,7 +363,6 @@ impl Error for CheckpointCreateError {
             Self::MetadataWrite { source, .. } => Some(source),
             Self::ExtensionDuplicate { .. } => None,
             Self::ExtensionIO { source, .. } => Some(source),
-            Self::ExtensionSerialise { source, .. } => Some(source),
             Self::OldCheckpointRemove { source, .. } => Some(source),
         }
     }
@@ -390,6 +379,6 @@ typedb_error! {
 
         AdditionalDataNotFound(8, "Checkpoint additional data with identifier '{name}' not found.", name: String),
         AdditionalDataIO(9, "Error accessing checkpoint additional data with identifier '{name}'.", name: String, source: Arc<io::Error>),
-        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, source: Arc<bincode::Error>),
+        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, source: Arc<io::Error>),
     }
 }

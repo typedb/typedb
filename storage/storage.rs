@@ -84,7 +84,11 @@ mod write_batches;
 /// has observed every commit <= W, so recovery only ever replays the WAL tail.
 pub trait CommitObserver: Send + Sync {
     fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
-    fn apply(&self, sequence_number: SequenceNumber, owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)]);
+    fn apply(
+        &self,
+        sequence_number: SequenceNumber,
+        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
+    );
     fn as_any_arc(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync>;
 }
 

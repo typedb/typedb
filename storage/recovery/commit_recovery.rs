@@ -12,8 +12,9 @@ use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
 use tracing::{Level, event, trace};
 
 use crate::{
-    CommitObserver, MVCCStorage, extract_owned_values,
+    CommitObserver, MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
+    extract_owned_values,
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
