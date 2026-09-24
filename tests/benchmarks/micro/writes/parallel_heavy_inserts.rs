@@ -98,7 +98,9 @@ fn parametrised_insert(
                     'outer: loop {
                         let start = Instant::now();
                         let mut query_profiles = Vec::with_capacity(n_query_per_txn);
-                        let mut tx = TransactionWrite::open(db.clone(), TransactionOptions::default()).unwrap();
+                        let mut tx_options = TransactionOptions::default();
+                        tx_options.tmp_enable_profiling = Some(true);
+                        let mut tx = TransactionWrite::open(db.clone(), tx_options).unwrap();
                         for _ in 0..n_query_per_txn {
                             let Some(given_rows) = producer.get_next_batch(thread_id) else {
                                 // Exhausted mid-transaction: commit whatever ran and stop.
