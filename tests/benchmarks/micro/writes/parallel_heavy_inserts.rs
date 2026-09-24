@@ -3,9 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 use std::{
+    cell::UnsafeCell,
     sync::{
-        Arc, Mutex,
+        Arc,
         atomic::{AtomicUsize, Ordering},
     },
     time::Instant,
@@ -16,6 +18,7 @@ use lib_benchmark::{
     QueryAnswer, commit,
     datagen::RandomDataGen,
     execute_write_query_in,
+    profiler::transaction_options_with_profiling,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     templates::{MultiQueryTxProfile, MultiTxMultiQueryProfile, PreloadDataFn, TypeDBMicroBenchmark, no_initial_data},
     utils::{CountResults, unpack_result},
@@ -26,50 +29,73 @@ use storage::durability_client::WALClient;
 
 use crate::simple_inserts::SCHEMA as SIMPLE_SCHEMA;
 
+/// Pre-generated batches consumed work-stealing style.
+/// Each slot is claimed by exactly one thread via fetch_add, so no locking needed.
 pub(crate) struct GivenRowBatchProducer {
     pub query: &'static str,
-    variables: Vec<String>,
-    n_rows_per_query: usize,
-    produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
-    // One RNG per thread — indexed by thread_id, never shared, so locks are uncontended.
-    rngs: Vec<Mutex<RandomDataGen>>,
-    next_txn_index: AtomicUsize,
-    n_total_txns: usize,
+    batches: Vec<UnsafeCell<Option<GivenRowsSimple>>>,
+    next_index: AtomicUsize,
 }
+
+// Safety: each index is claimed by exactly one thread (fetch_add ensures uniqueness).
+unsafe impl Sync for GivenRowBatchProducer {}
 
 impl GivenRowBatchProducer {
     pub fn new(
         query: &'static str,
         variables: Vec<String>,
+        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
         n_rows_per_query: usize,
         n_total_txns: usize,
-        n_parallel: usize,
-        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
     ) -> Self {
-        let rngs = (0..n_parallel).map(|_| Mutex::new(RandomDataGen::new())).collect();
-        Self {
-            query,
-            variables,
-            n_rows_per_query,
-            produce_row,
-            rngs,
-            next_txn_index: AtomicUsize::new(0),
-            n_total_txns,
-        }
+        let mut rng = RandomDataGen::new();
+        let batches = (0..n_total_txns)
+            .map(|_| {
+                let rows = (0..n_rows_per_query).map(|_| produce_row(&mut rng)).collect();
+                UnsafeCell::new(Some(GivenRowsSimple { variables: variables.clone(), rows }))
+            })
+            .collect();
+        Self { query, batches, next_index: AtomicUsize::new(0) }
     }
 
-    pub fn get_next_batch(&self, thread_id: usize) -> Option<GivenRowsSimple> {
-        let txn_index = self.next_txn_index.fetch_add(1, Ordering::Relaxed);
-        if txn_index >= self.n_total_txns {
+    pub fn has_remaining(&self) -> bool {
+        self.next_index.load(Ordering::Relaxed) < self.batches.len()
+    }
+
+    pub fn take_next_batch(&self) -> Option<GivenRowsSimple> {
+        let idx = self.next_index.fetch_add(1, Ordering::Relaxed);
+        if idx >= self.batches.len() {
             return None;
         }
-        let mut rng = self.rngs[thread_id].lock().unwrap();
-        let rows = (0..self.n_rows_per_query).map(|_| (self.produce_row)(&mut rng)).collect();
-        Some(GivenRowsSimple { variables: self.variables.clone(), rows })
+        // Safety: idx is unique — no other thread will ever access this slot.
+        unsafe { (*self.batches[idx].get()).take() }
+    }
+
+    pub fn make_preload_data_fn(
+        query: &'static str,
+        variables: Vec<String>,
+        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
+        n_total_rows: usize,
+        n_rows_per_query: usize,
+    ) -> PreloadDataFn {
+        let n_txns = n_total_rows.div_ceil(n_rows_per_query);
+        Box::new(move |database: Arc<Database<WALClient>>| {
+            let mut rng = RandomDataGen::new();
+            let mut remaining = n_total_rows;
+            while remaining > 0 {
+                let this_batch = n_rows_per_query.max(remaining);
+                remaining -= this_batch;
+                let rows = (0..this_batch).map(|_| produce_row(&mut rng)).collect();
+                let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
+                let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+                let (_, tx) = unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
+                commit(tx).unwrap();
+            }
+        })
     }
 }
 
-type HeavyInsertBenchmark = TypeDBMicroBenchmark<Arc<GivenRowBatchProducer>, MultiTxMultiQueryProfile>;
+type ParallelHeavyInsertBenchmark = TypeDBMicroBenchmark<Arc<GivenRowBatchProducer>, MultiTxMultiQueryProfile>;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("parallel_inserts");
@@ -87,34 +113,25 @@ fn parametrised_insert(
     n_query_per_txn: usize,
     n_rows_per_query: usize,
     query: &'static str,
+    variables: Vec<String>,
     produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
-) -> HeavyInsertBenchmark {
+) -> ParallelHeavyInsertBenchmark {
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<GivenRowBatchProducer>| {
+        let overestimate_txns_per_thread: usize = ((1.5 * n_txns as f64 / n_parallel as f64).ceil() as usize).max(2);
         let handles: Vec<_> = (0..n_parallel)
-            .map(|thread_id| {
+            .map(|_thread_id| {
                 let db = database.clone();
                 let producer = producer.clone();
+                let local_profiles = Vec::with_capacity(overestimate_txns_per_thread);
                 std::thread::spawn(move || {
-                    let mut local_profiles = Vec::new();
-                    'outer: loop {
-                        let start = Instant::now();
+                    let mut local_profiles = local_profiles;
+                    while producer.has_remaining() {
                         let mut query_profiles = Vec::with_capacity(n_query_per_txn);
-                        let mut tx_options = TransactionOptions::default();
-                        tx_options.tmp_enable_profiling = Some(true);
-                        let mut tx = TransactionWrite::open(db.clone(), tx_options).unwrap();
+                        let mut tx = TransactionWrite::open(db.clone(), transaction_options_with_profiling()).unwrap();
+                        let start = Instant::now();
                         for _ in 0..n_query_per_txn {
-                            let Some(given_rows) = producer.get_next_batch(thread_id) else {
-                                // Exhausted mid-transaction: commit whatever ran and stop.
-                                if !query_profiles.is_empty() {
-                                    let tx_profile = commit(tx).unwrap();
-                                    let time_elapsed = start.elapsed();
-                                    local_profiles.push(MultiQueryTxProfile {
-                                        tx_profile,
-                                        query_profiles,
-                                        time_elapsed,
-                                    });
-                                }
-                                break 'outer;
+                            let Some(given_rows) = producer.take_next_batch() else {
+                                break;
                             };
                             let (query_result, tx_returned) = unpack_result(execute_write_query_in::<_, CountResults>(
                                 tx,
@@ -127,9 +144,10 @@ fn parametrised_insert(
                             assert_eq!(rows, n_rows_per_query);
                             query_profiles.push(query_profile);
                         }
-                        let tx_profile = commit(tx).unwrap();
-                        let time_elapsed = start.elapsed();
-                        local_profiles.push(MultiQueryTxProfile { tx_profile, query_profiles, time_elapsed });
+                        if !query_profiles.is_empty() {
+                            let tx_profile = commit(tx).unwrap();
+                            local_profiles.push(MultiQueryTxProfile { tx_profile, query_profiles, time_elapsed: start.elapsed() });
+                        }
                     }
                     local_profiles
                 })
@@ -141,25 +159,23 @@ fn parametrised_insert(
         MultiTxMultiQueryProfile { name, profiles }
     });
 
+    let iter_input_producer = Arc::new(GivenRowBatchProducer::new(
+        query,
+        variables,
+        produce_row,
+        n_rows_per_query,
+        n_txns * n_query_per_txn,
+    ));
     TypeDBMicroBenchmark {
         name,
         schema,
         preload_data_fn,
-        prepare_iter_fn: Box::new(move |_| {
-            Arc::new(GivenRowBatchProducer::new(
-                query,
-                vec![],
-                n_rows_per_query,
-                n_txns * n_query_per_txn,
-                n_parallel,
-                produce_row,
-            ))
-        }),
+        prepare_iter_fn: Box::new(move |_| iter_input_producer.clone()),
         benchmark_fn,
     }
 }
 
-fn parallel_many_small_tx() -> HeavyInsertBenchmark {
+fn parallel_many_small_tx() -> ParallelHeavyInsertBenchmark {
     parametrised_insert(
         "parallel_many_small_tx",
         SIMPLE_SCHEMA,
@@ -169,11 +185,12 @@ fn parallel_many_small_tx() -> HeavyInsertBenchmark {
         1,
         1,
         "given; insert $x isa person;",
+        vec![],
         |_| vec![],
     )
 }
 
-fn parallel_many_average_tx() -> HeavyInsertBenchmark {
+fn parallel_many_average_tx() -> ParallelHeavyInsertBenchmark {
     parametrised_insert(
         "parallel_many_average_tx",
         SIMPLE_SCHEMA,
@@ -183,11 +200,12 @@ fn parallel_many_average_tx() -> HeavyInsertBenchmark {
         1,
         100,
         "given; insert $x isa person;",
+        vec![],
         |_| vec![],
     )
 }
 
-fn parallel_many_large_tx() -> HeavyInsertBenchmark {
+fn parallel_many_large_tx() -> ParallelHeavyInsertBenchmark {
     parametrised_insert(
         "parallel_many_large_tx",
         SIMPLE_SCHEMA,
@@ -197,31 +215,39 @@ fn parallel_many_large_tx() -> HeavyInsertBenchmark {
         1,
         10_000,
         "given; insert $x isa person;",
+        vec![],
         |_| vec![],
     )
 }
 
-fn parallel_binary_relation() -> HeavyInsertBenchmark {
+fn parallel_binary_relation() -> ParallelHeavyInsertBenchmark {
     let schema = r#"
     define
-        relation r, relates e1, relates e2;
-        entity e1, plays r:e1;
-        entity e2, plays r:e1;
+        relation r1, relates e1, relates e2;
+        entity e1, plays r1:e1;
+        entity e2, plays r1:e2;
     "#;
+    let preload_data_fn = GivenRowBatchProducer::make_preload_data_fn(
+        "given; insert $_ isa e1; $_ isa e1;",
+        vec![],
+        |_| vec![],
+        10_000_000,
+        10_000,
+    );
     parametrised_insert(
         "parallel_binary_relation",
         schema,
-        todo!(),
+        Some(preload_data_fn),
         8,
         1_000,
         1,
         10000,
         r#"
-        given $e1:e1, $e2: e2, $e2_2: e2;
+        given $e1:e1, $e2: e2;
         insert
             $r isa r1, links (e1: $e1, e2: $e2);
-            $r2 isa r1, links (e1: $e1, e2: $e2_2);
        "#,
+        vec!["e1".to_owned(), "e2".to_owned()],
         todo!(),
     )
 }
