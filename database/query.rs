@@ -64,7 +64,7 @@ pub fn execute_schema_query(
                 &function_manager,
                 &query,
                 &source_query,
-                None
+                None,
             )
         }
     )
