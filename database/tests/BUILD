@@ -57,6 +57,8 @@ rust_test(
         "//resource",
         "//storage",
         "//util/test:test_utils",
+
+        "@crates//:tokio"
     ]
 )
 

@@ -25,7 +25,7 @@ typedb_error! {
         DatabaseImport(1, "Error while importing the database's schema and data.", typedb_source: DatabaseImportError),
         ConceptDecode(2, "Cannot decode imported concept.", typedb_source: Box<ConceptDecodeError>),
         DuplicateImport(3, "Error importing '{name}': another import operation for database '{old_name}' was already initiated through this channel. It is a sign of a corrupted file or a client bug.", name: String, old_name: String),
-        ImportDatabaseNotFound(4, "Imported database not found during {phase}. Make sure to use a correct client.", phase: String),
+        ImportDatabaseNotFound(4, "Imported database not found. Make sure to use a correct client."),
         ImportEmptyItem(5, "An empty concept item received. It is a sign of a corrupted file or a client bug."),
         AbsentAttributeValue(6, "Cannot process an attribute: value is absent."),
         AttributesOwningAttributes(7, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
@@ -34,5 +34,7 @@ typedb_error! {
         ImportClosed(10, "The import was closed by the server. The import is aborted and can be retried."),
         ShutdownInterrupt(11, "The import was interrupted by server shutdown. The import is aborted and can be retried."),
         ClientClosed(12, "The import stream was closed by the client before completion. The import is aborted and can be retried."),
+        ChannelError(13, "Failed to send import message to workers"),
+        ThreadingError(14, "Worker threads reported error"),
     }
 }

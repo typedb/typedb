@@ -4,44 +4,37 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    marker::PhantomData,
-    path::PathBuf,
-    sync::Arc,
-};
-
-use bytes::{Bytes, byte_array::ByteArray};
+use bytes::{byte_array::ByteArray, Bytes};
 use cache::{CacheError, SpilloverCache};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        ThingAPI,
         attribute::Attribute,
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::ThingManager,
+        ThingAPI,
     },
     type_::{
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
-        constraint::Constraint,
-        object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        plays::{Plays, PlaysAnnotation},
+        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey}, attribute_type::{AttributeType, AttributeTypeAnnotation}, constraint::Constraint, object_type::ObjectType, owns::{Owns, OwnsAnnotation}, plays::{Plays, PlaysAnnotation},
         relates::{Relates, RelatesAnnotation},
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
+        Capability,
+        KindAPI,
+        Ordering,
+        OwnerAPI,
+        PlayerAPI,
+        TypeAPI,
     },
 };
 use encoding::{
     graph::{
-        Typed,
-        thing::{ThingVertex, vertex_object::ObjectVertex},
+        thing::{vertex_object::ObjectVertex, ThingVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
+        Typed,
     },
     value::{label::Label, value::Value},
 };
@@ -49,19 +42,28 @@ use error::typedb_error;
 use executor::ExecutionInterrupt;
 use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
+use std::ops::ControlFlow::{Break, Continue};
+use std::{
+    collections::{HashMap, HashSet},
+    marker::PhantomData,
+    path::PathBuf,
+    sync::Arc,
+};
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use tracing::{Level, event};
+use tokio::sync::mpsc::Receiver;
+use tokio::task::spawn_blocking;
+use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     migration::{
-        Checksums,
         database_import_handler::{DatabaseImportHandler, ImportHandlerError},
-        item::MigrationItem,
+        item::MigrationMessage,
+        Checksums,
     },
     query::execute_schema_query,
     transaction::{TransactionError, TransactionSchema, TransactionWrite},
@@ -340,6 +342,7 @@ pub struct DatabaseImporter {
     total_item_count: u64,
     interrupt: ExecutionInterrupt,
     schema_imported: bool,
+    item_receiver: Receiver<MigrationMessage>,
 }
 
 impl std::fmt::Debug for DatabaseImporter {
@@ -356,6 +359,7 @@ impl DatabaseImporter {
         import_handler: Box<dyn DatabaseImportHandler>,
         scratch_directory: PathBuf,
         interrupt: ExecutionInterrupt,
+        item_receiver: Receiver<MigrationMessage>,
     ) -> Self {
         let database_name = import_handler.database_name().to_owned();
         let data_info = DataInfo::new(&scratch_directory, &database_name);
@@ -368,21 +372,31 @@ impl DatabaseImporter {
             total_item_count: 0,
             schema_imported: false,
             interrupt,
+            item_receiver,
         }
     }
 
-    pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+    pub fn listen(mut self) -> Result<u64, DatabaseImportError> {
+        loop {
+            match self.item_receiver.blocking_recv() {
+                None => return Ok(self.total_item_count()),
+                Some(item) => self.apply(item)?,
+            }
+        }
+    }
+
+    fn apply(&mut self, item: MigrationMessage) -> Result<(), DatabaseImportError> {
         match item {
-            MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
-            MigrationItem::Schema(schema) => {
+            MigrationMessage::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
+            MigrationMessage::Schema(schema) => {
                 self.import_schema(schema)?;
                 self.schema_imported = true;
                 Ok(())
             }
             _ if !self.schema_imported => Err(DatabaseImportError::ItemBeforeSchema {}),
-            MigrationItem::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
+            MigrationMessage::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
             _ if self.data_info.expected_checksums.is_some() => Err(DatabaseImportError::ItemAfterChecksums {}),
-            MigrationItem::Header { typedb_version, original_database } => {
+            MigrationMessage::Header { typedb_version, original_database } => {
                 event!(
                     Level::DEBUG,
                     "Importing '{original_database}' from TypeDB {typedb_version} to '{}'.",
@@ -390,11 +404,12 @@ impl DatabaseImporter {
                 );
                 Ok(())
             }
-            MigrationItem::Entity { id, label, owned_attributes } => self.import_entity(id, label, owned_attributes),
-            MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
+            MigrationMessage::Entity { id, label, owned_attributes } => self.import_entity(id, label, owned_attributes),
+            MigrationMessage::Relation { id, label, owned_attributes, related_role_players } => {
                 self.import_relation(id, label, owned_attributes, related_role_players)
             }
-            MigrationItem::Attribute { id, label, value } => self.import_attribute(id, label, value),
+            MigrationMessage::Attribute { id, label, value } => self.import_attribute(id, label, value),
+            MigrationMessage::Finalize => self.finalize(),
         }
     }
 
@@ -477,7 +492,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub fn import_done(mut self) -> Result<(), DatabaseImportError> {
+    pub fn finalize(&mut self) -> Result<(), DatabaseImportError> {
         self.check_interrupt()?;
         self.drain_pending_ownerships()?;
         self.check_interrupt()?;
@@ -1151,5 +1166,7 @@ typedb_error! {
         ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
+
+        ChannelReceiveError(100, "Error occurred on the receiver channel"),
     }
 }

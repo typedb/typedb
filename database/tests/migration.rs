@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
 use database::{
     Database,
     database_manager::{DatabaseManager, ImportOwnership},
@@ -16,7 +14,7 @@ use database::{
             DatabaseImportHandler, ImportHandlerError, open_import_schema_transaction, open_import_write_transaction,
         },
         database_importer::{DatabaseImportError, DatabaseImporter},
-        item::MigrationItem,
+        item::MigrationMessage,
     },
     transaction::{
         CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionError, TransactionRead, TransactionSchema,
@@ -28,8 +26,13 @@ use encoding::value::{label::Label, value::Value};
 use executor::ExecutionInterrupt;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use resource::profile::CommitProfile;
+use std::sync::Arc;
+use std::thread;
+use std::thread::JoinHandle;
+use tokio::sync::mpsc::error::TrySendError;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_dir, init_logging};
+use tokio::sync::mpsc::Sender;
 
 const SCHEMA: &str = r#"define
   attribute name, value string;
@@ -85,14 +88,21 @@ fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
     .expect("DatabaseManager::new")
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporter {
+fn importer_sender(
+    database_manager: &Arc<DatabaseManager>,
+    name: &str,
+) -> (Sender<MigrationMessage>, JoinHandle<Result<u64, DatabaseImportError>>) {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
     let handler = TestImportHandler { database_manager: database_manager.clone(), staged_database };
-    DatabaseImporter::new(
+    let (sender, receiver) = tokio::sync::mpsc::channel(10);
+    let importer = DatabaseImporter::new(
         Box::new(handler),
         database_manager.import_directory().to_owned(),
         ExecutionInterrupt::new_uninterruptible(),
-    )
+        receiver,
+    );
+    let join_handle = thread::spawn(move || importer.listen());
+    (sender, join_handle)
 }
 
 fn read_transaction(database_manager: &Arc<DatabaseManager>, name: &str) -> TransactionRead<WALClient> {
@@ -100,7 +110,7 @@ fn read_transaction(database_manager: &Arc<DatabaseManager>, name: &str) -> Tran
     TransactionRead::open(database, TransactionOptions::default()).expect("open read")
 }
 
-fn export(transaction: &TransactionRead<WALClient>, name: &str) -> Vec<MigrationItem> {
+fn export(transaction: &TransactionRead<WALClient>, name: &str) -> Vec<MigrationMessage> {
     let mut exporter = DatabaseExporter::new(transaction, "3.0.0-test", name).expect("exporter");
     let mut items = Vec::new();
     while let Some(item) = exporter.next_item().expect("next item") {
@@ -109,28 +119,28 @@ fn export(transaction: &TransactionRead<WALClient>, name: &str) -> Vec<Migration
     items
 }
 
-fn source_items() -> Vec<MigrationItem> {
+fn source_items() -> Vec<MigrationMessage> {
     let alice = "alice".to_owned();
     let bob = "bob".to_owned();
     vec![
-        MigrationItem::Schema(SCHEMA.to_owned()),
-        MigrationItem::Attribute {
+        MigrationMessage::Schema(SCHEMA.to_owned()),
+        MigrationMessage::Attribute {
             id: alice.clone(),
             label: Label::build("name", None),
             value: Value::String("Alice".into()),
         },
-        MigrationItem::Attribute {
+        MigrationMessage::Attribute {
             id: bob.clone(),
             label: Label::build("name", None),
             value: Value::String("Bob".into()),
         },
-        MigrationItem::Entity {
+        MigrationMessage::Entity {
             id: "p1".to_owned(),
             label: Label::build("person", None),
             owned_attributes: vec![alice],
         },
-        MigrationItem::Entity { id: "p2".to_owned(), label: Label::build("person", None), owned_attributes: vec![bob] },
-        MigrationItem::Relation {
+        MigrationMessage::Entity { id: "p2".to_owned(), label: Label::build("person", None), owned_attributes: vec![bob] },
+        MigrationMessage::Relation {
             id: "f1".to_owned(),
             label: Label::build("friendship", None),
             owned_attributes: vec![],
@@ -139,7 +149,7 @@ fn source_items() -> Vec<MigrationItem> {
                 vec!["p1".to_owned(), "p2".to_owned()],
             )],
         },
-        MigrationItem::Checksums(Checksums {
+        MigrationMessage::Checksums(Checksums {
             entity_count: 2,
             attribute_count: 2,
             relation_count: 1,
@@ -149,16 +159,17 @@ fn source_items() -> Vec<MigrationItem> {
     ]
 }
 
-fn empty_checksums() -> MigrationItem {
-    MigrationItem::Checksums(Checksums::new())
+fn empty_checksums() -> MigrationMessage {
+    MigrationMessage::Checksums(Checksums::new())
 }
 
-fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationItem>) {
-    let mut importer = importer(database_manager, name);
+fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationMessage>) {
+    let (sender, task) = importer_sender(database_manager, name);
     for item in items {
-        importer.apply(item).expect("apply");
+        sender.try_send(item).expect("apply");
     }
-    importer.import_done().expect("import done");
+    sender.try_send(MigrationMessage::Finalize).expect("finalize message");
+    task.join().unwrap().unwrap();
 }
 
 #[test]
@@ -166,13 +177,13 @@ fn a_database_without_a_schema_or_data_round_trips() {
     init_logging();
     let data_dir = create_tmp_dir("migration_empty");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "blank", vec![MigrationItem::Schema(String::new()), empty_checksums()]);
+    import_all(&database_manager, "blank", vec![MigrationMessage::Schema(String::new()), empty_checksums()]);
 
     let items = export(&read_transaction(&database_manager, "blank"), "blank");
     assert!(
         matches!(
             items.as_slice(),
-            [MigrationItem::Schema(_), MigrationItem::Header { .. }, MigrationItem::Checksums(_)]
+            [MigrationMessage::Schema(_), MigrationMessage::Header { .. }, MigrationMessage::Checksums(_)]
         ),
         "{items:?}"
     );
@@ -191,18 +202,18 @@ fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums() {
     let items = export(&transaction, "source");
 
     match &items[0] {
-        MigrationItem::Schema(schema) => assert!(schema.contains("entity person"), "unexpected schema: {schema}"),
+        MigrationMessage::Schema(schema) => assert!(schema.contains("entity person"), "unexpected schema: {schema}"),
         other => panic!("the stream must open with the schema, not {other:?}"),
     }
     match &items[1] {
-        MigrationItem::Header { typedb_version, original_database } => {
+        MigrationMessage::Header { typedb_version, original_database } => {
             assert_eq!(typedb_version, "3.0.0-test");
             assert_eq!(original_database, "source");
         }
         other => panic!("the schema must be followed by the header, not {other:?}"),
     }
     match items.last().expect("a non-empty stream") {
-        MigrationItem::Checksums(checksums) => {
+        MigrationMessage::Checksums(checksums) => {
             assert_eq!(checksums.entity_count, 2);
             assert_eq!(checksums.attribute_count, 2);
             assert_eq!(checksums.relation_count, 1);
@@ -228,7 +239,7 @@ fn an_exported_stream_is_importable_as_it_comes() {
 
     let transaction = read_transaction(&database_manager, "target");
     let copied_items = export(&transaction, "target");
-    let (MigrationItem::Checksums(copied), MigrationItem::Checksums(original)) =
+    let (MigrationMessage::Checksums(copied), MigrationMessage::Checksums(original)) =
         (copied_items.last().unwrap(), export(&read_transaction(&database_manager, "source"), "source").pop().unwrap())
     else {
         panic!("both streams must close with the checksums")
@@ -246,28 +257,30 @@ fn an_out_of_order_stream_is_rejected() {
     let data_dir = create_tmp_dir("migration_stream_order");
     let database_manager = manager(&data_dir);
 
-    let mut early = importer(&database_manager, "early");
-    let result = early.apply(MigrationItem::Header {
+    let (sender, task) = importer_sender(&database_manager, "early");
+    sender.try_send(MigrationMessage::Header {
         typedb_version: "3.0.0-test".to_owned(),
         original_database: "source".to_owned(),
-    });
+    }).expect("Message failed to send");
+    let result = task.join().expect("Task failed to finish");
     assert!(matches!(result, Err(DatabaseImportError::ItemBeforeSchema { .. })), "{result:?}");
 
-    let mut twice = importer(&database_manager, "twice");
-    twice.apply(MigrationItem::Schema(SCHEMA.to_owned())).expect("first schema");
-    let result = twice.apply(MigrationItem::Schema(SCHEMA.to_owned()));
-    assert!(matches!(result, Err(DatabaseImportError::SchemaAlreadyImported { .. })), "{result:?}");
+    let (twice, twice_task) = importer_sender(&database_manager, "twice");
+    twice.try_send(MigrationMessage::Schema(SCHEMA.to_owned())).expect("Messaged failed");
+    let twice_result = twice_task.join().expect("Task failed to finish");
+    assert!(matches!(result, Err(DatabaseImportError::SchemaAlreadyImported { .. })), "{twice_result:?}");
 
-    let mut late = importer(&database_manager, "late");
+    let (late, late_task) = importer_sender(&database_manager, "late");
     for item in source_items() {
-        late.apply(item).expect("apply");
+        late.try_send(item).expect("Messaged failed");
     }
-    let result = late.apply(MigrationItem::Entity {
+    late.try_send(MigrationMessage::Entity {
         id: "p3".to_owned(),
         label: Label::build("person", None),
         owned_attributes: vec![],
-    });
+    }).expect("Message failed");
+    let result= late_task.join().expect("Task failed to finish");
     assert!(matches!(result, Err(DatabaseImportError::ItemAfterChecksums { .. })), "{result:?}");
-    let result = late.apply(MigrationItem::Checksums(Checksums::new()));
-    assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
+    let result = late.try_send(MigrationMessage::Checksums(Checksums::new()));
+    assert!(matches!(result, Err(TrySendError::Closed(_))), "{result:?}");
 }

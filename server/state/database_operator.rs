@@ -35,7 +35,8 @@ use tokio::{
     sync::{RwLock, Semaphore, mpsc::Sender},
     task::JoinHandle,
 };
-
+use tokio::sync::mpsc::Receiver;
+use database::migration::item::MigrationMessage;
 use crate::{
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
     service::grpc::migration::import_service::DatabaseImportService,
@@ -63,6 +64,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         name: &str,
         close_sender: Sender<()>,
         interrupt: ExecutionInterrupt,
+        item_receiver: Receiver<MigrationMessage>,
     ) -> Result<DatabaseImporter, ArcServerStateError>;
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
@@ -200,8 +202,9 @@ impl LocalDatabaseOperator {
         &self,
         handler: Box<dyn DatabaseImportHandler>,
         interrupt: ExecutionInterrupt,
+        item_receiver: Receiver<MigrationMessage>,
     ) -> DatabaseImporter {
-        DatabaseImporter::new(handler, self.database_manager.import_directory().to_owned(), interrupt)
+        DatabaseImporter::new(handler, self.database_manager.import_directory().to_owned(), interrupt, item_receiver)
     }
 
     pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
@@ -298,13 +301,14 @@ impl DatabaseOperator for LocalDatabaseOperator {
         name: &str,
         close_sender: Sender<()>,
         interrupt: ExecutionInterrupt,
+        item_receiver: Receiver<MigrationMessage>,
     ) -> Result<DatabaseImporter, ArcServerStateError> {
         let map_err =
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;
         let staged_database = self.prepare_imported_database(name.to_string())?;
         let handler = LocalDatabaseImportHandler { database_manager: self.database_manager.clone(), staged_database };
-        Ok(self.new_importer(Box::new(handler), interrupt))
+        Ok(self.new_importer(Box::new(handler), interrupt, item_receiver))
     }
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError> {

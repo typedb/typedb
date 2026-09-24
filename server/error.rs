@@ -274,7 +274,9 @@ impl ServerStateError for LocalServerStateError {
                 | DatabaseImportServiceError::ClientClosed { .. } => Request,
                 DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { typedb_source } => database_import_origin(typedb_source),
-                DatabaseImportServiceError::ImportTaskFailed { .. } => Internal,
+                DatabaseImportServiceError::ImportTaskFailed { .. }
+                | DatabaseImportServiceError::ChannelError { }
+                | DatabaseImportServiceError::ThreadingError {} => Internal,
                 DatabaseImportServiceError::ImportClosed { .. }
                 | DatabaseImportServiceError::ShutdownInterrupt { .. } => System,
             },
@@ -362,7 +364,8 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::DataCommitFailed { .. }
         | DatabaseImportError::FinalisationFailed { .. }
         | DatabaseImportError::CacheError { .. }
-        | DatabaseImportError::Interrupted { .. } => ErrorOrigin::System,
+        | DatabaseImportError::Interrupted { .. }
+        | DatabaseImportError:: ChannelReceiveError {} => ErrorOrigin::System,
 
         DatabaseImportError::PreparationSchemaCommitFailed { .. }
         | DatabaseImportError::FinalizationSchemaCommitFailed { .. } => ErrorOrigin::Internal,

@@ -45,6 +45,7 @@ rust_library(
         "@crates//:rocksdb",
         "@crates//:serde",
         "@crates//:tracing",
+        "@crates//:tokio",
     ],
     visibility = ["//visibility:public"],
 )
