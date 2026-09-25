@@ -24,9 +24,6 @@
 	[dependencies.concept]
 		workspace = true
 
-	[dependencies.criterion]
-		workspace = true
-
 	[dependencies.csv]
 		workspace = true
 

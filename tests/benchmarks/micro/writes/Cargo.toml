@@ -14,12 +14,6 @@
 	[dependencies.compiler]
 		workspace = true
 
-	[dependencies.criterion]
-		workspace = true
-
-	[dependencies.csv]
-		workspace = true
-
 	[dependencies.database]
 		workspace = true
 
@@ -39,9 +33,6 @@
 		workspace = true
 
 	[dependencies.options]
-		workspace = true
-
-	[dependencies.pprof]
 		workspace = true
 
 	[dependencies.primitive]
