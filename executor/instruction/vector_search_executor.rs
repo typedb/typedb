@@ -209,14 +209,11 @@ impl VectorSearchExecutor {
                 let mut k = 128.min(total);
                 loop {
                     let results = vector_store.search(type_id, &query, k);
-                    let tail_above_threshold =
-                        results.iter().all(|&(_, distance)| 1.0 - distance as f64 >= threshold);
+                    let tail_above_threshold = results.iter().all(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;
                     if !tail_above_threshold || exhausted {
                         candidates.extend(
-                            results
-                                .into_iter()
-                                .map(|(id, _)| AttributeVertex::new(type_id, AttributeID::Vector(id))),
+                            results.into_iter().map(|(id, _)| AttributeVertex::new(type_id, AttributeID::Vector(id))),
                         );
                         break;
                     }

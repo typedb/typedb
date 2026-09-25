@@ -115,11 +115,8 @@ fn vector_store(context: &Context) -> Arc<VectorStore> {
 
 fn embedding_type_id(context: &Context) -> encoding::graph::type_::vertex::TypeID {
     let snapshot = context.storage.clone().open_snapshot_read();
-    let attribute_type = context
-        .type_manager
-        .get_attribute_type(&snapshot, &Label::build("embedding", None))
-        .unwrap()
-        .unwrap();
+    let attribute_type =
+        context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
     attribute_type.vertex().type_id_()
 }
 
@@ -159,16 +156,11 @@ fn committed_vector_values_are_read_back_from_the_store() {
 
     // value read goes: KV key (existence, empty value) -> vector store (the value)
     let snapshot = context.storage.clone().open_snapshot_read();
-    let attribute_type = context
-        .type_manager
-        .get_attribute_type(&snapshot, &Label::build("embedding", None))
-        .unwrap()
-        .unwrap();
+    let attribute_type =
+        context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
     let mut values: Vec<Vec<f32>> = Vec::new();
-    let mut iterator = context
-        .thing_manager
-        .get_attributes_in(&snapshot, attribute_type, StorageCounters::DISABLED)
-        .unwrap();
+    let mut iterator =
+        context.thing_manager.get_attributes_in(&snapshot, attribute_type, StorageCounters::DISABLED).unwrap();
     while let Some(attribute) = iterator.next() {
         let attribute = attribute.unwrap();
         let value = attribute.get_value(&snapshot, &context.thing_manager, StorageCounters::DISABLED).unwrap();
@@ -202,10 +194,7 @@ fn duplicate_vector_insert_is_deduplicated() {
     run_write_query(&context, INSERT);
     // inserting an identical vector must reuse the existing attribute (value-derived identity),
     // exercising the store-backed hash disambiguation against committed (stripped) values
-    run_write_query(
-        &context,
-        r#"insert $d isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#,
-    );
+    run_write_query(&context, r#"insert $d isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
     let store = vector_store(&context);
     assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3, "no new vector expected");
 
