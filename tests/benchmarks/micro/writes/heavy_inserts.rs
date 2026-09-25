@@ -7,17 +7,17 @@ use std::{sync::Arc, time::Instant};
 
 use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
-    QueryAnswer, commit, execute_write_query_in,
+    QueryAnswer,
+    benchmark::{RunDescriptor, TypeDBMicroBenchmark},
+    commit, execute_write_query_in,
+    profiling::{MultiQueryTxProfile, MultiTxMultiQueryProfile},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
-    profiling::{
-        MultiQueryTxProfile, MultiTxMultiQueryProfile,
-    },
     utils::{CountResults, unpack_result},
 };
-use lib_benchmark::benchmark::{RunDescriptor, TypeDBMicroBenchmark};
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
+
 use crate::{given_rows_with, no_initial_data};
 
 type HeavyInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, MultiTxMultiQueryProfile>;
@@ -38,12 +38,8 @@ fn parametrised_entity_insert(
 ) -> HeavyInsertBenchmark {
     let query = "given; insert $x isa person;";
     let query_owned = query.to_owned();
-    let run_descriptor = RunDescriptor {
-        parallelism: 1,
-        total_txns: n_txns,
-        n_queries_per_tx,
-        n_rows_per_query: n_entities_per_query
-    };
+    let run_descriptor =
+        RunDescriptor { parallelism: 1, total_txns: n_txns, n_queries_per_tx, n_rows_per_query: n_entities_per_query };
     let benchmark_fn =
         Box::new(move |database: Arc<Database<WALClient>>, given_rows_to_clone: Option<GivenRowsSimple>| {
             let mut profiles = Vec::with_capacity(n_txns);

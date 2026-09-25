@@ -9,9 +9,9 @@ use std::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
-use std::time::Instant;
+
 use database::{Database, transaction::TransactionWrite};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
@@ -21,11 +21,10 @@ use crate::{
     Config, Context, QueryAnswer, commit,
     datagen::RandomDataGen,
     execute_write_query_in,
-    profiling::TxQueryProfile,
+    profiling::{MultiQueryTxProfile, MultiTxMultiQueryProfile, TxQueryProfile, transaction_options_with_profiling},
     reports::SimpleReport,
     utils::{CountResults, unpack_result},
 };
-use crate::profiling::{transaction_options_with_profiling, MultiQueryTxProfile, MultiTxMultiQueryProfile};
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
@@ -126,19 +125,18 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
 pub type TypeDBWorkloadBenchmark = TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile>;
 
 impl TypeDBWorkloadBenchmark {
-    fn new(name: &'static str, schema: &'static str, preload_data_fn: Option<PreloadDataFn>, query_descriptor: QueryDescriptor, run_descriptor: RunDescriptor) -> Self {
+    pub fn new(
+        name: &'static str,
+        schema: &'static str,
+        preload_data_fn: Option<PreloadDataFn>,
+        query_descriptor: QueryDescriptor,
+        run_descriptor: RunDescriptor,
+    ) -> Self {
         let warmup_fn = query_descriptor.for_warmup();
         let workload = WorkLoad { query_descriptor, run_descriptor };
         let prepare_run_fn = workload.prepare_fn();
         let benchmark_fn = workload.runner(name);
-        Self {
-            name,
-            schema,
-            preload_data_fn,
-            warmup_fn,
-            prepare_run_fn,
-            benchmark_fn,
-        }
+        Self { name, schema, preload_data_fn, warmup_fn, prepare_run_fn, benchmark_fn }
     }
 }
 
@@ -151,7 +149,6 @@ pub struct QueryDescriptor {
 }
 
 impl QueryDescriptor {
-
     pub fn for_warmup(&self) -> Option<WarmupFn> {
         let warmup_workload = self.create_workload(RunDescriptor::WARMUP.clone());
         let runner = warmup_workload.runner("_warmup");
@@ -176,12 +173,8 @@ pub struct RunDescriptor {
 }
 
 impl RunDescriptor {
-    const WARMUP: RunDescriptor = RunDescriptor {
-        parallelism: 1,
-        total_txns: 10,
-        n_queries_per_tx: 1,
-        n_rows_per_query: 1,
-    };
+    const WARMUP: RunDescriptor =
+        RunDescriptor { parallelism: 1, total_txns: 10, n_queries_per_tx: 1, n_rows_per_query: 1 };
 
     pub fn total_rows(&self) -> usize {
         self.total_txns * self.n_queries_per_tx * self.n_rows_per_query
@@ -225,7 +218,12 @@ impl WorkLoad {
         })
     }
 
-    fn new_runner_thread(database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>, query: &'static str, run_descriptor: RunDescriptor) -> impl FnOnce() -> Vec<MultiQueryTxProfile>{
+    fn new_runner_thread(
+        database: Arc<Database<WALClient>>,
+        producer: Arc<WorkloadInstance>,
+        query: &'static str,
+        run_descriptor: RunDescriptor,
+    ) -> impl FnOnce() -> Vec<MultiQueryTxProfile> {
         let overestimate_txns_per_thread: usize =
             ((1.5 * run_descriptor.total_txns as f64 / run_descriptor.parallelism as f64).ceil() as usize).max(2);
         let local_profiles = Vec::with_capacity(overestimate_txns_per_thread);
@@ -239,12 +237,8 @@ impl WorkLoad {
                     let Some(given_rows) = producer.take_next_batch() else {
                         break;
                     };
-                    let (query_result, tx_returned) = unpack_result(execute_write_query_in::<_, CountResults>(
-                        tx,
-                        query,
-                        Some(given_rows),
-                        true,
-                    ));
+                    let (query_result, tx_returned) =
+                        unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), true));
                     tx = tx_returned;
                     let QueryAnswer { profile: query_profile, answer: rows } = query_result.unwrap();
                     assert_eq!(rows, run_descriptor.n_rows_per_query);
@@ -289,9 +283,12 @@ impl WorkloadInstance {
                 UnsafeCell::new(given_rows_opt)
             })
             .collect();
-        Arc::new(
-            Self { query: query.query, variables: query.variables.clone(), batches, next_index: AtomicUsize::new(0) }
-        )
+        Arc::new(Self {
+            query: query.query,
+            variables: query.variables.clone(),
+            batches,
+            next_index: AtomicUsize::new(0),
+        })
     }
 
     pub fn query(&self) -> &str {
