@@ -95,7 +95,7 @@ use crate::{
         Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationCascade, AnnotationIndependent},
         attribute_type::AttributeType,
-        constraint::{Constraint, get_checked_constraints},
+        constraint::{Constraint, get_checked_cardinality_constraints},
         entity_type::EntityType,
         object_type::ObjectType,
         relation_type::RelationType,
@@ -1676,6 +1676,11 @@ impl ThingManager {
             })
     }
 
+    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, vertex: ObjectVertex) -> bool {
+        let key = vertex.into_storage_key();
+        matches!(snapshot.get_write(key.as_reference()), Some(Write::Insert { .. }))
+    }
+
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
@@ -2037,17 +2042,12 @@ impl ThingManager {
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_constraints =
-            get_checked_constraints(owner.type_().get_owned_attribute_type_constraints_cardinality(
-                snapshot,
-                self.type_manager(),
-                attribute_type,
-            )?);
-        if cardinality_constraints.is_empty() {
+        if Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
             return Ok(());
         }
-
-        for constraint in cardinality_constraints {
+        let constraints =
+            owner.type_().get_owned_attribute_type_constraints(snapshot, self.type_manager(), attribute_type)?;
+        for constraint in get_checked_cardinality_constraints(&constraints) {
             let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
@@ -2068,14 +2068,11 @@ impl ThingManager {
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_constraints = get_checked_constraints(
-            player.type_().get_played_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
-        );
-        if cardinality_constraints.is_empty() {
+        if Self::is_object_inserted_in_snapshot(snapshot, player.vertex()) {
             return Ok(());
         }
-
-        for constraint in cardinality_constraints {
+        let constraints = player.type_().get_played_role_type_constraints(snapshot, self.type_manager(), role_type)?;
+        for constraint in get_checked_cardinality_constraints(&constraints) {
             let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
@@ -2096,14 +2093,12 @@ impl ThingManager {
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_constraints = get_checked_constraints(
-            relation.type_().get_related_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
-        );
-        if cardinality_constraints.is_empty() {
+        if Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
             return Ok(());
         }
-
-        for constraint in cardinality_constraints {
+        let constraints =
+            relation.type_().get_related_role_type_constraints(snapshot, self.type_manager(), role_type)?;
+        for constraint in get_checked_cardinality_constraints(&constraints) {
             let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
@@ -2907,7 +2902,9 @@ impl ThingManager {
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
-        snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        if !Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
+            snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        }
         Ok(())
     }
 
@@ -2968,7 +2965,9 @@ impl ThingManager {
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
-        snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        if !Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
+            snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        }
 
         Ok(())
     }
