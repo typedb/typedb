@@ -64,6 +64,7 @@ pub fn execute_schema_query(
                 &function_manager,
                 &query,
                 &source_query,
+                None,
             )
         }
     )
@@ -182,6 +183,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         &query_pipeline,
         given_rows,
         source_query,
+        None,
     );
     let pipeline = match result {
         Ok(pipeline) => pipeline,
