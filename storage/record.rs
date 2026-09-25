@@ -8,6 +8,7 @@ use std::{fmt, io::Read};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
+use primitive::btreemap_intersection_iterator::BTreeMapIntersectionIterator;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -145,46 +146,34 @@ impl CommitRecord {
         for (write_buffer, pred_write_buffer) in self.operations().write_buffers().zip(predecessor.operations()) {
             let writes = write_buffer.writes();
             let predecessor_writes = pred_write_buffer.writes();
-
-            for (key, write) in writes.iter() {
-                if let Some(predecessor_write) = predecessor_writes.get(key) {
-                    match (predecessor_write, write) {
-                        (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
-                        }
-                        (Write::Delete, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
-                        }
-                        _ => (),
+            for (_key, write, predecessor_write) in BTreeMapIntersectionIterator::new(writes, predecessor_writes) {
+                match (predecessor_write, write) {
+                    (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
+                        puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
                     }
+                    (Write::Delete, Write::Put { reinsert, .. }) => {
+                        puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                    }
+                    _ => (),
                 }
-                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
-                {
+            }
+            // If there's a lock on a key, is there guaranteed to be a write on the key?
+            for (_key, write, predecessor_lock) in BTreeMapIntersectionIterator::new(writes, predecessor_locks) {
+                if matches!(write, Write::Delete) && matches!(predecessor_lock, LockType::Unmodifiable) {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
             }
 
             // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
-            // Iterate the smaller collection and point-lookup into the larger one.
-            if locks.len() <= predecessor_writes.len() {
-                for (key, lock) in locks.iter() {
-                    if matches!(lock, LockType::Unmodifiable)
-                        && matches!(predecessor_writes.get(key), Some(Write::Delete))
-                    {
-                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
-                    }
-                }
-            } else {
-                for (key, write) in predecessor_writes.iter() {
-                    if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
-                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
-                    }
+            for (_key, lock, predecessor_write) in BTreeMapIntersectionIterator::new(locks, predecessor_writes) {
+                if matches!(lock, LockType::Unmodifiable) && matches!(predecessor_write, Write::Delete) {
+                    return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                 }
             }
         }
 
-        for (key, lock) in locks.iter() {
-            if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
+        for (_key, lock, predecessor_lock) in BTreeMapIntersectionIterator::new(locks, predecessor_locks) {
+            if matches!(lock, LockType::Exclusive) && matches!(predecessor_lock, LockType::Exclusive) {
                 return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
             }
         }
