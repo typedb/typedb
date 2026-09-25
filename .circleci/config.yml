@@ -88,9 +88,9 @@ commands:
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
-  install-brew-rosetta:
-    steps:
-      - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  # Removed install-brew-rosetta: Homebrew's installer refuses Intel/Rosetta since 2026-09-11
+  # (Homebrew/install#1140), and no step in this config uses brew — bazelisk is fetched via curl.
+  # If an x86_64 brew turns out to be needed, pin the pre-removal installer commit f4aa1b1ca5.
 
   test-assembly-unix:
     steps:
@@ -235,7 +235,6 @@ jobs:
     steps:
       - macos/install-rosetta
       - checkout
-      - install-brew-rosetta
       - install-deps-brew:
           bazel-arch: amd64
       - test-assembly-unix
@@ -313,7 +312,6 @@ jobs:
     steps:
       - macos/install-rosetta
       - checkout
-      - install-brew-rosetta
       - install-deps-brew:
           bazel-arch: amd64
       - deploy-release-unix
