@@ -91,18 +91,18 @@ impl TimingStats {
         let total: Duration = values.iter().sum();
         let mean = total / n as u32;
         values.sort();
-        let pct = |p: f64| DurationMs(values[((p / 100.0) * (n - 1) as f64).round() as usize]);
-        let pct_of_outer = outer_total
+        let percentile = |p: f64| DurationMs(values[((p / 100.0) * (n - 1) as f64).round() as usize]);
+        let percentage_of_outer = outer_total
             .filter(|&o| !o.is_zero())
             .map_or("—".into(), |o| format!("{:.1}%", total.as_nanos() as f64 / o.as_nanos() as f64 * 100.0));
         Self {
             metric,
             n,
             mean_ms: DurationMs(mean),
-            p50_ms: pct(50.0),
-            p95_ms: pct(95.0),
-            p99_ms: pct(99.0),
-            pct_of_outer,
+            p50_ms: percentile(50.0),
+            p95_ms: percentile(95.0),
+            p99_ms: percentile(99.0),
+            pct_of_outer: percentage_of_outer,
         }
     }
 }
