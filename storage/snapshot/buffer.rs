@@ -25,7 +25,10 @@ use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKeyArray,
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
-    snapshot::{lock::LockType, write::Write},
+    snapshot::{
+        lock::LockType,
+        write::{KnownToExist, Write},
+    },
 };
 
 #[derive(Debug)]
@@ -152,12 +155,17 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes
-            .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: false });
+        self.put_with(key, value, KnownToExist::Unknown)
     }
 
-    pub(crate) fn put_existing(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: true });
+    pub(crate) fn put_with(
+        &mut self,
+        key: ByteArray<BUFFER_KEY_INLINE>,
+        value: ByteArray<BUFFER_VALUE_INLINE>,
+        known_to_exist: KnownToExist,
+    ) {
+        let reinsert = known_to_exist == KnownToExist::NonExistent;
+        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(reinsert)), known_to_exist });
     }
 
     pub(crate) fn unput(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, expected_value: ByteArray<BUFFER_VALUE_INLINE>) {
