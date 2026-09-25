@@ -48,9 +48,15 @@ yield), MVCC re-check each candidate against the snapshot KV key, re-score exact
 ## Durability
 
 Rides the existing checkpoint: `checkpoint_storage` calls `checkpoint.add_extension(vector_store)`
-(CheckpointAdditionalData, name VECTOR_STORE) — tmp+rename+watermark+old-cleanup inherited.
-Format: our own versioned envelope (format_version, per type: type id + dimensions + usearch
-save_to_buffer blob) — not trusting usearch's unverified header (ClickHouse's lesson).
+(CheckpointAdditionalData, name VECTOR_STORE) — atomicity inherited from the whole-checkpoint-dir
+tmp+rename; watermark+old-cleanup inherited too.
+Format (changed 2026-09-21, was a single bincode envelope): `VECTOR_STORE/` is a DIRECTORY of
+plain usearch files — `{type id hex}-cosine.usearch`, exactly usearch's on-disk format, openable
+with usearch tooling — plus a text `MANIFEST` (version line, then per index: type id, metric,
+dimensions, file byte length). The manifest carries what usearch's unverified header can't be
+trusted for (ClickHouse's lesson): dimensions to reconstruct index options + length as a
+torn-file guard. Files are fsynced individually (usearch save doesn't), then the dir. Per-file
+layout is the upgrade path to hard-link-unchanged checkpoints and mmap `view()`.
 
 Recovery (Database::load): load the extension into a VectorStore FIRST, then pass it as the
 commit observer into `MVCCStorage::load` — storage recovery replays the WAL tail through the

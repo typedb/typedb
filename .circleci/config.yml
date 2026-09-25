@@ -180,6 +180,35 @@ commands:
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
 jobs:
+  # TODO(vector-search): TEMPORARY debug job — REMOVE BEFORE MERGE.
+  # Diagnoses the linux-x86_64 opt-mode link failure: cxx.o (cxx crate's C++ shim,
+  # pulled in by usearch) lacks -fPIC while typedb_server_bin links as -pie.
+  debug-cxx-fpic-linux-x86_64:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - run:
+          name: reproduce failing link (verbose)
+          command: |
+            bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+            bazel build --config=ci --jobs=8 --compilation_mode=opt --verbose_failures //:typedb_server_bin 2>&1 | tail -100 || true
+      - run:
+          name: dump cxx.cc compile action (is -fPIC there?)
+          command: |
+            bazel aquery --config=ci --compilation_mode=opt 'inputs(".*cxx.cc", deps(//:typedb_server_bin))' 2>/dev/null | grep -E "Mnemonic|Outputs|fPIC|pic" | head -30
+            echo "--- full command line of the compile action ---"
+            bazel aquery --config=ci --compilation_mode=opt 'inputs(".*cxx.cc", deps(//:typedb_server_bin))' 2>/dev/null | grep -A2 "Command Line" | head -40
+      - run:
+          name: inspect built archives and relocations
+          command: |
+            find ~/.cache/bazel -name "libcxx_cc*" -path "*k8-opt*" 2>/dev/null
+            for obj in $(find ~/.cache/bazel -path "*cxx-1.0.194*" -name "*.o" 2>/dev/null | head -4); do
+              echo "== $obj"
+              readelf -r "$obj" 2>/dev/null | grep -c "R_X86_64_32" || true
+            done
+
   # per platform snapshot deployment
   test-deploy-snapshot-linux-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -421,6 +450,12 @@ jobs:
 workflows:
   typedb-snapshot:
     jobs:
+      # TODO(vector-search): TEMPORARY — REMOVE BEFORE MERGE
+      - debug-cxx-fpic-linux-x86_64:
+          filters:
+            branches:
+              only: [ vector-search-impl-indexing ]
+
       - test-deploy-snapshot-linux-x86_64:
           filters:
             branches:
