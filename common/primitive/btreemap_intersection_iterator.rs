@@ -6,7 +6,6 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, btree_map::Range},
-    ops::Bound,
 };
 
 struct BTreeMapAndRange<'a, K: Ord, V> {
@@ -25,11 +24,11 @@ impl<'a, K: Ord, V> BTreeMapAndRange<'a, K, V> {
     }
 
     fn seek(&mut self, key: &K) {
-        self.range = self.map.range((Bound::Included(key), Bound::Unbounded))
+        self.range = self.map.range(key..)
     }
 }
 
-// The implementation may rely on keys being unique, which is guaranteed for BTreeMaps
+// The implementation relies on keys being unique, which is guaranteed for BTreeMaps
 pub struct BTreeMapIntersectionIterator<'a, K: Ord, V1, V2> {
     first: BTreeMapAndRange<'a, K, V1>,
     second: BTreeMapAndRange<'a, K, V2>,
