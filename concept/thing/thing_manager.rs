@@ -95,7 +95,7 @@ use crate::{
         Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationCascade, AnnotationIndependent},
         attribute_type::AttributeType,
-        constraint::{Constraint, get_checked_constraints},
+        constraint::{Constraint, get_checked_cardinality_constraints},
         entity_type::EntityType,
         object_type::ObjectType,
         relation_type::RelationType,
@@ -1989,17 +1989,22 @@ impl ThingManager {
             let attribute_type = attribute.type_();
 
             self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
-            self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
+            self.may_add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
         } else if ThingEdgeLinks::is_links(key) {
             let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
             let relation = Relation::new(role_player.relation());
             let player = Object::new(role_player.player());
             let role_type = RoleType::build_from_type_id(role_player.role_id());
 
-            self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
-            self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
+            self.may_add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
+            self.may_add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
         }
         Ok(())
+    }
+
+    fn has_insert_write(snapshot: &impl WritableSnapshot, vertex: ObjectVertex) -> bool {
+        let key = vertex.into_storage_key();
+        matches!(snapshot.get_write(key.as_reference()), Some(Write::Insert { .. }))
     }
 
     fn add_exclusive_lock_for_unique_constraint(
@@ -2031,23 +2036,18 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_owns_cardinality_constraint(
+    fn may_add_exclusive_lock_for_owns_cardinality_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_constraints =
-            get_checked_constraints(owner.type_().get_owned_attribute_type_constraints_cardinality(
-                snapshot,
-                self.type_manager(),
-                attribute_type,
-            )?);
-        if cardinality_constraints.is_empty() {
-            return Ok(());
+        if Self::has_insert_write(snapshot, owner.vertex()) {
+            return Ok(()); // exists only in one concurrent tx, cannot have conflicts
         }
-
-        for constraint in cardinality_constraints {
+        let constraints =
+            owner.type_().get_owned_attribute_type_constraints(snapshot, self.type_manager(), attribute_type)?;
+        for constraint in get_checked_cardinality_constraints(&constraints) {
             let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
@@ -2062,20 +2062,17 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_plays_cardinality_constraint(
+    fn may_add_exclusive_lock_for_plays_cardinality_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_constraints = get_checked_constraints(
-            player.type_().get_played_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
-        );
-        if cardinality_constraints.is_empty() {
-            return Ok(());
+        if Self::has_insert_write(snapshot, player.vertex()) {
+            return Ok(()); // exists only in one concurrent tx, cannot have conflicts
         }
-
-        for constraint in cardinality_constraints {
+        let constraints = player.type_().get_played_role_type_constraints(snapshot, self.type_manager(), role_type)?;
+        for constraint in get_checked_cardinality_constraints(&constraints) {
             let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
@@ -2090,20 +2087,18 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_relates_cardinality_constraint(
+    fn may_add_exclusive_lock_for_relates_cardinality_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_constraints = get_checked_constraints(
-            relation.type_().get_related_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
-        );
-        if cardinality_constraints.is_empty() {
-            return Ok(());
+        if Self::has_insert_write(snapshot, relation.vertex()) {
+            return Ok(()); // exists only in one concurrent tx, cannot have conflicts
         }
-
-        for constraint in cardinality_constraints {
+        let constraints =
+            relation.type_().get_related_role_type_constraints(snapshot, self.type_manager(), role_type)?;
+        for constraint in get_checked_cardinality_constraints(&constraints) {
             let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
@@ -2907,7 +2902,9 @@ impl ThingManager {
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
-        snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        if !Self::has_insert_write(snapshot, owner.vertex()) {
+            snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        }
         Ok(())
     }
 
@@ -2968,7 +2965,9 @@ impl ThingManager {
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
-        snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        if !Self::has_insert_write(snapshot, relation.vertex()) {
+            snapshot.exclusive_lock_add(storage_key.into_byte_array());
+        }
 
         Ok(())
     }

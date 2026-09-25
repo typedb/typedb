@@ -545,10 +545,10 @@ pub(crate) fn get_values_constraints<C: Constraint<T>, T: Hash + Eq>(
     filter_by_constraint_category!(constraints.into_iter(), Values).collect()
 }
 
-pub(crate) fn get_checked_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
-) -> HashSet<C> {
-    filter_out_unchecked_constraints!(constraints.into_iter()).collect()
+pub(crate) fn get_checked_cardinality_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: &'a HashSet<C>,
+) -> impl Iterator<Item = &'a C> {
+    filter_out_unchecked_constraints!(filter_by_constraint_category!(constraints.iter(), Cardinality))
 }
 
 pub(crate) fn get_operation_time_checked_constraints<C: Constraint<T>, T: Hash + Eq>(
