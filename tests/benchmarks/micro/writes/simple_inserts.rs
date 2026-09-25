@@ -4,15 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::sync::Arc;
-use database::Database;
-use database::transaction::TransactionWrite;
-use lib_benchmark::{commit, execute_write_query_in, runner::{BenchmarkRunner, BenchmarkRunnerGroup},  QueryAnswer};
-use lib_benchmark::benchmark::{BenchmarkedFn, TypeDBMicroBenchmark};
-use lib_benchmark::profiling::TxQueryProfile;
-use lib_benchmark::utils::{unpack_result, CountResults};
+
+use database::{Database, transaction::TransactionWrite};
+use lib_benchmark::{
+    QueryAnswer,
+    benchmark::{BenchmarkedFn, TypeDBMicroBenchmark},
+    commit, execute_write_query_in,
+    profiling::TxQueryProfile,
+    runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    utils::{CountResults, unpack_result},
+};
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
+
 use crate::{given_rows_with, n_empty_given_rows, no_given_rows, no_initial_data};
 
 pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;

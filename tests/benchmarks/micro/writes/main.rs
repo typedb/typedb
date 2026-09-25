@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::sync::Arc;
+
 use clap::Parser;
 use database::Database;
 use lib_benchmark::{
-    benchmark::{SimpleBenchmark, sanity_check},
+    benchmark::{PreloadDataFn, PrepareRunFn, sanity_check},
+    datagen::RandomDataGen,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
 };
-use lib_benchmark::benchmark::{PreloadDataFn, PrepareRunFn};
-use lib_benchmark::datagen::RandomDataGen;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use storage::durability_client::WALClient;
 
@@ -19,8 +19,6 @@ mod heavy_inserts;
 // mod match_reads;
 mod parallel_heavy_inserts;
 mod simple_inserts;
-
-
 
 // Initial data
 pub fn no_initial_data() -> Option<PreloadDataFn> {
@@ -60,8 +58,7 @@ fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.new_group("sanity_check").run_benchmark(sanity_check());
     simple_inserts::run_all(&mut runner);
     heavy_inserts::run_all(&mut runner);
-    // parallel_heavy_inserts::run_all(&mut runner);
-    // match_reads::run_all(&mut runner);
+    parallel_heavy_inserts::run_all(&mut runner);
 
     runner.summary();
 }
