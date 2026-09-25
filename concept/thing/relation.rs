@@ -532,7 +532,7 @@ impl Links {
     }
 }
 
-fn storage_key_edge_to_links<'a>(
+pub(super) fn storage_key_edge_to_links<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Links, u64) {

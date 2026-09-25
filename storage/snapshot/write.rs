@@ -6,6 +6,7 @@
 
 use std::{
     fmt,
+    fmt::Formatter,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -14,14 +15,17 @@ use std::{
 
 use bytes::byte_array::ByteArray;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
+    de::{Error, Visitor},
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum Write {
     // Insert KeyValue with a new version. Never conflicts. May represent a brand new key or re-inserting an existing key blindly
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: bool },
+    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: KnownToExist },
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
@@ -108,4 +112,56 @@ pub enum WriteCategory {
     Insert,
     Put,
     Delete,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum KnownToExist {
+    Unknown,
+    NonExistent,
+    Exists,
+}
+
+impl fmt::Display for KnownToExist {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            KnownToExist::Unknown => "unknown",
+            KnownToExist::Exists => "persisted",
+            KnownToExist::NonExistent => "non-existent",
+        })
+    }
+}
+
+// TODO: We can easily do it as a number, but that might break backward compatibility
+impl Serialize for KnownToExist {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bool(*self == KnownToExist::Exists)
+    }
+}
+
+impl<'de> Deserialize<'de> for KnownToExist {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        pub struct KnownToExistVisitor;
+        impl Visitor<'_> for KnownToExistVisitor {
+            type Value = KnownToExist;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("`KnownToExist`")
+            }
+
+            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(if v { KnownToExist::Exists } else { KnownToExist::Unknown })
+            }
+        }
+
+        deserializer.deserialize_bool(KnownToExistVisitor)
+    }
 }
