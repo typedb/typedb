@@ -22,7 +22,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::migration::Checksums;
 
 #[derive(Debug)]
-pub enum MigrationMessage {
+pub enum MigrationItem {
     Schema(String),
     Header {
         typedb_version: String,
@@ -45,7 +45,6 @@ pub enum MigrationMessage {
         value: Value<'static>,
     },
     Checksums(Checksums),
-    Finalize,
 }
 
 pub(crate) fn encode_entity(
@@ -54,8 +53,8 @@ pub(crate) fn encode_entity(
     thing_manager: &ThingManager,
     checksums: &mut Checksums,
     entity: Entity,
-) -> Result<MigrationMessage, Box<ConceptReadError>> {
-    Ok(MigrationMessage::Entity {
+) -> Result<MigrationItem, Box<ConceptReadError>> {
+    Ok(MigrationItem::Entity {
         id: encode_thing_iid(&entity),
         label: encode_type_label(snapshot, type_manager, entity.type_())?,
         owned_attributes: encode_owned_attributes(snapshot, thing_manager, checksums, entity)?,
@@ -68,8 +67,8 @@ pub(crate) fn encode_relation(
     thing_manager: &ThingManager,
     checksums: &mut Checksums,
     relation: Relation,
-) -> Result<MigrationMessage, Box<ConceptReadError>> {
-    Ok(MigrationMessage::Relation {
+) -> Result<MigrationItem, Box<ConceptReadError>> {
+    Ok(MigrationItem::Relation {
         id: encode_thing_iid(&relation),
         label: encode_type_label(snapshot, type_manager, relation.type_())?,
         owned_attributes: encode_owned_attributes(snapshot, thing_manager, checksums, relation)?,
@@ -82,9 +81,9 @@ pub(crate) fn encode_attribute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     attribute: Attribute,
-) -> Result<MigrationMessage, Box<ConceptReadError>> {
+) -> Result<MigrationItem, Box<ConceptReadError>> {
     let value = attribute.get_value(snapshot, thing_manager, StorageCounters::DISABLED)?.into_owned();
-    Ok(MigrationMessage::Attribute {
+    Ok(MigrationItem::Attribute {
         id: encode_thing_iid(&attribute),
         label: encode_type_label(snapshot, type_manager, attribute.type_())?,
         value,
