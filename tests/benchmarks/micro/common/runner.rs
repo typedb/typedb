@@ -50,16 +50,21 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
         }
         println!("[.] SimpleRunner: Running benchmark {}", combined_name);
         let mut context = b.init_context();
+        println!(" +- Running before_all");
         b.before_all(&mut context);
         let database = b.create_database(&mut context);
+        println!(" +- Preparing database");
         b.prepare_database(&mut context, database.clone());
+        println!(" +- Warming up...");
+        let input = b.warm_up(&context, database.clone());
+        println!(" +- Preparing run");
         let input = b.prepare_run(&context, database.clone());
 
         let guard =
             self.runner.flamegraph.then(|| pprof::ProfilerGuard::new(100).expect("failed to start pprof profiler"));
-
+        println!(" +- Running benchmark");
         let iter_result = b.run_benchmark(&context, database.clone(), input);
-
+        println!(" +- Done. Preparing report");
         if let Some(guard) = guard {
             if let Ok(report) = guard.report().build() {
                 let dir = std::env::current_dir().unwrap().join("flamegraphs");
@@ -73,6 +78,7 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
 
         drop(database);
         let outputs = vec![iter_result];
+        println!(" +- Reports:");
         <T::IterOutput as SimpleReport>::report(&outputs);
         outputs
     }
