@@ -451,8 +451,13 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        let id =
-            VectorAttributeID::build_hashed_id(type_id, vector_bytes, snapshot, &self.large_value_hasher, committed_vector)?;
+        let id = VectorAttributeID::build_hashed_id(
+            type_id,
+            vector_bytes,
+            snapshot,
+            &self.large_value_hasher,
+            committed_vector,
+        )?;
         let hash = id.get_hash_hash();
         let lock =
             ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().to_bytes(), &type_id.to_bytes(), &hash]);

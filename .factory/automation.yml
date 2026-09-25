@@ -12,6 +12,11 @@ config:
 
 build:
   correctness:
+    # TODO(vector-search): TEMPORARY debug machine — REMOVE BEFORE MERGE. ssh factory@<ip>
+    debug-sleep:
+      image: typedb-ubuntu-22.04
+      command: |
+        sleep 3600
     build:
       image: typedb-ubuntu-22.04
       command: |
