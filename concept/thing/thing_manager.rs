@@ -66,7 +66,10 @@ use resource::{
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
+    snapshot::{
+        ReadableSnapshot, WritableSnapshot,
+        write::{KnownToExist, Write},
+    },
 };
 use tracing::trace;
 
@@ -82,7 +85,10 @@ use crate::{
         entity::Entity,
         has::Has,
         object::{HasIterator, HasReverseIterator, Object, ObjectAPI},
-        relation::{IndexedRelationsIterator, LinksIterator, LinksReverseIterator, Relation, RolePlayer},
+        relation::{
+            IndexedRelationsIterator, Links, LinksIterator, LinksReverseIterator, Relation, RolePlayer,
+            storage_key_edge_to_links,
+        },
         statistics::Statistics,
         r#struct::StructIndexForAttributeTypeIterator,
         thing_manager::validation::{
@@ -1456,15 +1462,20 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        Iterator::map(
-            LinksIterator::new(
-                snapshot.iterate_range(
-                    &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
-                    storage_counters,
-                ),
-            ),
-            |result| result.map(|(links, count)| (links.into_role_player(), count)),
-        )
+        let keyrange = KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+
+        let iter: Box<dyn Iterator<Item = Result<(Links, u64), Box<ConceptReadError>>>> =
+            if Self::is_object_inserted_in_snapshot(snapshot, &relation) {
+                Box::new(
+                    snapshot
+                        .iterate_writes_range(&keyrange)
+                        .filter_map(buffer_insert_entry_to_storage_entry)
+                        .map(|result| result.map(|(k, v)| storage_key_edge_to_links(k, v))),
+                )
+            } else {
+                Box::new(LinksIterator::new(snapshot.iterate_range(&keyrange, storage_counters)))
+            };
+        iter.map(|result| result.map(|(links, count)| (links.into_role_player(), count)))
     }
 
     pub(crate) fn get_role_players_ordered(
@@ -1676,9 +1687,13 @@ impl ThingManager {
             })
     }
 
-    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, vertex: ObjectVertex) -> bool {
-        let key = vertex.into_storage_key();
-        matches!(snapshot.get_write(key.as_reference()), Some(Write::Insert { .. }))
+    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> bool {
+        let key = object.vertex().into_storage_key();
+        snapshot.get_write(key.as_reference()).map_or(false, |write| match write {
+            Write::Insert { .. } => true,
+            Write::Put { .. } => unreachable!("Encountered a Put for a relation"),
+            Write::Delete => false,
+        })
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -2042,7 +2057,7 @@ impl ThingManager {
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
+        if Self::is_object_inserted_in_snapshot(snapshot, owner) {
             return Ok(());
         }
         let constraints =
@@ -2068,7 +2083,7 @@ impl ThingManager {
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, player.vertex()) {
+        if Self::is_object_inserted_in_snapshot(snapshot, player) {
             return Ok(());
         }
         let constraints = player.type_().get_played_role_type_constraints(snapshot, self.type_manager(), role_type)?;
@@ -2093,7 +2108,7 @@ impl ThingManager {
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
+        if Self::is_object_inserted_in_snapshot(snapshot, relation) {
             return Ok(());
         }
         let constraints =
@@ -2845,10 +2860,22 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            owner.set_required(snapshot, self, storage_counters.clone())?;
+            let owner_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &owner);
+            let edge_is_known_to_exist = edges_known_to_exist_if_newly_inserted(owner_is_newly_inserted);
+            if !owner_is_newly_inserted {
+                owner.set_required(snapshot, self, storage_counters.clone())?;
+            }
             attribute.set_required(snapshot, self, storage_counters.clone())?;
-            snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-            snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val_with(
+                has.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_is_known_to_exist,
+            );
+            snapshot.put_val_with(
+                has_reverse.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_is_known_to_exist,
+            );
             Ok(())
         }
     }
@@ -2899,10 +2926,13 @@ impl ThingManager {
             attribute_value_type.category(),
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
-        snapshot.put_val(storage_key.clone(), value);
+        let owner_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &owner);
+        let edge_is_known_to_exist = edges_known_to_exist_if_newly_inserted(owner_is_newly_inserted);
+
+        snapshot.put_val_with(storage_key.clone(), value, edge_is_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
+        if !owner_is_newly_inserted {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
         Ok(())
@@ -2928,16 +2958,29 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let count: u64 = 1;
-        relation.set_required(snapshot, self, storage_counters.clone())?;
+
+        let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
+        let edge_known_to_exist = edges_known_to_exist_if_newly_inserted(relation_is_newly_inserted);
+
+        if !relation_is_newly_inserted {
+            relation.set_required(snapshot, self, storage_counters.clone())?;
+        }
         player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-
+        snapshot.put_val_with(
+            links.into_storage_key().into_owned_array(),
+            ByteArray::copy(&encode_u64(count)),
+            edge_known_to_exist,
+        );
         let links_reverse =
             ThingEdgeLinks::new_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
-        snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+        snapshot.put_val_with(
+            links_reverse.into_storage_key().into_owned_array(),
+            ByteArray::copy(&encode_u64(count)),
+            edge_known_to_exist,
+        );
 
         if relation.type_().relation_index_available(snapshot, self.type_manager())? {
             self.relation_index_player_regenerate(
@@ -2962,10 +3005,14 @@ impl ThingManager {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
-        snapshot.put_val(storage_key.clone(), value);
+
+        let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
+        let edge_known_to_exist = edges_known_to_exist_if_newly_inserted(relation_is_newly_inserted);
+
+        snapshot.put_val_with(storage_key.clone(), value, edge_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
+        if !Self::is_object_inserted_in_snapshot(snapshot, &relation) {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
 
@@ -2984,14 +3031,25 @@ impl ThingManager {
         if count == 0 {
             self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
+            let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
+            let edge_known_to_exist = edges_known_to_exist_if_newly_inserted(relation_is_newly_inserted);
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
-            relation.set_required(snapshot, self, storage_counters.clone())?;
+            if !relation_is_newly_inserted {
+                relation.set_required(snapshot, self, storage_counters.clone())?;
+            }
             player.set_required(snapshot, self, storage_counters.clone())?;
-
-            snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-            snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val_with(
+                links.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_known_to_exist,
+            );
+            snapshot.put_val_with(
+                links_reverse.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_known_to_exist,
+            );
 
             if relation.type_().relation_index_available(snapshot, self.type_manager())? {
                 let player = Object::new(player.vertex());
@@ -3132,6 +3190,8 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
+        let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
+        let edge_known_to_exist = edges_known_to_exist_if_newly_inserted(relation_is_newly_inserted);
         let players = relation
             .get_players(snapshot, self, storage_counters)
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
@@ -3147,9 +3207,10 @@ impl ThingManager {
                         role_type.vertex().type_id_(),
                         role_type.vertex().type_id_(),
                     );
-                    snapshot.put_val(
+                    snapshot.put_val_with(
                         index.into_storage_key().into_owned_array(),
                         ByteArray::copy(&encode_u64(player_repetitions)),
+                        edge_known_to_exist,
                     );
                 }
             } else {
@@ -3161,8 +3222,11 @@ impl ThingManager {
                     role_type.vertex().type_id_(),
                     rp_role_type.vertex().type_id_(),
                 );
-                snapshot
-                    .put_val(index.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
+                snapshot.put_val_with(
+                    index.into_storage_key().into_owned_array(),
+                    ByteArray::copy(&encode_u64(rp_repetitions)),
+                    edge_known_to_exist,
+                );
                 let player_repetitions = count_for_player;
                 let index_reverse = ThingEdgeIndexedRelation::new(
                     rp_player.vertex(),
@@ -3171,9 +3235,10 @@ impl ThingManager {
                     rp_role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                snapshot.put_val(
+                snapshot.put_val_with(
                     index_reverse.into_storage_key().into_owned_array(),
                     ByteArray::copy(&encode_u64(player_repetitions)),
+                    edge_known_to_exist,
                 );
             }
         }
@@ -3273,6 +3338,10 @@ impl ThingManager {
     }
 }
 
+fn edges_known_to_exist_if_newly_inserted(vertex_newly_inserted: bool) -> KnownToExist {
+    if vertex_newly_inserted { KnownToExist::NonExistent } else { KnownToExist::Unknown }
+}
+
 fn register_delete_in_cleanup_intervals(
     cleanup_intervals: &mut CleanupIntervals,
     key: StorageKeyArray<BUFFER_KEY_INLINE>,
@@ -3368,5 +3437,15 @@ fn register_delete_in_cleanup_intervals(
         | Some(DecodableKey::IndexValueToStruct(_)) => {
             trace!("Unhandled delete when constructing compaction record!")
         }
+    }
+}
+
+fn buffer_insert_entry_to_storage_entry(
+    (key, write): (StorageKeyArray<BUFFER_KEY_INLINE>, Write),
+) -> Option<Result<(StorageKey<'static, BUFFER_KEY_INLINE>, Bytes<'static, BUFFER_VALUE_INLINE>), Box<ConceptReadError>>>
+{
+    match write {
+        Write::Insert { value } | Write::Put { value, .. } => Some(Ok((StorageKey::Array(key), Bytes::Array(value)))),
+        Write::Delete { .. } => None,
     }
 }
