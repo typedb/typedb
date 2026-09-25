@@ -1676,7 +1676,7 @@ impl ThingManager {
             })
     }
 
-    fn is_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, vertex: ObjectVertex) -> bool {
+    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, vertex: ObjectVertex) -> bool {
         let key = vertex.into_storage_key();
         matches!(snapshot.get_write(key.as_reference()), Some(Write::Insert { .. }))
     }
@@ -2042,7 +2042,7 @@ impl ThingManager {
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_inserted_in_snapshot(snapshot, owner.vertex()) {
+        if Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
             return Ok(());
         }
         let constraints =
@@ -2068,7 +2068,7 @@ impl ThingManager {
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_inserted_in_snapshot(snapshot, player.vertex()) {
+        if Self::is_object_inserted_in_snapshot(snapshot, player.vertex()) {
             return Ok(());
         }
         let constraints = player.type_().get_played_role_type_constraints(snapshot, self.type_manager(), role_type)?;
@@ -2093,7 +2093,7 @@ impl ThingManager {
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_inserted_in_snapshot(snapshot, relation.vertex()) {
+        if Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
             return Ok(());
         }
         let constraints =
@@ -2902,7 +2902,7 @@ impl ThingManager {
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_inserted_in_snapshot(snapshot, owner.vertex()) {
+        if !Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
         Ok(())
@@ -2965,7 +2965,7 @@ impl ThingManager {
         snapshot.put_val(storage_key.clone(), value);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_inserted_in_snapshot(snapshot, relation.vertex()) {
+        if !Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
 
