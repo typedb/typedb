@@ -20,6 +20,11 @@ common --@rules_rust//:rustfmt.toml=//:rustfmt_config --noincompatible_disallow_
 build --legacy_external_runfiles
 
 build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.bazel_disk_cache --experimental_disk_cache_gc_max_size=100G --experimental_disk_cache_gc_max_age=60d --java_runtime_version=remotejdk_21
+
+# usearch's cxx bridge links Bazel-compiled C++ (cxx_cc) into the -pie server binary; without
+# this, opt mode on linux-x86_64 picks the non-PIC object variant → R_X86_64_32 reloc link errors.
+# No-op on mac (always PIC) and windows (MSVC ignores it).
+build --force_pic
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 
