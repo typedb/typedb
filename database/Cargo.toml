@@ -18,9 +18,6 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
-	[dev-dependencies.tokio]
-		workspace = true
-
 	[dev-dependencies.test_utils_storage]
 		workspace = true
 
@@ -28,6 +25,9 @@ features = {}
 		workspace = true
 
 [dependencies]
+
+	[dependencies.tokio]
+		workspace = true
 
 	[dependencies.tracing]
 		workspace = true

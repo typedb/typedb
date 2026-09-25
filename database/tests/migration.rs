@@ -15,7 +15,7 @@ use database::{
         database_import_handler::{
             DatabaseImportHandler, ImportHandlerError, open_import_schema_transaction, open_import_write_transaction,
         },
-        database_importer::{DatabaseImportError, DatabaseImporter},
+        database_importer::{DatabaseImportError, DatabaseImporter, ImporterHandle},
         item::MigrationItem,
     },
     transaction::{
@@ -25,7 +25,6 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::value::{label::Label, value::Value};
-use executor::ExecutionInterrupt;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use resource::profile::CommitProfile;
 use storage::durability_client::WALClient;
@@ -85,14 +84,10 @@ fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
     .expect("DatabaseManager::new")
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporter {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> ImporterHandle {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
     let handler = TestImportHandler { database_manager: database_manager.clone(), staged_database };
-    DatabaseImporter::new(
-        Box::new(handler),
-        database_manager.import_directory().to_owned(),
-        ExecutionInterrupt::new_uninterruptible(),
-    )
+    DatabaseImporter::new(Box::new(handler), database_manager.import_directory().to_owned()).start(10)
 }
 
 fn read_transaction(database_manager: &Arc<DatabaseManager>, name: &str) -> TransactionRead<WALClient> {
@@ -156,9 +151,9 @@ fn empty_checksums() -> MigrationItem {
 fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationItem>) {
     let mut importer = importer(database_manager, name);
     for item in items {
-        importer.apply(item).expect("apply");
+        importer.blocking_send(item).expect("send");
     }
-    importer.import_done().expect("import done");
+    importer.blocking_finalize().expect("import");
 }
 
 #[test]
@@ -247,27 +242,43 @@ fn an_out_of_order_stream_is_rejected() {
     let database_manager = manager(&data_dir);
 
     let mut early = importer(&database_manager, "early");
-    let result = early.apply(MigrationItem::Header {
-        typedb_version: "3.0.0-test".to_owned(),
-        original_database: "source".to_owned(),
-    });
+    early
+        .blocking_send(MigrationItem::Header {
+            typedb_version: "3.0.0-test".to_owned(),
+            original_database: "source".to_owned(),
+        })
+        .expect("send");
+    let result = early.blocking_finalize();
     assert!(matches!(result, Err(DatabaseImportError::ItemBeforeSchema { .. })), "{result:?}");
 
     let mut twice = importer(&database_manager, "twice");
-    twice.apply(MigrationItem::Schema(SCHEMA.to_owned())).expect("first schema");
-    let result = twice.apply(MigrationItem::Schema(SCHEMA.to_owned()));
+    twice.blocking_send(MigrationItem::Schema(SCHEMA.to_owned())).expect("first schema");
+    twice.blocking_send(MigrationItem::Schema(SCHEMA.to_owned())).expect("second schema");
+    let result = twice.blocking_finalize();
     assert!(matches!(result, Err(DatabaseImportError::SchemaAlreadyImported { .. })), "{result:?}");
 
     let mut late = importer(&database_manager, "late");
     for item in source_items() {
-        late.apply(item).expect("apply");
+        late.blocking_send(item).expect("send");
     }
-    let result = late.apply(MigrationItem::Entity {
+    late.blocking_send(MigrationItem::Entity {
         id: "p3".to_owned(),
         label: Label::build("person", None),
         owned_attributes: vec![],
-    });
+    })
+    .expect("send");
+    let result = late.blocking_finalize();
     assert!(matches!(result, Err(DatabaseImportError::ItemAfterChecksums { .. })), "{result:?}");
-    let result = late.apply(MigrationItem::Checksums(Checksums::new()));
-    assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
+}
+
+#[test]
+fn an_aborted_import_stops_the_importer() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_abort");
+    let database_manager = manager(&data_dir);
+
+    let mut aborted = importer(&database_manager, "aborted");
+    aborted.blocking_send(MigrationItem::Schema(SCHEMA.to_owned())).expect("send");
+    let result = aborted.blocking_abort();
+    assert!(matches!(result, Err(DatabaseImportError::Interrupted { .. })), "{result:?}");
 }
