@@ -20,11 +20,18 @@ use crate::{
 };
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
+    run_serial(runner);
+    run_parallel(runner);
+}
+
+fn run_serial(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("serial_inserts");
     group.run_benchmark(serial_entities_few_large());
     group.run_benchmark(serial_entities_few_large_10q());
     group.run_benchmark(serial_entities_many_small());
+}
 
+fn run_parallel(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("parallel_inserts");
     group.run_benchmark(parallel_entities_many_small());
     group.run_benchmark(parallel_entities_many_large());
