@@ -256,10 +256,9 @@ impl MultiQueryTxProfileReport {
         let n_q = self.run_descriptor.n_queries_per_tx as f64;
         let sum_txn_wall: f64 =
             self.per_txn.iter().map(|r| r.commit_ms.0.as_secs_f64() + n_q * r.mean_query_ms.0.as_secs_f64()).sum();
-        let parallelism_utilisation = sum_txn_wall / self.total_wall_time.0.as_secs_f64();
         println!(
-            "E2E took: {} ms for {} rows = {:.0} rows/s | parallelism utilisation: {:.2}x",
-            self.total_wall_time, total_rows, rows_per_sec, parallelism_utilisation
+            "E2E took: {} ms for {} rows = {:.0} rows/s",
+            self.total_wall_time, total_rows, rows_per_sec
         );
     }
 
