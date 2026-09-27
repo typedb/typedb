@@ -265,12 +265,8 @@ impl ServerStateError for LocalServerStateError {
                 DataCommitError::DurabilityError { .. } => System,
             },
             Self::DatabaseImport { typedb_source } => match typedb_source {
-                DatabaseImportServiceError::ConceptDecode { .. }
-                | DatabaseImportServiceError::DuplicateImport { .. }
+                DatabaseImportServiceError::DuplicateImport { .. }
                 | DatabaseImportServiceError::ImportDatabaseNotFound { .. }
-                | DatabaseImportServiceError::ImportEmptyItem { .. }
-                | DatabaseImportServiceError::AbsentAttributeValue { .. }
-                | DatabaseImportServiceError::AttributesOwningAttributes { .. }
                 | DatabaseImportServiceError::ClientClosed { .. } => Request,
                 DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { typedb_source } => database_import_origin(typedb_source),
@@ -355,7 +351,8 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::AccessAfterFinalisation { .. }
         | DatabaseImportError::ItemBeforeSchema { .. }
         | DatabaseImportError::SchemaAlreadyImported { .. }
-        | DatabaseImportError::ItemAfterChecksums { .. } => ErrorOrigin::Request,
+        | DatabaseImportError::ItemAfterChecksums { .. }
+        | DatabaseImportError::ItemDecode { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
         | DatabaseImportError::DataCommitFailed { .. }

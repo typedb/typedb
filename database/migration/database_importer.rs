@@ -38,13 +38,14 @@ use encoding::{
     },
     value::{label::Label, value::Value},
 };
-use error::typedb_error;
+use error::{TypeDBError, typedb_error};
 use executor::{ExecutionInterrupt, InterruptType};
 use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     collections::{HashMap, HashSet},
+    iter,
     marker::PhantomData,
     panic::{self, AssertUnwindSafe},
     path::PathBuf,
@@ -333,9 +334,11 @@ impl AttributesInfo {
     }
 }
 
-#[derive(Debug)]
+pub type MigrationItemDecodeError = Arc<dyn TypeDBError + Send + Sync>;
+type ImportItems = Box<dyn Iterator<Item = Result<MigrationItem, MigrationItemDecodeError>> + Send>;
+
 enum ImportMessage {
-    Item(MigrationItem),
+    Items(ImportItems),
     Finalize,
 }
 
@@ -344,13 +347,29 @@ type ImportResult = Result<u64, DatabaseImportError>;
 pub struct ImporterHandle {
     sender: Option<mpsc::Sender<ImportMessage>>,
     interrupt: broadcast::Sender<InterruptType>,
+    interrupted: bool,
     result_receiver: Option<oneshot::Receiver<ImportResult>>,
 }
 
 impl ImporterHandle {
     pub async fn send(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(Box::new(iter::once(Ok(item))))).await
+    }
+
+    pub async fn send_batch<E>(
+        &mut self,
+        items: impl IntoIterator<Item = Result<MigrationItem, E>, IntoIter: Send + 'static>,
+    ) -> Result<(), DatabaseImportError>
+    where
+        E: TypeDBError + Send + Sync + 'static,
+    {
+        let items = items.into_iter().map(|item| item.map_err(|error| Arc::new(error) as MigrationItemDecodeError));
+        self.send_message(ImportMessage::Items(Box::new(items))).await
+    }
+
+    async fn send_message(&mut self, message: ImportMessage) -> Result<(), DatabaseImportError> {
         let sent = match &self.sender {
-            Some(sender) => sender.send(ImportMessage::Item(item)).await.is_ok(),
+            Some(sender) => sender.send(message).await.is_ok(),
             None => false,
         };
         if sent { Ok(()) } else { Err(Self::stop_reason(self.join().await)) }
@@ -373,7 +392,11 @@ impl ImporterHandle {
 
     /// The interrupt stops a busy importer at its next check; dropping the sender wakes an idle one.
     fn stop(&mut self) {
-        let _ = self.interrupt.send(InterruptType::DatabaseImportAborted);
+        // Sent at most once
+        if !self.interrupted {
+            let _ = self.interrupt.send(InterruptType::DatabaseImportAborted);
+            self.interrupted = true;
+        }
         self.sender = None;
     }
 
@@ -449,7 +472,6 @@ impl DatabaseImporter {
         }
     }
 
-    /// Runs the importer on its own thread. The returned handle is the only way to send it items.
     pub fn start(mut self, buffer_size: usize) -> ImporterHandle {
         let (sender, receiver) = mpsc::channel(buffer_size);
         let (interrupt, interrupt_receiver) = broadcast::channel(1);
@@ -473,7 +495,7 @@ impl DatabaseImporter {
         if let Err(err) = spawned {
             event!(Level::ERROR, "Failed to start the importer thread: {err}");
         }
-        ImporterHandle { sender: Some(sender), interrupt, result_receiver: Some(result_receiver) }
+        ImporterHandle { sender: Some(sender), interrupt, interrupted: false, result_receiver: Some(result_receiver) }
     }
 
     fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
@@ -482,10 +504,17 @@ impl DatabaseImporter {
             match receiver.blocking_recv() {
                 // The handle is gone without finalising: the import was aborted.
                 None => return Err(DatabaseImportError::Interrupted {}),
-                Some(ImportMessage::Item(item)) => self.apply(item)?,
+                Some(ImportMessage::Items(items)) => {
+                    for item in items {
+                        self.check_interrupt()?;
+                        self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
+                    }
+                }
                 Some(ImportMessage::Finalize) => {
-                    return self.finalize().map(|_| self.total_item_count());
-                },
+                    // Total item count before finalising, otherwise pendings get counted separately
+                    let total_item_count = self.total_item_count();
+                    return self.finalize().map(|()| total_item_count);
+                }
             }
         }
     }
@@ -1271,5 +1300,6 @@ typedb_error! {
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
         ImporterStopped(31, "The importer stopped unexpectedly before the import completed."),
+        ItemDecode(32, "A migration item could not be decoded.", typedb_source: MigrationItemDecodeError),
     }
 }

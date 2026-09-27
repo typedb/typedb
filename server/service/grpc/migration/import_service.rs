@@ -40,7 +40,8 @@ use typedb_protocol::{
 };
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
-const IMPORT_MESSAGE_BUFFER_SIZE: usize = 1000;
+// Each message is one request's batch of items.
+const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
 // const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
@@ -237,20 +238,18 @@ impl DatabaseImportService {
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportDatabaseNotFound {})?;
-        for item in items {
-            let item = decode_item(item).map_err(DatabaseImportServiceError::from)?;
-            self.stop_signals
-                .unless_stopped(active_import.importer.send(item))
-                .await?
-                .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
+        // Items are decoded on the importer thread, off the async runtime.
+        self.stop_signals
+            .unless_stopped(active_import.importer.send_batch(items.into_iter().map(decode_item)))
+            .await?
+            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
-            // TODO: submitted data isn't really a good indicator but is at least a fixed lag. Maybe this actually reads a real value?
-            // let total_items = active_import.importer.total_item_count();
-            // if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
-            //     let name = &active_import.name;
-            //     event!(Level::DEBUG, "Submitted {total_items} imported items of '{name}'...");
-            // }
-        }
+        // TODO: submitted data isn't really a good indicator but is at least a fixed lag. Maybe this actually reads a real value?
+        // let total_items = active_import.importer.total_item_count();
+        // if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
+        //     let name = &active_import.name;
+        //     event!(Level::DEBUG, "Submitted {total_items} imported items of '{name}'...");
+        // }
         Ok(Continue(()))
     }
 
