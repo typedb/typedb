@@ -30,11 +30,8 @@ typedb_error! {
         AbsentAttributeValue(6, "Cannot process an attribute: value is absent."),
         AttributesOwningAttributes(7, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
         ImportPrepareFailed(8, "The server could not open a database import for this request.", typedb_source: ArcServerStateError),
-        ImportTaskFailed(9, "Import processing unexpectedly failed during {phase}. The import is aborted and can be retried.", phase: String),
         ImportClosed(10, "The import was closed by the server. The import is aborted and can be retried."),
         ShutdownInterrupt(11, "The import was interrupted by server shutdown. The import is aborted and can be retried."),
         ClientClosed(12, "The import stream was closed by the client before completion. The import is aborted and can be retried."),
-        ChannelError(13, "Failed to send import message to workers"),
-        ThreadingError(14, "Worker threads reported error"),
     }
 }
