@@ -375,7 +375,6 @@ impl ImporterHandle {
         if sent { Ok(()) } else { Err(Self::stop_reason(self.join().await)) }
     }
 
-    /// Keeps the handle usable if cancelled: aborting it afterwards still waits for the importer to stop.
     pub async fn finalize(&mut self) -> ImportResult {
         if let Some(sender) = self.sender.take() {
             // If this fails, the importer has already stopped and its result carries the reason.
@@ -390,18 +389,17 @@ impl ImporterHandle {
         self.join().await
     }
 
-    /// The interrupt stops a busy importer at its next check; dropping the sender wakes an idle one.
     fn stop(&mut self) {
-        // Sent at most once
         if !self.interrupted {
             let _ = self.interrupt.send(InterruptType::DatabaseImportAborted);
             self.interrupted = true;
         }
+        // dropping sender closes channel to wake up receiver if required
         self.sender = None;
     }
 
     async fn join(&mut self) -> ImportResult {
-        // The receiver is only cleared once the result arrives, so a cancelled join can be retried.
+        // The receiver is only cleared once the result arrives, so a cancelled (dropped) join can be retried.
         let Some(result_receiver) = self.result_receiver.as_mut() else {
             return Err(DatabaseImportError::ImporterStopped {});
         };

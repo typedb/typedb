@@ -33,7 +33,7 @@ use tokio::sync::{
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typedb_protocol::{
     database_manager::import::{Client as ProtocolClient, Server as ProtocolServer},
     migration::Item as MigrationItemProto,
@@ -238,7 +238,6 @@ impl DatabaseImportService {
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportDatabaseNotFound {})?;
-        // Items are decoded on the importer thread, off the async runtime.
         self.stop_signals
             .unless_stopped(active_import.importer.send_batch(items.into_iter().map(decode_item)))
             .await?
@@ -264,32 +263,31 @@ impl DatabaseImportService {
             .await?
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
-        let Some(ActiveImport { name, started, .. }) = self.active_import.take() else {
-            return Err(DatabaseImportServiceError::ImportDatabaseNotFound {});
-        };
-        let elapsed = started.elapsed().as_secs();
-
-        event!(
-            Level::INFO,
-            "Import to '{name}' finished successfully. {total_items} items imported in {elapsed} seconds.",
-        );
+        if let Some(ActiveImport { name, started, .. }) = self.active_import.take() {
+            Self::log_imported(&name, started, total_items);
+        }
         Self::send_done(&self.response_sender).await;
         Ok(Break(()))
     }
 
-    async fn do_close(&mut self) {
-        let Some(active) = self.active_import.take() else {
-            return;
-        };
-        let ActiveImport { name, started, importer } = active;
-        let duration_secs = started.elapsed().as_secs();
-        // Wait for the importer to stop before discarding the database it writes to.
-        if let Ok(total_items) = importer.abort().await {
-            // A finalisation stopped midway can still complete: the database is then imported and must be kept.
-            event!(Level::INFO, "Import to '{name}' was finalised with {total_items} items while being closed.");
-            return;
+    async fn close_with_error(&mut self, status: Status) {
+        if self.do_close().await {
+            Self::send_done(&self.response_sender).await;
+        } else {
+            Self::send_error(&self.response_sender, status).await;
         }
-        event!(Level::INFO, "Import to '{name}' finished without completion after {duration_secs} seconds.");
+    }
+
+    async fn do_close(&mut self) -> bool {
+        let Some(ActiveImport { name, started, importer }) = self.active_import.take() else {
+            return false;
+        };
+        if let Ok(total_items) = importer.abort().await {
+            Self::log_imported(&name, started, total_items);
+            return true;
+        }
+        let elapsed = started.elapsed().as_secs();
+        event!(Level::INFO, "Import to '{name}' finished without completion after {elapsed} seconds.");
         if let Err(err) = self.server_state.databases().import_discard(&name).await {
             event!(
                 Level::ERROR,
@@ -297,11 +295,15 @@ impl DatabaseImportService {
                 err.format_code_and_description()
             );
         }
+        false
     }
 
-    async fn close_with_error(&mut self, status: Status) {
-        self.do_close().await;
-        Self::send_error(&self.response_sender, status).await;
+    fn log_imported(name: &str, started: Instant, total_items: u64) {
+        let elapsed = started.elapsed().as_secs();
+        event!(
+            Level::INFO,
+            "Import to '{name}' finished successfully. {total_items} items imported in {elapsed} seconds."
+        );
     }
 
     fn import_status(error: DatabaseImportServiceError) -> Status {
