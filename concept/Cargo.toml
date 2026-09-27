@@ -33,9 +33,6 @@ features = {}
 	[dev-dependencies.pprof]
 		workspace = true
 
-	[dev-dependencies.rocksdb]
-		workspace = true
-
 	[dev-dependencies.test_utils_concept]
 		workspace = true
 
@@ -111,10 +108,6 @@ features = {}
 [[test]]
 	path = "tests/test_type.rs"
 	name = "test_type"
-
-[[test]]
-	path = "tests/test_snapshot_iterators.rs"
-	name = "test_snapshot_iterators"
 
 [[test]]
 	path = "tests/test_thing.rs"
