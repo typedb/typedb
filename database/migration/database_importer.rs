@@ -4,37 +4,46 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, Bytes};
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+    marker::PhantomData,
+    path::PathBuf,
+    sync::Arc,
+    thread,
+};
+
+use bytes::{Bytes, byte_array::ByteArray};
 use cache::{CacheError, SpilloverCache};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        ThingAPI,
         attribute::Attribute,
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::ThingManager,
-        ThingAPI,
     },
     type_::{
-        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey}, attribute_type::{AttributeType, AttributeTypeAnnotation}, constraint::Constraint, object_type::ObjectType, owns::{Owns, OwnsAnnotation}, plays::{Plays, PlaysAnnotation},
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
+        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        constraint::Constraint,
+        object_type::ObjectType,
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
         relates::{Relates, RelatesAnnotation},
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability,
-        KindAPI,
-        Ordering,
-        OwnerAPI,
-        PlayerAPI,
-        TypeAPI,
     },
 };
 use encoding::{
     graph::{
-        thing::{vertex_object::ObjectVertex, ThingVertex},
-        type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
         Typed,
+        thing::{ThingVertex, vertex_object::ObjectVertex},
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     },
     value::{label::Label, value::Value},
 };
@@ -42,29 +51,20 @@ use error::{TypeDBError, typedb_error};
 use executor::{ExecutionInterrupt, InterruptType};
 use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
-use serde::{de::DeserializeOwned, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    iter,
-    marker::PhantomData,
-    panic::{self, AssertUnwindSafe},
-    path::PathBuf,
-    sync::Arc,
-    thread,
-};
+use serde::{Serialize, de::DeserializeOwned};
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::sync::{broadcast, mpsc, oneshot};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     migration::{
+        Checksums,
         database_import_handler::{DatabaseImportHandler, ImportHandlerError},
         item::MigrationItem,
-        Checksums,
     },
     query::execute_schema_query,
     transaction::{TransactionError, TransactionSchema, TransactionWrite},
@@ -372,7 +372,7 @@ impl ImporterHandle {
             Some(sender) => sender.send(message).await.is_ok(),
             None => false,
         };
-        if sent { Ok(()) } else { Err(Self::stop_reason(self.join().await)) }
+        if sent { Ok(()) } else { Err(Self::stop_reason(self.finish().await)) }
     }
 
     pub async fn finalize(&mut self) -> ImportResult {
@@ -380,13 +380,13 @@ impl ImporterHandle {
             // If this fails, the importer has already stopped and its result carries the reason.
             let _ = sender.send(ImportMessage::Finalize).await;
         }
-        self.join().await
+        self.finish().await
     }
 
     /// Stops the importer without processing the queued items, and waits until it has stopped.
     pub async fn abort(mut self) -> ImportResult {
         self.stop();
-        self.join().await
+        self.finish().await
     }
 
     fn stop(&mut self) {
@@ -398,8 +398,10 @@ impl ImporterHandle {
         self.sender = None;
     }
 
-    async fn join(&mut self) -> ImportResult {
-        // The receiver is only cleared once the result arrives, so a cancelled (dropped) join can be retried.
+    /// Waits for the importer to finish, e.g. after failing. Only the first completed wait gets its result: later ones
+    /// return `ImporterStopped`.
+    pub async fn finish(&mut self) -> ImportResult {
+        // The receiver is only cleared once the result arrives, so a cancelled (dropped) wait can be retried.
         let Some(result_receiver) = self.result_receiver.as_mut() else {
             return Err(DatabaseImportError::ImporterStopped {});
         };
@@ -452,10 +454,7 @@ impl DatabaseImporter {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
 
-    pub fn new(
-        import_handler: Box<dyn DatabaseImportHandler>,
-        scratch_directory: PathBuf,
-    ) -> Self {
+    pub fn new(import_handler: Box<dyn DatabaseImportHandler>, scratch_directory: PathBuf) -> Self {
         let database_name = import_handler.database_name().to_owned();
         let data_info = DataInfo::new(&scratch_directory, &database_name);
         Self {
@@ -476,20 +475,11 @@ impl DatabaseImporter {
         let (result_sender, result_receiver) = oneshot::channel();
         self.interrupt = ExecutionInterrupt::new(interrupt_receiver);
         let thread_name = format!("importer-{}", self.database_name);
+        // If the thread cannot start, or panics without the process exiting (the server's panic hook exits), the result
+        // sender is dropped and the handle reports the importer stopped.
         let spawned = thread::Builder::new().name(thread_name).spawn(move || {
-            let database_name = self.database_name.clone();
-            let result = panic::catch_unwind(AssertUnwindSafe(|| self.listen(receiver))).unwrap_or_else(|payload| {
-                let message = payload
-                    .downcast_ref::<&str>()
-                    .map(|message| message.to_string())
-                    .or_else(|| payload.downcast_ref::<String>().cloned())
-                    .unwrap_or_default();
-                event!(Level::ERROR, "Importer of '{database_name}' panicked: {message}");
-                Err(DatabaseImportError::ImporterStopped {})
-            });
-            let _ = result_sender.send(result);
+            let _ = result_sender.send(self.listen(receiver));
         });
-        // If the thread cannot start, the channels are dropped with it and the handle reports the importer stopped.
         if let Err(err) = spawned {
             event!(Level::ERROR, "Failed to start the importer thread: {err}");
         }

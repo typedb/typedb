@@ -150,9 +150,7 @@ fn empty_checksums() -> MigrationItem {
 
 async fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationItem>) {
     let mut importer = importer(database_manager, name);
-    for item in items {
-        importer.send(item).await.expect("send");
-    }
+    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
     importer.finalize().await.expect("import");
 }
 
@@ -268,6 +266,28 @@ async fn an_out_of_order_stream_is_rejected() {
     .expect("send");
     let result = late.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ItemAfterChecksums { .. })), "{result:?}");
+
+    let mut duplicate = importer(&database_manager, "duplicate");
+    for item in [MigrationItem::Schema(SCHEMA.to_owned()), empty_checksums(), empty_checksums()] {
+        duplicate.send(item).await.expect("send");
+    }
+    let result = duplicate.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
+}
+
+#[tokio::test]
+async fn an_item_that_fails_to_decode_fails_the_import() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_decode_failure");
+    let database_manager = manager(&data_dir);
+
+    let mut importer = importer(&database_manager, "undecodable");
+    importer.send(MigrationItem::Schema(SCHEMA.to_owned())).await.expect("send");
+    // Any TypeDB error stands in for the server's item decoding error.
+    let batch = [Ok(empty_checksums()), Err(DatabaseImportError::ImporterStopped {})];
+    importer.send_batch(batch).await.expect("send");
+    let result = importer.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::ItemDecode { .. })), "{result:?}");
 }
 
 #[tokio::test]
