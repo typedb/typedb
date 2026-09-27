@@ -45,7 +45,6 @@ use crate::{
 };
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
-// Each message is one request's batch of items.
 const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
 // const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
