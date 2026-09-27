@@ -1652,6 +1652,51 @@ fn role_player_duplicates_ordered_small_card() {
 }
 
 #[test]
+fn independent_relation_without_players_survives_commit() {
+    // The database importer marks relation types independent so a relation can be written before
+    // its players arrive (possibly in a later transaction) and be filled in when the import finalises.
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let friendship_label = Label::build("friendship", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
+        friendship_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "friend",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        type_manager.set_relation_type_independent(&mut snapshot, friendship_type).unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
+        thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (_, thing_manager) = load_managers(storage.clone(), None);
+        let relations_count = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).count();
+        assert_eq!(relations_count, 1);
+    }
+}
+
+#[test]
 fn schema_transactions_generate_role_player_indices() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
