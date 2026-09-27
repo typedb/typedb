@@ -46,6 +46,16 @@ rust_test(
 )
 
 rust_test(
+    name = "test_snapshot_iterators",
+    srcs = glob([
+        "test_snapshot_iterators.rs",
+    ]),
+    deps = test_deps + [
+        "@crates//:rocksdb",
+    ],
+)
+
+rust_test(
     name = "test_thing",
     srcs = glob([
         "test_thing.rs",
@@ -67,6 +77,7 @@ rust_test(
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
+        ":test_snapshot_iterators",
         ":test_statistics",
         ":test_thing",
         ":test_type",
