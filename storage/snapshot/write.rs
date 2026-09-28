@@ -124,6 +124,12 @@ pub enum KnownToExist {
     NonExistent = 2, // new
 }
 
+const _: () = {
+    assert!(KnownToExist::Unknown as u8 == 0);
+    assert!(KnownToExist::Exists as u8 == 1);
+    assert!(KnownToExist::NonExistent as u8 == 2);
+};
+
 impl fmt::Display for KnownToExist {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
@@ -135,7 +141,7 @@ impl fmt::Display for KnownToExist {
 }
 
 // We serialize this as a boolean for forward compatibility with 3.13
-// If we could do it as u8, that would improve recovery times.
+// If we do it as u8, that would break forward compatibility but improve recovery performance.
 impl Serialize for KnownToExist {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -150,7 +156,7 @@ impl<'de> Deserialize<'de> for KnownToExist {
     where
         D: Deserializer<'de>,
     {
-        pub struct KnownToExistVisitor;
+        struct KnownToExistVisitor;
         impl Visitor<'_> for KnownToExistVisitor {
             type Value = KnownToExist;
 
@@ -165,9 +171,6 @@ impl<'de> Deserialize<'de> for KnownToExist {
                 const UNKNOWN: u8 = 0;
                 const EXISTS: u8 = 1;
                 const NON_EXISTENT: u8 = 2;
-                assert_eq!(KnownToExist::Unknown as u8, UNKNOWN);
-                assert_eq!(KnownToExist::Exists as u8, EXISTS);
-                assert_eq!(KnownToExist::NonExistent as u8, NON_EXISTENT);
                 match v {
                     UNKNOWN => Ok(KnownToExist::Unknown),
                     EXISTS => Ok(KnownToExist::Exists),
@@ -182,7 +185,7 @@ impl<'de> Deserialize<'de> for KnownToExist {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use std::sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -256,7 +259,7 @@ pub mod tests {
                 ) => {
                     assert_eq!(expected_value, actual_value);
                     assert_eq!(expected_reinsert.load(Ordering::Relaxed), actual_reinsert.load(Ordering::Relaxed));
-                    assert_eq!(deserialized_known_to_exist, actual_known_to_exist); // Not expected
+                    assert_eq!(deserialized_known_to_exist, actual_known_to_exist);
                 }
                 _ => unreachable!(),
             }

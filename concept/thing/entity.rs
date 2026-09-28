@@ -27,7 +27,7 @@ use crate::{
     thing::{
         HKInstance, ThingAPI,
         object::{Object, ObjectAPI},
-        thing_manager::{ObjectWriteStatus, ThingManager},
+        thing_manager::{ObjectOrigin, ThingManager},
     },
     type_::{ObjectTypeAPI, Ordering, OwnerAPI, entity_type::EntityType},
 };
@@ -81,7 +81,7 @@ impl ThingAPI for Entity {
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if ObjectWriteStatus::of(snapshot, self).is_persisted() {
+        if ObjectOrigin::of(snapshot, self).is_uknown_transaction() {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())
