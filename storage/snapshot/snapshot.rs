@@ -212,7 +212,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().writes_in_mut(keyspace_id).put(byte_array, value);
     }
 
-    fn put_val_with(
+    fn put_val_with_known_to_exist(
         &mut self,
         key: StorageKeyArray<BUFFER_KEY_INLINE>,
         value: ByteArray<BUFFER_VALUE_INLINE>,
@@ -220,7 +220,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     ) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
-        self.operations_mut().writes_in_mut(keyspace_id).put_with(byte_array, value, known_to_exist);
+        self.operations_mut().writes_in_mut(keyspace_id).put_with_known_to_exist(byte_array, value, known_to_exist);
     }
 
     fn unput(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {

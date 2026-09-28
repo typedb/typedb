@@ -2881,12 +2881,12 @@ impl ThingManager {
             let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
             owner.set_required(snapshot, self, storage_counters.clone())?;
             attribute.set_required(snapshot, self, storage_counters.clone())?;
-            snapshot.put_val_with(
+            snapshot.put_val_with_known_to_exist(
                 has.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
                 edge_is_known_to_exist,
             );
-            snapshot.put_val_with(
+            snapshot.put_val_with_known_to_exist(
                 has_reverse.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
                 edge_is_known_to_exist,
@@ -2943,7 +2943,7 @@ impl ThingManager {
         );
         let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
 
-        snapshot.put_val_with(storage_key.clone(), value, edge_is_known_to_exist);
+        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
         if ObjectOrigin::of(snapshot, &owner).is_uknown_transaction() {
@@ -2979,14 +2979,14 @@ impl ThingManager {
         let edge_is_known_to_exist =
             ObjectOrigin::buffered_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        snapshot.put_val_with(
+        snapshot.put_val_with_known_to_exist(
             links.into_storage_key().into_owned_array(),
             ByteArray::copy(&encode_u64(count)),
             edge_is_known_to_exist,
         );
         let links_reverse =
             ThingEdgeLinks::new_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
-        snapshot.put_val_with(
+        snapshot.put_val_with_known_to_exist(
             links_reverse.into_storage_key().into_owned_array(),
             ByteArray::copy(&encode_u64(count)),
             edge_is_known_to_exist,
@@ -3018,7 +3018,7 @@ impl ThingManager {
 
         let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &relation).is_edge_known_to_exist();
 
-        snapshot.put_val_with(storage_key.clone(), value, edge_is_known_to_exist);
+        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
         if ObjectOrigin::of(snapshot, &relation).is_uknown_transaction() {
@@ -3048,12 +3048,12 @@ impl ThingManager {
             relation.set_required(snapshot, self, storage_counters.clone())?;
             player.set_required(snapshot, self, storage_counters.clone())?;
 
-            snapshot.put_val_with(
+            snapshot.put_val_with_known_to_exist(
                 links.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
                 edge_is_known_to_exist,
             );
-            snapshot.put_val_with(
+            snapshot.put_val_with_known_to_exist(
                 links_reverse.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
                 edge_is_known_to_exist,
@@ -3221,7 +3221,7 @@ impl ThingManager {
                         role_type.vertex().type_id_(),
                         role_type.vertex().type_id_(),
                     );
-                    snapshot.put_val_with(
+                    snapshot.put_val_with_known_to_exist(
                         index.into_storage_key().into_owned_array(),
                         ByteArray::copy(&encode_u64(player_repetitions)),
                         edge_is_known_to_exist,
@@ -3236,7 +3236,7 @@ impl ThingManager {
                     role_type.vertex().type_id_(),
                     rp_role_type.vertex().type_id_(),
                 );
-                snapshot.put_val_with(
+                snapshot.put_val_with_known_to_exist(
                     index.into_storage_key().into_owned_array(),
                     ByteArray::copy(&encode_u64(rp_repetitions)),
                     edge_is_known_to_exist,
@@ -3249,7 +3249,7 @@ impl ThingManager {
                     rp_role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                snapshot.put_val_with(
+                snapshot.put_val_with_known_to_exist(
                     index_reverse.into_storage_key().into_owned_array(),
                     ByteArray::copy(&encode_u64(player_repetitions)),
                     edge_is_known_to_exist,

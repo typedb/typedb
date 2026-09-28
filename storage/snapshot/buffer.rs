@@ -155,10 +155,10 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.put_with(key, value, KnownToExist::Unknown)
+        self.put_with_known_to_exist(key, value, KnownToExist::Unknown)
     }
 
-    pub(crate) fn put_with(
+    pub(crate) fn put_with_known_to_exist(
         &mut self,
         key: ByteArray<BUFFER_KEY_INLINE>,
         value: ByteArray<BUFFER_VALUE_INLINE>,
