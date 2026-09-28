@@ -382,11 +382,13 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        _lookup_mode: SnapshotLookupMode,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        // Writes can't have buffered
-        self.iterate_range(range, storage_counters)
+        match lookup_mode {
+            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_empty(),
+            SnapshotLookupMode::BufferAndStorage => self.iterate_range(range, storage_counters),
+        }
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {

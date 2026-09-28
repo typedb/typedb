@@ -41,7 +41,6 @@ impl SnapshotRangeIterator {
         }
     }
 
-    // for testing
     pub fn new_empty() -> Self {
         SnapshotRangeIterator { storage_iterator: None, buffered_iterator: None, ready_item_source: None }
     }

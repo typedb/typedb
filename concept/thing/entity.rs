@@ -19,7 +19,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
-use storage::snapshot::{ReadableSnapshot, SnapshotLookupMode, WritableSnapshot};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     ConceptAPI, ConceptStatus,
