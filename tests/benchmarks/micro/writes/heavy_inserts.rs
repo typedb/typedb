@@ -31,6 +31,7 @@ fn run_serial(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(serial_entities_few_large_10q());
     group.run_benchmark(serial_entities_many_small());
     group.run_benchmark(serial_relations_many_medium());
+    group.run_benchmark(serial_relations_few_large());
 }
 
 fn run_parallel(runner: &mut impl BenchmarkRunner) {
@@ -67,6 +68,10 @@ fn serial_entities_many_small() -> TypeDBWorkloadBenchmark {
 
 fn serial_relations_many_medium() -> TypeDBWorkloadBenchmark {
     parametrised_binary_relation("serial_relations_many_medium", SERIAL_MANY_MEDIUM)
+}
+
+fn serial_relations_few_large() -> TypeDBWorkloadBenchmark {
+    parametrised_binary_relation("serial_relations_few_large", SERIAL_FEW_LARGE)
 }
 
 // Parallel

@@ -8,7 +8,7 @@ use lib_benchmark::benchmark::RunDescriptor;
 
 pub const ROWS_SMALL: usize = 100;
 pub const ROWS_MEDIUM: usize = 1_000;
-pub const ROWS_LARGE: usize = 10_000;
+pub const ROWS_LARGE: usize = 5_000;
 
 pub const THREADS_SERIAL: usize = 1;
 pub const THREADS_THREADED: usize = 4;
