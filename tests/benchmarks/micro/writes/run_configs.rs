@@ -46,7 +46,7 @@ pub const PARALLEL_MANY_SMALL: RunDescriptor = RunDescriptor {
 };
 
 pub const PARALLEL_MANY_LARGE: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_THREADED,
+    parallelism: THREADS_PARALLEL,
     total_txns: TRANSACTIONS_MANY,
     n_queries_per_tx: 1,
     n_rows_per_query: ROWS_LARGE,
