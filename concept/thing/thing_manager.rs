@@ -67,7 +67,7 @@ use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{
-        ReadableSnapshot, WritableSnapshot,
+        BypassStorageIf, ReadableSnapshot, WritableSnapshot,
         write::{KnownToExist, Write},
     },
 };
@@ -695,7 +695,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(player);
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &player);
         Iterator::map(
             LinksReverseIterator::new(snapshot.iterate_range_may_bypass(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
@@ -767,7 +767,7 @@ impl ThingManager {
         };
 
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
         let has_exists = snapshot
             .get_mapped_may_bypass(
                 has.into_storage_key().as_reference(),
@@ -788,7 +788,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
         let has_exists = snapshot
             .get_mapped_may_bypass(
                 has.into_storage_key().as_reference(),
@@ -1077,7 +1077,7 @@ impl ThingManager {
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
         Ok(HasIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters)))
     }
 
@@ -1120,7 +1120,7 @@ impl ThingManager {
             end_value_bound,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
         Ok(HasIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters)))
     }
 
@@ -1167,7 +1167,7 @@ impl ThingManager {
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
         Ok(Iterator::map(
             HasIterator::new(snapshot.iterate_range_may_bypass(&range, bypass_storage_if, storage_counters)),
             |result: Result<(Has, u64), Box<ConceptReadError>>| result.map(|(has, value)| (has.attribute(), value)),
@@ -1224,7 +1224,7 @@ impl ThingManager {
             None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
         let attributes = snapshot
             .get_mapped_may_bypass(
                 key.into_storage_key().as_reference(),
@@ -1378,7 +1378,7 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
         LinksIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters))
     }
 
@@ -1390,7 +1390,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
         LinksIterator::new(snapshot.iterate_range_may_bypass(
             &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
             bypass_storage_if,
@@ -1448,7 +1448,7 @@ impl ThingManager {
                 ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
             }
         };
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(player);
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &player);
         LinksReverseIterator::new(snapshot.iterate_range_may_bypass(
             &KeyRange::new(
                 RangeStart::Inclusive(range_start),
@@ -1469,8 +1469,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let bypass_storage_if =
-            Self::bypass_if_fn_either_object_is_inserted_in_snapshot(relation.clone(), player.clone());
+        let bypass_storage_if = Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
         let links_exists = snapshot
             .get_mapped_may_bypass(
                 links.into_storage_key().as_reference(),
@@ -1490,7 +1489,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot::<Snapshot>(relation.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
         Iterator::map(
             LinksIterator::new(snapshot.iterate_range_may_bypass(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
@@ -1509,7 +1508,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
         let players = snapshot
             .get_mapped_may_bypass(
                 key.into_storage_key().as_reference(),
@@ -1745,20 +1744,22 @@ impl ThingManager {
         }
     }
 
-    fn bypass_if_fn_object_is_inserted_in_snapshot<Snapshot: ReadableSnapshot>(
-        object: impl ObjectAPI,
-    ) -> impl Fn(&Snapshot) -> bool {
-        move |snapshot: &Snapshot| Self::is_object_inserted_in_snapshot(snapshot, &object)
+    fn bypass_if_fn_object_is_inserted_in_snapshot(
+        snapshot: &impl ReadableSnapshot,
+        object: &impl ObjectAPI,
+    ) -> BypassStorageIf {
+        BypassStorageIf(Self::is_object_inserted_in_snapshot(snapshot, object))
     }
 
-    fn bypass_if_fn_either_object_is_inserted_in_snapshot<Snapshot: ReadableSnapshot>(
-        first: impl ObjectAPI,
-        second: impl ObjectAPI,
-    ) -> impl Fn(&Snapshot) -> bool {
-        move |snapshot: &Snapshot| {
-            Self::is_object_inserted_in_snapshot(snapshot, &first)
-                || Self::is_object_inserted_in_snapshot(snapshot, &second)
-        }
+    fn bypass_if_fn_either_object_is_inserted_in_snapshot(
+        snapshot: &impl ReadableSnapshot,
+        first: &impl ObjectAPI,
+        second: &impl ObjectAPI,
+    ) -> BypassStorageIf {
+        BypassStorageIf(
+            Self::is_object_inserted_in_snapshot(snapshot, first)
+                || Self::is_object_inserted_in_snapshot(snapshot, second),
+        )
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -3164,8 +3165,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let bypass_storage_if =
-            Self::bypass_if_fn_either_object_is_inserted_in_snapshot(relation.clone(), player.clone());
+        let bypass_storage_if = Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
         let count = snapshot
             .get_mapped_may_bypass(
                 links.into_storage_key().as_reference(),
@@ -3179,7 +3179,7 @@ impl ThingManager {
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             let bypass_storage_if =
-                Self::bypass_if_fn_either_object_is_inserted_in_snapshot(relation.clone(), player.clone());
+                Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
             let reverse_count = snapshot
                 .get_mapped_may_bypass(
                     links_reverse.into_storage_key().as_reference(),
@@ -3206,8 +3206,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let bypass_storage_if =
-            Self::bypass_if_fn_either_object_is_inserted_in_snapshot(relation.clone(), player.clone());
+        let bypass_storage_if = Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
         let count = snapshot
             .get_mapped_may_bypass(
                 links.into_storage_key().as_reference(),
@@ -3221,7 +3220,7 @@ impl ThingManager {
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             let bypass_storage_if =
-                Self::bypass_if_fn_either_object_is_inserted_in_snapshot(relation.clone(), player.clone());
+                Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
             let reverse_count = snapshot
                 .get_mapped_may_bypass(
                     links_reverse.into_storage_key().as_reference(),
@@ -3389,7 +3388,7 @@ impl ThingManager {
             );
             let index_range =
                 KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-            let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
+            let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
             let collected = snapshot
                 .iterate_range_may_bypass(&index_range, bypass_storage_if, storage_counters.clone())
                 .collect_cloned_vec(|k, _| StorageKeyArray::from(k))

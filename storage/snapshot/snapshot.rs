@@ -55,6 +55,9 @@ macro_rules! get_mapped_method {
     };
 }
 
+#[derive(Clone, Copy)]
+pub struct BypassStorageIf(pub bool);
+
 pub trait ReadableSnapshot {
     const IMMUTABLE_SCHEMA: bool;
 
@@ -81,14 +84,14 @@ pub trait ReadableSnapshot {
     fn get_may_bypass<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
 
     fn get_mapped_may_bypass<T>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         mut mapper: impl FnMut(&[u8]) -> T,
         storage_counters: StorageCounters,
     ) -> Result<Option<T>, SnapshotGetError> {
@@ -113,7 +116,7 @@ pub trait ReadableSnapshot {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator;
 
@@ -351,10 +354,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn get_may_bypass<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        if bypass_if(self) {
+        if bypass_if.0 {
             // There's no buffer, so if we bypass the storage, it's not there
             Ok(None)
         } else {
@@ -375,7 +378,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        _bypass_if: impl Fn(&Self) -> bool,
+        _bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         // Writes can't have buffered
@@ -483,20 +486,20 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.get_may_bypass(key, |_| false, storage_counters)
+        self.get_may_bypass(key, BypassStorageIf(false), storage_counters)
     }
 
     fn get_may_bypass<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => {
-                if bypass_if(self) {
+                if bypass_if.0 {
                     Ok(None)
                 } else {
                     self.storage
@@ -525,14 +528,14 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        if bypass_if(self) {
+        if bypass_if.0 {
             SnapshotRangeIterator::new_buffered_only(buffered_iterator)
         } else {
             let storage_iterator =
@@ -546,7 +549,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        self.iterate_range_may_bypass(range, |_| false, storage_counters)
+        self.iterate_range_may_bypass(range, BypassStorageIf(false), storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
@@ -693,20 +696,20 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.get_may_bypass(key, |_| false, storage_counters)
+        self.get_may_bypass(key, BypassStorageIf(false), storage_counters)
     }
 
     fn get_may_bypass<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => {
-                if bypass_if(self) {
+                if bypass_if.0 {
                     Ok(None)
                 } else {
                     self.storage
@@ -734,14 +737,14 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: impl Fn(&Self) -> bool,
+        bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        if bypass_if(self) {
+        if bypass_if.0 {
             SnapshotRangeIterator::new_buffered_only(buffered_iterator)
         } else {
             let storage_iterator =
@@ -755,7 +758,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        self.iterate_range_may_bypass(range, |_| false, storage_counters)
+        self.iterate_range_may_bypass(range, BypassStorageIf(false), storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
@@ -912,7 +915,7 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
     fn get_may_bypass<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        _bypass_if: impl Fn(&Self) -> bool,
+        _bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         self.get(key, storage_counters)
@@ -946,7 +949,7 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        _bypass_if: impl Fn(&Self) -> bool,
+        _bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         self.iterate_range(range, storage_counters)
