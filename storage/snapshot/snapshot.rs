@@ -343,7 +343,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: impl Fn(&Self) -> bool,
+        _bypass_if: impl Fn(&Self) -> bool,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         // Writes can't have buffered
@@ -878,7 +878,7 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: impl Fn(&Self) -> bool,
+        _bypass_if: impl Fn(&Self) -> bool,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         self.iterate_range(range, storage_counters)

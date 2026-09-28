@@ -697,9 +697,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(player);
         Iterator::map(
-            LinksReverseIterator::new(snapshot.iterate_range(
+            LinksReverseIterator::new(snapshot.iterate_range_may_bypass(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
+                bypass_storage_if,
                 storage_counters,
             )),
             |result| {
@@ -1065,7 +1067,8 @@ impl ThingManager {
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        Ok(HasIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters)))
     }
 
     pub(crate) fn owner_get_has_unordered_in_value_type<'a>(
@@ -1107,7 +1110,8 @@ impl ThingManager {
             end_value_bound,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(owner.clone());
+        Ok(HasIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters)))
     }
 
     pub(crate) fn get_has_from_thing_to_type_unordered<'a>(
@@ -1153,8 +1157,9 @@ impl ThingManager {
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot::<Snapshot>(relation.clone());
         Ok(Iterator::map(
-            HasIterator::new(snapshot.iterate_range(&range, storage_counters)),
+            HasIterator::new(snapshot.iterate_range_may_bypass(&range, bypass_storage_if, storage_counters)),
             |result: Result<(Has, u64), Box<ConceptReadError>>| result.map(|(has, value)| (has.attribute(), value)),
         ))
     }
@@ -1361,7 +1366,8 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        LinksIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
+        LinksIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters))
     }
 
     pub fn get_links_by_relation_and_player(
@@ -1372,10 +1378,8 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        LinksIterator::new(
-            snapshot
-                .iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), storage_counters),
-        )
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
+        LinksIterator::new(snapshot.iterate_range_may_bypass(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), bypass_storage_if, storage_counters))
     }
 
     pub fn get_links_reverse_by_player_type_range(
@@ -1428,12 +1432,14 @@ impl ThingManager {
                 ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
             }
         };
-        LinksReverseIterator::new(snapshot.iterate_range(
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(player);
+        LinksReverseIterator::new(snapshot.iterate_range_may_bypass(
             &KeyRange::new(
                 RangeStart::Inclusive(range_start),
                 RangeEnd::EndPrefixInclusive(range_end),
                 ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             ),
+            bypass_storage_if,
             storage_counters,
         ))
     }
@@ -1482,7 +1488,6 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
-        // TODO: Bypass storage variant
         let players = snapshot
             .get_mapped(
                 key.into_storage_key().as_reference(),
@@ -1657,7 +1662,6 @@ impl ThingManager {
                 relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
             })?;
         }
-        // TODO: If relation is newly inserted.
         Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range, storage_counters)))
     }
 
@@ -1685,7 +1689,7 @@ impl ThingManager {
             })
     }
 
-    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> bool {
+    fn is_object_inserted_in_snapshot(snapshot: &(impl ReadableSnapshot + WritableSnapshot), object: &impl ObjectAPI) -> bool {
         let key = object.vertex().into_storage_key();
         snapshot.get_write(key.as_reference()).map_or(false, |write| match write {
             Write::Insert { .. } => true,
@@ -3339,8 +3343,9 @@ impl ThingManager {
             );
             let index_range =
                 KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+            let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(relation.clone());
             let collected = snapshot
-                .iterate_range(&index_range, storage_counters.clone())
+                .iterate_range_may_bypass(&index_range, bypass_storage_if, storage_counters.clone())
                 .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
                 .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
             collected.into_iter().for_each(|edge| snapshot.delete(edge));
