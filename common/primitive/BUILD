@@ -15,6 +15,7 @@ rust_library(
     ]),
     deps = [
         "@crates//:serde",
+        "@crates//:rand",
     ]
 )
 

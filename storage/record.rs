@@ -157,7 +157,7 @@ impl CommitRecord {
                     _ => (),
                 }
             }
-            // If there's a lock on a key, is there guaranteed to be a write on the key?
+
             for (_key, write, predecessor_lock) in BTreeMapIntersectionIterator::new(writes, predecessor_locks) {
                 if matches!(write, Write::Delete) && matches!(predecessor_lock, LockType::Unmodifiable) {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);

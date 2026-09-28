@@ -14,8 +14,10 @@ struct BTreeMapAndRange<'a, K: Ord, V> {
 }
 
 impl<'a, K: Ord, V> BTreeMapAndRange<'a, K, V> {
+    // Probe linearly for a few steps to avoid seeking too much (log(N)) for highly overlapping maps.
+    // Can be tuned later. 2 felt too small, 3 felt too odd.
     const LINEAR_STEPS: usize = 4;
-    pub fn new(map: &'a BTreeMap<K, V>) -> Self {
+    fn new(map: &'a BTreeMap<K, V>) -> Self {
         let range = map.range(..);
         Self { map, range }
     }
@@ -74,7 +76,7 @@ impl<'a, K: Ord, V1, V2> Iterator for BTreeMapIntersectionIterator<'a, K, V1, V2
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use std::{collections::BTreeMap, fmt::Debug};
 
     use crate::btreemap_intersection_iterator::BTreeMapIntersectionIterator;
@@ -127,5 +129,22 @@ pub mod tests {
             &BTreeMap::from([(0, 20), (1, 21), (2, 22)]),
             vec![],
         )
+    }
+
+    #[test]
+    fn test_randomised() {
+        use rand::Rng;
+        const SIZE: usize = 100_000;
+        const MAX: usize = 5_000_000;
+        fn gen_numbers(i: usize) -> impl Iterator<Item = (usize, usize)> {
+            let mut rng = rand::thread_rng();
+            let base = rng.gen_range(0..MAX);
+            let repeat = rng.gen_range(0..4) * 2;
+            (0..repeat).map(move |j| (base + j, i * 10 + j))
+        };
+        let first = (0..SIZE).flat_map(gen_numbers).collect::<BTreeMap<_, _>>();
+        let second = (0..SIZE).flat_map(gen_numbers).collect::<BTreeMap<_, _>>();
+        let expected = first.iter().filter_map(|(k, v1)| second.get(k).map(|v2| (*k, *v1, *v2))).collect::<Vec<_>>();
+        check_intersection_is(&first, &second, expected)
     }
 }

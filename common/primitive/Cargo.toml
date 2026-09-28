@@ -16,6 +16,9 @@ dev-dependencies = {}
 
 [dependencies]
 
+	[dependencies.rand]
+		workspace = true
+
 	[dependencies.serde]
 		workspace = true
 
