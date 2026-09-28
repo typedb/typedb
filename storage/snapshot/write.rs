@@ -131,7 +131,7 @@ impl fmt::Display for KnownToExist {
     }
 }
 
-// We serialize this as a boolean for backward compatibility with 3.13
+// We serialize this as a boolean for forward compatibility with 3.13
 // If we could do it as u8, that would improve recovery times.
 impl Serialize for KnownToExist {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
