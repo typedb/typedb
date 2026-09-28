@@ -2133,11 +2133,11 @@ impl ThingManager {
                 if relation.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
                     continue;
                 }
-                if !relation.has_players(snapshot, self, storage_counters.clone())? {
-                    if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())? {
-                        relation.delete(snapshot, self, storage_counters.clone())?;
-                        any_deleted = true;
-                    }
+                if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
+                    && !relation.has_players(snapshot, self, storage_counters.clone())?
+                {
+                    relation.delete(snapshot, self, storage_counters.clone())?;
+                    any_deleted = true;
                 }
             }
         }
@@ -2153,7 +2153,9 @@ impl ThingManager {
                 .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
             {
                 let relation = Relation::new(ObjectVertex::decode(key.bytes()));
-                if !relation.has_players(snapshot, self, storage_counters.clone())? {
+                if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
+                    && !relation.has_players(snapshot, self, storage_counters.clone())?
+                {
                     relation.delete(snapshot, self, storage_counters.clone())?;
                     any_deleted = true;
                 }
@@ -2185,6 +2187,7 @@ impl ThingManager {
                     continue;
                 }
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
+                // Note: revisit independent relation types interactions with @cascade when cascade is implemented
                 once(&relation_type).chain(&subtypes).try_for_each(|type_| {
                     let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
                     if is_cascade {
