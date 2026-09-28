@@ -341,9 +341,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.storage
-            .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+        self.get_in_lookup_mode(key, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
     fn get_last_existing<const INLINE_BYTES: usize>(
@@ -366,7 +364,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
                 // There's no buffer, so if we bypass the storage, it's not there
                 Ok(None)
             }
-            SnapshotLookupMode::BufferAndStorage => self.get(key, storage_counters),
+            SnapshotLookupMode::BufferAndStorage => self
+                .storage
+                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
         }
     }
 
@@ -375,9 +376,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
+        self.iterate_range_in_lookup_mode(range, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
     fn iterate_range_in_lookup_mode<const PS: usize>(
@@ -391,7 +390,15 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
                 debug_assert!(false, "Unreachable at the time of writing.");
                 SnapshotRangeIterator::new_empty()
             }
-            SnapshotLookupMode::BufferAndStorage => self.iterate_range(range, storage_counters),
+            SnapshotLookupMode::BufferAndStorage => {
+                let mvcc_iterator = self.storage.iterate_range(
+                    self.iterator_pool(),
+                    range,
+                    self.open_sequence_number,
+                    storage_counters,
+                );
+                SnapshotRangeIterator::new(mvcc_iterator, None)
+            }
         }
     }
 

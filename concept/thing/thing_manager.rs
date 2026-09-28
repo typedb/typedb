@@ -3126,8 +3126,6 @@ impl ThingManager {
         #[cfg(debug_assertions)]
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
-            let snapshot_lookup_mode =
-                ObjectOrigin::buffered_if_either(snapshot, &relation, &player).edge_lookup_mode();
             let reverse_count = snapshot
                 .get_mapped_in_lookup_mode(
                     links_reverse.into_storage_key().as_reference(),
@@ -3167,8 +3165,6 @@ impl ThingManager {
         #[cfg(debug_assertions)]
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
-            let snapshot_lookup_mode =
-                ObjectOrigin::buffered_if_either(snapshot, &relation, &player).edge_lookup_mode();
             let reverse_count = snapshot
                 .get_mapped_in_lookup_mode(
                     links_reverse.into_storage_key().as_reference(),
@@ -3213,6 +3209,8 @@ impl ThingManager {
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
         for rp in players {
             let (rp_player, rp_role_type, rp_count) = rp?;
+            let edge_is_known_to_exist =
+                ObjectOrigin::buffered_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
             if rp_player.is_same_role_player(rp_role_type, player, role_type) {
                 let player_repetitions = count_for_player - 1;
                 if player_repetitions > 0 {
@@ -3223,8 +3221,6 @@ impl ThingManager {
                         role_type.vertex().type_id_(),
                         role_type.vertex().type_id_(),
                     );
-                    let edge_is_known_to_exist =
-                        ObjectOrigin::buffered_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
                     snapshot.put_val_with(
                         index.into_storage_key().into_owned_array(),
                         ByteArray::copy(&encode_u64(player_repetitions)),
@@ -3233,8 +3229,6 @@ impl ThingManager {
                 }
             } else {
                 let rp_repetitions = rp_count;
-                let edge_is_known_to_exist =
-                    ObjectOrigin::buffered_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
                 let index = ThingEdgeIndexedRelation::new(
                     player.vertex(),
                     rp_player.vertex(),
@@ -3460,7 +3454,7 @@ fn register_delete_in_cleanup_intervals(
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum ObjectOrigin {
     ThisTransaction,
-    UnknownTransaction, // May be this and deleted
+    UnknownTransaction, // Maybe another transaction, or this one but deleted.
 }
 
 impl ObjectOrigin {
@@ -3476,7 +3470,7 @@ impl ObjectOrigin {
         let key = object.vertex().into_storage_key();
         snapshot.get_write(key.as_reference()).map_or(Self::UnknownTransaction, |write| match write {
             Write::Insert { .. } => Self::ThisTransaction,
-            Write::Put { .. } => unreachable!("Encountered a Put for a relation"),
+            Write::Put { .. } => unreachable!("Encountered a Put for an Object"),
             Write::Delete => Self::UnknownTransaction,
         })
     }
