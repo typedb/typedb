@@ -117,6 +117,7 @@ pub enum WriteCategory {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum KnownToExist {
+    // KnownToExist in storage
     // DO NOT MODIFY ENCODING
     Unknown = 0,     // legacy `false`
     Exists = 1,      // legacy `true`

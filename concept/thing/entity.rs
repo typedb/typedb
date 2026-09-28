@@ -19,7 +19,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::{ReadableSnapshot, SnapshotLookupMode, WritableSnapshot};
 
 use crate::{
     ConceptAPI, ConceptStatus,
@@ -27,7 +27,7 @@ use crate::{
     thing::{
         HKInstance, ThingAPI,
         object::{Object, ObjectAPI},
-        thing_manager::ThingManager,
+        thing_manager::{ObjectWriteStatus, ThingManager},
     },
     type_::{ObjectTypeAPI, Ordering, OwnerAPI, entity_type::EntityType},
 };
@@ -81,7 +81,7 @@ impl ThingAPI for Entity {
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if !ThingManager::is_object_inserted_in_snapshot(snapshot, self) {
+        if ObjectWriteStatus::of(snapshot, self).is_persisted() {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())

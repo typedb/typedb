@@ -5,8 +5,8 @@
  */
 
 pub use snapshot::{
-    BypassStorageIf, CommittableSnapshot, PreloadedRangesSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot,
-    SnapshotError, SnapshotGetError, WritableSnapshot, WriteSnapshot,
+    CommittableSnapshot, PreloadedRangesSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
+    SnapshotGetError, SnapshotLookupMode, WritableSnapshot, WriteSnapshot,
 };
 
 pub mod buffer;

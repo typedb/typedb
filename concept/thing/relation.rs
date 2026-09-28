@@ -38,7 +38,9 @@ use crate::{
     thing::{
         HKInstance, ThingAPI,
         object::{Object, ObjectAPI},
-        thing_manager::{ThingManager, validation::operation_time_validation::OperationTimeValidation},
+        thing_manager::{
+            ObjectWriteStatus, ThingManager, validation::operation_time_validation::OperationTimeValidation,
+        },
     },
     type_::{ObjectTypeAPI, Ordering, OwnerAPI, relation_type::RelationType, role_type::RoleType},
 };
@@ -390,7 +392,7 @@ impl ThingAPI for Relation {
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if !ThingManager::is_object_inserted_in_snapshot(snapshot, self) {
+        if ObjectWriteStatus::of(snapshot, self).is_persisted() {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())

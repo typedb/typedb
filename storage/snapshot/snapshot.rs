@@ -56,7 +56,10 @@ macro_rules! get_mapped_method {
 }
 
 #[derive(Clone, Copy)]
-pub struct BypassStorageIf(pub bool);
+pub enum SnapshotLookupMode {
+    BufferOnly,
+    BufferAndStorage,
+}
 
 pub trait ReadableSnapshot {
     const IMMUTABLE_SCHEMA: bool;
@@ -81,21 +84,21 @@ pub trait ReadableSnapshot {
 
     get_mapped_method!(get_last_existing_mapped, get_last_existing);
 
-    fn get_may_bypass<const INLINE_BYTES: usize>(
+    fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
 
-    fn get_mapped_may_bypass<T>(
+    fn get_mapped_in_lookup_mode<T>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         mut mapper: impl FnMut(&[u8]) -> T,
         storage_counters: StorageCounters,
     ) -> Result<Option<T>, SnapshotGetError> {
-        let value = self.get_may_bypass::<BUFFER_VALUE_INLINE>(key, bypass_if, storage_counters)?;
+        let value = self.get_in_lookup_mode::<BUFFER_VALUE_INLINE>(key, lookup_mode, storage_counters)?;
         Ok(value.map(|bytes| mapper(bytes.as_ref())))
     }
 
@@ -113,10 +116,10 @@ pub trait ReadableSnapshot {
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator;
 
-    fn iterate_range_may_bypass<const PS: usize>(
+    fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator;
 
@@ -351,17 +354,18 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         self.get(key, storage_counters)
     }
 
-    fn get_may_bypass<const INLINE_BYTES: usize>(
+    fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        if bypass_if.0 {
-            // There's no buffer, so if we bypass the storage, it's not there
-            Ok(None)
-        } else {
-            self.get(key, storage_counters)
+        match lookup_mode {
+            SnapshotLookupMode::BufferOnly => {
+                // There's no buffer, so if we bypass the storage, it's not there
+                Ok(None)
+            }
+            SnapshotLookupMode::BufferAndStorage => self.get(key, storage_counters),
         }
     }
 
@@ -375,10 +379,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
-    fn iterate_range_may_bypass<const PS: usize>(
+    fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        _bypass_if: BypassStorageIf,
+        _lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         // Writes can't have buffered
@@ -486,27 +490,25 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.get_may_bypass(key, BypassStorageIf(false), storage_counters)
+        self.get_in_lookup_mode(key, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
-    fn get_may_bypass<const INLINE_BYTES: usize>(
+    fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
-            None => {
-                if bypass_if.0 {
-                    Ok(None)
-                } else {
-                    self.storage
-                        .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                        .map_err(|error| SnapshotGetError::MVCCRead { source: error })
-                }
-            }
+            None => match lookup_mode {
+                SnapshotLookupMode::BufferOnly => Ok(None),
+                SnapshotLookupMode::BufferAndStorage => self
+                    .storage
+                    .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
+                    .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+            },
         }
     }
 
@@ -525,22 +527,27 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         }
     }
 
-    fn iterate_range_may_bypass<const PS: usize>(
+    fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        if bypass_if.0 {
-            SnapshotRangeIterator::new_buffered_only(buffered_iterator)
-        } else {
-            let storage_iterator =
-                self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-            SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        match lookup_mode {
+            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator),
+            SnapshotLookupMode::BufferAndStorage => {
+                let storage_iterator = self.storage.iterate_range(
+                    self.iterator_pool(),
+                    range,
+                    self.open_sequence_number,
+                    storage_counters,
+                );
+                SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+            }
         }
     }
 
@@ -549,7 +556,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        self.iterate_range_may_bypass(range, BypassStorageIf(false), storage_counters)
+        self.iterate_range_in_lookup_mode(range, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
@@ -696,27 +703,25 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.get_may_bypass(key, BypassStorageIf(false), storage_counters)
+        self.get_in_lookup_mode(key, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
-    fn get_may_bypass<const INLINE_BYTES: usize>(
+    fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
-            None => {
-                if bypass_if.0 {
-                    Ok(None)
-                } else {
-                    self.storage
-                        .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                        .map_err(|error| SnapshotGetError::MVCCRead { source: error })
-                }
-            }
+            None => match lookup_mode {
+                SnapshotLookupMode::BufferOnly => Ok(None),
+                SnapshotLookupMode::BufferAndStorage => self
+                    .storage
+                    .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
+                    .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+            },
         }
     }
     /// Get the last existing Value for the key, returning an empty Option if it did not exist
@@ -734,22 +739,27 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         }
     }
 
-    fn iterate_range_may_bypass<const PS: usize>(
+    fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        bypass_if: BypassStorageIf,
+        lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        if bypass_if.0 {
-            SnapshotRangeIterator::new_buffered_only(buffered_iterator)
-        } else {
-            let storage_iterator =
-                self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-            SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        match lookup_mode {
+            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator),
+            SnapshotLookupMode::BufferAndStorage => {
+                let storage_iterator = self.storage.iterate_range(
+                    self.iterator_pool(),
+                    range,
+                    self.open_sequence_number,
+                    storage_counters,
+                );
+                SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+            }
         }
     }
 
@@ -758,7 +768,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        self.iterate_range_may_bypass(range, BypassStorageIf(false), storage_counters)
+        self.iterate_range_in_lookup_mode(range, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
@@ -912,10 +922,10 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         self.get(key, storage_counters)
     }
 
-    fn get_may_bypass<const INLINE_BYTES: usize>(
+    fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        _bypass_if: BypassStorageIf,
+        _lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         self.get(key, storage_counters)
@@ -946,10 +956,10 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         SnapshotRangeIterator::new_buffered_only(BufferRangeIterator::new(preloaded))
     }
 
-    fn iterate_range_may_bypass<const PS: usize>(
+    fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        _bypass_if: BypassStorageIf,
+        _lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         self.iterate_range(range, storage_counters)

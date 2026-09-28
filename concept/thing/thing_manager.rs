@@ -67,7 +67,7 @@ use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{
-        BypassStorageIf, ReadableSnapshot, WritableSnapshot,
+        ReadableSnapshot, SnapshotLookupMode, WritableSnapshot,
         write::{KnownToExist, Write},
     },
 };
@@ -695,11 +695,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &player);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &player).snapshot_lookup_mode();
         Iterator::map(
-            LinksReverseIterator::new(snapshot.iterate_range_may_bypass(
+            LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 storage_counters,
             )),
             |result| {
@@ -767,11 +767,11 @@ impl ThingManager {
         };
 
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &owner).snapshot_lookup_mode();
         let has_exists = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 has.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |_value| true,
                 storage_counters,
             )
@@ -788,11 +788,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &owner).snapshot_lookup_mode();
         let has_exists = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 has.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |_value| true,
                 storage_counters,
             )
@@ -1077,8 +1077,8 @@ impl ThingManager {
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
-        Ok(HasIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters)))
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &owner).snapshot_lookup_mode();
+        Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
     pub(crate) fn owner_get_has_unordered_in_value_type<'a>(
@@ -1120,8 +1120,8 @@ impl ThingManager {
             end_value_bound,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
-        Ok(HasIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters)))
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &owner).snapshot_lookup_mode();
+        Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
     pub(crate) fn get_has_from_thing_to_type_unordered<'a>(
@@ -1167,9 +1167,9 @@ impl ThingManager {
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &owner).snapshot_lookup_mode();
         Ok(Iterator::map(
-            HasIterator::new(snapshot.iterate_range_may_bypass(&range, bypass_storage_if, storage_counters)),
+            HasIterator::new(snapshot.iterate_range_in_lookup_mode(&range, snapshot_lookup_mode, storage_counters)),
             |result: Result<(Has, u64), Box<ConceptReadError>>| result.map(|(has, value)| (has.attribute(), value)),
         ))
     }
@@ -1224,11 +1224,11 @@ impl ThingManager {
             None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &owner);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &owner).snapshot_lookup_mode();
         let attributes = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |bytes| {
                     decode_attribute_ids(value_type.category(), bytes)
                         .map(|id| Attribute::new(AttributeVertex::new(attribute_type.vertex().type_id_(), id)))
@@ -1378,8 +1378,8 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
-        LinksIterator::new(snapshot.iterate_range_may_bypass(&key_range, bypass_storage_if, storage_counters))
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &relation).snapshot_lookup_mode();
+        LinksIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters))
     }
 
     pub fn get_links_by_relation_and_player(
@@ -1390,10 +1390,10 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
-        LinksIterator::new(snapshot.iterate_range_may_bypass(
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &relation).snapshot_lookup_mode();
+        LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
-            bypass_storage_if,
+            snapshot_lookup_mode,
             storage_counters,
         ))
     }
@@ -1448,14 +1448,14 @@ impl ThingManager {
                 ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
             }
         };
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &player);
-        LinksReverseIterator::new(snapshot.iterate_range_may_bypass(
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &player).snapshot_lookup_mode();
+        LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new(
                 RangeStart::Inclusive(range_start),
                 RangeEnd::EndPrefixInclusive(range_end),
                 ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             ),
-            bypass_storage_if,
+            snapshot_lookup_mode,
             storage_counters,
         ))
     }
@@ -1469,11 +1469,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+        let snapshot_lookup_mode =
+            ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).snapshot_lookup_mode();
         let links_exists = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |_| true,
                 storage_counters,
             )
@@ -1489,11 +1490,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &relation).snapshot_lookup_mode();
         Iterator::map(
-            LinksIterator::new(snapshot.iterate_range_may_bypass(
+            LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 storage_counters,
             )),
             |result| result.map(|(links, count)| (links.into_role_player(), count)),
@@ -1508,11 +1509,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
-        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
+        let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &relation).snapshot_lookup_mode();
         let players = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |bytes| decode_role_players(bytes).map(Object::new).collect(),
                 storage_counters,
             )
@@ -1709,57 +1710,6 @@ impl ThingManager {
                     None => Ok(ConceptStatus::Deleted),
                 }
             })
-    }
-
-    pub(crate) fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> bool {
-        let key = object.vertex().into_storage_key();
-        snapshot.get_write(key.as_reference()).map_or(false, |write| match write {
-            Write::Insert { .. } => true,
-            Write::Put { .. } => unreachable!("Encountered a Put for a relation"),
-            Write::Delete => false,
-        })
-    }
-
-    pub(crate) fn edge_known_to_exist_if_either_object_is_inserted_in_snapshot(
-        snapshot: &impl ReadableSnapshot,
-        first: &impl ObjectAPI,
-        second: &impl ObjectAPI,
-    ) -> KnownToExist {
-        if Self::is_object_inserted_in_snapshot(snapshot, first)
-            || Self::is_object_inserted_in_snapshot(snapshot, second)
-        {
-            KnownToExist::NonExistent
-        } else {
-            KnownToExist::Unknown
-        }
-    }
-    pub(crate) fn edge_known_to_exist_if_object_is_inserted_in_snapshot(
-        snapshot: &impl ReadableSnapshot,
-        object: &impl ObjectAPI,
-    ) -> KnownToExist {
-        if Self::is_object_inserted_in_snapshot(snapshot, object) {
-            KnownToExist::NonExistent
-        } else {
-            KnownToExist::Unknown
-        }
-    }
-
-    fn bypass_if_fn_object_is_inserted_in_snapshot(
-        snapshot: &impl ReadableSnapshot,
-        object: &impl ObjectAPI,
-    ) -> BypassStorageIf {
-        BypassStorageIf(Self::is_object_inserted_in_snapshot(snapshot, object))
-    }
-
-    fn bypass_if_fn_either_object_is_inserted_in_snapshot(
-        snapshot: &impl ReadableSnapshot,
-        first: &impl ObjectAPI,
-        second: &impl ObjectAPI,
-    ) -> BypassStorageIf {
-        BypassStorageIf(
-            Self::is_object_inserted_in_snapshot(snapshot, first)
-                || Self::is_object_inserted_in_snapshot(snapshot, second),
-        )
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -2123,7 +2073,7 @@ impl ThingManager {
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, owner) {
+        if ObjectWriteStatus::of(snapshot, owner).is_buffered() {
             return Ok(());
         }
         let constraints =
@@ -2149,7 +2099,7 @@ impl ThingManager {
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, player) {
+        if ObjectWriteStatus::of(snapshot, player).is_buffered() {
             return Ok(());
         }
         let constraints = player.type_().get_played_role_type_constraints(snapshot, self.type_manager(), role_type)?;
@@ -2174,7 +2124,7 @@ impl ThingManager {
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, relation) {
+        if ObjectWriteStatus::of(snapshot, relation).is_buffered() {
             return Ok(());
         }
         let constraints =
@@ -2929,7 +2879,7 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            let edge_is_known_to_exist = Self::edge_known_to_exist_if_object_is_inserted_in_snapshot(snapshot, &owner);
+            let edge_is_known_to_exist = ObjectWriteStatus::of(snapshot, &owner).into();
             owner.set_required(snapshot, self, storage_counters.clone())?;
             attribute.set_required(snapshot, self, storage_counters.clone())?;
             snapshot.put_val_with(
@@ -2992,13 +2942,12 @@ impl ThingManager {
             attribute_value_type.category(),
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
-        let edge_is_known_to_exist = Self::edge_known_to_exist_if_object_is_inserted_in_snapshot(snapshot, &owner);
+        let edge_is_known_to_exist = ObjectWriteStatus::of(snapshot, &owner).into();
 
         snapshot.put_val_with(storage_key.clone(), value, edge_is_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
-        let owner_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &owner);
-        if !owner_is_newly_inserted {
+        if ObjectWriteStatus::of(snapshot, &owner).is_persisted() {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
         Ok(())
@@ -3029,8 +2978,7 @@ impl ThingManager {
         player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
-        let edge_known_to_exist =
-            Self::edge_known_to_exist_if_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+        let edge_known_to_exist = ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).into();
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         snapshot.put_val_with(
             links.into_storage_key().into_owned_array(),
@@ -3069,12 +3017,12 @@ impl ThingManager {
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
 
-        let edge_known_to_exist = Self::edge_known_to_exist_if_object_is_inserted_in_snapshot(snapshot, &relation);
+        let edge_known_to_exist = ObjectWriteStatus::of(snapshot, &relation).into();
 
         snapshot.put_val_with(storage_key.clone(), value, edge_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_object_inserted_in_snapshot(snapshot, &relation) {
+        if ObjectWriteStatus::of(snapshot, &relation).is_persisted() {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
 
@@ -3096,8 +3044,7 @@ impl ThingManager {
             relation.set_required(snapshot, self, storage_counters.clone())?;
             player.set_required(snapshot, self, storage_counters.clone())?;
 
-            let edge_known_to_exist =
-                Self::edge_known_to_exist_if_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+            let edge_known_to_exist = ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).into();
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             snapshot.put_val_with(
@@ -3165,11 +3112,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+        let snapshot_lookup_mode =
+            ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).snapshot_lookup_mode();
         let count = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
@@ -3178,12 +3126,12 @@ impl ThingManager {
         #[cfg(debug_assertions)]
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
-            let bypass_storage_if =
-                Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+            let snapshot_lookup_mode =
+                ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).snapshot_lookup_mode();
             let reverse_count = snapshot
-                .get_mapped_may_bypass(
+                .get_mapped_in_lookup_mode(
                     links_reverse.into_storage_key().as_reference(),
-                    bypass_storage_if,
+                    snapshot_lookup_mode,
                     |arr| decode_u64(arr.try_into().unwrap()),
                     storage_counters.clone(),
                 )
@@ -3206,11 +3154,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let bypass_storage_if = Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+        let snapshot_lookup_mode =
+            ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).snapshot_lookup_mode();
         let count = snapshot
-            .get_mapped_may_bypass(
+            .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
-                bypass_storage_if,
+                snapshot_lookup_mode,
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
@@ -3219,12 +3168,12 @@ impl ThingManager {
         #[cfg(debug_assertions)]
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
-            let bypass_storage_if =
-                Self::bypass_if_fn_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+            let snapshot_lookup_mode =
+                ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).snapshot_lookup_mode();
             let reverse_count = snapshot
-                .get_mapped_may_bypass(
+                .get_mapped_in_lookup_mode(
                     links_reverse.into_storage_key().as_reference(),
-                    bypass_storage_if,
+                    snapshot_lookup_mode,
                     |arr| decode_u64(arr.try_into().unwrap()),
                     storage_counters.clone(),
                 )
@@ -3275,9 +3224,8 @@ impl ThingManager {
                         role_type.vertex().type_id_(),
                         role_type.vertex().type_id_(),
                     );
-                    let edge_known_to_exist = Self::edge_known_to_exist_if_either_object_is_inserted_in_snapshot(
-                        snapshot, &relation, &player,
-                    );
+                    let edge_known_to_exist =
+                        ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).into();
                     snapshot.put_val_with(
                         index.into_storage_key().into_owned_array(),
                         ByteArray::copy(&encode_u64(player_repetitions)),
@@ -3286,8 +3234,7 @@ impl ThingManager {
                 }
             } else {
                 let rp_repetitions = rp_count;
-                let edge_known_to_exist =
-                    Self::edge_known_to_exist_if_either_object_is_inserted_in_snapshot(snapshot, &relation, &player);
+                let edge_known_to_exist = ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).into();
                 let index = ThingEdgeIndexedRelation::new(
                     player.vertex(),
                     rp_player.vertex(),
@@ -3388,9 +3335,9 @@ impl ThingManager {
             );
             let index_range =
                 KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-            let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot(snapshot, &relation);
+            let snapshot_lookup_mode = ObjectWriteStatus::of(snapshot, &relation).snapshot_lookup_mode();
             let collected = snapshot
-                .iterate_range_may_bypass(&index_range, bypass_storage_if, storage_counters.clone())
+                .iterate_range_in_lookup_mode(&index_range, snapshot_lookup_mode, storage_counters.clone())
                 .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
                 .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
             collected.into_iter().for_each(|edge| snapshot.delete(edge));
@@ -3517,5 +3464,63 @@ fn buffer_insert_entry_to_storage_entry(
     match write {
         Write::Insert { value } | Write::Put { value, .. } => Some(Ok((StorageKey::Array(key), Bytes::Array(value)))),
         Write::Delete { .. } => None,
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum ObjectWriteStatus {
+    Buffered,
+    Persisted,
+}
+
+impl ObjectWriteStatus {
+    pub(crate) fn is_buffered(&self) -> bool {
+        *self == Self::Buffered
+    }
+
+    pub(crate) fn is_persisted(&self) -> bool {
+        *self == Self::Persisted
+    }
+
+    pub(crate) fn of(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> Self {
+        let key = object.vertex().into_storage_key();
+        snapshot.get_write(key.as_reference()).map_or(Self::Persisted, |write| match write {
+            Write::Insert { .. } => Self::Buffered,
+            Write::Put { .. } => unreachable!("Encountered a Put for a relation"),
+            Write::Delete => Self::Persisted,
+        })
+    }
+
+    fn buffered_if_either(snapshot: &impl ReadableSnapshot, first: &impl ObjectAPI, second: &impl ObjectAPI) -> Self {
+        Self::either(Self::of(snapshot, first), Self::of(snapshot, second))
+    }
+
+    fn either(first: Self, second: Self) -> Self {
+        match (first, second) {
+            (Self::Buffered, _) | (_, Self::Buffered) => Self::Buffered,
+            (Self::Persisted, Self::Persisted) => Self::Persisted,
+        }
+    }
+
+    pub(crate) fn snapshot_lookup_mode(&self) -> SnapshotLookupMode {
+        (*self).into()
+    }
+}
+
+impl Into<SnapshotLookupMode> for ObjectWriteStatus {
+    fn into(self) -> SnapshotLookupMode {
+        match self {
+            ObjectWriteStatus::Buffered => SnapshotLookupMode::BufferOnly,
+            ObjectWriteStatus::Persisted => SnapshotLookupMode::BufferAndStorage,
+        }
+    }
+}
+
+impl Into<KnownToExist> for ObjectWriteStatus {
+    fn into(self) -> KnownToExist {
+        match self {
+            ObjectWriteStatus::Buffered => KnownToExist::NonExistent,
+            ObjectWriteStatus::Persisted => KnownToExist::Unknown,
+        }
     }
 }
