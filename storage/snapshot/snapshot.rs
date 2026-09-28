@@ -78,6 +78,24 @@ pub trait ReadableSnapshot {
 
     get_mapped_method!(get_last_existing_mapped, get_last_existing);
 
+    fn get_may_bypass<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
+
+    fn get_mapped_may_bypass<T>(
+        &self,
+        key: StorageKeyReference<'_>,
+        bypass_if: impl Fn(&Self) -> bool,
+        mut mapper: impl FnMut(&[u8]) -> T,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<T>, SnapshotGetError> {
+        let value = self.get_may_bypass::<BUFFER_VALUE_INLINE>(key, bypass_if, storage_counters)?;
+        Ok(value.map(|bytes| mapper(bytes.as_ref())))
+    }
+
     fn contains(
         &self,
         key: StorageKeyReference<'_>,
@@ -330,6 +348,20 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         self.get(key, storage_counters)
     }
 
+    fn get_may_bypass<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        if bypass_if(self) {
+            // There's no buffer, so if we bypass the storage, it's not there
+            Ok(None)
+        } else {
+            self.get(key, storage_counters)
+        }
+    }
+
     fn iterate_range<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -451,13 +483,27 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        self.get_may_bypass(key, |_| false, storage_counters)
+    }
+
+    fn get_may_bypass<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
-            None => self
-                .storage
-                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+            None => {
+                if bypass_if(self) {
+                    Ok(None)
+                } else {
+                    self.storage
+                        .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
+                        .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+                }
+            }
         }
     }
 
@@ -647,16 +693,29 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        self.get_may_bypass(key, |_| false, storage_counters)
+    }
+
+    fn get_may_bypass<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
-            None => self
-                .storage
-                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+            None => {
+                if bypass_if(self) {
+                    Ok(None)
+                } else {
+                    self.storage
+                        .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
+                        .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+                }
+            }
         }
     }
-
     /// Get the last existing Value for the key, returning an empty Option if it did not exist
     fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
@@ -845,6 +904,15 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
     fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        self.get(key, storage_counters)
+    }
+
+    fn get_may_bypass<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+        _bypass_if: impl Fn(&Self) -> bool,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         self.get(key, storage_counters)
