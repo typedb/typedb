@@ -114,7 +114,7 @@ pub enum WriteCategory {
     Delete,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum KnownToExist {
     Unknown,
     NonExistent,
@@ -125,13 +125,14 @@ impl fmt::Display for KnownToExist {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             KnownToExist::Unknown => "unknown",
-            KnownToExist::Exists => "persisted",
+            KnownToExist::Exists => "exists",
             KnownToExist::NonExistent => "non-existent",
         })
     }
 }
 
-// TODO: We can easily do it as a number, but that might break backward compatibility
+// We serialize this as a boolean for backward compatibility with 3.13
+// If we could do it as u8, that would improve recovery times.
 impl Serialize for KnownToExist {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -163,5 +164,88 @@ impl<'de> Deserialize<'de> for KnownToExist {
         }
 
         deserializer.deserialize_bool(KnownToExistVisitor)
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    use bytes::byte_array::ByteArray;
+    use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+    use serde::{Deserialize, Serialize};
+
+    use crate::snapshot::write::KnownToExist;
+
+    #[derive(Serialize, Deserialize, Clone)]
+    pub enum OldWrite {
+        Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
+        Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: bool },
+        Delete,
+    }
+
+    #[test]
+    fn known_to_exist_serializes_the_same_as_bool() {
+        let value = ByteArray::<BUFFER_VALUE_INLINE>::copy(&[1, 2, 3]);
+        let reinsert = Arc::new(AtomicBool::new(false));
+        let known_to_exist_values = vec![
+            (false, KnownToExist::Unknown, KnownToExist::Unknown),
+            (true, KnownToExist::Exists, KnownToExist::Exists),
+            (false, KnownToExist::NonExistent, KnownToExist::Unknown),
+        ];
+        for (old_known_to_exist, new_known_to_exist, deserialized_known_to_exist) in known_to_exist_values {
+            let old_write =
+                OldWrite::Put { value: value.clone(), reinsert: reinsert.clone(), known_to_exist: old_known_to_exist };
+            let new_write = super::Write::Put {
+                value: value.clone(),
+                reinsert: reinsert.clone(),
+                known_to_exist: new_known_to_exist,
+            };
+            let serialized_old = bincode::serialize(&old_write).unwrap();
+            let serialized_new = bincode::serialize(&new_write).unwrap();
+            let new_deserialized_as_old: OldWrite = bincode::deserialize(&serialized_new).unwrap();
+            let old_deserialized_as_new: super::Write = bincode::deserialize(&serialized_old).unwrap();
+
+            assert_eq!(serialized_old, serialized_new);
+
+            match (old_write, new_deserialized_as_old) {
+                (
+                    OldWrite::Put {
+                        value: expected_value,
+                        reinsert: expected_reinsert,
+                        known_to_exist: expected_known_to_exist,
+                    },
+                    OldWrite::Put {
+                        value: actual_value,
+                        reinsert: actual_reinsert,
+                        known_to_exist: actual_known_to_exist,
+                    },
+                ) => {
+                    assert_eq!(expected_value, actual_value);
+                    assert_eq!(expected_reinsert.load(Ordering::Relaxed), actual_reinsert.load(Ordering::Relaxed));
+                    assert_eq!(expected_known_to_exist, actual_known_to_exist);
+                }
+                _ => unreachable!(),
+            }
+
+            match (new_write, old_deserialized_as_new) {
+                (
+                    super::Write::Put { value: expected_value, reinsert: expected_reinsert, known_to_exist: _ },
+                    super::Write::Put {
+                        value: actual_value,
+                        reinsert: actual_reinsert,
+                        known_to_exist: actual_known_to_exist,
+                    },
+                ) => {
+                    assert_eq!(expected_value, actual_value);
+                    assert_eq!(expected_reinsert.load(Ordering::Relaxed), actual_reinsert.load(Ordering::Relaxed));
+                    assert_eq!(deserialized_known_to_exist, actual_known_to_exist); // Not expected
+                }
+                _ => unreachable!(),
+            }
+        }
     }
 }
