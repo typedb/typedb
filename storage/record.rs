@@ -137,7 +137,6 @@ impl CommitRecord {
     pub(crate) fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
         // TODO: this can be optimised by some kind of bit-wise AND of two bloom filter-like data
         // structures first, since we assume few clashes this should mostly succeed
-        // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
 
         let mut puts_to_update = Vec::new();
 
