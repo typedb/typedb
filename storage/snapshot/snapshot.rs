@@ -362,6 +362,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match lookup_mode {
             SnapshotLookupMode::BufferOnly => {
+                debug_assert!(false, "Unreachable at the time of writing.");
                 // There's no buffer, so if we bypass the storage, it's not there
                 Ok(None)
             }
@@ -386,7 +387,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         match lookup_mode {
-            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_empty(),
+            SnapshotLookupMode::BufferOnly => {
+                debug_assert!(false, "Unreachable at the time of writing.");
+                SnapshotRangeIterator::new_empty()
+            }
             SnapshotLookupMode::BufferAndStorage => self.iterate_range(range, storage_counters),
         }
     }
