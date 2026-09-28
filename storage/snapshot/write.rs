@@ -115,10 +115,12 @@ pub enum WriteCategory {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
 pub enum KnownToExist {
-    Unknown,
-    NonExistent,
-    Exists,
+    // DO NOT MODIFY ENCODING
+    Unknown = 0,     // legacy `false`
+    Exists = 1,      // legacy `true`
+    NonExistent = 2, // new
 }
 
 impl fmt::Display for KnownToExist {
@@ -155,15 +157,26 @@ impl<'de> Deserialize<'de> for KnownToExist {
                 formatter.write_str("`KnownToExist`")
             }
 
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+            fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
             where
                 E: Error,
             {
-                Ok(if v { KnownToExist::Exists } else { KnownToExist::Unknown })
+                const UNKNOWN: u8 = 0;
+                const EXISTS: u8 = 1;
+                const NON_EXISTENT: u8 = 2;
+                assert_eq!(KnownToExist::Unknown as u8, UNKNOWN);
+                assert_eq!(KnownToExist::Exists as u8, EXISTS);
+                assert_eq!(KnownToExist::NonExistent as u8, NON_EXISTENT);
+                match v {
+                    UNKNOWN => Ok(KnownToExist::Unknown),
+                    EXISTS => Ok(KnownToExist::Exists),
+                    NON_EXISTENT => Ok(KnownToExist::NonExistent),
+                    other => Err(E::invalid_value(serde::de::Unexpected::Unsigned(other as u64), &self)),
+                }
             }
         }
 
-        deserializer.deserialize_bool(KnownToExistVisitor)
+        deserializer.deserialize_u8(KnownToExistVisitor)
     }
 }
 
