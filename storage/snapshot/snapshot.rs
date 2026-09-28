@@ -92,6 +92,13 @@ pub trait ReadableSnapshot {
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator;
 
+    fn iterate_range_may_bypass<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator;
+
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool;
 
     // --- we are slightly breaking the abstraction and Rust model by mimicking polymorphism for the following methods ---
@@ -333,6 +340,16 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
+    fn iterate_range_may_bypass<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator {
+        // Writes can't have buffered
+        self.iterate_range(range, storage_counters)
+    }
+
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
         !buffered_only
             && self
@@ -459,18 +476,31 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         }
     }
 
-    fn iterate_range<const PS: usize>(
+    fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
+        bypass_if: impl Fn(&Self) -> bool,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        let storage_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        if bypass_if(self) {
+            SnapshotRangeIterator::new_buffered_only(buffered_iterator)
+        } else {
+            let storage_iterator =
+                self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+            SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        }
+    }
+
+    fn iterate_range<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator {
+        self.iterate_range_may_bypass(range, |_| false, storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
@@ -642,18 +672,31 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         }
     }
 
-    fn iterate_range<const PS: usize>(
+    fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
+        bypass_if: impl Fn(&Self) -> bool,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        let storage_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
-        SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        if bypass_if(self) {
+            SnapshotRangeIterator::new_buffered_only(buffered_iterator)
+        } else {
+            let storage_iterator =
+                self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+            SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        }
+    }
+
+    fn iterate_range<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator {
+        self.iterate_range_may_bypass(range, |_| false, storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
@@ -830,6 +873,15 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
             .map(|(k, v)| (StorageKeyArray::new_raw(keyspace_id, k.clone()), Write::Insert { value: v.clone() }))
             .collect();
         SnapshotRangeIterator::new_buffered_only(BufferRangeIterator::new(preloaded))
+    }
+
+    fn iterate_range_may_bypass<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator {
+        self.iterate_range(range, storage_counters)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, _buffered_only: bool) -> bool {

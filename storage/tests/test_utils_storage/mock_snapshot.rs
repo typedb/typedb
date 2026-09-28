@@ -65,6 +65,15 @@ impl ReadableSnapshot for MockSnapshot {
         SnapshotRangeIterator::new_empty()
     }
 
+    fn iterate_range_may_bypass<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        _bypass_if: impl Fn(&Self) -> bool,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator {
+        self.iterate_range(range, storage_counters)
+    }
+
     fn any_in_range<'this, const PS: usize>(&'this self, _: &KeyRange<StorageKey<'this, PS>>, _: bool) -> bool {
         false
     }

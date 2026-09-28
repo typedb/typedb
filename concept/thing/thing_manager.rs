@@ -87,7 +87,6 @@ use crate::{
         object::{HasIterator, HasReverseIterator, Object, ObjectAPI},
         relation::{
             IndexedRelationsIterator, Links, LinksIterator, LinksReverseIterator, Relation, RolePlayer,
-            storage_key_edge_to_links,
         },
         statistics::Statistics,
         r#struct::StructIndexForAttributeTypeIterator,
@@ -1462,20 +1461,17 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        let keyrange = KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
-
-        let iter: Box<dyn Iterator<Item = Result<(Links, u64), Box<ConceptReadError>>>> =
-            if Self::is_object_inserted_in_snapshot(snapshot, &relation) {
-                Box::new(
-                    snapshot
-                        .iterate_writes_range(&keyrange)
-                        .filter_map(buffer_insert_entry_to_storage_entry)
-                        .map(|result| result.map(|(k, v)| storage_key_edge_to_links(k, v))),
-                )
-            } else {
-                Box::new(LinksIterator::new(snapshot.iterate_range(&keyrange, storage_counters)))
-            };
-        iter.map(|result| result.map(|(links, count)| (links.into_role_player(), count)))
+        let bypass_storage_if = Self::bypass_if_fn_object_is_inserted_in_snapshot::<Snapshot>(relation.clone());
+        Iterator::map(
+            LinksIterator::new(
+                snapshot.iterate_range_may_bypass(
+                    &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+                    bypass_storage_if,
+                    storage_counters,
+                ),
+            ),
+            |result| result.map(|(links, count)| (links.into_role_player(), count)),
+        )
     }
 
     pub(crate) fn get_role_players_ordered(
@@ -1486,6 +1482,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
+        // TODO: Bypass storage variant
         let players = snapshot
             .get_mapped(
                 key.into_storage_key().as_reference(),
@@ -1660,6 +1657,7 @@ impl ThingManager {
                 relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
             })?;
         }
+        // TODO: If relation is newly inserted.
         Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range, storage_counters)))
     }
 
@@ -1694,6 +1692,17 @@ impl ThingManager {
             Write::Put { .. } => unreachable!("Encountered a Put for a relation"),
             Write::Delete => false,
         })
+    }
+
+    fn bypass_if_fn_object_is_inserted_in_snapshot<Snapshot: ReadableSnapshot>(object: impl ObjectAPI) -> impl Fn(&Snapshot) -> bool {
+        move |snapshot: &Snapshot| {
+            let key = object.vertex().into_storage_key();
+            snapshot.get_write(key.as_reference()).map_or(false, |write| match write {
+                Write::Insert { .. } => true,
+                Write::Put { .. } => unreachable!("Encountered a Put for a relation"),
+                Write::Delete => false,
+            })
+        }
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -3203,11 +3212,11 @@ impl ThingManager {
         debug_assert_ne!(count_for_player, 0);
         let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
         let players = relation.get_players(snapshot, self, storage_counters).map_ok(|(roleplayer, count)| {
-            let player_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &player);
-            (roleplayer.player(), roleplayer.role_type(), count, player_is_newly_inserted)
+            (roleplayer.player(), roleplayer.role_type(), count)
         });
         for rp in players {
-            let (rp_player, rp_role_type, rp_count, player_is_newly_inserted) = rp?;
+            let (rp_player, rp_role_type, rp_count) = rp?;
+            let player_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &rp_player);
             if rp_player.is_same_role_player(rp_role_type, player, role_type) {
                 let player_repetitions = count_for_player - 1;
                 if player_repetitions > 0 {
