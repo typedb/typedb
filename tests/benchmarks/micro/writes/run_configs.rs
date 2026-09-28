@@ -31,6 +31,13 @@ pub const SERIAL_MANY_SMALL: RunDescriptor = RunDescriptor {
     n_rows_per_query: ROWS_SMALL,
 };
 
+pub const SERIAL_MANY_MEDIUM: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_SERIAL,
+    total_txns: TRANSACTIONS_MANY,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_MEDIUM,
+};
+
 pub const PARALLEL_MANY_SMALL: RunDescriptor = RunDescriptor {
     parallelism: THREADS_THREADED,
     total_txns: TRANSACTIONS_MANY,
