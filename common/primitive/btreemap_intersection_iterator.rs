@@ -14,6 +14,7 @@ struct BTreeMapAndRange<'a, K: Ord, V> {
 }
 
 impl<'a, K: Ord, V> BTreeMapAndRange<'a, K, V> {
+    const LINEAR_STEPS: usize = 4;
     pub fn new(map: &'a BTreeMap<K, V>) -> Self {
         let range = map.range(..);
         Self { map, range }
@@ -25,6 +26,17 @@ impl<'a, K: Ord, V> BTreeMapAndRange<'a, K, V> {
 
     fn seek(&mut self, key: &K) {
         self.range = self.map.range(key..)
+    }
+
+    fn advance_till_or_past(&mut self, key: &K) -> Option<(&'a K, &'a V)> {
+        for _ in 0..Self::LINEAR_STEPS {
+            let item = self.range.next()?;
+            if item.0 >= key {
+                return Some(item);
+            }
+        }
+        self.seek(key);
+        self.next()
     }
 }
 
@@ -51,12 +63,10 @@ impl<'a, K: Ord, V1, V2> Iterator for BTreeMapIntersectionIterator<'a, K, V1, V2
             match l.0.cmp(&r.0) {
                 Ordering::Equal => return Some((l.0, l.1, r.1)),
                 Ordering::Less => {
-                    self.first.seek(r.0);
-                    l = self.first.next()?;
+                    l = self.first.advance_till_or_past(r.0)?;
                 }
                 Ordering::Greater => {
-                    self.second.seek(l.0);
-                    r = self.second.next()?;
+                    r = self.second.advance_till_or_past(l.0)?;
                 }
             }
         }
