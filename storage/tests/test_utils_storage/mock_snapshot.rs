@@ -14,8 +14,8 @@ use storage::{
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
-        ReadableSnapshot, SnapshotGetError, buffer::BufferRangeIterator, iterator::SnapshotRangeIterator,
-        snapshot_id::SnapshotId, write::Write,
+        BypassStorageIf, ReadableSnapshot, SnapshotGetError, buffer::BufferRangeIterator,
+        iterator::SnapshotRangeIterator, snapshot_id::SnapshotId, write::Write,
     },
 };
 
@@ -49,6 +49,15 @@ impl ReadableSnapshot for MockSnapshot {
         Err(SnapshotGetError::MockError {})
     }
 
+    fn get_may_bypass<const INLINE_BYTES: usize>(
+        &self,
+        _: StorageKeyReference<'_>,
+        _: BypassStorageIf,
+        _: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        Err(SnapshotGetError::MockError {})
+    }
+
     fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
         _: StorageKeyReference<'_>,
@@ -68,7 +77,7 @@ impl ReadableSnapshot for MockSnapshot {
     fn iterate_range_may_bypass<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
-        _bypass_if: impl Fn(&Self) -> bool,
+        _bypass_if: BypassStorageIf,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         self.iterate_range(range, storage_counters)
