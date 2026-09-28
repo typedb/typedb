@@ -88,22 +88,12 @@ enum Domain {
     Data,
 }
 
-impl Prefix {
-    pub fn max_object_type_prefix() -> Prefix {
-        if Prefix::VertexEntityType.prefix_id().byte < Prefix::VertexRelationType.prefix_id().byte {
-            Prefix::VertexRelationType
-        } else {
-            Prefix::VertexEntityType
-        }
-    }
+const _: () =
+    assert!(Prefix::MIN_OBJECT_TYPE_PREFIX.prefix_id().byte < Prefix::MAX_OBJECT_TYPE_PREFIX.prefix_id().byte);
 
-    pub fn min_object_type_prefix() -> Prefix {
-        if Prefix::VertexEntityType.prefix_id().byte < Prefix::VertexRelationType.prefix_id().byte {
-            Prefix::VertexEntityType
-        } else {
-            Prefix::VertexRelationType
-        }
-    }
+impl Prefix {
+    pub const MIN_OBJECT_TYPE_PREFIX: Prefix = Prefix::VertexEntityType;
+    pub const MAX_OBJECT_TYPE_PREFIX: Prefix = Prefix::VertexRelationType;
 
     pub fn schema_byte_ranges() -> Vec<RangeInclusive<u8>> {
         let mut ranges: Vec<RangeInclusive<u8>> = Vec::new();

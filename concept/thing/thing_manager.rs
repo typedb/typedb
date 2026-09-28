@@ -1269,7 +1269,7 @@ impl ThingManager {
             ),
             Bound::Unbounded => RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(
                 attribute.vertex(),
-                Prefix::min_object_type_prefix(),
+                Prefix::MIN_OBJECT_TYPE_PREFIX,
                 TypeID::MIN,
             )),
         };
@@ -1282,7 +1282,7 @@ impl ThingManager {
             ),
             Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(
                 attribute.vertex(),
-                Prefix::max_object_type_prefix(),
+                Prefix::MAX_OBJECT_TYPE_PREFIX,
                 TypeID::MAX,
             )),
         };
