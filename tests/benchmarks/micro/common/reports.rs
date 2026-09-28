@@ -256,10 +256,7 @@ impl MultiQueryTxProfileReport {
         let n_q = self.run_descriptor.n_queries_per_tx as f64;
         let sum_txn_wall: f64 =
             self.per_txn.iter().map(|r| r.commit_ms.0.as_secs_f64() + n_q * r.mean_query_ms.0.as_secs_f64()).sum();
-        println!(
-            "E2E took: {} ms for {} rows = {:.0} rows/s",
-            self.total_wall_time, total_rows, rows_per_sec
-        );
+        println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.total_wall_time, total_rows, rows_per_sec);
     }
 
     fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {

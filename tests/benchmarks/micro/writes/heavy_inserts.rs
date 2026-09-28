@@ -14,7 +14,8 @@ use query::given_rows::GivenRowEntry;
 
 use crate::{
     run_configs::{
-        PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL,
+        PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_MEDIUM,
+        SERIAL_MANY_SMALL,
     },
     simple_inserts::{SCHEMA as SIMPLE_SCHEMA, no_initial_data},
 };
@@ -29,6 +30,7 @@ fn run_serial(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(serial_entities_few_large());
     group.run_benchmark(serial_entities_few_large_10q());
     group.run_benchmark(serial_entities_many_small());
+    group.run_benchmark(serial_relations_many_medium());
 }
 
 fn run_parallel(runner: &mut impl BenchmarkRunner) {
@@ -36,6 +38,7 @@ fn run_parallel(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(parallel_entities_many_small());
     group.run_benchmark(parallel_entities_many_large());
     group.run_benchmark(parallel_relations_many_medium());
+    group.run_benchmark(parallel_relations_many_large());
 }
 
 fn parametrised_entity_insert(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBWorkloadBenchmark {
@@ -62,6 +65,10 @@ fn serial_entities_many_small() -> TypeDBWorkloadBenchmark {
     parametrised_entity_insert("serial_entities_many_small", SERIAL_MANY_SMALL)
 }
 
+fn serial_relations_many_medium() -> TypeDBWorkloadBenchmark {
+    parametrised_binary_relation("serial_relations_many_medium", SERIAL_MANY_MEDIUM)
+}
+
 // Parallel
 fn parallel_entities_many_small() -> TypeDBWorkloadBenchmark {
     parametrised_entity_insert("parallel_entities_many_small", PARALLEL_MANY_SMALL)
@@ -72,10 +79,14 @@ fn parallel_entities_many_large() -> TypeDBWorkloadBenchmark {
 }
 
 fn parallel_relations_many_medium() -> TypeDBWorkloadBenchmark {
-    parametrised_parallel_binary_relation("parallel_relations_many_medium", PARALLEL_MANY_MEDIUM)
+    parametrised_binary_relation("parallel_relations_many_medium", PARALLEL_MANY_MEDIUM)
 }
 
-fn parametrised_parallel_binary_relation(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBWorkloadBenchmark {
+fn parallel_relations_many_large() -> TypeDBWorkloadBenchmark {
+    parametrised_binary_relation("parallel_relations_many_large", PARALLEL_MANY_LARGE)
+}
+
+fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBWorkloadBenchmark {
     const N_ENTITIES: usize = 100_000;
     fn produce_row(rng: &mut RandomDataGen) -> Vec<GivenRowEntry> {
         vec![
