@@ -2973,7 +2973,6 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let count: u64 = 1;
-
         relation.set_required(snapshot, self, storage_counters.clone())?;
         player.set_required(snapshot, self, storage_counters.clone())?;
 
@@ -3041,12 +3040,13 @@ impl ThingManager {
         if count == 0 {
             self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
-            relation.set_required(snapshot, self, storage_counters.clone())?;
-            player.set_required(snapshot, self, storage_counters.clone())?;
-
             let edge_known_to_exist = ObjectWriteStatus::buffered_if_either(snapshot, &relation, &player).into();
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+
+            relation.set_required(snapshot, self, storage_counters.clone())?;
+            player.set_required(snapshot, self, storage_counters.clone())?;
+
             snapshot.put_val_with(
                 links.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
@@ -3454,16 +3454,6 @@ fn register_delete_in_cleanup_intervals(
         | Some(DecodableKey::IndexValueToStruct(_)) => {
             trace!("Unhandled delete when constructing compaction record!")
         }
-    }
-}
-
-fn buffer_insert_entry_to_storage_entry(
-    (key, write): (StorageKeyArray<BUFFER_KEY_INLINE>, Write),
-) -> Option<Result<(StorageKey<'static, BUFFER_KEY_INLINE>, Bytes<'static, BUFFER_VALUE_INLINE>), Box<ConceptReadError>>>
-{
-    match write {
-        Write::Insert { value } | Write::Put { value, .. } => Some(Ok((StorageKey::Array(key), Bytes::Array(value)))),
-        Write::Delete { .. } => None,
     }
 }
 
