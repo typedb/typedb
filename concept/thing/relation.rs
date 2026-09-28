@@ -388,9 +388,9 @@ impl ThingAPI for Relation {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        storage_counters: StorageCounters,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if matches!(self.get_status(snapshot, thing_manager, storage_counters)?, ConceptStatus::Persisted) {
+        if !ThingManager::is_object_inserted_in_snapshot(snapshot, self) {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())

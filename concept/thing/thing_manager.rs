@@ -1712,7 +1712,7 @@ impl ThingManager {
             })
     }
 
-    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> bool {
+    pub(crate) fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> bool {
         let key = object.vertex().into_storage_key();
         snapshot.get_write(key.as_reference()).map_or(false, |write| match write {
             Write::Insert { .. } => true,
@@ -2906,9 +2906,7 @@ impl ThingManager {
 
             let owner_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &owner);
             let edge_is_known_to_exist = edges_known_to_exist_if_newly_inserted(owner_is_newly_inserted);
-            if !owner_is_newly_inserted {
-                owner.set_required(snapshot, self, storage_counters.clone())?;
-            }
+            owner.set_required(snapshot, self, storage_counters.clone())?;
             attribute.set_required(snapshot, self, storage_counters.clone())?;
             snapshot.put_val_with(
                 has.into_storage_key().into_owned_array(),
@@ -3006,12 +3004,8 @@ impl ThingManager {
         let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
         let player_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &player);
 
-        if !relation_is_newly_inserted {
-            relation.set_required(snapshot, self, storage_counters.clone())?;
-        }
-        if !player_is_newly_inserted {
-            player.set_required(snapshot, self, storage_counters.clone())?;
-        }
+        relation.set_required(snapshot, self, storage_counters.clone())?;
+        player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
         let edge_known_to_exist =
@@ -3081,12 +3075,8 @@ impl ThingManager {
         } else {
             let relation_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &relation);
             let player_is_newly_inserted = Self::is_object_inserted_in_snapshot(snapshot, &player);
-            if !relation_is_newly_inserted {
-                relation.set_required(snapshot, self, storage_counters.clone())?;
-            }
-            if !player_is_newly_inserted {
-                player.set_required(snapshot, self, storage_counters.clone())?;
-            }
+            relation.set_required(snapshot, self, storage_counters.clone())?;
+            player.set_required(snapshot, self, storage_counters.clone())?;
 
             let edge_known_to_exist =
                 edges_known_to_exist_if_newly_inserted(relation_is_newly_inserted | player_is_newly_inserted);
