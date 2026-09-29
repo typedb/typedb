@@ -130,17 +130,13 @@ fn check_is_value(
 ) {
     fn format(value: &serde_json::Value) -> String {
         match value {
+            serde_json::Value::Number(n) if n.is_i64() || n.is_u64() => n.to_string(),
             serde_json::Value::Number(n) => {
-                if let Some(float_val) = n.as_f64() {
-                    // Format with fixed point (e.g., 20 decimal places) to avoid scientific notation
-                    let s = format!("{:.20}", float_val);
-
-                    // Trim trailing zeros and the decimal point if it becomes an integer
-                    let s = s.trim_end_matches('0').trim_end_matches('.');
-                    s.to_string()
-                } else {
-                    n.to_string() // Integers don't need special formatting
-                }
+                // Render integers from the literal. as_f64() rounds anything past 2^53,
+                // which either changes the value or pushes it outside i64 entirely
+                let float_val = n.as_f64().expect("Expected a representable JSON number");
+                let rendered = format!("{float_val}");
+                if rendered.contains('.') { rendered } else { format!("{rendered}.0") }
             }
             serde_json::Value::String(string) => string.clone(),
             _ => value.to_string(), // Handle non-numbers normally
