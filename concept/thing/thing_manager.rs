@@ -563,11 +563,13 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     attribute_value_type.category(),
                     value_lower_bound,
+                    true,
                 );
                 let end_attribute_vertex_bound = self.get_attribute_vertex_prefix_upper_bound(
                     attribute_type.vertex().type_id_(),
                     attribute_value_type.category(),
                     value_upper_bound,
+                    true,
                 );
                 (start_attribute_vertex_bound, end_attribute_vertex_bound)
             };
@@ -599,6 +601,7 @@ impl ThingManager {
         attribute_type_id: TypeID,
         attribute_value_type_category: ValueTypeCategory,
         value_lower_bound: Bound<Value<'_>>,
+        sortable: bool,
     ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
         match value_lower_bound {
             Bound::Included(lower_value) => {
@@ -606,7 +609,7 @@ impl ThingManager {
                     attribute_type_id,
                     lower_value,
                     self.vertex_generator.hasher(),
-                    true, // lower and upper bound handling is only required when spanning a range
+                    sortable,
                 );
                 let storage_key_prefix = match vertex_or_prefix {
                     Either::First(vertex) => vertex.into_storage_key(),
@@ -619,7 +622,7 @@ impl ThingManager {
                     attribute_type_id,
                     lower_value,
                     self.vertex_generator.hasher(),
-                    true, // lower and upper bound handling is only required when spanning a range
+                    sortable,
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => RangeStart::ExcludePrefix(vertex.into_storage_key()),
@@ -645,6 +648,7 @@ impl ThingManager {
         attribute_type_id: TypeID,
         attribute_value_type_category: ValueTypeCategory,
         value_upper_bound: Bound<Value<'_>>,
+        sortable: bool,
     ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
         match value_upper_bound {
             Bound::Included(upper_value) => {
@@ -652,7 +656,7 @@ impl ThingManager {
                     attribute_type_id,
                     upper_value,
                     self.vertex_generator.hasher(),
-                    true, // lower and upper bound handling is only required when spanning a range
+                    sortable,
                 );
                 let storage_key_prefix = match vertex_or_prefix {
                     Either::First(vertex) => vertex.into_storage_key(),
@@ -665,7 +669,7 @@ impl ThingManager {
                     attribute_type_id,
                     upper_value,
                     self.vertex_generator.hasher(),
-                    true, // lower and upper bound handling is only required when spanning a range
+                    sortable,
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => RangeEnd::EndPrefixExclusive(vertex.into_storage_key()),
@@ -886,11 +890,7 @@ impl ThingManager {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let sortable_range = if let Bound::Included(_) = range.start_bound() && range.start_bound() == range.end_bound() {
-            true
-        } else {
-            false
-        };
+        let sortable_range = !Self::is_point_range(&value_lower_bound, &value_upper_bound);
 
         let has_range_start = match value_lower_bound {
             Bound::Included(lower_value) => {
@@ -1043,13 +1043,16 @@ impl ThingManager {
                     Either::First(vertex) => {
                         RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
                     }
-                    Either::Second(prefix) => RangeEnd::EndPrefixExclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                            attribute_value_type.category(),
-                            prefix.bytes(),
-                        )
+                    Either::Second(prefix) => {
+                        // the prefix is incomplete: values below the bound may share it, so it must stay included
+                        RangeEnd::EndPrefixInclusive(
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                                attribute_value_type.category(),
+                                prefix.bytes(),
+                            )
                             .resize_to(),
-                    ),
+                        )
+                    }
                 }
             }
             Bound::Unbounded => RangeEnd::EndPrefixInclusive(
@@ -1129,10 +1132,16 @@ impl ThingManager {
             None => return Ok(HasIterator::new_empty()),
             Some(lower_bound) => lower_bound,
         };
+        let end_value_bound = match Self::get_value_upper_bound_across_types(value_type_categories, value_range) {
+            None => return Ok(HasIterator::new_empty()),
+            Some(upper_bound) => upper_bound,
+        };
+        let sortable = !Self::is_point_range(&start_value_bound, &end_value_bound);
         let start = self.get_has_from_thing_to_type_unordered_start_bound(
             owner,
             start_attribute_type.vertex().type_id_(),
             start_value_bound,
+            sortable,
         );
 
         let end_attribute_type =
@@ -1140,14 +1149,11 @@ impl ThingManager {
                 None => return Ok(HasIterator::new_empty()),
                 Some(end_type_included) => end_type_included,
             };
-        let end_value_bound = match Self::get_value_upper_bound_across_types(value_type_categories, value_range) {
-            None => return Ok(HasIterator::new_empty()),
-            Some(upper_bound) => upper_bound,
-        };
         let end = self.get_has_from_thing_to_type_unordered_end_bound(
             owner,
             end_attribute_type.vertex().type_id_(),
             end_value_bound,
+            sortable,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
         let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
@@ -1186,15 +1192,18 @@ impl ThingManager {
                 result.map(|(has, value)| (has.attribute(), value))
             }));
         };
+        let sortable = !Self::is_point_range(&value_lower_bound, &value_upper_bound);
         let has_start_bound = self.get_has_from_thing_to_type_unordered_start_bound(
             owner,
             attribute_type.vertex().type_id_(),
             value_lower_bound,
+            sortable,
         );
         let has_end_bound = self.get_has_from_thing_to_type_unordered_end_bound(
             owner,
             attribute_type.vertex().type_id_(),
             value_upper_bound,
+            sortable,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
         let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
@@ -1209,6 +1218,7 @@ impl ThingManager {
         owner: impl ObjectAPI,
         attribute_type_id: TypeID,
         value_lower_bound: Bound<Value<'_>>,
+        sortable: bool,
     ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
         let attribute_vertex_lower_bound = self.get_attribute_vertex_prefix_lower_bound(
             attribute_type_id,
@@ -1216,6 +1226,7 @@ impl ThingManager {
             ValueTypeCategory::Boolean,
             // ### DUMMY - IRRELEVANT ###
             value_lower_bound,
+            sortable,
         );
         attribute_vertex_lower_bound.map(|lower_bound| {
             ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), lower_bound.bytes())
@@ -1228,6 +1239,7 @@ impl ThingManager {
         owner: impl ObjectAPI,
         attribute_type_id: TypeID,
         value_upper_bound: Bound<Value<'_>>,
+        sortable: bool,
     ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
         let attribute_vertex_upper_bound = self.get_attribute_vertex_prefix_upper_bound(
             attribute_type_id,
@@ -1235,6 +1247,7 @@ impl ThingManager {
             ValueTypeCategory::Boolean,
             // ### DUMMY - IRRELEVANT ###
             value_upper_bound,
+            sortable,
         );
         attribute_vertex_upper_bound.map(|end| {
             ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), end.bytes()).resize_to()
@@ -1901,6 +1914,12 @@ impl ThingManager {
             Bound::Unbounded => T::MAX,
         };
         Some(bound_inclusive)
+    }
+
+    /// A range with equal, inclusive bounds is a point lookup: the full deterministic attribute ID (including the
+    /// hash for long strings) may be used, instead of the order-preserving 8-byte prefix needed to span a range.
+    fn is_point_range(lower: &Bound<Value<'_>>, upper: &Bound<Value<'_>>) -> bool {
+        matches!(lower, Bound::Included(_)) && lower == upper
     }
 
     fn get_value_range<'a>(
