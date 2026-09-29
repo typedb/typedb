@@ -26,7 +26,7 @@ use crate::{
     type_::{
         Capability, OwnerAPI, PlayerAPI, TypeAPI,
         attribute_type::AttributeType,
-        constraint::{CapabilityConstraint, Constraint, get_checked_cardinality_constraints},
+        constraint::{CapabilityConstraint, Constraint},
         owns::Owns,
         plays::Plays,
         relates::Relates,
@@ -70,12 +70,12 @@ macro_rules! capability_cardinality_validation {
         $get_interface_counts_func:ident,
         $check_func:path
     ) => {
-        pub(crate) fn $collect_func_name(
+        fn $collect_func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
             object_type: <$capability_type as Capability>::ObjectType,
             interface_types: &HashSet<<$capability_type as Capability>::InterfaceType>,
-        ) -> Result<Vec<CapabilityConstraint<$capability_type>>, Box<ConceptReadError>> {
+        ) -> Result<Vec<CheckedCardinality<$capability_type>>, Box<ConceptReadError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             for interface_type in interface_types {
                 for constraint in object_type
@@ -86,33 +86,50 @@ macro_rules! capability_cardinality_validation {
                 }
             }
 
-            Ok(get_checked_cardinality_constraints(&cardinality_constraints).cloned().collect())
+            let mut checked = Vec::new();
+            for constraint in cardinality_constraints {
+                if !constraint.requires_validation() {
+                    continue;
+                }
+                let source_interface_type = constraint.source().interface();
+                let sub_interface_types =
+                    source_interface_type.get_subtypes_transitive(snapshot, thing_manager.type_manager())?;
+                let counted_interface_types =
+                    TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
+                        .collect();
+                checked.push(CheckedCardinality { constraint, counted_interface_types });
+            }
+            Ok(checked)
         }
 
-        pub(crate) fn $validate_func_name(
+        fn $validate_func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
             object: $object_instance,
-            constraints: &[CapabilityConstraint<$capability_type>],
+            checked_cardinalities: &[CheckedCardinality<$capability_type>],
             storage_counters: StorageCounters,
         ) -> Result<(), Box<DataValidationError>> {
-            if constraints.is_empty() {
+            if checked_cardinalities.is_empty() {
                 return Ok(());
             }
 
             let counts = object
                 .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-            for constraint in constraints {
-                let source_interface_type = constraint.source().interface();
-                let sub_interface_types = source_interface_type
-                    .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-                let count =
-                    TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
-                        .filter_map(|interface_type| counts.get(&interface_type))
-                        .sum();
-                $check_func(snapshot, thing_manager.type_manager(), constraint, object, source_interface_type, count)?;
+            for cardinality in checked_cardinalities {
+                let count = cardinality
+                    .counted_interface_types
+                    .iter()
+                    .filter_map(|interface_type| counts.get(interface_type))
+                    .sum();
+                $check_func(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    &cardinality.constraint,
+                    object,
+                    cardinality.constraint.source().interface(),
+                    count,
+                )?;
             }
 
             Ok(())
@@ -120,10 +137,15 @@ macro_rules! capability_cardinality_validation {
     };
 }
 
+struct CheckedCardinality<CAP: Capability> {
+    constraint: CapabilityConstraint<CAP>,
+    counted_interface_types: Vec<CAP::InterfaceType>,
+}
+
 /*
 The cardinalities validation flow is the following:
 1. Find instances affected by cardinalities changes (separately for 3 capabilities: owns, plays, relates): instance writes are visited straight from the write buffer, grouped by its key order; a capability cardinality change is recorded per type and every instance of the type is visited.
-2. Validate only the affected instances to avoid rescanning the whole system (see validate_capability_cardinality_constraint). For each object,
+2. Validate only the affected instances to avoid rescanning the whole system (see capability_cardinality_validation). For each object,
   2a. Count every capability instance it has (every has, every played role, every roleplayer).
   2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once).
   2c. Validate each constraint separately using the counts prepared in 2a. To validate a constraint, take its source type (where this constraint is declared), and count all instances of the source type and its subtypes.
@@ -197,9 +219,9 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
-        let mut owns_constraints_by_type: HashMap<ObjectType, Vec<CapabilityConstraint<Owns>>> = HashMap::new();
-        let mut plays_constraints_by_type: HashMap<ObjectType, Vec<CapabilityConstraint<Plays>>> = HashMap::new();
-        let mut relates_constraints_by_type: HashMap<RelationType, Vec<CapabilityConstraint<Relates>>> = HashMap::new();
+        let mut owns_constraints_by_type = HashMap::new();
+        let mut plays_constraints_by_type = HashMap::new();
+        let mut relates_constraints_by_type = HashMap::new();
         thing_manager.for_each_new_object(snapshot, |snapshot, object| {
             let object_type = object.type_();
             let owns_constraints = get_or_try_insert_with(&mut owns_constraints_by_type, object_type, || {
@@ -351,7 +373,7 @@ impl CardinalityValidation {
     ) -> Result<(), Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
         for (object_type, attribute_types) in &modified_types.owns {
-            let mut owns_constraints_by_type: HashMap<ObjectType, Vec<CapabilityConstraint<Owns>>> = HashMap::new();
+            let mut owns_constraints_by_type = HashMap::new();
             let mut objects = thing_manager.get_objects_in_range(
                 snapshot,
                 &object_type.range_with_subtypes_transitive(snapshot, type_manager)?,
@@ -377,7 +399,7 @@ impl CardinalityValidation {
             }
         }
         for (object_type, role_types) in &modified_types.plays {
-            let mut plays_constraints_by_type: HashMap<ObjectType, Vec<CapabilityConstraint<Plays>>> = HashMap::new();
+            let mut plays_constraints_by_type = HashMap::new();
             let mut objects = thing_manager.get_objects_in_range(
                 snapshot,
                 &object_type.range_with_subtypes_transitive(snapshot, type_manager)?,
@@ -403,8 +425,7 @@ impl CardinalityValidation {
             }
         }
         for (relation_type, role_types) in &modified_types.relates {
-            let mut relates_constraints_by_type: HashMap<RelationType, Vec<CapabilityConstraint<Relates>>> =
-                HashMap::new();
+            let mut relates_constraints_by_type = HashMap::new();
             let mut relations = thing_manager.get_relations_in_range(
                 snapshot,
                 &relation_type.range_with_subtypes_transitive(snapshot, type_manager)?,
