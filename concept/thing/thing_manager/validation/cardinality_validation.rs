@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 
 use bytes::Bytes;
 use resource::profile::StorageCounters;
@@ -23,7 +23,7 @@ use crate::{
     type_::{
         Capability, OwnerAPI, PlayerAPI, TypeAPI,
         attribute_type::AttributeType,
-        constraint::{CapabilityConstraint, Constraint},
+        constraint::{CapabilityConstraint, Constraint, get_checked_cardinality_constraints},
         owns::Owns,
         plays::Plays,
         relates::Relates,
@@ -57,46 +57,50 @@ use crate::{
     type_::{object_type::ObjectType, relation_type::RelationType, type_manager::TypeManager},
 };
 
-macro_rules! validate_capability_cardinality_constraint {
-    ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
-        pub(crate) fn $func_name(
+macro_rules! capability_cardinality_validation {
+    (
+        $collect_func_name:ident,
+        $validate_func_name:ident,
+        $capability_type:ident,
+        $object_instance:ident,
+        $get_cardinality_constraints_func:ident,
+        $get_interface_counts_func:ident,
+        $check_func:path
+    ) => {
+        pub(crate) fn $collect_func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
-            object: $object_instance,
-            interface_types_to_check: &HashSet<<$capability_type as Capability>::InterfaceType>,
-            storage_counters: StorageCounters,
-        ) -> Result<(), Box<DataValidationError>> {
+            object_type: <$capability_type as Capability>::ObjectType,
+            interface_types: &HashSet<<$capability_type as Capability>::InterfaceType>,
+        ) -> Result<Vec<CapabilityConstraint<$capability_type>>, Box<ConceptReadError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
-
-            let counts = std::cell::LazyCell::new(|| {
-                object
-                    .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))
-            });
-
-            for interface_type in interface_types_to_check {
-                for constraint in object
-                    .type_()
-                    .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+            for interface_type in interface_types {
+                for constraint in object_type
+                    .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())?
                     .into_iter()
                 {
                     cardinality_constraints.insert(constraint);
                 }
             }
 
-            for constraint in cardinality_constraints {
-                if !constraint
-                    .description()
-                    .unwrap_cardinality()
-                    .map_err(|source| Box::new(ConceptReadError::Constraint { typedb_source: source }))
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                    .requires_validation()
-                {
-                    continue;
-                }
+            Ok(get_checked_cardinality_constraints(&cardinality_constraints).cloned().collect())
+        }
 
-                let Ok(counts) = &*counts else { return Err(counts.clone().unwrap_err()) };
+        pub(crate) fn $validate_func_name(
+            snapshot: &impl ReadableSnapshot,
+            thing_manager: &ThingManager,
+            object: $object_instance,
+            constraints: &[CapabilityConstraint<$capability_type>],
+            storage_counters: StorageCounters,
+        ) -> Result<(), Box<DataValidationError>> {
+            if constraints.is_empty() {
+                return Ok(());
+            }
+
+            let counts = object
+                .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+            for constraint in constraints {
                 let source_interface_type = constraint.source().interface();
                 let sub_interface_types = source_interface_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
@@ -105,7 +109,7 @@ macro_rules! validate_capability_cardinality_constraint {
                     TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
                         .filter_map(|interface_type| counts.get(&interface_type))
                         .sum();
-                $check_func(snapshot, thing_manager.type_manager(), &constraint, object, source_interface_type, count)?;
+                $check_func(snapshot, thing_manager.type_manager(), constraint, object, source_interface_type, count)?;
             }
 
             Ok(())
@@ -190,42 +194,84 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
+        let mut checked_owns: HashMap<ObjectType, Vec<CapabilityConstraint<Owns>>> = HashMap::new();
+        let mut checked_plays: HashMap<ObjectType, Vec<CapabilityConstraint<Plays>>> = HashMap::new();
+        let mut checked_relates: HashMap<RelationType, Vec<CapabilityConstraint<Relates>>> = HashMap::new();
         thing_manager.for_each_new_object(snapshot, |snapshot, object| {
-            let attribute_types =
-                object.type_().get_owns(snapshot, type_manager)?.into_iter().map(|owns| owns.attribute()).collect();
-            CardinalityValidation::validate_object_has(
+            let object_type = object.type_();
+            let owns = match checked_owns.entry(object_type) {
+                Entry::Occupied(entry) => entry.into_mut(),
+                Entry::Vacant(entry) => {
+                    let attribute_types = object_type
+                        .get_owns(snapshot, type_manager)?
+                        .into_iter()
+                        .map(|owns| owns.attribute())
+                        .collect();
+                    entry.insert(CardinalityValidation::collect_checked_owns_cardinality_constraints(
+                        snapshot,
+                        thing_manager,
+                        object_type,
+                        &attribute_types,
+                    )?)
+                }
+            };
+            let owns_check = CardinalityValidation::validate_owns_cardinality_constraints(
                 snapshot,
                 thing_manager,
                 object,
-                &attribute_types,
-                out_errors,
+                owns,
                 storage_counters.clone(),
-            )?;
-            let role_types =
-                object.type_().get_plays(snapshot, type_manager)?.into_iter().map(|plays| plays.role()).collect();
-            CardinalityValidation::validate_object_links(
+            );
+            collect_errors!(out_errors, owns_check, |e: Box<_>| *e);
+
+            let plays = match checked_plays.entry(object_type) {
+                Entry::Occupied(entry) => entry.into_mut(),
+                Entry::Vacant(entry) => {
+                    let role_types =
+                        object_type.get_plays(snapshot, type_manager)?.into_iter().map(|plays| plays.role()).collect();
+                    entry.insert(CardinalityValidation::collect_checked_plays_cardinality_constraints(
+                        snapshot,
+                        thing_manager,
+                        object_type,
+                        &role_types,
+                    )?)
+                }
+            };
+            let plays_check = CardinalityValidation::validate_plays_cardinality_constraints(
                 snapshot,
                 thing_manager,
                 object,
-                &role_types,
-                out_errors,
+                plays,
                 storage_counters.clone(),
-            )?;
+            );
+            collect_errors!(out_errors, plays_check, |e: Box<_>| *e);
+
             if let Object::Relation(relation) = object {
-                let role_types = relation
-                    .type_()
-                    .get_relates(snapshot, type_manager)?
-                    .into_iter()
-                    .map(|relates| relates.role())
-                    .collect();
-                CardinalityValidation::validate_relation_links(
+                let relation_type = relation.type_();
+                let relates = match checked_relates.entry(relation_type) {
+                    Entry::Occupied(entry) => entry.into_mut(),
+                    Entry::Vacant(entry) => {
+                        let role_types = relation_type
+                            .get_relates(snapshot, type_manager)?
+                            .into_iter()
+                            .map(|relates| relates.role())
+                            .collect();
+                        entry.insert(CardinalityValidation::collect_checked_relates_cardinality_constraints(
+                            snapshot,
+                            thing_manager,
+                            relation_type,
+                            &role_types,
+                        )?)
+                    }
+                };
+                let relates_check = CardinalityValidation::validate_relates_cardinality_constraints(
                     snapshot,
                     thing_manager,
                     relation,
-                    &role_types,
-                    out_errors,
+                    relates,
                     storage_counters.clone(),
-                )?;
+                );
+                collect_errors!(out_errors, relates_check, |e: Box<_>| *e);
             }
             Ok(())
         })
@@ -379,11 +425,17 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_check = Self::validate_owns_cardinality_constraint(
+        let constraints = Self::collect_checked_owns_cardinality_constraints(
+            snapshot,
+            thing_manager,
+            object.type_(),
+            modified_attribute_types,
+        )?;
+        let cardinality_check = Self::validate_owns_cardinality_constraints(
             snapshot,
             thing_manager,
             object,
-            modified_attribute_types,
+            &constraints,
             storage_counters,
         );
         collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
@@ -398,11 +450,17 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_check = Self::validate_plays_cardinality_constraint(
+        let constraints = Self::collect_checked_plays_cardinality_constraints(
+            snapshot,
+            thing_manager,
+            object.type_(),
+            modified_role_types,
+        )?;
+        let cardinality_check = Self::validate_plays_cardinality_constraints(
             snapshot,
             thing_manager,
             object,
-            modified_role_types,
+            &constraints,
             storage_counters,
         );
         collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
@@ -417,35 +475,44 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_check = Self::validate_relates_cardinality_constraint(
+        let constraints = Self::collect_checked_relates_cardinality_constraints(
+            snapshot,
+            thing_manager,
+            relation.type_(),
+            modified_role_types,
+        )?;
+        let cardinality_check = Self::validate_relates_cardinality_constraints(
             snapshot,
             thing_manager,
             relation,
-            modified_role_types,
+            &constraints,
             storage_counters,
         );
         collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
     }
 
-    validate_capability_cardinality_constraint!(
-        validate_owns_cardinality_constraint,
+    capability_cardinality_validation!(
+        collect_checked_owns_cardinality_constraints,
+        validate_owns_cardinality_constraints,
         Owns,
         Object,
         get_owned_attribute_type_constraints_cardinality,
         get_has_counts,
         DataValidation::validate_owns_instances_cardinality_constraint
     );
-    validate_capability_cardinality_constraint!(
-        validate_plays_cardinality_constraint,
+    capability_cardinality_validation!(
+        collect_checked_plays_cardinality_constraints,
+        validate_plays_cardinality_constraints,
         Plays,
         Object,
         get_played_role_type_constraints_cardinality,
         get_played_roles_counts,
         DataValidation::validate_plays_instances_cardinality_constraint
     );
-    validate_capability_cardinality_constraint!(
-        validate_relates_cardinality_constraint,
+    capability_cardinality_validation!(
+        collect_checked_relates_cardinality_constraints,
+        validate_relates_cardinality_constraints,
         Relates,
         Relation,
         get_related_role_type_constraints_cardinality,
