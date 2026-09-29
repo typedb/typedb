@@ -69,6 +69,7 @@ impl AttributeVertex {
         type_id: TypeID,
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
+        sortable: bool,
     ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
         // preallocate upper bound length and then truncate later
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
@@ -79,6 +80,7 @@ impl AttributeVertex {
             &mut bytes[Self::RANGE_TYPE_ID.end..],
             value,
             large_value_hasher,
+            sortable,
         );
         bytes.truncate(Self::RANGE_TYPE_ID.end + id_length);
         if is_complete {
@@ -295,6 +297,7 @@ impl AttributeID {
         bytes: &mut [u8],
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
+        sortable: bool
     ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
         match value.value_type().category() {
@@ -307,7 +310,11 @@ impl AttributeID {
             ValueTypeCategory::DateTimeTZ => (DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes), true),
             ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
             ValueTypeCategory::String => {
-                (StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), bytes), false)
+                if sortable {
+                    (StringAttributeID::write_sortable_prefix(value.encode_string::<64>(), bytes), false)
+                } else {
+                    (StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes), false)
+                }
             }
             ValueTypeCategory::Struct => (
                 StructAttributeID::write_hashed_id_deterministic_prefix(
@@ -761,6 +768,24 @@ impl StringAttributeID {
 
     // write the deterministic prefix of the hash ID, and return the length of the prefix written
     pub(crate) fn write_deterministic_prefix<const INLINE_LENGTH: usize>(
+        string: StringBytes<INLINE_LENGTH>,
+        hasher: &impl Fn(&[u8]) -> u64,
+        bytes: &mut [u8],
+    ) -> usize {
+        if Self::is_inlineable(string.as_reference()) {
+            let bytes_range = &mut bytes[0..Self::LENGTH];
+            Self::write_inline_id(bytes_range.try_into().unwrap(), string);
+            Self::LENGTH
+        } else {
+            bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+            bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
+            let hash_length = Self::write_hash(&mut bytes[Self::HASHED_HASH_RANGE], hasher, string.bytes());
+            Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH + hash_length
+        }
+    }
+
+    // write the sortable prefix of the ID, which must exclude anything longer than 8 bytes due to hashing
+    pub(crate) fn write_sortable_prefix<const INLINE_LENGTH: usize>(
         string: StringBytes<INLINE_LENGTH>,
         bytes: &mut [u8],
     ) -> usize {
