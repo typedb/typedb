@@ -7,6 +7,7 @@
 use std::ops::Bound;
 
 pub mod atomic_arc_option;
+pub mod btreemap_intersection_iterator;
 pub mod either;
 pub mod maybe_owns;
 pub mod prefix;
