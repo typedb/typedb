@@ -43,8 +43,8 @@ fn run_parallel(runner: &mut impl BenchmarkRunner) {
 }
 
 fn parametrised_entity_insert(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBInsertWorkloadBenchmark {
-    let query_descriptor =
-        QueryDescriptor { query: "given; insert $x isa person;", variables: vec![], produce_row: Some(|_| vec![]) };
+    let query = "given; insert $x isa person;".to_owned();
+    let query_descriptor = QueryDescriptor { query, variables: vec![], produce_row: Some(|_| vec![]) };
     TypeDBInsertWorkloadBenchmark::new(name, SIMPLE_SCHEMA, no_initial_data(), query_descriptor, run_descriptor)
 }
 
@@ -104,10 +104,11 @@ fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescripto
         relation r1, relates e1, relates e2;
         entity e1, plays r1:e1;
         entity e2, plays r1:e2;
-    "#;
+    "#
+    .to_owned();
 
     let preload_data_fn = WorkloadInstance::make_preload_data_fn(
-        "given; insert $_ isa e1; $_ isa e2;",
+        "given; insert $_ isa e1; $_ isa e2;".to_owned(),
         vec![],
         |_, _| vec![],
         N_ENTITIES,
@@ -117,7 +118,8 @@ fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescripto
     let query = r#"
         given $e1:e1, $e2: e2;
         insert $r isa r1, links (e1: $e1, e2: $e2);
-       "#;
+       "#
+    .to_owned();
     let variables = vec!["e1".to_owned(), "e2".to_owned()];
     let query_descriptor = QueryDescriptor { query, variables, produce_row: Some(produce_row) };
 

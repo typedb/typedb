@@ -68,8 +68,8 @@ pub type PrepareRunFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 
 pub struct TypeDBMicroBenchmark<IN, OUT, REPORT: SimpleReport<OUT>> {
-    pub name: &'static str,
-    pub schema: &'static str,
+    pub name: String,
+    pub schema: String,
     pub preload_data_fn: Option<PreloadDataFn>,
     pub warmup_fn: Option<WarmupFn>,
     pub prepare_run_fn: PrepareRunFn<IN>,
@@ -83,11 +83,11 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
     type Report = REPORT;
 
     fn name(&self) -> &'_ str {
-        self.name
+        self.name.as_str()
     }
 
     fn prepare_database(&self, _context: &Context, database: Arc<Database<WALClient>>) {
-        crate::create_schema(database.clone(), self.schema);
+        crate::create_schema(database.clone(), self.schema.as_str());
         if let Some(preload_fn) = &self.preload_data_fn {
             preload_fn(database.clone())
         }
@@ -116,8 +116,8 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
 pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
     // Just to ensure the reported time is just the benchmark_fn
     TypeDBMicroBenchmark {
-        name: "sanity_check",
-        schema: "define entity person;",
+        name: "sanity_check".to_owned(),
+        schema: "define entity person;".to_owned(),
         preload_data_fn: Some(Box::new(|_| std::thread::sleep(Duration::from_millis(40)))),
         warmup_fn: None,
         prepare_run_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
@@ -135,23 +135,25 @@ pub type TypeDBMatchWorkloadBenchmark =
 
 impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Report> {
     pub fn new(
-        name: &'static str,
-        schema: &'static str,
+        name: impl Into<String>,
+        schema: impl Into<String>,
         preload_data_fn: Option<PreloadDataFn>,
         query_descriptor: QueryDescriptor,
         run_descriptor: RunDescriptor,
     ) -> Self {
+        let name: String = name.into();
+        let schema: String = schema.into();
         let warmup_fn = query_descriptor.for_warmup();
         let workload = WorkLoad { query_descriptor, run_descriptor };
         let prepare_run_fn = workload.prepare_fn();
-        let benchmark_fn = workload.runner(name);
+        let benchmark_fn = workload.runner(name.clone());
         Self { name, schema, preload_data_fn, warmup_fn, prepare_run_fn, benchmark_fn, _report: PhantomData }
     }
 }
 
 #[derive(Clone)]
 pub struct QueryDescriptor {
-    pub query: &'static str,
+    pub query: String,
     pub variables: Vec<String>,
     pub produce_row: Option<fn(&mut RandomDataGen) -> Vec<GivenRowEntry>>,
     //Box<dyn Fn(&mut RandomDataGen) -> Option<GivenRowsSimple>>,
@@ -203,8 +205,9 @@ impl WorkLoad {
         Box::new(move |_| WorkloadInstance::build(&query_descriptor, &run_descriptor))
     }
 
-    pub fn runner(&self, name: &'static str) -> BenchmarkedFn<Arc<WorkloadInstance>, MultiTxMultiQueryProfile> {
-        let query = self.query_descriptor.query;
+    pub fn runner(&self, name: impl Into<String>) -> BenchmarkedFn<Arc<WorkloadInstance>, MultiTxMultiQueryProfile> {
+        let name: String = name.into();
+        let query: Arc<String> = Arc::new(self.query_descriptor.query.clone());
         let run_descriptor = self.run_descriptor.clone();
         Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>| {
             let very_beginning = Instant::now();
@@ -213,13 +216,13 @@ impl WorkLoad {
                     let database = database.clone();
                     let producer = producer.clone();
                     let run_descriptor = run_descriptor.clone();
-                    std::thread::spawn(Self::new_runner_thread(database, producer, query, run_descriptor))
+                    std::thread::spawn(Self::new_runner_thread(database, producer, query.clone(), run_descriptor))
                 })
                 .collect();
 
             let profiles = handles.into_iter().flat_map(|h| h.join().expect("benchmark thread panicked")).collect();
             MultiTxMultiQueryProfile {
-                name,
+                name: name.clone(),
                 profiles,
                 run_descriptor: run_descriptor.clone(),
                 total_wall_time: very_beginning.elapsed(),
@@ -230,12 +233,13 @@ impl WorkLoad {
     fn new_runner_thread(
         database: Arc<Database<WALClient>>,
         producer: Arc<WorkloadInstance>,
-        query: &'static str,
+        query: Arc<String>,
         run_descriptor: RunDescriptor,
     ) -> impl FnOnce() -> Vec<MultiQueryTxProfile> {
         let overestimate_txns_per_thread: usize =
             ((1.5 * run_descriptor.total_txns as f64 / run_descriptor.parallelism as f64).ceil() as usize).max(2);
         let local_profiles = Vec::with_capacity(overestimate_txns_per_thread);
+        let query: Arc<String> = query.clone();
         move || {
             let mut local_profiles = local_profiles;
             while producer.has_remaining() {
@@ -246,8 +250,12 @@ impl WorkLoad {
                     let Some(given_rows) = producer.take_next_batch() else {
                         break;
                     };
-                    let (query_result, tx_returned) =
-                        unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), true));
+                    let (query_result, tx_returned) = unpack_result(execute_write_query_in::<_, CountResults>(
+                        tx,
+                        query.as_str(),
+                        Some(given_rows),
+                        true,
+                    ));
                     tx = tx_returned;
                     let QueryAnswer { profile: query_profile, answer: rows } = query_result.unwrap();
                     assert_eq!(rows, run_descriptor.n_rows_per_query);
@@ -270,7 +278,7 @@ impl WorkLoad {
 /// Pre-generated batches consumed work-stealing style.
 /// Each slot is claimed by exactly one thread via fetch_add, so no locking needed.
 pub struct WorkloadInstance {
-    query: &'static str,
+    query: String,
     variables: Vec<String>,
 
     batches: Vec<UnsafeCell<Option<GivenRowsSimple>>>,
@@ -293,7 +301,7 @@ impl WorkloadInstance {
             })
             .collect();
         Arc::new(Self {
-            query: query.query,
+            query: query.query.clone(),
             variables: query.variables.clone(),
             batches,
             next_index: AtomicUsize::new(0),
@@ -301,7 +309,7 @@ impl WorkloadInstance {
     }
 
     pub fn query(&self) -> &str {
-        self.query
+        self.query.as_str()
     }
 
     pub fn variables(&self) -> &Vec<String> {
@@ -322,7 +330,7 @@ impl WorkloadInstance {
     }
 
     pub fn make_preload_data_fn(
-        query: &'static str,
+        query: String,
         variables: Vec<String>,
         produce_row: fn(usize, &mut RandomDataGen) -> Vec<GivenRowEntry>,
         n_total_rows: usize,
@@ -336,8 +344,12 @@ impl WorkloadInstance {
                 let rows = (0..this_batch).map(|i| produce_row(completed + i, &mut rng)).collect();
                 let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
                 let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-                let (result, tx) =
-                    unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
+                let (result, tx) = unpack_result(execute_write_query_in::<_, CountResults>(
+                    tx,
+                    query.as_str(),
+                    Some(given_rows),
+                    false,
+                ));
                 let QueryAnswer { answer: n_answer_rows, .. } = result.unwrap();
                 assert_eq!(n_answer_rows, n_rows_per_query);
                 commit(tx).unwrap();

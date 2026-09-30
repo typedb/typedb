@@ -55,8 +55,8 @@ fn _query_in_write_tx(query: &str) -> BenchmarkedFn<Option<GivenRowsSimple>, TxQ
 
 fn entities_one() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__entities_one",
-        schema: SCHEMA,
+        name: "simple_inserts__entities_one".to_owned(),
+        schema: SCHEMA.to_owned(),
         preload_data_fn: no_initial_data(),
         warmup_fn: None,
         prepare_run_fn: no_given_rows(),
@@ -67,8 +67,8 @@ fn entities_one() -> TransactionInsertBenchmark {
 
 fn entities_thousand() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__entities_thousand",
-        schema: SCHEMA,
+        name: "simple_inserts__entities_thousand".to_owned(),
+        schema: SCHEMA.to_owned(),
         preload_data_fn: no_initial_data(),
         warmup_fn: None,
         prepare_run_fn: n_empty_given_rows(N_ROWS),
@@ -79,8 +79,8 @@ fn entities_thousand() -> TransactionInsertBenchmark {
 
 fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__ownerships_thousand_short_names",
-        schema: SCHEMA,
+        name: "simple_inserts__ownerships_thousand_short_names".to_owned(),
+        schema: SCHEMA.to_owned(),
         preload_data_fn: no_initial_data(),
         warmup_fn: None,
         prepare_run_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(5)]),
@@ -91,8 +91,8 @@ fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
 
 fn ownerships_thousand_names_long() -> TransactionInsertBenchmark {
     TransactionInsertBenchmark {
-        name: "simple_inserts__ownerships_thousand_long_names",
-        schema: SCHEMA,
+        name: "simple_inserts__ownerships_thousand_long_names".to_owned(),
+        schema: SCHEMA.to_owned(),
         preload_data_fn: no_initial_data(),
         warmup_fn: None,
         prepare_run_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(50)]),
