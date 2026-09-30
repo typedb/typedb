@@ -66,7 +66,10 @@ use resource::{
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
+    snapshot::{
+        ReadableSnapshot, SnapshotLookupMode, WritableSnapshot,
+        write::{KnownToExist, Write},
+    },
 };
 use tracing::trace;
 
@@ -692,9 +695,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edge_lookup_mode();
         Iterator::map(
-            LinksReverseIterator::new(snapshot.iterate_range(
+            LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
+                snapshot_lookup_mode,
                 storage_counters,
             )),
             |result| {
@@ -762,8 +767,14 @@ impl ThingManager {
         };
 
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
         let has_exists = snapshot
-            .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
+            .get_mapped_in_lookup_mode(
+                has.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
+                |_value| true,
+                storage_counters,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
@@ -777,8 +788,14 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
         let has_exists = snapshot
-            .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
+            .get_mapped_in_lookup_mode(
+                has.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
+                |_value| true,
+                storage_counters,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
@@ -1060,7 +1077,8 @@ impl ThingManager {
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
     pub(crate) fn owner_get_has_unordered_in_value_type<'a>(
@@ -1102,7 +1120,8 @@ impl ThingManager {
             end_value_bound,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
     pub(crate) fn get_has_from_thing_to_type_unordered<'a>(
@@ -1148,8 +1167,9 @@ impl ThingManager {
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
         Ok(Iterator::map(
-            HasIterator::new(snapshot.iterate_range(&range, storage_counters)),
+            HasIterator::new(snapshot.iterate_range_in_lookup_mode(&range, snapshot_lookup_mode, storage_counters)),
             |result: Result<(Has, u64), Box<ConceptReadError>>| result.map(|(has, value)| (has.attribute(), value)),
         ))
     }
@@ -1204,9 +1224,11 @@ impl ThingManager {
             None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
         let attributes = snapshot
-            .get_mapped(
+            .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
                 |bytes| {
                     decode_attribute_ids(value_type.category(), bytes)
                         .map(|id| Attribute::new(AttributeVertex::new(attribute_type.vertex().type_id_(), id)))
@@ -1356,7 +1378,8 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        LinksIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        LinksIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters))
     }
 
     pub fn get_links_by_relation_and_player(
@@ -1367,10 +1390,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        LinksIterator::new(
-            snapshot
-                .iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), storage_counters),
-        )
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
+            &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+            snapshot_lookup_mode,
+            storage_counters,
+        ))
     }
 
     pub fn get_links_reverse_by_player_type_range(
@@ -1423,12 +1448,14 @@ impl ThingManager {
                 ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
             }
         };
-        LinksReverseIterator::new(snapshot.iterate_range(
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edge_lookup_mode();
+        LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new(
                 RangeStart::Inclusive(range_start),
                 RangeEnd::EndPrefixInclusive(range_end),
                 ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             ),
+            snapshot_lookup_mode,
             storage_counters,
         ))
     }
@@ -1442,8 +1469,15 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
+        let snapshot_lookup_mode =
+            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
         let links_exists = snapshot
-            .get_mapped(links.into_storage_key().as_reference(), |_| true, storage_counters)
+            .get_mapped_in_lookup_mode(
+                links.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
+                |_| true,
+                storage_counters,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(links_exists)
@@ -1456,13 +1490,13 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
         Iterator::map(
-            LinksIterator::new(
-                snapshot.iterate_range(
-                    &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
-                    storage_counters,
-                ),
-            ),
+            LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
+                &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+                snapshot_lookup_mode,
+                storage_counters,
+            )),
             |result| result.map(|(links, count)| (links.into_role_player(), count)),
         )
     }
@@ -1475,9 +1509,11 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
         let players = snapshot
-            .get_mapped(
+            .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
                 |bytes| decode_role_players(bytes).map(Object::new).collect(),
                 storage_counters,
             )
@@ -1674,11 +1710,6 @@ impl ThingManager {
                     None => Ok(ConceptStatus::Deleted),
                 }
             })
-    }
-
-    fn is_object_inserted_in_snapshot(snapshot: &impl ReadableSnapshot, vertex: ObjectVertex) -> bool {
-        let key = vertex.into_storage_key();
-        matches!(snapshot.get_write(key.as_reference()), Some(Write::Insert { .. }))
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -2042,7 +2073,7 @@ impl ThingManager {
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
+        if ObjectOrigin::of(snapshot, owner).is_this_transaction() {
             return Ok(());
         }
         let constraints =
@@ -2068,7 +2099,7 @@ impl ThingManager {
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, player.vertex()) {
+        if ObjectOrigin::of(snapshot, player).is_this_transaction() {
             return Ok(());
         }
         let constraints = player.type_().get_played_role_type_constraints(snapshot, self.type_manager(), role_type)?;
@@ -2093,7 +2124,7 @@ impl ThingManager {
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
-        if Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
+        if ObjectOrigin::of(snapshot, relation).is_this_transaction() {
             return Ok(());
         }
         let constraints =
@@ -2848,10 +2879,19 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
+            let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
             owner.set_required(snapshot, self, storage_counters.clone())?;
             attribute.set_required(snapshot, self, storage_counters.clone())?;
-            snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-            snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val_with_known_to_exist(
+                has.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_is_known_to_exist,
+            );
+            snapshot.put_val_with_known_to_exist(
+                has_reverse.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_is_known_to_exist,
+            );
             Ok(())
         }
     }
@@ -2902,10 +2942,12 @@ impl ThingManager {
             attribute_value_type.category(),
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
-        snapshot.put_val(storage_key.clone(), value);
+        let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
+
+        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_object_inserted_in_snapshot(snapshot, owner.vertex()) {
+        if ObjectOrigin::of(snapshot, &owner).is_unknown_transaction() {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
         Ok(())
@@ -2935,12 +2977,21 @@ impl ThingManager {
         player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
+        let edge_is_known_to_exist =
+            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-
+        snapshot.put_val_with_known_to_exist(
+            links.into_storage_key().into_owned_array(),
+            ByteArray::copy(&encode_u64(count)),
+            edge_is_known_to_exist,
+        );
         let links_reverse =
             ThingEdgeLinks::new_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
-        snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+        snapshot.put_val_with_known_to_exist(
+            links_reverse.into_storage_key().into_owned_array(),
+            ByteArray::copy(&encode_u64(count)),
+            edge_is_known_to_exist,
+        );
 
         if relation.type_().relation_index_available(snapshot, self.type_manager())? {
             self.relation_index_player_regenerate(
@@ -2965,10 +3016,13 @@ impl ThingManager {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
-        snapshot.put_val(storage_key.clone(), value);
+
+        let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &relation).is_edge_known_to_exist();
+
+        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
-        if !Self::is_object_inserted_in_snapshot(snapshot, relation.vertex()) {
+        if ObjectOrigin::of(snapshot, &relation).is_unknown_transaction() {
             snapshot.exclusive_lock_add(storage_key.into_byte_array());
         }
 
@@ -2987,14 +3041,24 @@ impl ThingManager {
         if count == 0 {
             self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
+            let edge_is_known_to_exist =
+                ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
             relation.set_required(snapshot, self, storage_counters.clone())?;
             player.set_required(snapshot, self, storage_counters.clone())?;
 
-            snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
-            snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val_with_known_to_exist(
+                links.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_is_known_to_exist,
+            );
+            snapshot.put_val_with_known_to_exist(
+                links_reverse.into_storage_key().into_owned_array(),
+                ByteArray::copy(&encode_u64(count)),
+                edge_is_known_to_exist,
+            );
 
             if relation.type_().relation_index_available(snapshot, self.type_manager())? {
                 let player = Object::new(player.vertex());
@@ -3050,9 +3114,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
+        let snapshot_lookup_mode =
+            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
         let count = snapshot
-            .get_mapped(
+            .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
@@ -3062,8 +3129,9 @@ impl ThingManager {
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             let reverse_count = snapshot
-                .get_mapped(
+                .get_mapped_in_lookup_mode(
                     links_reverse.into_storage_key().as_reference(),
+                    snapshot_lookup_mode,
                     |arr| decode_u64(arr.try_into().unwrap()),
                     storage_counters.clone(),
                 )
@@ -3086,9 +3154,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
+        let snapshot_lookup_mode =
+            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
         let count = snapshot
-            .get_mapped(
+            .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
+                snapshot_lookup_mode,
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
@@ -3098,8 +3169,9 @@ impl ThingManager {
         {
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             let reverse_count = snapshot
-                .get_mapped(
+                .get_mapped_in_lookup_mode(
                     links_reverse.into_storage_key().as_reference(),
+                    snapshot_lookup_mode,
                     |arr| decode_u64(arr.try_into().unwrap()),
                     storage_counters.clone(),
                 )
@@ -3140,6 +3212,8 @@ impl ThingManager {
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
         for rp in players {
             let (rp_player, rp_role_type, rp_count) = rp?;
+            let edge_is_known_to_exist =
+                ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
             if rp_player.is_same_role_player(rp_role_type, player, role_type) {
                 let player_repetitions = count_for_player - 1;
                 if player_repetitions > 0 {
@@ -3150,9 +3224,10 @@ impl ThingManager {
                         role_type.vertex().type_id_(),
                         role_type.vertex().type_id_(),
                     );
-                    snapshot.put_val(
+                    snapshot.put_val_with_known_to_exist(
                         index.into_storage_key().into_owned_array(),
                         ByteArray::copy(&encode_u64(player_repetitions)),
+                        edge_is_known_to_exist,
                     );
                 }
             } else {
@@ -3164,8 +3239,11 @@ impl ThingManager {
                     role_type.vertex().type_id_(),
                     rp_role_type.vertex().type_id_(),
                 );
-                snapshot
-                    .put_val(index.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
+                snapshot.put_val_with_known_to_exist(
+                    index.into_storage_key().into_owned_array(),
+                    ByteArray::copy(&encode_u64(rp_repetitions)),
+                    edge_is_known_to_exist,
+                );
                 let player_repetitions = count_for_player;
                 let index_reverse = ThingEdgeIndexedRelation::new(
                     rp_player.vertex(),
@@ -3174,9 +3252,10 @@ impl ThingManager {
                     rp_role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                snapshot.put_val(
+                snapshot.put_val_with_known_to_exist(
                     index_reverse.into_storage_key().into_owned_array(),
                     ByteArray::copy(&encode_u64(player_repetitions)),
+                    edge_is_known_to_exist,
                 );
             }
         }
@@ -3253,8 +3332,9 @@ impl ThingManager {
             );
             let index_range =
                 KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+            let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
             let collected = snapshot
-                .iterate_range(&index_range, storage_counters.clone())
+                .iterate_range_in_lookup_mode(&index_range, snapshot_lookup_mode, storage_counters.clone())
                 .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
                 .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
             collected.into_iter().for_each(|edge| snapshot.delete(edge));
@@ -3370,6 +3450,60 @@ fn register_delete_in_cleanup_intervals(
         | Some(DecodableKey::IndexNameToDefinitionFunction(_))
         | Some(DecodableKey::IndexValueToStruct(_)) => {
             trace!("Unhandled delete when constructing compaction record!")
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum ObjectOrigin {
+    ThisTransaction,
+    UnknownTransaction, // Maybe another transaction, or this one but deleted.
+}
+
+impl ObjectOrigin {
+    pub(crate) fn of(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> Self {
+        let key = object.vertex().into_storage_key();
+        snapshot.get_write(key.as_reference()).map_or(Self::UnknownTransaction, |write| match write {
+            Write::Insert { .. } => Self::ThisTransaction,
+            Write::Put { .. } => unreachable!("Encountered a Put for an Object"),
+            Write::Delete => Self::UnknownTransaction,
+        })
+    }
+
+    pub(crate) fn is_this_transaction(&self) -> bool {
+        *self == Self::ThisTransaction
+    }
+
+    pub(crate) fn is_unknown_transaction(&self) -> bool {
+        *self == Self::UnknownTransaction
+    }
+
+    fn in_this_transaction_if_either(
+        snapshot: &impl ReadableSnapshot,
+        first: &impl ObjectAPI,
+        second: &impl ObjectAPI,
+    ) -> Self {
+        Self::either(Self::of(snapshot, first), Self::of(snapshot, second))
+    }
+
+    fn either(first: Self, second: Self) -> Self {
+        match (first, second) {
+            (Self::ThisTransaction, _) | (_, Self::ThisTransaction) => Self::ThisTransaction,
+            (Self::UnknownTransaction, Self::UnknownTransaction) => Self::UnknownTransaction,
+        }
+    }
+
+    pub(crate) fn is_edge_known_to_exist(&self) -> KnownToExist {
+        match self {
+            ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
+            ObjectOrigin::UnknownTransaction => KnownToExist::Unknown,
+        }
+    }
+
+    pub(crate) fn edge_lookup_mode(&self) -> SnapshotLookupMode {
+        match self {
+            ObjectOrigin::ThisTransaction => SnapshotLookupMode::BufferOnly,
+            ObjectOrigin::UnknownTransaction => SnapshotLookupMode::BufferAndStorage,
         }
     }
 }

@@ -6,7 +6,7 @@
 
 pub use snapshot::{
     CommittableSnapshot, PreloadedRangesSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
-    SnapshotGetError, WritableSnapshot, WriteSnapshot,
+    SnapshotGetError, SnapshotLookupMode, WritableSnapshot, WriteSnapshot,
 };
 
 pub mod buffer;

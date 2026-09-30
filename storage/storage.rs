@@ -63,7 +63,9 @@ use crate::{
     },
     sequence_number::SequenceNumber,
     snapshot::{
-        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, snapshot_id::SnapshotId, write::Write,
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
+        snapshot_id::SnapshotId,
+        write::{KnownToExist, Write},
     },
 };
 
@@ -360,27 +362,33 @@ impl<Durability> MVCCStorage<Durability> {
             });
             for (key, value, reinsert, known_to_exist) in puts {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
-                if known_to_exist {
-                    debug_assert!(
-                        self.get::<0>(
-                            snapshot.iterator_pool(),
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone()
-                        )
-                        .is_ok_and(|opt| opt.is_some())
-                    );
-                    reinsert.store(false, Ordering::Release);
-                } else {
-                    let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(
-                            snapshot.iterator_pool(),
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone(),
-                        )?
-                        .is_some_and(|reference| &reference == value);
-                    reinsert.store(!existing_stored, Ordering::Release);
+                match known_to_exist {
+                    KnownToExist::Exists => {
+                        debug_assert!(
+                            self.get::<0>(
+                                snapshot.iterator_pool(),
+                                wrapped,
+                                snapshot.open_sequence_number(),
+                                storage_counters.clone()
+                            )
+                            .is_ok_and(|opt| opt.is_some())
+                        );
+                        reinsert.store(false, Ordering::Release);
+                    }
+                    KnownToExist::Unknown => {
+                        let existing_stored = self
+                            .get::<BUFFER_VALUE_INLINE>(
+                                snapshot.iterator_pool(),
+                                wrapped,
+                                snapshot.open_sequence_number(),
+                                storage_counters.clone(),
+                            )?
+                            .is_some_and(|reference| &reference == value);
+                        reinsert.store(!existing_stored, Ordering::Release);
+                    }
+                    KnownToExist::NonExistent => {
+                        reinsert.store(true, Ordering::Release);
+                    }
                 }
             }
         }

@@ -38,7 +38,7 @@ use crate::{
     thing::{
         HKInstance, ThingAPI,
         object::{Object, ObjectAPI},
-        thing_manager::{ThingManager, validation::operation_time_validation::OperationTimeValidation},
+        thing_manager::{ObjectOrigin, ThingManager, validation::operation_time_validation::OperationTimeValidation},
     },
     type_::{ObjectTypeAPI, Ordering, OwnerAPI, relation_type::RelationType, role_type::RoleType},
 };
@@ -388,9 +388,9 @@ impl ThingAPI for Relation {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        storage_counters: StorageCounters,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if matches!(self.get_status(snapshot, thing_manager, storage_counters)?, ConceptStatus::Persisted) {
+        if ObjectOrigin::of(snapshot, self).is_unknown_transaction() {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())

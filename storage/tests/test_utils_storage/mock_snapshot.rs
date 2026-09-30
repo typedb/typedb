@@ -14,8 +14,8 @@ use storage::{
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
-        ReadableSnapshot, SnapshotGetError, buffer::BufferRangeIterator, iterator::SnapshotRangeIterator,
-        snapshot_id::SnapshotId, write::Write,
+        ReadableSnapshot, SnapshotGetError, SnapshotLookupMode, buffer::BufferRangeIterator,
+        iterator::SnapshotRangeIterator, snapshot_id::SnapshotId, write::Write,
     },
 };
 
@@ -49,6 +49,15 @@ impl ReadableSnapshot for MockSnapshot {
         Err(SnapshotGetError::MockError {})
     }
 
+    fn get_in_lookup_mode<const INLINE_BYTES: usize>(
+        &self,
+        _: StorageKeyReference<'_>,
+        _: SnapshotLookupMode,
+        _: StorageCounters,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        Err(SnapshotGetError::MockError {})
+    }
+
     fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
         _: StorageKeyReference<'_>,
@@ -63,6 +72,15 @@ impl ReadableSnapshot for MockSnapshot {
         _: StorageCounters,
     ) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
+    }
+
+    fn iterate_range_in_lookup_mode<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+        _lookup_mode: SnapshotLookupMode,
+        storage_counters: StorageCounters,
+    ) -> SnapshotRangeIterator {
+        self.iterate_range(range, storage_counters)
     }
 
     fn any_in_range<'this, const PS: usize>(&'this self, _: &KeyRange<StorageKey<'this, PS>>, _: bool) -> bool {
