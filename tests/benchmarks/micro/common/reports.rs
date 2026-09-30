@@ -285,7 +285,7 @@ pub struct QueryStepRow {
     pub total_ms: DurationMs,
     pub batches: u64,
     pub rows: u64,
-    pub us_per_row: DurationMs,
+    pub ms_per_row: DurationMs,
 }
 
 pub struct TxQueryProfileReport {
@@ -340,7 +340,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                 SubstepProfile::StepProfile(step) => {
                     let total = DurationMs(Duration::from_nanos(step.total_nanos()));
                     let rows = step.rows();
-                    let us_per_row = DurationMs(if rows > 0 {
+                    let ms_per_row = DurationMs(if rows > 0 {
                         Duration::from_nanos(step.total_nanos() / rows)
                     } else {
                         Duration::ZERO
@@ -351,7 +351,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                         total_ms: total,
                         batches: step.batches(),
                         rows,
-                        us_per_row,
+                        ms_per_row,
                     });
                 }
                 SubstepProfile::QueryProfile { profile, description } => {
@@ -361,7 +361,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                         total_ms: DurationMs(profile.total_duration()),
                         batches: 0,
                         rows: 0,
-                        us_per_row: DurationMs(Duration::ZERO),
+                        ms_per_row: DurationMs(Duration::ZERO),
                     });
                     collect_steps(profile, out);
                 }
@@ -370,7 +370,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                         if let SubstepProfile::StepProfile(step) = substep {
                             let total = DurationMs(Duration::from_nanos(step.total_nanos()));
                             let rows = step.rows();
-                            let us_per_row = DurationMs(if rows > 0 {
+                            let ms_per_row = DurationMs(if rows > 0 {
                                 Duration::from_nanos(step.total_nanos() / rows)
                             } else {
                                 Duration::ZERO
@@ -381,7 +381,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                                 total_ms: total,
                                 batches: step.batches(),
                                 rows,
-                                us_per_row,
+                                ms_per_row,
                             });
                         }
                     }
@@ -403,7 +403,7 @@ pub struct StepProfileReport {
     pub total_ms: DurationMs,
     pub batches: u64,
     pub rows: u64,
-    pub ns_per_row: DurationMs,
+    pub ms_per_row: DurationMs,
 }
 
 pub struct PatternProfileReport {
@@ -412,9 +412,9 @@ pub struct PatternProfileReport {
     pub total_ms: DurationMs,
 }
 
-pub enum StageFocusedReport {
-    Pattern { stage_id: u64, report: PatternProfileReport },
-    Todo { stage_id: u64, description: String },
+pub struct StageFocusedReport {
+    pub stage_id: u64,
+    pub report: PatternProfileReport,
 }
 
 pub struct QueryFocusedReport {
@@ -435,15 +435,15 @@ impl QueryFocusedReport {
         let all_queries: Vec<_> = profile.profiles.iter().flat_map(|tx| tx.query_profiles.iter()).collect();
 
         // Aggregate per (stage_id, substep_index): (desc, nanos, batches, rows)
-        // stage_id -> (pattern_desc, Vec<(substep_desc, nanos, batches, rows)>)
+        // stage_id -> (stage_desc, Vec<(substep_desc, nanos, batches, rows)>)
         let mut stage_agg: BTreeMap<u64, (String, Vec<(String, u64, u64, u64)>)> = BTreeMap::new();
 
         for query in &all_queries {
             let stage_profiles = query.stage_profiles().read().unwrap();
             for (&stage_id, stage) in stage_profiles.iter() {
                 let Some(pattern) = stage.pattern_profile() else { continue };
-                let pattern_desc = pattern_description(&pattern);
-                let entry = stage_agg.entry(stage_id).or_insert_with(|| (pattern_desc, Vec::new()));
+                let stage_desc = stage.description().unwrap_or("<unnamed stage>").to_owned();
+                let entry = stage_agg.entry(stage_id).or_insert_with(|| (stage_desc, Vec::new()));
                 let substep_data = substep_totals_for_pattern(&pattern);
                 if entry.1.is_empty() {
                     entry.1 = substep_data;
@@ -463,30 +463,26 @@ impl QueryFocusedReport {
 
         let stages = stage_agg
             .into_iter()
-            .map(|(stage_id, (pattern_desc, substep_data))| {
-                if is_match_stage(&pattern_desc) {
-                    let steps: Vec<StepProfileReport> = substep_data
-                        .into_iter()
-                        .map(|(description, nanos, batches, rows)| {
-                            let ns_per_row =
-                                DurationMs(if rows > 0 { Duration::from_nanos(nanos / rows) } else { Duration::ZERO });
-                            StepProfileReport {
-                                description,
-                                total_ms: DurationMs(Duration::from_nanos(nanos)),
-                                batches,
-                                rows,
-                                ns_per_row,
-                            }
-                        })
-                        .collect();
-                    let total_nanos: u64 = steps.iter().map(|s| s.total_ms.0.as_nanos() as u64).sum();
-                    let total_ms = DurationMs(Duration::from_nanos(total_nanos));
-                    StageFocusedReport::Pattern {
-                        stage_id,
-                        report: PatternProfileReport { description: pattern_desc, steps, total_ms },
-                    }
-                } else {
-                    StageFocusedReport::Todo { stage_id, description: pattern_desc }
+            .map(|(stage_id, (stage_desc, substep_data))| {
+                let steps: Vec<StepProfileReport> = substep_data
+                    .into_iter()
+                    .map(|(description, nanos, batches, rows)| {
+                        let ms_per_row =
+                            DurationMs(if rows > 0 { Duration::from_nanos(nanos / rows) } else { Duration::ZERO });
+                        StepProfileReport {
+                            description,
+                            total_ms: DurationMs(Duration::from_nanos(nanos)),
+                            batches,
+                            rows,
+                            ms_per_row,
+                        }
+                    })
+                    .collect();
+                let total_nanos: u64 = steps.iter().map(|s| s.total_ms.0.as_nanos() as u64).sum();
+                let total_ms = DurationMs(Duration::from_nanos(total_nanos));
+                StageFocusedReport {
+                    stage_id,
+                    report: PatternProfileReport { description: stage_desc, steps, total_ms },
                 }
             })
             .collect();
@@ -509,36 +505,17 @@ impl QueryFocusedReport {
         let folder = output_dir.join(format!("{}_{}", timestamp, name));
         std::fs::create_dir_all(&folder)?;
         for stage in &self.stages {
-            if let StageFocusedReport::Pattern { stage_id, report } = stage {
-                write_csv(folder.join(format!("stage_{stage_id}_steps.csv")), &report.steps)?;
-            }
+            write_csv(folder.join(format!("stage_{}_steps.csv", stage.stage_id)), &stage.report.steps)?;
         }
         Ok(folder)
     }
 
     fn print_tables(&self) {
         for stage in &self.stages {
-            match stage {
-                StageFocusedReport::Pattern { stage_id, report } => {
-                    println!("Stage {} [{}] — total: {} ms", stage_id, report.description, report.total_ms);
-                    println!("{}", tabled::Table::new(&report.steps));
-                }
-                StageFocusedReport::Todo { stage_id, description } => {
-                    println!("Stage {} [{}] — <TODO: non-match stage>", stage_id, description);
-                }
-            }
+            println!("Stage {} [{}] — total: {} ms", stage.stage_id, stage.report.description, stage.report.total_ms);
+            println!("{}", tabled::Table::new(&stage.report.steps));
         }
     }
-}
-
-fn pattern_description(_pattern: &PatternProfile) -> String {
-    // PatternProfile doesn't expose its description publicly; treat all stages as match for now.
-    "match".to_owned()
-}
-
-fn is_match_stage(description: &str) -> bool {
-    // TODO: refine once stage descriptions are accessible; currently all stages expose as match.
-    description.to_lowercase().contains("match")
 }
 
 /// Flatten a PatternProfile's substeps to (description, total_nanos, batches, rows) tuples.
