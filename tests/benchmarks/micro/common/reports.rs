@@ -259,7 +259,7 @@ impl CommitFocusedReport {
         println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.total_wall_time, total_rows, rows_per_sec);
     }
 
-    fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
+    pub fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
         let timestamp =
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
         let folder = output_dir.join(format!("{}_{}", timestamp, name));
@@ -269,7 +269,7 @@ impl CommitFocusedReport {
         Ok(folder)
     }
 
-    fn print_summary_table(&self) {
+    pub fn print_summary_table(&self) {
         println!("{}", tabled::Table::new(&self.summary));
     }
 }
@@ -421,8 +421,7 @@ pub struct StageFocusedReport {
 
 pub struct QueryFocusedReport {
     pub stages: Vec<StageFocusedReport>,
-    pub run_descriptor: RunDescriptor,
-    pub total_wall_time: DurationMs,
+    pub commit: CommitFocusedReport,
 }
 
 impl SimpleReport<MultiTxMultiQueryProfile> for QueryFocusedReport {
@@ -495,7 +494,7 @@ impl QueryFocusedReport {
             })
             .collect();
 
-        Self { stages, run_descriptor: profile.run_descriptor.clone(), total_wall_time: DurationMs(profile.total_wall_time) }
+        Self { stages, commit: CommitFocusedReport::from_ref(profile) }
     }
 
     pub fn write_and_print(&self, name: &str) {
@@ -505,9 +504,11 @@ impl QueryFocusedReport {
             Err(e) => eprintln!("Failed to write report: {e}"),
         }
         self.print_tables();
-        let total_rows = self.run_descriptor.total_rows();
-        let rows_per_sec = total_rows as f64 / self.total_wall_time.0.as_secs_f64();
-        println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.total_wall_time, total_rows, rows_per_sec);
+        println!("Commit — total: {} ms", self.commit.total_wall_time);
+        self.commit.print_summary_table();
+        let total_rows = self.commit.run_descriptor.total_rows();
+        let rows_per_sec = total_rows as f64 / self.commit.total_wall_time.0.as_secs_f64();
+        println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.commit.total_wall_time, total_rows, rows_per_sec);
     }
 
     fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
@@ -518,6 +519,7 @@ impl QueryFocusedReport {
         for stage in &self.stages {
             write_csv(folder.join(format!("stage_{}_steps.csv", stage.stage_id)), &stage.report.steps)?;
         }
+        self.commit.write_csvs(&folder, name).ok();
         Ok(folder)
     }
 
