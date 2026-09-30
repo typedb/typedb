@@ -313,14 +313,10 @@ impl AttributeID {
                 if order_required {
                     (StringAttributeID::write_sortable_prefix(value.encode_string::<64>(), bytes), false)
                 } else {
-                    (
-                        StringAttributeID::write_deterministic_prefix(
-                            value.encode_string::<64>(),
-                            large_value_hasher,
-                            bytes,
-                        ),
-                        false,
-                    )
+                    let string = value.encode_string::<64>();
+                    // an inlineable string is written as its complete ID; a longer one omits the disambiguator byte
+                    let is_complete = StringAttributeID::is_inlineable(string.as_reference());
+                    (StringAttributeID::write_hashed_prefix(string, large_value_hasher, bytes), is_complete)
                 }
             }
             ValueTypeCategory::Struct => (
@@ -773,8 +769,9 @@ impl StringAttributeID {
         Ok(string_attribute_id)
     }
 
-    // write the deterministic prefix of the hash ID, and return the length of the prefix written
-    pub(crate) fn write_deterministic_prefix<const INLINE_LENGTH: usize>(
+    // write the prefix that identifies the exact value: the full inline ID, or the 8-byte prefix plus the hash
+    // (without the disambiguator tail); return the length written
+    pub(crate) fn write_hashed_prefix<const INLINE_LENGTH: usize>(
         string: StringBytes<INLINE_LENGTH>,
         hasher: &impl Fn(&[u8]) -> u64,
         bytes: &mut [u8],

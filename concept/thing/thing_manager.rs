@@ -545,36 +545,19 @@ impl ThingManager {
         else {
             return Ok(AttributeIterator::new_empty());
         };
-        let (start_attribute_vertex_bound, end_attribute_vertex_bound) = if let Bound::Included(value) =
-            &value_lower_bound
-            && value_lower_bound == value_upper_bound
-        {
-            let vertex_prefix = AttributeVertex::build_or_prefix_for_value(
-                attribute_type.vertex().type_id_(),
-                value.as_reference(),
-                self.vertex_generator.hasher(),
-                false,
-            );
-            let start = match vertex_prefix {
-                Either::First(vertex) => vertex.into_storage_key(),
-                Either::Second(prefix_key) => prefix_key,
-            };
-            (RangeStart::Inclusive(start), RangeEnd::WithinStartAsPrefix)
-        } else {
-            let start_attribute_vertex_bound = self.get_attribute_vertex_prefix_lower_bound(
-                attribute_type.vertex().type_id_(),
-                attribute_value_type.category(),
-                value_lower_bound,
-                true,
-            );
-            let end_attribute_vertex_bound = self.get_attribute_vertex_prefix_upper_bound(
-                attribute_type.vertex().type_id_(),
-                attribute_value_type.category(),
-                value_upper_bound,
-                true,
-            );
-            (start_attribute_vertex_bound, end_attribute_vertex_bound)
-        };
+        let order_required = !Self::is_point_range(&value_lower_bound, &value_upper_bound);
+        let start_attribute_vertex_bound = self.get_attribute_vertex_prefix_lower_bound(
+            attribute_type.vertex().type_id_(),
+            attribute_value_type.category(),
+            value_lower_bound,
+            order_required,
+        );
+        let end_attribute_vertex_bound = self.get_attribute_vertex_prefix_upper_bound(
+            attribute_type.vertex().type_id_(),
+            attribute_value_type.category(),
+            value_upper_bound,
+            order_required,
+        );
 
         let has_reverse_start_prefix = start_attribute_vertex_bound.map(|start| {
             ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), start.bytes())
