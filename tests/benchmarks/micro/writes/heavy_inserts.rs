@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::borrow::Cow;
 
 use encoding::{graph::type_::vertex::TypeID, value::value::Value};
 use lib_benchmark::{
@@ -41,8 +40,6 @@ fn run_parallel(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(parallel_entities_many_large());
     group.run_benchmark(parallel_relations_many_medium());
     group.run_benchmark(parallel_relations_many_large());
-
-    group.run_benchmark(parallel_relations_by_id_many_medium());
 }
 
 fn parametrised_entity_insert(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBInsertWorkloadBenchmark {
@@ -125,54 +122,4 @@ fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescripto
     let query_descriptor = QueryDescriptor { query, variables, produce_row: Some(produce_row) };
 
     TypeDBInsertWorkloadBenchmark::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
-}
-
-fn parametrised_binary_relation_by_id(
-    name: &'static str,
-    run_descriptor: RunDescriptor,
-) -> TypeDBInsertWorkloadBenchmark {
-    fn make_id(id: i64) -> GivenRowEntry {
-        GivenRowEntry::Value(Value::String(Cow::Owned(format!("id_longer_than_16_bytes__{id}"))))
-    }
-
-    fn preload_row(i: usize, _: &mut RandomDataGen) -> Vec<GivenRowEntry> {
-        vec![make_id(i as i64), make_id(i as i64)]
-    }
-
-    const N_ENTITIES: usize = 100_000;
-    let schema = r#"
-    define
-        attribute id, value string;
-        relation r1, relates e1, relates e2;
-        entity e1, plays r1:e1, owns id;
-        entity e2, plays r1:e2, owns id;
-    "#;
-
-    let preload_data_fn = WorkloadInstance::make_preload_data_fn(
-        r#"
-            given $id1: string, $id2: string;
-            insert $_ isa e1, has id == $id1; $_ isa e2, has id == $id2;
-        "#,
-        vec!["id1".to_owned(), "id2".to_owned()],
-        preload_row,
-        N_ENTITIES,
-        10_000,
-    );
-
-    let query = r#"
-        given $id1: string, $id2: string;
-        match $e1 isa e1, has id == $id1; $e2 isa e2, has id == $id2;
-        insert $r isa r1, links (e1: $e1, e2: $e2);
-       "#;
-    let variables = vec!["id1".to_owned(), "id2".to_owned()];
-    fn produce_row(rng: &mut RandomDataGen) -> Vec<GivenRowEntry> {
-        vec![make_id(rng.integer_in(0, (N_ENTITIES - 1) as i64)), make_id(rng.integer_in(0, (N_ENTITIES - 1) as i64))]
-    }
-    let query_descriptor = QueryDescriptor { query, variables, produce_row: Some(produce_row) };
-
-    TypeDBInsertWorkloadBenchmark::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
-}
-
-fn parallel_relations_by_id_many_medium() -> TypeDBInsertWorkloadBenchmark {
-    parametrised_binary_relation_by_id("parallel_relations_by_id_many_medium", PARALLEL_MANY_MEDIUM)
 }
