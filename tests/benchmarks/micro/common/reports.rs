@@ -504,7 +504,8 @@ impl QueryFocusedReport {
             Err(e) => eprintln!("Failed to write report: {e}"),
         }
         self.print_tables();
-        println!("Commit — total: {} ms", self.commit.total_wall_time);
+        let total_commit_ms = DurationMs(self.commit.per_txn.iter().map(|r| r.commit_ms.0).sum());
+        println!("Commit — total: {} ms", total_commit_ms);
         self.commit.print_summary_table();
         let total_rows = self.commit.run_descriptor.total_rows();
         let rows_per_sec = total_rows as f64 / self.commit.total_wall_time.0.as_secs_f64();
