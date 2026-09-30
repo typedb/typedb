@@ -8,7 +8,7 @@ use std::borrow::Cow;
 
 use encoding::value::value::Value;
 use lib_benchmark::{
-    benchmark::{QueryDescriptor, RunDescriptor, TypeDBMatchWorkloadBenchmark, WorkloadInstance},
+    benchmark::{QueryDescriptor, RunDescriptor, TypeDBWorkloadReport, WorkloadInstance},
     datagen::RandomDataGen,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
 };
@@ -32,7 +32,7 @@ fn parametrised_binary_relation_by_id<MakeID: IDMaker>(
     name: &'static str,
     run_descriptor: RunDescriptor,
     id_type: &'static str,
-) -> TypeDBMatchWorkloadBenchmark {
+) -> TypeDBWorkloadReport {
     fn preload_row<MID: IDMaker>(i: usize, _: &mut RandomDataGen) -> Vec<GivenRowEntry> {
         vec![MID::make_id(i as i64), MID::make_id(i as i64)]
     }
@@ -77,10 +77,10 @@ fn parametrised_binary_relation_by_id<MakeID: IDMaker>(
     }
     let query_descriptor = QueryDescriptor { query, variables, produce_row: Some(produce_row::<MakeID>) };
 
-    TypeDBMatchWorkloadBenchmark::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
+    TypeDBWorkloadReport::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
 }
 
-fn serial_relations_by_short_string_id_few_large() -> TypeDBMatchWorkloadBenchmark {
+fn serial_relations_by_short_string_id_few_large() -> TypeDBWorkloadReport {
     parametrised_binary_relation_by_id::<LongStringIDMaker>(
         "serial_relations_by_short_string_id_few_large",
         SERIAL_FEW_LARGE,
@@ -88,7 +88,7 @@ fn serial_relations_by_short_string_id_few_large() -> TypeDBMatchWorkloadBenchma
     )
 }
 
-fn serial_relations_by_long_string_id_few_large() -> TypeDBMatchWorkloadBenchmark {
+fn serial_relations_by_long_string_id_few_large() -> TypeDBWorkloadReport {
     parametrised_binary_relation_by_id::<LongStringIDMaker>(
         "serial_relations_by_long_string_id_few_large",
         SERIAL_FEW_LARGE,
@@ -96,7 +96,7 @@ fn serial_relations_by_long_string_id_few_large() -> TypeDBMatchWorkloadBenchmar
     )
 }
 
-fn serial_relations_by_integer_id_few_large() -> TypeDBMatchWorkloadBenchmark {
+fn serial_relations_by_integer_id_few_large() -> TypeDBWorkloadReport {
     parametrised_binary_relation_by_id::<IntegerIDMaker>(
         "serial_relations_by_integer_id_few_large",
         SERIAL_FEW_LARGE,
