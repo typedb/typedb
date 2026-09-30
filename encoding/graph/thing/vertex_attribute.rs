@@ -297,7 +297,7 @@ impl AttributeID {
         bytes: &mut [u8],
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
-        order_required: bool
+        order_required: bool,
     ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
         match value.value_type().category() {
@@ -313,7 +313,14 @@ impl AttributeID {
                 if order_required {
                     (StringAttributeID::write_sortable_prefix(value.encode_string::<64>(), bytes), false)
                 } else {
-                    (StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes), false)
+                    (
+                        StringAttributeID::write_deterministic_prefix(
+                            value.encode_string::<64>(),
+                            large_value_hasher,
+                            bytes,
+                        ),
+                        false,
+                    )
                 }
             }
             ValueTypeCategory::Struct => (

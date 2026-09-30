@@ -146,19 +146,44 @@ fn string_equality_lookups() {
         ("EQ isa long", format!(r#"match $n isa name; $n == "{l500}";"#), 1, Some(10)),
         ("EQ has-reverse long", format!(r#"match $p isa person, has name $n; $n == "{l500}";"#), 1, Some(10)),
         ("EQ has literal long", format!(r#"match $p isa person, has name "{l500}";"#), 1, Some(10)),
-        ("EQ bound-owner long", format!(r#"match $p isa person, has id 500; $p has name $n; $n == "{l500}";"#), 1, Some(10)),
-        ("EQ bound-owner0 long", format!(r#"match $p isa person, has id 0; $p has name $n; $n == "{l0}";"#), 1, Some(10)),
+        (
+            "EQ bound-owner long",
+            format!(r#"match $p isa person, has id 500; $p has name $n; $n == "{l500}";"#),
+            1,
+            Some(10),
+        ),
+        (
+            "EQ bound-owner0 long",
+            format!(r#"match $p isa person, has id 0; $p has name $n; $n == "{l0}";"#),
+            1,
+            Some(10),
+        ),
         ("EQ bound-owner0 literal", format!(r#"match $p isa person, has id 0; $p has name "{l0}";"#), 1, Some(10)),
         ("EQ isa short", format!(r#"match $n isa name; $n == "{s500}";"#), 1, Some(10)),
         ("EQ has literal short", format!(r#"match $p isa person, has name "{s500}";"#), 1, Some(10)),
-        ("EQ bound-owner short", format!(r#"match $p isa person, has id 500; $p has name $n; $n == "{s500}";"#), 1, Some(10)),
+        (
+            "EQ bound-owner short",
+            format!(r#"match $p isa person, has id 500; $p has name $n; $n == "{s500}";"#),
+            1,
+            Some(10),
+        ),
         // ordering correctness (issue #7869 must stay fixed). Note "n-..." sorts after "https://...", and the 300 "extra/" names sort above l900, hence 1399 / 2.
         ("GT isa long", format!(r#"match $n isa name; $n > "{l900}";"#), 1399, None),
         ("GT has-reverse long", format!(r#"match $p isa person, has name $n; $n > "{l900}";"#), 1399, None),
         ("LT isa long", format!(r#"match $n isa name; $n < "{l100}";"#), 100, None),
         ("LT has-reverse long", format!(r#"match $p isa person, has name $n; $n < "{l100}";"#), 100, None),
-        ("GE bound-owner long", format!(r#"match $p isa person, has id 500; $p has name $n; $n >= "{l500}";"#), 2, None),
-        ("GT/LE has-reverse long", format!(r#"match $p isa person, has name $n; $n > "{l100}"; $n <= "{l900}";"#), 800, None),
+        (
+            "GE bound-owner long",
+            format!(r#"match $p isa person, has id 500; $p has name $n; $n >= "{l500}";"#),
+            2,
+            None,
+        ),
+        (
+            "GT/LE has-reverse long",
+            format!(r#"match $p isa person, has name $n; $n > "{l100}"; $n <= "{l900}";"#),
+            800,
+            None,
+        ),
     ];
 
     let mut failures = Vec::new();
