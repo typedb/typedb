@@ -91,6 +91,7 @@ where
         self.row_counter += 1;
         Some(self.source_iterator.next()?.and_then(|row| {
             debug_assert!(row.row().len() == expected_types.len());
+            let start_timer = self.profile.start_measurement();
             row.iter().enumerate().try_for_each(|(column_index, entry)| {
                 if !row_entry_satisfies_optionality(optionality[column_index], entry) {
                     Err(Box::new(PipelineExecutionError::GivenValueDidNotSatisfyDeclaredOptionality {
@@ -108,6 +109,7 @@ where
                     Ok(())
                 }
             })?;
+            start_timer.end(&self.profile, 0, 1);
             Ok(row)
         }))
     }

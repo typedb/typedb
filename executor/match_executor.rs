@@ -27,7 +27,7 @@ use crate::{
 
 pub struct MatchExecutor {
     entry: PatternExecutor,
-    input: Option<MaybeOwnedRow<'static>>,
+    input: Option<FixedBatch>,
     tabled_functions: TabledFunctions,
 }
 
@@ -36,7 +36,7 @@ impl MatchExecutor {
         conjunction_executable: &ConjunctionExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-        input: MaybeOwnedRow<'_>,
+        input_batch: FixedBatch,
         function_registry: Arc<ExecutableFunctionRegistry>,
         profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
@@ -50,7 +50,7 @@ impl MatchExecutor {
                 stage_profile,
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
-            input: Some(input.into_owned()),
+            input: Some(input_batch),
         })
     }
 
@@ -70,7 +70,7 @@ impl MatchExecutor {
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, Box<ReadExecutionError>> {
         if let Some(input) = self.input.take() {
-            self.entry.prepare(FixedBatch::from(input.into_owned()));
+            self.entry.prepare(input);
         }
         self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions).map_err(|err| Box::new(err))
     }

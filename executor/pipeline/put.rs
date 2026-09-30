@@ -14,7 +14,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     ExecutionInterrupt,
-    batch::Batch,
+    batch::{Batch, FixedBatch},
     error::ReadExecutionError,
     match_executor::MatchExecutor,
     pipeline::{
@@ -126,7 +126,7 @@ fn match_iterator_for_row<Snapshot: ReadableSnapshot + 'static>(
         &put_executable.match_,
         &context.snapshot,
         &context.thing_manager,
-        input_row,
+        FixedBatch::from(input_row),
         function_registry,
         &context.profile,
     )

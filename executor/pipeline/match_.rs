@@ -15,6 +15,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     ExecutionInterrupt,
+    batch::FixedBatch,
     error::ReadExecutionError,
     match_executor::{MatchExecutor, PatternIterator},
     pipeline::{
@@ -93,8 +94,19 @@ where
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
             let ExecutionContext { snapshot, thing_manager, profile, .. } = &self.context;
 
-            let input_row = match self.source_iterator.next()? {
-                Ok(row) => row,
+            let input_batch = match self.source_iterator.next()? {
+                Ok(row) => {
+                    let mut batch = FixedBatch::new(row.len() as u32);
+                    batch.append(|mut appended| appended.copy_from_row(row));
+                    while !batch.is_full() {
+                        match self.source_iterator.next() {
+                            Some(Ok(row)) => batch.append(|mut appended| appended.copy_from_row(row)),
+                            Some(Err(err)) => return Some(Err(err)),
+                            None => break,
+                        }
+                    }
+                    batch
+                }
                 Err(err) => return Some(Err(err)),
             };
 
@@ -102,7 +114,7 @@ where
                 &self.executable,
                 snapshot,
                 thing_manager,
-                input_row,
+                input_batch,
                 self.function_registry.clone(),
                 profile,
             )
