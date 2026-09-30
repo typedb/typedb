@@ -315,23 +315,24 @@ impl WorkloadInstance {
     pub fn make_preload_data_fn(
         query: &'static str,
         variables: Vec<String>,
-        produce_row: fn(&mut RandomDataGen) -> Vec<GivenRowEntry>,
+        produce_row: fn(usize, &mut RandomDataGen) -> Vec<GivenRowEntry>,
         n_total_rows: usize,
         n_rows_per_query: usize,
     ) -> PreloadDataFn {
         Box::new(move |database: Arc<Database<WALClient>>| {
             let mut rng = RandomDataGen::new();
-            let mut remaining = n_total_rows;
-            while remaining > 0 {
-                let this_batch = n_rows_per_query.min(remaining);
-                remaining -= this_batch;
-                let rows = (0..this_batch).map(|_| produce_row(&mut rng)).collect();
+            let mut completed = 0;
+            while completed < n_total_rows {
+                let this_batch = n_rows_per_query.min(n_total_rows - completed);
+                let rows = (0..this_batch).map(|i| produce_row(completed + i, &mut rng)).collect();
                 let given_rows = GivenRowsSimple { variables: variables.clone(), rows };
                 let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
                 let (result, tx) =
                     unpack_result(execute_write_query_in::<_, CountResults>(tx, query, Some(given_rows), false));
-                let QueryAnswer { answer: n_rows, .. } = result.unwrap();
+                let QueryAnswer { answer: n_answer_rows, .. } = result.unwrap();
+                assert_eq!(n_answer_rows, n_rows_per_query);
                 commit(tx).unwrap();
+                completed += this_batch;
             }
         })
     }
