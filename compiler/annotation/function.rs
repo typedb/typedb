@@ -95,7 +95,7 @@ pub struct AnnotatedFunctionSignature {
 pub type AnnotatedPreambleFunctions = Vec<AnnotatedFunction>;
 pub type AnnotatedSchemaFunctions = HashMap<DefinitionKey, AnnotatedFunction>;
 
-trait GetAnnotatedSignature {
+pub(crate) trait GetAnnotatedSignature {
     fn get_annotated_signature(&self) -> &AnnotatedFunctionSignature;
 }
 
@@ -116,7 +116,7 @@ pub trait AnnotatedFunctionSignatures {
 }
 
 #[derive(Debug)]
-pub struct AnnotatedFunctionSignaturesImpl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> {
+pub(crate) struct AnnotatedFunctionSignaturesImpl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> {
     schema_functions: &'a HashMap<DefinitionKey, T1>,
     local_functions: &'a Vec<T2>,
 }

@@ -749,7 +749,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
+    pub(crate) fn binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
         fn _all_binding<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
         ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {

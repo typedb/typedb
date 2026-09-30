@@ -210,7 +210,7 @@ pub(super) fn instances_of_types_chained(
     Ok(thing_iter)
 }
 
-pub(crate) struct IsaReverseBoundedSortedThing {
+pub struct IsaReverseBoundedSortedThing {
     inner: MultipleTypeIsaReverseIterator,
     filter_map: Box<IsaFilterMapFn>,
     type_: Type,
@@ -245,7 +245,7 @@ impl TupleSeekable for IsaReverseBoundedSortedThing {
     }
 }
 
-pub(crate) struct IsaReverseUnboundedSortedType {
+pub struct IsaReverseUnboundedSortedType {
     inner: MultipleTypeIsaReverseIterator,
     filter_map: Box<IsaFilterMapFn>,
 }
@@ -279,7 +279,7 @@ impl TupleSeekable for IsaReverseUnboundedSortedType {
     }
 }
 
-pub(super) struct MultipleTypeIsaReverseIterator {
+pub(crate) struct MultipleTypeIsaReverseIterator {
     object_iters: Vec<IsaReverseObjectIterator>,
     attribute_iters: Vec<IsaReverseAttributeIterator>,
 }
@@ -358,7 +358,7 @@ impl Iterator for MultipleTypeIsaReverseIterator {
     }
 }
 
-struct IsaReverseObjectIterator {
+pub(crate) struct IsaReverseObjectIterator {
     objects: InstanceIterator<Object>,
     type_: Type,
 }
@@ -397,7 +397,7 @@ impl Iterator for IsaReverseObjectIterator {
     }
 }
 
-struct IsaReverseAttributeIterator {
+pub(crate) struct IsaReverseAttributeIterator {
     attributes: AttributeIterator<InstanceIterator<Attribute>>,
     iterator_type: Type,
 }
