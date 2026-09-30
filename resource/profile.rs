@@ -679,6 +679,10 @@ impl StageProfile {
         Self { description: None, pattern_profile: OnceLock::new(), enabled: false }
     }
 
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
     pub fn create_or_get_pattern(&self, pattern_description: impl Fn() -> String) -> Arc<PatternProfile> {
         self.pattern_profile
             .get_or_init(|| {
@@ -770,6 +774,10 @@ impl PatternProfile {
 
     fn new_disabled() -> Self {
         Self { substeps: RwLock::new(Vec::new()), enabled: false, description: None }
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
     }
 
     pub fn substeps(&self) -> &RwLock<Vec<SubstepProfile>> {
