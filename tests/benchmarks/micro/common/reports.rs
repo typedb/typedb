@@ -404,6 +404,8 @@ pub struct StepProfileReport {
     pub batches: u64,
     pub rows: u64,
     pub ms_per_row: DurationMs,
+    pub raw_seeks: u64,
+    pub raw_advances: u64,
 }
 
 pub struct PatternProfileReport {
@@ -419,12 +421,14 @@ pub struct StageFocusedReport {
 
 pub struct QueryFocusedReport {
     pub stages: Vec<StageFocusedReport>,
+    pub run_descriptor: RunDescriptor,
+    pub total_wall_time: DurationMs,
 }
 
 impl SimpleReport<MultiTxMultiQueryProfile> for QueryFocusedReport {
     fn report(reports: &[MultiTxMultiQueryProfile]) {
         for r in reports {
-            QueryFocusedReport::from_ref(r).write_and_print(r.name);
+            QueryFocusedReport::from_ref(r).write_and_print(r.name.as_str());
         }
     }
 }
@@ -434,9 +438,9 @@ impl QueryFocusedReport {
         // Collect all query profiles across all transactions
         let all_queries: Vec<_> = profile.profiles.iter().flat_map(|tx| tx.query_profiles.iter()).collect();
 
-        // Aggregate per (stage_id, substep_index): (desc, nanos, batches, rows)
-        // stage_id -> (stage_desc, Vec<(substep_desc, nanos, batches, rows)>)
-        let mut stage_agg: BTreeMap<u64, (String, Vec<(String, u64, u64, u64)>)> = BTreeMap::new();
+        // Aggregate per (stage_id, substep_index): (desc, nanos, batches, rows, seeks, advances)
+        // stage_id -> (stage_desc, Vec<(substep_desc, nanos, batches, rows, seeks, advances)>)
+        let mut stage_agg: BTreeMap<u64, (String, Vec<(String, u64, u64, u64, u64, u64)>)> = BTreeMap::new();
 
         for query in &all_queries {
             let stage_profiles = query.stage_profiles().read().unwrap();
@@ -448,13 +452,15 @@ impl QueryFocusedReport {
                 if entry.1.is_empty() {
                     entry.1 = substep_data;
                 } else {
-                    for (i, (desc, nanos, batches, rows)) in substep_data.into_iter().enumerate() {
+                    for (i, (desc, nanos, batches, rows, seeks, advances)) in substep_data.into_iter().enumerate() {
                         if i < entry.1.len() {
                             entry.1[i].1 += nanos;
                             entry.1[i].2 += batches;
                             entry.1[i].3 += rows;
+                            entry.1[i].4 += seeks;
+                            entry.1[i].5 += advances;
                         } else {
-                            entry.1.push((desc, nanos, batches, rows));
+                            entry.1.push((desc, nanos, batches, rows, seeks, advances));
                         }
                     }
                 }
@@ -466,7 +472,7 @@ impl QueryFocusedReport {
             .map(|(stage_id, (stage_desc, substep_data))| {
                 let steps: Vec<StepProfileReport> = substep_data
                     .into_iter()
-                    .map(|(description, nanos, batches, rows)| {
+                    .map(|(description, nanos, batches, rows, raw_seeks, raw_advances)| {
                         let ms_per_row =
                             DurationMs(if rows > 0 { Duration::from_nanos(nanos / rows) } else { Duration::ZERO });
                         StepProfileReport {
@@ -475,6 +481,8 @@ impl QueryFocusedReport {
                             batches,
                             rows,
                             ms_per_row,
+                            raw_seeks,
+                            raw_advances,
                         }
                     })
                     .collect();
@@ -487,7 +495,7 @@ impl QueryFocusedReport {
             })
             .collect();
 
-        Self { stages }
+        Self { stages, run_descriptor: profile.run_descriptor.clone(), total_wall_time: DurationMs(profile.total_wall_time) }
     }
 
     pub fn write_and_print(&self, name: &str) {
@@ -497,6 +505,9 @@ impl QueryFocusedReport {
             Err(e) => eprintln!("Failed to write report: {e}"),
         }
         self.print_tables();
+        let total_rows = self.run_descriptor.total_rows();
+        let rows_per_sec = total_rows as f64 / self.total_wall_time.0.as_secs_f64();
+        println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.total_wall_time, total_rows, rows_per_sec);
     }
 
     fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
@@ -518,52 +529,69 @@ impl QueryFocusedReport {
     }
 }
 
-/// Flatten a PatternProfile's substeps to (description, total_nanos, batches, rows) tuples.
-fn substep_totals_for_pattern(pattern: &PatternProfile) -> Vec<(String, u64, u64, u64)> {
-    pattern.substeps().read().unwrap().iter().map(|substep| substep_aggregate(substep)).collect()
+/// Flatten a PatternProfile's substeps to (description, nanos, batches, rows, seeks, advances) tuples.
+fn substep_totals_for_pattern(pattern: &PatternProfile) -> Vec<(String, u64, u64, u64, u64, u64)> {
+    pattern.substeps().read().unwrap().iter().map(substep_aggregate).collect()
 }
 
-fn substep_aggregate(substep: &SubstepProfile) -> (String, u64, u64, u64) {
+fn substep_aggregate(substep: &SubstepProfile) -> (String, u64, u64, u64, u64, u64) {
     match substep {
         SubstepProfile::StepProfile(step) => {
+            let counters = step.storage_counters();
             let desc = step.description().unwrap_or("").to_owned();
-            (desc, step.total_nanos(), step.batches(), step.rows())
+            (
+                desc,
+                step.total_nanos(),
+                step.batches(),
+                step.rows(),
+                counters.get_raw_seek().unwrap_or(0),
+                counters.get_raw_advance().unwrap_or(0),
+            )
         }
         SubstepProfile::PatternProfile(pattern) => {
-            let (nanos, batches, rows) = sum_pattern_leaves(pattern);
+            let (nanos, batches, rows, seeks, advances) = sum_pattern_leaves(pattern);
             let desc = format!("[pattern] ({} substeps)", pattern.substeps().read().unwrap().len());
-            (desc, nanos, batches, rows)
+            (desc, nanos, batches, rows, seeks, advances)
         }
         SubstepProfile::QueryProfile { description, profile } => {
-            let (nanos, batches, rows) = sum_query_leaves(profile);
-            (format!("[fn] {description}"), nanos, batches, rows)
+            let (nanos, batches, rows, seeks, advances) = sum_query_leaves(profile);
+            (format!("[fn] {description}"), nanos, batches, rows, seeks, advances)
         }
     }
 }
 
-fn sum_pattern_leaves(pattern: &PatternProfile) -> (u64, u64, u64) {
+fn sum_pattern_leaves(pattern: &PatternProfile) -> (u64, u64, u64, u64, u64) {
     pattern
         .substeps()
         .read()
         .unwrap()
         .iter()
         .map(sum_substep_leaves)
-        .fold((0, 0, 0), |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2))
+        .fold((0, 0, 0, 0, 0), |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2, a.3 + b.3, a.4 + b.4))
 }
 
-fn sum_query_leaves(query: &QueryProfile) -> (u64, u64, u64) {
+fn sum_query_leaves(query: &QueryProfile) -> (u64, u64, u64, u64, u64) {
     query
         .stage_profiles()
         .read()
         .unwrap()
         .values()
         .flat_map(|stage| stage.pattern_profile().map(|p| sum_pattern_leaves(&p)).into_iter())
-        .fold((0, 0, 0), |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2))
+        .fold((0, 0, 0, 0, 0), |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2, a.3 + b.3, a.4 + b.4))
 }
 
-fn sum_substep_leaves(substep: &SubstepProfile) -> (u64, u64, u64) {
+fn sum_substep_leaves(substep: &SubstepProfile) -> (u64, u64, u64, u64, u64) {
     match substep {
-        SubstepProfile::StepProfile(step) => (step.total_nanos(), step.batches(), step.rows()),
+        SubstepProfile::StepProfile(step) => {
+            let counters = step.storage_counters();
+            (
+                step.total_nanos(),
+                step.batches(),
+                step.rows(),
+                counters.get_raw_seek().unwrap_or(0),
+                counters.get_raw_advance().unwrap_or(0),
+            )
+        }
         SubstepProfile::PatternProfile(pattern) => sum_pattern_leaves(pattern),
         SubstepProfile::QueryProfile { profile, .. } => sum_query_leaves(profile),
     }
@@ -609,7 +637,7 @@ impl SimpleReport<MultiTxMultiQueryProfile> for CommitFocusedReport {
         // Reports is a &[Self] but From consumes — clone timing data out into one merged report.
         // For simplicity, report each benchmark sample separately; typically there is only one.
         for r in reports.iter() {
-            CommitFocusedReport::from_ref(r).write_and_print(r.name);
+            CommitFocusedReport::from_ref(r).write_and_print(r.name.as_str());
         }
     }
 }

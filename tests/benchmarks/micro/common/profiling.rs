@@ -27,7 +27,7 @@ pub struct MultiQueryTxProfile {
 }
 
 pub struct MultiTxMultiQueryProfile {
-    pub name: &'static str,
+    pub name: String,
     pub profiles: Vec<MultiQueryTxProfile>,
     pub run_descriptor: RunDescriptor,
     pub total_wall_time: Duration,
