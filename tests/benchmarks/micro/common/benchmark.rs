@@ -128,9 +128,7 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
 
 pub type TypeDBWorkloadBenchmark<Report: SimpleReport<MultiTxMultiQueryProfile>> =
     TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, Report>;
-pub type TypeDBInsertWorkloadBenchmark =
-    TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, CommitFocusedReport>;
-pub type TypeDBMatchWorkloadBenchmark =
+pub type TypeDBWorkloadReport =
     TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, QueryFocusedReport>;
 
 impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Report> {

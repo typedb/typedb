@@ -6,7 +6,7 @@
 
 use encoding::{graph::type_::vertex::TypeID, value::value::Value};
 use lib_benchmark::{
-    benchmark::{QueryDescriptor, RunDescriptor, TypeDBInsertWorkloadBenchmark, WorkloadInstance},
+    benchmark::{QueryDescriptor, RunDescriptor, TypeDBWorkloadReport, WorkloadInstance},
     datagen::RandomDataGen,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
 };
@@ -42,19 +42,19 @@ fn run_parallel(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(parallel_relations_many_large());
 }
 
-fn parametrised_entity_insert(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBInsertWorkloadBenchmark {
+fn parametrised_entity_insert(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBWorkloadReport {
     let query = "given; insert $x isa person;".to_owned();
     let query_descriptor = QueryDescriptor { query, variables: vec![], produce_row: Some(|_| vec![]) };
-    TypeDBInsertWorkloadBenchmark::new(name, SIMPLE_SCHEMA, no_initial_data(), query_descriptor, run_descriptor)
+    TypeDBWorkloadReport::new(name, SIMPLE_SCHEMA, no_initial_data(), query_descriptor, run_descriptor)
 }
 
 // Serial
 
-fn serial_entities_few_large() -> TypeDBInsertWorkloadBenchmark {
+fn serial_entities_few_large() -> TypeDBWorkloadReport {
     parametrised_entity_insert("serial_entities_few_large", SERIAL_FEW_LARGE)
 }
 
-fn serial_entities_few_large_10q() -> TypeDBInsertWorkloadBenchmark {
+fn serial_entities_few_large_10q() -> TypeDBWorkloadReport {
     // FLAGGED: 10 queries/tx has no constant in run_configs
     parametrised_entity_insert(
         "serial_entities_few_large_10q",
@@ -62,36 +62,36 @@ fn serial_entities_few_large_10q() -> TypeDBInsertWorkloadBenchmark {
     )
 }
 
-fn serial_entities_many_small() -> TypeDBInsertWorkloadBenchmark {
+fn serial_entities_many_small() -> TypeDBWorkloadReport {
     parametrised_entity_insert("serial_entities_many_small", SERIAL_MANY_SMALL)
 }
 
-fn serial_relations_many_medium() -> TypeDBInsertWorkloadBenchmark {
+fn serial_relations_many_medium() -> TypeDBWorkloadReport {
     parametrised_binary_relation("serial_relations_many_medium", SERIAL_MANY_MEDIUM)
 }
 
-fn serial_relations_few_large() -> TypeDBInsertWorkloadBenchmark {
+fn serial_relations_few_large() -> TypeDBWorkloadReport {
     parametrised_binary_relation("serial_relations_few_large", SERIAL_FEW_LARGE)
 }
 
 // Parallel
-fn parallel_entities_many_small() -> TypeDBInsertWorkloadBenchmark {
+fn parallel_entities_many_small() -> TypeDBWorkloadReport {
     parametrised_entity_insert("parallel_entities_many_small", PARALLEL_MANY_SMALL)
 }
 
-fn parallel_entities_many_large() -> TypeDBInsertWorkloadBenchmark {
+fn parallel_entities_many_large() -> TypeDBWorkloadReport {
     parametrised_entity_insert("parallel_entities_many_large", PARALLEL_MANY_LARGE)
 }
 
-fn parallel_relations_many_medium() -> TypeDBInsertWorkloadBenchmark {
+fn parallel_relations_many_medium() -> TypeDBWorkloadReport {
     parametrised_binary_relation("parallel_relations_many_medium", PARALLEL_MANY_MEDIUM)
 }
 
-fn parallel_relations_many_large() -> TypeDBInsertWorkloadBenchmark {
+fn parallel_relations_many_large() -> TypeDBWorkloadReport {
     parametrised_binary_relation("parallel_relations_many_large", PARALLEL_MANY_LARGE)
 }
 
-fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBInsertWorkloadBenchmark {
+fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBWorkloadReport {
     const N_ENTITIES: usize = 100_000;
     fn produce_row(rng: &mut RandomDataGen) -> Vec<GivenRowEntry> {
         vec![
@@ -123,5 +123,5 @@ fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescripto
     let variables = vec!["e1".to_owned(), "e2".to_owned()];
     let query_descriptor = QueryDescriptor { query, variables, produce_row: Some(produce_row) };
 
-    TypeDBInsertWorkloadBenchmark::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
+    TypeDBWorkloadReport::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
 }
