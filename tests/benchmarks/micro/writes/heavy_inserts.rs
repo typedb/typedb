@@ -32,6 +32,7 @@ fn run_serial(runner: &mut impl BenchmarkRunner) {
     group.run_benchmark(serial_entities_many_small());
     group.run_benchmark(serial_relations_many_medium());
     group.run_benchmark(serial_relations_few_large());
+    group.run_benchmark(serial_blind_relations_few_large());
 }
 
 fn run_parallel(runner: &mut impl BenchmarkRunner) {
@@ -124,4 +125,38 @@ fn parametrised_binary_relation(name: &'static str, run_descriptor: RunDescripto
     let query_descriptor = QueryDescriptor { query, variables, produce_row: Some(produce_row) };
 
     TypeDBWorkloadReport::new(name, schema, Some(preload_data_fn), query_descriptor, run_descriptor)
+}
+
+
+fn paremetrised_blind_binary_relation_insert(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBWorkloadReport {
+    const N_ENTITIES: usize = 100_000;
+    fn produce_row(rng: &mut RandomDataGen) -> Vec<GivenRowEntry> {
+        vec![
+            rng.entry_entity_raw_in(TypeID::new(0), 0, (N_ENTITIES - 1) as u64),
+            rng.entry_entity_raw_in(TypeID::new(1), 0, (N_ENTITIES - 1) as u64),
+        ]
+    }
+    let schema = r#"
+    define
+        relation r1, relates e1, relates e2;
+        entity e1, plays r1:e1;
+        entity e2, plays r1:e2;
+    "#
+        .to_owned();
+
+    let query = r#"
+        insert $e1 isa e1; $e2 isa e2;
+        insert $r isa r1, links (e1: $e1, e2: $e2);
+       "#
+        .to_owned();
+    let variables = vec![];
+    let query_descriptor = QueryDescriptor { query, variables, produce_row: None };
+
+    TypeDBWorkloadReport::new(name, schema, None, query_descriptor, run_descriptor)
+
+}
+
+
+fn serial_blind_relations_few_large() -> TypeDBWorkloadReport {
+    parametrised_binary_relation("serial_blind_relations_few_large", SERIAL_FEW_LARGE)
 }
