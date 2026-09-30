@@ -109,20 +109,20 @@ impl TimingStats {
 
 // --- Top-level report ---
 
-pub struct MultiQueryTxProfileReport {
+pub struct CommitFocusedReport {
     pub per_txn: Vec<TxTimingRow>,
     pub summary: Vec<TimingStats>,
     pub run_descriptor: RunDescriptor,
     pub total_wall_time: DurationMs,
 }
 
-impl From<MultiTxMultiQueryProfile> for MultiQueryTxProfileReport {
+impl From<MultiTxMultiQueryProfile> for CommitFocusedReport {
     fn from(profile: MultiTxMultiQueryProfile) -> Self {
         Self::from_ref(&profile)
     }
 }
 
-impl MultiQueryTxProfileReport {
+impl CommitFocusedReport {
     pub fn from_ref(profile: &MultiTxMultiQueryProfile) -> Self {
         let n = profile.profiles.len();
         let mut per_txn = Vec::with_capacity(n);
@@ -243,7 +243,7 @@ impl MultiQueryTxProfileReport {
     }
 }
 
-impl MultiQueryTxProfileReport {
+impl CommitFocusedReport {
     pub fn write_and_print(&self, name: &str) {
         let base = std::env::current_dir().unwrap().join("benchmark_reports");
         match self.write_csvs(&base, name) {
@@ -404,21 +404,21 @@ fn write_csv<T: Serialize>(path: impl AsRef<Path>, rows: &[T]) -> std::io::Resul
     Ok(())
 }
 
-pub trait SimpleReport {
-    fn report(reports: &[Self])
+pub trait SimpleReport<T> {
+    fn report(reports: &[T])
     where
         Self: Sized;
 }
 
-impl SimpleReport for () {
-    fn report(_reports: &[Self]) {
+impl SimpleReport<()> for () {
+    fn report(_reports: &[()]) {
         println!("DONE. [Report was (), which is a nop dummy].")
     }
 }
 
 // SimpleReport implementations
-impl SimpleReport for TxQueryProfile {
-    fn report(reports: &[Self]) {
+impl SimpleReport<TxQueryProfile> for TxQueryProfileReport {
+    fn report(reports: &[TxQueryProfile]) {
         for (i, r) in reports.iter().enumerate() {
             let name = format!("tx_query_profile_{i}");
             TxQueryProfileReport::from(r).write_and_print(&name);
@@ -426,12 +426,12 @@ impl SimpleReport for TxQueryProfile {
     }
 }
 
-impl SimpleReport for MultiTxMultiQueryProfile {
-    fn report(reports: &[Self]) {
+impl SimpleReport<MultiTxMultiQueryProfile> for CommitFocusedReport {
+    fn report(reports: &[MultiTxMultiQueryProfile]) {
         // Reports is a &[Self] but From consumes — clone timing data out into one merged report.
         // For simplicity, report each benchmark sample separately; typically there is only one.
         for r in reports.iter() {
-            MultiQueryTxProfileReport::from_ref(r).write_and_print(r.name);
+            CommitFocusedReport::from_ref(r).write_and_print(r.name);
         }
     }
 }

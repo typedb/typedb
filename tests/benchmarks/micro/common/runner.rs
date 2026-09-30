@@ -79,7 +79,7 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
         drop(database);
         let outputs = vec![iter_result];
         println!(" +- Reports:");
-        <T::IterOutput as SimpleReport>::report(&outputs);
+        <T::Report>::report(&outputs);
         outputs
     }
 }

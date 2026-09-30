@@ -5,6 +5,7 @@
  */
 use std::{
     cell::UnsafeCell,
+    marker::PhantomData,
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -22,15 +23,15 @@ use crate::{
     datagen::RandomDataGen,
     execute_write_query_in,
     profiling::{MultiQueryTxProfile, MultiTxMultiQueryProfile, TxQueryProfile, transaction_options_with_profiling},
-    reports::SimpleReport,
+    reports::{CommitFocusedReport, SimpleReport},
     utils::{CountResults, unpack_result},
 };
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
     type RunInput;
-    type IterOutput: SimpleReport;
-
+    type IterOutput;
+    type Report: SimpleReport<Self::IterOutput>;
     /// Create given_rows if needed
     fn name(&self) -> &'_ str;
 
@@ -66,18 +67,20 @@ pub type WarmupFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
 pub type PrepareRunFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 
-pub struct TypeDBMicroBenchmark<IN, OUT: SimpleReport> {
+pub struct TypeDBMicroBenchmark<IN, OUT, REPORT: SimpleReport<OUT>> {
     pub name: &'static str,
     pub schema: &'static str,
     pub preload_data_fn: Option<PreloadDataFn>,
     pub warmup_fn: Option<WarmupFn>,
     pub prepare_run_fn: PrepareRunFn<IN>,
     pub benchmark_fn: BenchmarkedFn<IN, OUT>,
+    pub _report: PhantomData<REPORT>,
 }
 
-impl<IN, OUT: SimpleReport> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT> {
+impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT, REPORT> {
     type RunInput = IN;
     type IterOutput = OUT;
+    type Report = REPORT;
 
     fn name(&self) -> &'_ str {
         self.name
@@ -110,7 +113,7 @@ impl<IN, OUT: SimpleReport> SimpleBenchmark for TypeDBMicroBenchmark<IN, OUT> {
     }
 }
 
-pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
+pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
     // Just to ensure the reported time is just the benchmark_fn
     TypeDBMicroBenchmark {
         name: "sanity_check",
@@ -119,12 +122,16 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), ()> {
         warmup_fn: None,
         prepare_run_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
         benchmark_fn: Box::new(|_, _| std::thread::sleep(Duration::from_millis(10))),
+        _report: PhantomData,
     }
 }
 
-pub type TypeDBWorkloadBenchmark = TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile>;
+pub type TypeDBWorkloadBenchmark<Report: SimpleReport<MultiTxMultiQueryProfile>> =
+    TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, Report>;
+pub type TypeDBInsertWorkloadBenchmark =
+    TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, CommitFocusedReport>;
 
-impl TypeDBWorkloadBenchmark {
+impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Report> {
     pub fn new(
         name: &'static str,
         schema: &'static str,
@@ -136,7 +143,7 @@ impl TypeDBWorkloadBenchmark {
         let workload = WorkLoad { query_descriptor, run_descriptor };
         let prepare_run_fn = workload.prepare_fn();
         let benchmark_fn = workload.runner(name);
-        Self { name, schema, preload_data_fn, warmup_fn, prepare_run_fn, benchmark_fn }
+        Self { name, schema, preload_data_fn, warmup_fn, prepare_run_fn, benchmark_fn, _report: PhantomData }
     }
 }
 

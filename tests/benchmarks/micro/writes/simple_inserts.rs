@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
@@ -13,6 +13,7 @@ use lib_benchmark::{
     datagen::RandomDataGen,
     execute_write_query_in,
     profiling::TxQueryProfile,
+    reports::TxQueryProfileReport,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     utils::{CountResults, unpack_result},
 };
@@ -20,7 +21,8 @@ use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use storage::durability_client::WALClient;
 
-pub type TransactionInsertBenchmark = TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile>;
+pub type TransactionInsertBenchmark =
+    TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile, TxQueryProfileReport>;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     // I'm mainly keeping this file around as an alternate to using TypeDBWorkloadBenchmark
@@ -59,6 +61,7 @@ fn entities_one() -> TransactionInsertBenchmark {
         warmup_fn: None,
         prepare_run_fn: no_given_rows(),
         benchmark_fn: _query_in_write_tx("insert $x isa person;"),
+        _report: PhantomData,
     }
 }
 
@@ -70,6 +73,7 @@ fn entities_thousand() -> TransactionInsertBenchmark {
         warmup_fn: None,
         prepare_run_fn: n_empty_given_rows(N_ROWS),
         benchmark_fn: _query_in_write_tx("given ; insert $x isa person;"),
+        _report: PhantomData,
     }
 }
 
@@ -81,6 +85,7 @@ fn ownerships_thousand_names_short() -> TransactionInsertBenchmark {
         warmup_fn: None,
         prepare_run_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(5)]),
         benchmark_fn: _query_in_write_tx("given $name: string; insert $x isa person, has name == $name;"),
+        _report: PhantomData,
     }
 }
 
@@ -92,6 +97,7 @@ fn ownerships_thousand_names_long() -> TransactionInsertBenchmark {
         warmup_fn: None,
         prepare_run_fn: given_rows_with(N_ROWS, vec!["name".to_owned()], |rng| vec![rng.entry_string(50)]),
         benchmark_fn: _query_in_write_tx("given $name: string; insert $x isa person, has name == $name;"),
+        _report: PhantomData,
     }
 }
 
