@@ -198,7 +198,7 @@ mod tests {
     use crate::snapshot::write::KnownToExist;
 
     #[derive(Serialize, Deserialize, Clone)]
-    pub enum OldWrite {
+    pub enum V1Write {
         Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
         Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: bool },
         Delete,
@@ -215,7 +215,7 @@ mod tests {
         ];
         for (old_known_to_exist, new_known_to_exist, deserialized_known_to_exist) in known_to_exist_values {
             let old_write =
-                OldWrite::Put { value: value.clone(), reinsert: reinsert.clone(), known_to_exist: old_known_to_exist };
+                V1Write::Put { value: value.clone(), reinsert: reinsert.clone(), known_to_exist: old_known_to_exist };
             let new_write = super::Write::Put {
                 value: value.clone(),
                 reinsert: reinsert.clone(),
@@ -223,19 +223,19 @@ mod tests {
             };
             let serialized_old = bincode::serialize(&old_write).unwrap();
             let serialized_new = bincode::serialize(&new_write).unwrap();
-            let new_deserialized_as_old: OldWrite = bincode::deserialize(&serialized_new).unwrap();
+            let new_deserialized_as_old: V1Write = bincode::deserialize(&serialized_new).unwrap();
             let old_deserialized_as_new: super::Write = bincode::deserialize(&serialized_old).unwrap();
 
             assert_eq!(serialized_old, serialized_new);
 
             match (old_write, new_deserialized_as_old) {
                 (
-                    OldWrite::Put {
+                    V1Write::Put {
                         value: expected_value,
                         reinsert: expected_reinsert,
                         known_to_exist: expected_known_to_exist,
                     },
-                    OldWrite::Put {
+                    V1Write::Put {
                         value: actual_value,
                         reinsert: actual_reinsert,
                         known_to_exist: actual_known_to_exist,
