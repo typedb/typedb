@@ -23,7 +23,7 @@ use crate::{
     datagen::RandomDataGen,
     execute_write_query_in,
     profiling::{MultiQueryTxProfile, MultiTxMultiQueryProfile, TxQueryProfile, transaction_options_with_profiling},
-    reports::{CommitFocusedReport, SimpleReport},
+    reports::{CommitFocusedReport, QueryFocusedReport, SimpleReport},
     utils::{CountResults, unpack_result},
 };
 
@@ -130,6 +130,8 @@ pub type TypeDBWorkloadBenchmark<Report: SimpleReport<MultiTxMultiQueryProfile>>
     TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, Report>;
 pub type TypeDBInsertWorkloadBenchmark =
     TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, CommitFocusedReport>;
+pub type TypeDBMatchWorkloadBenchmark =
+    TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, QueryFocusedReport>;
 
 impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Report> {
     pub fn new(

@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, path::Path, time::Duration};
+use std::{collections::BTreeMap, fmt, path::Path, time::Duration};
 
-use resource::profile::{QueryProfile, StageProfile, SubstepProfile};
+use resource::profile::{PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use serde::Serialize;
 use tabled::Tabled;
 
@@ -388,6 +388,207 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                 }
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// QueryFocusedReport
+// ---------------------------------------------------------------------------
+
+/// One row in a pattern table — a single substep (Step, nested Pattern, or Query call).
+/// Nested Pattern/Query are flattened to the sum of their leaf StepProfiles.
+#[derive(Tabled, Serialize)]
+pub struct StepProfileReport {
+    pub description: String,
+    pub total_ms: DurationMs,
+    pub batches: u64,
+    pub rows: u64,
+    pub ns_per_row: DurationMs,
+}
+
+pub struct PatternProfileReport {
+    pub description: String,
+    pub steps: Vec<StepProfileReport>,
+    pub total_ms: DurationMs,
+}
+
+pub enum StageFocusedReport {
+    Pattern { stage_id: u64, report: PatternProfileReport },
+    Todo { stage_id: u64, description: String },
+}
+
+pub struct QueryFocusedReport {
+    pub stages: Vec<StageFocusedReport>,
+}
+
+impl SimpleReport<MultiTxMultiQueryProfile> for QueryFocusedReport {
+    fn report(reports: &[MultiTxMultiQueryProfile]) {
+        for r in reports {
+            QueryFocusedReport::from_ref(r).write_and_print(r.name);
+        }
+    }
+}
+
+impl QueryFocusedReport {
+    pub fn from_ref(profile: &MultiTxMultiQueryProfile) -> Self {
+        // Collect all query profiles across all transactions
+        let all_queries: Vec<_> = profile.profiles.iter().flat_map(|tx| tx.query_profiles.iter()).collect();
+
+        // Aggregate per (stage_id, substep_index): (desc, nanos, batches, rows)
+        // stage_id -> (pattern_desc, Vec<(substep_desc, nanos, batches, rows)>)
+        let mut stage_agg: BTreeMap<u64, (String, Vec<(String, u64, u64, u64)>)> = BTreeMap::new();
+
+        for query in &all_queries {
+            let stage_profiles = query.stage_profiles().read().unwrap();
+            for (&stage_id, stage) in stage_profiles.iter() {
+                let Some(pattern) = stage.pattern_profile() else { continue };
+                let pattern_desc = pattern_description(&pattern);
+                let entry = stage_agg.entry(stage_id).or_insert_with(|| (pattern_desc, Vec::new()));
+                let substep_data = substep_totals_for_pattern(&pattern);
+                if entry.1.is_empty() {
+                    entry.1 = substep_data;
+                } else {
+                    for (i, (desc, nanos, batches, rows)) in substep_data.into_iter().enumerate() {
+                        if i < entry.1.len() {
+                            entry.1[i].1 += nanos;
+                            entry.1[i].2 += batches;
+                            entry.1[i].3 += rows;
+                        } else {
+                            entry.1.push((desc, nanos, batches, rows));
+                        }
+                    }
+                }
+            }
+        }
+
+        let stages = stage_agg
+            .into_iter()
+            .map(|(stage_id, (pattern_desc, substep_data))| {
+                if is_match_stage(&pattern_desc) {
+                    let steps: Vec<StepProfileReport> = substep_data
+                        .into_iter()
+                        .map(|(description, nanos, batches, rows)| {
+                            let ns_per_row =
+                                DurationMs(if rows > 0 { Duration::from_nanos(nanos / rows) } else { Duration::ZERO });
+                            StepProfileReport {
+                                description,
+                                total_ms: DurationMs(Duration::from_nanos(nanos)),
+                                batches,
+                                rows,
+                                ns_per_row,
+                            }
+                        })
+                        .collect();
+                    let total_nanos: u64 = steps.iter().map(|s| s.total_ms.0.as_nanos() as u64).sum();
+                    let total_ms = DurationMs(Duration::from_nanos(total_nanos));
+                    StageFocusedReport::Pattern {
+                        stage_id,
+                        report: PatternProfileReport { description: pattern_desc, steps, total_ms },
+                    }
+                } else {
+                    StageFocusedReport::Todo { stage_id, description: pattern_desc }
+                }
+            })
+            .collect();
+
+        Self { stages }
+    }
+
+    pub fn write_and_print(&self, name: &str) {
+        let base = std::env::current_dir().unwrap().join("benchmark_reports");
+        match self.write_csvs(&base, name) {
+            Ok(folder) => eprintln!("Report written to: {}", folder.display()),
+            Err(e) => eprintln!("Failed to write report: {e}"),
+        }
+        self.print_tables();
+    }
+
+    fn write_csvs(&self, output_dir: &Path, name: &str) -> std::io::Result<std::path::PathBuf> {
+        let timestamp =
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+        let folder = output_dir.join(format!("{}_{}", timestamp, name));
+        std::fs::create_dir_all(&folder)?;
+        for stage in &self.stages {
+            if let StageFocusedReport::Pattern { stage_id, report } = stage {
+                write_csv(folder.join(format!("stage_{stage_id}_steps.csv")), &report.steps)?;
+            }
+        }
+        Ok(folder)
+    }
+
+    fn print_tables(&self) {
+        for stage in &self.stages {
+            match stage {
+                StageFocusedReport::Pattern { stage_id, report } => {
+                    println!("Stage {} [{}] — total: {} ms", stage_id, report.description, report.total_ms);
+                    println!("{}", tabled::Table::new(&report.steps));
+                }
+                StageFocusedReport::Todo { stage_id, description } => {
+                    println!("Stage {} [{}] — <TODO: non-match stage>", stage_id, description);
+                }
+            }
+        }
+    }
+}
+
+fn pattern_description(_pattern: &PatternProfile) -> String {
+    // PatternProfile doesn't expose its description publicly; treat all stages as match for now.
+    "match".to_owned()
+}
+
+fn is_match_stage(description: &str) -> bool {
+    // TODO: refine once stage descriptions are accessible; currently all stages expose as match.
+    description.to_lowercase().contains("match")
+}
+
+/// Flatten a PatternProfile's substeps to (description, total_nanos, batches, rows) tuples.
+fn substep_totals_for_pattern(pattern: &PatternProfile) -> Vec<(String, u64, u64, u64)> {
+    pattern.substeps().read().unwrap().iter().map(|substep| substep_aggregate(substep)).collect()
+}
+
+fn substep_aggregate(substep: &SubstepProfile) -> (String, u64, u64, u64) {
+    match substep {
+        SubstepProfile::StepProfile(step) => {
+            let desc = step.description().unwrap_or("").to_owned();
+            (desc, step.total_nanos(), step.batches(), step.rows())
+        }
+        SubstepProfile::PatternProfile(pattern) => {
+            let (nanos, batches, rows) = sum_pattern_leaves(pattern);
+            let desc = format!("[pattern] ({} substeps)", pattern.substeps().read().unwrap().len());
+            (desc, nanos, batches, rows)
+        }
+        SubstepProfile::QueryProfile { description, profile } => {
+            let (nanos, batches, rows) = sum_query_leaves(profile);
+            (format!("[fn] {description}"), nanos, batches, rows)
+        }
+    }
+}
+
+fn sum_pattern_leaves(pattern: &PatternProfile) -> (u64, u64, u64) {
+    pattern
+        .substeps()
+        .read()
+        .unwrap()
+        .iter()
+        .map(sum_substep_leaves)
+        .fold((0, 0, 0), |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2))
+}
+
+fn sum_query_leaves(query: &QueryProfile) -> (u64, u64, u64) {
+    query
+        .stage_profiles()
+        .read()
+        .unwrap()
+        .values()
+        .flat_map(|stage| stage.pattern_profile().map(|p| sum_pattern_leaves(&p)).into_iter())
+        .fold((0, 0, 0), |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2))
+}
+
+fn sum_substep_leaves(substep: &SubstepProfile) -> (u64, u64, u64) {
+    match substep {
+        SubstepProfile::StepProfile(step) => (step.total_nanos(), step.batches(), step.rows()),
+        SubstepProfile::PatternProfile(pattern) => sum_pattern_leaves(pattern),
+        SubstepProfile::QueryProfile { profile, .. } => sum_query_leaves(profile),
     }
 }
 

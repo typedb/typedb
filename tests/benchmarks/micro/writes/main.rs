@@ -10,6 +10,7 @@ use lib_benchmark::{
 };
 // mod match_reads;
 mod heavy_inserts;
+mod match_insert;
 mod run_configs;
 mod simple_inserts;
 
@@ -17,7 +18,7 @@ fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     runner.new_group("sanity_check").run_benchmark(sanity_check());
     simple_inserts::run_all(&mut runner);
     heavy_inserts::run_all(&mut runner);
-
+    match_insert::run_all(&mut runner);
     runner.summary();
 }
 
