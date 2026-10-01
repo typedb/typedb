@@ -2006,17 +2006,11 @@ impl ThingManager {
     fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
         snapshot.visit_writes_in_range(
             &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
-            |snapshot, key, _| {
-                debug_assert!(ThingEdgeHas::is_has(key));
-                self.create_has_commit_locks(snapshot, key)
-            },
+            |snapshot, key, _| self.create_has_commit_locks(snapshot, key),
         )?;
         snapshot.visit_writes_in_range(
             &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING),
-            |snapshot, key, _| {
-                debug_assert!(ThingEdgeLinks::is_links(key));
-                self.create_links_commit_locks(snapshot, key)
-            },
+            |snapshot, key, _| self.create_links_commit_locks(snapshot, key),
         )
     }
 
@@ -2025,6 +2019,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         key: &StorageKeyArray<BUFFER_KEY_INLINE>,
     ) -> Result<(), Box<ConceptReadError>> {
+        debug_assert!(ThingEdgeHas::is_has(key));
         let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
         let object = Object::new(has.from());
         let attribute = Attribute::new(has.to());
@@ -2039,6 +2034,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         key: &StorageKeyArray<BUFFER_KEY_INLINE>,
     ) -> Result<(), Box<ConceptReadError>> {
+        debug_assert!(ThingEdgeLinks::is_links(key));
         let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
         let relation = Relation::new(role_player.relation());
         let player = Object::new(role_player.player());
