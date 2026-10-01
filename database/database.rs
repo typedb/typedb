@@ -108,7 +108,7 @@ pub struct Database<D> {
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
 
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
-    next_reservation_request_id: AtomicU64,
+    reservation_request_id_generator: AtomicU64,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
     _cleanup_worker: IntervalRunner,
@@ -174,7 +174,7 @@ impl<D> Database<D> {
     }
 
     fn next_reservation_request_id(&self) -> ReservationRequestId {
-        self.next_reservation_request_id.fetch_add(1, Ordering::Relaxed)
+        self.reservation_request_id_generator.fetch_add(1, Ordering::Relaxed)
     }
 
     fn await_reservation(
@@ -187,14 +187,16 @@ impl<D> Database<D> {
             Ok(()) => return Ok(()),
             Err(source) => source,
         };
+        // Dropped before locking: a concurrent fulfillment would otherwise block in `send` while
+        // holding the lock this thread is about to wait for.
         drop(receiver);
 
-        let mut exclusivity_requests = self
+        let mut guard = self
             .schema_write_transaction_exclusivity
             .lock()
             .expect("Expected exclusive access to withdraw a reservation request");
-        exclusivity_requests.2.retain(|request| request.id() != id);
-        Self::fulfill_reservation_requests(&mut exclusivity_requests);
+        guard.2.retain(|request| request.id() != id);
+        Self::fulfill_reservation_requests(&mut guard);
         Err(TransactionError::Timeout { source })
     }
 
@@ -398,7 +400,7 @@ impl Database<WALClient> {
             query_cache,
             _cleanup_queue: cleanup_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
-            next_reservation_request_id: AtomicU64::new(0),
+            reservation_request_id_generator: AtomicU64::new(0),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
             _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
@@ -539,7 +541,7 @@ impl Database<WALClient> {
             query_cache,
             _cleanup_queue: cleanup_queue,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
-            next_reservation_request_id: AtomicU64::new(0),
+            reservation_request_id_generator: AtomicU64::new(0),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
                 checkpoint_fn,
