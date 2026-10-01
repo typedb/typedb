@@ -33,8 +33,8 @@ use compiler::{
 };
 use encoding::value::label::Label;
 use executor::{
-    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow,
+    ExecutionInterrupt, batch::FixedBatch, error::ReadExecutionError, match_executor::MatchExecutor,
+    pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
 };
 use ir::{
     pattern::{Vertex, constraint::IsaKind},
@@ -153,7 +153,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -229,7 +229,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -319,7 +319,7 @@ fn traverse_isa_bounded_thing() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -397,7 +397,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -473,7 +473,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -563,7 +563,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -657,7 +657,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -736,7 +736,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -812,7 +812,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )

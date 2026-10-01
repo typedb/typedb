@@ -41,8 +41,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow,
+    ExecutionInterrupt, batch::FixedBatch, error::ReadExecutionError, match_executor::MatchExecutor,
+    pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
 };
 use ir::{
     pattern::constraint::IsaKind,
@@ -335,7 +335,7 @@ fn traverse_links_unbounded_sorted_from() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -429,7 +429,7 @@ fn traverse_links_unbounded_sorted_to() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -540,7 +540,7 @@ fn traverse_links_bounded_relation() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -668,7 +668,7 @@ fn traverse_links_bounded_relation_player() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -762,7 +762,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -857,7 +857,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -968,7 +968,7 @@ fn traverse_links_reverse_bounded_player() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -1096,7 +1096,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )

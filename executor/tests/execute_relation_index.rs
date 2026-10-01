@@ -38,8 +38,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow,
+    ExecutionInterrupt, batch::FixedBatch, error::ReadExecutionError, match_executor::MatchExecutor,
+    pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
 };
 use ir::{
     pattern::{
@@ -430,7 +430,7 @@ fn traverse_index_from_unbound() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -519,7 +519,7 @@ fn traverse_index_from_unbound() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -692,7 +692,7 @@ fn traverse_index_from_bound() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -861,7 +861,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
