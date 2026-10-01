@@ -363,17 +363,62 @@ fn relation_index_qualification_matches_uncached() {
             assert_eq!(qualifies, *expected, "uncached answer for {label}");
         }
     }
+
+    let parent_label = Label::build("inherits_parent", None);
+    let child_label = Label::build("inherits_child", None);
+    {
+        let type_manager = type_manager_no_cache();
+        let thing_manager = thing_manager(type_manager.clone());
+        let parent = type_manager.create_relation_type(&mut snapshot, &parent_label).unwrap();
+        let relates = parent
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "shared",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(5))),
+            )
+            .unwrap();
+        let child = type_manager.create_relation_type(&mut snapshot, &child_label).unwrap();
+        child.set_supertype(&mut snapshot, &type_manager, &thing_manager, parent).unwrap();
+        let child_relates = child
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "specialised",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        child_relates
+            .set_specialise(&mut snapshot, &type_manager, &thing_manager, relates, StorageCounters::DISABLED)
+            .unwrap();
+        assert!(!child.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    }
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     {
-        // With cache, committed: the first read fills the memo and the second must come from it.
+        // With cache, committed: these answers were filled eagerly when the cache was built, and
+        // repeated reads of them must be stable.
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
-        for (label, _, _, expected) in &cases {
+        let expectations =
+            cases.iter().map(|(label, _, _, expected)| (label, *expected)).chain([(&child_label, false)]);
+        for (label, expected) in expectations {
             let relation_type = type_manager.get_relation_type(&snapshot, label).unwrap().unwrap();
             for read in 0..2 {
                 let qualifies = relation_type.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap();
-                assert_eq!(qualifies, *expected, "cached answer for {label}, read {read}");
+                assert_eq!(qualifies, expected, "cached answer for {label}, read {read}");
             }
         }
     }

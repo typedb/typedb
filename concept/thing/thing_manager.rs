@@ -2006,16 +2006,16 @@ impl ThingManager {
     fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
         snapshot.visit_writes_in_range(
             &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
-            |snapshot, key, _| match ThingEdgeHas::is_has(key) {
-                true => self.create_has_commit_locks(snapshot, key),
-                false => Ok(()),
+            |snapshot, key, _| {
+                debug_assert!(ThingEdgeHas::is_has(key));
+                self.create_has_commit_locks(snapshot, key)
             },
         )?;
         snapshot.visit_writes_in_range(
             &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING),
-            |snapshot, key, _| match ThingEdgeLinks::is_links(key) {
-                true => self.create_links_commit_locks(snapshot, key),
-                false => Ok(()),
+            |snapshot, key, _| {
+                debug_assert!(ThingEdgeLinks::is_links(key));
+                self.create_links_commit_locks(snapshot, key)
             },
         )
     }

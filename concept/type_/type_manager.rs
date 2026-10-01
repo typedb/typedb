@@ -24,10 +24,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
-use resource::{
-    constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt},
-    profile::StorageCounters,
-};
+use resource::{constants::encoding::StructFieldIDUInt, profile::StorageCounters};
 use storage::{
     keyspace::KeyspaceSet,
     snapshot::{PreloadedRangesSnapshot, ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
@@ -801,30 +798,10 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_relation_type_qualifies_for_relation_index(relation_type, || {
-                self.compute_type_qualifies_for_relation_index(snapshot, relation_type)
-            })
-        } else {
-            self.compute_type_qualifies_for_relation_index(snapshot, relation_type)
+        match &self.type_cache {
+            Some(cache) => Ok(cache.get_relation_type_qualifies_for_relation_index(relation_type)),
+            None => TypeReader::get_relation_type_qualifies_for_relation_index(snapshot, relation_type),
         }
-    }
-
-    fn compute_type_qualifies_for_relation_index(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        let mut max_card = 0;
-        let relates = relation_type.get_relates(snapshot, self)?;
-        for relates in relates.iter() {
-            let card = relates.get_cardinality(snapshot, self)?;
-            match card.end() {
-                None => return Ok(false),
-                Some(end) => max_card += end,
-            }
-        }
-        Ok(max_card <= RELATION_INDEX_THRESHOLD)
     }
 
     pub(crate) fn get_entity_type_plays_declared<'this>(

@@ -24,7 +24,10 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use resource::{
-    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    constants::{
+        concept::RELATION_INDEX_THRESHOLD,
+        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    },
     profile::StorageCounters,
 };
 use storage::{
@@ -37,13 +40,13 @@ use crate::{
     type_::{
         Capability, Independent, KindAPI, Ordering, TypeAPI,
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationDistinct, AnnotationIndependent,
-            AnnotationKey, AnnotationUnique,
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
+            AnnotationIndependent, AnnotationKey, AnnotationUnique,
         },
         attribute_type::AttributeType,
         constraint::{
-            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint, get_owns_default_constraints,
-            get_plays_default_constraints, get_relates_default_constraints,
+            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint, get_cardinality_constraint,
+            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints,
         },
         entity_type::EntityType,
         object_type::ObjectType,
@@ -396,6 +399,37 @@ impl TypeReader {
         }
 
         Ok(object_types)
+    }
+
+    pub(crate) fn get_relation_type_qualifies_for_relation_index(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        let mut max_card = 0;
+        for relates in Self::get_capabilities::<Relates>(snapshot, relation_type, false)? {
+            match Self::get_relates_cardinality(snapshot, relates)?.end() {
+                None => return Ok(false),
+                Some(end) => max_card += end,
+            }
+        }
+        Ok(max_card <= RELATION_INDEX_THRESHOLD)
+    }
+
+    // TODO: Move down from relation_type and generalise
+    fn get_relates_cardinality(
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates,
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
+        let source = match Self::is_relates_implicit(snapshot, relates)? {
+            true => Self::get_role_type_relates_explicit(snapshot, relates.role())?,
+            false => relates,
+        };
+        let constraints = Self::get_capability_constraints(snapshot, source)?;
+        get_cardinality_constraint(source, constraints.iter())
+            .ok_or(ConceptReadError::InternalMissingCardinalityForNonSpecialisingCapability {})?
+            .description()
+            .unwrap_cardinality()
+            .map_err(|source| Box::new(ConceptReadError::Constraint { typedb_source: source }))
     }
 
     pub(crate) fn get_role_type_relates_explicit(
