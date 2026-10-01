@@ -17,11 +17,12 @@ use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
+        annotation::{AnnotationAbstract, AnnotationCardinality, AnnotationRange, AnnotationValues},
         attribute_type::AttributeTypeAnnotation,
         entity_type::EntityTypeAnnotation,
         object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
+        relates::RelatesAnnotation,
         type_manager::{TypeManager, type_cache::TypeCache},
     },
 };
@@ -311,6 +312,70 @@ fn role_usage() {
         let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type));
         debug_assert_eq!(plays.role(), role_type);
+    }
+}
+
+#[test]
+fn relation_index_qualification_matches_uncached() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    // The rule sums each role's cardinality end bound and qualifies when the sum is at most
+    // RELATION_INDEX_THRESHOLD, which is 5. The first two cases sit either side of that boundary so the
+    // comparison cannot be loosened or tightened unnoticed, `two_roles_over` only crosses it once the
+    // roles are summed rather than taken singly, and the last has no end bound to sum at all.
+    let cases: [(Label, AnnotationCardinality, &[&str], bool); 5] = [
+        (Label::build("at_threshold", None), AnnotationCardinality::new(0, Some(5)), &["only"], true),
+        (Label::build("just_over_threshold", None), AnnotationCardinality::new(0, Some(6)), &["only"], false),
+        (Label::build("two_roles_under", None), AnnotationCardinality::new(0, Some(2)), &["left", "right"], true),
+        (Label::build("two_roles_over", None), AnnotationCardinality::new(0, Some(3)), &["left", "right"], false),
+        (Label::build("unbounded", None), AnnotationCardinality::new(0, None), &["left", "right"], false),
+    ];
+
+    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
+    {
+        // Without cache, uncommitted: every answer is computed from the snapshot.
+        let type_manager = type_manager_no_cache();
+        let thing_manager = thing_manager(type_manager.clone());
+        for (label, cardinality, roles, expected) in &cases {
+            let relation_type = type_manager.create_relation_type(&mut snapshot, label).unwrap();
+            for role in *roles {
+                let relates = relation_type
+                    .create_relates(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        role,
+                        Ordering::Unordered,
+                        StorageCounters::DISABLED,
+                    )
+                    .unwrap();
+                relates
+                    .set_annotation(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        RelatesAnnotation::Cardinality(*cardinality),
+                    )
+                    .unwrap();
+            }
+            let qualifies = relation_type.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap();
+            assert_eq!(qualifies, *expected, "uncached answer for {label}");
+        }
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    {
+        // With cache, committed: the first read fills the memo and the second must come from it.
+        let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
+        let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
+        for (label, _, _, expected) in &cases {
+            let relation_type = type_manager.get_relation_type(&snapshot, label).unwrap().unwrap();
+            for read in 0..2 {
+                let qualifies = relation_type.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap();
+                assert_eq!(qualifies, *expected, "cached answer for {label}, read {read}");
+            }
+        }
     }
 }
 

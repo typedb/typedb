@@ -801,7 +801,20 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
-        // TODO: it would be good if this doesn't require recomputation
+        if let Some(cache) = &self.type_cache {
+            cache.get_relation_type_qualifies_for_relation_index(relation_type, || {
+                self.compute_type_qualifies_for_relation_index(snapshot, relation_type)
+            })
+        } else {
+            self.compute_type_qualifies_for_relation_index(snapshot, relation_type)
+        }
+    }
+
+    fn compute_type_qualifies_for_relation_index(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<bool, Box<ConceptReadError>> {
         let mut max_card = 0;
         let relates = relation_type.get_relates(snapshot, self)?;
         for relates in relates.iter() {

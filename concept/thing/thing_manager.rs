@@ -1999,43 +1999,63 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
     ) -> Result<CleanupIntervals, Box<ConceptReadError>> {
-        let mut cleanup_intervals = CleanupIntervals::new();
-
-        // TODO: Should not collect here (iterate_writes() already copies)
-        for (key, write) in snapshot.iterate_writes().collect_vec() {
-            self.create_commit_locks(snapshot, &key)?;
-
-            if let Write::Delete = write {
-                register_delete_in_cleanup_intervals(&mut cleanup_intervals, key);
-            }
-        }
-
-        Ok(cleanup_intervals)
+        self.create_commit_locks(snapshot)?;
+        Ok(Self::collect_cleanup_intervals(snapshot))
     }
 
-    fn create_commit_locks(
+    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
+        snapshot.visit_writes_in_range(
+            &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
+            |snapshot, key, _| match ThingEdgeHas::is_has(key) {
+                true => self.create_has_commit_locks(snapshot, key),
+                false => Ok(()),
+            },
+        )?;
+        snapshot.visit_writes_in_range(
+            &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+            |snapshot, key, _| match ThingEdgeLinks::is_links(key) {
+                true => self.create_links_commit_locks(snapshot, key),
+                false => Ok(()),
+            },
+        )
+    }
+
+    fn create_has_commit_locks(
         &self,
         snapshot: &mut impl WritableSnapshot,
         key: &StorageKeyArray<BUFFER_KEY_INLINE>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if ThingEdgeHas::is_has(key) {
-            let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
-            let object = Object::new(has.from());
-            let attribute = Attribute::new(has.to());
-            let attribute_type = attribute.type_();
+        let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
+        let object = Object::new(has.from());
+        let attribute = Attribute::new(has.to());
+        let attribute_type = attribute.type_();
 
-            self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
-            self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
-        } else if ThingEdgeLinks::is_links(key) {
-            let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
-            let relation = Relation::new(role_player.relation());
-            let player = Object::new(role_player.player());
-            let role_type = RoleType::build_from_type_id(role_player.role_id());
+        self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
+        self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)
+    }
 
-            self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
-            self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
+    fn create_links_commit_locks(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        key: &StorageKeyArray<BUFFER_KEY_INLINE>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
+        let relation = Relation::new(role_player.relation());
+        let player = Object::new(role_player.player());
+        let role_type = RoleType::build_from_type_id(role_player.role_id());
+
+        self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
+        self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)
+    }
+
+    fn collect_cleanup_intervals(snapshot: &impl ReadableSnapshot) -> CleanupIntervals {
+        let mut cleanup_intervals = CleanupIntervals::new();
+        for (key, write) in snapshot.iterate_writes() {
+            if matches!(write, Write::Delete) {
+                register_delete_in_cleanup_intervals(&mut cleanup_intervals, StorageKeyArray::from(key));
+            }
         }
-        Ok(())
+        cleanup_intervals
     }
 
     fn add_exclusive_lock_for_unique_constraint(

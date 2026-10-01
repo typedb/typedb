@@ -396,6 +396,19 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).related_role_type_constraints
     }
 
+    pub(crate) fn get_relation_type_qualifies_for_relation_index<E>(
+        &self,
+        relation_type: RelationType,
+        compute: impl FnOnce() -> Result<bool, E>,
+    ) -> Result<bool, E> {
+        let cache = &RelationType::get_cache(self, relation_type).qualifies_for_relation_index;
+        if let Some(&qualifies) = cache.get() {
+            return Ok(qualifies);
+        }
+        let qualifies = compute()?;
+        Ok(*cache.get_or_init(|| qualifies))
+    }
+
     pub(crate) fn get_relation_type_independence(&self, relation_type: RelationType) -> Option<Independent> {
         RelationType::get_cache(self, relation_type).independence
     }

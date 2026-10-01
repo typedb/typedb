@@ -10,7 +10,7 @@ use bytes::byte_array::ByteArray;
 use resource::profile::StorageCounters;
 use storage::{
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyReference},
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
@@ -91,9 +91,7 @@ impl ReadableSnapshot for MockSnapshot {
         None
     }
 
-    fn iterate_writes(
-        &self,
-    ) -> impl Iterator<Item = (StorageKeyArray<{ resource::constants::snapshot::BUFFER_KEY_INLINE }>, Write)> + '_ {
+    fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
         empty()
     }
 

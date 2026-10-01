@@ -23,7 +23,7 @@ use serde::{
 
 use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::StorageKeyArray,
+    key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{
         lock::LockType,
@@ -83,11 +83,14 @@ impl OperationsBuffer {
         self.locks.is_empty()
     }
 
-    pub fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
+    pub fn iterate_writes<'this>(
+        &'this self,
+    ) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
         self.write_buffers().flat_map(|buffer| {
-            buffer.iterate_range(KeyRange::new_unbounded(RangeStart::Inclusive(Bytes::Array(ByteArray::<
-                BUFFER_KEY_INLINE,
-            >::empty()))))
+            buffer
+                .writes()
+                .iter()
+                .map(move |(key, write)| (StorageKeyReference::new_raw(buffer.keyspace_id, key), write))
         })
     }
 

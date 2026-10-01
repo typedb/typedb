@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
 
 use bytes::Bytes;
@@ -54,6 +54,7 @@ pub(crate) struct RelationTypeCache {
     pub(super) relates: HashSet<Relates>,
     pub(super) relates_with_specialised: HashSet<Relates>,
     pub(super) related_role_type_constraints: HashMap<RoleType, HashSet<CapabilityConstraint<Relates>>>,
+    pub(super) qualifies_for_relation_index: OnceLock<bool>,
     pub(super) independence: Option<Independent>,
     pub(super) object_cache: ObjectCache,
 }
@@ -180,6 +181,7 @@ impl RelationTypeCache {
                 relates,
                 relates_with_specialised,
                 related_role_type_constraints,
+                qualifies_for_relation_index: OnceLock::new(),
                 independence: independency,
                 object_cache,
             };

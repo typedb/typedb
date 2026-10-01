@@ -23,10 +23,7 @@ use encoding::{
 };
 use error::typedb_error;
 use resource::{
-    constants::{
-        database::{STATISTICS_DURABLE_WRITE_CHANGE_COUNT, STATISTICS_DURABLE_WRITE_SEQ_NUMBERS},
-        snapshot::BUFFER_KEY_INLINE,
-    },
+    constants::database::{STATISTICS_DURABLE_WRITE_CHANGE_COUNT, STATISTICS_DURABLE_WRITE_SEQ_NUMBERS},
     profile::StorageCounters,
 };
 use serde::{Deserialize, Serialize};
@@ -34,7 +31,7 @@ use storage::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     iterator::MVCCReadError,
-    key_value::StorageKeyArray,
+    key_value::StorageKeyReference,
     keyspace::IteratorPool,
     record::CommitType,
     recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
@@ -245,7 +242,7 @@ impl Statistics {
 
         for (key, write) in writes.operations.iterate_writes() {
             let delta =
-                write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
+                write_to_delta(key, write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
             match DecodableKey::try_decode(key.bytes()) {
                 Some(DecodableKey::EntityVertex(entity_vertex)) => {
                     let type_ = Entity::new(entity_vertex).type_();
@@ -568,7 +565,7 @@ impl Statistics {
 }
 
 fn write_to_delta<D>(
-    write_key: &StorageKeyArray<{ BUFFER_KEY_INLINE }>,
+    write_key: StorageKeyReference<'_>,
     write: &Write,
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,
