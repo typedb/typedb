@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
+use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, sync::Arc, vec};
 
 use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::thing::IsaReverseInstruction};
@@ -17,7 +17,7 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
-use encoding::value::value::Value;
+use encoding::value::value::ValueRestriction;
 use ir::pattern::constraint::{Isa, IsaKind};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -96,7 +96,7 @@ impl IsaReverseExecutor {
             Ok(false) => None,
         });
 
-        let range = self.checker.value_range_for(
+        let value_restriction = self.checker.value_restriction_for(
             context,
             Some(row.as_reference()),
             self.isa.thing().as_variable().unwrap(),
@@ -113,7 +113,7 @@ impl IsaReverseExecutor {
                     self.type_to_instance_types.keys().copied(),
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
-                    &range,
+                    &value_restriction,
                     storage_counters,
                 )?;
                 Ok(TupleIterator::IsaReverseUnbounded(SortedTupleIterator::new(
@@ -131,7 +131,7 @@ impl IsaReverseExecutor {
                     iter::once(type_),
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
-                    &range,
+                    &value_restriction,
                     storage_counters,
                 )?;
                 Ok(TupleIterator::IsaReverseBounded(SortedTupleIterator::new(
@@ -156,7 +156,7 @@ pub(super) fn instances_of_types_chained(
     types: impl Iterator<Item = Type>,
     type_to_instance_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
-    range: &(Bound<Value<'_>>, Bound<Value<'_>>),
+    value_restriction: &ValueRestriction<'_>,
     storage_counters: StorageCounters,
 ) -> Result<MultipleTypeIsaReverseIterator, Box<ConceptReadError>> {
     let (attribute_types, object_types) =
@@ -197,7 +197,7 @@ pub(super) fn instances_of_types_chained(
                     let iter = thing_manager.get_attributes_in_range(
                         snapshot,
                         subtype.as_attribute_type(),
-                        range,
+                        value_restriction,
                         counters.clone(),
                     )?;
                     Ok::<_, Box<_>>(IsaReverseAttributeIterator::new(iter, type_))

@@ -215,7 +215,7 @@ impl ValueTypeCategory {
         category
     }
 
-    pub fn comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
+    pub fn equality_comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
         match category {
             ValueTypeCategory::Boolean => &[ValueTypeCategory::Boolean],
             ValueTypeCategory::Integer => {
@@ -233,6 +233,14 @@ impl ValueTypeCategory {
             ValueTypeCategory::String => &[ValueTypeCategory::String],
             ValueTypeCategory::Struct => &[ValueTypeCategory::Struct],
             ValueTypeCategory::Date => &[ValueTypeCategory::Date],
+        }
+    }
+
+    pub fn orderable_comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
+        match category {
+            // Durations and structs have no ordering
+            ValueTypeCategory::Duration | ValueTypeCategory::Struct => &[],
+            _ => Self::equality_comparable_categories(category),
         }
     }
 

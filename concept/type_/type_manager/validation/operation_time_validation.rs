@@ -11,7 +11,7 @@ use encoding::{
         definition::definition_key::DefinitionKey,
         type_::{CapabilityKind, Kind},
     },
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, value::ValueRestriction, value_type::ValueType},
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
@@ -2790,7 +2790,7 @@ impl OperationTimeValidation {
                 snapshot,
                 thing_manager,
                 attribute_type,
-                &..,
+                &ValueRestriction::new_none(),
                 storage_counters.clone(),
             )?;
 

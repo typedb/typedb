@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
+use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, sync::Arc, vec};
 
 use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::thing::IsaInstruction};
@@ -18,7 +18,7 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
-use encoding::value::value::Value;
+use encoding::value::value::ValueRestriction;
 use ir::pattern::{
     Vertex,
     constraint::{Isa, IsaKind},
@@ -126,17 +126,17 @@ impl IsaExecutor {
         let thing_manager = context.thing_manager();
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let instances_range = if let Vertex::Variable(thing_variable) = self.isa.thing() {
-                    self.checker.value_range_for(context, Some(row), *thing_variable, storage_counters.clone())?
+                let value_restriction = if let Vertex::Variable(thing_variable) = self.isa.thing() {
+                    self.checker.value_restriction_for(context, Some(row), *thing_variable, storage_counters.clone())?
                 } else {
-                    (Bound::Unbounded, Bound::Unbounded)
+                    ValueRestriction::None
                 };
                 let thing_iter = instances_of_all_types_chained(
                     snapshot,
                     thing_manager,
                     self.instance_type_to_types.as_ref(),
                     self.isa.isa_kind(),
-                    instances_range,
+                    value_restriction,
                     storage_counters,
                 )?;
                 let as_tuples = IsaUnboundedSortedThing { inner: thing_iter, filter_map: filter_for_row };
@@ -473,7 +473,7 @@ pub(super) fn instances_of_all_types_chained(
     thing_manager: &ThingManager,
     instance_types_to_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
-    instance_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
+    value_restriction: ValueRestriction<'_>,
     storage_counters: StorageCounters,
 ) -> Result<MultipleTypeIsaIterator, Box<ConceptReadError>> {
     // TODO: this method contains a lot of heap allocations - we clone the Vec<Type> each time!
@@ -507,7 +507,7 @@ pub(super) fn instances_of_all_types_chained(
                 .get_attributes_in_range(
                     snapshot,
                     type_.as_attribute_type(),
-                    &instance_values_range,
+                    &value_restriction,
                     storage_counters.clone(),
                 )
                 .map(|iterator| IsaAttributeIterator::new(iterator, type_, returned_types))

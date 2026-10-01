@@ -65,22 +65,39 @@ impl AttributeVertex {
         Self { type_id, attribute_id }
     }
 
-    pub fn build_or_prefix_for_value(
+    pub fn build_or_prefix_for_value_equality(
         type_id: TypeID,
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
-        order_required: bool,
+    ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
+        Self::build_or_prefix_for_value(type_id, value, large_value_hasher, false)
+    }
+
+    pub fn build_or_prefix_for_value_comparison(
+        type_id: TypeID,
+        value: Value<'_>,
+        large_value_hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
+        Self::build_or_prefix_for_value(type_id, value, large_value_hasher, true)
+    }
+
+    fn build_or_prefix_for_value(
+        type_id: TypeID,
+        value: Value<'_>,
+        large_value_hasher: &impl Fn(&[u8]) -> u64,
+        for_comparison: bool,
     ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
         // preallocate upper bound length and then truncate later
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         let keyspace = Self::keyspace_for_category(value.value_type().category());
+        // An exact value needs no ordering, so it can use the hashed (or complete) ID; comparisons need the sortable prefix
         let (id_length, is_complete) = AttributeID::write_deterministic_value_or_prefix(
             &mut bytes[Self::RANGE_TYPE_ID.end..],
             value,
             large_value_hasher,
-            order_required,
+            for_comparison,
         );
         bytes.truncate(Self::RANGE_TYPE_ID.end + id_length);
         if is_complete {
@@ -297,7 +314,7 @@ impl AttributeID {
         bytes: &mut [u8],
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
-        order_required: bool,
+        for_comparison: bool,
     ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
         match value.value_type().category() {
@@ -310,7 +327,7 @@ impl AttributeID {
             ValueTypeCategory::DateTimeTZ => (DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes), true),
             ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
             ValueTypeCategory::String => {
-                if order_required {
+                if for_comparison {
                     (StringAttributeID::write_sortable_prefix(value.encode_string::<64>(), bytes), false)
                 } else {
                     let string = value.encode_string::<64>();

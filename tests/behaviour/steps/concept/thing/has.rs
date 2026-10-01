@@ -14,6 +14,7 @@ use concept::{
     },
     type_::{OwnerAPI, attribute_type::AttributeType},
 };
+use encoding::value::value::ValueRestriction;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
@@ -291,7 +292,7 @@ async fn object_get_has_type(
                 tx.snapshot.as_ref(),
                 &tx.thing_manager,
                 attribute_type,
-                &..,
+                &ValueRestriction::new_none(),
                 StorageCounters::DISABLED,
             )
             .unwrap()
@@ -332,7 +333,7 @@ async fn object_get_has_with_annotations(
                         tx.snapshot.as_ref(),
                         &tx.thing_manager,
                         attribute_type,
-                        &..,
+                        &ValueRestriction::new_none(),
                         StorageCounters::DISABLED,
                     )
                     .unwrap()

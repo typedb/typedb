@@ -18,7 +18,7 @@ use concept::{
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
     type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
-use encoding::value::value::Value;
+use encoding::value::value::ValueRestriction;
 use itertools::Itertools;
 use lending_iterator::kmerge::KMergeBy;
 use primitive::Bounds;
@@ -136,7 +136,7 @@ impl HasReverseExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         if self.iterate_mode.is_unbound_inverted() && self.attribute_cache.get().is_none() {
             // one-off initialisation of the cache of constants as we require the Parameters
-            let value_range = self.checker.value_range_for(
+            let value_range = self.checker.value_restriction_for(
                 context,
                 None,
                 self.has.attribute().as_variable().unwrap(),
@@ -178,7 +178,7 @@ impl HasReverseExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let range = self.checker.value_range_for(
+                let value_restriction = self.checker.value_restriction_for(
                     context,
                     Some(row.as_reference()),
                     self.has.attribute().as_variable().unwrap(),
@@ -188,7 +188,7 @@ impl HasReverseExecutor {
                     snapshot,
                     thing_manager,
                     &self.attribute_owner_types_range,
-                    range,
+                    &value_restriction,
                     filter_for_row,
                     storage_counters,
                 )?;
@@ -292,7 +292,7 @@ impl HasReverseExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type_owner_range: &BTreeMap<AttributeType, (Bound<ObjectType>, Bound<ObjectType>)>,
-        attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
+        value_restriction: &ValueRestriction<'_>,
         filter_fn: Arc<HasFilterMapFn>,
         storage_counters: StorageCounters,
     ) -> Result<Vec<HasTupleIterator<HasReverseIterator>>, Box<ConceptReadError>> {
@@ -309,7 +309,7 @@ impl HasReverseExecutor {
                     .get_has_reverse_in_range(
                         snapshot,
                         *attribute_type,
-                        &attribute_values_range,
+                        value_restriction,
                         owner_types,
                         storage_counters.clone(),
                     )
@@ -321,7 +321,7 @@ impl HasReverseExecutor {
                             tuple_attribute_owner_to_has_reverse,
                             FixedHasBounds::NoneWithLowerBounds(
                                 *attribute_type,
-                                attribute_values_range.0.clone().map(|v| v.into_owned()),
+                                value_restriction.lower_bound().map(|value| value.clone().into_owned()),
                             ),
                         )
                     })

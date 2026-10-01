@@ -185,7 +185,7 @@ impl HasExecutor {
             Ok(false) => None,
             Err(_) => Some(item),
         });
-        let value_range = self.checker.value_range_for(
+        let value_restriction = self.checker.value_restriction_for(
             context,
             Some(row.as_reference()),
             self.has.attribute().as_variable().unwrap(),
@@ -216,7 +216,7 @@ impl HasExecutor {
                     tuple_owner_attribute_to_has_canonical,
                     FixedHasBounds::NoneWithLowerBounds(
                         attribute_type_lower_bound_inclusive,
-                        value_range.0.clone().map(|v| v.into_owned()),
+                        value_restriction.lower_bound().map(|value| value.clone().into_owned()),
                     ),
                 );
                 Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
@@ -235,7 +235,7 @@ impl HasExecutor {
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.attribute_type_range,
                         &self.ordered_value_type_categories,
-                        &value_range,
+                        &value_restriction,
                         storage_counters,
                     )?;
                     let as_tuples = HasTupleIterator::new(
@@ -261,7 +261,7 @@ impl HasExecutor {
                             thing_manager,
                             &self.attribute_type_range,
                             &self.ordered_value_type_categories,
-                            &value_range,
+                            &value_restriction,
                             storage_counters.clone(),
                         )?;
                         let filter = filter_for_row.clone();
@@ -297,7 +297,7 @@ impl HasExecutor {
                             thing_manager,
                             &self.attribute_type_range,
                             &self.ordered_value_type_categories,
-                            &value_range,
+                            &value_restriction,
                             storage_counters,
                         )?,
                     VariableValue::Thing(Thing::Relation(relation)) => relation
@@ -306,7 +306,7 @@ impl HasExecutor {
                             thing_manager,
                             &self.attribute_type_range,
                             &self.ordered_value_type_categories,
-                            &value_range,
+                            &value_restriction,
                             storage_counters,
                         )?,
                     _ => unreachable!("Has owner must be an entity or relation."),

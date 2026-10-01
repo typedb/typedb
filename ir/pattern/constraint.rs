@@ -2408,6 +2408,35 @@ pub enum Comparator {
 }
 
 impl Comparator {
+    pub fn reverse(&self) -> Option<Comparator> {
+        match self {
+            Comparator::Equal => Some(Comparator::Equal),
+            Comparator::NotEqual => Some(Comparator::NotEqual),
+            Comparator::Less => Some(Comparator::Greater),
+            Comparator::Greater => Some(Comparator::Less),
+            Comparator::LessOrEqual => Some(Comparator::GreaterOrEqual),
+            Comparator::GreaterOrEqual => Some(Comparator::LessOrEqual),
+            Comparator::Like | Comparator::Contains => None,
+        }
+    }
+
+    pub fn comparable_categories(
+        &self,
+        category: encoding::value::value_type::ValueTypeCategory,
+    ) -> &'static [encoding::value::value_type::ValueTypeCategory] {
+        use encoding::value::value_type::ValueTypeCategory;
+        match self {
+            Comparator::Equal | Comparator::NotEqual => ValueTypeCategory::equality_comparable_categories(category),
+            Comparator::Less | Comparator::Greater | Comparator::LessOrEqual | Comparator::GreaterOrEqual => {
+                ValueTypeCategory::orderable_comparable_categories(category)
+            }
+            Comparator::Like | Comparator::Contains => match category {
+                ValueTypeCategory::String => &[ValueTypeCategory::String],
+                _ => &[],
+            },
+        }
+    }
+
     pub fn name(&self) -> &str {
         match self {
             Comparator::Equal => typeql::token::Comparator::Eq.as_str(),

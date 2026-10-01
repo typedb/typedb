@@ -19,7 +19,11 @@ use encoding::{
         vertex_object::ObjectVertex,
     },
     layout::prefix::Prefix,
-    value::{decode_value_u64, value::Value, value_type::ValueTypeCategory},
+    value::{
+        decode_value_u64,
+        value::{Value, ValueRestriction},
+        value_type::ValueTypeCategory,
+    },
 };
 use lending_iterator::higher_order::Hkt;
 use resource::{
@@ -184,12 +188,12 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         self.get_has_types_range_unordered(snapshot, thing_manager, storage_counters)
     }
 
-    fn get_has_type_unordered<'a>(
+    fn get_has_type_unordered(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
-        value_range: &'a impl RangeBounds<Value<'a>>,
+        value_restriction: &ValueRestriction<'_>,
         storage_counters: StorageCounters,
     ) -> Result<
         Map<
@@ -202,7 +206,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             snapshot,
             self,
             attribute_type,
-            value_range,
+            value_restriction,
             storage_counters,
         )
     }
@@ -226,13 +230,13 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.owner_get_has_unordered_all(snapshot, self, storage_counters)
     }
 
-    fn get_has_types_range_unordered_in_value_types<'a>(
+    fn get_has_types_range_unordered_in_value_types(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type_range: &impl RangeBounds<AttributeType>,
         ordered_value_categories: &[ValueTypeCategory],
-        value_range: &'a impl RangeBounds<Value<'a>>,
+        value_restriction: &ValueRestriction<'_>,
         storage_counters: StorageCounters,
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         thing_manager.owner_get_has_unordered_in_value_type(
@@ -240,7 +244,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             self,
             attribute_type_range,
             ordered_value_categories,
-            value_range,
+            value_restriction,
             storage_counters,
         )
     }

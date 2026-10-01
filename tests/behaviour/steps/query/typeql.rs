@@ -22,7 +22,7 @@ use encoding::{
         },
         type_::vertex::TypeID,
     },
-    value::{ValueEncodable, label::Label, value_type::ValueType},
+    value::{ValueEncodable, label::Label, value::ValueRestriction, value_type::ValueType},
 };
 use executor::{
     ExecutionInterrupt,
@@ -452,12 +452,24 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
         let mut attr_iter: Box<dyn Iterator<Item = Result<(Attribute, u64), Box<ConceptReadError>>>> = match thing {
             Thing::Entity(entity) => Box::new(
                 entity
-                    .get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type, &.., StorageCounters::DISABLED)
+                    .get_has_type_unordered(
+                        &*tx.snapshot,
+                        &tx.thing_manager,
+                        key_type,
+                        &ValueRestriction::new_none(),
+                        StorageCounters::DISABLED,
+                    )
                     .unwrap(),
             ),
             Thing::Relation(relation) => Box::new(
                 relation
-                    .get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type, &.., StorageCounters::DISABLED)
+                    .get_has_type_unordered(
+                        &*tx.snapshot,
+                        &tx.thing_manager,
+                        key_type,
+                        &ValueRestriction::new_none(),
+                        StorageCounters::DISABLED,
+                    )
                     .unwrap(),
             ),
             Thing::Attribute(_) => return false,

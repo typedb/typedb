@@ -136,6 +136,13 @@ typedb_error!(
             actual: ExpressionValueType,
             source_span: Option<Span>,
         ),
+        UnorderedValueTypeForSortVariable(
+            20,
+            "The sort variable '{variable}' uses values of value-type '{value_type}', which have no ordering.",
+            variable: String,
+            value_type: ValueTypeCategory,
+            source_span: Option<Span>,
+        ),
         Internal(100, "Internal error: {message}", message: String),
     }
 );
