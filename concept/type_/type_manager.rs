@@ -1109,13 +1109,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relates: Relates,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        match relates.is_implicit(snapshot, self)? {
-            true => {
-                debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates)?.is_none());
-                self.get_capability_cardinality(snapshot, relates.role().get_relates_explicit(snapshot, self)?)
-            }
-            false => self.get_capability_cardinality(snapshot, relates),
-        }
+        self.get_capability_cardinality(snapshot, relates.role().get_relates_explicit(snapshot, self)?)
     }
 
     fn get_capability_cardinality_constraint<CAP: Capability>(

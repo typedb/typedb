@@ -404,6 +404,14 @@ fn relation_index_qualification_matches_uncached() {
             .set_specialise(&mut snapshot, &type_manager, &thing_manager, relates, StorageCounters::DISABLED)
             .unwrap();
         assert!(!child.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+        let implicit = child
+            .get_relates(&snapshot, &type_manager)
+            .unwrap()
+            .iter()
+            .find(|relates| relates.is_implicit(&snapshot, &type_manager).unwrap())
+            .copied()
+            .unwrap();
+        assert_eq!(implicit.get_cardinality(&snapshot, &type_manager).unwrap(), AnnotationCardinality::new(0, Some(5)));
     }
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 

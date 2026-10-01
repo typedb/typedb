@@ -407,7 +407,8 @@ impl TypeReader {
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut max_card = 0;
         for relates in Self::get_capabilities::<Relates>(snapshot, relation_type, false)? {
-            match Self::get_relates_cardinality(snapshot, relates)?.end() {
+            let cardinality_source = Self::get_role_type_relates_explicit(snapshot, relates.role())?;
+            match Self::get_capability_cardinality(snapshot, cardinality_source)?.end() {
                 None => return Ok(false),
                 Some(end) => max_card += end,
             }
@@ -415,17 +416,12 @@ impl TypeReader {
         Ok(max_card <= RELATION_INDEX_THRESHOLD)
     }
 
-    // TODO: Move down from relation_type and generalise
-    fn get_relates_cardinality(
+    pub(crate) fn get_capability_cardinality<CAP: Capability>(
         snapshot: &impl ReadableSnapshot,
-        relates: Relates,
+        capability: CAP,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        let source = match Self::is_relates_implicit(snapshot, relates)? {
-            true => Self::get_role_type_relates_explicit(snapshot, relates.role())?,
-            false => relates,
-        };
-        let constraints = Self::get_capability_constraints(snapshot, source)?;
-        get_cardinality_constraint(source, constraints.iter())
+        let constraints = Self::get_capability_constraints(snapshot, capability)?;
+        get_cardinality_constraint(capability, constraints.iter())
             .ok_or(ConceptReadError::InternalMissingCardinalityForNonSpecialisingCapability {})?
             .description()
             .unwrap_cardinality()
