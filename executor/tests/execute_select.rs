@@ -35,8 +35,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow,
+    ExecutionInterrupt, batch::FixedBatch, error::ReadExecutionError, match_executor::MatchExecutor,
+    pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
 };
 use ir::{
     pattern::constraint::IsaKind,
@@ -251,7 +251,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -344,7 +344,7 @@ fn unselected_named_vars_counted() {
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -457,7 +457,7 @@ fn cartesian_named_counted_checked() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )

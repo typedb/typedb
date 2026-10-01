@@ -24,7 +24,8 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    ExecutionInterrupt, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt, batch::FixedBatch, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -154,7 +155,7 @@ fn test_has_planning_traversal() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -253,7 +254,7 @@ fn test_expression_planning_traversal() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -340,7 +341,7 @@ fn test_links_planning_traversal() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -434,7 +435,7 @@ fn test_links_intersection() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -519,7 +520,7 @@ fn test_negation_planning_traversal() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -626,7 +627,7 @@ fn test_forall_planning_traversal() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -718,7 +719,7 @@ fn test_named_var_select() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -810,7 +811,7 @@ fn test_disjunction_planning_traversal() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -906,7 +907,7 @@ fn test_disjunction_planning_nested_negations() {
         &conjunction_executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
@@ -965,7 +966,7 @@ fn test_mismatched_input_types() {
             &conjunction_executable,
             &snapshot,
             &thing_manager,
-            MaybeOwnedRow::empty(),
+            FixedBatch::from(MaybeOwnedRow::empty()),
             Arc::new(ExecutableFunctionRegistry::empty()),
             &QueryProfile::new(false),
         )
@@ -1000,7 +1001,7 @@ fn test_mismatched_input_types() {
             &conjunction_executable,
             &snapshot,
             &thing_manager,
-            MaybeOwnedRow::empty(),
+            FixedBatch::from(MaybeOwnedRow::empty()),
             Arc::new(ExecutableFunctionRegistry::empty()),
             &QueryProfile::new(false),
         )
