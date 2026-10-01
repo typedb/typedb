@@ -23,6 +23,7 @@ pub struct TransactionOptions {
     pub parallel: bool,
     pub schema_lock_acquire_timeout_millis: u64,
     pub transaction_timeout_millis: u64,
+    pub tmp_enable_profiling: Option<bool>,
 }
 
 impl Default for TransactionOptions {
@@ -31,6 +32,7 @@ impl Default for TransactionOptions {
             parallel: DEFAULT_TRANSACTION_PARALLEL,
             schema_lock_acquire_timeout_millis: DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
             transaction_timeout_millis: DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
+            tmp_enable_profiling: None,
         }
     }
 }
