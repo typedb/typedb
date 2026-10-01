@@ -21,14 +21,10 @@ use crate::{
     run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, SERIAL_FEW_LARGE, SERIAL_MANY_MEDIUM},
 };
 
-const RELATION_SCHEMA: &str = r#"
-    define
-        relation r1, relates e1, relates e2;
-        entity e1, plays r1:e1;
-        entity e2, plays r1:e2;
-    "#;
-
 const N_ENTITIES: usize = 100_000;
+
+const STANDARD_RUNS: [RunDescriptor; 4] =
+    [SERIAL_MANY_MEDIUM, SERIAL_FEW_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_LARGE];
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     run_by_insert(runner);
@@ -37,28 +33,35 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
 }
 
 pub fn run_by_concept(runner: &mut impl BenchmarkRunner) {
-    let mut by_concept = runner.new_group("relations_by_concept");
-    // let query_name = "relations_by_concept";
-    // let workloads = workloads! {
-    //     ()
-    // };
-    by_concept.run_benchmark(serial_relations_by_concept_many_medium());
-    by_concept.run_benchmark(serial_relations_by_concept_few_large());
-    by_concept.run_benchmark(parallel_relations_by_concept_many_medium());
-    by_concept.run_benchmark(parallel_relations_by_concept_many_large());
+    let mut group = runner.new_group("relations_by_concept");
+    for run_descriptor in STANDARD_RUNS {
+        group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_concept(), run_descriptor));
+    }
 }
 
 pub fn run_by_id(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_id");
-
-    group.run_benchmark(serial_relations_by_short_string_id_few_large());
-    group.run_benchmark(serial_relations_by_long_string_id_few_large());
-    group.run_benchmark(serial_relations_by_integer_id_few_large());
+    for run_descriptor in STANDARD_RUNS {
+        group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
+            relation_by_id::<IntegerIDMaker>("integer"),
+            run_descriptor.clone(),
+        ));
+        group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
+            relation_by_id::<ShortStringIDMaker>("short_string"),
+            run_descriptor.clone(),
+        ));
+        group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
+            relation_by_id::<LongStringIDMaker>("long_string"),
+            run_descriptor.clone(),
+        ));
+    }
 }
 
 pub fn run_by_insert(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_insert");
-    group.run_benchmark(serial_relations_by_insert_few_large());
+    for run_descriptor in STANDARD_RUNS {
+        group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_insert(), run_descriptor));
+    }
 }
 
 // Helpers
@@ -118,6 +121,16 @@ fn preload_entities_with_id<MakeID: IDMaker>() -> PreloadDataFn {
 }
 
 // Workload definitions
+fn parametrised_workload<MakeID: IDMaker>(
+    query_descriptor: QueryDescriptor,
+    run_descriptor: RunDescriptor,
+) -> TypeDBQueryWorkloadBenchmark {
+    let name = run_configs::standardised_name(&query_descriptor, &run_descriptor);
+    let schema = MakeID::schema();
+    let preload_data_fn = Some(preload_entities_with_id::<MakeID>());
+    TypeDBQueryWorkloadBenchmark::new(name, schema, preload_data_fn, query_descriptor, run_descriptor)
+}
+
 fn relation_by_concept() -> QueryDescriptor {
     let name = "relations_by_concept".to_owned();
     let query = r#"
@@ -152,84 +165,6 @@ fn relation_by_id<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
     );
     let variables = vec!["id1".to_owned(), "id2".to_owned()];
     QueryDescriptor { name, query, variables, produce_row: Some(produce_row_by_id::<MakeID>) }
-}
-
-fn parametrised_workload<MakeID: IDMaker>(
-    suggested_name: &'static str,
-    query_descriptor: QueryDescriptor,
-    run_descriptor: RunDescriptor,
-) -> TypeDBQueryWorkloadBenchmark {
-    let name = run_configs::standardised_name(&query_descriptor, &run_descriptor);
-    assert_eq!(suggested_name, name);
-    let schema = MakeID::schema();
-    let preload_data_fn = Some(preload_entities_with_id::<MakeID>());
-    TypeDBQueryWorkloadBenchmark::new(name, schema, preload_data_fn, query_descriptor, run_descriptor)
-}
-
-fn parametrised_relation_by_concept(name: &'static str, run_descriptor: RunDescriptor) -> TypeDBQueryWorkloadBenchmark {
-    parametrised_workload::<IntegerIDMaker>(name, relation_by_concept(), run_descriptor)
-}
-
-fn parametrised_binary_relation_by_insert(
-    name: &'static str,
-    run_descriptor: RunDescriptor,
-) -> TypeDBQueryWorkloadBenchmark {
-    parametrised_workload::<IntegerIDMaker>(name, relation_by_insert(), run_descriptor)
-}
-
-fn parametrised_binary_relation_by_id<MakeID: IDMaker>(
-    name: &'static str,
-    id_name: &str,
-    run_descriptor: RunDescriptor,
-) -> TypeDBQueryWorkloadBenchmark {
-    parametrised_workload::<MakeID>(name, relation_by_id::<MakeID>(id_name), run_descriptor)
-}
-
-// Actual workloads
-// by_insert
-fn serial_relations_by_insert_few_large() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_binary_relation_by_insert("serial_relations_by_insert_few_large", SERIAL_FEW_LARGE)
-}
-
-// by_concept
-fn serial_relations_by_concept_many_medium() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_relation_by_concept("serial_relations_by_concept_many_medium", SERIAL_MANY_MEDIUM)
-}
-
-fn serial_relations_by_concept_few_large() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_relation_by_concept("serial_relations_by_concept_few_large", SERIAL_FEW_LARGE)
-}
-
-fn parallel_relations_by_concept_many_medium() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_relation_by_concept("parallel_relations_by_concept_many_medium", PARALLEL_MANY_MEDIUM)
-}
-
-fn parallel_relations_by_concept_many_large() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_relation_by_concept("parallel_relations_by_concept_many_large", PARALLEL_MANY_LARGE)
-}
-
-fn serial_relations_by_short_string_id_few_large() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_binary_relation_by_id::<LongStringIDMaker>(
-        "serial_relations_by_short_string_id_few_large",
-        "short_string_id",
-        SERIAL_FEW_LARGE,
-    )
-}
-
-fn serial_relations_by_long_string_id_few_large() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_binary_relation_by_id::<LongStringIDMaker>(
-        "serial_relations_by_long_string_id_few_large",
-        "long_string_id",
-        SERIAL_FEW_LARGE,
-    )
-}
-
-fn serial_relations_by_integer_id_few_large() -> TypeDBQueryWorkloadBenchmark {
-    parametrised_binary_relation_by_id::<IntegerIDMaker>(
-        "serial_relations_by_integer_id_few_large",
-        "integer_id",
-        SERIAL_FEW_LARGE,
-    )
 }
 
 struct LongStringIDMaker {}
