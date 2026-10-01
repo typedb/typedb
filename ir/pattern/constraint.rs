@@ -2428,7 +2428,7 @@ impl Comparator {
         match self {
             Comparator::Equal | Comparator::NotEqual => ValueTypeCategory::equality_comparable_categories(category),
             Comparator::Less | Comparator::Greater | Comparator::LessOrEqual | Comparator::GreaterOrEqual => {
-                ValueTypeCategory::orderable_comparable_categories(category)
+                ValueTypeCategory::order_comparable_categories(category)
             }
             Comparator::Like | Comparator::Contains => match category {
                 ValueTypeCategory::String => &[ValueTypeCategory::String],

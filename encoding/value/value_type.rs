@@ -236,7 +236,7 @@ impl ValueTypeCategory {
         }
     }
 
-    pub fn orderable_comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
+    pub fn order_comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
         match category {
             // Durations and structs have no ordering
             ValueTypeCategory::Duration | ValueTypeCategory::Struct => &[],

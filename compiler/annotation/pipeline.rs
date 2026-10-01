@@ -450,7 +450,7 @@ pub fn validate_sort_variables_comparable(
             if let Some(unordered) = value_types
                 .iter()
                 .map(|value_type| value_type.category())
-                .find(|category| ValueTypeCategory::orderable_comparable_categories(*category).is_empty())
+                .find(|category| ValueTypeCategory::order_comparable_categories(*category).is_empty())
             {
                 let variable_name = ctx.name_for_error(sort_var.variable());
                 return Err(AnnotationError::UnorderedValueTypeForSortVariable {
@@ -460,7 +460,7 @@ pub fn validate_sort_variables_comparable(
                 });
             }
             let first_category = value_types.iter().next().unwrap().category();
-            let allowed_categories = ValueTypeCategory::orderable_comparable_categories(first_category);
+            let allowed_categories = ValueTypeCategory::order_comparable_categories(first_category);
             for other_type in value_types.iter().map(|v| v.category()) {
                 // Don't need to do pairwise if comparable is transitive
                 if !allowed_categories.contains(&other_type) {

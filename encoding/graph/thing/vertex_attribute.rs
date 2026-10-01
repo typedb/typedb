@@ -328,12 +328,12 @@ impl AttributeID {
             ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
             ValueTypeCategory::String => {
                 if for_comparison {
-                    (StringAttributeID::write_sortable_prefix(value.encode_string::<64>(), bytes), false)
+                    (StringAttributeID::write_prefix_for_comparison(value.encode_string::<64>(), bytes), false)
                 } else {
                     let string = value.encode_string::<64>();
                     // an inlineable string is written as its complete ID; a longer one omits the disambiguator byte
                     let is_complete = StringAttributeID::is_inlineable(string.as_reference());
-                    (StringAttributeID::write_hashed_prefix(string, large_value_hasher, bytes), is_complete)
+                    (StringAttributeID::write_prefix_for_equality(string, large_value_hasher, bytes), is_complete)
                 }
             }
             ValueTypeCategory::Struct => (
@@ -788,7 +788,7 @@ impl StringAttributeID {
 
     // write the prefix that identifies the exact value: the full inline ID, or the 8-byte prefix plus the hash
     // (without the disambiguator tail); return the length written
-    pub(crate) fn write_hashed_prefix<const INLINE_LENGTH: usize>(
+    pub(crate) fn write_prefix_for_equality<const INLINE_LENGTH: usize>(
         string: StringBytes<INLINE_LENGTH>,
         hasher: &impl Fn(&[u8]) -> u64,
         bytes: &mut [u8],
@@ -806,7 +806,7 @@ impl StringAttributeID {
     }
 
     // write the order-preserving prefix of the ID, which must exclude anything longer than 8 bytes due to hashing
-    pub(crate) fn write_sortable_prefix<const INLINE_LENGTH: usize>(
+    pub(crate) fn write_prefix_for_comparison<const INLINE_LENGTH: usize>(
         string: StringBytes<INLINE_LENGTH>,
         bytes: &mut [u8],
     ) -> usize {
