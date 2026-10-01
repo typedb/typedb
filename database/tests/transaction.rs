@@ -965,13 +965,14 @@ fn timed_out_request_does_not_let_a_write_transaction_past_a_schema_transaction(
     let runtime = Runtime::new().expect("Expected runtime");
     runtime.block_on(async move {
         let database_clone = database.clone();
-        let task_giving_up = tokio::spawn(async move {
+        let task_waiting = tokio::task::spawn_blocking(move || {
+            let options = TransactionOptions { schema_lock_acquire_timeout_millis: 1500, ..Default::default() };
+            TransactionWrite::open(database_clone, options).err()
+        });
+        sleep(Duration::from_millis(100)).await;
+        let task_giving_up = tokio::task::spawn_blocking(move || {
             let options = TransactionOptions { schema_lock_acquire_timeout_millis: 200, ..Default::default() };
             TransactionWrite::open(database, options).err()
-        });
-        let task_waiting = tokio::spawn(async move {
-            let options = TransactionOptions { schema_lock_acquire_timeout_millis: 3000, ..Default::default() };
-            TransactionWrite::open(database_clone, options).err()
         });
 
         let (giving_up, waiting) = tokio::try_join!(task_giving_up, task_waiting).unwrap();
@@ -994,12 +995,12 @@ fn withdrawing_a_timed_out_request_admits_the_write_transactions_behind_it() {
     let runtime = Runtime::new().expect("Expected runtime");
     runtime.block_on(async move {
         let database_clone = database.clone();
-        let task_giving_up = tokio::spawn(async move {
+        let task_giving_up = tokio::task::spawn_blocking(move || {
             let options = TransactionOptions { schema_lock_acquire_timeout_millis: 500, ..Default::default() };
             TransactionSchema::open(database, options).err()
         });
-        let task_queued_behind = tokio::spawn(async move {
-            sleep(Duration::from_millis(100)).await; // queue behind the schema request
+        let task_queued_behind = tokio::task::spawn_blocking(move || {
+            std::thread::sleep(Duration::from_millis(100)); // queue behind the schema request
             let open_started = Instant::now();
             (TransactionWrite::open(database_clone, TransactionOptions::default()), open_started.elapsed())
         });
