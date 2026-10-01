@@ -155,7 +155,7 @@ fn relation_by_insert() -> QueryDescriptor {
 
 fn relation_by_id<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
     let id_type = MakeID::ID_TYPE;
-    let name = format!("relations_by_{id_name}");
+    let name = format!("relations_by_{id_name}_id");
     let query = format!(
         r#"
         given $id1: {id_type}, $id2: {id_type};
