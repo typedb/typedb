@@ -658,6 +658,28 @@ fn write_transaction_does_not_block_concurrent_write_transactions() {
 }
 
 #[test]
+fn timed_out_schema_request_does_not_block_concurrent_write_transactions() {
+    init_logging();
+    let databases_path = create_tmp_storage_dir();
+    let database = create_database(&databases_path);
+
+    let _tx_write_1 = open_write(database.clone());
+
+    let options = TransactionOptions { schema_lock_acquire_timeout_millis: 100, ..Default::default() };
+    let tx_schema_error = TransactionSchema::open(database.clone(), options).unwrap_err();
+    assert_transaction_timeout!(tx_schema_error);
+
+    let open_started = Instant::now();
+    let open_result = TransactionWrite::open(database, TransactionOptions::default());
+    assert_ok!(open_result);
+    assert!(
+        open_started.elapsed() < Duration::from_secs(1),
+        "Opening a write transaction waited for {:?}",
+        open_started.elapsed()
+    );
+}
+
+#[test]
 fn write_transaction_does_not_block_concurrent_read_transactions() {
     init_logging();
     let databases_path = create_tmp_storage_dir();
