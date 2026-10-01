@@ -54,6 +54,7 @@ pub(crate) struct RelationTypeCache {
     pub(super) relates: HashSet<Relates>,
     pub(super) relates_with_specialised: HashSet<Relates>,
     pub(super) related_role_type_constraints: HashMap<RoleType, HashSet<CapabilityConstraint<Relates>>>,
+    pub(super) qualifies_for_relation_index: bool,
     pub(super) independence: Option<Independent>,
     pub(super) object_cache: ObjectCache,
 }
@@ -172,7 +173,9 @@ impl RelationTypeCache {
                 TypeReader::get_capabilities::<Relates>(snapshot, relation_type, true).unwrap();
             let related_role_type_constraints =
                 TypeReader::get_type_capabilities_constraints::<Relates>(snapshot, relation_type).unwrap();
-            let independency = TypeReader::get_relation_type_independence(snapshot, relation_type).unwrap();
+            let qualifies_for_relation_index =
+                TypeReader::get_relation_type_qualifies_for_relation_index(snapshot, relation_type).unwrap();
+            let independence = TypeReader::get_relation_type_independence(snapshot, relation_type).unwrap();
             let cache = RelationTypeCache {
                 common_type_cache,
                 relates_root,
@@ -180,7 +183,8 @@ impl RelationTypeCache {
                 relates,
                 relates_with_specialised,
                 related_role_type_constraints,
-                independence: independency,
+                qualifies_for_relation_index,
+                independence,
                 object_cache,
             };
             caches[relation_type.vertex().type_id_().as_u16() as usize] = Some(cache);

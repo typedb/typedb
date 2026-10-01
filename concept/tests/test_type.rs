@@ -17,11 +17,12 @@ use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
+        annotation::{AnnotationAbstract, AnnotationCardinality, AnnotationRange, AnnotationValues},
         attribute_type::AttributeTypeAnnotation,
         entity_type::EntityTypeAnnotation,
         object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
+        relates::RelatesAnnotation,
         type_manager::{TypeManager, type_cache::TypeCache},
     },
 };
@@ -36,7 +37,10 @@ use encoding::{
     },
     value::{decimal_value::Decimal, label::Label, timezone::TimeZone, value::Value, value_type::ValueType},
 };
-use resource::profile::{CommitProfile, StorageCounters};
+use resource::{
+    constants::concept::RELATION_INDEX_THRESHOLD,
+    profile::{CommitProfile, StorageCounters},
+};
 use storage::{
     MVCCStorage,
     durability_client::WALClient,
@@ -311,6 +315,139 @@ fn role_usage() {
         let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type));
         debug_assert_eq!(plays.role(), role_type);
+    }
+}
+
+#[test]
+fn relation_index_qualification_matches_uncached() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    assert!(RELATION_INDEX_THRESHOLD >= 2, "these cases need a threshold of at least 2 to straddle it");
+    let half = RELATION_INDEX_THRESHOLD / 2;
+    let cases: [(Label, AnnotationCardinality, &[&str], bool); 5] = [
+        (
+            Label::build("at_threshold", None),
+            AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD)),
+            &["only"],
+            true,
+        ),
+        (
+            Label::build("just_over_threshold", None),
+            AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD + 1)),
+            &["only"],
+            false,
+        ),
+        (Label::build("two_roles_under", None), AnnotationCardinality::new(0, Some(half)), &["left", "right"], true),
+        (
+            Label::build("two_roles_over", None),
+            AnnotationCardinality::new(0, Some(half + 1)),
+            &["left", "right"],
+            false,
+        ),
+        (Label::build("unbounded", None), AnnotationCardinality::new(0, None), &["left", "right"], false),
+    ];
+
+    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
+    {
+        // Without cache, uncommitted: every answer is computed from the snapshot.
+        let type_manager = type_manager_no_cache();
+        let thing_manager = thing_manager(type_manager.clone());
+        for (label, cardinality, roles, expected) in &cases {
+            let relation_type = type_manager.create_relation_type(&mut snapshot, label).unwrap();
+            for role in *roles {
+                let relates = relation_type
+                    .create_relates(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        role,
+                        Ordering::Unordered,
+                        StorageCounters::DISABLED,
+                    )
+                    .unwrap();
+                relates
+                    .set_annotation(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        RelatesAnnotation::Cardinality(*cardinality),
+                    )
+                    .unwrap();
+            }
+            let qualifies = relation_type.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap();
+            assert_eq!(qualifies, *expected, "uncached answer for {label}");
+        }
+    }
+
+    let parent_label = Label::build("inherits_parent", None);
+    let child_label = Label::build("inherits_child", None);
+    {
+        let type_manager = type_manager_no_cache();
+        let thing_manager = thing_manager(type_manager.clone());
+        let parent = type_manager.create_relation_type(&mut snapshot, &parent_label).unwrap();
+        let relates = parent
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "shared",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD))),
+            )
+            .unwrap();
+        let child = type_manager.create_relation_type(&mut snapshot, &child_label).unwrap();
+        child.set_supertype(&mut snapshot, &type_manager, &thing_manager, parent).unwrap();
+        let child_relates = child
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "specialised",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        child_relates
+            .set_specialise(&mut snapshot, &type_manager, &thing_manager, relates, StorageCounters::DISABLED)
+            .unwrap();
+        assert!(!child.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+        let implicit = child
+            .get_relates(&snapshot, &type_manager)
+            .unwrap()
+            .iter()
+            .find(|relates| relates.is_implicit(&snapshot, &type_manager).unwrap())
+            .copied()
+            .unwrap();
+        assert_eq!(
+            implicit.get_cardinality(&snapshot, &type_manager).unwrap(),
+            AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD))
+        );
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    {
+        // With cache, committed: these answers were filled eagerly when the cache was built, and
+        // repeated reads of them must be stable.
+        let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
+        let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
+        let expectations =
+            cases.iter().map(|(label, _, _, expected)| (label, *expected)).chain([(&child_label, false)]);
+        for (label, expected) in expectations {
+            let relation_type = type_manager.get_relation_type(&snapshot, label).unwrap().unwrap();
+            for read in 0..2 {
+                let qualifies = relation_type.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap();
+                assert_eq!(qualifies, expected, "cached answer for {label}, read {read}");
+            }
+        }
     }
 }
 

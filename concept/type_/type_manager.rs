@@ -24,10 +24,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
-use resource::{
-    constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt},
-    profile::StorageCounters,
-};
+use resource::{constants::encoding::StructFieldIDUInt, profile::StorageCounters};
 use storage::{
     keyspace::KeyspaceSet,
     snapshot::{PreloadedRangesSnapshot, ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
@@ -801,17 +798,10 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
-        // TODO: it would be good if this doesn't require recomputation
-        let mut max_card = 0;
-        let relates = relation_type.get_relates(snapshot, self)?;
-        for relates in relates.iter() {
-            let card = relates.get_cardinality(snapshot, self)?;
-            match card.end() {
-                None => return Ok(false),
-                Some(end) => max_card += end,
-            }
+        match &self.type_cache {
+            Some(cache) => Ok(cache.get_relation_type_qualifies_for_relation_index(relation_type)),
+            None => TypeReader::get_relation_type_qualifies_for_relation_index(snapshot, relation_type),
         }
-        Ok(max_card <= RELATION_INDEX_THRESHOLD)
     }
 
     pub(crate) fn get_entity_type_plays_declared<'this>(
@@ -1119,13 +1109,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relates: Relates,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        match relates.is_implicit(snapshot, self)? {
-            true => {
-                debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates)?.is_none());
-                self.get_capability_cardinality(snapshot, relates.role().get_relates_explicit(snapshot, self)?)
-            }
-            false => self.get_capability_cardinality(snapshot, relates),
-        }
+        self.get_capability_cardinality(snapshot, relates.role().get_relates_explicit(snapshot, self)?)
     }
 
     fn get_capability_cardinality_constraint<CAP: Capability>(
