@@ -128,8 +128,7 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
 
 pub type TypeDBWorkloadBenchmark<Report: SimpleReport<MultiTxMultiQueryProfile>> =
     TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, Report>;
-pub type TypeDBWorkloadReport =
-    TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, QueryFocusedReport>;
+pub type TypeDBQueryWorkloadBenchmark = TypeDBWorkloadBenchmark<QueryFocusedReport>;
 
 impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Report> {
     pub fn new(
@@ -151,6 +150,7 @@ impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Rep
 
 #[derive(Clone)]
 pub struct QueryDescriptor {
+    pub name: String,
     pub query: String,
     pub variables: Vec<String>,
     pub produce_row: Option<fn(&mut RandomDataGen) -> Vec<GivenRowEntry>>,
