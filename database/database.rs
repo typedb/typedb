@@ -82,17 +82,16 @@ type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservation
 
 type ReservationRequestId = u64;
 
-enum TransactionReservationRequest {
-    Write(ReservationRequestId, SyncSender<()>),
-    Schema(ReservationRequestId, SyncSender<()>),
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TransactionReservationKind {
+    Write,
+    Schema,
 }
 
-impl TransactionReservationRequest {
-    fn id(&self) -> ReservationRequestId {
-        match self {
-            Self::Write(id, _) | Self::Schema(id, _) => *id,
-        }
-    }
+struct TransactionReservationRequest {
+    id: ReservationRequestId,
+    kind: TransactionReservationKind,
+    notifier: SyncSender<()>,
 }
 
 pub struct Database<D> {
@@ -145,7 +144,11 @@ impl<D> Database<D> {
         if has_schema_transaction || !notify_queue.is_empty() {
             let id = self.next_reservation_request_id();
             let (sender, receiver) = sync_channel::<()>(0);
-            notify_queue.push_back(TransactionReservationRequest::Write(id, sender));
+            notify_queue.push_back(TransactionReservationRequest {
+                id,
+                kind: TransactionReservationKind::Write,
+                notifier: sender,
+            });
             drop(guard);
             self.await_reservation(receiver, id, timeout_left)?;
         } else {
@@ -163,7 +166,11 @@ impl<D> Database<D> {
         if has_schema_transaction || running_write_transactions > 0 || !notify_queue.is_empty() {
             let id = self.next_reservation_request_id();
             let (sender, receiver) = sync_channel::<()>(0);
-            notify_queue.push_back(TransactionReservationRequest::Schema(id, sender));
+            notify_queue.push_back(TransactionReservationRequest {
+                id,
+                kind: TransactionReservationKind::Schema,
+                notifier: sender,
+            });
             drop(guard);
             self.await_reservation(receiver, id, timeout_left)?;
         } else {
@@ -195,7 +202,7 @@ impl<D> Database<D> {
             .schema_write_transaction_exclusivity
             .lock()
             .expect("Expected exclusive access to withdraw a reservation request");
-        guard.2.retain(|request| request.id() != id);
+        guard.2.retain(|request| request.id != id);
         Self::fulfill_reservation_requests(&mut guard);
         Err(TransactionError::Timeout { source })
     }
@@ -251,45 +258,31 @@ impl<D> Database<D> {
         guard: &mut MutexGuard<'_, (bool, usize, VecDeque<TransactionReservationRequest>)>,
     ) {
         let (has_schema_transaction, running_write_transactions, notify_queue) = &mut **guard;
+        if *has_schema_transaction {
+            return;
+        }
 
         loop {
-            if *has_schema_transaction {
+            let Some(next_kind) = notify_queue.front().map(|request| request.kind) else {
                 break;
-            }
-
-            let (next_schema, next_write) = match notify_queue.front() {
-                Some(TransactionReservationRequest::Schema(..)) => (true, false),
-                Some(TransactionReservationRequest::Write(..)) => (false, true),
-                None => (false, false),
             };
 
-            if next_schema {
-                if *running_write_transactions > 0 {
-                    // wait for the write transactions to finish, leave the request in the queue
-                    break;
-                }
-                let TransactionReservationRequest::Schema(_, notifier) =
-                    notify_queue.pop_front().expect("Expected the next schema request")
-                else {
-                    panic!("Expected the next schema request: the queue cannot be changed")
-                };
-                if notifier.send(()).is_ok() {
+            if next_kind == TransactionReservationKind::Schema && *running_write_transactions > 0 {
+                // wait for the write transactions to finish, leave the request in the queue
+                break;
+            }
+            let request = notify_queue.pop_front().expect("Expected the next request");
+            if request.notifier.send(()).is_err() {
+                continue;
+            }
+            match next_kind {
+                TransactionReservationKind::Schema => {
                     // fulfill exactly 1 awaiting schema request
                     *has_schema_transaction = true;
                     break;
                 }
-            } else if next_write {
-                let TransactionReservationRequest::Write(_, notifier) =
-                    notify_queue.pop_front().expect("Expected the next write request")
-                else {
-                    panic!("Expected the next write request: the queue cannot be changed")
-                };
-                if notifier.send(()).is_ok() {
-                    // fulfill as many write requests as possible
-                    *running_write_transactions += 1;
-                }
-            } else {
-                break;
+                // fulfill as many write requests as possible
+                TransactionReservationKind::Write => *running_write_transactions += 1,
             }
         }
     }
@@ -308,6 +301,8 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
+    const RESET_EXCLUSIVITY_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(60);
+
     pub fn open(
         path: &Path,
         diagnostics_manager: &DiagnosticsManager,
@@ -594,15 +589,14 @@ impl Database<WALClient> {
     }
 
     pub fn reset(&mut self) -> Result<(), Box<DatabaseResetError>> {
-        const EXCLUSIVITY_WAITING_TIMEOUT: Duration = Duration::from_secs(60);
-        self.reserve_schema_transaction(EXCLUSIVITY_WAITING_TIMEOUT.as_millis() as u64)
+        self.reserve_schema_transaction(Self::RESET_EXCLUSIVITY_ACQUIRE_TIMEOUT.as_millis() as u64)
             .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?;
-        let result = self.reset_exclusively();
+        let result = self.reset_with_schema_exclusivity();
         self.release_schema_transaction();
         result
     }
 
-    fn reset_exclusively(&mut self) -> Result<(), Box<DatabaseResetError>> {
+    fn reset_with_schema_exclusivity(&mut self) -> Result<(), Box<DatabaseResetError>> {
         use DatabaseResetError::CorruptionPartialResetStorageInUse;
 
         let mut locked_schema = self.schema.write().unwrap();

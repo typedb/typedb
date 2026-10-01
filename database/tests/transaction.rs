@@ -981,3 +981,37 @@ fn timed_out_request_does_not_let_a_write_transaction_past_a_schema_transaction(
         assert_transaction_timeout!(waiting_error);
     });
 }
+
+#[test]
+fn withdrawing_a_timed_out_request_admits_the_write_transactions_behind_it() {
+    init_logging();
+    let databases_path = create_tmp_storage_dir();
+    let database = create_database(&databases_path);
+
+    // Held for the whole test: the write request below is admitted while it is still open.
+    let _tx_write_1 = open_write(database.clone());
+
+    let runtime = Runtime::new().expect("Expected runtime");
+    runtime.block_on(async move {
+        let database_clone = database.clone();
+        let task_giving_up = tokio::spawn(async move {
+            let options = TransactionOptions { schema_lock_acquire_timeout_millis: 500, ..Default::default() };
+            TransactionSchema::open(database, options).err()
+        });
+        let task_queued_behind = tokio::spawn(async move {
+            sleep(Duration::from_millis(100)).await; // queue behind the schema request
+            let open_started = Instant::now();
+            (TransactionWrite::open(database_clone, TransactionOptions::default()), open_started.elapsed())
+        });
+
+        let (giving_up, queued_behind) = tokio::try_join!(task_giving_up, task_queued_behind).unwrap();
+        let giving_up_error = giving_up.expect("Expected the schema request to time out");
+        assert_transaction_timeout!(giving_up_error);
+
+        // Withdrawing the schema request must admit this one, rather than leave it waiting for
+        // _tx_write_1, which is never released.
+        let (open_result, open_elapsed) = queued_behind;
+        assert_ok!(open_result);
+        assert!(open_elapsed < Duration::from_secs(5), "Opening a write transaction waited for {open_elapsed:?}");
+    });
+}
