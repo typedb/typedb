@@ -37,7 +37,10 @@ use encoding::{
     },
     value::{decimal_value::Decimal, label::Label, timezone::TimeZone, value::Value, value_type::ValueType},
 };
-use resource::profile::{CommitProfile, StorageCounters};
+use resource::{
+    constants::concept::RELATION_INDEX_THRESHOLD,
+    profile::{CommitProfile, StorageCounters},
+};
 use storage::{
     MVCCStorage,
     durability_client::WALClient,
@@ -320,15 +323,28 @@ fn relation_index_qualification_matches_uncached() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    // The rule sums each role's cardinality end bound and qualifies when the sum is at most
-    // RELATION_INDEX_THRESHOLD, which is 5. The first two cases sit either side of that boundary so the
-    // comparison cannot be loosened or tightened unnoticed, `two_roles_over` only crosses it once the
-    // roles are summed rather than taken singly, and the last has no end bound to sum at all.
+    assert!(RELATION_INDEX_THRESHOLD >= 2, "these cases need a threshold of at least 2 to straddle it");
+    let half = RELATION_INDEX_THRESHOLD / 2;
     let cases: [(Label, AnnotationCardinality, &[&str], bool); 5] = [
-        (Label::build("at_threshold", None), AnnotationCardinality::new(0, Some(5)), &["only"], true),
-        (Label::build("just_over_threshold", None), AnnotationCardinality::new(0, Some(6)), &["only"], false),
-        (Label::build("two_roles_under", None), AnnotationCardinality::new(0, Some(2)), &["left", "right"], true),
-        (Label::build("two_roles_over", None), AnnotationCardinality::new(0, Some(3)), &["left", "right"], false),
+        (
+            Label::build("at_threshold", None),
+            AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD)),
+            &["only"],
+            true,
+        ),
+        (
+            Label::build("just_over_threshold", None),
+            AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD + 1)),
+            &["only"],
+            false,
+        ),
+        (Label::build("two_roles_under", None), AnnotationCardinality::new(0, Some(half)), &["left", "right"], true),
+        (
+            Label::build("two_roles_over", None),
+            AnnotationCardinality::new(0, Some(half + 1)),
+            &["left", "right"],
+            false,
+        ),
         (Label::build("unbounded", None), AnnotationCardinality::new(0, None), &["left", "right"], false),
     ];
 
@@ -385,7 +401,7 @@ fn relation_index_qualification_matches_uncached() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(5))),
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD))),
             )
             .unwrap();
         let child = type_manager.create_relation_type(&mut snapshot, &child_label).unwrap();
@@ -411,7 +427,10 @@ fn relation_index_qualification_matches_uncached() {
             .find(|relates| relates.is_implicit(&snapshot, &type_manager).unwrap())
             .copied()
             .unwrap();
-        assert_eq!(implicit.get_cardinality(&snapshot, &type_manager).unwrap(), AnnotationCardinality::new(0, Some(5)));
+        assert_eq!(
+            implicit.get_cardinality(&snapshot, &type_manager).unwrap(),
+            AnnotationCardinality::new(0, Some(RELATION_INDEX_THRESHOLD))
+        );
     }
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
