@@ -22,6 +22,7 @@ use crate::{
 };
 
 const N_ENTITIES: usize = 100_000;
+const N_ENTITIES_OUT_OF_MEMORY: usize = 100_000;
 
 const STANDARD_RUNS: [RunDescriptor; 4] =
     [SERIAL_MANY_MEDIUM, SERIAL_FEW_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_LARGE];

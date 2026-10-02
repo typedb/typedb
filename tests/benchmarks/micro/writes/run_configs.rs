@@ -16,6 +16,7 @@ pub const THREADS_PARALLEL: usize = 16;
 
 pub const TRANSACTIONS_FEW: usize = 100;
 pub const TRANSACTIONS_MANY: usize = 1_000;
+pub const TRANSACTIONS_TONS: usize = 20_000;
 
 pub const SERIAL_FEW_LARGE: RunDescriptor = RunDescriptor {
     parallelism: THREADS_SERIAL,
@@ -38,6 +39,19 @@ pub const SERIAL_MANY_MEDIUM: RunDescriptor = RunDescriptor {
     n_rows_per_query: ROWS_MEDIUM,
 };
 
+pub const SERIAL_TONS_MEDIUM: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_SERIAL,
+    total_txns: TRANSACTIONS_TONS,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_MEDIUM,
+};
+
+pub const SERIAL_TONS_LARGE: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_SERIAL,
+    total_txns: TRANSACTIONS_TONS,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_LARGE,
+};
 pub const PARALLEL_MANY_SMALL: RunDescriptor = RunDescriptor {
     parallelism: THREADS_PARALLEL,
     total_txns: TRANSACTIONS_MANY,
@@ -59,11 +73,26 @@ pub const PARALLEL_MANY_MEDIUM: RunDescriptor = RunDescriptor {
     n_rows_per_query: ROWS_MEDIUM,
 };
 
+pub const PARALLEL_TONS_MEDIUM: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_PARALLEL,
+    total_txns: TRANSACTIONS_TONS,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_MEDIUM,
+};
+
+pub const PARALLEL_TONS_LARGE: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_PARALLEL,
+    total_txns: TRANSACTIONS_TONS,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_LARGE,
+};
+
 pub fn standardised_name(query_descriptor: &QueryDescriptor, run_descriptor: &RunDescriptor) -> String {
     let desc = &query_descriptor.name;
     let txn = match run_descriptor.total_txns {
         TRANSACTIONS_FEW => "few".to_owned(),
         TRANSACTIONS_MANY => "many".to_owned(),
+        TRANSACTIONS_TONS => "tons".to_owned(),
         other => format!("txn[{other}]"),
     };
     let parallelism = match run_descriptor.parallelism {
