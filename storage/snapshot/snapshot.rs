@@ -15,6 +15,7 @@ use std::{
 };
 
 use bytes::byte_array::ByteArray;
+use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::{
@@ -288,7 +289,10 @@ pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
-    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitData>, SnapshotError>;
+    fn commit(
+        self,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<Option<CommitData>, (Option<DurabilitySequenceNumber>, SnapshotError)>;
 
     fn into_commit_record(self) -> (WriteSnapshotDropGuard, CommitRecord);
 
@@ -631,13 +635,20 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
-    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitData>, SnapshotError> {
+    fn commit(
+        self,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<Option<CommitData>, (Option<DurabilitySequenceNumber>, SnapshotError)> {
         if self.has_changes() {
-            self.storage
-                .clone()
-                .snapshot_commit(self, commit_profile)
+            let storage = self.storage.clone();
+            let commit_in_progress = storage
+                .persist_commit_record(self, commit_profile)
+                .map_err(|typedb_source| (None, SnapshotError::Commit { typedb_source }))?;
+            let sequence_number = commit_in_progress.sequence_number;
+            storage
+                .snapshot_commit(commit_in_progress, commit_profile)
                 .map(Some)
-                .map_err(|typedb_source| SnapshotError::Commit { typedb_source })
+                .map_err(|typedb_source| (Some(sequence_number), SnapshotError::Commit { typedb_source }))
         } else {
             Ok(None)
         }
@@ -843,13 +854,20 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
-    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitData>, SnapshotError> {
+    fn commit(
+        self,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<Option<CommitData>, (Option<DurabilitySequenceNumber>, SnapshotError)> {
         if self.has_changes() {
-            self.storage
-                .clone()
-                .snapshot_commit(self, commit_profile)
+            let storage = self.storage.clone();
+            let commit_in_progress = storage
+                .persist_commit_record(self, commit_profile)
+                .map_err(|typedb_source| (None, SnapshotError::Commit { typedb_source }))?;
+            let sequence_number = commit_in_progress.sequence_number;
+            storage
+                .snapshot_commit(commit_in_progress, commit_profile)
                 .map(Some)
-                .map_err(|typedb_source| SnapshotError::Commit { typedb_source })
+                .map_err(|typedb_source| (Some(sequence_number), SnapshotError::Commit { typedb_source }))
         } else {
             Ok(None)
         }
@@ -859,6 +877,12 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         let Self { operations, open_sequence_number, reader_guard, id, iterator_pool: _, storage: _ } = self;
         (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id))
     }
+}
+
+pub(crate) struct CommitInProgress {
+    pub(crate) record: CommitRecord,
+    pub(crate) sequence_number: DurabilitySequenceNumber,
+    pub(crate) reader_guard: WriteSnapshotDropGuard,
 }
 
 type KeyspaceBtree = BTreeMap<ByteArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>>;

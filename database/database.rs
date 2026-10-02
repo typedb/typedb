@@ -159,7 +159,7 @@ pub struct Database<D> {
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
-    pub(super) _commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
+    pub(super) _commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, Option<CommitDeltas>>>>,
 
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
@@ -360,7 +360,7 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new());
-        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, Option<CommitDeltas>>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
@@ -491,7 +491,7 @@ impl Database<WALClient> {
         };
 
         let query_cache = Arc::new(QueryCache::new());
-        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, Option<CommitDeltas>>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
@@ -675,7 +675,7 @@ fn make_update_statistics_fn(
     schema: Arc<RwLock<Schema>>,
     schema_txn_lock: Arc<RwLock<()>>,
     query_cache: Arc<QueryCache>,
-    commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
+    commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, Option<CommitDeltas>>>>,
 ) -> impl Fn() {
     move || {
         let watermark = storage.snapshot_watermark();
@@ -693,8 +693,12 @@ fn make_update_statistics_fn(
                     }
                     queue.pop_first().unwrap().1
                 };
-                if let Err(err) = new_statistics.update(&commit_deltas, storage.durability()) {
-                    error!("Statistics update failed: {err:?}");
+                if let Some(commit_deltas) = commit_deltas {
+                    if let Err(err) = new_statistics.update(&commit_deltas, storage.durability()) {
+                        error!("Statistics update failed: {err:?}");
+                    }
+                } else {
+                    new_statistics.sequence_number = new_statistics.sequence_number.next();
                 }
             }
             let new_statistics = Arc::new(new_statistics);
