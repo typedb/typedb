@@ -5,6 +5,7 @@
  */
 use std::{
     fmt::Formatter,
+    mem,
     ops::Deref,
     sync::{Arc, mpsc::RecvTimeoutError},
     time::Duration,
@@ -586,7 +587,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
-        use SchemaCommitError::{DurabilityError, StatisticsError, TypeCacheUpdateError};
+        use SchemaCommitError::{DurabilityError, TypeCacheUpdateError};
         let database = &self.database_drop_guard;
 
         // Schema commits must wait for all other data operations to finish. No new read or write
@@ -595,10 +596,23 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         let mut schema = (*schema_commit_guard).clone();
 
         let mut thing_statistics = (*schema.thing_statistics).clone();
+        let durability = database.storage.durability();
 
         // synchronise statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
-            return Err(StatisticsError { typedb_source });
+        for (sequence_number, commit_deltas) in mem::take(&mut *database._commit_deltas_queue.write().unwrap()) {
+            debug_assert!(
+                thing_statistics.sequence_number.next() >= sequence_number,
+                "Attempting to apply deltas {} to Statistics at {} during schema commit.",
+                sequence_number,
+                thing_statistics.sequence_number,
+            );
+            if let Some(commit_deltas) = commit_deltas {
+                if let Err(typedb_source) = thing_statistics.update(&commit_deltas, durability) {
+                    return Err(DurabilityError { typedb_source });
+                }
+            } else {
+                thing_statistics.sequence_number = thing_statistics.sequence_number.next();
+            }
         }
 
         // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
@@ -627,8 +641,6 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         };
 
         if let Some(CommitData { sequence_number, record }) = commit_data {
-            let durability = database.storage.durability();
-
             durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| DurabilityError { typedb_source })?;
@@ -636,7 +648,9 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
 
             let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
             durability.unsequenced_write(&commit_deltas).map_err(|typedb_source| DurabilityError { typedb_source })?;
-            database._commit_deltas_queue.write().unwrap().insert(sequence_number, Some(commit_deltas));
+            if let Err(typedb_source) = thing_statistics.update(&commit_deltas, durability) {
+                return Err(DurabilityError { typedb_source });
+            }
 
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
@@ -658,9 +672,6 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         }
 
         // replace statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
-            return Err(StatisticsError { typedb_source });
-        }
         commit_profile.schema_update_statistics_keys_updated();
         schema.thing_statistics = Arc::new(thing_statistics);
 
