@@ -536,11 +536,11 @@ impl ThingManager {
             return Ok(AttributeIterator::new_empty());
         };
         let value_type_category = attribute_value_type.category();
-        match value_restriction {
-            ValueRestriction::None => self.get_attributes_in(snapshot, attribute_type, storage_counters),
-            ValueRestriction::Equality(value) if value.value_type().category() == value_type_category => {
-                let attribute_key =
-                    self.get_attribute_vertex_exact_key(attribute_type.vertex().type_id_(), value.as_reference());
+        match AttributeValueLookup::new(value_restriction, &[value_type_category]) {
+            AttributeValueLookup::All => self.get_attributes_in(snapshot, attribute_type, storage_counters),
+            AttributeValueLookup::Exact(value) => {
+                let attribute_key = self
+                    .get_attribute_vertex_prefix_for_equality(attribute_type.vertex().type_id_(), value.as_reference());
                 let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
                     value_type_category,
                     attribute_key.bytes(),
@@ -557,22 +557,14 @@ impl ThingManager {
                     self.type_manager().get_independent_attribute_types(snapshot)?,
                 ))
             }
-            // An equality on another value type is cast to bounds in this value type, which may span several values
-            ValueRestriction::Equality(value) => self.get_attributes_in_value_range(
+            AttributeValueLookup::Range(lower, upper) => self.get_attributes_in_value_range(
                 snapshot,
                 attribute_type,
                 value_type_category,
-                &(Bound::Included(value.as_reference()), Bound::Included(value.as_reference())),
+                &(lower, upper),
                 storage_counters,
             ),
-            ValueRestriction::Range(range) => self.get_attributes_in_value_range(
-                snapshot,
-                attribute_type,
-                value_type_category,
-                range,
-                storage_counters,
-            ),
-            ValueRestriction::Unsatisfiable => Ok(AttributeIterator::new_empty()),
+            AttributeValueLookup::Empty => Ok(AttributeIterator::new_empty()),
         }
     }
 
@@ -614,21 +606,6 @@ impl ThingManager {
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
-    }
-
-    fn get_attribute_vertex_exact_key(
-        &self,
-        attribute_type_id: TypeID,
-        value: Value<'_>,
-    ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
-        match AttributeVertex::build_or_prefix_for_value_equality(
-            attribute_type_id,
-            value,
-            self.vertex_generator.hasher(),
-        ) {
-            Either::First(vertex) => vertex.into_storage_key(),
-            Either::Second(prefix) => prefix,
-        }
     }
 
     fn get_attribute_vertex_prefix_lower_bound(
@@ -898,9 +875,9 @@ impl ThingManager {
             return Ok(HasReverseIterator::new_empty());
         };
         let value_type_category = attribute_value_type.category();
-        match value_restriction {
-            ValueRestriction::None => self.get_has_reverse(snapshot, attribute_type, storage_counters),
-            ValueRestriction::Equality(value) if value.value_type().category() == value_type_category => {
+        match AttributeValueLookup::new(value_restriction, &[value_type_category]) {
+            AttributeValueLookup::All => self.get_has_reverse(snapshot, attribute_type, storage_counters),
+            AttributeValueLookup::Exact(value) => {
                 let key_range = match AttributeVertex::build_or_prefix_for_value_equality(
                     attribute_type.vertex().type_id_(),
                     value.as_reference(),
@@ -919,24 +896,15 @@ impl ThingManager {
                 };
                 Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
             }
-            // An equality on another value type is cast to bounds in this value type, which may span several values
-            ValueRestriction::Equality(value) => self.get_has_reverse_in_value_range(
+            AttributeValueLookup::Range(lower, upper) => self.get_has_reverse_in_value_range(
                 snapshot,
                 attribute_type,
                 value_type_category,
-                &(Bound::Included(value.as_reference()), Bound::Included(value.as_reference())),
+                &(lower, upper),
                 owner_types_range_hint,
                 storage_counters,
             ),
-            ValueRestriction::Range(range) => self.get_has_reverse_in_value_range(
-                snapshot,
-                attribute_type,
-                value_type_category,
-                range,
-                owner_types_range_hint,
-                storage_counters,
-            ),
-            ValueRestriction::Unsatisfiable => Ok(HasReverseIterator::new_empty()),
+            AttributeValueLookup::Empty => Ok(HasReverseIterator::new_empty()),
         }
     }
 
@@ -1164,8 +1132,8 @@ impl ThingManager {
                 None => return Ok(HasIterator::new_empty()),
                 Some(end_type_included) => end_type_included,
             };
-        match value_restriction {
-            ValueRestriction::None => self.owner_get_has_unordered_in_value_range(
+        match AttributeValueLookup::new(value_restriction, value_type_categories) {
+            AttributeValueLookup::All => self.owner_get_has_unordered_in_value_range(
                 snapshot,
                 owner,
                 start_attribute_type,
@@ -1174,18 +1142,20 @@ impl ThingManager {
                 &(Bound::<Value<'_>>::Unbounded, Bound::<Value<'_>>::Unbounded),
                 storage_counters,
             ),
-            ValueRestriction::Equality(value)
-                if Self::equality_matches_only_own_value_type(value, value_type_categories) =>
-            {
-                let start = RangeStart::Inclusive(self.get_has_from_thing_to_type_exact_prefix(
-                    owner,
-                    start_attribute_type.vertex().type_id_(),
-                    value.as_reference(),
+            AttributeValueLookup::Exact(value) => {
+                let start_attribute_type_id = start_attribute_type.vertex().type_id_();
+                let start_attribute_key =
+                    self.get_attribute_vertex_prefix_for_equality(start_attribute_type_id, value.as_reference());
+                let start = RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(
+                    owner.vertex(),
+                    start_attribute_key.bytes(),
                 ));
-                let end = RangeEnd::EndPrefixInclusive(self.get_has_from_thing_to_type_exact_prefix(
-                    owner,
-                    end_attribute_type.vertex().type_id_(),
-                    value.as_reference(),
+                let end_attribute_type_id = end_attribute_type.vertex().type_id_();
+                let end_attribute_key =
+                    self.get_attribute_vertex_prefix_for_equality(end_attribute_type_id, value.as_reference());
+                let end = RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(
+                    owner.vertex(),
+                    end_attribute_key.bytes(),
                 ));
                 let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
                 let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
@@ -1195,37 +1165,17 @@ impl ThingManager {
                     storage_counters,
                 )))
             }
-            // An equality that attributes of other value types may also satisfy is cast to bounds in those value types
-            ValueRestriction::Equality(value) => self.owner_get_has_unordered_in_value_range(
+            AttributeValueLookup::Range(lower, upper) => self.owner_get_has_unordered_in_value_range(
                 snapshot,
                 owner,
                 start_attribute_type,
                 end_attribute_type,
                 value_type_categories,
-                &(Bound::Included(value.as_reference()), Bound::Included(value.as_reference())),
+                &(lower, upper),
                 storage_counters,
             ),
-            ValueRestriction::Range(range) => self.owner_get_has_unordered_in_value_range(
-                snapshot,
-                owner,
-                start_attribute_type,
-                end_attribute_type,
-                value_type_categories,
-                range,
-                storage_counters,
-            ),
-            ValueRestriction::Unsatisfiable => Ok(HasIterator::new_empty()),
+            AttributeValueLookup::Empty => Ok(HasIterator::new_empty()),
         }
-    }
-
-    // Whether, among the given value types, only attributes of the value's own value type can be equal to it, so that
-    // looking up the value's exact key finds every match
-    fn equality_matches_only_own_value_type(value: &Value<'_>, value_type_categories: &[ValueTypeCategory]) -> bool {
-        let value_type = value.value_type();
-        value_type_categories.contains(&value_type.category())
-            && value_type_categories.iter().all(|category| {
-                *category == value_type.category() || !value_type.is_approximately_castable_to(*category)
-            })
     }
 
     fn owner_get_has_unordered_in_value_range<'a>(
@@ -1284,8 +1234,8 @@ impl ThingManager {
             return Ok(Iterator::map(HasIterator::new_empty(), to_attribute));
         };
         let value_type_category = attribute_value_type.category();
-        let has_iterator = match value_restriction {
-            ValueRestriction::None => self.get_has_from_thing_to_type_in_value_range(
+        let has_iterator = match AttributeValueLookup::new(value_restriction, &[value_type_category]) {
+            AttributeValueLookup::All => self.get_has_from_thing_to_type_in_value_range(
                 snapshot,
                 owner,
                 attribute_type,
@@ -1293,11 +1243,13 @@ impl ThingManager {
                 &(Bound::<Value<'_>>::Unbounded, Bound::<Value<'_>>::Unbounded),
                 storage_counters,
             ),
-            ValueRestriction::Equality(value) if value.value_type().category() == value_type_category => {
-                let prefix = self.get_has_from_thing_to_type_exact_prefix(
-                    owner,
-                    attribute_type.vertex().type_id_(),
-                    value.as_reference(),
+            AttributeValueLookup::Exact(value) => {
+                let attribute_type_id = attribute_type.vertex().type_id_();
+                let value1 = value.as_reference();
+                let attribute_key = self.get_attribute_vertex_prefix_for_equality(attribute_type_id, value1);
+                let prefix = ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(
+                    owner.vertex(),
+                    attribute_key.bytes(),
                 );
                 let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
                 let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
@@ -1307,24 +1259,15 @@ impl ThingManager {
                     storage_counters,
                 ))
             }
-            // An equality on another value type is cast to bounds in this value type, which may span several values
-            ValueRestriction::Equality(value) => self.get_has_from_thing_to_type_in_value_range(
+            AttributeValueLookup::Range(lower, upper) => self.get_has_from_thing_to_type_in_value_range(
                 snapshot,
                 owner,
                 attribute_type,
                 value_type_category,
-                &(Bound::Included(value.as_reference()), Bound::Included(value.as_reference())),
+                &(lower, upper),
                 storage_counters,
             ),
-            ValueRestriction::Range(range) => self.get_has_from_thing_to_type_in_value_range(
-                snapshot,
-                owner,
-                attribute_type,
-                value_type_category,
-                range,
-                storage_counters,
-            ),
-            ValueRestriction::Unsatisfiable => HasIterator::new_empty(),
+            AttributeValueLookup::Empty => HasIterator::new_empty(),
         };
         Ok(Iterator::map(has_iterator, to_attribute))
     }
@@ -1357,16 +1300,19 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range_in_lookup_mode(&range, snapshot_lookup_mode, storage_counters))
     }
 
-    // The prefix of the owner's has edges to exactly this attribute value: see `get_attribute_vertex_exact_key`
-    fn get_has_from_thing_to_type_exact_prefix(
+    fn get_attribute_vertex_prefix_for_equality(
         &self,
-        owner: impl ObjectAPI,
         attribute_type_id: TypeID,
         value: Value<'_>,
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
-        let attribute_key = self.get_attribute_vertex_exact_key(attribute_type_id, value);
-        ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), attribute_key.bytes())
-            .resize_to()
+        match AttributeVertex::build_or_prefix_for_value_equality(
+            attribute_type_id,
+            value,
+            self.vertex_generator.hasher(),
+        ) {
+            Either::First(vertex) => vertex.into_storage_key(),
+            Either::Second(prefix) => prefix,
+        }
     }
 
     fn get_has_from_thing_to_type_unordered_start_bound(
@@ -3716,5 +3662,41 @@ impl ObjectOrigin {
             ObjectOrigin::ThisTransaction => SnapshotLookupMode::BufferOnly,
             ObjectOrigin::UnknownTransaction => SnapshotLookupMode::BufferAndStorage,
         }
+    }
+}
+
+// How an attribute lookup scans for a value restriction: every value, the value's exact key, a value range, or nothing
+enum AttributeValueLookup<'v, 'a> {
+    All,
+    Exact(&'v Value<'a>),
+    Range(Bound<&'v Value<'a>>, Bound<&'v Value<'a>>),
+    Empty,
+}
+
+impl<'v, 'a> AttributeValueLookup<'v, 'a> {
+    // An equality uses the value's exact key only when no attribute of another of the value types can equal it;
+    // otherwise it is the point range [value, value], which is cast to each value type's bounds
+    fn new(value_restriction: &'v ValueRestriction<'a>, value_type_categories: &[ValueTypeCategory]) -> Self {
+        match value_restriction {
+            ValueRestriction::None => Self::All,
+            ValueRestriction::Equality(value)
+                if Self::equality_matches_only_own_value_type(value, value_type_categories) =>
+            {
+                Self::Exact(value)
+            }
+            ValueRestriction::Equality(value) => Self::Range(Bound::Included(value), Bound::Included(value)),
+            ValueRestriction::Range(range) => Self::Range(range.start_bound(), range.end_bound()),
+            ValueRestriction::Unsatisfiable => Self::Empty,
+        }
+    }
+
+    // Whether, among the given value types, only attributes of the value's own value type can be equal to it, so that
+    // looking up the value's exact key finds every match
+    fn equality_matches_only_own_value_type(value: &Value<'_>, value_type_categories: &[ValueTypeCategory]) -> bool {
+        let value_type = value.value_type();
+        value_type_categories.contains(&value_type.category())
+            && value_type_categories.iter().all(|category| {
+                *category == value_type.category() || !value_type.is_approximately_castable_to(*category)
+            })
     }
 }
