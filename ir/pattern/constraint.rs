@@ -2426,9 +2426,9 @@ impl Comparator {
     ) -> &'static [encoding::value::value_type::ValueTypeCategory] {
         use encoding::value::value_type::ValueTypeCategory;
         match self {
-            Comparator::Equal | Comparator::NotEqual => ValueTypeCategory::equality_comparable_categories(category),
+            Comparator::Equal | Comparator::NotEqual => category.equality_comparable_categories(),
             Comparator::Less | Comparator::Greater | Comparator::LessOrEqual | Comparator::GreaterOrEqual => {
-                ValueTypeCategory::order_comparable_categories(category)
+                category.order_comparable_categories()
             }
             Comparator::Like | Comparator::Contains => match category {
                 ValueTypeCategory::String => &[ValueTypeCategory::String],

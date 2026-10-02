@@ -435,8 +435,16 @@ pub fn validate_sort_variables_comparable(
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<(), AnnotationError> {
     for sort_var in &sort.variables {
-        if input_annotations.values.contains_key(&sort_var.variable()) {
-            continue; // Expressions always return the same type.
+        if let Some(expression_value_type) = input_annotations.values.get(&sort_var.variable()) {
+            let category = expression_value_type.value_type().category();
+            if category.order_comparable_categories().is_empty() {
+                let variable_name = ctx.name_for_error(sort_var.variable());
+                return Err(AnnotationError::UnorderedValueTypeForSortVariable {
+                    variable: variable_name,
+                    value_type: category,
+                    source_span: sort.source_span(),
+                });
+            }
         } else if let Some(types) = input_annotations.concepts.get(&sort_var.variable()) {
             let value_types = resolve_value_types(&(**types), ctx.snapshot, ctx.type_manager)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
@@ -450,7 +458,7 @@ pub fn validate_sort_variables_comparable(
             if let Some(unordered) = value_types
                 .iter()
                 .map(|value_type| value_type.category())
-                .find(|category| ValueTypeCategory::order_comparable_categories(*category).is_empty())
+                .find(|category| !category.is_order_comparable())
             {
                 let variable_name = ctx.name_for_error(sort_var.variable());
                 return Err(AnnotationError::UnorderedValueTypeForSortVariable {
@@ -460,7 +468,7 @@ pub fn validate_sort_variables_comparable(
                 });
             }
             let first_category = value_types.iter().next().unwrap().category();
-            let allowed_categories = ValueTypeCategory::order_comparable_categories(first_category);
+            let allowed_categories = first_category.order_comparable_categories();
             for other_type in value_types.iter().map(|v| v.category()) {
                 // Don't need to do pairwise if comparable is transitive
                 if !allowed_categories.contains(&other_type) {

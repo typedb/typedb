@@ -319,10 +319,7 @@ impl HasReverseExecutor {
                             filter,
                             has_to_tuple_attribute_owner,
                             tuple_attribute_owner_to_has_reverse,
-                            FixedHasBounds::NoneWithLowerBounds(
-                                *attribute_type,
-                                value_restriction.lower_bound().map(|value| value.clone().into_owned()),
-                            ),
+                            FixedHasBounds::None,
                         )
                     })
             })

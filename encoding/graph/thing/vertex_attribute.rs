@@ -76,9 +76,38 @@ impl AttributeVertex {
     pub fn build_or_prefix_for_value_comparison(
         type_id: TypeID,
         value: Value<'_>,
-        large_value_hasher: &impl Fn(&[u8]) -> u64,
     ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
-        Self::build_or_prefix_for_value(type_id, value, large_value_hasher, true)
+        let no_hasher = |_: &[u8]| -> u64 { unreachable!("Comparable value attributes should never hash") };
+        Self::build_or_prefix_for_value(type_id, value, &no_hasher, true)
+    }
+
+    // The lowest vertex of this attribute type that may hold a value at or above the given value
+    // This is the bridge that makes sure that the Value ordering floor is respected by the returned vertex
+    pub fn build_value_floor_for_comparison(type_id: TypeID, value: Value<'_>) -> Option<Self> {
+        let value_type_category = value.value_type().category();
+        if !value_type_category.is_order_comparable() {
+            return None;
+        }
+        match Self::build_or_prefix_for_value_comparison(type_id, value) {
+            Either::First(vertex) if value_type_category == ValueTypeCategory::DateTimeTZ => {
+                // values compare by instant alone, so zero the time zone to sit below that instant in every zone
+                let mut bytes = ByteArray::<BUFFER_KEY_INLINE>::copy(vertex.into_storage_key().bytes());
+                let instant_end = THING_VERTEX_LENGTH_PREFIX_TYPE
+                    + ValueTypeBytes::CATEGORY_LENGTH
+                    + DateTimeTZBytes::DATE_TIME_LENGTH;
+                bytes[instant_end..].fill(0);
+                Some(Self::decode(bytes.as_ref()))
+            }
+            Either::First(vertex) => Some(vertex),
+            Either::Second(prefix) => {
+                // the lowest complete vertex sharing the prefix: pad the remaining ID bytes with zeros
+                let mut bytes: ByteArray<BUFFER_KEY_INLINE> = ByteArray::zeros(
+                    THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::value_type_encoding_length(value_type_category),
+                );
+                bytes[..prefix.bytes().len()].copy_from_slice(prefix.bytes());
+                Some(Self::decode(bytes.as_ref()))
+            }
+        }
     }
 
     fn build_or_prefix_for_value(

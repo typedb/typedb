@@ -625,3 +625,158 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         print!("{}", r);
     }
 }
+
+const CREATED_LABEL: Label = Label::new_static("created");
+
+fn datetime_tz(offset_hours: i32, year: i32, month: u32, day: u32, hour: u32) -> Value<'static> {
+    use chrono::TimeZone as _;
+    let time_zone =
+        encoding::value::timezone::TimeZone::Fixed(chrono::FixedOffset::east_opt(offset_hours * 3600).unwrap());
+    let naive = chrono::NaiveDate::from_ymd_opt(year, month, day).unwrap().and_hms_opt(hour, 0, 0).unwrap();
+    Value::DateTimeTZ(time_zone.from_local_datetime(&naive).unwrap())
+}
+
+// The instant 2024-01-01T00:00Z, written in several time zones
+fn same_instant_in_time_zones() -> [Value<'static>; 4] {
+    [
+        datetime_tz(0, 2024, 1, 1, 0),
+        datetime_tz(1, 2024, 1, 1, 1),
+        datetime_tz(9, 2024, 1, 1, 9),
+        datetime_tz(-5, 2023, 12, 31, 19),
+    ]
+}
+
+// Named people each own a `created` datetime-tz: one per time zone at the same instant, and one an hour earlier
+fn setup_created_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let created_type = type_manager.create_attribute_type(&mut snapshot, &CREATED_LABEL).unwrap();
+    created_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::DateTimeTZ).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    for attribute_type in [created_type, name_type] {
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                attribute_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+    }
+
+    // Before each named person comes an unnamed one, so the intersection has to seek the `created` iterator forward
+    let createds = same_instant_in_time_zones().into_iter().chain([datetime_tz(0, 2023, 12, 31, 23)]);
+    for (index, created) in createds.enumerate() {
+        let unnamed_person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let created = thing_manager.create_attribute(&mut snapshot, created_type, created).unwrap();
+        let name = thing_manager
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(format!("person {index}"))))
+            .unwrap();
+        unnamed_person.set_has_unordered(&mut snapshot, &thing_manager, &created, StorageCounters::DISABLED).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &created, StorageCounters::DISABLED).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
+    }
+
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+    assert!(finalise_result.is_ok());
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+}
+
+// Counts the rows of `$person has $created, has $name` with `$created <comparator> bound`, intersected on $person
+// so that the has iterators are sought by owner
+fn count_rows_with_created_check(comparator: ir::pattern::constraint::Comparator, bound: Value<'static>) -> usize {
+    use compiler::executable::match_::instructions::{CheckInstruction, CheckVertex};
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_created_database(&mut storage);
+    let mut translation_context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let bound_id = value_parameters.register_value(bound, typeql::common::Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_created_type = conjunction.constraints_mut().get_or_declare_variable("created_type", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().get_or_declare_variable("name_type", None).unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_created = conjunction.constraints_mut().get_or_declare_variable("created", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
+    let has_created = conjunction.constraints_mut().add_has(var_person, var_created, None).unwrap().clone();
+    let has_name = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_created, var_created_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_created_type, CREATED_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    let entry = builder.finish().unwrap();
+
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut ctx = PipelineAnnotationContext::new(
+        &snapshot,
+        &type_manager,
+        &EmptyAnnotatedFunctionSignatures,
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_name, var_created], [var_person_type, var_name_type, var_created_type]);
+
+    let mut created_instruction = HasInstruction::new(has_created, Inputs::None([]), &entry_annotations).map(&mapping);
+    created_instruction.add_check(
+        CheckInstruction::Comparison {
+            lhs: CheckVertex::Variable(var_created),
+            rhs: CheckVertex::Parameter(bound_id),
+            comparator,
+        }
+        .map(&mapping),
+    );
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
+        mapping[&var_person],
+        vec![
+            ConstraintInstruction::Has(created_instruction),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&mapping),
+            ),
+        ],
+        vec![variable_positions[&var_person], variable_positions[&var_name], variable_positions[&var_created]],
+        &named_variables,
+        3,
+    ))];
+    let executable =
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+    let snapshot = Arc::new(snapshot);
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
+    rows.into_iter().map(|row| row.unwrap().multiplicity() as usize).sum()
+}
+
+#[test]
+fn traverse_has_unbounded_seek_floor_ignores_datetime_tz_time_zone() {
+    use ir::pattern::constraint::Comparator::{Greater, GreaterOrEqual};
+    // whichever time zone the bound is written in, every stored value at the same instant satisfies `>=`
+    for bound in same_instant_in_time_zones() {
+        assert_eq!(count_rows_with_created_check(GreaterOrEqual, bound.clone()), 4, ">= {bound}");
+        assert_eq!(count_rows_with_created_check(Greater, bound.clone()), 0, "> {bound}");
+    }
+}

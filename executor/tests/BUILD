@@ -48,7 +48,9 @@ rust_test(
     name = "test_execute_has",
     crate_root = "execute_has.rs",
     srcs = ["execute_has.rs"],
-    deps = deps,
+    deps = deps + [
+        "@crates//:chrono",
+    ],
 )
 
 rust_test(

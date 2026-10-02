@@ -39,8 +39,9 @@ impl Decimal {
         debug_assert!(fractional_double < 1.0);
         // the double's fractional part may have more decimal places than the Decimal type can handle
         // we can therefor round it to 1/FRACTIONAL_PART_DENOMINATOR
-        let fractional_parts = fractional_double / FRACTIONAL_PART_DENOMINATOR as f64;
-        let fractional_parts_floor = fractional_parts.floor() as u64;
+        let fractional_parts = fractional_double * FRACTIONAL_PART_DENOMINATOR as f64;
+        // a fractional part just below 1.0 can round up to a whole unit in floating point
+        let fractional_parts_floor = (fractional_parts.floor() as u64).min(FRACTIONAL_PART_DENOMINATOR - 1);
         Self::new(integer, fractional_parts_floor)
     }
 
@@ -48,9 +49,17 @@ impl Decimal {
         debug_assert!(fractional_double < 1.0);
         // the double's fractional part may have more decimal places than the Decimal type can handle
         // we can therefor round it to 1/FRACTIONAL_PART_DENOMINATOR
-        let fractional_parts = fractional_double / FRACTIONAL_PART_DENOMINATOR as f64;
+        let fractional_parts = fractional_double * FRACTIONAL_PART_DENOMINATOR as f64;
         let fractional_parts_ceil = fractional_parts.ceil() as u64;
-        Self::new(integer, fractional_parts_ceil)
+        if fractional_parts_ceil >= FRACTIONAL_PART_DENOMINATOR {
+            // rounded up to a whole unit: carry into the integer part
+            match integer.checked_add(1) {
+                Some(next_integer) => Self::new(next_integer, 0),
+                None => Self::MAX,
+            }
+        } else {
+            Self::new(integer, fractional_parts_ceil)
+        }
     }
 
     pub fn integer_part(self) -> i64 {
@@ -402,6 +411,26 @@ impl fmt::Debug for DecimalParseError {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    #[test]
+    fn bounds_from_double_fraction_enclose_the_value() {
+        let half = 5 * (super::FRACTIONAL_PART_DENOMINATOR / 10);
+        assert_eq!(Decimal::new_lower_bound_from(10, 0.5), Decimal::new(10, half));
+        assert_eq!(Decimal::new_upper_bound_from(10, 0.5), Decimal::new(10, half));
+        assert_eq!(Decimal::new_lower_bound_from(10, 0.0), Decimal::new(10, 0));
+        assert_eq!(Decimal::new_upper_bound_from(10, 0.0), Decimal::new(10, 0));
+
+        let lower = Decimal::new_lower_bound_from(10, 0.1);
+        let upper = Decimal::new_upper_bound_from(10, 0.1);
+        assert!(lower <= upper);
+        assert!(lower.to_f64() <= 10.1 && 10.1 <= upper.to_f64());
+
+        // the largest fraction below a whole unit stays within the fractional part
+        let almost_one = 1.0 - f64::EPSILON / 2.0;
+        assert_eq!(Decimal::new_lower_bound_from(10, almost_one).integer_part(), 10);
+        assert_eq!(Decimal::new_upper_bound_from(10, almost_one).integer_part(), 10);
+        assert_eq!(Decimal::new_upper_bound_from(i64::MAX, almost_one).integer_part(), i64::MAX);
+    }
 
     use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
 

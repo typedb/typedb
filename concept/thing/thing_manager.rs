@@ -639,11 +639,8 @@ impl ThingManager {
     ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
         match value_lower_bound {
             Bound::Included(lower_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type_id,
-                    lower_value,
-                    self.vertex_generator.hasher(),
-                );
+                let vertex_or_prefix =
+                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, lower_value);
                 let storage_key_prefix = match vertex_or_prefix {
                     Either::First(vertex) => vertex.into_storage_key(),
                     Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
@@ -651,11 +648,8 @@ impl ThingManager {
                 RangeStart::Inclusive(storage_key_prefix)
             }
             Bound::Excluded(lower_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type_id,
-                    lower_value,
-                    self.vertex_generator.hasher(),
-                );
+                let vertex_or_prefix =
+                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, lower_value);
                 match vertex_or_prefix {
                     Either::First(vertex) => RangeStart::ExcludePrefix(vertex.into_storage_key()),
                     Either::Second(incomplete_attribute_prefix) => {
@@ -683,11 +677,8 @@ impl ThingManager {
     ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
         match value_upper_bound {
             Bound::Included(upper_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type_id,
-                    upper_value,
-                    self.vertex_generator.hasher(),
-                );
+                let vertex_or_prefix =
+                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, upper_value);
                 let storage_key_prefix = match vertex_or_prefix {
                     Either::First(vertex) => vertex.into_storage_key(),
                     Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
@@ -695,11 +686,8 @@ impl ThingManager {
                 RangeEnd::EndPrefixInclusive(storage_key_prefix)
             }
             Bound::Excluded(upper_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type_id,
-                    upper_value,
-                    self.vertex_generator.hasher(),
-                );
+                let vertex_or_prefix =
+                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, upper_value);
                 match vertex_or_prefix {
                     Either::First(vertex) => RangeEnd::EndPrefixExclusive(vertex.into_storage_key()),
                     Either::Second(incomplete_attribute_prefix) => {
@@ -970,7 +958,6 @@ impl ThingManager {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
                     attribute_type.vertex().type_id_(),
                     lower_value,
-                    self.vertex_generator.hasher(),
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => Self::has_reverse_start_for_attribute(vertex, owner_types_range_hint),
@@ -990,7 +977,6 @@ impl ThingManager {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
                     attribute_type.vertex().type_id_(),
                     lower_value,
-                    self.vertex_generator.hasher(),
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => {
@@ -1029,7 +1015,6 @@ impl ThingManager {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
                     attribute_type.vertex().type_id_(),
                     upper_value,
-                    self.vertex_generator.hasher(),
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => Self::has_reverse_end_for_attribute(vertex, owner_types_range_hint),
@@ -1043,7 +1028,6 @@ impl ThingManager {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
                     attribute_type.vertex().type_id_(),
                     upper_value,
-                    self.vertex_generator.hasher(),
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => {
@@ -2082,11 +2066,6 @@ impl ThingManager {
             Bound::Unbounded => T::MAX,
         };
         Some(bound_inclusive)
-    }
-
-    /// A range with equal, inclusive bounds is a point lookup: the full deterministic attribute ID may be used.
-    fn is_point_range(lower: &Bound<Value<'_>>, upper: &Bound<Value<'_>>) -> bool {
-        matches!(lower, Bound::Included(_)) && lower == upper
     }
 
     fn get_value_range<'a>(

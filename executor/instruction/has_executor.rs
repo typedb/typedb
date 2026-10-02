@@ -18,14 +18,18 @@ use compiler::{ExecutorVariable, executable::match_::instructions::thing::HasIns
 use concept::{
     error::ConceptReadError,
     thing::{
+        ThingAPI,
         attribute::Attribute,
         has::Has,
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
     },
-    type_::{TypeAPI, attribute_type::AttributeType, object_type::ObjectType},
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use encoding::{
+    graph::{Typed, thing::vertex_attribute::AttributeVertex, type_::vertex::TypeVertexEncoding},
+    value::{ValueEncodable, value::Value, value_type::ValueTypeCategory},
+};
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
@@ -206,18 +210,31 @@ impl HasExecutor {
                     &self.owner_type_range,
                     storage_counters,
                 );
-                let attribute_type_lower_bound_inclusive =
-                    ThingManager::start_type_bound_to_range_start_included_type(self.attribute_type_range.0.as_ref())
-                        .unwrap_or(AttributeType::MIN);
+                let lowest_attribute_type =
+                    ThingManager::start_type_bound_to_range_start_included_type(self.attribute_type_range.0.as_ref());
+                let fixed_bounds = match lowest_attribute_type {
+                    None => FixedHasBounds::None,
+                    Some(attribute_type) => {
+                        match attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())? {
+                            None => FixedHasBounds::None,
+                            Some(value_type) => match attribute_seek_floor(
+                                attribute_type,
+                                value_type.category(),
+                                value_restriction.lower_bound(),
+                            ) {
+                                None => FixedHasBounds::None,
+                                Some(floor) => FixedHasBounds::AttributeRangeFloor(floor),
+                            },
+                        }
+                    }
+                };
+
                 let as_tuples = HasTupleIterator::new(
                     has_iterator,
                     filter_for_row,
                     has_to_tuple_owner_attribute,
                     tuple_owner_attribute_to_has_canonical,
-                    FixedHasBounds::NoneWithLowerBounds(
-                        attribute_type_lower_bound_inclusive,
-                        value_restriction.lower_bound().map(|value| value.clone().into_owned()),
-                    ),
+                    fixed_bounds,
                 );
                 Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                     as_tuples,
@@ -335,9 +352,26 @@ impl fmt::Display for HasExecutor {
 }
 
 pub(crate) enum FixedHasBounds {
-    NoneWithLowerBounds(AttributeType, Bound<Value<'static>>),
+    None,
+    AttributeRangeFloor(Attribute),
     Owner(Object),
     Attribute(Attribute),
+}
+
+fn attribute_seek_floor(
+    attribute_type: AttributeType,
+    value_type_category: ValueTypeCategory,
+    lower_bound: Bound<&Value<'_>>,
+) -> Option<Attribute> {
+    let (Bound::Included(lower_bound) | Bound::Excluded(lower_bound)) = lower_bound else {
+        return None;
+    };
+    if !lower_bound.value_type().is_approximately_castable_to(value_type_category) {
+        return None;
+    }
+    let lower_bound = lower_bound.as_reference().approximate_cast_lower_bound(value_type_category)?;
+    let vertex = AttributeVertex::build_value_floor_for_comparison(attribute_type.vertex().type_id_(), lower_bound)?;
+    Some(Attribute::new(vertex))
 }
 
 pub(super) struct HasTupleIterator<Iter: LendingIterator> {

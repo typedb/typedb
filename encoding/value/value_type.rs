@@ -215,8 +215,8 @@ impl ValueTypeCategory {
         category
     }
 
-    pub fn equality_comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
-        match category {
+    pub fn equality_comparable_categories(&self) -> &'static [ValueTypeCategory] {
+        match self {
             ValueTypeCategory::Boolean => &[ValueTypeCategory::Boolean],
             ValueTypeCategory::Integer => {
                 &[ValueTypeCategory::Integer, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
@@ -236,12 +236,16 @@ impl ValueTypeCategory {
         }
     }
 
-    pub fn order_comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
-        match category {
+    pub fn order_comparable_categories(&self) -> &'static [ValueTypeCategory] {
+        match self {
             // Durations and structs have no ordering
             ValueTypeCategory::Duration | ValueTypeCategory::Struct => &[],
-            _ => Self::equality_comparable_categories(category),
+            _ => self.equality_comparable_categories(),
         }
+    }
+
+    pub fn is_order_comparable(&self) -> bool {
+        self.order_comparable_categories().contains(self)
     }
 
     pub fn try_into_value_type(self) -> Option<ValueType> {

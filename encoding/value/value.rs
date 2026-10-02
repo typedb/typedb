@@ -643,14 +643,6 @@ pub struct ValueRange<'a> {
 }
 
 impl<'a> ValueRange<'a> {
-    pub fn lower(&self) -> &Bound<Value<'a>> {
-        &self.lower
-    }
-
-    pub fn upper(&self) -> &Bound<Value<'a>> {
-        &self.upper
-    }
-
     pub fn into_bounds(self) -> (Bound<Value<'a>>, Bound<Value<'a>>) {
         (self.lower, self.upper)
     }
