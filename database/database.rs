@@ -77,6 +77,20 @@ pub(super) struct Schema {
     pub(super) function_cache: Arc<FunctionCache>,
 }
 
+type ReservationRequestId = u64;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TransactionReservationKind {
+    Write,
+    Schema,
+}
+
+struct TransactionReservationRequest {
+    id: ReservationRequestId,
+    kind: TransactionReservationKind,
+    notifier: SyncSender<()>,
+}
+
 struct SchemaWriteTransactionState {
     has_schema_transaction: bool,
     running_write_transactions: usize,
@@ -114,6 +128,13 @@ impl SchemaWriteTransactionState {
         }
     }
 
+    fn release(&mut self, kind: TransactionReservationKind) {
+        match kind {
+            TransactionReservationKind::Schema => self.has_schema_transaction = false,
+            TransactionReservationKind::Write => self.running_write_transactions -= 1,
+        }
+    }
+
     fn fulfill_requests_until_blocked(&mut self) {
         while let Some(kind) = self.queue.front().map(|request| request.kind) {
             if self.is_blocked(kind) {
@@ -125,20 +146,6 @@ impl SchemaWriteTransactionState {
             }
         }
     }
-}
-
-type ReservationRequestId = u64;
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum TransactionReservationKind {
-    Write,
-    Schema,
-}
-
-struct TransactionReservationRequest {
-    id: ReservationRequestId,
-    kind: TransactionReservationKind,
-    notifier: SyncSender<()>,
 }
 
 pub struct Database<D> {
@@ -220,28 +227,25 @@ impl<D> Database<D> {
             .lock()
             .expect("Expected exclusive access to withdraw a reservation request");
         guard.queue.retain(|request| request.id != id);
-        guard.fulfill_requests();
+        guard.fulfill_requests_until_blocked();
         Err(TransactionError::Timeout { source })
     }
 
     pub(super) fn release_write_transaction(&self) {
-        let mut guard = self
-            .schema_write_transaction_exclusivity
-            .lock()
-            .expect("The exclusive access should already be acquired in `reserve`");
-        guard.running_write_transactions -= 1;
-        if guard.running_write_transactions == 0 {
-            guard.fulfill_requests()
-        }
+        self.release_transaction(TransactionReservationKind::Write)
     }
 
     pub(super) fn release_schema_transaction(&self) {
+        self.release_transaction(TransactionReservationKind::Schema)
+    }
+
+    fn release_transaction(&self, kind: TransactionReservationKind) {
         let mut guard = self
             .schema_write_transaction_exclusivity
             .lock()
             .expect("The exclusive access should already be acquired in `reserve`");
-        guard.has_schema_transaction = false;
-        guard.fulfill_requests()
+        guard.release(kind);
+        guard.fulfill_requests_until_blocked();
     }
 
     fn try_acquire_schema_write_transaction_lock(

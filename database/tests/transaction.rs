@@ -1016,3 +1016,35 @@ fn withdrawing_a_timed_out_request_admits_the_write_transactions_behind_it() {
         assert!(open_elapsed < Duration::from_secs(5), "Opening a write transaction waited for {open_elapsed:?}");
     });
 }
+
+#[test]
+fn a_queued_schema_request_is_not_jumped_by_later_write_transactions() {
+    init_logging();
+    let databases_path = create_tmp_storage_dir();
+    let database = create_database(&databases_path);
+
+    let tx_write_1 = open_write(database.clone());
+
+    let runtime = Runtime::new().expect("Expected runtime");
+    runtime.block_on(async move {
+        let database_clone = database.clone();
+        let task_schema = tokio::task::spawn_blocking(move || {
+            // Released as soon as it is admitted, so the write queued behind it can proceed.
+            TransactionSchema::open(database, TransactionOptions::default()).map(TransactionSchema::close)
+        });
+        sleep(Duration::from_millis(100)).await; // let the schema request queue
+
+        let task_write_2 =
+            tokio::task::spawn_blocking(move || TransactionWrite::open(database_clone, TransactionOptions::default()));
+        sleep(Duration::from_millis(100)).await; // let the write request queue behind it
+
+        // The schema request can only be admitted if this was the last running write transaction,
+        // which requires the write above to have queued rather than started alongside it.
+        tx_write_1.close();
+
+        let schema_result = task_schema.await.unwrap();
+        assert_ok!(schema_result);
+        let write_2_result = task_write_2.await.unwrap();
+        assert_ok!(write_2_result);
+    });
+}
