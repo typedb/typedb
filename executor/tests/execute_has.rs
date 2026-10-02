@@ -773,7 +773,7 @@ fn count_rows_with_measure_checks(
         &executable,
         &snapshot,
         &thing_manager,
-        MaybeOwnedRow::empty(),
+        FixedBatch::from(MaybeOwnedRow::empty()),
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
