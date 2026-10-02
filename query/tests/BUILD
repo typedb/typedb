@@ -59,13 +59,6 @@ rust_test(
 )
 
 rust_test(
-    name = "test_string_equality",
-    crate_root = "string_equality.rs",
-    srcs = ["string_equality.rs"],
-    deps = deps,
-)
-
-rust_test(
     name = "test_query_profile",
     crate_root = "query_profile.rs",
     srcs = ["query_profile.rs"],

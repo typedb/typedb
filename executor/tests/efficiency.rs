@@ -1560,3 +1560,185 @@ fn intersections_seeks_with_extra_values() {
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 3);
     assert_eq!(storage_counters.get_raw_advance().unwrap(), 9)
 }
+
+// Strings longer than 16 bytes are stored under a hash of the value, keyed by only its first 8 bytes. These names all
+// share those 8 bytes, so an equality that scans the shared prefix rather than looking up the exact key reads every one.
+const LONG_NAME_PREFIX: &str = "https://example.com/item/";
+const LONG_NAME_OWNERS: usize = 100;
+const EXTRA_LONG_NAMES_ON_FIRST_OWNER: usize = 100;
+
+fn long_name(i: usize) -> String {
+    format!("{LONG_NAME_PREFIX}{i:05}")
+}
+
+// person i has name long_name(i); person 0 also has EXTRA_LONG_NAMES_ON_FIRST_OWNER more names with the same prefix
+fn setup_long_names_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            name_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap()
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+
+    let extra_names = (0..EXTRA_LONG_NAMES_ON_FIRST_OWNER).map(|j| format!("{LONG_NAME_PREFIX}extra/{j:05}"));
+    let names_by_owner = (0..LONG_NAME_OWNERS).map(|i| {
+        if i == 0 { [long_name(0)].into_iter().chain(extra_names.clone()).collect() } else { vec![long_name(i)] }
+    });
+    for names in names_by_owner {
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        for name in names {
+            let name =
+                thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(name))).unwrap();
+            person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
+        }
+    }
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+}
+
+enum NameLookup {
+    // $name isa name; $name == <value>;
+    IsaReverse,
+    // $person has $name; $name == <value>; (from the name)
+    HasReverse,
+    // $person isa person; $person has $name; $name == <value>; (from each person)
+    HasBoundOwner,
+}
+
+// Runs the lookup of `$name == <value>` on the long names database, and returns the number of answers and the storage
+// (seeks, advances) of the step that finds $name
+fn long_name_equality(lookup: NameLookup, value: &str) -> (usize, u64, u64) {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_long_names_database(&mut storage);
+
+    let mut translation_context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_id = value_parameters
+        .register_value(Value::String(Cow::Owned(value.to_owned())), Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("var_person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("var_person_type", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("var_name", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().get_or_declare_variable("var_name_type", None).unwrap();
+    let has = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let isa_name =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_id.clone()), Comparator::Equal, None)
+        .unwrap();
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_person_type, var_name, var_name_type], []);
+    let value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_name),
+        rhs: CheckVertex::Parameter(value_id),
+        comparator: Comparator::Equal,
+    }
+    .map(&mapping);
+    let step = |sort_variable: Variable, instruction, selected: &[Variable]| {
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&sort_variable],
+            vec![instruction],
+            selected.iter().map(|var| variable_positions[var]).collect(),
+            &named_variables,
+            4,
+        ))
+    };
+    let steps = match lookup {
+        NameLookup::IsaReverse => {
+            let mut isa = IsaReverseInstruction::new(isa_name, Inputs::None([]), &type_annotations).map(&mapping);
+            isa.add_check(value_check);
+            vec![step(var_name_type, ConstraintInstruction::IsaReverse(isa), &[var_name, var_name_type])]
+        }
+        NameLookup::HasReverse => {
+            let mut has_reverse = HasReverseInstruction::new(has, Inputs::None([]), &type_annotations).map(&mapping);
+            has_reverse.add_check(value_check);
+            vec![step(var_name, ConstraintInstruction::HasReverse(has_reverse), &[var_person, var_name])]
+        }
+        NameLookup::HasBoundOwner => {
+            let isa = IsaReverseInstruction::new(isa_person, Inputs::None([]), &type_annotations).map(&mapping);
+            let mut has = HasInstruction::new(has, Inputs::Single([var_person]), &type_annotations).map(&mapping);
+            has.add_check(value_check);
+            vec![
+                step(var_person_type, ConstraintInstruction::IsaReverse(isa), &[var_person, var_person_type]),
+                step(var_name, ConstraintInstruction::Has(has), &[var_person, var_person_type, var_name]),
+            ]
+        }
+    };
+    let name_step_index = steps.len() - 1;
+
+    let query_profile = QueryProfile::new(true);
+    let rows =
+        execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
+    let stage_profiles = query_profile.stage_profiles().read().unwrap();
+    let (_, match_profile) = stage_profiles.iter().next().unwrap();
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let storage_counters = pattern_profile.extend_or_get_step(name_step_index, || String::new()).storage_counters();
+    let (seeks, advances) = (storage_counters.get_raw_seek().unwrap(), storage_counters.get_raw_advance().unwrap());
+    println!("rows {}, seeks {seeks}, advances {advances}", rows.len());
+    (rows.len(), seeks, advances)
+}
+
+#[test]
+fn value_hashed_string_equality_isa_reads_exact_key() {
+    let (rows, seeks, advances) = long_name_equality(NameLookup::IsaReverse, &long_name(50));
+    assert_eq!(rows, 1);
+    // 3 seeks: the attribute's exact key, its has-reverse edges (to check it is owned), and reading its hashed value
+    assert_eq!(seeks, 3);
+    // 1 advance: step past the only attribute with that key and finish, without visiting the other names
+    assert_eq!(advances, 1);
+}
+
+#[test]
+fn value_hashed_string_equality_has_reverse_reads_exact_key() {
+    let (rows, seeks, advances) = long_name_equality(NameLookup::HasReverse, &long_name(50));
+    assert_eq!(rows, 1);
+    // 2 seeks: the has-reverse edges of the attribute's exact key, and reading its hashed value
+    assert_eq!(seeks, 2);
+    // 1 advance: step past the only owner and finish, without visiting the other names
+    assert_eq!(advances, 1);
+}
+
+#[test]
+fn value_hashed_string_equality_has_bound_owner_reads_exact_key() {
+    // person 0 owns 101 names sharing the first 8 bytes
+    let (rows, seeks, advances) = long_name_equality(NameLookup::HasBoundOwner, &long_name(0));
+    assert_eq!(rows, 1);
+    // 101 seeks: for each person, skip directly to the person + exact name key, plus reading the one hashed value
+    assert_eq!(seeks, LONG_NAME_OWNERS as u64 + 1);
+    // 1 advance: step past the only matching has edge and finish, without visiting person 0's other names
+    assert_eq!(advances, 1);
+}
