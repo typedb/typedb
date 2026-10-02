@@ -505,12 +505,28 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let database = &self.database_drop_guard;
+
         let commit_data = match self.write_snapshot.commit(commit_profile) {
-            Ok(sequence_number) => sequence_number,
-            Err(typedb_source) => return Err(DataCommitError::SnapshotError { typedb_source }),
+            Ok(commit_data) => commit_data,
+            Err((sequence_number, typedb_source)) => {
+                if let Some(sequence_number) = sequence_number {
+                    // landed in the WAL, must have been rejected
+                    debug_assert!(
+                        matches!(
+                            typedb_source,
+                            SnapshotError::Commit { typedb_source: storage::StorageCommitError::Isolation { .. } }
+                        ),
+                        "commit failed post-WAL with unexpected error: {}",
+                        error::TypeDBError::format_code_and_description(&typedb_source),
+                    );
+                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, None);
+                }
+                return Err(DataCommitError::SnapshotError { typedb_source });
+            }
         };
+
         if let Some(CommitData { sequence_number, record }) = commit_data {
-            let database = &self.database_drop_guard;
             let durability = database.storage.durability();
 
             durability
@@ -522,7 +538,7 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
             durability
                 .unsequenced_write(&commit_deltas)
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, Some(commit_deltas));
         }
         Ok(())
     }
@@ -592,8 +608,22 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         commit_profile.schema_update_statistics_durably_written();
 
         let commit_data = match self.schema_snapshot.commit(commit_profile) {
-            Ok(sequence_number) => sequence_number,
-            Err(typedb_source) => return Err(SchemaCommitError::SnapshotError { typedb_source }),
+            Ok(commit_data) => commit_data,
+            Err((sequence_number, typedb_source)) => {
+                if let Some(sequence_number) = sequence_number {
+                    // landed in the WAL, must have been rejected
+                    debug_assert!(
+                        matches!(
+                            typedb_source,
+                            SnapshotError::Commit { typedb_source: storage::StorageCommitError::Isolation { .. } }
+                        ),
+                        "commit failed post-WAL with unexpected error: {}",
+                        error::TypeDBError::format_code_and_description(&typedb_source),
+                    );
+                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, None);
+                }
+                return Err(SchemaCommitError::SnapshotError { typedb_source });
+            }
         };
 
         if let Some(CommitData { sequence_number, record }) = commit_data {
@@ -606,7 +636,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
 
             let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
             durability.unsequenced_write(&commit_deltas).map_err(|typedb_source| DurabilityError { typedb_source })?;
-            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, Some(commit_deltas));
 
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
