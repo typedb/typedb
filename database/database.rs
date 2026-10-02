@@ -101,6 +101,30 @@ impl SchemaWriteTransactionState {
         self.queue.push_back(TransactionReservationRequest { id, kind, notifier });
         (receiver, id)
     }
+
+    fn is_blocked(&self, kind: TransactionReservationKind) -> bool {
+        self.has_schema_transaction
+            || (kind == TransactionReservationKind::Schema && self.running_write_transactions > 0)
+    }
+
+    fn admit(&mut self, kind: TransactionReservationKind) {
+        match kind {
+            TransactionReservationKind::Schema => self.has_schema_transaction = true,
+            TransactionReservationKind::Write => self.running_write_transactions += 1,
+        }
+    }
+
+    fn fulfill_requests_until_blocked(&mut self) {
+        while let Some(kind) = self.queue.front().map(|request| request.kind) {
+            if self.is_blocked(kind) {
+                break;
+            }
+            let request = self.queue.pop_front().expect("Expected the peeked request");
+            if request.notifier.send(()).is_ok() {
+                self.admit(kind);
+            }
+        }
+    }
 }
 
 type ReservationRequestId = u64;
@@ -158,32 +182,23 @@ impl<D> Database<D> {
         self.thing_vertex_generator.sync_from_storage(self.storage.clone())
     }
 
-    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
-        let (mut guard, timeout_left) =
-            self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
-        if guard.has_schema_transaction || !guard.queue.is_empty() {
-            let (receiver, id) = guard.enqueue(TransactionReservationKind::Write);
-            drop(guard);
-            self.await_reservation(receiver, id, timeout_left)?;
-        } else {
-            guard.running_write_transactions += 1;
-            drop(guard);
-        }
-        Ok(())
+    pub(super) fn reserve_write_transaction(&self, timeout: Duration) -> Result<(), TransactionError> {
+        self.reserve_transaction(TransactionReservationKind::Write, timeout)
     }
 
-    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
-        let (mut guard, timeout_left) =
-            self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
-        if guard.has_schema_transaction || guard.running_write_transactions > 0 || !guard.queue.is_empty() {
-            let (receiver, id) = guard.enqueue(TransactionReservationKind::Schema);
-            drop(guard);
-            self.await_reservation(receiver, id, timeout_left)?;
-        } else {
-            guard.has_schema_transaction = true;
-            drop(guard);
+    pub(super) fn reserve_schema_transaction(&self, timeout: Duration) -> Result<(), TransactionError> {
+        self.reserve_transaction(TransactionReservationKind::Schema, timeout)
+    }
+
+    fn reserve_transaction(&self, kind: TransactionReservationKind, timeout: Duration) -> Result<(), TransactionError> {
+        let (mut guard, timeout_left) = self.try_acquire_schema_write_transaction_lock(timeout)?;
+        if guard.queue.is_empty() && !guard.is_blocked(kind) {
+            guard.admit(kind);
+            return Ok(());
         }
-        Ok(())
+        let (receiver, id) = guard.enqueue(kind);
+        drop(guard);
+        self.await_reservation(receiver, id, timeout_left)
     }
 
     fn await_reservation(
@@ -205,7 +220,7 @@ impl<D> Database<D> {
             .lock()
             .expect("Expected exclusive access to withdraw a reservation request");
         guard.queue.retain(|request| request.id != id);
-        Self::fulfill_reservation_requests(&mut guard);
+        guard.fulfill_requests();
         Err(TransactionError::Timeout { source })
     }
 
@@ -216,7 +231,7 @@ impl<D> Database<D> {
             .expect("The exclusive access should already be acquired in `reserve`");
         guard.running_write_transactions -= 1;
         if guard.running_write_transactions == 0 {
-            Self::fulfill_reservation_requests(&mut guard)
+            guard.fulfill_requests()
         }
     }
 
@@ -226,7 +241,7 @@ impl<D> Database<D> {
             .lock()
             .expect("The exclusive access should already be acquired in `reserve`");
         guard.has_schema_transaction = false;
-        Self::fulfill_reservation_requests(&mut guard)
+        guard.fulfill_requests()
     }
 
     fn try_acquire_schema_write_transaction_lock(
@@ -254,38 +269,6 @@ impl<D> Database<D> {
         let remaining_timeout = if timeout < elapsed { Duration::from_millis(0) } else { timeout - elapsed };
 
         Ok((guard, remaining_timeout))
-    }
-
-    fn fulfill_reservation_requests(guard: &mut MutexGuard<'_, SchemaWriteTransactionState>) {
-        let SchemaWriteTransactionState { has_schema_transaction, running_write_transactions, queue, .. } =
-            &mut **guard;
-        if *has_schema_transaction {
-            return;
-        }
-
-        loop {
-            let Some(next_kind) = queue.front().map(|request| request.kind) else {
-                break;
-            };
-
-            if next_kind == TransactionReservationKind::Schema && *running_write_transactions > 0 {
-                // wait for the write transactions to finish, leave the request in the queue
-                break;
-            }
-            let request = queue.pop_front().expect("Expected the next request");
-            if request.notifier.send(()).is_err() {
-                continue;
-            }
-            match next_kind {
-                TransactionReservationKind::Schema => {
-                    // fulfill exactly 1 awaiting schema request
-                    *has_schema_transaction = true;
-                    break;
-                }
-                // fulfill as many write requests as possible
-                TransactionReservationKind::Write => *running_write_transactions += 1,
-            }
-        }
     }
 }
 
@@ -588,7 +571,7 @@ impl Database<WALClient> {
     }
 
     pub fn reset(&mut self) -> Result<(), Box<DatabaseResetError>> {
-        self.reserve_schema_transaction(Self::RESET_EXCLUSIVITY_ACQUIRE_TIMEOUT.as_millis() as u64)
+        self.reserve_schema_transaction(Self::RESET_EXCLUSIVITY_ACQUIRE_TIMEOUT)
             .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?;
         let result = self.reset_with_schema_exclusivity();
         self.release_schema_transaction();
