@@ -688,7 +688,8 @@ fn make_update_statistics_fn(
                 let commit_deltas = {
                     let mut queue = commit_deltas_queue.write().unwrap();
                     let Some((&seq, _)) = queue.first_key_value() else { break };
-                    if seq != new_statistics.sequence_number.next() {
+                    if seq > new_statistics.sequence_number.next() {
+                        // waiting on commits between statistics and current front of the queue
                         break;
                     }
                     queue.pop_first().unwrap().1
