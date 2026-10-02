@@ -44,7 +44,7 @@ fn snapshot_generated_new_id() {
     let snapshot1_open_seq_num = snapshot1.open_sequence_number();
     let snapshot2_id = snapshot2.id();
     snapshot1.put(StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1])));
-    let seqnum1 = snapshot1.commit(&mut profile).unwrap().unwrap();
+    let seqnum1 = snapshot1.commit(&mut profile).unwrap().unwrap().sequence_number;
 
     let snapshot3 = storage.clone().open_snapshot_write();
     assert_ne!(snapshot3.open_sequence_number(), snapshot1_open_seq_num);
@@ -445,7 +445,7 @@ fn preloaded_snapshot_load_from_at_sequence_number() {
 
     let mut snap_t0 = storage.clone().open_snapshot_write();
     snap_t0.put_val(key_at_t0.clone(), ByteArray::copy(&[0]));
-    let seq_t0 = snap_t0.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
+    let seq_t0 = snap_t0.commit(&mut CommitProfile::disabled()).unwrap().unwrap().sequence_number;
 
     let mut snap_t1 = storage.clone().open_snapshot_write();
     snap_t1.put_val(key_at_t1.clone(), ByteArray::copy(&[1]));

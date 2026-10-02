@@ -5,6 +5,7 @@
  */
 use std::{
     fmt::Formatter,
+    mem,
     ops::Deref,
     sync::{Arc, mpsc::RecvTimeoutError},
     time::Duration,
@@ -13,7 +14,10 @@ use std::{
 pub use concept::thing::cleanup::{CleanupIntervals, CleanupRecord};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{statistics::StatisticsError, thing_manager::ThingManager},
+    thing::{
+        statistics::{StatisticsError, deltas::CommitDeltas},
+        thing_manager::ThingManager,
+    },
     type_::type_manager::{
         TypeManager,
         type_cache::{TypeCache, TypeCacheCreateError},
@@ -28,6 +32,7 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, TransactionProfile};
 use serde::{Deserialize, Serialize};
 use storage::{
+    CommitData,
     durability_client::{DurabilityClient, DurabilityClientError},
     isolation_manager::WriteSnapshotDropGuard,
     record::CommitRecord,
@@ -501,18 +506,40 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        let sequence_number = match self.write_snapshot.commit(commit_profile) {
-            Ok(sequence_number) => sequence_number,
-            Err(typedb_source) => return Err(DataCommitError::SnapshotError { typedb_source }),
+        let database = &self.database_drop_guard;
+
+        let commit_data = match self.write_snapshot.commit(commit_profile) {
+            Ok(commit_data) => commit_data,
+            Err((sequence_number, typedb_source)) => {
+                if let Some(sequence_number) = sequence_number {
+                    // landed in the WAL, must have been rejected
+                    debug_assert!(
+                        matches!(
+                            typedb_source,
+                            SnapshotError::Commit { typedb_source: storage::StorageCommitError::Isolation { .. } }
+                        ),
+                        "commit failed post-WAL with unexpected error: {}",
+                        error::TypeDBError::format_code_and_description(&typedb_source),
+                    );
+                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, None);
+                }
+                return Err(DataCommitError::SnapshotError { typedb_source });
+            }
         };
-        if let Some(sequence_number) = sequence_number {
-            let database = &self.database_drop_guard;
-            database
-                .storage
-                .durability()
+
+        if let Some(CommitData { sequence_number, record }) = commit_data {
+            let durability = database.storage.durability();
+
+            durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
             database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
+
+            let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
+            durability
+                .unsequenced_write(&commit_deltas)
+                .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, Some(commit_deltas));
         }
         Ok(())
     }
@@ -560,7 +587,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
     }
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
-        use SchemaCommitError::{StatisticsError, TypeCacheUpdateError};
+        use SchemaCommitError::{DurabilityError, TypeCacheUpdateError};
         let database = &self.database_drop_guard;
 
         // Schema commits must wait for all other data operations to finish. No new read or write
@@ -569,30 +596,61 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         let mut schema = (*schema_commit_guard).clone();
 
         let mut thing_statistics = (*schema.thing_statistics).clone();
+        let durability = database.storage.durability();
 
         // synchronise statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
-            return Err(StatisticsError { typedb_source });
+        for (sequence_number, commit_deltas) in mem::take(&mut *database._commit_deltas_queue.write().unwrap()) {
+            debug_assert!(
+                thing_statistics.sequence_number.next() >= sequence_number,
+                "Attempting to apply deltas {} to Statistics at {} during schema commit.",
+                sequence_number,
+                thing_statistics.sequence_number,
+            );
+            if let Some(commit_deltas) = commit_deltas {
+                if let Err(typedb_source) = thing_statistics.update(&commit_deltas, durability) {
+                    return Err(DurabilityError { typedb_source });
+                }
+            } else {
+                thing_statistics.sequence_number = thing_statistics.sequence_number.next();
+            }
         }
 
         // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
-            return Err(StatisticsError { typedb_source });
+            return Err(DurabilityError { typedb_source });
         }
         commit_profile.schema_update_statistics_durably_written();
 
-        let sequence_number = match self.schema_snapshot.commit(commit_profile) {
-            Ok(sequence_number) => sequence_number,
-            Err(typedb_source) => return Err(SchemaCommitError::SnapshotError { typedb_source }),
+        let commit_data = match self.schema_snapshot.commit(commit_profile) {
+            Ok(commit_data) => commit_data,
+            Err((sequence_number, typedb_source)) => {
+                if let Some(sequence_number) = sequence_number {
+                    // landed in the WAL, must have been rejected
+                    debug_assert!(
+                        matches!(
+                            typedb_source,
+                            SnapshotError::Commit { typedb_source: storage::StorageCommitError::Isolation { .. } }
+                        ),
+                        "commit failed post-WAL with unexpected error: {}",
+                        error::TypeDBError::format_code_and_description(&typedb_source),
+                    );
+                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, None);
+                }
+                return Err(SchemaCommitError::SnapshotError { typedb_source });
+            }
         };
 
-        if let Some(sequence_number) = sequence_number {
-            database
-                .storage
-                .durability()
+        if let Some(CommitData { sequence_number, record }) = commit_data {
+            durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
-                .map_err(|typedb_source| SchemaCommitError::DurabilityError { typedb_source })?;
+                .map_err(|typedb_source| DurabilityError { typedb_source })?;
             database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
+
+            let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
+            durability.unsequenced_write(&commit_deltas).map_err(|typedb_source| DurabilityError { typedb_source })?;
+            if let Err(typedb_source) = thing_statistics.update(&commit_deltas, durability) {
+                return Err(DurabilityError { typedb_source });
+            }
 
             // replace schema cache
             let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
@@ -614,9 +672,6 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         }
 
         // replace statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
-            return Err(StatisticsError { typedb_source });
-        }
         commit_profile.schema_update_statistics_keys_updated();
         schema.thing_statistics = Arc::new(thing_statistics);
 

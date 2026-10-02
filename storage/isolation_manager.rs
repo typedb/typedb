@@ -14,7 +14,7 @@ use std::{
     fmt,
     sync::{
         Arc, OnceLock, RwLock,
-        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
+        atomic::{AtomicU8, AtomicU64, Ordering},
     },
 };
 
@@ -26,6 +26,7 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
     sequence_number::SequenceNumber,
+    snapshot::write::{AtomicPutAction, PutAction},
     write_batches::WriteBatches,
 };
 
@@ -117,10 +118,11 @@ impl IsolationManager {
                     CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
                     _ => panic!("get_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
                 };
-                Ok(ValidatedCommit::Write(WriteBatches::from_operations(
-                    sequence_number,
-                    commit_record.get().operations(),
-                )))
+                let commit_record = commit_record.get();
+                Ok(ValidatedCommit::Write(
+                    WriteBatches::from_operations(sequence_number, commit_record.operations()),
+                    commit_record,
+                ))
             }
         }
     }
@@ -262,7 +264,7 @@ impl IsolationManager {
 
 pub(crate) enum ValidatedCommit {
     Conflict(IsolationConflict),
-    Write(WriteBatches),
+    Write(WriteBatches, Arc<CommitRecord>),
 }
 
 fn resolve_concurrent(
@@ -307,15 +309,17 @@ fn handle_dependency(commit_dependency: CommitDependency) -> Option<IsolationCon
 
 #[derive(Debug, Clone)]
 pub(crate) enum DependentPut {
-    Deleted { reinsert: Arc<AtomicBool> },
-    Inserted { reinsert: Arc<AtomicBool> },
+    Deleted { action: Arc<AtomicPutAction> },
+    Inserted { action: Arc<AtomicPutAction> },
+    Overwritten { action: Arc<AtomicPutAction> },
 }
 
 impl DependentPut {
     fn apply(self) {
         match self {
-            DependentPut::Deleted { reinsert } => reinsert.store(true, Ordering::Release),
-            DependentPut::Inserted { reinsert } => reinsert.store(false, Ordering::Release),
+            DependentPut::Deleted { action } => action.store(PutAction::Insert, Ordering::Release),
+            DependentPut::Inserted { action } => action.store(PutAction::Nop, Ordering::Release),
+            DependentPut::Overwritten { action } => action.store(PutAction::Overwrite, Ordering::Release),
         }
     }
 }
