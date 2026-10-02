@@ -89,8 +89,9 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
     fn prepare_database(&self, _context: &Context, database: Arc<Database<WALClient>>) {
         crate::create_schema(database.clone(), self.schema.as_str());
         if let Some(preload_fn) = &self.preload_data_fn {
-            preload_fn(database.clone())
+            preload_fn(database.clone());
         }
+        database.benchmark_only__flush();
     }
 
     fn warm_up(&self, _context: &Context, database: Arc<Database<WALClient>>) {
@@ -183,7 +184,7 @@ pub struct RunDescriptor {
 
 impl RunDescriptor {
     const WARMUP: RunDescriptor =
-        RunDescriptor { parallelism: 1, total_txns: 10, n_queries_per_tx: 1, n_rows_per_query: 1 };
+        RunDescriptor { parallelism: 1, total_txns: 10, n_queries_per_tx: 1, n_rows_per_query: 10 };
 
     pub fn total_rows(&self) -> usize {
         self.total_txns * self.n_queries_per_tx * self.n_rows_per_query
