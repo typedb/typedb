@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, MutexGuard, RwLock, TryLockError,
-        mpsc::{SyncSender, sync_channel},
+        mpsc::{Receiver, SyncSender, sync_channel},
     },
     time::{Duration, Instant},
 };
@@ -77,11 +77,75 @@ pub(super) struct Schema {
     pub(super) function_cache: Arc<FunctionCache>,
 }
 
-type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservationRequest>);
+type ReservationRequestId = u64;
 
-enum TransactionReservationRequest {
-    Write(SyncSender<()>),
-    Schema(SyncSender<()>),
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TransactionReservationKind {
+    Write,
+    Schema,
+}
+
+struct TransactionReservationRequest {
+    id: ReservationRequestId,
+    kind: TransactionReservationKind,
+    notifier: SyncSender<()>,
+}
+
+struct SchemaWriteTransactionState {
+    has_schema_transaction: bool,
+    running_write_transactions: usize,
+    queue: VecDeque<TransactionReservationRequest>,
+    next_request_id: ReservationRequestId,
+}
+
+impl SchemaWriteTransactionState {
+    fn new() -> Self {
+        Self {
+            has_schema_transaction: false,
+            running_write_transactions: 0,
+            queue: VecDeque::with_capacity(100),
+            next_request_id: 0,
+        }
+    }
+
+    fn enqueue(&mut self, kind: TransactionReservationKind) -> (Receiver<()>, ReservationRequestId) {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
+        let (notifier, receiver) = sync_channel::<()>(0);
+        self.queue.push_back(TransactionReservationRequest { id, kind, notifier });
+        (receiver, id)
+    }
+
+    fn is_blocked(&self, kind: TransactionReservationKind) -> bool {
+        self.has_schema_transaction
+            || (kind == TransactionReservationKind::Schema && self.running_write_transactions > 0)
+    }
+
+    fn admit(&mut self, kind: TransactionReservationKind) {
+        match kind {
+            TransactionReservationKind::Schema => self.has_schema_transaction = true,
+            TransactionReservationKind::Write => self.running_write_transactions += 1,
+        }
+    }
+
+    fn release(&mut self, kind: TransactionReservationKind) {
+        match kind {
+            TransactionReservationKind::Schema => self.has_schema_transaction = false,
+            TransactionReservationKind::Write => self.running_write_transactions -= 1,
+        }
+    }
+
+    fn fulfill_requests_until_blocked(&mut self) {
+        while let Some(kind) = self.queue.front().map(|request| request.kind) {
+            if self.is_blocked(kind) {
+                break;
+            }
+            let request = self.queue.pop_front().expect("Expected the peeked request");
+            if request.notifier.send(()).is_ok() {
+                self.admit(kind);
+            }
+        }
+    }
 }
 
 pub struct Database<D> {
@@ -125,58 +189,63 @@ impl<D> Database<D> {
         self.thing_vertex_generator.sync_from_storage(self.storage.clone())
     }
 
-    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
-        let (mut guard, timeout_left) =
-            self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
-        let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
-
-        if has_schema_transaction || !notify_queue.is_empty() {
-            let (sender, receiver) = sync_channel::<()>(0);
-            notify_queue.push_back(TransactionReservationRequest::Write(sender));
-            drop(guard);
-            receiver.recv_timeout(timeout_left).map_err(|source| TransactionError::Timeout { source })?;
-        } else {
-            guard.1 = running_write_transactions + 1;
-            drop(guard);
-        }
-        Ok(())
+    pub(super) fn reserve_write_transaction(&self, timeout: Duration) -> Result<(), TransactionError> {
+        self.reserve_transaction(TransactionReservationKind::Write, timeout)
     }
 
-    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
-        let (mut guard, timeout_left) =
-            self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
-        let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
+    pub(super) fn reserve_schema_transaction(&self, timeout: Duration) -> Result<(), TransactionError> {
+        self.reserve_transaction(TransactionReservationKind::Schema, timeout)
+    }
 
-        if has_schema_transaction || running_write_transactions > 0 || !notify_queue.is_empty() {
-            let (sender, receiver) = sync_channel::<()>(0);
-            notify_queue.push_back(TransactionReservationRequest::Schema(sender));
-            drop(guard);
-            receiver.recv_timeout(timeout_left).map_err(|source| TransactionError::Timeout { source })?;
-        } else {
-            guard.0 = true;
-            drop(guard);
+    fn reserve_transaction(&self, kind: TransactionReservationKind, timeout: Duration) -> Result<(), TransactionError> {
+        let (mut guard, timeout_left) = self.try_acquire_schema_write_transaction_lock(timeout)?;
+        if guard.queue.is_empty() && !guard.is_blocked(kind) {
+            guard.admit(kind);
+            return Ok(());
         }
-        Ok(())
+        let (receiver, id) = guard.enqueue(kind);
+        drop(guard);
+        self.await_reservation(receiver, id, timeout_left)
+    }
+
+    fn await_reservation(
+        &self,
+        receiver: Receiver<()>,
+        id: ReservationRequestId,
+        timeout: Duration,
+    ) -> Result<(), TransactionError> {
+        let source = match receiver.recv_timeout(timeout) {
+            Ok(()) => return Ok(()),
+            Err(source) => source,
+        };
+        // Dropped before locking: a concurrent fulfillment would otherwise block in `send` while
+        // holding the lock this thread is about to wait for.
+        drop(receiver);
+
+        let mut guard = self
+            .schema_write_transaction_exclusivity
+            .lock()
+            .expect("Expected exclusive access to withdraw a reservation request");
+        guard.queue.retain(|request| request.id != id);
+        guard.fulfill_requests_until_blocked();
+        Err(TransactionError::Timeout { source })
     }
 
     pub(super) fn release_write_transaction(&self) {
-        let mut guard = self
-            .schema_write_transaction_exclusivity
-            .lock()
-            .expect("The exclusive access should already be acquired in `reserve`");
-        guard.1 -= 1;
-        if guard.1 == 0 {
-            Self::fulfill_reservation_requests(&mut guard)
-        }
+        self.release_transaction(TransactionReservationKind::Write)
     }
 
     pub(super) fn release_schema_transaction(&self) {
+        self.release_transaction(TransactionReservationKind::Schema)
+    }
+
+    fn release_transaction(&self, kind: TransactionReservationKind) {
         let mut guard = self
             .schema_write_transaction_exclusivity
             .lock()
             .expect("The exclusive access should already be acquired in `reserve`");
-        guard.0 = false;
-        Self::fulfill_reservation_requests(&mut guard)
+        guard.release(kind);
+        guard.fulfill_requests_until_blocked();
     }
 
     fn try_acquire_schema_write_transaction_lock(
@@ -205,49 +274,6 @@ impl<D> Database<D> {
 
         Ok((guard, remaining_timeout))
     }
-
-    fn fulfill_reservation_requests(
-        guard: &mut MutexGuard<'_, (bool, usize, VecDeque<TransactionReservationRequest>)>,
-    ) {
-        let (has_schema_transaction, running_write_transactions, notify_queue) = &mut **guard;
-
-        loop {
-            let (next_schema, next_write) = match notify_queue.front() {
-                Some(TransactionReservationRequest::Schema(_)) => (true, false),
-                Some(TransactionReservationRequest::Write(_)) => (false, true),
-                None => (false, false),
-            };
-
-            if next_schema {
-                if *running_write_transactions > 0 {
-                    // wait for the write transactions to finish, leave the request in the queue
-                    break;
-                }
-                let TransactionReservationRequest::Schema(notifier) =
-                    notify_queue.pop_front().expect("Expected the next schema request")
-                else {
-                    panic!("Expected the next schema request: the queue cannot be changed")
-                };
-                if notifier.send(()).is_ok() {
-                    // fulfill exactly 1 awaiting schema request
-                    *has_schema_transaction = true;
-                    break;
-                }
-            } else if next_write {
-                let TransactionReservationRequest::Write(notifier) =
-                    notify_queue.pop_front().expect("Expected the next write request")
-                else {
-                    panic!("Expected the next write request: the queue cannot be changed")
-                };
-                if notifier.send(()).is_ok() {
-                    // fulfill as many write requests as possible
-                    *running_write_transactions += 1;
-                }
-            } else {
-                break;
-            }
-        }
-    }
 }
 
 impl<D: DurabilityClient> Database<D> {
@@ -263,6 +289,8 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
+    const RESET_EXCLUSIVITY_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(60);
+
     pub fn open(
         path: &Path,
         diagnostics_manager: &DiagnosticsManager,
@@ -354,7 +382,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
-            schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
+            schema_write_transaction_exclusivity: Mutex::new(SchemaWriteTransactionState::new()),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
             _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
@@ -494,7 +522,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
-            schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
+            schema_write_transaction_exclusivity: Mutex::new(SchemaWriteTransactionState::new()),
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
                 checkpoint_fn,
@@ -547,10 +575,16 @@ impl Database<WALClient> {
     }
 
     pub fn reset(&mut self) -> Result<(), Box<DatabaseResetError>> {
+        self.reserve_schema_transaction(Self::RESET_EXCLUSIVITY_ACQUIRE_TIMEOUT)
+            .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?;
+        let result = self.reset_with_schema_exclusivity();
+        self.release_schema_transaction();
+        result
+    }
+
+    fn reset_with_schema_exclusivity(&mut self) -> Result<(), Box<DatabaseResetError>> {
         use DatabaseResetError::CorruptionPartialResetStorageInUse;
 
-        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64)
-            .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?; // exclusively lock out other write or schema transactions;
         let mut locked_schema = self.schema.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
@@ -577,7 +611,6 @@ impl Database<WALClient> {
 
         self.query_cache.force_reset(&Statistics::new(SequenceNumber::MIN));
 
-        self.release_schema_transaction();
         Ok(())
     }
 

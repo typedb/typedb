@@ -7,6 +7,7 @@ use std::{
     fmt::Formatter,
     ops::Deref,
     sync::{Arc, mpsc::RecvTimeoutError},
+    time::Duration,
 };
 
 pub use concept::thing::cleanup::{CleanupIntervals, CleanupRecord};
@@ -136,7 +137,8 @@ pub struct TransactionWrite<D> {
 
 impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
-        database.reserve_write_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
+        database
+            .reserve_write_transaction(Duration::from_millis(transaction_options.schema_lock_acquire_timeout_millis))?;
 
         let schema = database.schema.read().unwrap();
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
@@ -251,7 +253,9 @@ pub struct TransactionSchema<D> {
 
 impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
-        database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
+        database.reserve_schema_transaction(Duration::from_millis(
+            transaction_options.schema_lock_acquire_timeout_millis,
+        ))?;
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(
