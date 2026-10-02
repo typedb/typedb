@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
-
 use answer::variable::Variable;
 use encoding::value::{label::Label, value::Value};
 use error::UnimplementedFeature;
@@ -567,7 +565,6 @@ fn add_typeql_iterable_binding(
         | typeql::Expression::Operation(_)
         | typeql::Expression::Paren(_)
         | typeql::Expression::ScopedLabel(_)
-        | typeql::Expression::Vector(_)
         | typeql::Expression::Label(_) => unreachable!(),
     }
 }
@@ -597,31 +594,18 @@ fn add_vector_search_call(
 
     let query = match vector_arg {
         typeql::Expression::Variable(var) => Vertex::Variable(register_typeql_var(constraints, var)?),
-        typeql::Expression::Vector(vector) => {
-            let typeql::Expression::List(list) = &vector.list else {
-                return Err(invalid("second argument must be a vector literal with inline elements"));
-            };
-            if list.items.is_empty() || list.items.len() > MAX_VECTOR_LENGTH as usize {
-                return Err(invalid("query vector length out of range"));
+        typeql::Expression::Value(literal) => match translate_literal(literal) {
+            Ok(Value::Vector(elements)) => {
+                if elements.is_empty() || elements.len() > MAX_VECTOR_LENGTH as usize {
+                    return Err(invalid("query vector length out of range"));
+                }
+                Vertex::Parameter(constraints.parameters().register_value(
+                    Value::Vector(elements),
+                    literal.span().expect("Parser did not provide Vector text range"),
+                ))
             }
-            let elements = list
-                .items
-                .iter()
-                .map(|item| {
-                    let typeql::Expression::Value(literal) = item else { return None };
-                    match translate_literal(literal).ok()? {
-                        Value::Double(double) => Some(double as f32),
-                        Value::Integer(integer) => Some(integer as f32),
-                        _ => None,
-                    }
-                })
-                .collect::<Option<Vec<f32>>>()
-                .ok_or_else(|| invalid("query vector elements must be numeric literals"))?;
-            Vertex::Parameter(constraints.parameters().register_value(
-                Value::Vector(Cow::Owned(elements)),
-                vector.span().expect("Parser did not provide Vector text range"),
-            ))
-        }
+            _ => return Err(invalid("second argument must be a vector literal or a variable")),
+        },
         _ => return Err(invalid("second argument must be a vector literal or a variable")),
     };
 

@@ -3195,15 +3195,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "numkong"
-version = "7.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "221cf2cb86582f5952456f6e75e9cc828258e24c3ffac49e52d3fe3ab44dd5c1"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "objc2"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6005,7 +5996,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=aafb485dccb171bb26f254758f9bb499f898e143#aafb485dccb171bb26f254758f9bb499f898e143"
+source = "git+https://github.com/typedb/typeql?rev=c931116b8dc3f409b3aaf3828b91dd8fb388e671#c931116b8dc3f409b3aaf3828b91dd8fb388e671"
 dependencies = [
  "chrono",
  "itertools 0.14.0",
@@ -6110,7 +6101,6 @@ checksum = "b43f3a7c8d3b100d53c1a34e9ce4cd76cc83627bdb4fcd035d4e82102778aeee"
 dependencies = [
  "cxx",
  "cxx-build",
- "numkong",
 ]
 
 [[package]]

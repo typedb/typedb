@@ -72,6 +72,14 @@ impl FromTypeQLLiteral for Value<'static> {
             ValueLiteral::Struct(_) => {
                 Err(LiteralParseError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Structs })
             }
+            ValueLiteral::Vector(vector) => {
+                let elements = vector
+                    .elements
+                    .iter()
+                    .map(|element| Ok(f64::from_typeql_literal(element, source_span)? as f32))
+                    .collect::<Result<Vec<f32>, LiteralParseError>>()?;
+                Ok(Value::Vector(Cow::Owned(elements)))
+            }
         }
     }
 }

@@ -4,11 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
-
 use answer::variable::Variable;
-use encoding::value::{value::Value, value_type::VectorPrecision};
-use error::UnimplementedFeature;
+use encoding::value::value::Value;
 use typeql::{
     common::{Span, Spanned},
     expression::{BuiltinFunctionName, FunctionName},
@@ -22,7 +19,7 @@ use crate::{
         constraint::ConstraintsBuilder,
         expression::{
             BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
-            ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator, VectorConstructor,
+            ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
     },
     pipeline::function_signature::FunctionSignatureIndex,
@@ -31,7 +28,7 @@ use crate::{
             register_type_label, register_type_scoped_label, register_typeql_var, split_out_inline_expressions,
         },
         literal::translate_literal,
-        tokens::{MAX_VECTOR_LENGTH, checked_identifier, translate_vector_precision},
+        tokens::checked_identifier,
     },
 };
 
@@ -107,54 +104,6 @@ fn build_recursive(
                 list.span().expect("Parser did not provide List text range"),
             );
             Expression::List(ListConstructor::new(items, len_id, list.span()))
-        }
-        typeql::Expression::Vector(vector) => {
-            let typeql::Expression::List(list) = &vector.list else {
-                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                    feature: UnimplementedFeature::VectorSearch,
-                }));
-            };
-            let items = list
-                .items
-                .iter()
-                .map(|sub_expr| build_recursive(function_index, constraints, sub_expr, tree))
-                .collect::<Result<Vec<_>, _>>()?;
-            let precision = translate_vector_precision(vector.precision);
-
-            let foldable = !items.is_empty() && items.len() <= MAX_VECTOR_LENGTH as usize;
-            let folded: Option<Vec<f32>> = foldable
-                .then(|| {
-                    items
-                        .iter()
-                        .map(|item_id| match tree.get(*item_id) {
-                            Expression::Constant(parameter_id) => match constraints.parameters().value(parameter_id) {
-                                Some(Value::Double(double)) => Some(*double as f32),
-                                Some(Value::Integer(integer)) => Some(*integer as f32),
-                                _ => None,
-                            },
-                            _ => None,
-                        })
-                        .collect::<Option<Vec<_>>>()
-                })
-                .flatten();
-
-            match folded {
-                Some(elements) => {
-                    debug_assert_eq!(precision, VectorPrecision::Float32);
-                    let id = constraints.parameters().register_value(
-                        Value::Vector(Cow::Owned(elements)),
-                        vector.span().expect("Parser did not provide Vector text range"),
-                    );
-                    Expression::Constant(id)
-                }
-                None => {
-                    let len_id = constraints.parameters().register_value(
-                        Value::Integer(items.len() as i64),
-                        list.span().expect("Parser did not provide List text range"),
-                    );
-                    Expression::Vector(VectorConstructor::new(items, len_id, precision, vector.span()))
-                }
-            }
         }
         typeql::Expression::ListIndexRange(range) => {
             let list_variable = register_typeql_var(constraints, &range.var)?;
