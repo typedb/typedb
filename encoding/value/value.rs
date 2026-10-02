@@ -615,8 +615,18 @@ impl<'a> BitAnd for ValueRestriction<'a> {
             (ValueRestriction::Equality(lhs), ValueRestriction::Equality(rhs)) => match lhs.partial_cmp(&rhs) {
                 Some(Ordering::Equal) => ValueRestriction::new_equality(Self::wider_value(&lhs, &rhs).clone()),
                 Some(Ordering::Less | Ordering::Greater) => ValueRestriction::new_unsatisfiable(),
-                // Undecided here (e.g. date and datetime, which the executor compares by casting): the intersection is a
-                // subset of either operand, so keeping one never excludes a valid answer. The checks filter the rest
+                // values of value types the checks never compare (e.g. string and integer) can't both be matched
+                None if !lhs.value_type().is_trivially_castable_to(rhs.value_type().category())
+                    && !rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) =>
+                {
+                    ValueRestriction::new_unsatisfiable()
+                }
+                // the checks compare these by casting one to the other (e.g. date to datetime): the intersection is a
+                // subset of either operand, so keep the one that casts, which can be looked up in attributes of either
+                // value type, and leave the other to the checks
+                None if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) => {
+                    ValueRestriction::new_equality(rhs)
+                }
                 None => ValueRestriction::new_equality(lhs),
             },
             (ValueRestriction::Equality(eq), ValueRestriction::Range(range))
