@@ -156,7 +156,7 @@ commands:
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           export VERSION=$(git rev-parse HEAD)
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --config=ci --jobs=8 --platforms=//docker:linux-<<parameters.image-arch>> \
+          bazel run --config=ci --jobs=8 --platforms=//docker:linux-<<parameters.image-arch>> --compilation_mode=opt \
             //:deploy-docker-snapshot-<<parameters.image-arch>> -- --tag "$VERSION-<<parameters.image-arch>>"
 
   # TODO: Migrate to bazel sh_binary
@@ -641,42 +641,42 @@ workflows:
       - test-deploy-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - test-deploy-snapshot-linux-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - deploy-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - deploy-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - deploy-docker-snapshot-multiarch:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
@@ -684,17 +684,17 @@ workflows:
       - deploy-snapshot-apt-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - deploy-snapshot-apt-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
 
       - deploy-snapshot-brew:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - test-deploy-snapshot-mac-arm64
             - test-deploy-snapshot-mac-x86_64
@@ -702,56 +702,56 @@ workflows:
       - deploy-snapshot-installer-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - test-deploy-snapshot-mac-arm64
 
       - deploy-snapshot-installer-mac-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - test-deploy-snapshot-mac-x86_64
 
       - test-distribution-apt-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-snapshot-apt-x86_64
 
       - test-distribution-apt-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-snapshot-apt-arm64
 
       - test-distribution-brew-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-snapshot-brew
 
       - test-distribution-brew-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-snapshot-brew
 
       - test-distribution-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-docker-snapshot-multiarch
 
       - test-distribution-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, tmp-snapshot-release-3.14-preview ]
           requires:
             - deploy-docker-snapshot-multiarch
 
