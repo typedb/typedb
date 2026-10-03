@@ -17,7 +17,7 @@ pub struct DateTimeTZBytes {
 }
 
 impl DateTimeTZBytes {
-    const DATE_TIME_LENGTH: usize = (i64::BITS + u32::BITS) as usize / 8;
+    pub(crate) const DATE_TIME_LENGTH: usize = (i64::BITS + u32::BITS) as usize / 8;
     const TZ_LENGTH: usize = u32::BITS as usize / 8;
 
     pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {

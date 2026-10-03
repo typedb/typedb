@@ -65,20 +65,69 @@ impl AttributeVertex {
         Self { type_id, attribute_id }
     }
 
-    pub fn build_or_prefix_for_value(
+    pub fn build_or_prefix_for_value_equality(
         type_id: TypeID,
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
+        Self::build_or_prefix_for_value(type_id, value, large_value_hasher, false)
+    }
+
+    pub fn build_or_prefix_for_value_comparison(
+        type_id: TypeID,
+        value: Value<'_>,
+    ) -> Option<Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>>> {
+        // an unordered value has no place in the key order to compare from
+        if !value.value_type().category().is_order_comparable() {
+            return None;
+        }
+        let no_hasher = |_: &[u8]| -> u64 { unreachable!("Comparable value attributes should never hash") };
+        Some(Self::build_or_prefix_for_value(type_id, value, &no_hasher, true))
+    }
+
+    // The lowest vertex of this attribute type that may hold a value at or above the given value
+    // This is the bridge that makes sure that the Value ordering floor is respected by the returned vertex
+    pub fn build_value_floor_for_comparison(type_id: TypeID, value: Value<'_>) -> Option<Self> {
+        let value_type_category = value.value_type().category();
+        match Self::build_or_prefix_for_value_comparison(type_id, value)? {
+            Either::First(vertex) if value_type_category == ValueTypeCategory::DateTimeTZ => {
+                // values compare by instant alone, so zero the time zone to sit below that instant in every zone
+                let mut bytes = ByteArray::<BUFFER_KEY_INLINE>::copy(vertex.into_storage_key().bytes());
+                let instant_end = THING_VERTEX_LENGTH_PREFIX_TYPE
+                    + ValueTypeBytes::CATEGORY_LENGTH
+                    + DateTimeTZBytes::DATE_TIME_LENGTH;
+                bytes[instant_end..].fill(0);
+                Some(Self::decode(bytes.as_ref()))
+            }
+            Either::First(vertex) => Some(vertex),
+            Either::Second(prefix) => {
+                // the lowest complete vertex sharing the prefix: pad the remaining ID bytes with zeros
+                let mut bytes: ByteArray<BUFFER_KEY_INLINE> = ByteArray::zeros(
+                    THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::value_type_encoding_length(value_type_category),
+                );
+                bytes[..prefix.bytes().len()].copy_from_slice(prefix.bytes());
+                Some(Self::decode(bytes.as_ref()))
+            }
+        }
+    }
+
+    fn build_or_prefix_for_value(
+        type_id: TypeID,
+        value: Value<'_>,
+        large_value_hasher: &impl Fn(&[u8]) -> u64,
+        for_comparison: bool,
     ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
         // preallocate upper bound length and then truncate later
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         let keyspace = Self::keyspace_for_category(value.value_type().category());
+        // An exact value needs no ordering, so it can use the hashed (or complete) ID; comparisons need the sortable prefix
         let (id_length, is_complete) = AttributeID::write_deterministic_value_or_prefix(
             &mut bytes[Self::RANGE_TYPE_ID.end..],
             value,
             large_value_hasher,
+            for_comparison,
         );
         bytes.truncate(Self::RANGE_TYPE_ID.end + id_length);
         if is_complete {
@@ -295,6 +344,7 @@ impl AttributeID {
         bytes: &mut [u8],
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
+        for_comparison: bool,
     ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
         match value.value_type().category() {
@@ -307,7 +357,14 @@ impl AttributeID {
             ValueTypeCategory::DateTimeTZ => (DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes), true),
             ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
             ValueTypeCategory::String => {
-                (StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), bytes), false)
+                if for_comparison {
+                    (StringAttributeID::write_prefix_for_comparison(value.encode_string::<64>(), bytes), false)
+                } else {
+                    let string = value.encode_string::<64>();
+                    // an inlineable string is written as its complete ID; a longer one omits the disambiguator byte
+                    let is_complete = StringAttributeID::is_inlineable(string.as_reference());
+                    (StringAttributeID::write_prefix_for_equality(string, large_value_hasher, bytes), is_complete)
+                }
             }
             ValueTypeCategory::Struct => (
                 StructAttributeID::write_hashed_id_deterministic_prefix(
@@ -759,8 +816,27 @@ impl StringAttributeID {
         Ok(string_attribute_id)
     }
 
-    // write the deterministic prefix of the hash ID, and return the length of the prefix written
-    pub(crate) fn write_deterministic_prefix<const INLINE_LENGTH: usize>(
+    // write the prefix that identifies the exact value: the full inline ID, or the 8-byte prefix plus the hash
+    // (without the disambiguator tail); return the length written
+    pub(crate) fn write_prefix_for_equality<const INLINE_LENGTH: usize>(
+        string: StringBytes<INLINE_LENGTH>,
+        hasher: &impl Fn(&[u8]) -> u64,
+        bytes: &mut [u8],
+    ) -> usize {
+        if Self::is_inlineable(string.as_reference()) {
+            let bytes_range = &mut bytes[0..Self::LENGTH];
+            Self::write_inline_id(bytes_range.try_into().unwrap(), string);
+            Self::LENGTH
+        } else {
+            bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+            bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
+            let hash_length = Self::write_hash(&mut bytes[Self::HASHED_HASH_RANGE], hasher, string.bytes());
+            Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH + hash_length
+        }
+    }
+
+    // write the order-preserving prefix of the ID, which must exclude anything longer than 8 bytes due to hashing
+    pub(crate) fn write_prefix_for_comparison<const INLINE_LENGTH: usize>(
         string: StringBytes<INLINE_LENGTH>,
         bytes: &mut [u8],
     ) -> usize {

@@ -9,6 +9,7 @@ use std::{
     cmp::Ordering,
     fmt,
     hash::{Hash, Hasher},
+    ops::{BitAnd, Bound, RangeBounds},
 };
 
 use bytes::byte_array::ByteArray;
@@ -69,6 +70,14 @@ impl PartialOrd for Value<'_> {
                 self_date_time_tz.partial_cmp(other_date_time_tz)
             }
             (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
+
+            // Durations and structs are unordered, but equal values must still compare as equal
+            (Self::Duration(self_duration), Self::Duration(other_duration)) => {
+                (self_duration == other_duration).then_some(Ordering::Equal)
+            }
+            (Self::Struct(self_struct), Self::Struct(other_struct)) => {
+                (self_struct == other_struct).then_some(Ordering::Equal)
+            }
 
             // Heterogeneous
             (Self::Integer(self_integer), Self::Double(other_double)) => {
@@ -479,6 +488,171 @@ impl fmt::Display for Value<'_> {
             // TODO: this string will not have field names, only field IDs!
             Value::Struct(struct_) => write!(f, "{struct_}"),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ValueRestriction<'a> {
+    None,
+    Equality(Value<'a>),
+    Range(ValueRange<'a>),
+    Unsatisfiable,
+}
+
+impl<'a> ValueRestriction<'a> {
+    pub fn new_range(lower: Bound<Value<'a>>, upper: Bound<Value<'a>>) -> Self {
+        match (&lower, &upper) {
+            (Bound::Unbounded, Bound::Unbounded) => Self::None,
+            (Bound::Included(lower_value), Bound::Included(upper_value))
+                if lower_value.partial_cmp(upper_value) == Some(Ordering::Equal) =>
+            {
+                Self::Equality(Self::wider_value(lower_value, upper_value).clone())
+            }
+            _ if Self::is_empty_range(&lower, &upper) => Self::Unsatisfiable,
+            _ => Self::Range(ValueRange { lower, upper }),
+        }
+    }
+
+    // The lowest value admitted, as a seek bound. Nothing satisfies an unsatisfiable restriction, so it is unbounded
+    pub fn lower_bound(&self) -> Bound<&Value<'a>> {
+        match self {
+            Self::None | Self::Unsatisfiable => Bound::Unbounded,
+            Self::Equality(value) => Bound::Included(value),
+            Self::Range(range) => range.lower.as_ref(),
+        }
+    }
+
+    fn wider_value<'v>(first: &'v Value<'a>, second: &'v Value<'a>) -> &'v Value<'a> {
+        let first_category = first.value_type().category();
+        let second_category = second.value_type().category();
+        if first_category != second_category && first.value_type().is_trivially_castable_to(second_category) {
+            second
+        } else {
+            first
+        }
+    }
+
+    fn is_empty_range(lower: &Bound<Value<'a>>, upper: &Bound<Value<'a>>) -> bool {
+        let (lower_value, upper_value, is_inclusive) = match (lower, upper) {
+            (Bound::Unbounded, _) | (_, Bound::Unbounded) => return false,
+            (Bound::Included(lower), Bound::Included(upper)) => (lower, upper, true),
+            (Bound::Included(lower) | Bound::Excluded(lower), Bound::Included(upper) | Bound::Excluded(upper)) => {
+                (lower, upper, false)
+            }
+        };
+        match lower_value.partial_cmp(upper_value) {
+            Some(Ordering::Greater) => true,
+            Some(Ordering::Equal) => !is_inclusive,
+            Some(Ordering::Less) | None => false,
+        }
+    }
+
+    fn satisfies_lower(value: &Value<'a>, lower: &Bound<Value<'a>>) -> bool {
+        match lower {
+            Bound::Unbounded => true,
+            Bound::Included(bound) => !matches!(value.partial_cmp(bound), Some(Ordering::Less)),
+            Bound::Excluded(bound) => !matches!(value.partial_cmp(bound), Some(Ordering::Less | Ordering::Equal)),
+        }
+    }
+
+    fn satisfies_upper(value: &Value<'a>, upper: &Bound<Value<'a>>) -> bool {
+        match upper {
+            Bound::Unbounded => true,
+            Bound::Included(bound) => !matches!(value.partial_cmp(bound), Some(Ordering::Greater)),
+            Bound::Excluded(bound) => !matches!(value.partial_cmp(bound), Some(Ordering::Greater | Ordering::Equal)),
+        }
+    }
+
+    fn tighter_bound(
+        first: Bound<Value<'a>>,
+        second: Bound<Value<'a>>,
+        tighter_ordering: Ordering,
+    ) -> Bound<Value<'a>> {
+        let (first_value, second_value) = match (&first, &second) {
+            (Bound::Unbounded, _) => return second,
+            (_, Bound::Unbounded) => return first,
+            (Bound::Included(first) | Bound::Excluded(first), Bound::Included(second) | Bound::Excluded(second)) => {
+                (first, second)
+            }
+        };
+        match first_value.partial_cmp(second_value) {
+            // if Greater and we're looking for Greater, return first
+            Some(ordering) if ordering == tighter_ordering => first,
+            Some(Ordering::Equal) => match first {
+                Bound::Excluded(_) => first,
+                _ => second,
+            },
+            // Else use the second
+            Some(_) => second,
+            // Incomparable, fall back to the first
+            None => first,
+        }
+    }
+}
+
+impl<'a> BitAnd for ValueRestriction<'a> {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (ValueRestriction::None, rhs) => rhs,
+            (lhs, ValueRestriction::None) => lhs,
+            (ValueRestriction::Unsatisfiable, _) | (_, ValueRestriction::Unsatisfiable) => {
+                ValueRestriction::Unsatisfiable
+            }
+            (ValueRestriction::Equality(lhs), ValueRestriction::Equality(rhs)) => match lhs.partial_cmp(&rhs) {
+                Some(Ordering::Equal) => ValueRestriction::Equality(Self::wider_value(&lhs, &rhs).clone()),
+                Some(Ordering::Less | Ordering::Greater) => ValueRestriction::Unsatisfiable,
+                // values of value types the checks never compare (e.g. string and integer) can't both be matched
+                None if !lhs.value_type().is_trivially_castable_to(rhs.value_type().category())
+                    && !rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) =>
+                {
+                    ValueRestriction::Unsatisfiable
+                }
+                // the checks compare these by casting one to the other (e.g. date to datetime): the intersection is a
+                // subset of either operand, so keep the one that casts, which can be looked up in attributes of either
+                // value type, and leave the other to the checks
+                None if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) => {
+                    ValueRestriction::Equality(rhs)
+                }
+                None => ValueRestriction::Equality(lhs),
+            },
+            (ValueRestriction::Equality(eq), ValueRestriction::Range(range))
+            | (ValueRestriction::Range(range), ValueRestriction::Equality(eq)) => {
+                if Self::satisfies_lower(&eq, &range.lower) && Self::satisfies_upper(&eq, &range.upper) {
+                    ValueRestriction::Equality(eq)
+                } else {
+                    ValueRestriction::Unsatisfiable
+                }
+            }
+            (ValueRestriction::Range(lhs), ValueRestriction::Range(rhs)) => {
+                let lower = Self::tighter_bound(lhs.lower, rhs.lower, Ordering::Greater);
+                let upper = Self::tighter_bound(lhs.upper, rhs.upper, Ordering::Less);
+                Self::new_range(lower, upper)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ValueRange<'a> {
+    lower: Bound<Value<'a>>,
+    upper: Bound<Value<'a>>,
+}
+
+impl<'a> ValueRange<'a> {
+    pub fn into_bounds(self) -> (Bound<Value<'a>>, Bound<Value<'a>>) {
+        (self.lower, self.upper)
+    }
+}
+
+impl<'a> RangeBounds<Value<'a>> for ValueRange<'a> {
+    fn start_bound(&self) -> Bound<&Value<'a>> {
+        self.lower.as_ref()
+    }
+
+    fn end_bound(&self) -> Bound<&Value<'a>> {
+        self.upper.as_ref()
     }
 }
 

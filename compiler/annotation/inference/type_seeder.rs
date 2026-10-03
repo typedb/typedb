@@ -16,7 +16,7 @@ use concept::{
     error::ConceptReadError,
     type_::{OwnerAPI, PlayerAPI, TypeAPI, object_type::ObjectType, type_manager::TypeManager},
 };
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::ValueType;
 use ir::{
     pattern::{
         Pattern, Vertex,
@@ -1336,7 +1336,7 @@ impl BinaryConstraint for Comparison<Variable> {
                 _ => None,
             };
             if let Some(value_type) = left_value_type {
-                let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
+                let comparable_types = self.comparator().comparable_categories(value_type.category());
                 for subattr in allowed_right_types {
                     if let Some(subvaluetype) = subattr
                         .as_attribute_type()
@@ -1376,7 +1376,7 @@ impl BinaryConstraint for Comparison<Variable> {
                 _ => None,
             };
             if let Some(value_type) = right_value_type {
-                let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
+                let comparable_types = self.comparator().comparable_categories(value_type.category());
                 for subattr in allowed_left_types {
                     if let Some(subvaluetype) = subattr
                         .as_attribute_type()

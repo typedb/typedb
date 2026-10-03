@@ -18,7 +18,11 @@ use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{Ordering, OwnerAPI, PlayerAPI, object_type::ObjectType, type_manager::TypeManager},
 };
-use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use encoding::value::{
+    label::Label,
+    value::{Value, ValueRestriction},
+    value_type::ValueType,
+};
 use executor::{
     ExecutionInterrupt, Provenance,
     pipeline::{
@@ -509,7 +513,7 @@ fn test_has_with_input_rows() {
     let age_of_p10 = p10
         .as_thing()
         .as_object()
-        .get_has_type_unordered(&snapshot, &thing_manager, age_type, &.., StorageCounters::DISABLED)
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type, &ValueRestriction::None, StorageCounters::DISABLED)
         .unwrap()
         .map(|result| result.unwrap().0.clone())
         .collect::<Vec<_>>();

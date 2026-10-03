@@ -32,7 +32,7 @@ use encoding::{
     graph::definition::definition_key::DefinitionKey,
     value::{
         label::Label,
-        value::Value,
+        value::{Value, ValueRestriction},
         value_struct::StructValue,
         value_type::{ValueType, ValueTypeCategory},
     },
@@ -401,7 +401,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
+                &ValueRestriction::new_range(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
                 StorageCounters::DISABLED,
             )
@@ -412,7 +412,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
+                &ValueRestriction::new_range(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
                 StorageCounters::DISABLED,
             )
@@ -423,7 +423,10 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Included(Value::Integer(age_value_10)), Bound::Excluded(Value::Integer(age_value_11))),
+                &ValueRestriction::new_range(
+                    Bound::Included(Value::Integer(age_value_10)),
+                    Bound::Excluded(Value::Integer(age_value_11)),
+                ),
                 &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
                 StorageCounters::DISABLED,
             )
@@ -434,7 +437,10 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Excluded(Value::Integer(age_value_11))),
+                &ValueRestriction::new_range(
+                    Bound::Excluded(Value::Integer(age_value_10)),
+                    Bound::Excluded(Value::Integer(age_value_11)),
+                ),
                 &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
                 StorageCounters::DISABLED,
             )
@@ -445,7 +451,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
+                &ValueRestriction::new_range(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Excluded(ObjectType::Entity(person_type)), Bound::Unbounded),
                 StorageCounters::DISABLED,
             )
@@ -457,7 +463,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
+                &ValueRestriction::new_range(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Excluded(ObjectType::Entity(person_type)), Bound::Unbounded),
                 StorageCounters::DISABLED,
             )
@@ -469,7 +475,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type,
-                &(Bound::Unbounded, Bound::Included(Value::Integer(age_value_11))),
+                &ValueRestriction::new_range(Bound::Unbounded, Bound::Included(Value::Integer(age_value_11))),
                 &(Bound::Excluded(ObjectType::Entity(person_type)), Bound::Excluded(ObjectType::Entity(company_type))),
                 StorageCounters::DISABLED,
             )

@@ -625,3 +625,201 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         print!("{}", r);
     }
 }
+
+const MEASURE_LABEL: Label = Label::new_static("measure");
+
+fn datetime_tz(offset_hours: i32, year: i32, month: u32, day: u32, hour: u32) -> Value<'static> {
+    use chrono::TimeZone as _;
+    let time_zone =
+        encoding::value::timezone::TimeZone::Fixed(chrono::FixedOffset::east_opt(offset_hours * 3600).unwrap());
+    let naive = chrono::NaiveDate::from_ymd_opt(year, month, day).unwrap().and_hms_opt(hour, 0, 0).unwrap();
+    Value::DateTimeTZ(time_zone.from_local_datetime(&naive).unwrap())
+}
+
+// The instant 2024-01-01T00:00Z, written in several time zones
+fn same_instant_in_time_zones() -> [Value<'static>; 4] {
+    [
+        datetime_tz(0, 2024, 1, 1, 0),
+        datetime_tz(1, 2024, 1, 1, 1),
+        datetime_tz(9, 2024, 1, 1, 9),
+        datetime_tz(-5, 2023, 12, 31, 19),
+    ]
+}
+
+// Each value is owned, as a `measure` of the given value type, by a named person and by an unnamed person before them,
+// so that intersecting `has measure` with `has name` has to seek the `measure` iterator forward to each named person
+fn setup_measure_database(
+    storage: &mut Arc<MVCCStorage<WALClient>>,
+    value_type: ValueType,
+    measures: Vec<Value<'static>>,
+) {
+    setup_concept_storage(storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let measure_type = type_manager.create_attribute_type(&mut snapshot, &MEASURE_LABEL).unwrap();
+    measure_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, value_type).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    for attribute_type in [measure_type, name_type] {
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                attribute_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+    }
+
+    for (index, measure) in measures.into_iter().enumerate() {
+        let unnamed_person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let measure = thing_manager.create_attribute(&mut snapshot, measure_type, measure).unwrap();
+        let name = thing_manager
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(format!("person {index}"))))
+            .unwrap();
+        unnamed_person.set_has_unordered(&mut snapshot, &thing_manager, &measure, StorageCounters::DISABLED).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &measure, StorageCounters::DISABLED).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
+    }
+
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+    assert!(finalise_result.is_ok());
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+}
+
+// Counts the rows of `$person has $measure, has $name` with the given comparisons on $measure, intersected on
+// $person so that the has iterators are sought by owner
+fn count_rows_with_measure_checks(
+    value_type: ValueType,
+    measures: Vec<Value<'static>>,
+    checks: Vec<(ir::pattern::constraint::Comparator, Value<'static>)>,
+) -> usize {
+    use compiler::executable::match_::instructions::{CheckInstruction, CheckVertex};
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_measure_database(&mut storage, value_type, measures);
+    let mut translation_context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let checks: Vec<_> = checks
+        .into_iter()
+        .map(|(comparator, bound)| {
+            let span = typeql::common::Span { begin_offset: 0, end_offset: 0 };
+            (comparator, value_parameters.register_value(bound, span))
+        })
+        .collect();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_measure_type = conjunction.constraints_mut().get_or_declare_variable("measure_type", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().get_or_declare_variable("name_type", None).unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_measure = conjunction.constraints_mut().get_or_declare_variable("measure", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
+    let has_measure = conjunction.constraints_mut().add_has(var_person, var_measure, None).unwrap().clone();
+    let has_name = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_measure, var_measure_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_measure_type, MEASURE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    let entry = builder.finish().unwrap();
+
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut ctx = PipelineAnnotationContext::new(
+        &snapshot,
+        &type_manager,
+        &EmptyAnnotatedFunctionSignatures,
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_name, var_measure], [var_person_type, var_name_type, var_measure_type]);
+
+    let mut measure_instruction = HasInstruction::new(has_measure, Inputs::None([]), &entry_annotations).map(&mapping);
+    for (comparator, bound_id) in checks {
+        measure_instruction.add_check(
+            CheckInstruction::Comparison {
+                lhs: CheckVertex::Variable(var_measure),
+                rhs: CheckVertex::Parameter(bound_id),
+                comparator,
+            }
+            .map(&mapping),
+        );
+    }
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
+        mapping[&var_person],
+        vec![
+            ConstraintInstruction::Has(measure_instruction),
+            ConstraintInstruction::Has(
+                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&mapping),
+            ),
+        ],
+        vec![variable_positions[&var_person], variable_positions[&var_name], variable_positions[&var_measure]],
+        &named_variables,
+        3,
+    ))];
+    let executable =
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+    let snapshot = Arc::new(snapshot);
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        FixedBatch::from(MaybeOwnedRow::empty()),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::new(value_parameters));
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
+    rows.into_iter().map(|row| row.unwrap().multiplicity() as usize).sum()
+}
+
+#[test]
+fn traverse_has_unbounded_seek_floor_ignores_datetime_tz_time_zone() {
+    use ir::pattern::constraint::Comparator::{Greater, GreaterOrEqual};
+    let measures: Vec<_> = same_instant_in_time_zones().into_iter().chain([datetime_tz(0, 2023, 12, 31, 23)]).collect();
+    // whichever time zone the bound is written in, every stored value at the same instant satisfies `>=`
+    for bound in same_instant_in_time_zones() {
+        let count = |comparator| {
+            count_rows_with_measure_checks(ValueType::DateTimeTZ, measures.clone(), vec![(comparator, bound.clone())])
+        };
+        assert_eq!(count(GreaterOrEqual), 4, ">= {bound}");
+        assert_eq!(count(Greater), 0, "> {bound}");
+    }
+}
+
+#[test]
+fn traverse_has_unbounded_seek_floor_casts_bound_to_integer() {
+    use ir::pattern::constraint::Comparator::{Equal, Greater, GreaterOrEqual, LessOrEqual};
+    let measures: Vec<_> = (10..15).map(Value::Integer).collect();
+    let count = |checks| count_rows_with_measure_checks(ValueType::Integer, measures.clone(), checks);
+    // a double bound must be cast to an integer floor, not sought in the double encoding past every integer
+    assert_eq!(count(vec![(Greater, Value::Double(10.5))]), 4);
+    assert_eq!(count(vec![(GreaterOrEqual, Value::Double(13.0))]), 2);
+    assert_eq!(count(vec![(Equal, Value::Double(13.0))]), 1);
+    assert_eq!(count(vec![(GreaterOrEqual, Value::Integer(13)), (LessOrEqual, Value::Double(13.0))]), 1);
+}
+
+#[test]
+fn traverse_has_unbounded_seek_floor_orders_hashed_strings_by_prefix() {
+    use ir::pattern::constraint::Comparator::GreaterOrEqual;
+    // 21-byte strings are stored under a hash after their first 8 bytes, so a floor built from the inline bound
+    // "abcdefghij" could sort above some of them; the floor must be the bound's order-preserving 8-byte prefix
+    let above: Vec<_> = (0..10).map(|i| format!("abcdefghijk-long-{i:04}")).collect();
+    let below: Vec<_> = (0..3).map(|i| format!("abcdefgha-long-x{i:04}")).collect();
+    let measures = above.into_iter().chain(below).map(|name| Value::String(Cow::Owned(name))).collect();
+    let bound = Value::String(Cow::Borrowed("abcdefghij"));
+    assert_eq!(count_rows_with_measure_checks(ValueType::String, measures, vec![(GreaterOrEqual, bound)]), 10);
+}
