@@ -6,9 +6,11 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    iter,
     marker::PhantomData,
     path::PathBuf,
     sync::Arc,
+    thread,
 };
 
 use bytes::{Bytes, byte_array::ByteArray};
@@ -45,8 +47,8 @@ use encoding::{
     },
     value::{label::Label, value::Value},
 };
-use error::typedb_error;
-use executor::ExecutionInterrupt;
+use error::{TypeDBError, typedb_error};
+use executor::{ExecutionInterrupt, InterruptType};
 use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use serde::{Serialize, de::DeserializeOwned};
@@ -54,6 +56,7 @@ use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use tokio::sync::{broadcast, mpsc, oneshot};
 use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
@@ -331,6 +334,105 @@ impl AttributesInfo {
     }
 }
 
+pub type MigrationItemDecodeError = Arc<dyn TypeDBError + Send + Sync>;
+type ImportItems = Box<dyn Iterator<Item = Result<MigrationItem, MigrationItemDecodeError>> + Send>;
+
+enum ImportMessage {
+    Items(ImportItems),
+    Finalize,
+}
+
+type ImportResult = Result<u64, DatabaseImportError>;
+
+pub struct ImporterHandle {
+    sender: Option<mpsc::Sender<ImportMessage>>,
+    interrupt: broadcast::Sender<InterruptType>,
+    interrupted: bool,
+    result_receiver: Option<oneshot::Receiver<ImportResult>>,
+}
+
+impl ImporterHandle {
+    pub async fn send(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(Box::new(iter::once(Ok(item))))).await
+    }
+
+    pub async fn send_batch<E>(
+        &mut self,
+        items: impl IntoIterator<Item = Result<MigrationItem, E>, IntoIter: Send + 'static>,
+    ) -> Result<(), DatabaseImportError>
+    where
+        E: TypeDBError + Send + Sync + 'static,
+    {
+        let items = items.into_iter().map(|item| item.map_err(|error| Arc::new(error) as MigrationItemDecodeError));
+        self.send_message(ImportMessage::Items(Box::new(items))).await
+    }
+
+    async fn send_message(&mut self, message: ImportMessage) -> Result<(), DatabaseImportError> {
+        let sent = match &self.sender {
+            Some(sender) => sender.send(message).await.is_ok(),
+            None => false,
+        };
+        if sent { Ok(()) } else { Err(Self::stop_reason(self.finish().await)) }
+    }
+
+    pub async fn finalize(&mut self) -> ImportResult {
+        if let Some(sender) = self.sender.take() {
+            // If this fails, the importer has already stopped and its result carries the reason.
+            let _ = sender.send(ImportMessage::Finalize).await;
+        }
+        self.finish().await
+    }
+
+    /// Stops the importer without processing the queued items, and waits until it has stopped.
+    pub async fn abort(mut self) -> ImportResult {
+        self.stop();
+        self.finish().await
+    }
+
+    fn stop(&mut self) {
+        if !self.interrupted {
+            let _ = self.interrupt.send(InterruptType::DatabaseImportAborted);
+            self.interrupted = true;
+        }
+        // dropping sender closes channel to wake up receiver if required
+        self.sender = None;
+    }
+
+    /// Waits for the importer to finish, e.g. after failing. Only the first completed wait gets its result: later ones
+    /// return `ImporterStopped`.
+    pub async fn finish(&mut self) -> ImportResult {
+        // The receiver is only cleared once the result arrives, so a cancelled (dropped) wait can be retried.
+        let Some(result_receiver) = self.result_receiver.as_mut() else {
+            return Err(DatabaseImportError::ImporterStopped {});
+        };
+        let result = result_receiver.await.unwrap_or(Err(DatabaseImportError::ImporterStopped {}));
+        self.result_receiver = None;
+        result
+    }
+
+    fn stop_reason(result: ImportResult) -> DatabaseImportError {
+        match result {
+            Ok(_) => DatabaseImportError::ImporterStopped {},
+            Err(err) => err,
+        }
+    }
+}
+
+impl Drop for ImporterHandle {
+    fn drop(&mut self) {
+        if self.result_receiver.is_some() {
+            event!(Level::WARN, "An import was dropped before it was finalised or aborted. Aborting the import.");
+            self.stop();
+        }
+    }
+}
+
+impl std::fmt::Debug for ImporterHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImporterHandle").finish_non_exhaustive()
+    }
+}
+
 pub struct DatabaseImporter {
     import_handler: Option<Box<dyn DatabaseImportHandler>>,
     database_name: String,
@@ -352,11 +454,7 @@ impl DatabaseImporter {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
 
-    pub fn new(
-        import_handler: Box<dyn DatabaseImportHandler>,
-        scratch_directory: PathBuf,
-        interrupt: ExecutionInterrupt,
-    ) -> Self {
+    pub fn new(import_handler: Box<dyn DatabaseImportHandler>, scratch_directory: PathBuf) -> Self {
         let database_name = import_handler.database_name().to_owned();
         let data_info = DataInfo::new(&scratch_directory, &database_name);
         Self {
@@ -367,11 +465,49 @@ impl DatabaseImporter {
             data_transaction: None,
             total_item_count: 0,
             schema_imported: false,
-            interrupt,
+            interrupt: ExecutionInterrupt::new_uninterruptible(),
         }
     }
 
-    pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+    pub fn start(mut self, buffer_size: usize) -> ImporterHandle {
+        let (sender, receiver) = mpsc::channel(buffer_size);
+        let (interrupt, interrupt_receiver) = broadcast::channel(1);
+        let (result_sender, result_receiver) = oneshot::channel();
+        self.interrupt = ExecutionInterrupt::new(interrupt_receiver);
+        let thread_name = format!("importer-{}", self.database_name);
+        // If the thread cannot start, or panics without the process exiting (the server's panic hook exits), the result
+        // sender is dropped and the handle reports the importer stopped.
+        let spawned = thread::Builder::new().name(thread_name).spawn(move || {
+            let _ = result_sender.send(self.listen(receiver));
+        });
+        if let Err(err) = spawned {
+            event!(Level::ERROR, "Failed to start the importer thread: {err}");
+        }
+        ImporterHandle { sender: Some(sender), interrupt, interrupted: false, result_receiver: Some(result_receiver) }
+    }
+
+    fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
+        loop {
+            self.check_interrupt()?;
+            match receiver.blocking_recv() {
+                // The handle is gone without finalising: the import was aborted.
+                None => return Err(DatabaseImportError::Interrupted {}),
+                Some(ImportMessage::Items(items)) => {
+                    for item in items {
+                        self.check_interrupt()?;
+                        self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
+                    }
+                }
+                Some(ImportMessage::Finalize) => {
+                    // Total item count before finalising, otherwise pendings get counted separately
+                    let total_item_count = self.total_item_count();
+                    return self.finalize().map(|()| total_item_count);
+                }
+            }
+        }
+    }
+
+    fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
         match item {
             MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
             MigrationItem::Schema(schema) => {
@@ -477,7 +613,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub fn import_done(mut self) -> Result<(), DatabaseImportError> {
+    fn finalize(&mut self) -> Result<(), DatabaseImportError> {
         self.check_interrupt()?;
         self.drain_pending_ownerships()?;
         self.check_interrupt()?;
@@ -1151,5 +1287,7 @@ typedb_error! {
         ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
+        ImporterStopped(31, "The importer stopped unexpectedly before the import completed."),
+        ItemDecode(32, "A migration item could not be decoded.", typedb_source: MigrationItemDecodeError),
     }
 }

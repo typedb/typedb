@@ -15,7 +15,7 @@ use database::{
         database_import_handler::{
             DatabaseImportHandler, ImportHandlerError, open_import_schema_transaction, open_import_write_transaction,
         },
-        database_importer::{DatabaseImportError, DatabaseImporter},
+        database_importer::{DatabaseImportError, DatabaseImporter, ImporterHandle},
         item::MigrationItem,
     },
     transaction::{
@@ -25,7 +25,6 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::value::{label::Label, value::Value};
-use executor::ExecutionInterrupt;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use resource::profile::CommitProfile;
 use storage::durability_client::WALClient;
@@ -85,14 +84,10 @@ fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
     .expect("DatabaseManager::new")
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporter {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> ImporterHandle {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
     let handler = TestImportHandler { database_manager: database_manager.clone(), staged_database };
-    DatabaseImporter::new(
-        Box::new(handler),
-        database_manager.import_directory().to_owned(),
-        ExecutionInterrupt::new_uninterruptible(),
-    )
+    DatabaseImporter::new(Box::new(handler), database_manager.import_directory().to_owned()).start(10)
 }
 
 fn read_transaction(database_manager: &Arc<DatabaseManager>, name: &str) -> TransactionRead<WALClient> {
@@ -153,20 +148,18 @@ fn empty_checksums() -> MigrationItem {
     MigrationItem::Checksums(Checksums::new())
 }
 
-fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationItem>) {
+async fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationItem>) {
     let mut importer = importer(database_manager, name);
-    for item in items {
-        importer.apply(item).expect("apply");
-    }
-    importer.import_done().expect("import done");
+    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.finalize().await.expect("import");
 }
 
-#[test]
-fn a_database_without_a_schema_or_data_round_trips() {
+#[tokio::test]
+async fn a_database_without_a_schema_or_data_round_trips() {
     init_logging();
     let data_dir = create_tmp_dir("migration_empty");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "blank", vec![MigrationItem::Schema(String::new()), empty_checksums()]);
+    import_all(&database_manager, "blank", vec![MigrationItem::Schema(String::new()), empty_checksums()]).await;
 
     let items = export(&read_transaction(&database_manager, "blank"), "blank");
     assert!(
@@ -176,16 +169,16 @@ fn a_database_without_a_schema_or_data_round_trips() {
         ),
         "{items:?}"
     );
-    import_all(&database_manager, "blank-copy", items);
+    import_all(&database_manager, "blank-copy", items).await;
     assert!(database_manager.database("blank-copy").is_some());
 }
 
-#[test]
-fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums() {
+#[tokio::test]
+async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums() {
     init_logging();
     let data_dir = create_tmp_dir("migration_stream_shape");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "source", source_items());
+    import_all(&database_manager, "source", source_items()).await;
 
     let transaction = read_transaction(&database_manager, "source");
     let items = export(&transaction, "source");
@@ -213,18 +206,18 @@ fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums() {
     }
 }
 
-#[test]
-fn an_exported_stream_is_importable_as_it_comes() {
+#[tokio::test]
+async fn an_exported_stream_is_importable_as_it_comes() {
     init_logging();
     let data_dir = create_tmp_dir("migration_round_trip");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "source", source_items());
+    import_all(&database_manager, "source", source_items()).await;
 
     let source_items = {
         let transaction = read_transaction(&database_manager, "source");
         export(&transaction, "source")
     };
-    import_all(&database_manager, "target", source_items);
+    import_all(&database_manager, "target", source_items).await;
 
     let transaction = read_transaction(&database_manager, "target");
     let copied_items = export(&transaction, "target");
@@ -240,34 +233,71 @@ fn an_exported_stream_is_importable_as_it_comes() {
     assert_eq!(copied.ownership_count, original.ownership_count);
 }
 
-#[test]
-fn an_out_of_order_stream_is_rejected() {
+#[tokio::test]
+async fn an_out_of_order_stream_is_rejected() {
     init_logging();
     let data_dir = create_tmp_dir("migration_stream_order");
     let database_manager = manager(&data_dir);
 
     let mut early = importer(&database_manager, "early");
-    let result = early.apply(MigrationItem::Header {
-        typedb_version: "3.0.0-test".to_owned(),
-        original_database: "source".to_owned(),
-    });
+    early
+        .send(MigrationItem::Header { typedb_version: "3.0.0-test".to_owned(), original_database: "source".to_owned() })
+        .await
+        .expect("send");
+    let result = early.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ItemBeforeSchema { .. })), "{result:?}");
 
     let mut twice = importer(&database_manager, "twice");
-    twice.apply(MigrationItem::Schema(SCHEMA.to_owned())).expect("first schema");
-    let result = twice.apply(MigrationItem::Schema(SCHEMA.to_owned()));
+    twice.send(MigrationItem::Schema(SCHEMA.to_owned())).await.expect("first schema");
+    twice.send(MigrationItem::Schema(SCHEMA.to_owned())).await.expect("second schema");
+    let result = twice.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::SchemaAlreadyImported { .. })), "{result:?}");
 
     let mut late = importer(&database_manager, "late");
     for item in source_items() {
-        late.apply(item).expect("apply");
+        late.send(item).await.expect("send");
     }
-    let result = late.apply(MigrationItem::Entity {
+    late.send(MigrationItem::Entity {
         id: "p3".to_owned(),
         label: Label::build("person", None),
         owned_attributes: vec![],
-    });
+    })
+    .await
+    .expect("send");
+    let result = late.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ItemAfterChecksums { .. })), "{result:?}");
-    let result = late.apply(MigrationItem::Checksums(Checksums::new()));
+
+    let mut duplicate = importer(&database_manager, "duplicate");
+    for item in [MigrationItem::Schema(SCHEMA.to_owned()), empty_checksums(), empty_checksums()] {
+        duplicate.send(item).await.expect("send");
+    }
+    let result = duplicate.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
+}
+
+#[tokio::test]
+async fn an_item_that_fails_to_decode_fails_the_import() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_decode_failure");
+    let database_manager = manager(&data_dir);
+
+    let mut importer = importer(&database_manager, "undecodable");
+    importer.send(MigrationItem::Schema(SCHEMA.to_owned())).await.expect("send");
+    // Any TypeDB error stands in for the server's item decoding error.
+    let batch = [Ok(empty_checksums()), Err(DatabaseImportError::ImporterStopped {})];
+    importer.send_batch(batch).await.expect("send");
+    let result = importer.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::ItemDecode { .. })), "{result:?}");
+}
+
+#[tokio::test]
+async fn an_aborted_import_stops_the_importer() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_abort");
+    let database_manager = manager(&data_dir);
+
+    let mut aborted = importer(&database_manager, "aborted");
+    aborted.send(MigrationItem::Schema(SCHEMA.to_owned())).await.expect("send");
+    let result = aborted.abort().await;
+    assert!(matches!(result, Err(DatabaseImportError::Interrupted { .. })), "{result:?}");
 }

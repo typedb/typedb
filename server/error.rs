@@ -265,16 +265,11 @@ impl ServerStateError for LocalServerStateError {
                 DataCommitError::DurabilityError { .. } => System,
             },
             Self::DatabaseImport { typedb_source } => match typedb_source {
-                DatabaseImportServiceError::ConceptDecode { .. }
-                | DatabaseImportServiceError::DuplicateImport { .. }
+                DatabaseImportServiceError::DuplicateImport { .. }
                 | DatabaseImportServiceError::ImportDatabaseNotFound { .. }
-                | DatabaseImportServiceError::ImportEmptyItem { .. }
-                | DatabaseImportServiceError::AbsentAttributeValue { .. }
-                | DatabaseImportServiceError::AttributesOwningAttributes { .. }
                 | DatabaseImportServiceError::ClientClosed { .. } => Request,
                 DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { typedb_source } => database_import_origin(typedb_source),
-                DatabaseImportServiceError::ImportTaskFailed { .. } => Internal,
                 DatabaseImportServiceError::ImportClosed { .. }
                 | DatabaseImportServiceError::ShutdownInterrupt { .. } => System,
             },
@@ -356,7 +351,8 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::AccessAfterFinalisation { .. }
         | DatabaseImportError::ItemBeforeSchema { .. }
         | DatabaseImportError::SchemaAlreadyImported { .. }
-        | DatabaseImportError::ItemAfterChecksums { .. } => ErrorOrigin::Request,
+        | DatabaseImportError::ItemAfterChecksums { .. }
+        | DatabaseImportError::ItemDecode { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
         | DatabaseImportError::DataCommitFailed { .. }
@@ -365,7 +361,8 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::Interrupted { .. } => ErrorOrigin::System,
 
         DatabaseImportError::PreparationSchemaCommitFailed { .. }
-        | DatabaseImportError::FinalizationSchemaCommitFailed { .. } => ErrorOrigin::Internal,
+        | DatabaseImportError::FinalizationSchemaCommitFailed { .. }
+        | DatabaseImportError::ImporterStopped { .. } => ErrorOrigin::Internal,
 
         DatabaseImportError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),
         DatabaseImportError::ConceptWrite { typedb_source } => concept_write_origin(typedb_source),
