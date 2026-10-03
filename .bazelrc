@@ -14,9 +14,7 @@ build --macos_minimum_os=11.0
 try-import ./.bazel-remote-cache.rc
 
 # Default all C++ compilation to C++20 (RocksDB 11 requires it). This sets the auto-configured C++ toolchain's
-# default rather than using --cxxopt, so it also applies to Cargo build scripts (e.g. librocksdb-sys), which
-# take their flags from the toolchain. On Windows, the MSVC toolchain's default_cpp_std feature adds
-# /std:c++17, so disable it and provide /std:c++20 instead.
+# default rather than using --cxxopt, so it also applies to Cargo build scripts.
 common --enable_platform_specific_config
 common:linux --repo_env=BAZEL_CXXOPTS=-std=c++20
 common:macos --repo_env=BAZEL_CXXOPTS=-std=c++20
