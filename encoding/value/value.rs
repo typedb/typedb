@@ -500,29 +500,17 @@ pub enum ValueRestriction<'a> {
 }
 
 impl<'a> ValueRestriction<'a> {
-    pub fn new_none() -> Self {
-        Self::None
-    }
-
-    pub fn new_equality(value: Value<'a>) -> Self {
-        Self::Equality(value)
-    }
-
     pub fn new_range(lower: Bound<Value<'a>>, upper: Bound<Value<'a>>) -> Self {
         match (&lower, &upper) {
-            (Bound::Unbounded, Bound::Unbounded) => Self::new_none(),
+            (Bound::Unbounded, Bound::Unbounded) => Self::None,
             (Bound::Included(lower_value), Bound::Included(upper_value))
                 if lower_value.partial_cmp(upper_value) == Some(Ordering::Equal) =>
             {
-                Self::new_equality(Self::wider_value(lower_value, upper_value).clone())
+                Self::Equality(Self::wider_value(lower_value, upper_value).clone())
             }
-            _ if Self::is_empty_range(&lower, &upper) => Self::new_unsatisfiable(),
+            _ if Self::is_empty_range(&lower, &upper) => Self::Unsatisfiable,
             _ => Self::Range(ValueRange { lower, upper }),
         }
-    }
-
-    pub fn new_unsatisfiable() -> Self {
-        Self::Unsatisfiable
     }
 
     // The lowest value admitted, as a seek bound. Nothing satisfies an unsatisfiable restriction, so it is unbounded
@@ -610,31 +598,31 @@ impl<'a> BitAnd for ValueRestriction<'a> {
             (ValueRestriction::None, rhs) => rhs,
             (lhs, ValueRestriction::None) => lhs,
             (ValueRestriction::Unsatisfiable, _) | (_, ValueRestriction::Unsatisfiable) => {
-                ValueRestriction::new_unsatisfiable()
+                ValueRestriction::Unsatisfiable
             }
             (ValueRestriction::Equality(lhs), ValueRestriction::Equality(rhs)) => match lhs.partial_cmp(&rhs) {
-                Some(Ordering::Equal) => ValueRestriction::new_equality(Self::wider_value(&lhs, &rhs).clone()),
-                Some(Ordering::Less | Ordering::Greater) => ValueRestriction::new_unsatisfiable(),
+                Some(Ordering::Equal) => ValueRestriction::Equality(Self::wider_value(&lhs, &rhs).clone()),
+                Some(Ordering::Less | Ordering::Greater) => ValueRestriction::Unsatisfiable,
                 // values of value types the checks never compare (e.g. string and integer) can't both be matched
                 None if !lhs.value_type().is_trivially_castable_to(rhs.value_type().category())
                     && !rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) =>
                 {
-                    ValueRestriction::new_unsatisfiable()
+                    ValueRestriction::Unsatisfiable
                 }
                 // the checks compare these by casting one to the other (e.g. date to datetime): the intersection is a
                 // subset of either operand, so keep the one that casts, which can be looked up in attributes of either
                 // value type, and leave the other to the checks
                 None if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) => {
-                    ValueRestriction::new_equality(rhs)
+                    ValueRestriction::Equality(rhs)
                 }
-                None => ValueRestriction::new_equality(lhs),
+                None => ValueRestriction::Equality(lhs),
             },
             (ValueRestriction::Equality(eq), ValueRestriction::Range(range))
             | (ValueRestriction::Range(range), ValueRestriction::Equality(eq)) => {
                 if Self::satisfies_lower(&eq, &range.lower) && Self::satisfies_upper(&eq, &range.upper) {
-                    ValueRestriction::new_equality(eq)
+                    ValueRestriction::Equality(eq)
                 } else {
-                    ValueRestriction::new_unsatisfiable()
+                    ValueRestriction::Unsatisfiable
                 }
             }
             (ValueRestriction::Range(lhs), ValueRestriction::Range(rhs)) => {

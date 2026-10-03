@@ -28,7 +28,11 @@ use concept::{
 };
 use encoding::{
     graph::{Typed, thing::vertex_attribute::AttributeVertex, type_::vertex::TypeVertexEncoding},
-    value::{ValueEncodable, value::Value, value_type::ValueTypeCategory},
+    value::{
+        ValueEncodable,
+        value::{Value, ValueRestriction},
+        value_type::ValueTypeCategory,
+    },
 };
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, kmerge::KMergeBy};
@@ -205,11 +209,15 @@ impl HasExecutor {
 
                 // TODO: in the HasReverse case, we look up N iterators (one per type) and link them - here we scan and post-filter
                 //        we should determine which strategy we want long-term
-                let has_iterator: HasIterator = thing_manager.get_has_from_owner_type_range_unordered(
-                    snapshot,
-                    &self.owner_type_range,
-                    storage_counters,
-                );
+                let has_iterator: HasIterator = if matches!(value_restriction, ValueRestriction::Unsatisfiable) {
+                    HasIterator::new_empty()
+                } else {
+                    thing_manager.get_has_from_owner_type_range_unordered(
+                        snapshot,
+                        &self.owner_type_range,
+                        storage_counters,
+                    )
+                };
                 let lowest_attribute_type =
                     ThingManager::start_type_bound_to_range_start_included_type(self.attribute_type_range.0.as_ref());
                 let fixed_bounds = match lowest_attribute_type {

@@ -513,13 +513,7 @@ fn test_has_with_input_rows() {
     let age_of_p10 = p10
         .as_thing()
         .as_object()
-        .get_has_type_unordered(
-            &snapshot,
-            &thing_manager,
-            age_type,
-            &ValueRestriction::new_none(),
-            StorageCounters::DISABLED,
-        )
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type, &ValueRestriction::None, StorageCounters::DISABLED)
         .unwrap()
         .map(|result| result.unwrap().0.clone())
         .collect::<Vec<_>>();

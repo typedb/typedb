@@ -136,7 +136,7 @@ impl HasReverseExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         if self.iterate_mode.is_unbound_inverted() && self.attribute_cache.get().is_none() {
             // one-off initialisation of the cache of constants as we require the Parameters
-            let value_range = self.checker.value_restriction_for(
+            let value_restriction = self.checker.value_restriction_for(
                 context,
                 None,
                 self.has.attribute().as_variable().unwrap(),
@@ -149,7 +149,7 @@ impl HasReverseExecutor {
                     .get_attributes_in_range(
                         context.snapshot.as_ref(),
                         type_.as_attribute_type(),
-                        &value_range,
+                        &value_restriction,
                         storage_counters.clone(),
                     )?
                     .try_collect()?;

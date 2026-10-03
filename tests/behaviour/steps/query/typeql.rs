@@ -456,7 +456,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
                         &*tx.snapshot,
                         &tx.thing_manager,
                         key_type,
-                        &ValueRestriction::new_none(),
+                        &ValueRestriction::None,
                         StorageCounters::DISABLED,
                     )
                     .unwrap(),
@@ -467,7 +467,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
                         &*tx.snapshot,
                         &tx.thing_manager,
                         key_type,
-                        &ValueRestriction::new_none(),
+                        &ValueRestriction::None,
                         StorageCounters::DISABLED,
                     )
                     .unwrap(),

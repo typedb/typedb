@@ -76,19 +76,20 @@ impl AttributeVertex {
     pub fn build_or_prefix_for_value_comparison(
         type_id: TypeID,
         value: Value<'_>,
-    ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
+    ) -> Option<Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>>> {
+        // an unordered value has no place in the key order to compare from
+        if !value.value_type().category().is_order_comparable() {
+            return None;
+        }
         let no_hasher = |_: &[u8]| -> u64 { unreachable!("Comparable value attributes should never hash") };
-        Self::build_or_prefix_for_value(type_id, value, &no_hasher, true)
+        Some(Self::build_or_prefix_for_value(type_id, value, &no_hasher, true))
     }
 
     // The lowest vertex of this attribute type that may hold a value at or above the given value
     // This is the bridge that makes sure that the Value ordering floor is respected by the returned vertex
     pub fn build_value_floor_for_comparison(type_id: TypeID, value: Value<'_>) -> Option<Self> {
         let value_type_category = value.value_type().category();
-        if !value_type_category.is_order_comparable() {
-            return None;
-        }
-        match Self::build_or_prefix_for_value_comparison(type_id, value) {
+        match Self::build_or_prefix_for_value_comparison(type_id, value)? {
             Either::First(vertex) if value_type_category == ValueTypeCategory::DateTimeTZ => {
                 // values compare by instant alone, so zero the time zone to sit below that instant in every zone
                 let mut bytes = ByteArray::<BUFFER_KEY_INLINE>::copy(vertex.into_storage_key().bytes());

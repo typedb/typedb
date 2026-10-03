@@ -2790,7 +2790,7 @@ impl OperationTimeValidation {
                 snapshot,
                 thing_manager,
                 attribute_type,
-                &ValueRestriction::new_none(),
+                &ValueRestriction::None,
                 storage_counters.clone(),
             )?;
 

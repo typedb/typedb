@@ -292,7 +292,7 @@ async fn object_get_has_type(
                 tx.snapshot.as_ref(),
                 &tx.thing_manager,
                 attribute_type,
-                &ValueRestriction::new_none(),
+                &ValueRestriction::None,
                 StorageCounters::DISABLED,
             )
             .unwrap()
@@ -333,7 +333,7 @@ async fn object_get_has_with_annotations(
                         tx.snapshot.as_ref(),
                         &tx.thing_manager,
                         attribute_type,
-                        &ValueRestriction::new_none(),
+                        &ValueRestriction::None,
                         StorageCounters::DISABLED,
                     )
                     .unwrap()

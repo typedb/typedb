@@ -614,28 +614,18 @@ impl ThingManager {
         attribute_value_type_category: ValueTypeCategory,
         value_lower_bound: Bound<Value<'_>>,
     ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
-        match value_lower_bound {
-            Bound::Included(lower_value) => {
-                let vertex_or_prefix =
-                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, lower_value);
-                let storage_key_prefix = match vertex_or_prefix {
-                    Either::First(vertex) => vertex.into_storage_key(),
-                    Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
-                };
-                RangeStart::Inclusive(storage_key_prefix)
+        let vertex_or_prefix = value_lower_bound
+            .map(|lower_value| AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, lower_value));
+        match vertex_or_prefix {
+            Bound::Included(Some(Either::First(vertex))) => RangeStart::Inclusive(vertex.into_storage_key()),
+            Bound::Excluded(Some(Either::First(vertex))) => RangeStart::ExcludePrefix(vertex.into_storage_key()),
+            Bound::Included(Some(Either::Second(incomplete_attribute_prefix)))
+            | Bound::Excluded(Some(Either::Second(incomplete_attribute_prefix))) => {
+                // we have to include values above the bound which may share prefix
+                RangeStart::Inclusive(incomplete_attribute_prefix)
             }
-            Bound::Excluded(lower_value) => {
-                let vertex_or_prefix =
-                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, lower_value);
-                match vertex_or_prefix {
-                    Either::First(vertex) => RangeStart::ExcludePrefix(vertex.into_storage_key()),
-                    Either::Second(incomplete_attribute_prefix) => {
-                        // we have to include values above the bound which may share prefix
-                        RangeStart::Inclusive(incomplete_attribute_prefix)
-                    }
-                }
-            }
-            Bound::Unbounded => RangeStart::Inclusive(
+            // an unordered value has no place in the key order, so the range starts at the type
+            Bound::Included(None) | Bound::Excluded(None) | Bound::Unbounded => RangeStart::Inclusive(
                 AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
                     attribute_type_id,
@@ -652,28 +642,18 @@ impl ThingManager {
         attribute_value_type_category: ValueTypeCategory,
         value_upper_bound: Bound<Value<'_>>,
     ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
-        match value_upper_bound {
-            Bound::Included(upper_value) => {
-                let vertex_or_prefix =
-                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, upper_value);
-                let storage_key_prefix = match vertex_or_prefix {
-                    Either::First(vertex) => vertex.into_storage_key(),
-                    Either::Second(incomplete_attribute_prefix) => incomplete_attribute_prefix,
-                };
-                RangeEnd::EndPrefixInclusive(storage_key_prefix)
+        let vertex_or_prefix = value_upper_bound
+            .map(|upper_value| AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, upper_value));
+        match vertex_or_prefix {
+            Bound::Included(Some(Either::First(vertex))) => RangeEnd::EndPrefixInclusive(vertex.into_storage_key()),
+            Bound::Excluded(Some(Either::First(vertex))) => RangeEnd::EndPrefixExclusive(vertex.into_storage_key()),
+            Bound::Included(Some(Either::Second(incomplete_attribute_prefix)))
+            | Bound::Excluded(Some(Either::Second(incomplete_attribute_prefix))) => {
+                // we have to include values below the bound which may share prefix
+                RangeEnd::EndPrefixInclusive(incomplete_attribute_prefix)
             }
-            Bound::Excluded(upper_value) => {
-                let vertex_or_prefix =
-                    AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, upper_value);
-                match vertex_or_prefix {
-                    Either::First(vertex) => RangeEnd::EndPrefixExclusive(vertex.into_storage_key()),
-                    Either::Second(incomplete_attribute_prefix) => {
-                        // we have to include values below the bound which may share prefix
-                        RangeEnd::EndPrefixInclusive(incomplete_attribute_prefix)
-                    }
-                }
-            }
-            Bound::Unbounded => {
+            // an unordered value has no place in the key order, so the range ends at the end of the type
+            Bound::Included(None) | Bound::Excluded(None) | Bound::Unbounded => {
                 let prefix = AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
                     attribute_type_id,
@@ -921,104 +901,55 @@ impl ThingManager {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let has_range_start = match value_lower_bound {
-            Bound::Included(lower_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type.vertex().type_id_(),
-                    lower_value,
-                );
-                match vertex_or_prefix {
-                    Either::First(vertex) => Self::has_reverse_start_for_attribute(vertex, owner_types_range_hint),
-                    Either::Second(prefix) => {
-                        // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
-                        RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                                value_type_category,
-                                prefix.bytes(),
-                            )
-                            .resize_to(),
-                        )
-                    }
-                }
+        let attribute_type_id = attribute_type.vertex().type_id_();
+        let lower_vertex_or_prefix = value_lower_bound
+            .map(|lower_value| AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, lower_value));
+        let has_range_start = match lower_vertex_or_prefix {
+            Bound::Included(Some(Either::First(vertex))) => {
+                Self::has_reverse_start_for_attribute(vertex, owner_types_range_hint)
             }
-            Bound::Excluded(lower_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type.vertex().type_id_(),
-                    lower_value,
-                );
-                match vertex_or_prefix {
-                    Either::First(vertex) => {
-                        // trick: increment the vertex, since it is complete, then concat the next type - this will help
-                        // with hitting the bloom filters
-                        let storage_key = vertex.into_storage_key();
-                        let mut byte_array = storage_key.into_owned_array().into_byte_array();
-                        byte_array.increment().unwrap();
-                        let next_attribute = AttributeVertex::decode(&byte_array);
-                        Self::has_reverse_start_for_attribute(next_attribute, owner_types_range_hint)
-                    }
-                    Either::Second(prefix) => {
-                        // since this is not a complete vertex, and only a prefix, we shouldn't make assumptions about incrementing
-                        // to get to value + 1 in sort order
-                        RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                                value_type_category,
-                                prefix.bytes(),
-                            )
-                            .resize_to(),
-                        )
-                    }
-                }
+            Bound::Excluded(Some(Either::First(vertex))) => {
+                // trick: increment the vertex, since it is complete, then concat the next type - this will help
+                // with hitting the bloom filters
+                let storage_key = vertex.into_storage_key();
+                let mut byte_array = storage_key.into_owned_array().into_byte_array();
+                byte_array.increment().unwrap();
+                let next_attribute = AttributeVertex::decode(&byte_array);
+                Self::has_reverse_start_for_attribute(next_attribute, owner_types_range_hint)
             }
-            Bound::Unbounded => RangeStart::Inclusive(
-                ThingEdgeHasReverse::prefix_from_attribute_type(
-                    value_type_category,
-                    attribute_type.vertex().type_id_(),
+            Bound::Included(Some(Either::Second(prefix))) | Bound::Excluded(Some(Either::Second(prefix))) => {
+                // the prefix is incomplete: values above the bound may share it, so it must stay included, and we
+                // shouldn't make assumptions about incrementing to get to value + 1 in sort order
+                RangeStart::Inclusive(
+                    ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(value_type_category, prefix.bytes())
+                        .resize_to(),
                 )
-                .resize_to(),
+            }
+            // an unordered value has no place in the key order, so the range starts at the type
+            Bound::Included(None) | Bound::Excluded(None) | Bound::Unbounded => RangeStart::Inclusive(
+                ThingEdgeHasReverse::prefix_from_attribute_type(value_type_category, attribute_type_id).resize_to(),
             ),
         };
 
-        let has_range_end = match value_upper_bound {
-            Bound::Included(upper_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type.vertex().type_id_(),
-                    upper_value,
-                );
-                match vertex_or_prefix {
-                    Either::First(vertex) => Self::has_reverse_end_for_attribute(vertex, owner_types_range_hint),
-                    Either::Second(prefix) => RangeEnd::EndPrefixInclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(value_type_category, prefix.bytes())
-                            .resize_to(),
-                    ),
-                }
+        let upper_vertex_or_prefix = value_upper_bound
+            .map(|upper_value| AttributeVertex::build_or_prefix_for_value_comparison(attribute_type_id, upper_value));
+        let has_range_end = match upper_vertex_or_prefix {
+            Bound::Included(Some(Either::First(vertex))) => {
+                Self::has_reverse_end_for_attribute(vertex, owner_types_range_hint)
             }
-            Bound::Excluded(upper_value) => {
-                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value_comparison(
-                    attribute_type.vertex().type_id_(),
-                    upper_value,
-                );
-                match vertex_or_prefix {
-                    Either::First(vertex) => {
-                        RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
-                    }
-                    Either::Second(prefix) => {
-                        // the prefix is incomplete: values below the bound may share it, so it must stay included
-                        RangeEnd::EndPrefixInclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                                value_type_category,
-                                prefix.bytes(),
-                            )
-                            .resize_to(),
-                        )
-                    }
-                }
+            Bound::Excluded(Some(Either::First(vertex))) => {
+                RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
             }
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(
-                ThingEdgeHasReverse::prefix_from_attribute_type(
-                    value_type_category,
-                    attribute_type.vertex().type_id_(),
+            Bound::Included(Some(Either::Second(prefix))) | Bound::Excluded(Some(Either::Second(prefix))) => {
+                // the prefix is incomplete: values below the bound may share it, so it must stay included
+                RangeEnd::EndPrefixInclusive(
+                    ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(value_type_category, prefix.bytes())
+                        .resize_to(),
                 )
-                .resize_to(),
+            }
+            // an unordered value has no place in the key order, so the range ends at the end of the type
+            Bound::Included(None) | Bound::Excluded(None) | Bound::Unbounded => RangeEnd::EndPrefixInclusive(
+                ThingEdgeHasReverse::prefix_from_attribute_type(value_type_category, attribute_type_id).resize_to(),
             ),
         };
         let key_range = KeyRange::new(has_range_start, has_range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
@@ -1245,8 +1176,8 @@ impl ThingManager {
             ),
             AttributeValueLookup::Exact(value) => {
                 let attribute_type_id = attribute_type.vertex().type_id_();
-                let value1 = value.as_reference();
-                let attribute_key = self.get_attribute_vertex_prefix_for_equality(attribute_type_id, value1);
+                let attribute_key =
+                    self.get_attribute_vertex_prefix_for_equality(attribute_type_id, value.as_reference());
                 let prefix = ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(
                     owner.vertex(),
                     attribute_key.bytes(),

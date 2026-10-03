@@ -77,7 +77,7 @@ impl<T> Checker<T> {
         target_variable: ExecutorVariable,
         storage_counters: StorageCounters,
     ) -> Result<ValueRestriction<'static>, Box<ConceptReadError>> {
-        let mut restriction = ValueRestriction::new_none();
+        let mut restriction = ValueRestriction::None;
         for check in &self.checks {
             // Normalise each check to `target <comparator> other`
             let (other, comparator) = match check {
@@ -120,7 +120,7 @@ impl<T> Checker<T> {
 
     fn comparison_restriction(comparator: Comparator, value: Value<'static>) -> Option<ValueRestriction<'static>> {
         match comparator {
-            Comparator::Equal => Some(ValueRestriction::new_equality(value)),
+            Comparator::Equal => Some(ValueRestriction::Equality(value)),
             Comparator::Less => Some(ValueRestriction::new_range(Bound::Unbounded, Bound::Excluded(value))),
             Comparator::LessOrEqual => Some(ValueRestriction::new_range(Bound::Unbounded, Bound::Included(value))),
             Comparator::Greater => Some(ValueRestriction::new_range(Bound::Excluded(value), Bound::Unbounded)),

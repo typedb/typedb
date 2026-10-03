@@ -182,7 +182,7 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Has {
                 snapshot,
                 thing_manager,
                 new_attribute.type_(),
-                &ValueRestriction::new_none(),
+                &ValueRestriction::None,
                 StorageCounters::DISABLED,
             )
             .map_err(|err| WriteError::ConceptRead { typedb_source: err })?

@@ -46,9 +46,8 @@ use crate::{
         },
         fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
-            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
-            get_annotations_from_labels_vec,
+            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
+            FunctionParameterAnnotation, annotate_preamble_functions, get_annotations_from_labels_vec,
         },
         inference::match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
@@ -437,7 +436,7 @@ pub fn validate_sort_variables_comparable(
     for sort_var in &sort.variables {
         if let Some(expression_value_type) = input_annotations.values.get(&sort_var.variable()) {
             let category = expression_value_type.value_type().category();
-            if category.order_comparable_categories().is_empty() {
+            if !category.is_order_comparable() {
                 let variable_name = ctx.name_for_error(sort_var.variable());
                 return Err(AnnotationError::UnorderedValueTypeForSortVariable {
                     variable: variable_name,
