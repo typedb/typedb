@@ -20,7 +20,7 @@ impl RocksResources {
     /// Note: cache limit is a _soft_ limit
     /// it is possible to exceed it with pinned index and filter blocks
     pub fn new(cache_limit: ByteSize, write_buffers_limit: ByteSize) -> Self {
-        let cache = Cache::new_lru_cache(cache_limit.as_usize());
+        let cache = Cache::new_hyper_clock_cache(cache_limit.as_usize(), 0);
         let write_buffer_manager = WriteBufferManager::new_write_buffer_manager(write_buffers_limit.as_usize(), false);
         Self { cache, write_buffer_manager, cache_limit, write_buffers_limit }
     }
@@ -46,7 +46,7 @@ impl fmt::Debug for RocksResources {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Rocks LRU Cache size (shared by all databases): {}. \n
+            "Rocks HyperClockCache size (shared by all databases): {}. \n
              Rocks write buffers size limit (shared by all databases): {}.",
             self.cache_limit, self.write_buffers_limit
         )

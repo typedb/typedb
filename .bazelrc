@@ -13,6 +13,14 @@ build --macos_minimum_os=11.0
 
 try-import ./.bazel-remote-cache.rc
 
+# Default all C++ compilation to C++20 (RocksDB 11 requires it). This sets the auto-configured C++ toolchain's
+# default rather than using --cxxopt, so it also applies to Cargo build scripts.
+common --enable_platform_specific_config
+common:linux --repo_env=BAZEL_CXXOPTS=-std=c++20
+common:macos --repo_env=BAZEL_CXXOPTS=-std=c++20
+common:windows --repo_env=BAZEL_CXXOPTS=/std:c++20
+build:windows --features=-default_cpp_std --host_features=-default_cpp_std
+
 # Allow empty globs (many checkstyle_test patterns may not match)
 common --@rules_rust//:rustfmt.toml=//:rustfmt_config --noincompatible_disallow_empty_glob --experimental_repository_downloader_retries=5 --http_timeout_scaling=2.0
 
