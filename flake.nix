@@ -59,14 +59,14 @@
               nativeBuildInputs = [ bin ];
             }
             ''
-              out=$(typedb-server --version)
-              echo "typedb-server --version: $out"
-              echo "$out" | grep -q "${version}" || (echo "version mismatch" >&2; exit 1)
-              touch $out
+              version_output=$(typedb-server --version)
+              echo "typedb-server --version: $version_output"
+              echo "$version_output" | grep -Fq -- "${version}" || (echo "version mismatch" >&2; exit 1)
+              touch "$out"
             '';
         help = pkgs.runCommand "typedb-server-help" { nativeBuildInputs = [ self.packages.${pkgs.stdenv.hostPlatform.system}.typedb-server ]; } ''
           typedb-server --help | grep -q "storage.data-directory" || (echo "CLI shape changed" >&2; exit 1)
-          touch $out
+          touch "$out"
         '';
       });
 
