@@ -10,12 +10,14 @@ use std::{
 };
 
 use bytes::Bytes;
+use encoding::Keyable;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
     thing::{
+        ThingAPI,
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
@@ -64,12 +66,38 @@ macro_rules! capability_cardinality_validation {
     (
         $collect_func_name:ident,
         $validate_func_name:ident,
+        $revalidate_func_name:ident,
         $capability_type:ident,
         $object_instance:ident,
         $get_cardinality_constraints_func:ident,
         $get_interface_counts_func:ident,
         $check_func:path
     ) => {
+        fn $revalidate_func_name(
+            snapshot: &impl ReadableSnapshot,
+            thing_manager: &ThingManager,
+            object: $object_instance,
+            interface_types: &HashSet<<$capability_type as Capability>::InterfaceType>,
+            out_errors: &mut Vec<DataValidationError>,
+            storage_counters: StorageCounters,
+        ) -> Result<(), Box<ConceptReadError>> {
+            let key = object.vertex().into_storage_key();
+            // Revalidation for existing objects only
+            if ThingManager::get_buffered_status(snapshot, key.as_reference()).is_some() {
+                return Ok(());
+            }
+            let constraints = Self::$collect_func_name(snapshot, thing_manager, object.type_(), interface_types)?;
+            if constraints.is_empty()
+                || thing_manager.get_storage_status(snapshot, key, storage_counters.clone())?
+                    != ConceptStatus::Persisted
+            {
+                return Ok(());
+            }
+            let check = Self::$validate_func_name(snapshot, thing_manager, object, &constraints, storage_counters);
+            collect_errors!(out_errors, check, |e: Box<_>| *e);
+            Ok(())
+        }
+
         fn $collect_func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
@@ -292,24 +320,16 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        thing_manager.for_each_owner_with_modified_has(
-            snapshot,
-            storage_counters.clone(),
-            |error| error,
-            |snapshot, modified| {
-                if modified.status == ConceptStatus::Persisted {
-                    CardinalityValidation::validate_object_has(
-                        snapshot,
-                        thing_manager,
-                        modified.owner,
-                        &modified.modified_attribute_types,
-                        out_errors,
-                        storage_counters.clone(),
-                    )?;
-                }
-                Ok(())
-            },
-        )
+        thing_manager.for_each_owner_with_modified_has(snapshot, |snapshot, modified| {
+            Self::revalidate_existing_object_has(
+                snapshot,
+                thing_manager,
+                modified.owner,
+                &modified.modified_attribute_types,
+                out_errors,
+                storage_counters.clone(),
+            )
+        })
     }
 
     fn validate_existing_players_of_modified_links<Snapshot: ReadableSnapshot>(
@@ -318,24 +338,16 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        thing_manager.for_each_player_with_modified_links(
-            snapshot,
-            storage_counters.clone(),
-            |error| error,
-            |snapshot, modified| {
-                if modified.status == ConceptStatus::Persisted {
-                    CardinalityValidation::validate_object_links(
-                        snapshot,
-                        thing_manager,
-                        modified.player,
-                        &modified.modified_role_types,
-                        out_errors,
-                        storage_counters.clone(),
-                    )?;
-                }
-                Ok(())
-            },
-        )
+        thing_manager.for_each_player_with_modified_links(snapshot, |snapshot, modified| {
+            Self::revalidate_existing_object_links(
+                snapshot,
+                thing_manager,
+                modified.player,
+                &modified.modified_role_types,
+                out_errors,
+                storage_counters.clone(),
+            )
+        })
     }
 
     fn validate_existing_relations_of_modified_links<Snapshot: ReadableSnapshot>(
@@ -344,24 +356,16 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        thing_manager.for_each_relation_with_modified_links(
-            snapshot,
-            storage_counters.clone(),
-            |error| error,
-            |snapshot, modified| {
-                if modified.status == ConceptStatus::Persisted {
-                    CardinalityValidation::validate_relation_links(
-                        snapshot,
-                        thing_manager,
-                        modified.relation,
-                        &modified.modified_role_types,
-                        out_errors,
-                        storage_counters.clone(),
-                    )?;
-                }
-                Ok(())
-            },
-        )
+        thing_manager.for_each_relation_with_modified_links(snapshot, |snapshot, modified| {
+            Self::revalidate_existing_relation_links(
+                snapshot,
+                thing_manager,
+                modified.relation,
+                &modified.modified_role_types,
+                out_errors,
+                storage_counters.clone(),
+            )
+        })
     }
 
     fn validate_instances_of_modified_types(
@@ -453,84 +457,10 @@ impl CardinalityValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_object_has(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        object: Object,
-        modified_attribute_types: &HashSet<AttributeType>,
-        out_errors: &mut Vec<DataValidationError>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        let constraints = Self::collect_checked_owns_cardinality_constraints(
-            snapshot,
-            thing_manager,
-            object.type_(),
-            modified_attribute_types,
-        )?;
-        let check = Self::validate_owns_cardinality_constraints(
-            snapshot,
-            thing_manager,
-            object,
-            &constraints,
-            storage_counters,
-        );
-        collect_errors!(out_errors, check, |e: Box<_>| *e);
-        Ok(())
-    }
-
-    pub(crate) fn validate_object_links(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        object: Object,
-        modified_role_types: &HashSet<RoleType>,
-        out_errors: &mut Vec<DataValidationError>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        let constraints = Self::collect_checked_plays_cardinality_constraints(
-            snapshot,
-            thing_manager,
-            object.type_(),
-            modified_role_types,
-        )?;
-        let check = Self::validate_plays_cardinality_constraints(
-            snapshot,
-            thing_manager,
-            object,
-            &constraints,
-            storage_counters,
-        );
-        collect_errors!(out_errors, check, |e: Box<_>| *e);
-        Ok(())
-    }
-
-    pub(crate) fn validate_relation_links(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        relation: Relation,
-        modified_role_types: &HashSet<RoleType>,
-        out_errors: &mut Vec<DataValidationError>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        let constraints = Self::collect_checked_relates_cardinality_constraints(
-            snapshot,
-            thing_manager,
-            relation.type_(),
-            modified_role_types,
-        )?;
-        let check = Self::validate_relates_cardinality_constraints(
-            snapshot,
-            thing_manager,
-            relation,
-            &constraints,
-            storage_counters,
-        );
-        collect_errors!(out_errors, check, |e: Box<_>| *e);
-        Ok(())
-    }
-
     capability_cardinality_validation!(
         collect_checked_owns_cardinality_constraints,
         validate_owns_cardinality_constraints,
+        revalidate_existing_object_has,
         Owns,
         Object,
         get_owned_attribute_type_constraints_cardinality,
@@ -540,6 +470,7 @@ impl CardinalityValidation {
     capability_cardinality_validation!(
         collect_checked_plays_cardinality_constraints,
         validate_plays_cardinality_constraints,
+        revalidate_existing_object_links,
         Plays,
         Object,
         get_played_role_type_constraints_cardinality,
@@ -549,6 +480,7 @@ impl CardinalityValidation {
     capability_cardinality_validation!(
         collect_checked_relates_cardinality_constraints,
         validate_relates_cardinality_constraints,
+        revalidate_existing_relation_links,
         Relates,
         Relation,
         get_related_role_type_constraints_cardinality,

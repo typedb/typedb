@@ -23,6 +23,7 @@ use concept::{
         attribute_type::AttributeTypeAnnotation,
         object_type::ObjectType,
         owns::OwnsAnnotation,
+        plays::PlaysAnnotation,
         relates::RelatesAnnotation,
         type_manager::TypeManager,
     },
@@ -1648,6 +1649,304 @@ fn role_player_duplicates_ordered_small_card() {
             })
             .sum();
         assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
+    }
+}
+
+#[test]
+fn persisted_player_links_are_revalidated_against_plays_cardinality() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let employment_label = Label::build("employment", None);
+    let employee_role = "employee";
+    let restricted_label = Label::build("restricted", None);
+    let unrestricted_label = Label::build("unrestricted", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
+        employment_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                employee_role,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        let employee_relates =
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap();
+        // The relates default would cap the role at one player, which the second link below exceeds.
+        employee_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))),
+            )
+            .unwrap();
+        let employee_type = employee_relates.role();
+
+        let restricted_type = type_manager.create_entity_type(&mut snapshot, &restricted_label).unwrap();
+        restricted_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type, StorageCounters::DISABLED)
+            .unwrap();
+        restricted_type
+            .get_plays_role(&snapshot, &type_manager, employee_type)
+            .unwrap()
+            .unwrap()
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                PlaysAnnotation::Cardinality(AnnotationCardinality::new(0, Some(1))),
+            )
+            .unwrap();
+
+        let unrestricted_type = type_manager.create_entity_type(&mut snapshot, &unrestricted_label).unwrap();
+        unrestricted_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type, StorageCounters::DISABLED)
+            .unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // One link each, committed, so both players are persisted with a single role played.
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let employment_type = type_manager.get_relation_type(&snapshot, &employment_label).unwrap().unwrap();
+        let employee_type =
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap().role();
+        let employment = thing_manager.create_relation(&mut snapshot, employment_type).unwrap();
+        for label in [&restricted_label, &unrestricted_label] {
+            let entity_type = type_manager.get_entity_type(&snapshot, label).unwrap().unwrap();
+            let entity = thing_manager.create_entity(&mut snapshot, entity_type).unwrap();
+            employment
+                .add_player(
+                    &mut snapshot,
+                    &thing_manager,
+                    employee_type,
+                    Object::Entity(entity),
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+        }
+        assert!(thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).is_ok());
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // A second role played takes the restricted player past its plays cardinality, and the unrestricted
+    // one past nothing, because the default plays cardinality is unchecked.
+    for (label, expect_ok) in [(&restricted_label, false), (&unrestricted_label, true)] {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let employment_type = type_manager.get_relation_type(&snapshot, &employment_label).unwrap().unwrap();
+        let employee_type =
+            employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap().role();
+        let entity_type = type_manager.get_entity_type(&snapshot, label).unwrap().unwrap();
+        let player =
+            thing_manager.get_entities_in(&snapshot, entity_type, StorageCounters::DISABLED).next().unwrap().unwrap();
+        let employment = thing_manager.create_relation(&mut snapshot, employment_type).unwrap();
+        employment
+            .add_player(&mut snapshot, &thing_manager, employee_type, Object::Entity(player), StorageCounters::DISABLED)
+            .unwrap();
+        assert_eq!(
+            thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).is_ok(),
+            expect_ok,
+            "second role played by {label}"
+        );
+    }
+}
+
+#[test]
+fn persisted_owner_has_is_revalidated_against_owns_cardinality() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let tag_label = Label::build("tag", None);
+    let restricted_label = Label::build("restricted", None);
+    let unrestricted_label = Label::build("unrestricted", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let tag_type = type_manager.create_attribute_type(&mut snapshot, &tag_label).unwrap();
+        tag_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+
+        let restricted_type = type_manager.create_entity_type(&mut snapshot, &restricted_label).unwrap();
+        restricted_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                tag_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+
+        // Unlike plays, the unordered owns default of 0..1 is already checked, so the unrestricted
+        // owner has to opt out of validation explicitly.
+        let unrestricted_type = type_manager.create_entity_type(&mut snapshot, &unrestricted_label).unwrap();
+        unrestricted_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                tag_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        unrestricted_type
+            .get_owns_attribute(&snapshot, &type_manager, tag_type)
+            .unwrap()
+            .unwrap()
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+            )
+            .unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // One attribute each, committed, so both owners are persisted already owning a tag.
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let tag_type = type_manager.get_attribute_type(&snapshot, &tag_label).unwrap().unwrap();
+        let first =
+            thing_manager.create_attribute(&mut snapshot, tag_type, Value::String(Cow::Borrowed("first"))).unwrap();
+        for label in [&restricted_label, &unrestricted_label] {
+            let entity_type = type_manager.get_entity_type(&snapshot, label).unwrap().unwrap();
+            let entity = thing_manager.create_entity(&mut snapshot, entity_type).unwrap();
+            entity.set_has_unordered(&mut snapshot, &thing_manager, &first, StorageCounters::DISABLED).unwrap();
+        }
+        assert!(thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).is_ok());
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // A second tag takes the restricted owner past its owns cardinality, and the unrestricted one
+    // past nothing.
+    for (label, expect_ok) in [(&restricted_label, false), (&unrestricted_label, true)] {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let tag_type = type_manager.get_attribute_type(&snapshot, &tag_label).unwrap().unwrap();
+        let entity_type = type_manager.get_entity_type(&snapshot, label).unwrap().unwrap();
+        let owner =
+            thing_manager.get_entities_in(&snapshot, entity_type, StorageCounters::DISABLED).next().unwrap().unwrap();
+        let second =
+            thing_manager.create_attribute(&mut snapshot, tag_type, Value::String(Cow::Borrowed("second"))).unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, &second, StorageCounters::DISABLED).unwrap();
+        assert_eq!(
+            thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).is_ok(),
+            expect_ok,
+            "second tag owned by {label}"
+        );
+    }
+}
+
+#[test]
+fn persisted_relation_links_are_revalidated_against_relates_cardinality() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let member_role = "member";
+    let person_label = Label::build("person", None);
+    let restricted_label = Label::build("restricted", None);
+    let unrestricted_label = Label::build("unrestricted", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+
+        // Like owns and unlike plays, the unordered relates default of 0..1 is already checked, so the
+        // unrestricted relation has to opt out of validation explicitly.
+        for (label, cardinality) in
+            [(&restricted_label, None), (&unrestricted_label, Some(AnnotationCardinality::new(0, None)))]
+        {
+            let relation_type = type_manager.create_relation_type(&mut snapshot, label).unwrap();
+            relation_type
+                .create_relates(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    member_role,
+                    Ordering::Unordered,
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+            let relates = relation_type.get_relates_role_name(&snapshot, &type_manager, member_role).unwrap().unwrap();
+            if let Some(cardinality) = cardinality {
+                relates
+                    .set_annotation(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        RelatesAnnotation::Cardinality(cardinality),
+                    )
+                    .unwrap();
+            }
+            person_type
+                .set_plays(&mut snapshot, &type_manager, &thing_manager, relates.role(), StorageCounters::DISABLED)
+                .unwrap();
+        }
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // One player each, committed, so both relations are persisted already holding a player.
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        for label in [&restricted_label, &unrestricted_label] {
+            let relation_type = type_manager.get_relation_type(&snapshot, label).unwrap().unwrap();
+            let member_type =
+                relation_type.get_relates_role_name(&snapshot, &type_manager, member_role).unwrap().unwrap().role();
+            let relation = thing_manager.create_relation(&mut snapshot, relation_type).unwrap();
+            let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+            relation
+                .add_player(
+                    &mut snapshot,
+                    &thing_manager,
+                    member_type,
+                    Object::Entity(person),
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+        }
+        assert!(thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).is_ok());
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // A second player takes the restricted relation past its relates cardinality, and the unrestricted
+    // one past nothing.
+    for (label, expect_ok) in [(&restricted_label, false), (&unrestricted_label, true)] {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let relation_type = type_manager.get_relation_type(&snapshot, label).unwrap().unwrap();
+        let member_type =
+            relation_type.get_relates_role_name(&snapshot, &type_manager, member_role).unwrap().unwrap().role();
+        let relation = thing_manager
+            .get_relations_in(&snapshot, relation_type, StorageCounters::DISABLED)
+            .next()
+            .unwrap()
+            .unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        relation
+            .add_player(&mut snapshot, &thing_manager, member_type, Object::Entity(person), StorageCounters::DISABLED)
+            .unwrap();
+        assert_eq!(
+            thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).is_ok(),
+            expect_ok,
+            "second player of {label}"
+        );
     }
 }
 
