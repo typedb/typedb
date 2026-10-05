@@ -1693,7 +1693,8 @@ impl ThingManager {
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         match self.get_buffered_status(snapshot, key.as_reference()) {
             Some(status) => Ok(status),
-            None => self.get_storage_status(snapshot, key, storage_counters),
+            None if self.is_persisted_in_storage(snapshot, key, storage_counters)? => Ok(ConceptStatus::Persisted),
+            None => Ok(ConceptStatus::Deleted),
         }
     }
 
@@ -1709,19 +1710,16 @@ impl ThingManager {
         })
     }
 
-    pub(crate) fn get_storage_status(
+    pub(crate) fn is_persisted_in_storage(
         &self,
         snapshot: &impl ReadableSnapshot,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
-    ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        match snapshot
+    ) -> Result<bool, Box<ConceptReadError>> {
+        Ok(snapshot
             .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?
-        {
-            Some(_) => Ok(ConceptStatus::Persisted),
-            None => Ok(ConceptStatus::Deleted),
-        }
+            .is_some())
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(

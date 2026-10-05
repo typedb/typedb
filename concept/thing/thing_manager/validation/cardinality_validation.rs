@@ -57,23 +57,20 @@ use encoding::{
 };
 use storage::{key_range::KeyRange, snapshot::write::Write};
 
-use crate::{
-    ConceptStatus,
-    type_::{object_type::ObjectType, relation_type::RelationType, type_manager::TypeManager},
-};
+use crate::type_::{object_type::ObjectType, relation_type::RelationType, type_manager::TypeManager};
 
 macro_rules! capability_cardinality_validation {
     (
         $collect_func_name:ident,
         $validate_func_name:ident,
-        $revalidate_func_name:ident,
+        $validate_existing_func_name:ident,
         $capability_type:ident,
         $object_instance:ident,
         $get_cardinality_constraints_func:ident,
         $get_interface_counts_func:ident,
         $check_func:path
     ) => {
-        fn $revalidate_func_name(
+        fn $validate_existing_func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
             object: $object_instance,
@@ -87,8 +84,7 @@ macro_rules! capability_cardinality_validation {
             }
             let constraints = Self::$collect_func_name(snapshot, thing_manager, object.type_(), interface_types)?;
             if constraints.is_empty()
-                || thing_manager.get_storage_status(snapshot, key, storage_counters.clone())?
-                    != ConceptStatus::Persisted
+                || !thing_manager.is_persisted_in_storage(snapshot, key, storage_counters.clone())?
             {
                 return Ok(());
             }
@@ -320,7 +316,7 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         thing_manager.for_each_owner_with_modified_has(snapshot, |snapshot, modified| {
-            Self::revalidate_existing_object_has(
+            Self::validate_existing_object_has(
                 snapshot,
                 thing_manager,
                 modified.owner,
@@ -338,7 +334,7 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         thing_manager.for_each_player_with_modified_links(snapshot, |snapshot, modified| {
-            Self::revalidate_existing_object_links(
+            Self::validate_existing_object_links(
                 snapshot,
                 thing_manager,
                 modified.player,
@@ -356,7 +352,7 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         thing_manager.for_each_relation_with_modified_links(snapshot, |snapshot, modified| {
-            Self::revalidate_existing_relation_links(
+            Self::validate_existing_relation_links(
                 snapshot,
                 thing_manager,
                 modified.relation,
@@ -459,7 +455,7 @@ impl CardinalityValidation {
     capability_cardinality_validation!(
         collect_checked_owns_cardinality_constraints,
         validate_owns_cardinality_constraints,
-        revalidate_existing_object_has,
+        validate_existing_object_has,
         Owns,
         Object,
         get_owned_attribute_type_constraints_cardinality,
@@ -469,7 +465,7 @@ impl CardinalityValidation {
     capability_cardinality_validation!(
         collect_checked_plays_cardinality_constraints,
         validate_plays_cardinality_constraints,
-        revalidate_existing_object_links,
+        validate_existing_object_links,
         Plays,
         Object,
         get_played_role_type_constraints_cardinality,
@@ -479,7 +475,7 @@ impl CardinalityValidation {
     capability_cardinality_validation!(
         collect_checked_relates_cardinality_constraints,
         validate_relates_cardinality_constraints,
-        revalidate_existing_relation_links,
+        validate_existing_relation_links,
         Relates,
         Relation,
         get_related_role_type_constraints_cardinality,
