@@ -14,6 +14,7 @@ use encoding::{
     graph::{Typed, type_::vertex::TypeVertexEncoding},
     value::{label::Label, value::Value},
 };
+use answer::variable_value::VariableValue;
 use executor::{ExecutionInterrupt, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
@@ -138,13 +139,13 @@ fn committed_vectors_live_in_the_store_and_are_searchable() {
     // ANN search over committed vectors: [1,0,0] and [0.9,0.1,0] are close to [1,0,0]; [0,1,0] is not
     let rows = run_read_query(
         &context,
-        r#"match let $emb in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
+        r#"match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
     );
     assert_eq!(rows.len(), 2, "expected 2 vectors above similarity 0.9, got: {rows:?}");
 
     let rows = run_read_query(
         &context,
-        r#"match let $emb in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#,
+        r#"match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#,
     );
     assert_eq!(rows.len(), 3, "expected all 3 vectors above similarity -1.0, got: {rows:?}");
 }
@@ -181,7 +182,7 @@ fn uncommitted_vectors_are_found_by_search_in_the_same_transaction() {
         r#"insert
             $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");
             $b isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
-        match let $emb in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
+        match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
     );
     // the insert stage produces a single row (binding $a and $b); the match stage joins the one
     // buffered vector above the threshold onto it
@@ -202,4 +203,48 @@ fn duplicate_vector_insert_is_deduplicated() {
     assert_eq!(rows.len(), 3);
     let rows = run_read_query(&context, r#"match $x isa item, has embedding $e;"#);
     assert_eq!(rows.len(), 4);
+}
+
+#[test]
+fn similarity_scores_are_returned_alongside_elements() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+
+    let rows = run_read_query(
+        &context,
+        r#"match let $emb, $sim in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
+    );
+    // in row order: the implicit sort returns the most similar vector first
+    let scores: Vec<f64> = rows
+        .iter()
+        .flat_map(|row| {
+            row.iter().filter_map(|entry| match entry {
+                VariableValue::Value(Value::Double(double)) => Some(*double),
+                _ => None,
+            })
+        })
+        .collect();
+    let expected = [1.0, 0.9 / (0.81f64 + 0.01).sqrt()];
+    assert_eq!(scores.len(), expected.len(), "expected one score per row, got: {rows:?}");
+    for (score, expected) in scores.iter().zip(expected) {
+        assert!((score - expected).abs() < 1e-5, "expected {expected}, got {score}");
+    }
+}
+
+#[test]
+fn vector_search_requires_two_assigned_variables() {
+    let context = setup();
+    let query = r#"match let $emb in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#;
+    let pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let result = context.query_manager.prepare_read_pipeline(
+        snapshot,
+        &context.type_manager,
+        context.thing_manager.clone(),
+        context.function_manager.clone(),
+        &pipeline,
+        None::<GivenRowsSimple>,
+        query,
+    );
+    assert!(result.is_err(), "single-variable assignment should be rejected");
 }

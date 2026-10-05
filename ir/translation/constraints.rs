@@ -580,8 +580,8 @@ fn add_vector_search_call(
     let invalid = |reason: &str| {
         Box::new(RepresentationError::InvalidVectorSearchCall { reason: reason.to_owned(), source_span: span })
     };
-    let [assigned_var] = &assigned[..] else {
-        return Err(invalid("expected exactly one assigned variable"));
+    let [attribute_var, similarity_var] = &assigned[..] else {
+        return Err(invalid("expected exactly two assigned variables: the attribute and its similarity score"));
     };
     let [type_arg, vector_arg, threshold_arg] = args else {
         return Err(invalid("expected exactly 3 arguments"));
@@ -628,8 +628,14 @@ fn add_vector_search_call(
         threshold_literal.span().expect("Parser did not provide literal text range"),
     );
 
-    let similarity = constraints.create_anonymous_variable(span)?;
-    constraints.add_vector_search(assigned_var.variable, attribute_type, query, threshold_id, similarity, span)?;
+    constraints.add_vector_search(
+        attribute_var.variable,
+        attribute_type,
+        query,
+        threshold_id,
+        similarity_var.variable,
+        span,
+    )?;
     Ok(())
 }
 
