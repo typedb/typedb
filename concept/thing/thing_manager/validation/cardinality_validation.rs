@@ -82,8 +82,7 @@ macro_rules! capability_cardinality_validation {
             storage_counters: StorageCounters,
         ) -> Result<(), Box<ConceptReadError>> {
             let key = object.vertex().into_storage_key();
-            // Revalidation for existing objects only
-            if ThingManager::get_buffered_status(snapshot, key.as_reference()).is_some() {
+            if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_some() {
                 return Ok(());
             }
             let constraints = Self::$collect_func_name(snapshot, thing_manager, object.type_(), interface_types)?;

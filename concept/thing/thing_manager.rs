@@ -1691,13 +1691,14 @@ impl ThingManager {
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        match Self::get_buffered_status(snapshot, key.as_reference()) {
+        match self.get_buffered_status(snapshot, key.as_reference()) {
             Some(status) => Ok(status),
             None => self.get_storage_status(snapshot, key, storage_counters),
         }
     }
 
     pub(crate) fn get_buffered_status(
+        &self,
         snapshot: &impl ReadableSnapshot,
         key: StorageKeyReference<'_>,
     ) -> Option<ConceptStatus> {
@@ -2400,6 +2401,9 @@ impl ThingManager {
                     qualification
                 }
             };
+            if !qualification.qualified_before && !qualification.qualified_now {
+                return Ok(());
+            }
             let status = modified.relation.get_status(snapshot, self, storage_counters.clone()).map_err(read_error)?;
             if status == ConceptStatus::Deleted {
                 if qualification.qualified_before {
@@ -2428,9 +2432,6 @@ impl ThingManager {
                     .cartesian_product(counterparts.iter())
                     .flat_map(|(removed, counterpart)| [(*removed, *counterpart), (*counterpart, *removed)]);
                 self.relation_index_player_pairs_remove(snapshot, modified.relation, pairs, storage_counters.clone())?;
-            }
-            if !qualification.qualified_before && !qualification.qualified_now {
-                return Ok(());
             }
             self.relation_index_players_update(
                 snapshot,
