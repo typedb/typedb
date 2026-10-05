@@ -191,6 +191,7 @@ pub enum PlaysAnnotation {
 impl PartialEq<Annotation> for PlaysAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
+            Annotation::Index(_) => false,
             Annotation::Cardinality(other_cardinality) => {
                 if let Self::Cardinality(cardinality) = self {
                     cardinality == other_cardinality

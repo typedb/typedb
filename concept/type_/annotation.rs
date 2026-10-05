@@ -55,6 +55,7 @@ pub enum Annotation {
     Values(AnnotationValues),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
+    Index(AnnotationIndex),
     // TODO: Subkey
     // TODO: Replace
 }
@@ -74,6 +75,7 @@ impl fmt::Display for Annotation {
             Annotation::Values(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Doc(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Meta(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Index(annotation) => fmt::Display::fmt(annotation, f),
         }
     }
 }
@@ -288,6 +290,51 @@ impl fmt::Display for AnnotationRegex {
         // we only have to re-escape the escaped quotations
         let escaped = self.regex().replace("\"", "\\\"");
         write!(f, "@regex(\"{}\")", escaped)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum IndexMetric {
+    Cosine,
+}
+
+impl fmt::Display for IndexMetric {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IndexMetric::Cosine => write!(f, "{}", typeql::token::IndexMetric::Cosine),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationIndex {
+    metrics: Vec<IndexMetric>,
+}
+
+impl AnnotationIndex {
+    pub fn new(metrics: Vec<IndexMetric>) -> Self {
+        Self { metrics }
+    }
+
+    pub fn metrics(&self) -> &[IndexMetric] {
+        &self.metrics
+    }
+
+    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
+        matches!(value_type, Some(ValueType::Vector(_)))
+    }
+}
+
+impl fmt::Display for AnnotationIndex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "@{}(", typeql::token::Annotation::Index)?;
+        for (i, metric) in self.metrics.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{metric}")?;
+        }
+        write!(f, ")")
     }
 }
 
@@ -693,6 +740,7 @@ pub enum AnnotationCategory {
     Values,
     Doc,
     Meta(String),
+    Index,
     // TODO: Subkey
     // TODO: Replace
 }
@@ -711,7 +759,8 @@ impl AnnotationCategory {
             | AnnotationCategory::Range
             | AnnotationCategory::Values
             | AnnotationCategory::Doc
-            | AnnotationCategory::Meta(_) => true,
+            | AnnotationCategory::Meta(_)
+            | AnnotationCategory::Index => true,
         }
     }
 
@@ -729,7 +778,8 @@ impl AnnotationCategory {
             | AnnotationCategory::Range
             | AnnotationCategory::Values
             | AnnotationCategory::Doc
-            | AnnotationCategory::Meta(_) => true,
+            | AnnotationCategory::Meta(_)
+            | AnnotationCategory::Index => true,
         }
     }
 
@@ -747,6 +797,7 @@ impl AnnotationCategory {
             AnnotationCategory::Values => typeql::token::Annotation::Values.as_str(),
             AnnotationCategory::Doc => typeql::token::Annotation::Doc.as_str(),
             AnnotationCategory::Meta(_) => typeql::token::Annotation::Meta.as_str(),
+            AnnotationCategory::Index => typeql::token::Annotation::Index.as_str(),
         }
     }
 }
@@ -890,6 +941,18 @@ impl TypeVertexPropertyEncoding for AnnotationRange {
     }
 }
 
+impl TypeVertexPropertyEncoding for AnnotationIndex {
+    const INFIX: Infix = Infix::PropertyAnnotationIndex;
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
+        bincode::deserialize(value).unwrap()
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
+    }
+}
+
 impl TypeVertexPropertyEncoding for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
     fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
@@ -1002,6 +1065,18 @@ impl TypeEdgePropertyEncoding for AnnotationRegex {
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
+    }
+}
+
+impl TypeEdgePropertyEncoding for AnnotationIndex {
+    const INFIX: Infix = Infix::PropertyAnnotationIndex;
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
+        bincode::deserialize(value).unwrap()
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 

@@ -570,6 +570,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationRegex => {
                         Annotation::Regex(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
+                    Infix::PropertyAnnotationIndex => {
+                        Annotation::Index(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
                     Infix::PropertyAnnotationCascade => Annotation::Cascade(AnnotationCascade),
                     Infix::PropertyAnnotationRange => {
                         Annotation::Range(TypeVertexPropertyEncoding::from_key_value_bytes(suffix, value))
@@ -667,6 +670,9 @@ impl TypeReader {
                     }
                     Infix::PropertyAnnotationRegex => {
                         Annotation::Regex(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+                    Infix::PropertyAnnotationIndex => {
+                        unreachable!("@index is not a capability annotation")
                     }
                     Infix::PropertyAnnotationRange => {
                         Annotation::Range(TypeEdgePropertyEncoding::from_key_value_bytes(suffix, value))

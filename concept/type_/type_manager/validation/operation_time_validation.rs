@@ -31,7 +31,7 @@ use crate::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
+            AnnotationIndex, AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
@@ -1048,6 +1048,22 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(Box::new(SchemaValidationError::ValueTypeIsNotCompatibleWithRegexAnnotation {
+                attribute: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                value_type,
+            }))
+        }
+    }
+
+    pub(crate) fn validate_annotation_index_compatible_value_type(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType,
+        value_type: Option<ValueType>,
+    ) -> Result<(), Box<SchemaValidationError>> {
+        if AnnotationIndex::value_type_valid(value_type.clone()) {
+            Ok(())
+        } else {
+            Err(Box::new(SchemaValidationError::ValueTypeIsNotCompatibleWithIndexAnnotation {
                 attribute: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
                 value_type,
             }))
@@ -2520,6 +2536,15 @@ impl OperationTimeValidation {
                         value_type.clone(),
                     )?;
                     Self::validate_values_arguments(values.clone(), value_type.clone())?
+                }
+
+                AttributeTypeAnnotation::Index(_) => {
+                    Self::validate_annotation_index_compatible_value_type(
+                        snapshot,
+                        type_manager,
+                        attribute_type,
+                        value_type.clone(),
+                    )?;
                 }
 
                 | AttributeTypeAnnotation::Abstract(_)

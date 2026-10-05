@@ -6,8 +6,8 @@
 
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
-    AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex,
-    AnnotationUnique, AnnotationValues,
+    AnnotationDoc, AnnotationIndependent, AnnotationIndex, AnnotationKey, AnnotationMeta, AnnotationRange,
+    AnnotationRegex, AnnotationUnique, AnnotationValues, IndexMetric,
 };
 use encoding::{
     graph::type_::Kind,
@@ -67,7 +67,16 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             String::from_typeql_literal(&meta.key, meta.span())?,
             String::from_typeql_literal(&meta.value, meta.span())?,
         )),
+        typeql::Annotation::Index(index) => Annotation::Index(AnnotationIndex::new(
+            index.metrics.iter().map(translate_index_metric).collect(),
+        )),
     })
+}
+
+fn translate_index_metric(metric: &token::IndexMetric) -> IndexMetric {
+    match metric {
+        token::IndexMetric::Cosine => IndexMetric::Cosine,
+    }
 }
 
 pub fn translate_annotation_category(
@@ -91,6 +100,7 @@ pub fn translate_annotation_category(
         typeql::schema::undefinable::AnnotationCategory::Meta(meta, span) => {
             Ok(AnnotationCategory::Meta(String::from_typeql_literal(meta, *span)?))
         }
+        typeql::schema::undefinable::AnnotationCategory::Index => Ok(AnnotationCategory::Index),
     }
 }
 
