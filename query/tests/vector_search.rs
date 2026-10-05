@@ -35,7 +35,7 @@ struct Context {
 }
 
 const SCHEMA: &str = r#"define
-    attribute embedding, value vector(3, "float32");
+    attribute embedding, value vector(3, "float32") @index(cosine);
     entity item owns embedding @card(0..);
 "#;
 
@@ -60,6 +60,31 @@ fn setup() -> Context {
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+}
+
+fn setup_empty() -> Context {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let function_manager = Arc::new(FunctionManager::new(
+        Arc::new(encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator::new()),
+        None,
+    ));
+    let query_manager = QueryManager::new(None);
+    Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+}
+
+fn try_define(context: &Context, query: &str) -> Result<(), String> {
+    let mut snapshot = context.storage.clone().open_snapshot_schema();
+    let define = typeql::parse_query(query).unwrap().into_structure().into_schema();
+    context
+        .query_manager
+        .execute_schema(&mut snapshot, &context.type_manager, &context.thing_manager, &context.function_manager, define, query)
+        .map_err(|err| format!("{err:?}"))?;
+    // the transaction commit flow runs commit-time schema validation before committing the snapshot
+    context.type_manager.validate(&snapshot).map_err(|errs| format!("{errs:?}"))?;
+    snapshot.commit(&mut CommitProfile::DISABLED).map_err(|err| format!("{err:?}"))?;
+    Ok(())
 }
 
 fn run_write_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>> {
@@ -247,4 +272,14 @@ fn vector_search_requires_two_assigned_variables() {
         query,
     );
     assert!(result.is_err(), "single-variable assignment should be rejected");
+}
+
+#[test]
+fn vector_attribute_requires_index_annotation() {
+    let context = setup_empty();
+    let result = try_define(&context, r#"define attribute bare-embedding, value vector(3, "float32");"#);
+    assert!(result.is_err(), "vector attribute without @index(cosine) should be rejected at commit");
+
+    let result = try_define(&context, r#"define attribute name, value string @index(cosine);"#);
+    assert!(result.is_err(), "@index on a non-vector value type should be rejected");
 }

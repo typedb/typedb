@@ -123,6 +123,7 @@ impl ConstraintDescription {
 
             // no constraints:
             Annotation::Cascade(_) => HashSet::new(),
+            Annotation::Index(_) => HashSet::new(),
         }
     }
 

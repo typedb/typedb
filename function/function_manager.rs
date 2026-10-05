@@ -305,6 +305,7 @@ impl FunctionManager {
                     }
 
                     | Infix::PropertyAnnotationAbstract
+                    | Infix::PropertyAnnotationIndex
                     | Infix::PropertyAnnotationDistinct
                     | Infix::PropertyAnnotationIndependent
                     | Infix::PropertyAnnotationCardinality
