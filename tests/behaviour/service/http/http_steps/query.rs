@@ -33,7 +33,7 @@ use crate::{
     params::{
         ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, VariableList, WithCommit, WithGiven,
     },
-    util::{iter_table, list_contains_json, parse_json},
+    util::{JsonNumber, iter_table, list_contains_json, parse_json},
 };
 
 fn get_answers_column_names(answer: &serde_json::Value) -> Vec<String> {
@@ -130,14 +130,16 @@ fn check_is_value(
 ) {
     fn format(value: &serde_json::Value) -> String {
         match value {
-            serde_json::Value::Number(n) if n.is_i64() || n.is_u64() => n.to_string(),
-            serde_json::Value::Number(n) => {
-                // Render integers from the literal. as_f64() rounds anything past 2^53,
-                // which either changes the value or pushes it outside i64 entirely
-                let float_val = n.as_f64().expect("Expected a representable JSON number");
-                let rendered = format!("{float_val}");
-                if rendered.contains('.') { rendered } else { format!("{rendered}.0") }
-            }
+            serde_json::Value::Number(n) => match JsonNumber::from(n) {
+                JsonNumber::Integer(integer) => integer.to_string(),
+                JsonNumber::Double(double) => {
+                    // Display never uses an exponent, but writes a whole double without ".0",
+                    // which would make e.g. 1.5e300 an integer literal outside i64. Thus, we
+                    // handle it manually.
+                    let rendered = format!("{double}");
+                    if rendered.contains('.') { rendered } else { format!("{rendered}.0") }
+                }
+            },
             serde_json::Value::String(string) => string.clone(),
             _ => value.to_string(), // Handle non-numbers normally
         }

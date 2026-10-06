@@ -41,6 +41,21 @@ pub(crate) fn parse_json(json: &str) -> JSON {
     }
 }
 
+// serde_json keeps integers exact, but its as_f64() rounds them past 2^53 (f64 has a 53-bit mantissa).
+pub(crate) enum JsonNumber {
+    Integer(i64),
+    Double(f64),
+}
+
+impl From<&serde_json::Number> for JsonNumber {
+    fn from(number: &serde_json::Number) -> Self {
+        match number.as_i64() {
+            Some(integer) => Self::Integer(integer),
+            None => Self::Double(number.as_f64().unwrap()),
+        }
+    }
+}
+
 fn jsons_equal_up_to_reorder(lhs: &JSON, rhs: &JSON) -> bool {
     match (lhs, rhs) {
         (JSON::Object(lhs), JSON::Object(rhs)) => {
@@ -73,7 +88,11 @@ fn jsons_equal_up_to_reorder(lhs: &JSON, rhs: &JSON) -> bool {
             true
         }
         (JSON::String(lhs), JSON::String(rhs)) => lhs == rhs,
-        (JSON::Number(lhs), JSON::Number(rhs)) => equals_approximate(lhs.as_f64().unwrap(), rhs.as_f64().unwrap()),
+        (JSON::Number(lhs), JSON::Number(rhs)) => match (JsonNumber::from(lhs), JsonNumber::from(rhs)) {
+            (JsonNumber::Integer(lhs), JsonNumber::Integer(rhs)) => lhs == rhs,
+            (JsonNumber::Double(lhs), JsonNumber::Double(rhs)) => equals_approximate(lhs, rhs),
+            _ => false,
+        },
         (JSON::Bool(lhs), JSON::Bool(rhs)) => lhs == rhs,
         (JSON::Null, JSON::Null) => true,
         _ => false,
