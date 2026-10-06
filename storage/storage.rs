@@ -1035,11 +1035,11 @@ mod tests {
 
         assert!(!storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
         assert!(!storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
-        WriteSnapshot::new_with_commit_record(storage, commit_record1).commit(&mut profile).unwrap();
+        WriteSnapshot::new_with_commit_record(storage.clone(), commit_record1).commit(&mut profile).unwrap();
         assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
         assert!(!storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
 
-        WriteSnapshot::new_with_commit_record(storage, commit_record2).commit(&mut profile).unwrap();
+        WriteSnapshot::new_with_commit_record(storage.clone(), commit_record2).commit(&mut profile).unwrap();
         assert_eq!(seqnum1, seqnum2);
         assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
         assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
@@ -1087,7 +1087,7 @@ mod tests {
         assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
         assert!(!storage.commit_record_exists(seqnum4, snapshot_id4).unwrap());
 
-        WriteSnapshot::new_with_commit_record(storage, commit_record4).commit(&mut profile).unwrap();
+        WriteSnapshot::new_with_commit_record(storage.clone(), commit_record4).commit(&mut profile).unwrap();
         assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
         assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
         assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());

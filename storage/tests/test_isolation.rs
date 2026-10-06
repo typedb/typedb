@@ -110,9 +110,12 @@ fn g0_update_conflicts_fail() {
 
     let result_2 = snapshot_2.commit(&mut CommitProfile::disabled());
     assert!(
-        matches!(result_2, Err(SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { .. }, .. }, ..)),
+        matches!(
+            result_2,
+            Err((_, SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { .. }, .. }, ..)),
+        ),
         "{:?}",
-        result_2
+        result_2,
     );
 }
 

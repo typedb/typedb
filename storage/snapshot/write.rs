@@ -5,8 +5,7 @@
  */
 
 use std::{
-    fmt,
-    fmt::Formatter,
+    fmt::{self, Formatter},
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicU8, Ordering},
@@ -285,9 +284,9 @@ mod tests {
     use resource::constants::snapshot::BUFFER_VALUE_INLINE;
     use serde::{Deserialize, Serialize};
 
-    use crate::snapshot::write::KnownToExist;
+    use crate::snapshot::write::{AtomicPutAction, KnownToExist, PutAction, Write};
 
-    #[derive(Serialize, Deserialize, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum V1Write {
         Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
         Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: bool },
@@ -297,7 +296,10 @@ mod tests {
     #[test]
     fn known_to_exist_serializes_the_same_as_bool() {
         let value = ByteArray::<BUFFER_VALUE_INLINE>::copy(&[1, 2, 3]);
+
         let reinsert = Arc::new(AtomicBool::new(false));
+        let action = Arc::new(AtomicPutAction::new(PutAction::Nop));
+
         let known_to_exist_values = vec![
             (false, KnownToExist::Unknown, KnownToExist::Unknown),
             (true, KnownToExist::Exists, KnownToExist::Exists),
@@ -306,15 +308,12 @@ mod tests {
         for (old_known_to_exist, new_known_to_exist, deserialized_known_to_exist) in known_to_exist_values {
             let old_write =
                 V1Write::Put { value: value.clone(), reinsert: reinsert.clone(), known_to_exist: old_known_to_exist };
-            let new_write = super::Write::Put {
-                value: value.clone(),
-                reinsert: reinsert.clone(),
-                known_to_exist: new_known_to_exist,
-            };
+            let new_write =
+                Write::Put { value: value.clone(), action: action.clone(), known_to_exist: new_known_to_exist };
             let serialized_old = bincode::serialize(&old_write).unwrap();
             let serialized_new = bincode::serialize(&new_write).unwrap();
             let new_deserialized_as_old: V1Write = bincode::deserialize(&serialized_new).unwrap();
-            let old_deserialized_as_new: super::Write = bincode::deserialize(&serialized_old).unwrap();
+            let old_deserialized_as_new: Write = bincode::deserialize(&serialized_old).unwrap();
 
             assert_eq!(serialized_old, serialized_new);
 
@@ -340,8 +339,50 @@ mod tests {
 
             match (new_write, old_deserialized_as_new) {
                 (
-                    super::Write::Put { value: expected_value, reinsert: expected_reinsert, known_to_exist: _ },
-                    super::Write::Put {
+                    Write::Put { value: expected_value, action: expected_action, known_to_exist: _ },
+                    Write::Put { value: actual_value, action: actual_action, known_to_exist: actual_known_to_exist },
+                ) => {
+                    assert_eq!(expected_value, actual_value);
+                    assert_eq!(expected_action.load(Ordering::Relaxed), actual_action.load(Ordering::Relaxed));
+                    assert_eq!(deserialized_known_to_exist, actual_known_to_exist);
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    #[test]
+    fn put_action_serializes_the_same_as_bool_reinsert() {
+        let value = ByteArray::<BUFFER_VALUE_INLINE>::copy(&[1, 2, 3]);
+
+        let put_action_values = vec![
+            (false, PutAction::Nop, PutAction::Nop),
+            (true, PutAction::Insert, PutAction::Insert),
+            (true, PutAction::Overwrite, PutAction::Insert),
+        ];
+        for (old_reinsert, new_put_action, deserialized_put_action) in put_action_values {
+            let reinsert = Arc::new(AtomicBool::new(old_reinsert));
+            let action = Arc::new(AtomicPutAction::new(new_put_action));
+
+            let old_write = V1Write::Put { value: value.clone(), reinsert: reinsert.clone(), known_to_exist: false };
+            let new_write =
+                Write::Put { value: value.clone(), action: action.clone(), known_to_exist: KnownToExist::Unknown };
+
+            let serialized_old = bincode::serialize(&old_write).unwrap();
+            let serialized_new = bincode::serialize(&new_write).unwrap();
+            let new_deserialized_as_old: V1Write = bincode::deserialize(&serialized_new).unwrap();
+            let old_deserialized_as_new: Write = bincode::deserialize(&serialized_old).unwrap();
+
+            assert_eq!(serialized_old, serialized_new);
+
+            match (old_write, new_deserialized_as_old) {
+                (
+                    V1Write::Put {
+                        value: expected_value,
+                        reinsert: expected_reinsert,
+                        known_to_exist: expected_known_to_exist,
+                    },
+                    V1Write::Put {
                         value: actual_value,
                         reinsert: actual_reinsert,
                         known_to_exist: actual_known_to_exist,
@@ -349,7 +390,19 @@ mod tests {
                 ) => {
                     assert_eq!(expected_value, actual_value);
                     assert_eq!(expected_reinsert.load(Ordering::Relaxed), actual_reinsert.load(Ordering::Relaxed));
-                    assert_eq!(deserialized_known_to_exist, actual_known_to_exist);
+                    assert_eq!(expected_known_to_exist, actual_known_to_exist);
+                }
+                _ => unreachable!(),
+            }
+
+            match (new_write, old_deserialized_as_new) {
+                (
+                    Write::Put { value: expected_value, action: _, known_to_exist: expected_known_to_exist },
+                    Write::Put { value: actual_value, action: actual_action, known_to_exist: actual_known_to_exist },
+                ) => {
+                    assert_eq!(expected_value, actual_value);
+                    assert_eq!(deserialized_put_action, actual_action.load(Ordering::Relaxed));
+                    assert_eq!(expected_known_to_exist, actual_known_to_exist);
                 }
                 _ => unreachable!(),
             }
