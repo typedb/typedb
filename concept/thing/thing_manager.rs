@@ -111,20 +111,17 @@ pub mod validation;
 
 pub(crate) struct ModifiedOwnerHas {
     pub owner: Object,
-    pub status: ConceptStatus,
     pub modified_attribute_types: HashSet<AttributeType>,
 }
 
 pub(crate) struct ModifiedRelationLinks {
     pub relation: Relation,
-    pub status: ConceptStatus,
     pub modified_role_types: HashSet<RoleType>,
     pub removed_role_players: HashSet<(Object, RoleType)>,
 }
 
 pub(crate) struct ModifiedPlayerLinks {
     pub player: Object,
-    pub status: ConceptStatus,
     pub modified_role_types: HashSet<RoleType>,
 }
 
@@ -1766,22 +1763,35 @@ impl ThingManager {
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        snapshot
-            .get_write(key.as_reference())
-            .map(|write| match write {
-                Write::Insert { .. } => Ok(ConceptStatus::Inserted),
-                Write::Put { .. } => Ok(ConceptStatus::Put),
-                Write::Delete => Ok(ConceptStatus::Deleted),
-            })
-            .unwrap_or_else(|| {
-                match snapshot
-                    .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                {
-                    Some(_) => Ok(ConceptStatus::Persisted),
-                    None => Ok(ConceptStatus::Deleted),
-                }
-            })
+        match self.get_buffered_status(snapshot, key.as_reference()) {
+            Some(status) => Ok(status),
+            None if self.is_persisted_in_storage(snapshot, key, storage_counters)? => Ok(ConceptStatus::Persisted),
+            None => Ok(ConceptStatus::Deleted),
+        }
+    }
+
+    pub(crate) fn get_buffered_status(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        key: StorageKeyReference<'_>,
+    ) -> Option<ConceptStatus> {
+        snapshot.get_write(key).map(|write| match write {
+            Write::Insert { .. } => ConceptStatus::Inserted,
+            Write::Put { .. } => ConceptStatus::Put,
+            Write::Delete => ConceptStatus::Deleted,
+        })
+    }
+
+    pub(crate) fn is_persisted_in_storage(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        Ok(snapshot
+            .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
+            .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?
+            .is_some())
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -1804,8 +1814,6 @@ impl ThingManager {
     pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
-        storage_counters: StorageCounters,
-        read_error: impl Fn(Box<ConceptReadError>) -> E,
         mut visit: impl FnMut(&mut Snapshot, ModifiedOwnerHas) -> Result<(), E>,
     ) -> Result<(), E> {
         let mut group: Option<ModifiedOwnerHas> = None;
@@ -1820,10 +1828,7 @@ impl ThingManager {
                 let owner = Object::new(edge.from());
                 if !group.as_ref().is_some_and(|modified| modified.owner == owner) {
                     flush(snapshot, group.take())?;
-                    let status = self
-                        .get_status(snapshot, owner.vertex().into_storage_key(), storage_counters.clone())
-                        .map_err(&read_error)?;
-                    group = Some(ModifiedOwnerHas { owner, status, modified_attribute_types: HashSet::new() });
+                    group = Some(ModifiedOwnerHas { owner, modified_attribute_types: HashSet::new() });
                 }
                 group.as_mut().unwrap().modified_attribute_types.insert(Attribute::new(edge.to()).type_());
                 Ok(())
@@ -1835,8 +1840,6 @@ impl ThingManager {
     pub(crate) fn for_each_relation_with_modified_links<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
-        storage_counters: StorageCounters,
-        read_error: impl Fn(Box<ConceptReadError>) -> E,
         mut visit: impl FnMut(&mut Snapshot, ModifiedRelationLinks) -> Result<(), E>,
     ) -> Result<(), E> {
         let mut group: Option<ModifiedRelationLinks> = None;
@@ -1851,12 +1854,8 @@ impl ThingManager {
                 let relation = Relation::new(edge.relation());
                 if !group.as_ref().is_some_and(|modified| modified.relation == relation) {
                     flush(snapshot, group.take())?;
-                    let status = self
-                        .get_status(snapshot, relation.vertex().into_storage_key(), storage_counters.clone())
-                        .map_err(&read_error)?;
                     group = Some(ModifiedRelationLinks {
                         relation,
-                        status,
                         modified_role_types: HashSet::new(),
                         removed_role_players: HashSet::new(),
                     });
@@ -1877,8 +1876,6 @@ impl ThingManager {
     pub(crate) fn for_each_player_with_modified_links<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
-        storage_counters: StorageCounters,
-        read_error: impl Fn(Box<ConceptReadError>) -> E,
         mut visit: impl FnMut(&mut Snapshot, ModifiedPlayerLinks) -> Result<(), E>,
     ) -> Result<(), E> {
         let mut group: Option<ModifiedPlayerLinks> = None;
@@ -1893,10 +1890,7 @@ impl ThingManager {
                 let player = Object::new(edge.player());
                 if !group.as_ref().is_some_and(|modified| modified.player == player) {
                     flush(snapshot, group.take())?;
-                    let status = self
-                        .get_status(snapshot, player.vertex().into_storage_key(), storage_counters.clone())
-                        .map_err(&read_error)?;
-                    group = Some(ModifiedPlayerLinks { player, status, modified_role_types: HashSet::new() });
+                    group = Some(ModifiedPlayerLinks { player, modified_role_types: HashSet::new() });
                 }
                 group.as_mut().unwrap().modified_role_types.insert(RoleType::build_from_type_id(edge.role_id()));
                 Ok(())
@@ -2466,47 +2460,28 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let read_error = |typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source });
         let mut qualifying_types: HashMap<RelationType, RelationIndexQualification> = HashMap::new();
-        self.for_each_relation_with_modified_links(
-            snapshot,
-            storage_counters.clone(),
-            read_error,
-            |snapshot, modified| {
-                let relation_type = modified.relation.type_();
-                let qualification = match qualifying_types.get(&relation_type) {
-                    Some(qualification) => *qualification,
-                    None => {
-                        let qualification =
-                            self.relation_index_qualification(snapshot, relation_type).map_err(read_error)?;
-                        qualifying_types.insert(relation_type, qualification);
-                        qualification
-                    }
-                };
-                if modified.status == ConceptStatus::Deleted {
-                    if qualification.qualified_before {
-                        let pairs = modified
-                            .removed_role_players
-                            .iter()
-                            .cartesian_product(modified.removed_role_players.iter())
-                            .map(|(start, end)| (*start, *end));
-                        self.relation_index_player_pairs_remove(
-                            snapshot,
-                            modified.relation,
-                            pairs,
-                            storage_counters.clone(),
-                        )?;
-                    }
-                    return Ok(());
+        self.for_each_relation_with_modified_links(snapshot, |snapshot, modified| {
+            let relation_type = modified.relation.type_();
+            let qualification = match qualifying_types.get(&relation_type) {
+                Some(qualification) => *qualification,
+                None => {
+                    let qualification =
+                        self.relation_index_qualification(snapshot, relation_type).map_err(read_error)?;
+                    qualifying_types.insert(relation_type, qualification);
+                    qualification
                 }
-                if qualification.qualified_before && !modified.removed_role_players.is_empty() {
-                    let mut counterparts = self
-                        .relation_role_players(snapshot, modified.relation, storage_counters.clone())
-                        .map_err(read_error)?;
-                    counterparts.extend(modified.removed_role_players.iter().copied());
+            };
+            if !qualification.qualified_before && !qualification.qualified_now {
+                return Ok(());
+            }
+            let status = modified.relation.get_status(snapshot, self, storage_counters.clone()).map_err(read_error)?;
+            if status == ConceptStatus::Deleted {
+                if qualification.qualified_before {
                     let pairs = modified
                         .removed_role_players
                         .iter()
-                        .cartesian_product(counterparts.iter())
-                        .flat_map(|(removed, counterpart)| [(*removed, *counterpart), (*counterpart, *removed)]);
+                        .cartesian_product(modified.removed_role_players.iter())
+                        .map(|(start, end)| (*start, *end));
                     self.relation_index_player_pairs_remove(
                         snapshot,
                         modified.relation,
@@ -2514,18 +2489,28 @@ impl ThingManager {
                         storage_counters.clone(),
                     )?;
                 }
-                if !qualification.qualified_before && !qualification.qualified_now {
-                    return Ok(());
-                }
-                self.relation_index_players_update(
-                    snapshot,
-                    modified.relation,
-                    &modified.modified_role_types,
-                    qualification.qualified_now,
-                    storage_counters.clone(),
-                )
-            },
-        )
+                return Ok(());
+            }
+            if qualification.qualified_before && !modified.removed_role_players.is_empty() {
+                let mut counterparts = self
+                    .relation_role_players(snapshot, modified.relation, storage_counters.clone())
+                    .map_err(read_error)?;
+                counterparts.extend(modified.removed_role_players.iter().copied());
+                let pairs = modified
+                    .removed_role_players
+                    .iter()
+                    .cartesian_product(counterparts.iter())
+                    .flat_map(|(removed, counterpart)| [(*removed, *counterpart), (*counterpart, *removed)]);
+                self.relation_index_player_pairs_remove(snapshot, modified.relation, pairs, storage_counters.clone())?;
+            }
+            self.relation_index_players_update(
+                snapshot,
+                modified.relation,
+                &modified.modified_role_types,
+                qualification.qualified_now,
+                storage_counters.clone(),
+            )
+        })
     }
 
     fn rebuild_relation_indices_of_requalified_types(
