@@ -9,7 +9,7 @@ use std::{
     fmt,
     fmt::Formatter,
     hash::{Hash, Hasher},
-    marker::PhantomData,
+    sync::Arc,
 };
 
 use answer::{Thing, Type, variable_value::VariableValue};
@@ -658,6 +658,7 @@ impl<T> PartialEq for FilterFnVariable<T> {
 }
 
 impl<T> Eq for FilterFnVariable<T> {}
+
 impl<T> PartialOrd for FilterFnVariable<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
