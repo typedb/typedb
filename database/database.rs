@@ -695,7 +695,7 @@ fn make_update_statistics_fn(
                     queue.pop_first().unwrap().1
                 };
                 if let Some(commit_deltas) = commit_deltas {
-                    if let Err(err) = new_statistics.update(&commit_deltas, storage.durability()) {
+                    if let Err(err) = new_statistics.update_deltas(&commit_deltas, storage.durability()) {
                         error!("Statistics update failed: {err:?}");
                     }
                 } else {

@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 use std::{
     fmt::Formatter,
     mem,
@@ -607,7 +608,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
                 thing_statistics.sequence_number,
             );
             if let Some(commit_deltas) = commit_deltas {
-                if let Err(typedb_source) = thing_statistics.update(&commit_deltas, durability) {
+                if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
                     return Err(DurabilityError { typedb_source });
                 }
             } else {
@@ -648,7 +649,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
 
             let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
             durability.unsequenced_write(&commit_deltas).map_err(|typedb_source| DurabilityError { typedb_source })?;
-            if let Err(typedb_source) = thing_statistics.update(&commit_deltas, durability) {
+            if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
                 return Err(DurabilityError { typedb_source });
             }
 

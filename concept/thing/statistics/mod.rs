@@ -6,10 +6,10 @@
 
 use std::{
     cmp::min,
-    collections::{BTreeMap, HashMap, hash_map},
+    collections::{HashMap, hash_map},
     fmt,
     hash::Hash,
-    ops::Bound,
+    sync::Arc,
     time::Instant,
 };
 
@@ -27,7 +27,7 @@ use storage::{
     key_value::StorageKeyReference,
     keyspace::IteratorPool,
     record::CommitType,
-    recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
+    recovery::commit_recovery::StorageRecoveryError,
     sequence_number::SequenceNumber,
     snapshot::{
         ReadableSnapshot,
@@ -40,8 +40,16 @@ use tracing::{Level, event};
 use crate::{
     error::ConceptReadError,
     thing::{
-        ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation,
-        statistics::deltas::CommitDeltas, thing_manager::ThingManager,
+        ThingAPI,
+        attribute::Attribute,
+        entity::Entity,
+        object::Object,
+        relation::Relation,
+        statistics::{
+            deltas::CommitDeltas,
+            sync::{SyncRecord, load_commit_deltas},
+        },
+        thing_manager::ThingManager,
     },
     type_::{
         TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
@@ -50,6 +58,7 @@ use crate::{
 };
 
 pub mod deltas;
+mod sync;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u64)]
@@ -150,8 +159,6 @@ pub struct Statistics {
 
 impl Statistics {
     const ENCODING_VERSION: StatisticsEncodingVersion = StatisticsEncodingVersion::V0;
-    const COMMIT_CONTEXT_SIZE: u64 = 8;
-    const COMMIT_CONTEXT_MEMORY_LIMIT: usize = 1 << 30; // 1 GiB
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
@@ -270,13 +277,101 @@ impl Statistics {
         })
     }
 
-    pub fn update(
+    pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
+        use StatisticsError::DurablyWrite;
+
+        let storage_watermark = storage.snapshot_watermark();
+        debug_assert!(self.sequence_number <= storage_watermark);
+        if self.sequence_number == storage_watermark {
+            return Ok(());
+        }
+
+        let start = Instant::now();
+
+        let wal_commit_records = load_commit_deltas(self.sequence_number.next(), storage.durability())?;
+
+        for (seq, status) in wal_commit_records {
+            debug_assert_eq!(seq, self.sequence_number.next());
+            match status {
+                SyncRecord::Rejected => {
+                    self.sequence_number = seq;
+                }
+                SyncRecord::Deltas(deltas) => {
+                    self.update_deltas(&deltas, storage.durability()).unwrap();
+                }
+                SyncRecord::Commit(record) => {
+                    let commit_type = record.commit_type();
+                    match commit_type {
+                        CommitType::Data => (),
+                        CommitType::Schema => {
+                            if self.sequence_number < seq {
+                                // If last write was at Seq[11] and this schema commit is at Seq[12],
+                                // no changes need to be applied or persisted.
+                                if self.last_durable_write_sequence_number.next() < seq {
+                                    self.durably_write(storage.durability())
+                                        .map_err(|err| DurablyWrite { typedb_source: err })?;
+                                }
+                            }
+                        }
+                    };
+                    let delta = self
+                        .update_write(
+                            seq,
+                            &CommittedWrites {
+                                open_sequence_number: record.open_sequence_number(),
+                                operations: record.into_operations(),
+                            },
+                            storage,
+                        )
+                        .unwrap();
+                    self.total_count = self.total_count.checked_add_signed(delta).unwrap();
+                    self.sequence_number = seq;
+                }
+            }
+        }
+
+        self.may_durably_write(storage.durability()).map_err(|err| DurablyWrite { typedb_source: err })?;
+
+        let millis = Instant::now().duration_since(start).as_millis();
+        event!(
+            Level::TRACE,
+            "Statistics sync finished in {} ms. Storage watermark was initially: {}. Current statistics sequence is from: {}",
+            millis,
+            storage_watermark,
+            self.sequence_number
+        );
+        Ok(())
+    }
+
+    fn may_durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
+        let count_change_since_last_durable_write =
+            u64::abs_diff(self.total_count, self.last_durable_write_total_count);
+        let sequence_numbers_since_last_durable_write = self.sequence_number - self.last_durable_write_sequence_number;
+
+        if count_change_since_last_durable_write > STATISTICS_DURABLE_WRITE_CHANGE_COUNT
+            || sequence_numbers_since_last_durable_write > STATISTICS_DURABLE_WRITE_SEQ_NUMBERS
+        {
+            self.durably_write(durability)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
+        durability.unsequenced_write(self)?;
+        self.last_durable_write_sequence_number = self.sequence_number;
+        self.last_durable_write_total_count = self.total_count;
+        Ok(())
+    }
+
+    pub fn update_deltas(
         &mut self,
         commit_deltas: &CommitDeltas,
         durability: &impl DurabilityClient,
     ) -> Result<(), DurabilityClientError> {
         let CommitDeltas {
             encoding_version: _,
+            commit_type,
             commit_sequence_number,
             entity_deltas,
             relation_deltas,
@@ -288,6 +383,12 @@ impl Statistics {
 
         if *commit_sequence_number <= self.sequence_number {
             return Ok(());
+        }
+
+        if *commit_type == CommitType::Schema
+            && self.last_durable_write_sequence_number.next() < *commit_sequence_number
+        {
+            self.durably_write(durability)?;
         }
 
         let mut total_delta = 0;
@@ -335,125 +436,10 @@ impl Statistics {
         Ok(())
     }
 
-    pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
-        use StatisticsError::{DataRead, DurablyWrite, ReloadCommitData};
-
-        let storage_watermark = storage.snapshot_watermark();
-        debug_assert!(self.sequence_number <= storage_watermark);
-        if self.sequence_number == storage_watermark {
-            return Ok(());
-        }
-
-        let start = Instant::now();
-
-        let mut data_commits = BTreeMap::new();
-
-        let wal_commit_records = load_commit_data_from_with_context(
-            self.sequence_number,
-            Self::COMMIT_CONTEXT_SIZE,
-            storage.durability(),
-            Self::COMMIT_CONTEXT_MEMORY_LIMIT,
-        )
-        .map_err(|err| ReloadCommitData { typedb_source: err })?;
-
-        let mut last_included = None;
-
-        for (seq, status) in wal_commit_records {
-            match status {
-                RecoveryCommitStatus::Pending(_) => {
-                    // there's a gap/incomplete data in the log that means we can't apply beyond this sequence number
-                    break;
-                }
-                RecoveryCommitStatus::Validated(record) => {
-                    let commit_type = record.commit_type();
-                    let writes = CommittedWrites {
-                        open_sequence_number: record.open_sequence_number(),
-                        operations: record.into_operations(),
-                    };
-                    match commit_type {
-                        CommitType::Data => _ = data_commits.insert(seq, writes),
-                        CommitType::Schema => {
-                            if self.sequence_number < seq {
-                                // If last write was at Seq[11] and this schema commit is at Seq[12],
-                                // no changes need to be applied or persisted.
-                                if self.last_durable_write_sequence_number.next() < seq {
-                                    self.update_writes(&data_commits, storage)
-                                        .map_err(|err| DataRead { source: err })?;
-                                    self.durably_write(storage.durability())
-                                        .map_err(|err| DurablyWrite { typedb_source: err })?;
-                                }
-                                self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
-                                    .map_err(|err| DataRead { source: err })?;
-                            }
-                            data_commits.clear();
-                        }
-                    };
-                    last_included = Some(seq);
-                }
-                RecoveryCommitStatus::Rejected => {
-                    last_included = Some(seq);
-                }
-            }
-        }
-
-        self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
-
-        self.may_durably_write(storage.durability()).map_err(|err| DurablyWrite { typedb_source: err })?;
-
-        if let Some(last_included) = last_included {
-            self.sequence_number = last_included;
-        }
-
-        let millis = Instant::now().duration_since(start).as_millis();
-        event!(
-            Level::TRACE,
-            "Statistics sync finished in {} ms. Storage watermark was initially: {}. Current statistics sequence is from: {}",
-            millis,
-            storage_watermark,
-            self.sequence_number
-        );
-        Ok(())
-    }
-
-    fn may_durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
-        let count_change_since_last_durable_write =
-            u64::abs_diff(self.total_count, self.last_durable_write_total_count);
-        let sequence_numbers_since_last_durable_write = self.sequence_number - self.last_durable_write_sequence_number;
-
-        if count_change_since_last_durable_write > STATISTICS_DURABLE_WRITE_CHANGE_COUNT
-            || sequence_numbers_since_last_durable_write > STATISTICS_DURABLE_WRITE_SEQ_NUMBERS
-        {
-            self.durably_write(durability)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
-        durability.unsequenced_write(self)?;
-        self.last_durable_write_sequence_number = self.sequence_number;
-        self.last_durable_write_total_count = self.total_count;
-        Ok(())
-    }
-
-    fn update_writes<D>(
-        &mut self,
-        commits: &BTreeMap<SequenceNumber, CommittedWrites>,
-        storage: &MVCCStorage<D>,
-    ) -> Result<(), MVCCReadError> {
-        for (sequence_number, writes) in commits.range(self.sequence_number.next()..) {
-            let delta = self.update_write(*sequence_number, writes, commits, storage)?;
-            self.total_count = self.total_count.checked_add_signed(delta).unwrap();
-            self.sequence_number = *sequence_number;
-        }
-        Ok(())
-    }
-
     fn update_write<D>(
         &mut self,
         commit_sequence_number: SequenceNumber,
         writes: &CommittedWrites,
-        commits: &BTreeMap<SequenceNumber, CommittedWrites>,
         storage: &MVCCStorage<D>,
     ) -> Result<i64, MVCCReadError> {
         type CleanupFn = Box<dyn FnOnce(&mut Statistics)>;
@@ -462,8 +448,7 @@ impl Statistics {
         let mut deferred_type_cleanups: Vec<CleanupFn> = Vec::new();
 
         for (key, write) in writes.operations.iterate_writes() {
-            let delta =
-                write_to_delta(key, write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
+            let delta = write_to_delta(key, write, writes.open_sequence_number, commit_sequence_number, storage)?;
             match DecodableKey::try_decode(key.bytes()) {
                 Some(DecodableKey::EntityVertex(entity_vertex)) => {
                     let type_ = Entity::new(entity_vertex).type_();
@@ -770,43 +755,37 @@ fn write_to_delta<D>(
     write: &Write,
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,
-    commits: &BTreeMap<SequenceNumber, CommittedWrites>,
     storage: &MVCCStorage<D>,
 ) -> Result<i64, MVCCReadError> {
-    let concurrent_commit_range = (Bound::Excluded(open_sequence_number), Bound::Excluded(commit_sequence_number));
     match write {
         Write::Insert { .. } => Ok(1),
         Write::Delete => {
-            if commits.range(concurrent_commit_range).any(|(_, writes)| {
-                matches!(
-                    writes.operations.writes_in(write_key.keyspace_id()).writes_get(write_key.bytes()),
-                    Some(Write::Delete)
-                )
-            }) {
-                Ok(0)
-            } else {
+            if open_sequence_number.next() >= commit_sequence_number {
+                // no concurrent commit could have occurred - this is a real DELETE
                 Ok(-1)
+            } else {
+                if storage
+                    .get::<0>(
+                        &IteratorPool::new(),
+                        write_key,
+                        commit_sequence_number.previous(),
+                        StorageCounters::DISABLED,
+                    )?
+                    .is_some()
+                {
+                    // exists in storage before DELETE is committed
+                    Ok(-1)
+                } else {
+                    // does not exist in storage before DELETE is committed
+                    Ok(0)
+                }
             }
         }
         Write::Put { action, .. } => {
-            // PUT operation which we may have a concurrent commit and may or may not be inserted in the end
-            // The easiest way to check whether it was ultimately committed or not is to open the storage at
-            // CommitSequenceNumber - 1, and check if it exists. If it exists, we don't count. If it does, we do.
-            // However, this induces a read for every PUT, even though 99% of time there is no concurrent put.
-
-            // We only read from storage, if we can't tell from the current set of commits whether a predecessor
-            // could have written the same key (open < commits start)
-
-            let first_commit_sequence_number = *commits.first_key_value().unwrap().0;
-
-            if let Some(write) = commits.range(concurrent_commit_range).rev().find_map(|(_, writes)| {
-                writes.operations.writes_in(write_key.keyspace_id()).writes_get(write_key.bytes())
-            }) {
-                match write {
-                    Write::Insert { .. } | Write::Put { .. } => Ok(0),
-                    Write::Delete => Ok(1),
-                }
-            } else if open_sequence_number.next() < first_commit_sequence_number {
+            if open_sequence_number.next() >= commit_sequence_number {
+                // no concurrent commit could have occurred - fall back to the flag
+                if action.load(std::sync::atomic::Ordering::Relaxed) != PutAction::Nop { Ok(1) } else { Ok(0) }
+            } else {
                 if storage
                     .get::<0>(
                         &IteratorPool::new(),
@@ -822,9 +801,6 @@ fn write_to_delta<D>(
                     // does not exist in storage before PUT is committed
                     Ok(1)
                 }
-            } else {
-                // no concurrent commit could have occurred - fall back to the flag
-                if action.load(std::sync::atomic::Ordering::Relaxed) != PutAction::Nop { Ok(1) } else { Ok(0) }
             }
         }
     }
@@ -915,6 +891,8 @@ typedb_error!(
         DurablyWrite(1, "Error writing statistics summary WAL record.", typedb_source: DurabilityClientError),
         ReloadCommitData(2, "Failed to update statistics due to error reading commit records.", typedb_source: StorageRecoveryError),
         DataRead(3, "Error updating statistics due error reading MVCC storage layer.", source: MVCCReadError),
+        Durability(4, "Error reading statistics from durability client.", typedb_source: DurabilityClientError),
+        DurabilityRecordDeserialize(5, "Failed to deserialise durability record.", source: Arc<bincode::Error>),
     }
 );
 

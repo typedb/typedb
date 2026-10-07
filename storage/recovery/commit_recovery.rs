@@ -26,18 +26,9 @@ pub fn load_commit_data_from(
     start: SequenceNumber,
     durability_client: &impl DurabilityClient,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
-    load_commit_data_from_with_context(start, 0, durability_client, 0)
-}
-
-pub fn load_commit_data_from_with_context(
-    start: SequenceNumber,
-    context_size: u64,
-    durability_client: &impl DurabilityClient,
-    context_memory_limit: usize,
-) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
     use StorageRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
 
-    let load_start = start.saturating_sub(context_size);
+    let load_start = start;
     let records =
         durability_client.iter_from(load_start).map_err(|error| DurabilityClientRead { typedb_source: error })?;
 
@@ -120,9 +111,7 @@ pub fn load_commit_data_from_with_context(
             _not_storage_record => (), // skip, not storage record
         }
 
-        while bytes_read > context_memory_limit
-            && recovered_commits.first_key_value().is_some_and(|(&seq, _)| seq < start)
-        {
+        while bytes_read > 0 && recovered_commits.first_key_value().is_some_and(|(&seq, _)| seq < start) {
             recovered_commits.pop_first();
             let (seq, size) = recovered_commit_sizes.pop_first().expect("can't be over memory limit with zero commits");
             bytes_read -= size;

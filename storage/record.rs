@@ -83,7 +83,7 @@ impl fmt::Debug for CommitRecord {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommitType {
     Data,
     Schema,
@@ -223,11 +223,11 @@ impl StatusRecord {
         StatusRecord { commit_record_sequence_number: sequence_number, was_committed: committed }
     }
 
-    pub(crate) fn was_committed(&self) -> bool {
+    pub fn was_committed(&self) -> bool {
         self.was_committed
     }
 
-    pub(crate) fn commit_record_sequence_number(&self) -> SequenceNumber {
+    pub fn commit_record_sequence_number(&self) -> SequenceNumber {
         self.commit_record_sequence_number
     }
 }

@@ -9,7 +9,7 @@ use std::{collections::HashMap, fmt};
 use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
 use storage::{
     durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
-    record::CommitRecord,
+    record::{CommitRecord, CommitType},
     sequence_number::SequenceNumber,
 };
 
@@ -86,6 +86,7 @@ impl TryFrom<u64> for CommitDeltasEncodingVersion {
 #[derive(Debug, Clone)]
 pub struct CommitDeltas {
     pub(crate) encoding_version: CommitDeltasEncodingVersion,
+    pub commit_type: CommitType,
     pub commit_sequence_number: SequenceNumber,
 
     pub entity_deltas: HashMap<EntityType, Delta>,
@@ -104,6 +105,7 @@ impl CommitDeltas {
     const ENCODING_VERSION: CommitDeltasEncodingVersion = CommitDeltasEncodingVersion::V0;
 
     pub fn from_commit(commit_record: &CommitRecord, commit_sequence_number: SequenceNumber) -> Self {
+        let commit_type = commit_record.commit_type();
         let mut entity_deltas = HashMap::<_, Delta>::new();
         let mut relation_deltas = HashMap::<_, Delta>::new();
         let mut attribute_deltas = HashMap::<_, Delta>::new();
@@ -187,6 +189,7 @@ impl CommitDeltas {
 
         Self {
             encoding_version: Self::ENCODING_VERSION,
+            commit_type,
             commit_sequence_number,
             entity_deltas,
             relation_deltas,
@@ -270,6 +273,7 @@ mod serialize {
 
     enum CommitDeltasField {
         EncodingVersion,
+        CommitType,
         CommitSequenceNumber,
         EntityDeltas,
         RelationDeltas,
@@ -280,8 +284,9 @@ mod serialize {
     }
 
     impl CommitDeltasField {
-        const NAMES: [&'static str; 8] = [
+        const NAMES: [&'static str; 9] = [
             Self::EncodingVersion.name(),
+            Self::CommitType.name(),
             Self::CommitSequenceNumber.name(),
             Self::EntityDeltas.name(),
             Self::RelationDeltas.name(),
@@ -294,6 +299,7 @@ mod serialize {
         const fn name(&self) -> &'static str {
             match self {
                 CommitDeltasField::EncodingVersion => "EncodingVersion",
+                CommitDeltasField::CommitType => "CommitType",
                 CommitDeltasField::CommitSequenceNumber => "CommitSequenceNumber",
                 CommitDeltasField::EntityDeltas => "EntityDeltas",
                 CommitDeltasField::RelationDeltas => "RelationDeltas",
@@ -307,6 +313,7 @@ mod serialize {
         fn try_from(str: &str) -> Option<Self> {
             match str {
                 "EncodingVersion" => Some(CommitDeltasField::EncodingVersion),
+                "CommitType" => Some(CommitDeltasField::CommitType),
                 "CommitSequenceNumber" => Some(CommitDeltasField::CommitSequenceNumber),
                 "EntityDeltas" => Some(CommitDeltasField::EntityDeltas),
                 "RelationDeltas" => Some(CommitDeltasField::RelationDeltas),
@@ -353,6 +360,7 @@ mod serialize {
         {
             let mut state = serializer.serialize_struct("CommitDeltas", 8)?;
             state.serialize_field(CommitDeltasField::EncodingVersion.name(), &self.encoding_version)?;
+            state.serialize_field(CommitDeltasField::CommitType.name(), &self.commit_type)?;
             state.serialize_field(CommitDeltasField::CommitSequenceNumber.name(), &self.commit_sequence_number)?;
             state.serialize_field(CommitDeltasField::EntityDeltas.name(), &to_serialisable_map(&self.entity_deltas))?;
             state.serialize_field(
@@ -398,23 +406,24 @@ mod serialize {
                     V: de::SeqAccess<'de>,
                 {
                     let encoding_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                    let commit_type = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                     let commit_sequence_number =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
                     let entity_deltas =
-                        into_entity_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?);
+                        into_entity_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?);
                     let relation_deltas =
-                        into_relation_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?);
+                        into_relation_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?);
                     let attribute_deltas =
-                        into_attribute_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?);
+                        into_attribute_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?);
                     let has_attribute_deltas = seq
                         .next_element::<DoubleHashMap<SerialisableType, SerialisableType, _>>()?
-                        .ok_or_else(|| de::Error::invalid_length(5, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(6, &self))?
                         .into_iter()
                         .map(|(ty, map)| (ty.into_object_type(), into_attribute_map(map)))
                         .collect();
                     let relation_role_player_deltas = seq
                         .next_element::<TripleHashMap<SerialisableType, SerialisableType, SerialisableType, _>>()?
-                        .ok_or_else(|| de::Error::invalid_length(6, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(7, &self))?
                         .into_iter()
                         .map(|(ty, map)| {
                             (
@@ -425,13 +434,14 @@ mod serialize {
                         .collect();
                     let links_index_deltas = seq
                         .next_element::<DoubleHashMap<SerialisableType, SerialisableType, _>>()?
-                        .ok_or_else(|| de::Error::invalid_length(7, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(8, &self))?
                         .into_iter()
                         .map(|(ty, map)| (ty.into_object_type(), into_object_map(map)))
                         .collect();
 
                     Ok(CommitDeltas {
                         encoding_version,
+                        commit_type,
                         commit_sequence_number,
                         entity_deltas,
                         relation_deltas,
@@ -447,6 +457,7 @@ mod serialize {
                     V: de::MapAccess<'de>,
                 {
                     let mut encoding_version = None;
+                    let mut commit_type = None;
                     let mut commit_sequence_number = None;
                     let mut entity_deltas = None;
                     let mut relation_deltas = None;
@@ -458,6 +469,7 @@ mod serialize {
                     while let Some(key) = map.next_key()? {
                         match key {
                             CommitDeltasField::EncodingVersion => encoding_version = Some(map.next_value()?),
+                            CommitDeltasField::CommitType => commit_type = Some(map.next_value()?),
                             CommitDeltasField::CommitSequenceNumber => commit_sequence_number = Some(map.next_value()?),
                             CommitDeltasField::EntityDeltas => entity_deltas = Some(into_entity_map(map.next_value()?)),
                             CommitDeltasField::RelationDeltas => {
@@ -515,6 +527,8 @@ mod serialize {
                     Ok(CommitDeltas {
                         encoding_version: encoding_version
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::EncodingVersion.name()))?,
+                        commit_type: commit_type
+                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitSequenceNumber.name()))?,
                         commit_sequence_number: commit_sequence_number
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitSequenceNumber.name()))?,
                         entity_deltas: entity_deltas
