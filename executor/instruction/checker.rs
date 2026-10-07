@@ -624,21 +624,13 @@ fn get_vertex_value<'a, 'b>(
     parameters: &'b ParameterRegistry,
 ) -> VariableValue<'b> {
     match vertex {
-        CheckVertex::Variable(var) => get_variable_value(row, &var),
+        CheckVertex::Variable(var) => {
+            let row = row.expect("CheckVertex::Variable requires a row to take from");
+            var.extract(row)
+        }
         CheckVertex::Type(type_) => VariableValue::Type(*type_),
         CheckVertex::Parameter(parameter_id) => {
             VariableValue::Value(parameters.value_unchecked(parameter_id).as_reference())
-        }
-    }
-}
-
-fn get_variable_value<'a>(row: Option<&'a MaybeOwnedRow<'a>>, variable: &ExecutorVariable) -> VariableValue<'a> {
-    match variable {
-        ExecutorVariable::RowPosition(position) => {
-            row.expect("CheckVertex::Variable requires a row to take from").get(*position).as_reference()
-        }
-        ExecutorVariable::Internal(_) => {
-            unreachable!("Check variables without an extractor must have been recorded in the row.")
         }
     }
 }
@@ -672,8 +664,6 @@ impl<'r> ExtractFrom<MaybeOwnedRow<'r>> for ExecutorVariable {
     }
 }
 
-type SubRow = Vec<VariableValue<'static>>;
-
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 struct SubRowIndex(usize);
 
@@ -689,6 +679,7 @@ impl<T> Clone for FilterFnVariable<T> {
 }
 
 impl<T> Copy for FilterFnVariable<T> {}
+
 impl<T> fmt::Debug for FilterFnVariable<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -712,6 +703,7 @@ impl<T> Hash for FilterFnVariable<T> {
         }
     }
 }
+
 impl<T> PartialEq for FilterFnVariable<T> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -721,12 +713,14 @@ impl<T> PartialEq for FilterFnVariable<T> {
         }
     }
 }
+
 impl<T> Eq for FilterFnVariable<T> {}
 impl<T> PartialOrd for FilterFnVariable<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
+
 impl<T> Ord for FilterFnVariable<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match (self, other) {
@@ -751,7 +745,7 @@ impl<T> fmt::Display for FilterFnVariable<T> {
 
 struct TupleAndSubRow<'a, T> {
     tuple: &'a T,
-    subrow: &'a SubRow,
+    subrow: &'a [VariableValue<'static>],
 }
 
 impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for FilterFnVariable<T> {
@@ -825,7 +819,7 @@ impl<T: 'static> InlineCheckFactory<T> {
 
 pub(crate) struct FilterFnWithSubRow<T> {
     checks: Arc<Vec<CheckInstruction<FilterFnVariable<T>>>>,
-    subrow: SubRow,
+    subrow: Vec<VariableValue<'static>>,
 }
 
 impl<T> FilterFnWithSubRow<T> {
@@ -837,34 +831,10 @@ impl<T> FilterFnWithSubRow<T> {
         storage_counters: StorageCounters,
     ) -> impl Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>> {
         move |res| {
-            // TODO: Copied from the older one. Doesn't this swallow errors?
+            // returning Ok(true) on error just means the error is passed on to the next layer.
             let Ok(tuple) = res else { return Ok(true) };
             let value = TupleAndSubRow { tuple, subrow: &self.subrow };
             filter_impl(&self.checks, &*snapshot, &thing_manager, &parameters, &value, storage_counters.clone())
         }
-    }
-}
-
-impl<T: 'static> FilterFnWithSubRow<T> {
-    pub(crate) fn check(
-        &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        item: &Result<T, Box<ConceptReadError>>,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        // TODO: WHY DO THESE ACCEPT &Result<T, _> instead of just &T?
-        let tuple = match item {
-            Ok(tuple) => tuple,
-            Err(err) => return Err(err.clone()),
-        };
-        let source = TupleAndSubRow { tuple, subrow: &self.subrow };
-        filter_impl(
-            &self.checks,
-            &*context.snapshot,
-            &context.thing_manager,
-            &context.parameters,
-            &source,
-            storage_counters,
-        )
     }
 }
