@@ -618,11 +618,11 @@ fn check_sub(
     }
 }
 
-fn get_vertex_value<'a, 'b>(
+fn get_vertex_value<'a>(
     vertex: &'a CheckVertex<ExecutorVariable>,
-    row: Option<&'b MaybeOwnedRow<'b>>,
-    parameters: &'b ParameterRegistry,
-) -> VariableValue<'b> {
+    row: Option<&'a MaybeOwnedRow<'a>>,
+    parameters: &'a ParameterRegistry,
+) -> VariableValue<'a> {
     match vertex {
         CheckVertex::Variable(var) => {
             let row = row.expect("CheckVertex::Variable requires a row to take from");
