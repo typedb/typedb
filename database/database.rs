@@ -629,6 +629,10 @@ impl Database<WALClient> {
             },
         }
     }
+
+    pub fn benchmark_only__flush(&self) {
+        self.storage.benchmark_only__flush()
+    }
 }
 
 fn make_checkpoint_fn(

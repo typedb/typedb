@@ -679,6 +679,10 @@ impl<Durability> MVCCStorage<Durability> {
     pub fn estimate_key_count(&self) -> Result<u64, StorageOpenError> {
         self.keyspaces.estimate_key_count().map_err(|source| StorageOpenError::Keyspace { source })
     }
+
+    pub fn benchmark_only__flush(&self) {
+        self.keyspaces.iter().for_each(|ks| ks.benchmark_only__flush())
+    }
 }
 
 typedb_error! {
