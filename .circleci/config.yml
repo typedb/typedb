@@ -9,16 +9,17 @@ orbs:
   macos: circleci/macos@2.4.0
 
 executors:
-  linux-arm64-amazonlinux-2:
+  # AlmaLinux 8 (glibc 2.28) with gcc-toolset-14, installed by install-deps-dnf: release binaries need glibc >= 2.28.
+  linux-arm64-almalinux-8:
     docker:
-      - image: typedb/amazonlinux2-ci:3.13.0-arm64
+      - image: almalinux:8.10-20261002@sha256:8b469a3a78515e8a18ea8fc727e6a3679e1d0c5ba6f58d5b30be3d0d9b86cffe
     resource_class: arm.large
     working_directory: ~/typedb
 
-  # All builds go on amazon-linux.
-  linux-x86_64-amazonlinux-2:
+  # All builds go on AlmaLinux 8.
+  linux-x86_64-almalinux-8:
     docker:
-      - image: typedb/amazonlinux2-ci:3.13.0-amd64
+      - image: almalinux:8.10-20261002@sha256:8b469a3a78515e8a18ea8fc727e6a3679e1d0c5ba6f58d5b30be3d0d9b86cffe
     resource_class: large
     working_directory: ~/typedb
 
@@ -47,16 +48,44 @@ commands:
   # common setup steps #
   ######################
 
-  install-deps-yum:
+  # Git and ssh for checkout, which the base image lacks; runs before checkout.
+  install-git-dnf:
+    steps:
+      - run: dnf install -y --setopt=install_weak_deps=False git-core openssh-clients
+
+  # Build dependencies. Bazel uses gcc-toolset-14 via an absolute CC path, since --incompatible_strict_action_env
+  # resets PATH inside actions. Bazel's C++ toolchain detection links with lld when it's installed (it tries lld
+  # before gold).
+  install-deps-dnf:
     parameters:
       bazel-arch:
         type: string
     steps:
+      - install-git-dnf
       - run: |
-          amazon-linux-extras install docker -y 
+          dnf install -y --setopt=install_weak_deps=False gcc-toolset-14-gcc-c++ clang lld python3.11
+          ln -sf /usr/bin/python3.11 /usr/local/bin/python3
+          if [ "<<parameters.bazel-arch>>" = "amd64" ]; then BAZELISK_SHA256=61699e22abb2a26304edfa1376f65ad24191f94a4ffed68a58d42b6fee01e124; else BAZELISK_SHA256=a836972b8a7c34970fb9ecc44768ece172f184c5f7e2972c80033fcdcf8c1870; fi
+          curl -fsSL -o /usr/local/bin/bazel "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
+          echo "$BAZELISK_SHA256  /usr/local/bin/bazel" | sha256sum -c -
+          chmod a+x /usr/local/bin/bazel
+          echo "export CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc" >> $BASH_ENV
           export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64/')
-          echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
-          echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
+          # Only use a prebuilt cargo-bazel if this project defines one: rules_rust fails on an empty
+          # CARGO_BAZEL_GENERATOR_URL, but builds cargo-bazel from source when it's unset.
+          URL_VAR=CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER; SHA_VAR=CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER
+          if [ -n "${!URL_VAR:-}" ] && [ -n "${!SHA_VAR:-}" ]; then
+            echo "export CARGO_BAZEL_GENERATOR_URL=\"\$$URL_VAR\"" >> $BASH_ENV
+            echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$$SHA_VAR\"" >> $BASH_ENV
+          fi
+
+  # The docker CLI, for jobs using setup_remote_docker (AlmaLinux doesn't ship docker).
+  install-docker-cli:
+    steps:
+      - run: |
+          dnf install -y dnf-plugins-core
+          dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+          dnf install -y docker-ce-cli
 
   install-deps-brew:
     parameters:
@@ -65,8 +94,13 @@ commands:
     steps:
       - run: |
           export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/arm64/ARM64/')
-          echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
-          echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
+          # Only use a prebuilt cargo-bazel if this project defines one: rules_rust fails on an empty
+          # CARGO_BAZEL_GENERATOR_URL, but builds cargo-bazel from source when it's unset.
+          URL_VAR=CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER; SHA_VAR=CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER
+          if [ -n "${!URL_VAR:-}" ] && [ -n "${!SHA_VAR:-}" ]; then
+            echo "export CARGO_BAZEL_GENERATOR_URL=\"\$$URL_VAR\"" >> $BASH_ENV
+            echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$$SHA_VAR\"" >> $BASH_ENV
+          fi
 
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
@@ -248,21 +282,21 @@ commands:
 jobs:
   # per platform snapshot deployment
   test-deploy-snapshot-linux-x86_64:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - checkout
       - test-assembly-unix
       - test-admin-unix
       - deploy-snapshot-unix
 
   test-deploy-snapshot-linux-arm64:
-    executor: linux-arm64-amazonlinux-2
+    executor: linux-arm64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: arm64
+      - checkout
       - test-assembly-unix
       - test-admin-unix
       - deploy-snapshot-unix
@@ -312,43 +346,44 @@ jobs:
       - run: .circleci\windows\deploy_snapshot.bat
 
   deploy-docker-snapshot-x86_64:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
       - setup_remote_docker
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - install-docker-cli
+      - checkout
       - deploy-docker-snapshot-for-arch:
           image-arch: x86_64
 
   deploy-docker-snapshot-arm64:
-    executor: linux-arm64-amazonlinux-2
+    executor: linux-arm64-almalinux-8
     steps:
       - setup_remote_docker
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: arm64
+      - install-docker-cli
+      - checkout
       - deploy-docker-snapshot-for-arch:
           image-arch: arm64
 
   deploy-docker-snapshot-multiarch:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
       - setup_remote_docker
+      - install-git-dnf
+      - install-docker-cli
       - checkout
-      - install-deps-yum:
-          bazel-arch: amd64
       - deploy-docker-snapshot-multiarch
 
   deploy-snapshot-brew:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
-      - run: yum install -y tar gzip
       - attach_workspace:
           at: ~/dist
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
@@ -376,36 +411,36 @@ jobs:
       - deploy-snapshot-installer-mac
 
   deploy-snapshot-apt-x86_64:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - checkout
       - deploy-snapshot-apt
 
   deploy-snapshot-apt-arm64:
-    executor: linux-arm64-amazonlinux-2
+    executor: linux-arm64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: arm64
+      - checkout
       - deploy-snapshot-apt
 
   # per platform release deployment
   deploy-release-linux-x86_64:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - checkout
       - deploy-release-unix
 
   deploy-release-linux-arm64:
-    executor: linux-arm64-amazonlinux-2
+    executor: linux-arm64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: arm64
+      - checkout
       - deploy-release-unix
 
   deploy-release-mac-x86_64:
@@ -446,14 +481,13 @@ jobs:
       - run: .circleci\windows\deploy_release.bat
 
   deploy-release-brew:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
-      - run: yum install -y tar gzip
       - attach_workspace:
           at: ~/dist
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
@@ -480,60 +514,61 @@ jobs:
       - deploy-release-installer-mac
 
   deploy-release-apt-x86_64:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - checkout
       - deploy-release-apt
 
   deploy-release-apt-arm64:
-    executor: linux-arm64-amazonlinux-2
+    executor: linux-arm64-almalinux-8
     steps:
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: arm64
+      - checkout
       - deploy-release-apt
 
   deploy-docker-release-x86_64:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
       - setup_remote_docker
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: amd64
+      - install-docker-cli
+      - checkout
       - deploy-docker-release-for-arch:
           image-arch: x86_64
 
   deploy-docker-release-arm64:
-    executor: linux-arm64-amazonlinux-2
+    executor: linux-arm64-almalinux-8
     steps:
       - setup_remote_docker
-      - checkout
-      - install-deps-yum:
+      - install-deps-dnf:
           bazel-arch: arm64
+      - install-docker-cli
+      - checkout
       - deploy-docker-release-for-arch:
           image-arch: arm64
 
   deploy-docker-release-multiarch:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
       - setup_remote_docker
+      - install-git-dnf
+      - install-docker-cli
       - checkout
-      - install-deps-yum:
-          bazel-arch: amd64
       - deploy-docker-release-multiarch
 
   deploy-github:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-almalinux-8
     steps:
+      - install-git-dnf
       - checkout
-      - install-deps-yum:
-          bazel-arch: amd64
       - run:
           name: "Publish Release on GitHub"
           command: |
-            wget https://github.com/tcnksm/ghr/releases/download/v0.16.2/ghr_v0.16.2_linux_amd64.tar.gz
+            curl -fsSLO https://github.com/tcnksm/ghr/releases/download/v0.16.2/ghr_v0.16.2_linux_amd64.tar.gz
             tar -xf ghr_v0.16.2_linux_amd64.tar.gz
             ghr_v0.16.2_linux_amd64/ghr -t ${REPO_GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} \
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
