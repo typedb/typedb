@@ -48,7 +48,7 @@ use crate::{pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 pub(crate) struct Checker<T: 'static> {
     extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     pub checks: Vec<CheckInstruction<ExecutorVariable>>,
-    inline_check_maker: CheckerForInline<T>,
+    inline_check_factory: InlineCheckFactory<T>,
 }
 
 type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>>;
@@ -72,8 +72,8 @@ impl<T> Checker<T> {
         checks: Vec<CheckInstruction<ExecutorVariable>>,
         extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     ) -> Self {
-        let inline_check_maker = CheckerForInline::new(&checks, &extractors);
-        Self { extractors, checks, inline_check_maker }
+        let inline_check_factory = InlineCheckFactory::new(&checks, &extractors);
+        Self { extractors, checks, inline_check_factory }
     }
 
     pub(crate) fn filter_fn_for_row<Snapshot: ReadableSnapshot + 'static>(
@@ -82,7 +82,7 @@ impl<T> Checker<T> {
         row: &MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> impl Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>> + use<T, Snapshot> {
-        self.inline_check_maker.filter_fn_for_row(context, row, storage_counters)
+        self.inline_check_factory.filter_fn_for_row(context, row, storage_counters)
     }
 
     pub(crate) fn value_range_for(
@@ -242,42 +242,42 @@ impl Checker<()> {
     }
 }
 
-pub(crate) fn filter_impl<T, V: ExtractFrom<T>>(
-    checks: &[CheckInstruction<V>],
+pub(crate) fn filter_impl<Source, Var: ExtractFrom<Source>>(
+    checks: &[CheckInstruction<Var>],
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
+    source: &Source,
     storage_counters: StorageCounters,
 ) -> Result<bool, Box<ConceptReadError>> {
     for check in checks {
         let passes = match check {
-            CheckInstruction::Iid { var, iid } => filter_iid(parameters, row, var, iid),
-            CheckInstruction::TypeList { type_var, types } => filter_type_list(row, type_var, types),
-            CheckInstruction::ThingTypeList { thing_var, types } => filter_thing_type_list(row, thing_var, types),
+            CheckInstruction::Iid { var, iid } => filter_iid(parameters, source, var, iid),
+            CheckInstruction::TypeList { type_var, types } => filter_type_list(source, type_var, types),
+            CheckInstruction::ThingTypeList { thing_var, types } => filter_thing_type_list(source, thing_var, types),
             CheckInstruction::Sub { sub_kind, subtype, supertype } => {
-                filter_sub(snapshot, thing_manager, parameters, row, *sub_kind, subtype, supertype)?
+                filter_sub(snapshot, thing_manager, parameters, source, *sub_kind, subtype, supertype)?
             }
             CheckInstruction::Owns { owner, attribute } => {
-                filter_owns(snapshot, thing_manager, parameters, row, owner, attribute)?
+                filter_owns(snapshot, thing_manager, parameters, source, owner, attribute)?
             }
             CheckInstruction::Relates { relation, role_type } => {
-                filter_relates(snapshot, thing_manager, parameters, row, relation, role_type)?
+                filter_relates(snapshot, thing_manager, parameters, source, relation, role_type)?
             }
             CheckInstruction::Plays { player, role_type } => {
-                filter_plays(snapshot, thing_manager, parameters, row, player, role_type)?
+                filter_plays(snapshot, thing_manager, parameters, source, player, role_type)?
             }
             CheckInstruction::Isa { isa_kind, type_, thing } => {
-                filter_isa(snapshot, thing_manager, parameters, row, *isa_kind, type_, thing)?
+                filter_isa(snapshot, thing_manager, parameters, source, *isa_kind, type_, thing)?
             }
             CheckInstruction::Has { owner, attribute } => {
-                filter_has(snapshot, thing_manager, parameters, row, owner, attribute, storage_counters.clone())?
+                filter_has(snapshot, thing_manager, parameters, source, owner, attribute, storage_counters.clone())?
             }
             CheckInstruction::Links { relation, player, role } => filter_links(
                 snapshot,
                 thing_manager,
                 parameters,
-                row,
+                source,
                 relation,
                 player,
                 role,
@@ -288,7 +288,7 @@ pub(crate) fn filter_impl<T, V: ExtractFrom<T>>(
                     snapshot,
                     thing_manager,
                     parameters,
-                    row,
+                    source,
                     start_player,
                     end_player,
                     relation,
@@ -297,21 +297,21 @@ pub(crate) fn filter_impl<T, V: ExtractFrom<T>>(
                     storage_counters.clone(),
                 )?
             }
-            CheckInstruction::Is { lhs, rhs } => filter_is(row, lhs, rhs),
+            CheckInstruction::Is { lhs, rhs } => filter_is(source, lhs, rhs),
             CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
-                filter_links_dedup(row, role1, player1, role2, player2)
+                filter_links_dedup(source, role1, player1, role2, player2)
             }
             CheckInstruction::Comparison { lhs, rhs, comparator } => filter_comparison(
                 snapshot,
                 thing_manager,
                 parameters,
-                row,
+                source,
                 lhs,
                 rhs,
                 *comparator,
                 storage_counters.clone(),
             )?,
-            CheckInstruction::NotNone { variables } => filter_not_none(row, variables),
+            CheckInstruction::NotNone { variables } => filter_not_none(source, variables),
             CheckInstruction::Unsatisfiable => false,
         };
         if !passes {
@@ -321,48 +321,48 @@ pub(crate) fn filter_impl<T, V: ExtractFrom<T>>(
     Ok(true)
 }
 
-fn filter_iid<T, V: ExtractFrom<T>>(
+fn filter_iid<Source, Var: ExtractFrom<Source>>(
     parameters: &ParameterRegistry,
-    row: &T,
-    var: &V,
+    source: &Source,
+    var: &Var,
     iid: &ir::pattern::ParameterID,
 ) -> bool {
-    let extracted = var.extract(row);
+    let extracted = var.extract(source);
     let iid = parameters.iid(iid).unwrap();
     check_iid(iid, extracted)
 }
 
-fn filter_type_list<T, V: ExtractFrom<T>>(
-    row: &T,
-    type_var: &V,
+fn filter_type_list<Source, Var: ExtractFrom<Source>>(
+    source: &Source,
+    type_var: &Var,
     types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
 ) -> bool {
-    let extracted = type_var.extract(row);
+    let extracted = type_var.extract(source);
     let VariableValue::Type(t) = extracted else { return false };
     types.contains(&t)
 }
 
-fn filter_thing_type_list<T, V: ExtractFrom<T>>(
-    row: &T,
-    thing_var: &V,
+fn filter_thing_type_list<Source, Var: ExtractFrom<Source>>(
+    source: &Source,
+    thing_var: &Var,
     types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
 ) -> bool {
-    let extracted = thing_var.extract(row);
+    let extracted = thing_var.extract(source);
     let VariableValue::Thing(thing) = extracted else { return false };
     types.contains(&thing.type_())
 }
 
-fn filter_sub<T, V: ExtractFrom<T>>(
+fn filter_sub<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
+    source: &Source,
     sub_kind: SubKind,
-    subtype: &CheckVertex<V>,
-    supertype: &CheckVertex<V>,
+    subtype: &CheckVertex<Var>,
+    supertype: &CheckVertex<Var>,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let subtype = V::extract_vertex(subtype, row, parameters);
-    let supertype = V::extract_vertex(supertype, row, parameters);
+    let subtype = Var::extract_vertex(subtype, source, parameters);
+    let supertype = Var::extract_vertex(supertype, source, parameters);
     check_sub(
         snapshot,
         thing_manager,
@@ -372,62 +372,62 @@ fn filter_sub<T, V: ExtractFrom<T>>(
     )
 }
 
-fn filter_owns<T, V: ExtractFrom<T>>(
+fn filter_owns<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    owner: &CheckVertex<V>,
-    attribute: &CheckVertex<V>,
+    source: &Source,
+    owner: &CheckVertex<Var>,
+    attribute: &CheckVertex<Var>,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let owner = V::extract_vertex(owner, row, parameters);
-    let attribute = V::extract_vertex(attribute, row, parameters);
+    let owner = Var::extract_vertex(owner, source, parameters);
+    let attribute = Var::extract_vertex(attribute, source, parameters);
     let owner = unwrap_or_result_false!(owner => Type).as_object_type();
     let attribute = unwrap_or_result_false!(attribute => Type).as_attribute_type();
     owner.get_owns_attribute(snapshot, thing_manager.type_manager(), attribute).map(|owns| owns.is_some())
 }
 
-fn filter_relates<T, V: ExtractFrom<T>>(
+fn filter_relates<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    relation: &CheckVertex<V>,
-    role_type: &CheckVertex<V>,
+    source: &Source,
+    relation: &CheckVertex<Var>,
+    role_type: &CheckVertex<Var>,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let relation = V::extract_vertex(relation, row, parameters);
-    let role_type = V::extract_vertex(role_type, row, parameters);
+    let relation = Var::extract_vertex(relation, source, parameters);
+    let role_type = Var::extract_vertex(role_type, source, parameters);
     let relation_type = unwrap_or_result_false!(relation => Type).as_relation_type();
     let role_type = unwrap_or_result_false!(role_type => Type).as_role_type();
     relation_type.get_relates_role(snapshot, thing_manager.type_manager(), role_type).map(|r| r.is_some())
 }
 
-fn filter_plays<T, V: ExtractFrom<T>>(
+fn filter_plays<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    player: &CheckVertex<V>,
-    role_type: &CheckVertex<V>,
+    source: &Source,
+    player: &CheckVertex<Var>,
+    role_type: &CheckVertex<Var>,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let player = V::extract_vertex(player, row, parameters);
-    let role_type = V::extract_vertex(role_type, row, parameters);
+    let player = Var::extract_vertex(player, source, parameters);
+    let role_type = Var::extract_vertex(role_type, source, parameters);
     let object_type = unwrap_or_result_false!(player => Type).as_object_type();
     let role_type = unwrap_or_result_false!(role_type => Type).as_role_type();
     object_type.get_plays_role(snapshot, thing_manager.type_manager(), role_type).map(|p| p.is_some())
 }
 
-fn filter_isa<T, V: ExtractFrom<T>>(
+fn filter_isa<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
+    source: &Source,
     isa_kind: IsaKind,
-    type_: &CheckVertex<V>,
-    thing: &CheckVertex<V>,
+    type_: &CheckVertex<Var>,
+    thing: &CheckVertex<Var>,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let thing = V::extract_vertex(thing, row, parameters);
-    let type_ = V::extract_vertex(type_, row, parameters);
+    let thing = Var::extract_vertex(thing, source, parameters);
+    let type_ = Var::extract_vertex(type_, source, parameters);
     let actual = unwrap_or_result_false!(thing => Thing).type_();
     let expected = unwrap_or_result_false!(type_ => Type);
     if isa_kind == IsaKind::Exact {
@@ -437,58 +437,58 @@ fn filter_isa<T, V: ExtractFrom<T>>(
     }
 }
 
-fn filter_has<T, V: ExtractFrom<T>>(
+fn filter_has<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    owner: &CheckVertex<V>,
-    attribute: &CheckVertex<V>,
+    source: &Source,
+    owner: &CheckVertex<Var>,
+    attribute: &CheckVertex<Var>,
     storage_counters: StorageCounters,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let owner = V::extract_vertex(owner, row, parameters);
-    let attribute = V::extract_vertex(attribute, row, parameters);
+    let owner = Var::extract_vertex(owner, source, parameters);
+    let attribute = Var::extract_vertex(attribute, source, parameters);
     let owner = unwrap_or_result_false!(&owner => Thing).as_object();
     let attribute = unwrap_or_result_false!(&attribute => Thing).as_attribute();
     owner.has_attribute(snapshot, thing_manager, attribute, storage_counters)
 }
 
-fn filter_links<T, V: ExtractFrom<T>>(
+fn filter_links<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    relation: &CheckVertex<V>,
-    player: &CheckVertex<V>,
-    role: &CheckVertex<V>,
+    source: &Source,
+    relation: &CheckVertex<Var>,
+    player: &CheckVertex<Var>,
+    role: &CheckVertex<Var>,
     storage_counters: StorageCounters,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let relation = V::extract_vertex(relation, row, parameters);
-    let player = V::extract_vertex(player, row, parameters);
-    let role = V::extract_vertex(role, row, parameters);
+    let relation = Var::extract_vertex(relation, source, parameters);
+    let player = Var::extract_vertex(player, source, parameters);
+    let role = Var::extract_vertex(role, source, parameters);
     let relation = unwrap_or_result_false!(relation => Thing).as_relation();
     let player = unwrap_or_result_false!(player => Thing).as_object();
     let role = unwrap_or_result_false!(role => Type).as_role_type();
     relation.has_role_player(snapshot, thing_manager, player, role, storage_counters)
 }
 
-fn filter_indexed_relation<T, V: ExtractFrom<T>>(
+fn filter_indexed_relation<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    start_player: &CheckVertex<V>,
-    end_player: &CheckVertex<V>,
-    relation: &CheckVertex<V>,
-    start_role: &CheckVertex<V>,
-    end_role: &CheckVertex<V>,
+    source: &Source,
+    start_player: &CheckVertex<Var>,
+    end_player: &CheckVertex<Var>,
+    relation: &CheckVertex<Var>,
+    start_role: &CheckVertex<Var>,
+    end_role: &CheckVertex<Var>,
     storage_counters: StorageCounters,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let start_player = V::extract_vertex(start_player, row, parameters);
-    let end_player = V::extract_vertex(end_player, row, parameters);
-    let relation = V::extract_vertex(relation, row, parameters);
-    let start_role = V::extract_vertex(start_role, row, parameters);
-    let end_role = V::extract_vertex(end_role, row, parameters);
+    let start_player = Var::extract_vertex(start_player, source, parameters);
+    let end_player = Var::extract_vertex(end_player, source, parameters);
+    let relation = Var::extract_vertex(relation, source, parameters);
+    let start_role = Var::extract_vertex(start_role, source, parameters);
+    let end_role = Var::extract_vertex(end_role, source, parameters);
     let start_player = unwrap_or_result_false!(start_player => Thing).as_object();
     let end_player = unwrap_or_result_false!(end_player => Thing).as_object();
     let relation = unwrap_or_result_false!(relation => Thing).as_relation();
@@ -505,39 +505,45 @@ fn filter_indexed_relation<T, V: ExtractFrom<T>>(
     )
 }
 
-fn filter_is<T, V: ExtractFrom<T>>(row: &T, lhs: &V, rhs: &V) -> bool {
-    let lhs = V::extract(lhs, row);
-    let rhs = V::extract(rhs, row);
+fn filter_is<Source, Var: ExtractFrom<Source>>(row: &Source, lhs: &Var, rhs: &Var) -> bool {
+    let lhs = Var::extract(lhs, row);
+    let rhs = Var::extract(rhs, row);
     lhs == rhs
 }
 
-fn filter_links_dedup<T, V: ExtractFrom<T>>(row: &T, role1: &V, player1: &V, role2: &V, player2: &V) -> bool {
-    let role1 = V::extract(role1, row);
-    let player1 = V::extract(player1, row);
-    let role2 = V::extract(role2, row);
-    let player2 = V::extract(player2, row);
+fn filter_links_dedup<Source, Var: ExtractFrom<Source>>(
+    row: &Source,
+    role1: &Var,
+    player1: &Var,
+    role2: &Var,
+    player2: &Var,
+) -> bool {
+    let role1 = Var::extract(role1, row);
+    let player1 = Var::extract(player1, row);
+    let role2 = Var::extract(role2, row);
+    let player2 = Var::extract(player2, row);
     !(role1 == role2 && player1 == player2)
 }
 
-fn filter_not_none<T, V: ExtractFrom<T>>(row: &T, variables: &[V]) -> bool {
+fn filter_not_none<Source, Var: ExtractFrom<Source>>(row: &Source, variables: &[Var]) -> bool {
     variables.iter().all(|var| {
-        let value = V::extract(var, row);
+        let value = Var::extract(var, row);
         !value.is_none()
     })
 }
 
-fn filter_comparison<T, V: ExtractFrom<T>>(
+fn filter_comparison<Source, Var: ExtractFrom<Source>>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    row: &T,
-    lhs: &CheckVertex<V>,
-    rhs: &CheckVertex<V>,
+    source: &Source,
+    lhs: &CheckVertex<Var>,
+    rhs: &CheckVertex<Var>,
     comparator: Comparator,
     storage_counters: StorageCounters,
 ) -> Result<bool, Box<ConceptReadError>> {
-    let lhs = V::extract_vertex(lhs, row, parameters);
-    let rhs = V::extract_vertex(rhs, row, parameters);
+    let lhs = Var::extract_vertex(lhs, source, parameters);
+    let rhs = Var::extract_vertex(rhs, source, parameters);
     let rhs = match &rhs {
         VariableValue::Thing(Thing::Attribute(attr)) => {
             attr.get_value(snapshot, thing_manager, storage_counters.clone())?
@@ -637,10 +643,10 @@ fn get_variable_value<'a>(row: Option<&'a MaybeOwnedRow<'a>>, variable: &Executo
     }
 }
 
-trait ExtractFrom<T>: Sized {
+trait ExtractFrom<Source>: Sized {
     fn extract_vertex<'a>(
         vertex: &'a CheckVertex<Self>,
-        from: &'a T,
+        from: &'a Source,
         parameters: &'a ParameterRegistry,
     ) -> VariableValue<'a> {
         match vertex {
@@ -652,7 +658,7 @@ trait ExtractFrom<T>: Sized {
         }
     }
 
-    fn extract<'a>(&'a self, from: &'a T) -> VariableValue<'a>;
+    fn extract<'a>(&'a self, from: &'a Source) -> VariableValue<'a>;
 }
 
 impl<'r> ExtractFrom<MaybeOwnedRow<'r>> for ExecutorVariable {
@@ -758,12 +764,12 @@ impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for FilterFnVariable<T> {
 }
 
 #[derive(Debug)]
-pub(crate) struct CheckerForInline<T> {
+pub(crate) struct InlineCheckFactory<T> {
     checks: Arc<Vec<CheckInstruction<FilterFnVariable<T>>>>,
     subrow_schema: Vec<VariablePosition>,
 }
 
-impl<T: 'static> CheckerForInline<T> {
+impl<T: 'static> InlineCheckFactory<T> {
     pub(crate) fn new(
         outline_checks: &[CheckInstruction<ExecutorVariable>],
         extractors: &HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
@@ -851,13 +857,13 @@ impl<T: 'static> FilterFnWithSubRow<T> {
             Ok(tuple) => tuple,
             Err(err) => return Err(err.clone()),
         };
-        let row = TupleAndSubRow { tuple, subrow: &self.subrow };
+        let source = TupleAndSubRow { tuple, subrow: &self.subrow };
         filter_impl(
             &self.checks,
             &*context.snapshot,
             &context.thing_manager,
             &context.parameters,
-            &row,
+            &source,
             storage_counters,
         )
     }
