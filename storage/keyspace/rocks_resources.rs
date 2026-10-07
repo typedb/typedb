@@ -20,6 +20,7 @@ impl RocksResources {
     /// Note: cache limit is a _soft_ limit
     /// it is possible to exceed it with pinned index and filter blocks
     pub fn new(cache_limit: ByteSize, write_buffers_limit: ByteSize) -> Self {
+        // An estimated entry charge of 0 selects RocksDB's self-sizing AutoHyperClockCache.
         let cache = Cache::new_hyper_clock_cache(cache_limit.as_usize(), 0);
         let write_buffer_manager = WriteBufferManager::new_write_buffer_manager(write_buffers_limit.as_usize(), false);
         Self { cache, write_buffer_manager, cache_limit, write_buffers_limit }
