@@ -143,7 +143,7 @@ fn run_read_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>>
 }
 
 fn vector_store(context: &Context) -> Arc<VectorStore> {
-    context.storage.commit_observer().unwrap().as_any_arc().downcast::<VectorStore>().unwrap()
+    context.thing_manager.vector_store().clone()
 }
 
 fn embedding_type_id(context: &Context) -> encoding::graph::type_::vertex::TypeID {

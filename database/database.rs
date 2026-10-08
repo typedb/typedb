@@ -299,12 +299,11 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
-        let storage = Arc::new(
-            MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
-                .map_err(|error| StorageOpen { typedb_source: error })?,
-        );
         let vector_store = Arc::new(VectorStore::new());
+        let mut storage = MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
+            .map_err(|error| StorageOpen { typedb_source: error })?;
         storage.set_commit_observer(vector_store.clone());
+        let storage = Arc::new(storage);
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =

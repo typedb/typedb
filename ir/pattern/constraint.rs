@@ -1709,7 +1709,7 @@ pub struct VectorSearch<ID> {
     attribute: Vertex<ID>,
     attribute_type: Vertex<ID>,
     query: Vertex<ID>,
-    threshold: Vertex<ID>,
+    threshold: ParameterID,
     similarity: Vertex<ID>,
     source_span: Option<Span>,
 }
@@ -1727,7 +1727,7 @@ impl<ID> VectorSearch<ID> {
             attribute: Vertex::Variable(attribute),
             attribute_type,
             query,
-            threshold: Vertex::Parameter(threshold),
+            threshold,
             similarity: Vertex::Variable(similarity),
             source_span,
         }
@@ -1752,7 +1752,7 @@ impl<ID: IrID> VectorSearch<ID> {
     }
 
     pub fn threshold(&self) -> ParameterID {
-        self.threshold.as_parameter().unwrap().clone()
+        self.threshold.clone()
     }
 
     pub fn similarity(&self) -> &Vertex<ID> {
@@ -1771,7 +1771,7 @@ impl<ID: IrID> VectorSearch<ID> {
     }
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
-        [&self.attribute, &self.attribute_type, &self.query, &self.threshold, &self.similarity].into_iter()
+        [&self.attribute, &self.attribute_type, &self.query, &self.similarity].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -1789,7 +1789,7 @@ impl<ID: IrID> VectorSearch<ID> {
             attribute: self.attribute.map(mapping),
             attribute_type: self.attribute_type.map(mapping),
             query: self.query.map(mapping),
-            threshold: self.threshold.map(mapping),
+            threshold: self.threshold,
             similarity: self.similarity.map(mapping),
             source_span: self.source_span,
         }

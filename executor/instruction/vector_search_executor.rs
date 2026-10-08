@@ -116,10 +116,12 @@ impl VectorSearchExecutor {
     pub(crate) fn new(
         instruction: VectorSearchInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        _sort_by: ExecutorVariable,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let VectorSearchInstruction { vector_search, types, checks, inputs } = instruction;
         let var = vector_search.attribute().as_variable().unwrap();
+        // the iterator yields in attribute order (BTreeSet); the planner must not pick any other sort variable
+        debug_assert_eq!(sort_by, var, "vector search can only be sorted by its attribute variable");
         let attribute_bound = inputs.iter().any(|&input| input == var);
         let similarity_var = vector_search.similarity().as_variable();
         let tuple_positions = TuplePositions::Pair([Some(var), similarity_var]);
@@ -209,9 +211,14 @@ impl VectorSearchExecutor {
                 let mut k = 128.min(total);
                 loop {
                     let results = vector_store.search(type_id, &query, k);
-                    let tail_above_threshold = results.iter().all(|&(_, distance)| 1.0 - distance as f64 >= threshold);
+                    // results are nearest-first, so only the last (worst) hit decides whether more
+                    // hits above the threshold may exist beyond k. the stop decision uses usearch's
+                    // approximate distance while inclusion below re-scores with the exact simsimd
+                    // similarity — that asymmetry is intentional for an ANN path.
+                    let last_above_threshold =
+                        results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;
-                    if !tail_above_threshold || exhausted {
+                    if !last_above_threshold || exhausted {
                         candidates.extend(
                             results.into_iter().map(|(id, _)| AttributeVertex::new(type_id, AttributeID::Vector(id))),
                         );
@@ -273,7 +280,7 @@ pub(crate) fn resolve_query_vector(
 ) -> Result<Vec<f32>, Box<ConceptReadError>> {
     if let Some(parameter) = parameter {
         match context.parameters().value_unchecked(&parameter) {
-            Value::Vector(vector) => Ok(vector.as_ref().clone()),
+            Value::Vector(vector) => Ok(vector.to_vec()),
             other => unreachable!("vector search query parameter is not a vector: {other}"),
         }
     } else {
@@ -283,7 +290,7 @@ pub(crate) fn resolve_query_vector(
             unreachable!("vector search query variable must have a row position")
         };
         match row.get(position) {
-            VariableValue::Value(Value::Vector(vector)) => Ok(vector.as_ref().clone()),
+            VariableValue::Value(Value::Vector(vector)) => Ok(vector.to_vec()),
             other => {
                 let actual_type = match other {
                     VariableValue::Value(value) => value.value_type().to_string(),

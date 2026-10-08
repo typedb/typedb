@@ -191,10 +191,6 @@ impl CommitObserver for VectorStore {
             self.add(vertex, &vector);
         }
     }
-
-    fn as_any_arc(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync> {
-        self
-    }
 }
 
 /// Checkpoint format: a directory of plain usearch index files — one per attribute type, named
