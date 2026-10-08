@@ -341,7 +341,8 @@ impl Keyspace {
             .map(|result_opt| result_opt.unwrap_or(0))
     }
 
-    pub(crate) fn benchmark_only__flush(&self) {
+    #[cfg(not(debug_assertions))]
+    pub(crate) fn benchmark_only_flush(&self) {
         self.kv_storage.flush().expect("This is test only code. We unwrap")
     }
 }

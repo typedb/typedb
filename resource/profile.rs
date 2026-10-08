@@ -512,11 +512,7 @@ impl QueryProfile {
         &self.stage_profiles
     }
 
-    pub fn total_duration(&self) -> Duration {
-        Duration::from_nanos(self.total_nanos())
-    }
-
-    fn total_nanos(&self) -> u64 {
+    pub fn total_nanos(&self) -> u64 {
         let stage_nanos: u64 = self
             .stage_profiles
             .read()

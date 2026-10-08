@@ -10,10 +10,8 @@ use lib_benchmark::{
     typedb_workload::benchmark::sanity_check,
 };
 
-// mod match_reads;
 mod insert_entities;
 mod insert_relations;
-mod run_configs;
 mod simple_inserts;
 
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {

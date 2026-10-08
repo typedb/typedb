@@ -680,8 +680,9 @@ impl<Durability> MVCCStorage<Durability> {
         self.keyspaces.estimate_key_count().map_err(|source| StorageOpenError::Keyspace { source })
     }
 
-    pub fn benchmark_only__flush(&self) {
-        self.keyspaces.iter().for_each(|ks| ks.benchmark_only__flush())
+    #[cfg(not(debug_assertions))]
+    pub fn benchmark_only_flush(&self) {
+        self.keyspaces.iter().for_each(|ks| ks.benchmark_only_flush())
     }
 }
 

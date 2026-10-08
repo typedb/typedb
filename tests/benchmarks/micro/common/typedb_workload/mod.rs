@@ -11,11 +11,10 @@ use datagen::RandomDataGen;
 use query::given_rows::GivenRowEntry;
 use resource::profile::{QueryProfile, TransactionProfile};
 
-use crate::benchmark::SimpleReport;
-
 pub mod benchmark;
 pub mod datagen;
 pub mod reports;
+pub mod run_configs;
 
 #[derive(Clone)]
 pub struct QueryDescriptor {
@@ -60,7 +59,7 @@ impl RunDescriptor {
 
 pub fn transaction_options_with_profiling() -> options::TransactionOptions {
     let mut tx_options = options::TransactionOptions::default();
-    tx_options.tmp_enable_profiling = Some(true);
+    tx_options.enable_profiling = Some(true);
     tx_options
 }
 

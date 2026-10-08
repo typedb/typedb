@@ -50,7 +50,7 @@ impl Into<TransactionOptions> for TransactionOptionsPayload {
                 .schema_lock_acquire_timeout_millis
                 .unwrap_or(DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS),
             transaction_timeout_millis: self.transaction_timeout_millis.unwrap_or(DEFAULT_TRANSACTION_TIMEOUT_MILLIS),
-            tmp_enable_profiling: None,
+            enable_profiling: None,
         }
     }
 }

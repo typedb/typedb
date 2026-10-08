@@ -236,7 +236,7 @@ impl DatabaseExportService {
             parallel: Self::OPTIONS_PARALLEL,
             schema_lock_acquire_timeout_millis: Self::OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
             transaction_timeout_millis: Self::OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
-            tmp_enable_profiling: None,
+            enable_profiling: None,
         }
     }
 }
