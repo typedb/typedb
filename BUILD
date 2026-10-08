@@ -486,8 +486,8 @@ mac_pkg_installer(
     sign_binaries = [
         "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
     ],
-    application_cert_subject = "Developer ID Application: TypeDB LTD (RHKH8FP9SX)",
-    installer_cert_subject = "Developer ID Installer: TypeDB LTD (RHKH8FP9SX)",
+    application_cert_subject = "Developer ID Application: TYPEDB LTD (RHKH8FP9SX)",
+    installer_cert_subject = "Developer ID Installer: TYPEDB LTD (RHKH8FP9SX)",
 
     notarize = True,
     apple_id = "bot@vaticle.com",
@@ -514,8 +514,8 @@ mac_pkg_installer(
     sign_binaries = [
         "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
     ],
-    application_cert_subject = "Developer ID Application: TypeDB LTD (RHKH8FP9SX)",
-    installer_cert_subject = "Developer ID Installer: TypeDB LTD (RHKH8FP9SX)",
+    application_cert_subject = "Developer ID Application: TYPEDB LTD (RHKH8FP9SX)",
+    installer_cert_subject = "Developer ID Installer: TYPEDB LTD (RHKH8FP9SX)",
 
 
     notarize = True,
