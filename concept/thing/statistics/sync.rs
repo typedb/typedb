@@ -71,7 +71,9 @@ pub(crate) fn load_commit_deltas(
                 StatusRecord::RECORD_TYPE => {
                     let status = StatusRecord::deserialise_from(&mut &*bytes)
                         .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
-                    if commits.contains_key(&status.commit_record_sequence_number()) {
+                    if commits.contains_key(&status.commit_record_sequence_number())
+                        || status.commit_record_sequence_number() < start
+                    {
                         continue;
                     }
                     let commit_sequence_number = status.commit_record_sequence_number();
