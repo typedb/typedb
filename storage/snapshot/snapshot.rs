@@ -15,7 +15,6 @@ use std::{
 };
 
 use bytes::byte_array::ByteArray;
-use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::{
@@ -292,7 +291,7 @@ where
     fn commit(
         self,
         commit_profile: &mut CommitProfile,
-    ) -> Result<Option<CommitData>, (Option<DurabilitySequenceNumber>, SnapshotError)>;
+    ) -> Result<Option<CommitData>, (Option<SequenceNumber>, SnapshotError)>;
 
     fn into_commit_record(self) -> (WriteSnapshotDropGuard, CommitRecord);
 
@@ -638,7 +637,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     fn commit(
         self,
         commit_profile: &mut CommitProfile,
-    ) -> Result<Option<CommitData>, (Option<DurabilitySequenceNumber>, SnapshotError)> {
+    ) -> Result<Option<CommitData>, (Option<SequenceNumber>, SnapshotError)> {
         if self.has_changes() {
             let storage = self.storage.clone();
             let commit_in_progress = storage
@@ -857,7 +856,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     fn commit(
         self,
         commit_profile: &mut CommitProfile,
-    ) -> Result<Option<CommitData>, (Option<DurabilitySequenceNumber>, SnapshotError)> {
+    ) -> Result<Option<CommitData>, (Option<SequenceNumber>, SnapshotError)> {
         if self.has_changes() {
             let storage = self.storage.clone();
             let commit_in_progress = storage
@@ -881,7 +880,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
 
 pub(crate) struct CommitInProgress {
     pub(crate) record: CommitRecord,
-    pub(crate) sequence_number: DurabilitySequenceNumber,
+    pub(crate) sequence_number: SequenceNumber,
     pub(crate) reader_guard: WriteSnapshotDropGuard,
 }
 
