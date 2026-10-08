@@ -8,18 +8,15 @@ use std::borrow::Cow;
 use encoding::{graph::type_::vertex::TypeID, value::value::Value};
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    typedb_workload,
     typedb_workload::{
         QueryDescriptor, RunDescriptor,
         benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
         datagen::RandomDataGen,
+        run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, SERIAL_FEW_LARGE, SERIAL_MANY_MEDIUM},
     },
 };
 use query::given_rows::GivenRowEntry;
-
-use crate::{
-    run_configs,
-    run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, SERIAL_FEW_LARGE, SERIAL_MANY_MEDIUM},
-};
 
 const N_ENTITIES: usize = 100_000;
 const N_ENTITIES_OUT_OF_MEMORY: usize = 100_000;
@@ -126,7 +123,7 @@ fn parametrised_workload<MakeID: IDMaker>(
     query_descriptor: QueryDescriptor,
     run_descriptor: RunDescriptor,
 ) -> TypeDBQueryWorkloadBenchmark {
-    let name = run_configs::standardised_name(&query_descriptor, &run_descriptor);
+    let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
     let schema = MakeID::schema();
     let preload_data_fn = Some(preload_entities_with_id::<MakeID>());
     TypeDBQueryWorkloadBenchmark::new(name, schema, preload_data_fn, query_descriptor, run_descriptor)

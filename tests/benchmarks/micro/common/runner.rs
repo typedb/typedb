@@ -56,7 +56,7 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
         println!(" +- Preparing database");
         b.prepare_database(&mut context, database.clone());
         println!(" +- Warming up...");
-        let input = b.warm_up(&context, database.clone());
+        b.warm_up(&context, database.clone());
         println!(" +- Preparing run");
         let input = b.prepare_run(&context, database.clone());
 

@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use answer::Thing;
 use concept::{
     thing::{ThingAPI, entity::Entity, relation::Relation},
-    type_::{TypeAPI, entity_type::EntityType, relation_type::RelationType},
+    type_::{entity_type::EntityType, relation_type::RelationType},
 };
 use encoding::{
     graph::{

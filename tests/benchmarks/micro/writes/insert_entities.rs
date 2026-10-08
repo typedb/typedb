@@ -6,13 +6,15 @@
 
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
-    typedb_workload::{QueryDescriptor, RunDescriptor, benchmark::TypeDBQueryWorkloadBenchmark},
+    typedb_workload,
+    typedb_workload::{
+        QueryDescriptor, RunDescriptor,
+        benchmark::TypeDBQueryWorkloadBenchmark,
+        run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
+    },
 };
 
-use crate::{
-    run_configs::{self, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
-    simple_inserts::{SCHEMA, no_initial_data},
-};
+use crate::simple_inserts::{SCHEMA, no_initial_data};
 
 const STANDARD_RUNS: [RunDescriptor; 4] =
     [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
@@ -28,7 +30,7 @@ fn parametrised_workload(
     query_descriptor: QueryDescriptor,
     run_descriptor: RunDescriptor,
 ) -> TypeDBQueryWorkloadBenchmark {
-    let name = run_configs::standardised_name(&query_descriptor, &run_descriptor);
+    let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
     TypeDBQueryWorkloadBenchmark::new(name, SCHEMA, no_initial_data(), query_descriptor, run_descriptor)
 }
 

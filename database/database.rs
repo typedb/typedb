@@ -666,8 +666,9 @@ impl Database<WALClient> {
         }
     }
 
-    pub fn benchmark_only__flush(&self) {
-        self.storage.benchmark_only__flush()
+    #[cfg(not(debug_assertions))]
+    pub fn benchmark_only_flush(&self) {
+        self.storage.benchmark_only_flush()
     }
 }
 

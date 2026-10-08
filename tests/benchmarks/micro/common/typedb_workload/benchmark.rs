@@ -53,7 +53,7 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
         if let Some(preload_fn) = &self.preload_data_fn {
             preload_fn(database.clone());
         }
-        database.benchmark_only__flush();
+        database.benchmark_only_flush();
     }
 
     fn warm_up(&self, _context: &Context, database: Arc<Database<WALClient>>) {
@@ -107,7 +107,7 @@ impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Rep
     }
 }
 
-pub type TypeDBWorkloadBenchmark<Report: SimpleReport<MultiTxMultiQueryProfile>> =
+pub type TypeDBWorkloadBenchmark<Report> =
     TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, Report>;
 pub type TypeDBQueryWorkloadBenchmark = TypeDBWorkloadBenchmark<QueryFocusedReport>;
 

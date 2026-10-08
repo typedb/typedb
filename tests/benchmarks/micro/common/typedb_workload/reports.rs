@@ -143,7 +143,8 @@ impl CommitFocusedReport {
             let commit_total = tx.tx_profile.commit_profile_ref().total();
             let phases = tx.tx_profile.commit_profile_ref().phases();
 
-            let mut query_durations: Vec<Duration> = tx.query_profiles.iter().map(|q| q.total_duration()).collect();
+            let mut query_durations: Vec<Duration> =
+                tx.query_profiles.iter().map(|q| Duration::from_nanos(q.total_nanos())).collect();
             query_durations.sort();
             let n_q = query_durations.len();
             let mean_q = if n_q > 0 { query_durations.iter().sum::<Duration>() / n_q as u32 } else { Duration::ZERO };
@@ -254,8 +255,6 @@ impl CommitFocusedReport {
         let total_rows = self.run_descriptor.total_rows();
         let rows_per_sec = total_rows as f64 / self.total_wall_time.0.as_secs_f64();
         let n_q = self.run_descriptor.n_queries_per_tx as f64;
-        let sum_txn_wall: f64 =
-            self.per_txn.iter().map(|r| r.commit_ms.0.as_secs_f64() + n_q * r.mean_query_ms.0.as_secs_f64()).sum();
         println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.total_wall_time, total_rows, rows_per_sec);
     }
 
@@ -295,7 +294,7 @@ pub struct TxQueryProfileReport {
 
 impl From<&TxQueryProfile> for TxQueryProfileReport {
     fn from(profile: &TxQueryProfile) -> Self {
-        let total_query = DurationMs(profile.query_profile.total_duration());
+        let total_query = DurationMs(Duration::from_nanos(profile.query_profile.total_nanos()));
         let mut steps = Vec::new();
         collect_steps(&profile.query_profile, &mut steps);
         Self { steps, total_query }
@@ -358,7 +357,7 @@ fn collect_stage_steps(stage_id: u64, stage: &StageProfile, out: &mut Vec<QueryS
                     out.push(QueryStepRow {
                         stage_id,
                         step_description: format!("[fn] {description}"),
-                        total_ms: DurationMs(profile.total_duration()),
+                        total_ms: DurationMs(Duration::from_nanos(profile.total_nanos())),
                         batches: 0,
                         rows: 0,
                         ms_per_row: DurationMs(Duration::ZERO),

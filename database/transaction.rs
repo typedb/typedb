@@ -97,7 +97,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
         drop(schema);
 
         let enable_transaction_profiling =
-            transaction_options.tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
+            transaction_options.enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
@@ -168,7 +168,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         drop(schema);
 
         let enable_transaction_profiling =
-            transaction_options.tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
+            transaction_options.enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
@@ -285,7 +285,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let query_manager = Arc::new(QueryManager::new(None));
 
         let enable_transaction_profiling =
-            transaction_options.tmp_enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
+            transaction_options.enable_profiling.unwrap_or(tracing::enabled!(Level::TRACE));
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
