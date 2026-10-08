@@ -124,7 +124,7 @@ typedb_error!(
         ),
         CannotUnsetAbstractnessOfRelationTypeWithoutRoleTypes(60, "Cannot unset abstractness of relation type '{relation}' because it does not have any role types related.", relation: Label),
         ValueTypeIsNotCompatibleWithIndexAnnotation(62, "Value type '{value_type:?}' is not compatible with index annotation on '{attribute}'.", attribute: Label, value_type: Option<ValueType>),
-        VectorAttributeMissingIndexAnnotation(63, "Attribute type '{attribute}' with a vector value type must declare an index annotation, e.g. @index(cosine).", attribute: Label),
+        VectorAttributeMissingIndexAnnotation(63, "Attribute type '{attribute}' with a vector value type must declare an index annotation, e.g. @index(hnsw:cosine).", attribute: Label),
         CannotUnsetRelationSupertypeBecauseAllRoleTypesAreLost(61, "Cannot unset supertype of relation type '{relation}' because the relation type will not have any role types related.", relation: Label),
     }
 );

@@ -39,7 +39,7 @@ fn open_db(path: &std::path::Path) -> Arc<Database<WALClient>> {
 
 fn define_schema(db: Arc<Database<WALClient>>) {
     let schema = r#"define
-        attribute embedding, value vector(3, "float32");
+        attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
         entity item owns embedding @card(0..);
     "#;
     let tx = TransactionSchema::open(db, TransactionOptions::default()).expect("schema txn");
