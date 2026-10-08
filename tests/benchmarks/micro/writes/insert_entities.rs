@@ -14,7 +14,7 @@ use lib_benchmark::{
     },
 };
 
-use crate::simple_inserts::{SCHEMA, no_initial_data};
+use crate::NO_INITIAL_DATA;
 
 const STANDARD_RUNS: [RunDescriptor; 4] =
     [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
@@ -30,8 +30,10 @@ fn parametrised_workload(
     query_descriptor: QueryDescriptor,
     run_descriptor: RunDescriptor,
 ) -> TypeDBQueryWorkloadBenchmark {
+    pub(crate) const SCHEMA: &'static str = "define entity person";
+
     let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
-    TypeDBQueryWorkloadBenchmark::new(name, SCHEMA, no_initial_data(), query_descriptor, run_descriptor)
+    TypeDBQueryWorkloadBenchmark::new(name, SCHEMA, NO_INITIAL_DATA, query_descriptor, run_descriptor)
 }
 
 fn entity_insert() -> QueryDescriptor {

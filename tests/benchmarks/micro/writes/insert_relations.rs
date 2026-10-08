@@ -3,9 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::borrow::Cow;
-
-use encoding::{graph::type_::vertex::TypeID, value::value::Value};
+use encoding::graph::type_::vertex::TypeID;
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
@@ -13,16 +11,16 @@ use lib_benchmark::{
         QueryDescriptor, RunDescriptor,
         benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
         datagen::RandomDataGen,
-        run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, SERIAL_FEW_LARGE, SERIAL_MANY_MEDIUM},
     },
 };
 use query::given_rows::GivenRowEntry;
 
-const N_ENTITIES: usize = 100_000;
-const N_ENTITIES_OUT_OF_MEMORY: usize = 100_000;
+use crate::{
+    STANDARD_RUNS,
+    id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
+};
 
-const STANDARD_RUNS: [RunDescriptor; 4] =
-    [SERIAL_MANY_MEDIUM, SERIAL_FEW_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_LARGE];
+const N_ENTITIES: usize = 100_000;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     run_by_insert(runner);
@@ -32,52 +30,33 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
 
 pub fn run_by_concept(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_concept");
-    for run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in STANDARD_RUNS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_concept(), run_descriptor));
     }
 }
 
 pub fn run_by_id(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_id");
-    for run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in STANDARD_RUNS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
             relation_by_id::<IntegerIDMaker>("integer"),
-            run_descriptor.clone(),
+            run_descriptor,
         ));
         group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
             relation_by_id::<ShortStringIDMaker>("short_string"),
-            run_descriptor.clone(),
+            run_descriptor,
         ));
         group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
             relation_by_id::<LongStringIDMaker>("long_string"),
-            run_descriptor.clone(),
+            run_descriptor,
         ));
     }
 }
 
 pub fn run_by_insert(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_insert");
-    for run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in STANDARD_RUNS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_insert(), run_descriptor));
-    }
-}
-
-// Helpers
-trait IDMaker {
-    const ID_TYPE: &'static str;
-    fn make_id(id: i64) -> GivenRowEntry;
-
-    fn schema() -> String {
-        let id_type = Self::ID_TYPE;
-        format!(
-            r#"
-            define
-                attribute id, value {id_type};
-                relation r1, relates e1, relates e2;
-                entity e1, plays r1:e1, owns id;
-                entity e2, plays r1:e2, owns id;
-            "#
-        )
     }
 }
 
@@ -163,28 +142,4 @@ fn relation_by_id<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
     );
     let variables = vec!["id1".to_owned(), "id2".to_owned()];
     QueryDescriptor { name, query, variables, produce_row: Some(produce_row_by_id::<MakeID>) }
-}
-
-struct LongStringIDMaker {}
-impl IDMaker for LongStringIDMaker {
-    const ID_TYPE: &'static str = "string";
-    fn make_id(id: i64) -> GivenRowEntry {
-        GivenRowEntry::Value(Value::String(Cow::Owned(format!("id_longer_than_16_bytes__{id}"))))
-    }
-}
-
-struct ShortStringIDMaker {}
-impl IDMaker for ShortStringIDMaker {
-    const ID_TYPE: &'static str = "string";
-    fn make_id(id: i64) -> GivenRowEntry {
-        GivenRowEntry::Value(Value::String(Cow::Owned(format!("smol_{id}"))))
-    }
-}
-
-struct IntegerIDMaker {}
-impl IDMaker for IntegerIDMaker {
-    const ID_TYPE: &'static str = "integer";
-    fn make_id(id: i64) -> GivenRowEntry {
-        GivenRowEntry::Value(Value::Integer(id))
-    }
 }

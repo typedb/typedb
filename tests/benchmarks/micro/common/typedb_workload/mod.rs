@@ -40,7 +40,7 @@ impl QueryDescriptor {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct RunDescriptor {
     pub parallelism: usize,
     pub total_txns: usize,

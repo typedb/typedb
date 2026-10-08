@@ -16,6 +16,9 @@ pub const TRANSACTIONS_FEW: usize = 100;
 pub const TRANSACTIONS_MANY: usize = 1_000;
 pub const TRANSACTIONS_TONS: usize = 20_000;
 
+pub const CI_MINIMAL: RunDescriptor =
+    RunDescriptor { parallelism: 1, total_txns: 1, n_queries_per_tx: 1, n_rows_per_query: 1 };
+
 pub const SERIAL_FEW_LARGE: RunDescriptor = RunDescriptor {
     parallelism: THREADS_SERIAL,
     total_txns: TRANSACTIONS_FEW,
