@@ -308,7 +308,7 @@ impl Iterator for MultipleTypeIsaIterator {
     }
 }
 
-pub(crate) struct IsaObjectIterator {
+pub(super) struct IsaObjectIterator {
     objects: InstanceIterator<Object>,
     iterator_type: Type,
     types: Vec<Type>,
@@ -384,7 +384,7 @@ impl Iterator for IsaObjectIterator {
     }
 }
 
-pub(crate) struct IsaAttributeIterator {
+pub(super) struct IsaAttributeIterator {
     attributes: AttributeIterator<InstanceIterator<Attribute>>,
     iterator_type: Type,
     types: Vec<Type>,

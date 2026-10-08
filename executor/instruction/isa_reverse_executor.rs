@@ -358,7 +358,7 @@ impl Iterator for MultipleTypeIsaReverseIterator {
     }
 }
 
-pub(crate) struct IsaReverseObjectIterator {
+pub(super) struct IsaReverseObjectIterator {
     objects: InstanceIterator<Object>,
     type_: Type,
 }
@@ -397,7 +397,7 @@ impl Iterator for IsaReverseObjectIterator {
     }
 }
 
-pub(crate) struct IsaReverseAttributeIterator {
+pub(super) struct IsaReverseAttributeIterator {
     attributes: AttributeIterator<InstanceIterator<Attribute>>,
     iterator_type: Type,
 }
