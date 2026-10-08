@@ -109,7 +109,8 @@ fn first_gap(
         return Some(start);
     }
 
-    if let Some(gap) = map.keys().tuple_windows().find_map(|(&prev, &next)| (prev.next() < next).then_some(prev)) {
+    if let Some(gap) = map.keys().tuple_windows().find_map(|(&prev, &next)| (prev.next() < next).then_some(prev.next()))
+    {
         return Some(gap);
     }
 
