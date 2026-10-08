@@ -490,7 +490,7 @@ mac_pkg_installer(
     installer_cert_subject = "Developer ID Installer: TypeDB LTD (RHKH8FP9SX)",
 
     notarize = True,
-    apple_id = "bot@typedb.com",
+    apple_id = "bot@vaticle.com",
     apple_team_id = "RHKH8FP9SX",
 
     verbose = False, # True for debugging
@@ -519,7 +519,7 @@ mac_pkg_installer(
 
 
     notarize = True,
-    apple_id = "bot@typedb.com",
+    apple_id = "bot@vaticle.com",
     apple_team_id = "RHKH8FP9SX",
 
     verbose = True,
