@@ -172,7 +172,7 @@ bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "bf924ef788fd605224383a2ea7f59599862c6bab",
+    commit = "ed06df658a2a149a60bbe1143d96505b71a42cdf",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
@@ -193,7 +193,7 @@ bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "9dc71dcee4183b21caad2b78ecabd4eb702cc0c1",
+    commit = "024dbb311ecd71c16dfa60615c84bebe665a5ea1",
 )
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")

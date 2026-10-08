@@ -33,7 +33,7 @@ use crate::{
     params::{
         ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, VariableList, WithCommit, WithGiven,
     },
-    util::{iter_table, list_contains_json, parse_json},
+    util::{JsonNumber, iter_table, list_contains_json, parse_json},
 };
 
 fn get_answers_column_names(answer: &serde_json::Value) -> Vec<String> {
@@ -130,18 +130,16 @@ fn check_is_value(
 ) {
     fn format(value: &serde_json::Value) -> String {
         match value {
-            serde_json::Value::Number(n) => {
-                if let Some(float_val) = n.as_f64() {
-                    // Format with fixed point (e.g., 20 decimal places) to avoid scientific notation
-                    let s = format!("{:.20}", float_val);
-
-                    // Trim trailing zeros and the decimal point if it becomes an integer
-                    let s = s.trim_end_matches('0').trim_end_matches('.');
-                    s.to_string()
-                } else {
-                    n.to_string() // Integers don't need special formatting
+            serde_json::Value::Number(n) => match JsonNumber::from(n) {
+                JsonNumber::Integer(integer) => integer.to_string(),
+                JsonNumber::Double(double) => {
+                    // Display never uses an exponent, but writes a whole double without ".0",
+                    // which would make e.g. 1.5e300 an integer literal outside i64. Thus, we
+                    // handle it manually.
+                    let rendered = format!("{double}");
+                    if rendered.contains('.') { rendered } else { format!("{rendered}.0") }
                 }
-            }
+            },
             serde_json::Value::String(string) => string.clone(),
             _ => value.to_string(), // Handle non-numbers normally
         }
