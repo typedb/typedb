@@ -15,9 +15,9 @@ features = {}
 
 [dependencies]
 
-	[dependencies.sysinfo]
+	[dependencies.itertools]
 		workspace = true
 
-	[dependencies.itertools]
+	[dependencies.sysinfo]
 		workspace = true
 

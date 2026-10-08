@@ -223,7 +223,7 @@ features = {}
 		[workspace.dependencies.clap]
 			default-features = false
 			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-			version = "4.6.6"
+			version = "4.6.7"
 
 		[workspace.dependencies.compiler]
 			default-features = false
@@ -333,7 +333,7 @@ features = {}
 		[workspace.dependencies.hyper-util]
 			default-features = false
 			features = ["client", "client-legacy", "default", "http1", "http2", "server", "server-auto", "service", "tokio"]
-			version = "0.1.20"
+			version = "0.1.21"
 
 		[workspace.dependencies.ir]
 			default-features = false
@@ -488,7 +488,7 @@ features = {}
 		[workspace.dependencies.serde_with]
 			default-features = false
 			features = ["alloc", "default", "macros", "std"]
-			version = "3.22.0"
+			version = "3.24.0"
 
 		[workspace.dependencies.serde_yaml2]
 			default-features = false
@@ -508,7 +508,7 @@ features = {}
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
-			version = "1.16.0"
+			version = "1.16.2"
 
 		[workspace.dependencies.smol]
 			default-features = false
@@ -568,12 +568,12 @@ features = {}
 		[workspace.dependencies.tokio]
 			default-features = false
 			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
-			version = "1.53.1"
+			version = "1.53.2"
 
 		[workspace.dependencies.tokio-rustls]
 			default-features = false
 			features = ["logging", "ring", "tls12"]
-			version = "0.26.4"
+			version = "0.26.6"
 
 		[workspace.dependencies.tokio-stream]
 			default-features = false
@@ -583,7 +583,7 @@ features = {}
 		[workspace.dependencies.tokio-test]
 			default-features = false
 			features = []
-			version = "0.4.5"
+			version = "0.4.6"
 
 		[workspace.dependencies.tokio-util]
 			default-features = false
@@ -634,18 +634,18 @@ features = {}
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.12.0"
+			tag = "3.13.4"
 
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			rev = "5485e04a51c79ad1d29477db7532003c84983751"
+			tag = "3.13.4"
 
 		[workspace.dependencies.unicase]
 			default-features = false
 			features = []
-			version = "2.9.0"
+			version = "2.10.0"
 
 		[workspace.dependencies.url]
 			default-features = false
@@ -660,7 +660,7 @@ features = {}
 		[workspace.dependencies.uuid]
 			default-features = false
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.21.0"
+			version = "1.27.0"
 
 		[workspace.dependencies.xoshiro]
 			default-features = false
@@ -670,7 +670,7 @@ features = {}
 		[workspace.dependencies.xxhash-rust]
 			default-features = false
 			features = ["xxh3"]
-			version = "0.8.18"
+			version = "0.8.19"
 
 		[workspace.dependencies.yaml-rust2]
 			default-features = false
