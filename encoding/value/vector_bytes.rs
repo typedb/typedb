@@ -26,7 +26,7 @@ impl<'a, const INLINE_LENGTH: usize> VectorBytes<'a, INLINE_LENGTH> {
     pub fn build(vector: &[f32]) -> VectorBytes<'static, INLINE_LENGTH> {
         let mut buf = Vec::with_capacity(vector.len() * Self::ELEMENT_LENGTH);
         for element in vector {
-            buf.extend_from_slice(&element.to_bits().to_le_bytes());
+            buf.extend_from_slice(&element.to_bits().to_be_bytes());
         }
         VectorBytes::new(Bytes::Array(ByteArray::boxed(buf.into_boxed_slice())))
     }
@@ -34,7 +34,7 @@ impl<'a, const INLINE_LENGTH: usize> VectorBytes<'a, INLINE_LENGTH> {
     pub fn as_vector(&self) -> Vec<f32> {
         self.bytes
             .chunks_exact(Self::ELEMENT_LENGTH)
-            .map(|chunk| f32::from_bits(u32::from_le_bytes(chunk.try_into().unwrap())))
+            .map(|chunk| f32::from_bits(u32::from_be_bytes(chunk.try_into().unwrap())))
             .collect()
     }
 

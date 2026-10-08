@@ -13,7 +13,7 @@ use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::{
-        Arc, OnceLock,
+        Arc,
         atomic::{AtomicU64, Ordering},
     },
     thread::sleep,
@@ -82,14 +82,13 @@ mod write_batches;
 /// empty value; the real value is handed to `apply` after the KV write and before the watermark
 /// advances past `sequence_number`. That ordering guarantees a checkpoint taken at watermark W
 /// has observed every commit <= W, so recovery only ever replays the WAL tail.
-pub trait CommitObserver: Send + Sync {
+pub trait CommitObserver: Send + Sync + fmt::Debug {
     fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
     fn apply(
         &self,
         sequence_number: SequenceNumber,
         owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
     );
-    fn as_any_arc(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync>;
 }
 
 pub(crate) fn extract_owned_values(
@@ -109,24 +108,6 @@ pub(crate) fn extract_owned_values(
         .collect()
 }
 
-pub(crate) struct CommitObserverCell(OnceLock<Arc<dyn CommitObserver>>);
-
-impl CommitObserverCell {
-    fn new() -> Self {
-        Self(OnceLock::new())
-    }
-
-    pub(crate) fn get(&self) -> Option<&Arc<dyn CommitObserver>> {
-        self.0.get()
-    }
-}
-
-impl fmt::Debug for CommitObserverCell {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "CommitObserverCell(set: {})", self.0.get().is_some())
-    }
-}
-
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
     name: Arc<str>,
@@ -135,7 +116,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
-    commit_observer: CommitObserverCell,
+    commit_observer: Option<Arc<dyn CommitObserver>>,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -172,7 +153,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            commit_observer: CommitObserverCell::new(),
+            commit_observer: None,
         })
     }
 
@@ -236,10 +217,6 @@ impl<Durability> MVCCStorage<Durability> {
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
-        let observer_cell = CommitObserverCell::new();
-        if let Some(observer) = commit_observer {
-            let _ = observer_cell.0.set(observer);
-        }
         Ok(Self {
             name: Arc::<str>::from(name),
             path: storage_dir,
@@ -247,19 +224,15 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            commit_observer: observer_cell,
+            commit_observer,
         })
     }
 
-    /// Set the commit observer. Must be called before any commits are served; used after
-    /// `create` (which performs no recovery). For `load`, pass the observer into `load` itself so
-    /// it also observes commits replayed from the WAL during recovery.
-    pub fn set_commit_observer(&self, observer: Arc<dyn CommitObserver>) {
-        self.commit_observer.0.set(observer).unwrap_or_else(|_| panic!("commit observer already set"));
-    }
-
-    pub fn commit_observer(&self) -> Option<Arc<dyn CommitObserver>> {
-        self.commit_observer.get().cloned()
+    /// Attach the commit observer after `create` (which performs no recovery): `&mut self` means
+    /// the storage cannot be serving commits yet. For `load`, pass the observer into `load` itself
+    /// so it also observes commits replayed from the WAL during recovery.
+    pub fn set_commit_observer(&mut self, observer: Arc<dyn CommitObserver>) {
+        self.commit_observer = Some(observer);
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
@@ -354,8 +327,10 @@ impl<Durability> MVCCStorage<Durability> {
 
         commit_profile.commit_size(commit_record.operations().len());
 
-        let owned_values =
-            self.commit_observer.get().map(|observer| extract_owned_values(&**observer, commit_record.operations()));
+        let owned_values = self
+            .commit_observer
+            .as_ref()
+            .map(|observer| extract_owned_values(&**observer, commit_record.operations()));
 
         let commit_sequence_number = self
             .durability_client
@@ -370,7 +345,7 @@ impl<Durability> MVCCStorage<Durability> {
             commit_sequence_number,
             commit_record,
             &self.durability_client,
-            self.commit_observer.get().map(|observer| &**observer),
+            self.commit_observer.as_ref().map(|observer| &**observer),
         );
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
@@ -388,7 +363,7 @@ impl<Durability> MVCCStorage<Durability> {
 
                 // Apply externally-owned values (e.g. vectors) before the watermark can advance
                 // past this commit, so checkpoints at watermark W always cover commits <= W.
-                if let (Some(observer), Some(owned)) = (self.commit_observer.get(), owned_values.as_ref()) {
+                if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
                     observer.apply(commit_sequence_number, owned);
                 }
 

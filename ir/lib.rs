@@ -357,7 +357,7 @@ typedb_error! {
         ),
         InvalidVectorSearchCall(
             257,
-            "Invalid cosine_similarity_search usage ({reason}). Expected: let $x in cosine_similarity_search(<attribute type>, <vector literal>, <threshold>).",
+            "Invalid cosine_similarity_search usage ({reason}). Expected: let $attribute, $similarity in cosine_similarity_search(<attribute type>, <vector literal>, <threshold>).",
             reason: String,
             source_span: Option<Span>,
         ),

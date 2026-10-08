@@ -138,7 +138,7 @@ impl ValueType {
                 Self::Struct(definition_key)
             }
             ValueTypeCategory::Vector => {
-                let length = u16::from_le_bytes([tail[0], tail[1]]);
+                let length = u16::from_be_bytes([tail[0], tail[1]]);
                 let precision = VectorPrecision::from_byte(tail[2]);
                 Self::Vector(VectorTypeParameters::new(length, precision))
             }
@@ -157,7 +157,9 @@ impl ValueType {
         }
     }
 
-    pub fn is_trivially_castable_to_value_type(&self, other: &ValueType) -> bool {
+    /// Like `is_trivially_castable_to`, but exact on parameterised types: vectors must match
+    /// length and precision, not just the category.
+    pub fn is_trivially_castable_to_exact(&self, other: &ValueType) -> bool {
         match (self, other) {
             (ValueType::Vector(params), ValueType::Vector(other_params)) => params == other_params,
             _ => self.is_trivially_castable_to(other.category()),
@@ -376,7 +378,7 @@ impl ValueTypeBytes {
                 array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
             }
             ValueType::Vector(params) => {
-                let length_bytes = params.length.to_le_bytes();
+                let length_bytes = params.length.to_be_bytes();
                 array[Self::RANGE_TAIL.start] = length_bytes[0];
                 array[Self::RANGE_TAIL.start + 1] = length_bytes[1];
                 array[Self::RANGE_TAIL.start + 2] = params.precision.to_byte();

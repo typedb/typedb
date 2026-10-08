@@ -46,7 +46,7 @@ pub enum Value<'a> {
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
-    Vector(Cow<'a, Vec<f32>>),
+    Vector(Cow<'a, [f32]>),
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
@@ -215,7 +215,7 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub fn unwrap_vector(self) -> Cow<'a, Vec<f32>> {
+    pub fn unwrap_vector(self) -> Cow<'a, [f32]> {
         match self {
             Self::Vector(vector) => vector,
             _ => panic!("Cannot unwrap Vector if not a vector value."),
