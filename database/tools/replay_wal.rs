@@ -7,7 +7,7 @@
 use std::{fs::create_dir_all, io, path::PathBuf};
 
 use clap::{Parser, ValueEnum};
-use concept::thing::statistics::Statistics;
+use concept::thing::statistics::{Statistics, deltas::CommitDeltas};
 use diagnostics::metrics::FsyncMetrics;
 use durability::{DurabilitySequenceNumber, wal::WAL};
 use storage::{
@@ -45,6 +45,7 @@ enum RecordKind {
     LegacyCommitRecordV1,
     CommitStatus,
     Statistics,
+    CommitDeltas,
 }
 
 fn main() {
@@ -57,6 +58,7 @@ fn main() {
     source_wal.register_record_type::<LegacyCommitRecordV1>();
     source_wal.register_record_type::<CommitRecord>();
     source_wal.register_record_type::<StatusRecord>();
+    source_wal.register_record_type::<CommitDeltas>();
 
     match create_dir_all(cli.target_directory.join("wal")) {
         Ok(()) => (),
@@ -69,6 +71,7 @@ fn main() {
     target_wal.register_record_type::<LegacyCommitRecordV1>();
     target_wal.register_record_type::<CommitRecord>();
     target_wal.register_record_type::<StatusRecord>();
+    target_wal.register_record_type::<CommitDeltas>();
 
     let from = DurabilitySequenceNumber::new(cli.from);
     let to = cli.to.map(DurabilitySequenceNumber::new).unwrap_or(source_wal.previous());
@@ -91,6 +94,9 @@ fn main() {
             }
             Statistics::RECORD_TYPE if cli.kind.is_empty() || cli.kind.contains(&RecordKind::Statistics) => {
                 target_wal.unsequenced_write::<Statistics>(&deserialise_record(&record.bytes)).unwrap()
+            }
+            CommitDeltas::RECORD_TYPE if cli.kind.is_empty() || cli.kind.contains(&RecordKind::CommitDeltas) => {
+                target_wal.unsequenced_write::<CommitDeltas>(&deserialise_record(&record.bytes)).unwrap()
             }
             LegacyCommitRecordV1::RECORD_TYPE
             | CommitRecord::RECORD_TYPE
