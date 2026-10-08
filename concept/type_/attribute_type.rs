@@ -39,8 +39,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
             AnnotationIndex, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation,
-            HasAnnotationCategory,
-            HasAnnotationCategoryDerive,
+            HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,

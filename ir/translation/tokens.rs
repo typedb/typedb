@@ -7,7 +7,7 @@
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
     AnnotationDoc, AnnotationIndependent, AnnotationIndex, AnnotationKey, AnnotationMeta, AnnotationRange,
-    AnnotationRegex, AnnotationUnique, AnnotationValues, IndexMetric,
+    AnnotationRegex, AnnotationUnique, AnnotationValues, HnswMetric, IndexSpec,
 };
 use encoding::{
     graph::type_::Kind,
@@ -67,15 +67,15 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             String::from_typeql_literal(&meta.key, meta.span())?,
             String::from_typeql_literal(&meta.value, meta.span())?,
         )),
-        typeql::Annotation::Index(index) => Annotation::Index(AnnotationIndex::new(
-            index.metrics.iter().map(translate_index_metric).collect(),
-        )),
+        typeql::Annotation::Index(index) => {
+            Annotation::Index(AnnotationIndex::new(index.specs.iter().map(translate_index_spec).collect()))
+        }
     })
 }
 
-fn translate_index_metric(metric: &token::IndexMetric) -> IndexMetric {
-    match metric {
-        token::IndexMetric::Cosine => IndexMetric::Cosine,
+fn translate_index_spec(spec: &typeql::annotation::IndexSpec) -> IndexSpec {
+    match spec {
+        typeql::annotation::IndexSpec::Hnsw(token::HnswMetric::Cosine) => IndexSpec::Hnsw(HnswMetric::Cosine),
     }
 }
 
