@@ -38,10 +38,10 @@ pub(crate) fn load_commit_deltas(
             continue;
         }
 
-        if commits.insert(commit_sequence_number, SyncRecord::Deltas(deltas)).is_some() {
-            #[cfg(debug_assertions)]
-            unreachable!("Encountered two sets of deltas for {commit_sequence_number:?}");
-        }
+        debug_assert!(
+            commits.insert(commit_sequence_number, SyncRecord::Deltas(deltas)).is_none(),
+            "Encountered two sets of deltas for {commit_sequence_number:?}",
+        );
     }
 
     if let Some(first_gap) = first_gap(&commits, start, durability_client.previous()) {
