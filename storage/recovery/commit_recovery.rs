@@ -28,9 +28,7 @@ pub fn load_commit_data_from(
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
     use StorageRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
 
-    let load_start = start;
-    let records =
-        durability_client.iter_from(load_start).map_err(|error| DurabilityClientRead { typedb_source: error })?;
+    let records = durability_client.iter_from(start).map_err(|error| DurabilityClientRead { typedb_source: error })?;
 
     let mut recovered_commits = BTreeMap::new();
     let mut recovered_commit_sizes = BTreeMap::new();
@@ -42,7 +40,7 @@ pub fn load_commit_data_from(
         let RawRecord { sequence_number, record_type, bytes } =
             record.map_err(|error| DurabilityClientRead { typedb_source: error })?;
         if first_record {
-            if sequence_number != load_start {
+            if sequence_number != start {
                 return Err(DurabilityRecordsMissing {
                     expected_sequence_number: start,
                     first_record_sequence_number: sequence_number,
@@ -109,13 +107,6 @@ pub fn load_commit_data_from(
                 }
             }
             _not_storage_record => (), // skip, not storage record
-        }
-
-        while bytes_read > 0 && recovered_commits.first_key_value().is_some_and(|(&seq, _)| seq < start) {
-            recovered_commits.pop_first();
-            let (seq, size) = recovered_commit_sizes.pop_first().expect("can't be over memory limit with zero commits");
-            bytes_read -= size;
-            trace!("Discarded commit @ {} with size {}; {} total", seq, format_size(size), format_size(bytes_read));
         }
     }
     Ok(recovered_commits)
