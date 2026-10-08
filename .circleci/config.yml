@@ -9,14 +9,13 @@ orbs:
   macos: circleci/macos@2.4.0
 
 executors:
-  # AlmaLinux 8 (glibc 2.28) with gcc-toolset-14, installed by install-deps-dnf: release binaries need glibc >= 2.28.
+  # AlmaLinux 8 (glibc 2.28) with gcc-toolset-14
   linux-arm64-almalinux-8:
     docker:
       - image: almalinux:8.10-20261002@sha256:8b469a3a78515e8a18ea8fc727e6a3679e1d0c5ba6f58d5b30be3d0d9b86cffe
     resource_class: arm.large
     working_directory: ~/typedb
 
-  # All builds go on AlmaLinux 8.
   linux-x86_64-almalinux-8:
     docker:
       - image: almalinux:8.10-20261002@sha256:8b469a3a78515e8a18ea8fc727e6a3679e1d0c5ba6f58d5b30be3d0d9b86cffe
@@ -48,14 +47,10 @@ commands:
   # common setup steps #
   ######################
 
-  # Git and ssh for checkout, which the base image lacks; runs before checkout.
   install-git-dnf:
     steps:
       - run: dnf install -y --setopt=install_weak_deps=False git-core openssh-clients
 
-  # Build dependencies. Bazel uses gcc-toolset-14 via an absolute CC path, since --incompatible_strict_action_env
-  # resets PATH inside actions. Bazel's C++ toolchain detection links with lld when it's installed (it tries lld
-  # before gold).
   install-deps-dnf:
     parameters:
       bazel-arch:
@@ -71,15 +66,9 @@ commands:
           chmod a+x /usr/local/bin/bazel
           echo "export CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc" >> $BASH_ENV
           export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64/')
-          # Only use a prebuilt cargo-bazel if this project defines one: rules_rust fails on an empty
-          # CARGO_BAZEL_GENERATOR_URL, but builds cargo-bazel from source when it's unset.
-          URL_VAR=CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER; SHA_VAR=CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER
-          if [ -n "${!URL_VAR:-}" ] && [ -n "${!SHA_VAR:-}" ]; then
-            echo "export CARGO_BAZEL_GENERATOR_URL=\"\$$URL_VAR\"" >> $BASH_ENV
-            echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$$SHA_VAR\"" >> $BASH_ENV
-          fi
+          echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
+          echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
 
-  # The docker CLI, for jobs using setup_remote_docker (AlmaLinux doesn't ship docker).
   install-docker-cli:
     steps:
       - run: |
@@ -94,13 +83,8 @@ commands:
     steps:
       - run: |
           export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/arm64/ARM64/')
-          # Only use a prebuilt cargo-bazel if this project defines one: rules_rust fails on an empty
-          # CARGO_BAZEL_GENERATOR_URL, but builds cargo-bazel from source when it's unset.
-          URL_VAR=CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER; SHA_VAR=CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER
-          if [ -n "${!URL_VAR:-}" ] && [ -n "${!SHA_VAR:-}" ]; then
-            echo "export CARGO_BAZEL_GENERATOR_URL=\"\$$URL_VAR\"" >> $BASH_ENV
-            echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$$SHA_VAR\"" >> $BASH_ENV
-          fi
+          echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
+          echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
 
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
