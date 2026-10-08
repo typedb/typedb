@@ -5,8 +5,8 @@
  */
 
 use lib_benchmark::{
-    benchmark::{QueryDescriptor, RunDescriptor, TypeDBQueryWorkloadBenchmark},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    typedb_workload::{QueryDescriptor, RunDescriptor, benchmark::TypeDBQueryWorkloadBenchmark},
 };
 
 use crate::{

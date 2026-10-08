@@ -5,12 +5,10 @@
  */
 
 pub mod benchmark;
-pub mod datagen;
 mod pipelines;
-pub mod profiling;
-pub mod reports;
 pub mod runner;
 mod transaction;
+pub mod typedb_workload;
 pub mod utils;
 
 use std::{collections::HashMap, sync::Arc};

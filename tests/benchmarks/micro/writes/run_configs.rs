@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use lib_benchmark::benchmark::{QueryDescriptor, RunDescriptor, WorkLoad};
+use lib_benchmark::typedb_workload::{QueryDescriptor, RunDescriptor};
 
 pub const ROWS_SMALL: usize = 100;
 pub const ROWS_MEDIUM: usize = 1_000;

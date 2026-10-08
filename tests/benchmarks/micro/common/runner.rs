@@ -5,7 +5,7 @@
  */
 use clap::Parser;
 
-use crate::{benchmark::SimpleBenchmark, reports::SimpleReport};
+use crate::benchmark::{SimpleBenchmark, SimpleReport};
 
 pub trait BenchmarkRunnerGroup {
     fn run_benchmark<T: SimpleBenchmark>(&mut self, b: T) -> Vec<T::IterOutput>;

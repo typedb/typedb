@@ -99,8 +99,8 @@ fn prepare_read_pipeline<Snapshot: ReadableSnapshot>(
         Some(enable_profiling),
     );
     match prepare_result {
+        Err(err) => Err(ErrorWrapper { snapshot, partial_tx, err }),
         Ok(pipeline) => Ok(ReadPipelineWrapper { partial_tx, pipeline }),
-        Err(err) => Err(ErrorWrapper::new(snapshot, partial_tx, err)),
     }
 }
 
@@ -124,7 +124,7 @@ fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
     );
     match prepare_result {
         Ok(pipeline) => Ok(WritePipelineWrapper { partial_tx, pipeline }),
-        Err((snapshot, err)) => Err(ErrorWrapper::new(Arc::new(snapshot), partial_tx, err)),
+        Err((snapshot, err)) => Err(ErrorWrapper { snapshot: Arc::new(snapshot), partial_tx, err }),
     }
 }
 
@@ -133,12 +133,6 @@ struct ErrorWrapper<Snapshot, Err> {
     snapshot: Arc<Snapshot>,
     partial_tx: PartialTx,
     err: Err,
-}
-
-impl<Snapshot: ReadableSnapshot, Err> ErrorWrapper<Snapshot, Err> {
-    fn new(snapshot: Arc<Snapshot>, partial_tx: PartialTx, err: Err) -> Self {
-        Self { snapshot, partial_tx, err }
-    }
 }
 
 fn to_err_and_tx<TX: UnifiedTransactionView, Err>(error_wrapper: ErrorWrapper<TX::Snapshot, Err>) -> (Err, TX) {
