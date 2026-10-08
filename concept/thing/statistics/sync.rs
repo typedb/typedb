@@ -83,8 +83,8 @@ pub(crate) fn load_commit_deltas(
                             commits.insert(commit_sequence_number, SyncRecord::Rejected);
                         }
                     } else {
-                        debug_assert!(
-                            pending.contains_key(&commit_sequence_number),
+                        #[cfg(debug_assertions)]
+                        unreachable!(
                             "Found a status record at {commit_sequence_number:?} without a corresponding commit record",
                         );
                     }
