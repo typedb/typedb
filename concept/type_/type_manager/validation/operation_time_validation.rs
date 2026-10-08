@@ -30,8 +30,8 @@ use crate::{
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRange,
-            AnnotationIndex, AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationIndex, AnnotationKey,
+            AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{

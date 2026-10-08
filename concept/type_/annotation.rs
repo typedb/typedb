@@ -294,30 +294,43 @@ impl fmt::Display for AnnotationRegex {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum IndexMetric {
+pub enum HnswMetric {
     Cosine,
 }
 
-impl fmt::Display for IndexMetric {
+impl fmt::Display for HnswMetric {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IndexMetric::Cosine => write!(f, "{}", typeql::token::IndexMetric::Cosine),
+            HnswMetric::Cosine => write!(f, "{}", typeql::token::HnswMetric::Cosine),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum IndexSpec {
+    Hnsw(HnswMetric),
+}
+
+impl fmt::Display for IndexSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IndexSpec::Hnsw(metric) => write!(f, "hnsw:{metric}"),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationIndex {
-    metrics: Vec<IndexMetric>,
+    specs: Vec<IndexSpec>,
 }
 
 impl AnnotationIndex {
-    pub fn new(metrics: Vec<IndexMetric>) -> Self {
-        Self { metrics }
+    pub fn new(specs: Vec<IndexSpec>) -> Self {
+        Self { specs }
     }
 
-    pub fn metrics(&self) -> &[IndexMetric] {
-        &self.metrics
+    pub fn specs(&self) -> &[IndexSpec] {
+        &self.specs
     }
 
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
@@ -328,11 +341,11 @@ impl AnnotationIndex {
 impl fmt::Display for AnnotationIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@{}(", typeql::token::Annotation::Index)?;
-        for (i, metric) in self.metrics.iter().enumerate() {
+        for (i, spec) in self.specs.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{metric}")?;
+            write!(f, "{spec}")?;
         }
         write!(f, ")")
     }

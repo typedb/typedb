@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use answer::variable_value::VariableValue;
 use concept::{
     thing::{thing_manager::ThingManager, vector_store::VectorStore},
     type_::{TypeAPI, type_manager::TypeManager},
@@ -14,7 +15,6 @@ use encoding::{
     graph::{Typed, type_::vertex::TypeVertexEncoding},
     value::{label::Label, value::Value},
 };
-use answer::variable_value::VariableValue;
 use executor::{ExecutionInterrupt, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
@@ -35,7 +35,7 @@ struct Context {
 }
 
 const SCHEMA: &str = r#"define
-    attribute embedding, value vector(3, "float32") @index(cosine);
+    attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
     entity item owns embedding @card(0..);
 "#;
 
@@ -79,7 +79,14 @@ fn try_define(context: &Context, query: &str) -> Result<(), String> {
     let define = typeql::parse_query(query).unwrap().into_structure().into_schema();
     context
         .query_manager
-        .execute_schema(&mut snapshot, &context.type_manager, &context.thing_manager, &context.function_manager, define, query)
+        .execute_schema(
+            &mut snapshot,
+            &context.type_manager,
+            &context.thing_manager,
+            &context.function_manager,
+            define,
+            query,
+        )
         .map_err(|err| format!("{err:?}"))?;
     // the transaction commit flow runs commit-time schema validation before committing the snapshot
     context.type_manager.validate(&snapshot).map_err(|errs| format!("{errs:?}"))?;
@@ -278,8 +285,8 @@ fn vector_search_requires_two_assigned_variables() {
 fn vector_attribute_requires_index_annotation() {
     let context = setup_empty();
     let result = try_define(&context, r#"define attribute bare-embedding, value vector(3, "float32");"#);
-    assert!(result.is_err(), "vector attribute without @index(cosine) should be rejected at commit");
+    assert!(result.is_err(), "vector attribute without @index(hnsw:cosine) should be rejected at commit");
 
-    let result = try_define(&context, r#"define attribute name, value string @index(cosine);"#);
+    let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
     assert!(result.is_err(), "@index on a non-vector value type should be rejected");
 }
