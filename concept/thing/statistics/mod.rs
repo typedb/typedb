@@ -248,7 +248,7 @@ impl Statistics {
         let total_role_count = role_counts.values().sum();
         let total_has_count = has_attribute_counts.values().flat_map(|x| x.values()).sum();
 
-        // attribute countrs and links index counts are not included in the total count
+        // attribute counters and links index counts are not included in the total count
         let total_count = total_entity_count + total_relation_count + total_has_count + total_role_count;
 
         Ok(Self {
