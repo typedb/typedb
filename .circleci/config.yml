@@ -656,7 +656,7 @@ workflows:
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, try-new-developerid-certificates ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
@@ -702,7 +702,7 @@ workflows:
       - deploy-snapshot-installer-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, try-new-developerid-certificates ]
           requires:
             - test-deploy-snapshot-mac-arm64
 

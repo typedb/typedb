@@ -451,7 +451,7 @@ label_flag(
 # Signed mac installer
 alias(
     name = "developer-id-certs",
-    actual = "@vaticle_developer_id_combined//file",
+    actual = "@typedb_developer_id_combined//file",
     tags = ["manual"],
 )
 
@@ -486,11 +486,11 @@ mac_pkg_installer(
     sign_binaries = [
         "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
     ],
-    application_cert_subject = "Developer ID Application: Vaticle LTD (RHKH8FP9SX)",
-    installer_cert_subject = "Developer ID Installer: Vaticle LTD (RHKH8FP9SX)",
+    application_cert_subject = "Developer ID Application: TypeDB LTD (RHKH8FP9SX)",
+    installer_cert_subject = "Developer ID Installer: TypeDB LTD (RHKH8FP9SX)",
 
     notarize = True,
-    apple_id = "bot@vaticle.com",
+    apple_id = "bot@typedb.com",
     apple_team_id = "RHKH8FP9SX",
 
     verbose = False, # True for debugging
@@ -514,11 +514,12 @@ mac_pkg_installer(
     sign_binaries = [
         "typedb", "server/typedb_server_bin", "console/typedb_console_bin", "admin/typedb_admin_bin", "loader/typedb_loader_bin"
     ],
-    application_cert_subject = "Developer ID Application: Vaticle LTD (RHKH8FP9SX)",
-    installer_cert_subject = "Developer ID Installer: Vaticle LTD (RHKH8FP9SX)",
+    application_cert_subject = "Developer ID Application: TypeDB LTD (RHKH8FP9SX)",
+    installer_cert_subject = "Developer ID Installer: TypeDB LTD (RHKH8FP9SX)",
+
 
     notarize = True,
-    apple_id = "bot@vaticle.com",
+    apple_id = "bot@typedb.com",
     apple_team_id = "RHKH8FP9SX",
 
     verbose = True,

@@ -198,8 +198,8 @@ git_override(
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 http_file(
-    name = "vaticle_developer_id_combined",
-    url = "https://repo.typedb.com/basic/private-tools/raw/files/VaticleDeveloperIDCombined.p12",
-    sha256 = "e6da59e0698ea876c89ac2a19c87ac6e6936df98ee5df31d8895a09ef26b15c7",
-    downloaded_file_path = "VaticleDeveloperIDCombined.p12",
+    name = "typedb_developer_id_combined",
+    url = "https://repo.typedb.com/basic/private-tools/raw/files/TypeDBDeveloperIDCombined.p12",
+    sha256 = "51807e7c881c1e7885d55fa6a74f4d0229787bcc5fdd164b33b81238b0199baf",
+    downloaded_file_path = "TypeDBDeveloperIDCombined.p12",
 )
