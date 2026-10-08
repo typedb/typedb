@@ -7,12 +7,12 @@ use std::borrow::Cow;
 
 use encoding::{graph::type_::vertex::TypeID, value::value::Value};
 use lib_benchmark::{
-    benchmark::{
-        PreloadDataFn, QueryDescriptor, RunDescriptor, TypeDBQueryWorkloadBenchmark, TypeDBWorkloadBenchmark,
-        WorkloadInstance,
-    },
-    datagen::RandomDataGen,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    typedb_workload::{
+        QueryDescriptor, RunDescriptor,
+        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
+        datagen::RandomDataGen,
+    },
 };
 use query::given_rows::GivenRowEntry;
 

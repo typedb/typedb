@@ -7,14 +7,14 @@ use std::{marker::PhantomData, sync::Arc};
 
 use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
-    QueryAnswer,
-    benchmark::{BenchmarkedFn, PreloadDataFn, PrepareRunFn, TypeDBMicroBenchmark},
-    commit,
-    datagen::RandomDataGen,
-    execute_write_query_in,
-    profiling::TxQueryProfile,
-    reports::TxQueryProfileReport,
+    QueryAnswer, commit, execute_write_query_in,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    typedb_workload::{
+        TxQueryProfile,
+        benchmark::{BenchmarkedFn, PreloadDataFn, PrepareRunFn, TypeDBMicroBenchmark},
+        datagen::RandomDataGen,
+        reports::TxQueryProfileReport,
+    },
     utils::{CountResults, unpack_result},
 };
 use options::TransactionOptions;

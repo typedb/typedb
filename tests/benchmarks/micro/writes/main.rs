@@ -6,8 +6,8 @@
 
 use clap::Parser;
 use lib_benchmark::{
-    benchmark::sanity_check,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+    typedb_workload::benchmark::sanity_check,
 };
 
 // mod match_reads;

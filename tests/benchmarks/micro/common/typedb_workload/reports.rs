@@ -11,8 +11,8 @@ use serde::Serialize;
 use tabled::Tabled;
 
 use crate::{
-    benchmark::RunDescriptor,
-    profiling::{MultiTxMultiQueryProfile, TxQueryProfile},
+    benchmark::SimpleReport,
+    typedb_workload::{MultiTxMultiQueryProfile, RunDescriptor, TxQueryProfile},
 };
 
 /// Wraps a Duration: displays as ms with 3dp, serializes as f64 ms for CSV.
@@ -424,14 +424,6 @@ pub struct QueryFocusedReport {
     pub commit: CommitFocusedReport,
 }
 
-impl SimpleReport<MultiTxMultiQueryProfile> for QueryFocusedReport {
-    fn report(reports: &[MultiTxMultiQueryProfile]) {
-        for r in reports {
-            QueryFocusedReport::from_ref(r).write_and_print(r.name.as_str());
-        }
-    }
-}
-
 impl QueryFocusedReport {
     pub fn from_ref(profile: &MultiTxMultiQueryProfile) -> Self {
         // Collect all query profiles across all transactions
@@ -611,18 +603,6 @@ fn write_csv<T: Serialize>(path: impl AsRef<Path>, rows: &[T]) -> std::io::Resul
     }
     wtr.flush()?;
     Ok(())
-}
-
-pub trait SimpleReport<T> {
-    fn report(reports: &[T])
-    where
-        Self: Sized;
-}
-
-impl SimpleReport<()> for () {
-    fn report(_reports: &[()]) {
-        println!("DONE. [Report was (), which is a nop dummy].")
-    }
 }
 
 // SimpleReport implementations
