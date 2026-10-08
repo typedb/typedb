@@ -44,7 +44,7 @@ pub struct TabledCallExecutorState {
     pub(crate) next_table_row: TableIndex,
 }
 
-pub(super) enum TabledCallResult<'a> {
+pub(crate) enum TabledCallResult<'a> {
     RetrievedFromTable(FixedBatch),
     MustExecutePattern(MutexGuard<'a, TabledFunctionPatternExecutorState>),
     Suspend,

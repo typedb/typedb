@@ -251,7 +251,7 @@ fn enrich_annotations(
         .collect()
 }
 
-pub fn build_fetch_annotations(
+fn build_fetch_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     parameters: Arc<ParameterRegistry>,

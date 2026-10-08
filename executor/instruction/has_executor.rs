@@ -382,7 +382,7 @@ fn attribute_seek_floor(
     Some(Attribute::new(vertex))
 }
 
-pub(super) struct HasTupleIterator<Iter: LendingIterator> {
+pub struct HasTupleIterator<Iter: LendingIterator> {
     inner: Iter,
     filter_map: Arc<HasFilterMapFn>,
     to_tuple_fn: HasToTupleFn,

@@ -30,7 +30,7 @@ impl PatternSuspension {
 pub(super) struct SuspensionCount(usize);
 
 #[derive(Debug)]
-pub(super) struct TabledCallSuspension {
+pub(crate) struct TabledCallSuspension {
     pub(crate) executor_index: ExecutorIndex,
     pub(crate) depth: usize,
     pub(crate) input_row: MaybeOwnedRow<'static>,
@@ -38,7 +38,7 @@ pub(super) struct TabledCallSuspension {
 }
 
 #[derive(Debug)]
-pub(super) struct NestedPatternSuspension {
+pub(crate) struct NestedPatternSuspension {
     pub(crate) executor_index: ExecutorIndex,
     pub(crate) depth: usize,
     pub(crate) branch_index: BranchIndex,

@@ -28,7 +28,7 @@ struct EncodedRow<'a> {
     involved_blocks: Option<Vec<u16>>, // TODO: Rename if we break studio compatibility
 }
 
-pub fn encode_row<'a>(
+pub(crate) fn encode_row<'a>(
     row: MaybeOwnedRow<'_>,
     columns: &'a [(String, VariablePosition)],
     snapshot: &impl ReadableSnapshot,
