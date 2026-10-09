@@ -1003,6 +1003,9 @@ impl BinaryConstraint for Owns<Variable> {
     }
 }
 
+// Deliberately propagates the type as identity in both directions (unlike non-exact `Isa`, which
+// seeds subtypes): vector search is exact-type, searching one type's vector index and never its
+// subtypes'. The check lowering (`IsaKind::Exact` in plan.rs) matches this.
 impl BinaryConstraint for VectorSearch<Variable> {
     fn left(&self) -> &Vertex<Variable> {
         self.attribute()

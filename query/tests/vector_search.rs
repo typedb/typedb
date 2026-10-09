@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use answer::variable_value::VariableValue;
 use concept::{
-    thing::{thing_manager::ThingManager, vector_store::VectorStore},
+    thing::{ThingAPI, thing_manager::ThingManager, vector_store::VectorStore},
     type_::{TypeAPI, type_manager::TypeManager},
 };
 use encoding::{
@@ -244,9 +244,10 @@ fn similarity_scores_are_returned_alongside_elements() {
 
     let rows = run_read_query(
         &context,
-        r#"match let $emb, $sim in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
+        r#"match let $emb, $sim in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);
+           sort $sim desc;"#,
     );
-    // in row order: the implicit sort returns the most similar vector first
+    // in row order: the explicit sort returns the most similar vector first
     let scores: Vec<f64> = rows
         .iter()
         .flat_map(|row| {
@@ -282,10 +283,37 @@ fn vector_search_requires_two_assigned_variables() {
 }
 
 #[test]
-fn vector_attribute_requires_index_annotation() {
+fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
+    // NaN != NaN under f32 `==`, but the attribute ID hash is computed over the encoded bytes:
+    // identity resolution must also compare encoded bytes, or every put of a NaN-containing
+    // vector would allocate a fresh attribute (until the hash-disambiguation tail overflows)
+    let context = setup();
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let attribute_type =
+        context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
+    drop(snapshot);
+
+    let vector: Vec<f32> = vec![f32::NAN, 0.0, -0.0];
+    let mut vertices = Vec::new();
+    for _ in 0..2 {
+        let mut snapshot = context.storage.clone().open_snapshot_write();
+        let attribute = context
+            .thing_manager
+            .create_attribute(&mut snapshot, attribute_type, Value::Vector(std::borrow::Cow::Borrowed(&vector)))
+            .unwrap();
+        vertices.push(attribute.vertex());
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    }
+    assert_eq!(vertices[0], vertices[1], "an identical NaN vector must resolve to the same attribute ID");
+    assert_eq!(vector_store(&context).indexed_vector_count(embedding_type_id(&context)), 1);
+}
+
+#[test]
+fn vector_index_annotation_is_optional_and_vector_only() {
     let context = setup_empty();
+    // a cosine HNSW index is implicit for vector value types; @index(hnsw:cosine) is declarative
     let result = try_define(&context, r#"define attribute bare-embedding, value vector(3, "float32");"#);
-    assert!(result.is_err(), "vector attribute without @index(hnsw:cosine) should be rejected at commit");
+    assert!(result.is_ok(), "vector attribute without @index(hnsw:cosine) should be accepted: {result:?}");
 
     let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
     assert!(result.is_err(), "@index on a non-vector value type should be rejected");

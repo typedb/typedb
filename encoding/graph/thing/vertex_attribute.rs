@@ -1066,7 +1066,6 @@ impl VectorAttributeID {
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_length];
 
-        let target_vector = VectorBytes::new(Bytes::<1>::Reference(value_bytes)).as_vector();
         let tail_byte_index = key_without_tail_byte.len();
         let mut iter = snapshot.iterate_range(
             &KeyRange::new_within(
@@ -1084,10 +1083,19 @@ impl VectorAttributeID {
             let value_matches = if value.is_empty() {
                 let index_key =
                     u64::from_be_bytes(key.bytes()[key.bytes().len() - (Self::HASH_LENGTH + 1)..].try_into().unwrap());
-                let vector = committed_vector(index_key).unwrap_or_else(|| {
-                    panic!("vector attribute exists in storage but its value is missing from the vector store")
-                });
-                vector == target_vector
+                let vector = committed_vector(index_key).ok_or_else(|| {
+                    // treating a miss as a non-match would allocate a fresh attribute ID for a
+                    // value that already exists, so it must surface as an error
+                    Arc::new(SnapshotIteratorError::ExternalValueMissing {
+                        description: format!(
+                            "vector attribute (key: {index_key:#018x}) exists in storage but its value is missing from the vector store"
+                        ),
+                    })
+                })?;
+                // compare the encoded bytes, not decoded f32s: the hash is computed over the
+                // encoded bytes, and f32 `==` would disagree with it on NaN (never equal to
+                // itself) and on -0.0/0.0 (equal despite different bytes)
+                VectorBytes::<1>::build(&vector).bytes() == value_bytes
             } else {
                 &*value == value_bytes
             };

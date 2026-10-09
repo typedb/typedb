@@ -38,10 +38,16 @@ fn open_db(path: &std::path::Path) -> Arc<Database<WALClient>> {
 }
 
 fn define_schema(db: Arc<Database<WALClient>>) {
-    let schema = r#"define
-        attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
-        entity item owns embedding @card(0..);
-    "#;
+    run_schema_query(
+        db,
+        r#"define
+            attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
+            entity item owns embedding @card(0..);
+        "#,
+    );
+}
+
+fn run_schema_query(db: Arc<Database<WALClient>>, schema: &str) {
     let tx = TransactionSchema::open(db, TransactionOptions::default()).expect("schema txn");
     let query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     let (tx, result) = execute_schema_query(tx, query, schema.to_string());
@@ -67,12 +73,16 @@ fn insert_vectors(db: Arc<Database<WALClient>>, query: &str) {
 }
 
 fn lookup_embedding_type_id(db: &Arc<Database<WALClient>>) -> TypeID {
+    lookup_attribute_type_id(db, "embedding")
+}
+
+fn lookup_attribute_type_id(db: &Arc<Database<WALClient>>, label: &str) -> TypeID {
     let tx = TransactionRead::open(db.clone(), TransactionOptions::default()).expect("read txn");
     let attribute_type = tx
         .type_manager
-        .get_attribute_type(tx.snapshot.as_ref(), &Label::build("embedding", None))
+        .get_attribute_type(tx.snapshot.as_ref(), &Label::build(label, None))
         .unwrap()
-        .expect("embedding type");
+        .expect("attribute type");
     let type_id = attribute_type.vertex().type_id_();
     tx.close();
     type_id
@@ -129,4 +139,31 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
         found.sort_by(|a, b| a.partial_cmp(b).unwrap());
         assert_eq!(found, vec![vec![0.0, 0.0, 1.0], vec![0.0, 1.0, 0.0], vec![1.0, 0.0, 0.0]]);
     }
+}
+
+#[test]
+fn undefining_a_vector_type_drops_its_index_so_the_type_id_is_reusable() {
+    let tmp = create_tmp_storage_dir();
+    let db = open_db(&tmp.join("vector-undefine"));
+    define_schema(db.clone());
+    insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
+    let old_type_id = lookup_embedding_type_id(&db);
+    assert_eq!(db.vector_store().indexed_vector_count(old_type_id), 1);
+
+    // instances must be deleted before the type can be undefined
+    insert_vectors(db.clone(), "match $x isa item; delete $x;");
+    insert_vectors(db.clone(), "match $e isa embedding; delete $e;");
+    run_schema_query(db.clone(), "undefine embedding;");
+
+    // the schema commit pruned the undefined type's index: TypeIDs are reused, and a stale
+    // 3-dimensional index would otherwise reject every vector of a future type with this TypeID
+    assert_eq!(db.vector_store().indexed_vector_count(old_type_id), 0);
+
+    // a replacement vector type with different dimensions (possibly reusing the TypeID) works
+    run_schema_query(
+        db.clone(),
+        r#"define attribute embedding2, value vector(4, "float32"); entity item owns embedding2 @card(0..);"#,
+    );
+    insert_vectors(db.clone(), r#"insert $a isa item, has embedding2 vector([0.0, 1.0, 0.0, 0.0], "float32");"#);
+    assert_eq!(db.vector_store().indexed_vector_count(lookup_attribute_type_id(&db, "embedding2")), 1);
 }

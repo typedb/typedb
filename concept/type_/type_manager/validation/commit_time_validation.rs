@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::definition::r#struct::StructDefinition, value::value_type::ValueType};
+use encoding::graph::definition::r#struct::StructDefinition;
 use itertools::Itertools;
 use storage::{keyspace::KeyspaceSet, snapshot::ReadableSnapshot};
 
@@ -14,7 +14,7 @@ use crate::{
     error::ConceptReadError,
     type_::{
         Capability, KindAPI, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        attribute_type::AttributeType,
         constraint::{Constraint, ConstraintDescription, filter_by_source},
         entity_type::EntityType,
         object_type::ObjectType,
@@ -560,19 +560,6 @@ impl CommitTimeValidation {
             validation_errors.push(Box::new(SchemaValidationError::AttributeTypeWithoutValueTypeShouldBeAbstract {
                 attribute: get_label_or_concept_read_err(snapshot, type_manager, attribute_type)?,
             }));
-        }
-
-        // the vector store only maintains metric indexes, so a vector attribute must declare one
-        if let Some((ValueType::Vector(_), source)) = &value_type {
-            let has_index_annotation = source
-                .get_annotations_declared(snapshot, type_manager)?
-                .iter()
-                .any(|annotation| matches!(annotation, AttributeTypeAnnotation::Index(_)));
-            if !has_index_annotation {
-                validation_errors.push(Box::new(SchemaValidationError::VectorAttributeMissingIndexAnnotation {
-                    attribute: get_label_or_concept_read_err(snapshot, type_manager, *source)?,
-                }));
-            }
         }
 
         Ok(())
