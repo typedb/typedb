@@ -816,7 +816,7 @@ impl ThingEdgeIndexedRelation {
     const LENGTH: usize = Self::RANGE_END_ROLE_TYPE_ID.end;
     const RANGE_START_TYPE: Range<usize> =
         Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + THING_VERTEX_LENGTH_PREFIX_TYPE;
-    pub const LENGTH_PREFIX: usize = Self::RANGE_RELATION_TYPE_ID.start;
+    pub const LENGTH_PREFIX: usize = Self::INDEX_PREFIX + 1;
     pub const LENGTH_PREFIX_REL_TYPE_ID: usize = Self::RANGE_RELATION_TYPE_ID.end;
     pub const LENGTH_PREFIX_REL_TYPE_ID_START_TYPE: usize =
         PrefixID::LENGTH + TypeID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
