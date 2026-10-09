@@ -435,6 +435,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -510,6 +511,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -598,7 +600,7 @@ fn sync_from_storage_never_lowers_a_counter() {
     let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
     let resources = create_rocks_resources();
     let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &resources)
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &resources, None)
             .unwrap(),
     );
     let mut snapshot = storage.clone().open_snapshot_write();

@@ -19,7 +19,7 @@ pub fn create_core_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
     let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
     let resources = create_rocks_resources();
     let storage = Arc::new(
-        MVCCStorage::create::<EncodingKeyspace>("db_storage", &storage_path, WALClient::new(wal), &resources).unwrap(),
+        MVCCStorage::create::<EncodingKeyspace>("db_storage", &storage_path, WALClient::new(wal), &resources, None).unwrap(),
     );
     (storage_path, storage)
 }

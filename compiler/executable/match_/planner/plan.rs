@@ -1911,21 +1911,10 @@ impl ConjunctionPlan<'_> {
                 let isa = planner.isa();
                 binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
             }
-            ConstraintVertex::VectorSearch(planner) => {
-                let search = planner.vector_search();
-                let attribute_pos = search.attribute().clone().map(conjunction_builder.position_mapping());
-                let type_pos = search.attribute_type().clone().map(conjunction_builder.position_mapping());
-                conjunction_builder.push_check(CheckInstruction::Isa {
-                    isa_kind: IsaKind::Exact,
-                    type_: CheckVertex::resolve(type_pos, self.local_annotations),
-                    thing: CheckVertex::resolve(attribute_pos.clone(), self.local_annotations),
-                });
-                let query_pos = search.query().clone().map(conjunction_builder.position_mapping());
-                conjunction_builder.push_check(CheckInstruction::VectorSearch {
-                    attribute: CheckVertex::resolve(attribute_pos, self.local_annotations),
-                    query: CheckVertex::resolve(query_pos, self.local_annotations),
-                    threshold: search.threshold(),
-                });
+            ConstraintVertex::VectorSearch(_) => {
+                // a constraint is check-lowered only when it produces no variables, and the
+                // similarity variable's sole producer is the vector search constraint itself
+                unreachable!("vector search always produces its similarity variable")
             }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();

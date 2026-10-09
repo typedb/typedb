@@ -142,6 +142,7 @@ fn loading_storage_assigns_next_vertex() {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );

@@ -595,11 +595,6 @@ pub enum CheckInstruction<ID> {
         type_: CheckVertex<ID>,
         thing: CheckVertex<ID>,
     },
-    VectorSearch {
-        attribute: CheckVertex<ID>,
-        query: CheckVertex<ID>,
-        threshold: ParameterID,
-    },
     Has {
         owner: CheckVertex<ID>,
         attribute: CheckVertex<ID>,
@@ -663,11 +658,6 @@ impl<ID: IrID> CheckInstruction<ID> {
             Self::Isa { isa_kind: kind, type_, thing } => {
                 CheckInstruction::Isa { isa_kind: kind, type_: type_.map(mapping), thing: thing.map(mapping) }
             }
-            Self::VectorSearch { attribute, query, threshold } => CheckInstruction::VectorSearch {
-                attribute: attribute.map(mapping),
-                query: query.map(mapping),
-                threshold,
-            },
             Self::Has { owner, attribute } => {
                 CheckInstruction::Has { owner: owner.map(mapping), attribute: attribute.map(mapping) }
             }
@@ -721,9 +711,6 @@ impl<ID: IrID> CheckInstruction<ID> {
             }
             CheckInstruction::Isa { thing, type_, .. } => {
                 Box::new(thing.as_variable().into_iter().chain(type_.as_variable().into_iter()))
-            }
-            CheckInstruction::VectorSearch { attribute, query, .. } => {
-                Box::new(attribute.as_variable().into_iter().chain(query.as_variable().into_iter()))
             }
             CheckInstruction::Has { owner, attribute } => {
                 Box::new(owner.as_variable().into_iter().chain(attribute.as_variable().into_iter()))
@@ -792,9 +779,6 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             }
             Self::Isa { isa_kind, type_, thing } => {
                 write!(f, "{thing} {}{} {type_}", typeql::token::Keyword::Isa, isa_kind)?;
-            }
-            Self::VectorSearch { attribute, .. } => {
-                write!(f, "{attribute} vector-search")?;
             }
             Self::Has { owner, attribute } => {
                 write!(f, "{owner} {} {attribute}", typeql::token::Keyword::Has)?;

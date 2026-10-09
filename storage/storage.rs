@@ -141,6 +141,7 @@ impl<Durability> MVCCStorage<Durability> {
         path: &Path,
         mut durability_client: Durability,
         rocks_resources: &RocksResources,
+        commit_observer: Option<Arc<dyn CommitObserver>>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -167,7 +168,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            commit_observer: None,
+            commit_observer,
         })
     }
 
@@ -242,9 +243,10 @@ impl<Durability> MVCCStorage<Durability> {
         })
     }
 
-    /// Attach the commit observer after `create` (which performs no recovery): `&mut self` means
-    /// the storage cannot be serving commits yet. For `load`, pass the observer into `load` itself
-    /// so it also observes commits replayed from the WAL during recovery.
+    /// Test-only escape hatch for harnesses that assemble storage in layers (the observer lives
+    /// in a crate the storage-creating test utility cannot depend on). Production code passes the
+    /// observer to `create` / `load` instead. `&mut self` means the storage cannot be serving
+    /// commits yet.
     pub fn set_commit_observer(&mut self, observer: Arc<dyn CommitObserver>) {
         self.commit_observer = Some(observer);
     }
@@ -965,6 +967,7 @@ mod tests {
                 &storage_path,
                 durability_client,
                 &resources,
+                None,
             )
             .unwrap(),
         );
