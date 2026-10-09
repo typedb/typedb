@@ -47,7 +47,7 @@ use crate::{
         relation::Relation,
         statistics::{
             deltas::CommitDeltas,
-            sync::{SyncRecord, load_commit_deltas},
+            sync::{SyncRecord, load_sync_records},
         },
         thing_manager::ThingManager,
     },
@@ -291,7 +291,7 @@ impl Statistics {
 
         let start = Instant::now();
 
-        let wal_commit_records = load_commit_deltas(self.sequence_number.next(), storage.durability())?;
+        let wal_commit_records = load_sync_records(self.sequence_number.next(), storage.durability())?;
 
         for (seq, status) in wal_commit_records {
             debug_assert_eq!(seq, self.sequence_number.next());

@@ -22,7 +22,7 @@ pub(crate) enum SyncRecord {
     Rejected,
 }
 
-pub(crate) fn load_commit_deltas(
+pub(crate) fn load_sync_records(
     start: SequenceNumber,
     durability_client: &impl DurabilityClient,
 ) -> Result<BTreeMap<SequenceNumber, SyncRecord>, StatisticsError> {
