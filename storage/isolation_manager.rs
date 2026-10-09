@@ -311,7 +311,7 @@ fn handle_dependency(commit_dependency: CommitDependency) -> Option<IsolationCon
 pub(crate) enum DependentPut {
     Deleted { action: Arc<AtomicPutAction> },
     Inserted { action: Arc<AtomicPutAction> },
-    Overwritten { action: Arc<AtomicPutAction> },
+    DifferentValue { action: Arc<AtomicPutAction> },
 }
 
 impl DependentPut {
@@ -319,7 +319,7 @@ impl DependentPut {
         match self {
             DependentPut::Deleted { action } => action.store(PutAction::Insert, Ordering::Release),
             DependentPut::Inserted { action } => action.store(PutAction::Nop, Ordering::Release),
-            DependentPut::Overwritten { action } => action.store(PutAction::Overwrite, Ordering::Release),
+            DependentPut::DifferentValue { action } => action.store(PutAction::Overwrite, Ordering::Release),
         }
     }
 }

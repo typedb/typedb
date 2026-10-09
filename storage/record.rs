@@ -154,7 +154,7 @@ impl CommitRecord {
                         if value == prev_value {
                             puts_to_update.push(DependentPut::Inserted { action: action.clone() });
                         } else {
-                            puts_to_update.push(DependentPut::Overwritten { action: action.clone() });
+                            puts_to_update.push(DependentPut::DifferentValue { action: action.clone() });
                         }
                     }
                     (Write::Delete, Write::Put { action, .. }) => {
