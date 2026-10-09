@@ -454,7 +454,9 @@ impl Database<WALClient> {
             &name,
             thing_statistics.sequence_number
         );
-        thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        thing_statistics
+            .may_synchronise_from_wal(&storage)
+            .map_err(|err| StatisticsInitialise { typedb_source: err })?;
         if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
             thing_statistics
                 .durably_write(storage.durability())

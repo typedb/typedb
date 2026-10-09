@@ -92,7 +92,7 @@ fn setup(
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let mut statistics = Statistics::new(SequenceNumber::new(0));
-    statistics.may_synchronise(storage).unwrap();
+    statistics.may_synchronise_from_wal(storage).unwrap();
     statistics
 }
 

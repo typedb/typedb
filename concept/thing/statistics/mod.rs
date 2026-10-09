@@ -277,7 +277,10 @@ impl Statistics {
         })
     }
 
-    pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
+    pub fn may_synchronise_from_wal(
+        &mut self,
+        storage: &MVCCStorage<impl DurabilityClient>,
+    ) -> Result<(), StatisticsError> {
         use StatisticsError::DurablyWrite;
 
         let storage_watermark = storage.snapshot_watermark();

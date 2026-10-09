@@ -162,7 +162,7 @@ fn create_entity() {
     *manually_tracked.entity_counts.entry(person_type).or_default() += 1;
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -194,7 +194,7 @@ fn delete_twice() {
     snapshot2.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -245,7 +245,7 @@ fn put_has_twice() {
     snapshot1.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     person.set_has_unordered(&mut snapshot2, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     thing_manager.finalise(&mut snapshot2, StorageCounters::DISABLED).unwrap();
@@ -308,7 +308,7 @@ fn put_plays() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -348,7 +348,7 @@ fn unset_has() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -383,7 +383,7 @@ fn delete_attribute() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -429,7 +429,7 @@ fn delete_relation() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -483,7 +483,7 @@ fn remove_player() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }
@@ -547,7 +547,7 @@ fn relation_index_counts() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.may_synchronise_from_wal(&storage).unwrap();
 
     let read = read_statistics(storage, &thing_manager);
     assert!(!read.links_index_counts.is_empty(), "expected links_index_counts to be populated by data-snapshot writes");
