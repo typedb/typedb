@@ -1752,7 +1752,7 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn iterate_all_indexed_relations(
+    pub(crate) fn get_indexed_relations(
         &self,
         snapshot: &impl ReadableSnapshot,
         storage_counters: StorageCounters,

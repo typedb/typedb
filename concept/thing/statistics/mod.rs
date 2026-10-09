@@ -235,7 +235,7 @@ impl Statistics {
         }
 
         let mut links_index_counts = DoubleHashMap::new();
-        for links_index in thing_manager.iterate_all_indexed_relations(snapshot, storage_counters)? {
+        for links_index in thing_manager.get_indexed_relations(snapshot, storage_counters)? {
             let ((player1, player2, ..), _) = links_index?;
             *links_index_counts.double_entry(player1.type_(), player2.type_()).or_default() += 1;
         }
