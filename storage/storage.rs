@@ -63,7 +63,7 @@ use crate::{
     },
     sequence_number::SequenceNumber,
     snapshot::{
-        CommitInProgress, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
+        CommittableSnapshot, DurabilityPersistedCommit, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
         snapshot_id::SnapshotId,
         write::{KnownToExist, PutAction, Write},
     },
@@ -269,7 +269,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn snapshot_commit(
         &self,
-        commit: CommitInProgress,
+        commit: DurabilityPersistedCommit,
         commit_profile: &mut CommitProfile,
     ) -> Result<CommitData, StorageCommitError>
     where
@@ -277,7 +277,7 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace};
 
-        let CommitInProgress { record, sequence_number, reader_guard } = commit;
+        let DurabilityPersistedCommit { record, sequence_number, reader_guard } = commit;
 
         fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
 
@@ -336,7 +336,7 @@ impl<Durability> MVCCStorage<Durability> {
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
         commit_profile: &mut CommitProfile,
-    ) -> Result<CommitInProgress, StorageCommitError>
+    ) -> Result<DurabilityPersistedCommit, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
@@ -356,7 +356,7 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
         commit_profile.snapshot_durable_write_data_submitted();
 
-        Ok(CommitInProgress { reader_guard, record, sequence_number })
+        Ok(DurabilityPersistedCommit { reader_guard, record, sequence_number })
     }
 
     fn set_initial_put_status(
