@@ -112,6 +112,24 @@ pub struct CommitDeltas {
 impl CommitDeltas {
     const ENCODING_VERSION: CommitDeltasEncodingVersion = CommitDeltasEncodingVersion::V0;
 
+    pub fn empty(commit_type: CommitType, commit_sequence_number: SequenceNumber) -> Self {
+        Self {
+            encoding_version: Self::ENCODING_VERSION,
+            commit_type,
+            commit_sequence_number,
+            undefined_entities: Default::default(),
+            undefined_relations: Default::default(),
+            undefined_attributes: Default::default(),
+            undefined_roles: Default::default(),
+            entity_deltas: Default::default(),
+            relation_deltas: Default::default(),
+            attribute_deltas: Default::default(),
+            has_attribute_deltas: Default::default(),
+            relation_role_player_deltas: Default::default(),
+            links_index_deltas: Default::default(),
+        }
+    }
+
     pub fn from_commit(commit_record: &CommitRecord, commit_sequence_number: SequenceNumber) -> Self {
         let commit_type = commit_record.commit_type();
 

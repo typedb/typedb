@@ -36,7 +36,7 @@ use storage::{
     CommitData,
     durability_client::{DurabilityClient, DurabilityClientError},
     isolation_manager::WriteSnapshotDropGuard,
-    record::CommitRecord,
+    record::{CommitRecord, CommitType},
     snapshot::{
         CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
         WriteSnapshot, snapshot_id::SnapshotId,
@@ -508,6 +508,7 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
         let database = &self.database_drop_guard;
+        let durability = database.storage.durability();
 
         let commit_data = match self.write_snapshot.commit(commit_profile) {
             Ok(commit_data) => commit_data,
@@ -522,15 +523,17 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
                         "commit failed post-WAL with unexpected error: {}",
                         error::TypeDBError::format_code_and_description(&typedb_source),
                     );
-                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, None);
+                    let commit_deltas = CommitDeltas::empty(CommitType::Data, sequence_number);
+                    durability
+                        .unsequenced_write(&commit_deltas)
+                        .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
+                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
                 }
                 return Err(DataCommitError::SnapshotError { typedb_source });
             }
         };
 
         if let Some(CommitData { sequence_number, record }) = commit_data {
-            let durability = database.storage.durability();
-
             durability
                 .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
@@ -540,7 +543,7 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
             durability
                 .unsequenced_write(&commit_deltas)
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-            database._commit_deltas_queue.write().unwrap().insert(sequence_number, Some(commit_deltas));
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
         }
         Ok(())
     }
@@ -607,12 +610,8 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
                 sequence_number,
                 thing_statistics.sequence_number,
             );
-            if let Some(commit_deltas) = commit_deltas {
-                if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
-                    return Err(DurabilityError { typedb_source });
-                }
-            } else {
-                thing_statistics.sequence_number = thing_statistics.sequence_number.next();
+            if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
+                return Err(DurabilityError { typedb_source });
             }
         }
 
@@ -635,7 +634,11 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
                         "commit failed post-WAL with unexpected error: {}",
                         error::TypeDBError::format_code_and_description(&typedb_source),
                     );
-                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, None);
+                    let commit_deltas = CommitDeltas::empty(CommitType::Schema, sequence_number);
+                    durability
+                        .unsequenced_write(&commit_deltas)
+                        .map_err(|typedb_source| DurabilityError { typedb_source })?;
+                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
                 }
                 return Err(SchemaCommitError::SnapshotError { typedb_source });
             }
