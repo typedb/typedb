@@ -11,14 +11,14 @@ use lib_benchmark::{
 };
 
 use crate::{
-    NO_INITIAL_DATA, STANDARD_RUNS,
+    NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS,
     id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
 };
 
 const MAX_ID_INTEGER: usize = 100_000_000;
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("insert_entities");
-    for &run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
             insert_ownership::<IntegerIDMaker>("int"),
             run_descriptor,

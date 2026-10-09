@@ -14,14 +14,11 @@ use lib_benchmark::{
     },
 };
 
-use crate::NO_INITIAL_DATA;
-
-const STANDARD_RUNS: [RunDescriptor; 4] =
-    [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
+use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS};
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("insert_entities");
-    for run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
         group.run_benchmark(parametrised_workload(entity_insert(), run_descriptor));
     }
 }

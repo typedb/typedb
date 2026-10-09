@@ -16,7 +16,7 @@ use lib_benchmark::{
 use query::given_rows::GivenRowEntry;
 
 use crate::{
-    STANDARD_RUNS,
+    SELECTED_RUN_DESCRIPTORS,
     id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
 };
 
@@ -30,14 +30,14 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
 
 pub fn run_by_concept(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_concept");
-    for &run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_concept(), run_descriptor));
     }
 }
 
 pub fn run_by_id(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_id");
-    for &run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
             relation_by_id::<IntegerIDMaker>("integer"),
             run_descriptor,
@@ -55,7 +55,7 @@ pub fn run_by_id(runner: &mut impl BenchmarkRunner) {
 
 pub fn run_by_insert(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("relations_by_insert");
-    for &run_descriptor in STANDARD_RUNS {
+    for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
         group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_insert(), run_descriptor));
     }
 }

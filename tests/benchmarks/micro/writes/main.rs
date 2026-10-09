@@ -32,6 +32,11 @@ mod insert_relations;
 
 const NO_INITIAL_DATA: Option<PreloadDataFn> = None;
 
+const CI_RUNS: [RunDescriptor; 1] = [CI_MINIMAL];
+const STANDARD_RUNS: [RunDescriptor; 4] =
+    [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
+const SELECTED_RUN_DESCRIPTORS: &'static [RunDescriptor] = &STANDARD_RUNS;
+
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     run_sample_benchmarks(&mut runner);
     insert_entities::run_all(&mut runner);
@@ -75,8 +80,3 @@ fn insert_million_entities() -> TypeDBMicroBenchmark<Option<GivenRowsSimple>, Tx
 fn main() {
     run_benchmarks(SimpleRunner::parse());
 }
-
-const CI_RUNS: [RunDescriptor; 1] = [CI_MINIMAL];
-const PUBLISHABLE_RUNS: [RunDescriptor; 4] =
-    [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
-const STANDARD_RUNS: &'static [RunDescriptor] = &PUBLISHABLE_RUNS;
