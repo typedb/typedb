@@ -7,7 +7,7 @@
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock, TryLockError},
 };
 
 use compiler::executable::function::{
@@ -88,9 +88,18 @@ impl TabledFunctions {
 
     pub(crate) fn may_prepare_to_retry_suspended(&self) {
         for function_state in self.iterate_states() {
-            let mut guard = function_state.executor_state.try_lock().unwrap();
-            if guard.pattern_executor.has_empty_control_stack() {
-                guard.prepare_to_retry_suspended();
+            match function_state.executor_state.try_lock() {
+                Ok(mut guard) => {
+                    if guard.pattern_executor.has_empty_control_stack() {
+                        guard.prepare_to_retry_suspended();
+                    }
+                }
+                Err(TryLockError::WouldBlock) => {
+                    // This function is active elsewhere on the stack. Don't reset it.
+                    // It will be reset and retried from that part of the stack.
+                    continue;
+                }
+                Err(TryLockError::Poisoned(_)) => panic!("The mutex on a tabled function was poisoned"),
             }
         }
     }
