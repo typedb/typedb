@@ -5,24 +5,80 @@
 features = {}
 
 [package]
-	name = "concept"
 	edition = "2024"
+	name = "concept"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
+
+[dependencies]
+
+	[dependencies.bincode]
+		workspace = true
+
+	[dependencies.bytes]
+		workspace = true
+
+	[dependencies.chrono]
+		workspace = true
+
+	[dependencies.chrono-tz]
+		workspace = true
+
+	[dependencies.diagnostics]
+		workspace = true
+
+	[dependencies.durability]
+		workspace = true
+
+	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.error]
+		workspace = true
+
+	[dependencies.iterator]
+		workspace = true
+
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.macro_rules_attribute]
+		workspace = true
+
+	[dependencies.paste]
+		workspace = true
+
+	[dependencies.primitive]
+		workspace = true
+
+	[dependencies.regex]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.sentry]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
 
 [dev-dependencies]
-
-	[dev-dependencies.rand]
-		workspace = true
-
-	[dev-dependencies.test_utils]
-		workspace = true
-
-	[dev-dependencies.test_utils_encoding]
-		workspace = true
 
 	[dev-dependencies.criterion]
 		workspace = true
@@ -33,87 +89,31 @@ features = {}
 	[dev-dependencies.pprof]
 		workspace = true
 
+	[dev-dependencies.rand]
+		workspace = true
+
+	[dev-dependencies.test_utils]
+		workspace = true
+
 	[dev-dependencies.test_utils_concept]
 		workspace = true
 
-[dependencies]
-
-	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.primitive]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.durability]
-		workspace = true
-
-	[dependencies.macro_rules_attribute]
-		workspace = true
-
-	[dependencies.paste]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.encoding]
-		workspace = true
-
-	[dependencies.error]
-		workspace = true
-
-	[dependencies.itertools]
-		workspace = true
-
-	[dependencies.iterator]
-		workspace = true
-
-	[dependencies.regex]
-		workspace = true
-
-	[dependencies.chrono-tz]
-		workspace = true
-
-	[dependencies.diagnostics]
-		workspace = true
-
-	[dependencies.bytes]
-		workspace = true
-
-	[dependencies.bincode]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.chrono]
-		workspace = true
-
-	[dependencies.sentry]
-		workspace = true
-
-	[dependencies.lending_iterator]
+	[dev-dependencies.test_utils_encoding]
 		workspace = true
 
 [[bench]]
-	name = "bench_thing_write"
 	harness = false
+	name = "bench_thing_write"
 
 [[test]]
-	path = "tests/test_type.rs"
-	name = "test_type"
-
-[[test]]
-	path = "tests/test_thing.rs"
-	name = "test_thing"
-
-[[test]]
-	path = "tests/test_statistics.rs"
 	name = "test_statistics"
+	path = "tests/test_statistics.rs"
+
+[[test]]
+	name = "test_thing"
+	path = "tests/test_thing.rs"
+
+[[test]]
+	name = "test_type"
+	path = "tests/test_type.rs"
 

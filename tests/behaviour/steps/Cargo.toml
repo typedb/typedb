@@ -5,47 +5,44 @@
 features = {}
 
 [package]
-	name = "steps"
 	edition = "2024"
+	name = "steps"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.test_utils]
+	[dependencies.answer]
 		workspace = true
 
-	[dependencies.server]
-		workspace = true
-
-	[dependencies.primitive]
-		workspace = true
-
-	[dependencies.cucumber]
-		workspace = true
-
-	[dependencies.concept]
-		workspace = true
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.error]
-		workspace = true
-
-	[dependencies.itertools]
+	[dependencies.chrono]
 		workspace = true
 
 	[dependencies.chrono-tz]
 		workspace = true
 
+	[dependencies.compiler]
+		workspace = true
+
+	[dependencies.concept]
+		workspace = true
+
+	[dependencies.cucumber]
+		workspace = true
+
 	[dependencies.database]
+		workspace = true
+
+	[dependencies.durability]
+		workspace = true
+
+	[dependencies.encoding]
+		workspace = true
+
+	[dependencies.error]
 		workspace = true
 
 	[dependencies.executor]
@@ -54,51 +51,54 @@ features = {}
 	[dependencies.function]
 		workspace = true
 
-	[dependencies.options]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.compiler]
-		workspace = true
-
-	[dependencies.tokio]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.query]
-		workspace = true
-
-	[dependencies.durability]
+	[dependencies.futures]
 		workspace = true
 
 	[dependencies.ir]
 		workspace = true
 
+	[dependencies.itertools]
+		workspace = true
+
+	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.logger]
+		workspace = true
+
 	[dependencies.macro_rules_attribute]
+		workspace = true
+
+	[dependencies.options]
 		workspace = true
 
 	[dependencies.params]
 		workspace = true
 
-	[dependencies.futures]
+	[dependencies.primitive]
 		workspace = true
 
-	[dependencies.encoding]
+	[dependencies.query]
 		workspace = true
 
-	[dependencies.answer]
-		workspace = true
-
-	[dependencies.chrono]
+	[dependencies.resource]
 		workspace = true
 
 	[dependencies.serde_json]
 		workspace = true
 
-	[dependencies.lending_iterator]
+	[dependencies.server]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.test_utils]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.typeql]
 		workspace = true
 

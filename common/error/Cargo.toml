@@ -5,13 +5,13 @@
 features = {}
 
 [package]
-	name = "error"
 	edition = "2024"
+	name = "error"
 	version = "0.0.0"
 
 [lib]
-	path = "error.rs"
 	crate-type = ["lib"]
+	path = "error.rs"
 
 [dependencies]
 

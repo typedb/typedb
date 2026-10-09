@@ -6,6 +6,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@typedb_dependencies//builder/proto_grpc/rust:compile.bzl", "rust_tonic_compile")
+load("@typedb_dependencies//library/crates:defs.bzl", "cargo_build_dep_tag")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 proto_library(
@@ -26,6 +27,11 @@ rust_library(
     deps = [
         "@crates//:prost",
         "@crates//:tonic",
+    ],
+    tags = [
+        "cargo-entry-point=lib.rs",
+        "cargo-build-script=build.rs",
+        cargo_build_dep_tag("tonic-build"),
     ],
     visibility = ["//visibility:public"],
 )

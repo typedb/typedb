@@ -6,67 +6,67 @@ features = {}
 dev-dependencies = {}
 
 [package]
-	name = "diagnostics"
 	edition = "2024"
+	name = "diagnostics"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
 
-	[dependencies.tokio]
-		workspace = true
-
-	[dependencies.tracing]
-		workspace = true
-
-	[dependencies.serde]
-		workspace = true
-
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.logger]
-		workspace = true
-
-	[dependencies.futures]
-		workspace = true
-
-	[dependencies.error]
+	[dependencies.chrono]
 		workspace = true
 
 	[dependencies.concurrency]
 		workspace = true
 
-	[dependencies.tonic-types]
+	[dependencies.error]
 		workspace = true
 
-	[dependencies.sysinfo]
-		workspace = true
-
-	[dependencies.xxhash-rust]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.tonic]
-		workspace = true
-
-	[dependencies.chrono]
+	[dependencies.futures]
 		workspace = true
 
 	[dependencies.hyper]
 		workspace = true
 
-	[dependencies.serde_json]
-		workspace = true
-
 	[dependencies.hyper-rustls]
 		workspace = true
 
+	[dependencies.logger]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
 	[dependencies.sentry]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
+	[dependencies.serde_json]
+		workspace = true
+
+	[dependencies.sysinfo]
+		workspace = true
+
+	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tonic]
+		workspace = true
+
+	[dependencies.tonic-types]
+		workspace = true
+
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.xxhash-rust]
 		workspace = true
 

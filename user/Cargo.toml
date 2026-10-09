@@ -5,46 +5,46 @@
 features = {}
 
 [package]
-	name = "user"
 	edition = "2024"
+	name = "user"
 	version = "0.0.0"
 
 [lib]
-	path = "lib.rs"
 	crate-type = ["lib"]
+	path = "lib.rs"
 
 [dependencies]
-
-	[dependencies.database]
-		workspace = true
-
-	[dependencies.system]
-		workspace = true
 
 	[dependencies.answer]
 		workspace = true
 
-	[dependencies.resource]
-		workspace = true
-
-	[dependencies.executor]
-		workspace = true
-
-	[dependencies.query]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.storage]
+	[dependencies.database]
 		workspace = true
 
 	[dependencies.error]
 		workspace = true
 
-	[dependencies.uuid]
+	[dependencies.executor]
 		workspace = true
 
 	[dependencies.lending_iterator]
+		workspace = true
+
+	[dependencies.query]
+		workspace = true
+
+	[dependencies.resource]
+		workspace = true
+
+	[dependencies.storage]
+		workspace = true
+
+	[dependencies.system]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.uuid]
 		workspace = true
 
