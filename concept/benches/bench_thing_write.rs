@@ -135,7 +135,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.snapshot_watermark()).unwrap());
         let mut statistics = Statistics::new(DurabilitySequenceNumber::MIN);
-        statistics.may_synchronise(&storage).unwrap();
+        statistics.may_synchronise_from_wal(&storage).unwrap();
         let statistics = Arc::new(statistics);
         b.iter(|| {
             write_entity_attributes(

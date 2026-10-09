@@ -87,8 +87,10 @@ rust_test(
     ]),
     deps = [
         "//common/options",
+        "//concept",
         "//database",
         "//diagnostics",
+        "//durability",
         "//executor",
         "//query",
         "//storage",

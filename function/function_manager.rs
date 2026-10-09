@@ -719,7 +719,8 @@ pub mod tests {
 
         {
             // Read cached
-            let cache = Arc::new(FunctionCache::new(storage.clone(), &type_manager, sequence_number).unwrap());
+            let cache =
+                Arc::new(FunctionCache::new(storage.clone(), &type_manager, sequence_number.sequence_number).unwrap());
             let snapshot = storage.clone().open_snapshot_read();
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), Some(cache.clone()));
             let index = ReadThroughFunctionSignatureIndex::new(
