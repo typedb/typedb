@@ -571,6 +571,13 @@ fn add_typeql_iterable_binding(
 
 pub const VECTOR_SEARCH_FUNCTION_NAME: &str = "cosine_similarity_search";
 
+/// `let $attribute, $similarity in cosine_similarity_search(<type>, <vector>, <threshold>)`.
+///
+/// Deliberate semantics:
+/// - the search is EXACT-type: only attributes of exactly `<type>` are searched, never its
+///   subtypes (each attribute type has its own vector index; see the type seeder);
+/// - result order is unspecified, like any other match constraint: callers wanting
+///   similarity order write `sort $similarity desc;` explicitly.
 fn add_vector_search_call(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     assigned: Vec<AssignedVariable>,

@@ -82,28 +82,42 @@ mod write_batches;
 /// empty value; the real value is handed to `apply` after the KV write and before the watermark
 /// advances past `sequence_number`. That ordering guarantees a checkpoint taken at watermark W
 /// has observed every commit <= W, so recovery only ever replays the WAL tail.
+///
+/// `validate` runs before the commit is durably written: anything that can fail must fail there,
+/// so the commit aborts cleanly. After a successful `validate`, `apply` failing is an internal
+/// error (the commit is already in the WAL and KV store) and poisons the commit pipeline.
 pub trait CommitObserver: Send + Sync + fmt::Debug {
     fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
+    fn validate(
+        &self,
+        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
+    ) -> Result<(), Box<dyn Error + Send + Sync>>;
     fn apply(
         &self,
         sequence_number: SequenceNumber,
         owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
-    );
+    ) -> Result<(), Box<dyn Error + Send + Sync>>;
 }
 
 pub(crate) fn extract_owned_values(
     observer: &dyn CommitObserver,
     operations: &OperationsBuffer,
 ) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> {
+    // iterate the write buffers by reference, cloning only entries the observer owns: a commit
+    // with no externally-owned values pays one cheap `owns_value` check per key and zero clones
     operations
-        .iterate_writes()
-        .filter_map(|(key, write)| {
-            let value = match write {
-                Write::Insert { value } => value,
-                Write::Put { value, .. } => value,
-                Write::Delete => return None,
-            };
-            observer.owns_value(key.keyspace_id(), key.bytes()).then(|| (key, value))
+        .write_buffers()
+        .flat_map(|buffer| {
+            buffer.writes().iter().filter_map(move |(key, write)| {
+                let value = match write {
+                    Write::Insert { value } => value,
+                    Write::Put { value, .. } => value,
+                    Write::Delete => return None,
+                };
+                observer
+                    .owns_value(buffer.keyspace_id, key)
+                    .then(|| (StorageKeyArray::new_raw(buffer.keyspace_id, key.clone()), value.clone()))
+            })
         })
         .collect()
 }
@@ -332,6 +346,17 @@ impl<Durability> MVCCStorage<Durability> {
             .as_ref()
             .map(|observer| extract_owned_values(&**observer, commit_record.operations()));
 
+        // anything the observer cannot apply must abort here, before the commit is durably
+        // written: a failure after the KV write cannot be rolled back
+        if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
+            if !owned.is_empty() {
+                observer.validate(owned).map_err(|error| StorageCommitError::CommitObserver {
+                    name: self.name.clone(),
+                    source: Arc::from(error),
+                })?;
+            }
+        }
+
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)
@@ -363,8 +388,12 @@ impl<Durability> MVCCStorage<Durability> {
 
                 // Apply externally-owned values (e.g. vectors) before the watermark can advance
                 // past this commit, so checkpoints at watermark W always cover commits <= W.
+                // `validate` ran before the durable write, so a failure here is an internal error,
+                // handled like a keyspace write failure.
                 if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
-                    observer.apply(commit_sequence_number, owned);
+                    observer.apply(commit_sequence_number, owned).map_err(|error| {
+                        StorageCommitError::CommitObserver { name: self.name.clone(), source: Arc::from(error) }
+                    })?;
                 }
 
                 fail_point!(COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS);
@@ -684,6 +713,7 @@ typedb_error! {
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
         Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
+        CommitObserver(7, "Commit in database '{name}' was rejected by the commit observer.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
     }
 }
 

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
 };
@@ -201,23 +201,9 @@ pub(crate) fn annotate_pipeline_stages(
         let annotated_stage =
             annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage, pipeline_origin)?;
 
-        let similarity_variables: HashSet<Variable> = match &annotated_stage {
-            AnnotatedStage::Match { block, .. } => block
-                .conjunction()
-                .constraints()
-                .iter()
-                .filter_map(|constraint| match constraint {
-                    Constraint::VectorSearch(search) => search.similarity().as_variable(),
-                    _ => None,
-                })
-                .collect(),
-            _ => HashSet::new(),
-        };
         // running_annotations.retain(|var| var.is_named());
         let retain_running_var_fn = |var: &Variable| {
-            var.is_named()
-                || return_variables.as_ref().map_or(false, |vars| vars.contains(var))
-                || similarity_variables.contains(var)
+            var.is_named() || return_variables.as_ref().map_or(false, |vars| vars.contains(var))
         };
         running_annotations.retain(retain_running_var_fn);
         if let AnnotatedStage::Match { .. } = annotated_stage {

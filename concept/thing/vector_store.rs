@@ -22,6 +22,7 @@
 
 use std::{
     collections::HashMap,
+    error::Error,
     fmt, fs,
     fs::File,
     io,
@@ -56,8 +57,10 @@ struct TypeVectorIndex {
     index: RwLock<Index>,
 }
 
+type VectorStoreError = Box<dyn Error + Send + Sync>;
+
 impl TypeVectorIndex {
-    fn new(dimensions: usize) -> Self {
+    fn new(dimensions: usize) -> Result<Self, VectorStoreError> {
         let options = IndexOptions {
             dimensions,
             metric: MetricKind::Cos,
@@ -68,23 +71,55 @@ impl TypeVectorIndex {
             multi: false,
         };
         let index = usearch::new_index(&options)
-            .unwrap_or_else(|err| panic!("failed to create vector index (dimensions: {dimensions}): {err}"));
-        Self { index: RwLock::new(index) }
+            .map_err(|err| format!("failed to create vector index (dimensions: {dimensions}): {err}"))?;
+        Ok(Self { index: RwLock::new(index) })
     }
 
-    fn add(&self, key: u64, vector: &[f32]) {
+    fn dimensions(&self) -> usize {
+        self.index.read().unwrap().dimensions()
+    }
+
+    /// Pre-commit validation: everything `add` needs that can fail is checked or allocated here,
+    /// so that failures abort the commit before it is durably written.
+    fn prepare(&self, dimensions: usize, additional: usize) -> Result<(), VectorStoreError> {
+        let index = self.index.write().unwrap();
+        if index.dimensions() != dimensions {
+            return Err(format!(
+                "vector dimension mismatch: index has {} dimensions, vector has {dimensions}",
+                index.dimensions()
+            )
+            .into());
+        }
+        let required = index.size() + additional;
+        if required > index.capacity() {
+            index
+                .reserve((index.capacity() * 2).max(1024).max(required))
+                .map_err(|err| format!("failed to grow vector index: {err}"))?;
+        }
+        Ok(())
+    }
+
+    fn add(&self, key: u64, vector: &[f32]) -> Result<(), VectorStoreError> {
         let index = self.index.write().unwrap();
         if index.contains(key) {
-            return; // idempotent: value-derived key, same vector (WAL replay, duplicate puts)
+            return Ok(()); // idempotent: value-derived key, same vector (WAL replay, duplicate puts)
+        }
+        if index.dimensions() != vector.len() {
+            return Err(format!(
+                "vector dimension mismatch: index has {} dimensions, vector has {}",
+                index.dimensions(),
+                vector.len()
+            )
+            .into());
         }
         if index.size() >= index.capacity() {
             index
                 .reserve((index.capacity() * 2).max(1024))
-                .unwrap_or_else(|err| panic!("failed to grow vector index: {err}"));
+                .map_err(|err| format!("failed to grow vector index: {err}"))?;
         }
         // the vector store is the only copy of the value: failing to add would silently lose
-        // committed data, so a broken index must announce itself
-        index.add(key, vector).unwrap_or_else(|err| panic!("failed to add vector to index: {err}"));
+        // committed data, so a broken index must surface the error
+        index.add(key, vector).map_err(|err| format!("failed to add vector to index: {err}").into())
     }
 
     fn get(&self, key: u64) -> Option<Vec<f32>> {
@@ -110,21 +145,22 @@ impl VectorStore {
         Self { indexes: RwLock::new(HashMap::new()) }
     }
 
-    fn index_for_type(&self, type_id: TypeID, dimensions_if_created: usize) -> Arc<TypeVectorIndex> {
+    fn index_for_type(&self, type_id: TypeID, dimensions_if_created: usize) -> Result<Arc<TypeVectorIndex>, VectorStoreError> {
         if let Some(index) = self.indexes.read().unwrap().get(&type_id) {
-            return index.clone();
+            return Ok(index.clone());
         }
-        self.indexes
-            .write()
-            .unwrap()
-            .entry(type_id)
-            .or_insert_with(|| Arc::new(TypeVectorIndex::new(dimensions_if_created)))
-            .clone()
+        let mut indexes = self.indexes.write().unwrap();
+        if let Some(index) = indexes.get(&type_id) {
+            return Ok(index.clone());
+        }
+        let index = Arc::new(TypeVectorIndex::new(dimensions_if_created)?);
+        indexes.insert(type_id, index.clone());
+        Ok(index)
     }
 
-    pub fn add(&self, vertex: AttributeVertex, vector: &[f32]) {
+    pub fn add(&self, vertex: AttributeVertex, vector: &[f32]) -> Result<(), VectorStoreError> {
         let id = vertex.attribute_id().unwrap_vector();
-        self.index_for_type(vertex.type_id_(), vector.len()).add(id.as_vector_index_key(), vector);
+        self.index_for_type(vertex.type_id_(), vector.len())?.add(id.as_vector_index_key(), vector)
     }
 
     pub fn get_vector(&self, vertex: AttributeVertex) -> Option<Vec<f32>> {
@@ -149,6 +185,17 @@ impl VectorStore {
 
     pub fn indexed_vector_count(&self, type_id: TypeID) -> usize {
         self.indexes.read().unwrap().get(&type_id).map_or(0, |index| index.size())
+    }
+
+    /// Drop indexes whose type is no longer a live vector attribute type (or whose dimensions no
+    /// longer match the schema): TypeIDs are reused after undefine, so a stale index would reject
+    /// every vector of a future type with the same TypeID and different dimensions.
+    ///
+    /// Called on schema commit. ponytail: a read snapshot opened before the undefine commit that
+    /// still iterates deleted instances of the undefined type loses access to their vectors; a
+    /// versioned drop (defer until the watermark passes all open readers) closes that window.
+    pub fn retain_indexes(&self, is_live: impl Fn(TypeID, usize) -> bool) {
+        self.indexes.write().unwrap().retain(|type_id, index| is_live(*type_id, index.dimensions()));
     }
 
     /// Drop all indexes (database reset).
@@ -179,17 +226,46 @@ impl CommitObserver for VectorStore {
         AttributeVertex::is_vector_attribute_vertex(keyspace_id, key)
     }
 
+    /// Runs before the commit is durably written: creates missing indexes, checks dimensions, and
+    /// reserves capacity, so that `apply` (which runs after the KV write, where a failure can no
+    /// longer abort the commit) cannot fail for any data-dependent reason.
+    fn validate(
+        &self,
+        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let mut pending: HashMap<TypeID, (usize, usize)> = HashMap::new();
+        for (key, value) in owned {
+            let vertex = AttributeVertex::decode(key.bytes());
+            if value.is_empty() {
+                return Err(format!("vector attribute committed without a value: {vertex:?}").into());
+            }
+            let dimensions = value.len() / VectorBytes::<BUFFER_VALUE_INLINE>::ELEMENT_LENGTH;
+            let (existing_dimensions, count) = pending.entry(vertex.type_id_()).or_insert((dimensions, 0));
+            if *existing_dimensions != dimensions {
+                return Err(format!(
+                    "conflicting vector dimensions ({existing_dimensions} and {dimensions}) for one attribute type in a single commit"
+                )
+                .into());
+            }
+            *count += 1;
+        }
+        for (type_id, (dimensions, count)) in pending {
+            self.index_for_type(type_id, dimensions)?.prepare(dimensions, count)?;
+        }
+        Ok(())
+    }
+
     fn apply(
         &self,
         _sequence_number: SequenceNumber,
         owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
-    ) {
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         for (key, value) in owned {
             let vertex = AttributeVertex::decode(key.bytes());
-            assert!(!value.is_empty(), "vector attribute committed without a value: {vertex:?}");
             let vector = VectorBytes::new(Bytes::<BUFFER_VALUE_INLINE>::Reference(value)).as_vector();
-            self.add(vertex, &vector);
+            self.add(vertex, &vector)?;
         }
+        Ok(())
     }
 }
 
@@ -273,7 +349,8 @@ impl CheckpointAdditionalData for VectorStore {
                     "vector index file {file_name} is {actual_length} bytes, manifest says {file_length}"
                 )));
             }
-            let type_index = TypeVectorIndex::new(dimensions);
+            let type_index = TypeVectorIndex::new(dimensions)
+                .map_err(|err| invalid_data(format!("failed to create vector index {file_name}: {err}")))?;
             type_index
                 .index
                 .write()
@@ -302,9 +379,9 @@ mod test {
     #[test]
     fn add_get_search_roundtrip() {
         let store = VectorStore::new();
-        store.add(vertex(1, 100), &[1.0, 0.0, 0.0]);
-        store.add(vertex(1, 200), &[0.0, 1.0, 0.0]);
-        store.add(vertex(1, 100), &[1.0, 0.0, 0.0]); // idempotent re-add
+        store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
+        store.add(vertex(1, 200), &[0.0, 1.0, 0.0]).unwrap();
+        store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap(); // idempotent re-add
 
         assert_eq!(store.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0, 0.0]));
         assert_eq!(store.get_vector(vertex(1, 300)), None);
@@ -319,8 +396,8 @@ mod test {
     #[test]
     fn checkpoint_roundtrip() {
         let store = VectorStore::new();
-        store.add(vertex(1, 100), &[1.0, 0.0]);
-        store.add(vertex(7, 200), &[0.0, 1.0, 0.0, 0.0]);
+        store.add(vertex(1, 100), &[1.0, 0.0]).unwrap();
+        store.add(vertex(7, 200), &[0.0, 1.0, 0.0, 0.0]).unwrap();
 
         let dir = std::env::temp_dir().join(format!("vector_store_checkpoint_test_{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);

@@ -155,7 +155,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                     SchemaCommitError::FunctionError { .. } => {}
                     SchemaCommitError::TypeCacheUpdateError { .. }
                     | SchemaCommitError::StatisticsError { .. }
-                    | SchemaCommitError::SnapshotError { .. } => {
+                    | SchemaCommitError::SnapshotError { .. }
+                    | SchemaCommitError::VectorIndexUpdate { .. } => {
                         panic!("Unexpected schema commit error: {:?}", error);
                     }
                 }

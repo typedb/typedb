@@ -172,9 +172,18 @@ pub(crate) fn apply_recovered(
                 let owned_values =
                     commit_observer.map(|observer| extract_owned_values(&**observer, commit_record.operations()));
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
+                if let (Some(observer), Some(owned)) = (commit_observer, owned_values.as_ref()) {
+                    observer.validate(owned).map_err(|error| Internal {
+                        name: Arc::<str>::from(database_name),
+                        source: Arc::from(error),
+                    })?;
+                }
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
                 if let (Some(observer), Some(owned)) = (commit_observer, owned_values) {
-                    observer.apply(commit_sequence_number, &owned);
+                    observer.apply(commit_sequence_number, &owned).map_err(|error| Internal {
+                        name: Arc::<str>::from(database_name),
+                        source: Arc::from(error),
+                    })?;
                 }
                 fail_point!(RECOVERY_PARTIAL_WRITE);
                 isolation_manager
@@ -197,11 +206,20 @@ pub(crate) fn apply_recovered(
                 drop(read_guard);
                 match validated_commit {
                     ValidatedCommit::Write(write_batches) => {
+                        if let (Some(observer), Some(owned)) = (commit_observer, owned_values.as_ref()) {
+                            observer.validate(owned).map_err(|error| Internal {
+                                name: Arc::<str>::from(database_name),
+                                source: Arc::from(error),
+                            })?;
+                        }
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
                         if let (Some(observer), Some(owned)) = (commit_observer, owned_values) {
-                            observer.apply(commit_sequence_number, &owned);
+                            observer.apply(commit_sequence_number, &owned).map_err(|error| Internal {
+                                name: Arc::<str>::from(database_name),
+                                source: Arc::from(error),
+                            })?;
                         }
                         fail_point!(RECOVERY_PARTIAL_WRITE);
                         isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {

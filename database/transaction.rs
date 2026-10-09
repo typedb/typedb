@@ -4,18 +4,29 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{
+    collections::HashMap,
     fmt::Formatter,
     ops::Deref,
     sync::{Arc, mpsc::RecvTimeoutError},
 };
 
 use concept::{
-    error::ConceptWriteError,
+    error::{ConceptReadError, ConceptWriteError},
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::type_manager::{
-        TypeManager,
-        type_cache::{TypeCache, TypeCacheCreateError},
+    type_::{
+        TypeAPI,
+        type_manager::{
+            TypeManager,
+            type_cache::{TypeCache, TypeCacheCreateError},
+        },
     },
+};
+use encoding::{
+    graph::{
+        Typed,
+        type_::vertex::{TypeID, TypeVertexEncoding},
+    },
+    value::value_type::ValueType,
 };
 use durability::DurabilitySequenceNumber;
 use error::typedb_error;
@@ -509,6 +520,25 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             };
             schema.function_cache = Arc::new(function_cache);
             commit_profile.schema_update_caches_updated();
+
+            // prune vector indexes of undefined (or dimension-changed) vector attribute types:
+            // TypeIDs are reused, so a stale index would reject a future type's vectors
+            let snapshot = database.storage.clone().open_snapshot_read_at(sequence_number);
+            let live_vector_types: HashMap<TypeID, usize> = (|| {
+                let mut live = HashMap::new();
+                for attribute_type in type_manager.get_attribute_types(&snapshot)? {
+                    if let Some(ValueType::Vector(params)) =
+                        attribute_type.get_value_type_without_source(&snapshot, &type_manager)?
+                    {
+                        live.insert(attribute_type.vertex().type_id_(), params.length as usize);
+                    }
+                }
+                Ok::<_, Box<ConceptReadError>>(live)
+            })()
+            .map_err(|typedb_source| SchemaCommitError::VectorIndexUpdate { typedb_source })?;
+            database
+                .vector_store
+                .retain_indexes(|type_id, dimensions| live_vector_types.get(&type_id) == Some(&dimensions));
         }
 
         // replace statistics
@@ -588,6 +618,7 @@ typedb_error! {
         StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
         FunctionError(5, "Function error.", typedb_source: FunctionError),
         SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
+        VectorIndexUpdate(7, "Failed to update vector indexes against the committed schema.", typedb_source: Box<ConceptReadError>),
     }
 }
 
