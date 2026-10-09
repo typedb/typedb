@@ -22,8 +22,6 @@ This file should comprise a set of low-level tests relating to MVCC.
    After cleanup is run, if we iterate directly on the storage layer, we should be able to confirm the keys are actually not present anymore (Rocks may defer the disk delete till compaction, but to us they are "gone").
  */
 
-#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
-
 use TestKeyspaceSet::Keyspace;
 use bytes::byte_array::ByteArray;
 use resource::profile::{CommitProfile, StorageCounters};
