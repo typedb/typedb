@@ -686,16 +686,27 @@ fn make_update_statistics_fn(
 
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
-            loop {
-                let commit_deltas = {
-                    let mut queue = commit_deltas_queue.write().unwrap();
-                    let Some((&seq, _)) = queue.first_key_value() else { break };
-                    if seq > new_statistics.sequence_number.next() {
-                        // waiting on commits between statistics and current front of the queue
-                        break;
-                    }
-                    queue.pop_first().unwrap().1
-                };
+            let commit_deltas = {
+                let mut queue = commit_deltas_queue.write().unwrap();
+                let Some((&seq, _)) = queue.first_key_value() else { return };
+                if seq > new_statistics.sequence_number.next() {
+                    // waiting on commits between statistics and current front of the queue
+                    return;
+                }
+
+                let range_start = seq;
+                let range_end = queue
+                    .keys()
+                    .tuple_windows()
+                    .map_while(|(&prev, &cur)| (prev.next() == cur).then_some(cur))
+                    .last()
+                    .unwrap_or(range_start) // only one consecutive sequence number
+                    .next();
+                let tail = queue.split_off(&range_end);
+                mem::replace(&mut *queue, tail)
+            };
+
+            for commit_deltas in commit_deltas.into_values() {
                 if let Err(err) = new_statistics.update_deltas(&commit_deltas, storage.durability()) {
                     error!("Statistics update failed: {err:?}");
                 }
