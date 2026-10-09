@@ -373,6 +373,10 @@ impl Statistics {
             encoding_version: _,
             commit_type,
             commit_sequence_number,
+            undefined_entities,
+            undefined_relations,
+            undefined_attributes,
+            undefined_roles,
             entity_deltas,
             relation_deltas,
             attribute_deltas,
@@ -425,6 +429,38 @@ impl Statistics {
             for (&player_2_type, delta) in player_2_type_deltas {
                 self.update_indexed_player(player_1_type, player_2_type, delta.net_change());
             }
+        }
+
+        for &entity_type in undefined_entities {
+            self.entity_counts.remove(&entity_type);
+            self.clear_object_type(ObjectType::Entity(entity_type));
+        }
+
+        for &relation_type in undefined_relations {
+            self.relation_counts.remove(&relation_type);
+            self.relation_role_counts.remove(&relation_type);
+            self.clear_object_type(ObjectType::Relation(relation_type));
+        }
+
+        for &attribute_type in undefined_attributes {
+            self.attribute_counts.remove(&attribute_type);
+            self.attribute_owner_counts.remove(&attribute_type);
+            for map in self.has_attribute_counts.values_mut() {
+                map.remove(&attribute_type);
+            }
+            self.has_attribute_counts.retain(|_, map| !map.is_empty());
+        }
+
+        for &role_type in undefined_roles {
+            self.role_counts.remove(&role_type);
+            for map in self.role_player_counts.values_mut() {
+                map.remove(&role_type);
+            }
+            self.role_player_counts.retain(|_, map| !map.is_empty());
+            for map in self.relation_role_counts.values_mut() {
+                map.remove(&role_type);
+            }
+            self.relation_role_counts.retain(|_, map| !map.is_empty());
         }
 
         self.total_count = self.total_count.checked_add_signed(total_delta).unwrap();
@@ -912,7 +948,10 @@ impl DurabilityRecord for Statistics {
 impl UnsequencedDurabilityRecord for Statistics {}
 
 mod serialise {
-    use std::{collections::HashMap, fmt};
+    use std::{
+        collections::{HashMap, HashSet},
+        fmt,
+    };
 
     use encoding::graph::{
         Typed,
@@ -1215,10 +1254,32 @@ mod serialise {
         map.iter().map(|(type_, value)| (type_.clone().into(), to_serialisable_map_map(value))).collect()
     }
 
+    pub(super) fn to_serialisable_set<Type_: Into<SerialisableType> + Clone>(
+        map: &HashSet<Type_>,
+    ) -> HashSet<SerialisableType> {
+        map.iter().map(|type_| type_.clone().into()).collect()
+    }
+
     pub(super) fn to_serialisable_map<Type_: Into<SerialisableType> + Clone, Value: Copy>(
         map: &HashMap<Type_, Value>,
     ) -> HashMap<SerialisableType, Value> {
         map.iter().map(|(type_, value)| (type_.clone().into(), *value)).collect()
+    }
+
+    pub(super) fn into_entity_set(set: HashSet<SerialisableType>) -> HashSet<EntityType> {
+        set.into_iter().map(|type_| type_.into_entity_type()).collect()
+    }
+
+    pub(super) fn into_relation_set(set: HashSet<SerialisableType>) -> HashSet<RelationType> {
+        set.into_iter().map(|type_| type_.into_relation_type()).collect()
+    }
+
+    pub(super) fn into_attribute_set(set: HashSet<SerialisableType>) -> HashSet<AttributeType> {
+        set.into_iter().map(|type_| type_.into_attribute_type()).collect()
+    }
+
+    pub(super) fn into_role_set(set: HashSet<SerialisableType>) -> HashSet<RoleType> {
+        set.into_iter().map(|type_| type_.into_role_type()).collect()
     }
 
     pub(super) fn into_entity_map<Value: Copy>(map: HashMap<SerialisableType, Value>) -> HashMap<EntityType, Value> {

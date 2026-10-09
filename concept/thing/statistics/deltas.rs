@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
 use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
 use storage::{
@@ -23,8 +26,8 @@ use crate::{
         statistics::{DoubleHashMap, DoubleHashMapExt, TripleHashMap, TripleHashMapExt},
     },
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType,
+        TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
+        relation_type::RelationType, role_type::RoleType,
     },
 };
 
@@ -89,6 +92,11 @@ pub struct CommitDeltas {
     pub commit_type: CommitType,
     pub commit_sequence_number: SequenceNumber,
 
+    pub undefined_entities: HashSet<EntityType>,
+    pub undefined_relations: HashSet<RelationType>,
+    pub undefined_attributes: HashSet<AttributeType>,
+    pub undefined_roles: HashSet<RoleType>,
+
     pub entity_deltas: HashMap<EntityType, Delta>,
     pub relation_deltas: HashMap<RelationType, Delta>,
     pub attribute_deltas: HashMap<AttributeType, Delta>,
@@ -106,11 +114,19 @@ impl CommitDeltas {
 
     pub fn from_commit(commit_record: &CommitRecord, commit_sequence_number: SequenceNumber) -> Self {
         let commit_type = commit_record.commit_type();
+
+        let mut undefined_entities = HashSet::new();
+        let mut undefined_relations = HashSet::new();
+        let mut undefined_attributes = HashSet::new();
+        let mut undefined_roles = HashSet::new();
+
         let mut entity_deltas = HashMap::<_, Delta>::new();
         let mut relation_deltas = HashMap::<_, Delta>::new();
         let mut attribute_deltas = HashMap::<_, Delta>::new();
+
         let mut has_attribute_deltas = DoubleHashMap::<_, _, Delta>::new();
         let mut relation_role_player_deltas = TripleHashMap::<_, _, _, Delta>::new();
+
         let mut links_index_deltas = DoubleHashMap::<_, _, Delta>::new();
 
         for (key, write) in commit_record.operations().iterate_writes() {
@@ -133,6 +149,27 @@ impl CommitDeltas {
             };
 
             match DecodableKey::try_decode(key.bytes()) {
+                Some(DecodableKey::VertexEntityType(entity_type)) => {
+                    if write.is_delete() {
+                        undefined_entities.insert(EntityType::new(entity_type));
+                    }
+                }
+                Some(DecodableKey::VertexRelationType(relation_type)) => {
+                    if write.is_delete() {
+                        undefined_relations.insert(RelationType::new(relation_type));
+                    }
+                }
+                Some(DecodableKey::VertexAttributeType(attribute_type)) => {
+                    if write.is_delete() {
+                        undefined_attributes.insert(AttributeType::new(attribute_type));
+                    }
+                }
+                Some(DecodableKey::VertexRoleType(role_type)) => {
+                    if write.is_delete() {
+                        undefined_roles.insert(RoleType::new(role_type));
+                    }
+                }
+
                 Some(DecodableKey::EntityVertex(entity_vertex)) => {
                     update(entity_deltas.entry(Entity::new(entity_vertex).type_()).or_default());
                 }
@@ -161,11 +198,7 @@ impl CommitDeltas {
                     update(links_index_deltas.double_entry(player1, player2).or_default());
                 }
 
-                Some(DecodableKey::VertexEntityType(_))
-                | Some(DecodableKey::VertexRelationType(_))
-                | Some(DecodableKey::VertexAttributeType(_))
-                | Some(DecodableKey::VertexRoleType(_))
-                | Some(DecodableKey::PropertyTypeVertex(_))
+                Some(DecodableKey::PropertyTypeVertex(_))
                 | Some(DecodableKey::PropertyTypeEdge(_))
                 | Some(DecodableKey::PropertyObjectVertex(_))
                 | Some(DecodableKey::PropertyFunction(_))
@@ -191,9 +224,16 @@ impl CommitDeltas {
             encoding_version: Self::ENCODING_VERSION,
             commit_type,
             commit_sequence_number,
+
+            undefined_entities,
+            undefined_relations,
+            undefined_attributes,
+            undefined_roles,
+
             entity_deltas,
             relation_deltas,
             attribute_deltas,
+
             has_attribute_deltas,
             relation_role_player_deltas,
             links_index_deltas,
@@ -275,6 +315,10 @@ mod serialize {
         EncodingVersion,
         CommitType,
         CommitSequenceNumber,
+        UndefinedEntities,
+        UndefinedRelations,
+        UndefinedAttributes,
+        UndefinedRoles,
         EntityDeltas,
         RelationDeltas,
         AttributeDeltas,
@@ -284,10 +328,14 @@ mod serialize {
     }
 
     impl CommitDeltasField {
-        const NAMES: [&'static str; 9] = [
+        const NAMES: [&'static str; 13] = [
             Self::EncodingVersion.name(),
             Self::CommitType.name(),
             Self::CommitSequenceNumber.name(),
+            Self::UndefinedEntities.name(),
+            Self::UndefinedRelations.name(),
+            Self::UndefinedAttributes.name(),
+            Self::UndefinedRoles.name(),
             Self::EntityDeltas.name(),
             Self::RelationDeltas.name(),
             Self::AttributeDeltas.name(),
@@ -301,6 +349,10 @@ mod serialize {
                 CommitDeltasField::EncodingVersion => "EncodingVersion",
                 CommitDeltasField::CommitType => "CommitType",
                 CommitDeltasField::CommitSequenceNumber => "CommitSequenceNumber",
+                CommitDeltasField::UndefinedEntities => "UndefinedEntities",
+                CommitDeltasField::UndefinedRelations => "UndefinedRelations",
+                CommitDeltasField::UndefinedAttributes => "UndefinedAttributes",
+                CommitDeltasField::UndefinedRoles => "UndefinedRoles",
                 CommitDeltasField::EntityDeltas => "EntityDeltas",
                 CommitDeltasField::RelationDeltas => "RelationDeltas",
                 CommitDeltasField::AttributeDeltas => "AttributeDeltas",
@@ -315,6 +367,10 @@ mod serialize {
                 "EncodingVersion" => Some(CommitDeltasField::EncodingVersion),
                 "CommitType" => Some(CommitDeltasField::CommitType),
                 "CommitSequenceNumber" => Some(CommitDeltasField::CommitSequenceNumber),
+                "UndefinedEntities" => Some(CommitDeltasField::UndefinedEntities),
+                "UndefinedRelations" => Some(CommitDeltasField::UndefinedRelations),
+                "UndefinedAttributes" => Some(CommitDeltasField::UndefinedAttributes),
+                "UndefinedRoles" => Some(CommitDeltasField::UndefinedRoles),
                 "EntityDeltas" => Some(CommitDeltasField::EntityDeltas),
                 "RelationDeltas" => Some(CommitDeltasField::RelationDeltas),
                 "AttributeDeltas" => Some(CommitDeltasField::AttributeDeltas),
@@ -362,6 +418,22 @@ mod serialize {
             state.serialize_field(CommitDeltasField::EncodingVersion.name(), &self.encoding_version)?;
             state.serialize_field(CommitDeltasField::CommitType.name(), &self.commit_type)?;
             state.serialize_field(CommitDeltasField::CommitSequenceNumber.name(), &self.commit_sequence_number)?;
+            state.serialize_field(
+                CommitDeltasField::UndefinedEntities.name(),
+                &to_serialisable_set(&self.undefined_entities),
+            )?;
+            state.serialize_field(
+                CommitDeltasField::UndefinedRelations.name(),
+                &to_serialisable_set(&self.undefined_relations),
+            )?;
+            state.serialize_field(
+                CommitDeltasField::UndefinedAttributes.name(),
+                &to_serialisable_set(&self.undefined_attributes),
+            )?;
+            state.serialize_field(
+                CommitDeltasField::UndefinedRoles.name(),
+                &to_serialisable_set(&self.undefined_roles),
+            )?;
             state.serialize_field(CommitDeltasField::EntityDeltas.name(), &to_serialisable_map(&self.entity_deltas))?;
             state.serialize_field(
                 CommitDeltasField::RelationDeltas.name(),
@@ -409,21 +481,29 @@ mod serialize {
                     let commit_type = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                     let commit_sequence_number =
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
+                    let undefined_entities =
+                        into_entity_set(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?);
+                    let undefined_relations =
+                        into_relation_set(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?);
+                    let undefined_attributes =
+                        into_attribute_set(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?);
+                    let undefined_roles =
+                        into_role_set(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, &self))?);
                     let entity_deltas =
-                        into_entity_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?);
+                        into_entity_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, &self))?);
                     let relation_deltas =
-                        into_relation_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?);
+                        into_relation_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, &self))?);
                     let attribute_deltas =
-                        into_attribute_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?);
+                        into_attribute_map(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, &self))?);
                     let has_attribute_deltas = seq
                         .next_element::<DoubleHashMap<SerialisableType, SerialisableType, _>>()?
-                        .ok_or_else(|| de::Error::invalid_length(6, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(10, &self))?
                         .into_iter()
                         .map(|(ty, map)| (ty.into_object_type(), into_attribute_map(map)))
                         .collect();
                     let relation_role_player_deltas = seq
                         .next_element::<TripleHashMap<SerialisableType, SerialisableType, SerialisableType, _>>()?
-                        .ok_or_else(|| de::Error::invalid_length(7, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(11, &self))?
                         .into_iter()
                         .map(|(ty, map)| {
                             (
@@ -434,7 +514,7 @@ mod serialize {
                         .collect();
                     let links_index_deltas = seq
                         .next_element::<DoubleHashMap<SerialisableType, SerialisableType, _>>()?
-                        .ok_or_else(|| de::Error::invalid_length(8, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(12, &self))?
                         .into_iter()
                         .map(|(ty, map)| (ty.into_object_type(), into_object_map(map)))
                         .collect();
@@ -443,6 +523,10 @@ mod serialize {
                         encoding_version,
                         commit_type,
                         commit_sequence_number,
+                        undefined_entities,
+                        undefined_relations,
+                        undefined_attributes,
+                        undefined_roles,
                         entity_deltas,
                         relation_deltas,
                         attribute_deltas,
@@ -459,6 +543,10 @@ mod serialize {
                     let mut encoding_version = None;
                     let mut commit_type = None;
                     let mut commit_sequence_number = None;
+                    let mut undefined_entities = None;
+                    let mut undefined_relations = None;
+                    let mut undefined_attributes = None;
+                    let mut undefined_roles = None;
                     let mut entity_deltas = None;
                     let mut relation_deltas = None;
                     let mut attribute_deltas = None;
@@ -471,6 +559,18 @@ mod serialize {
                             CommitDeltasField::EncodingVersion => encoding_version = Some(map.next_value()?),
                             CommitDeltasField::CommitType => commit_type = Some(map.next_value()?),
                             CommitDeltasField::CommitSequenceNumber => commit_sequence_number = Some(map.next_value()?),
+                            CommitDeltasField::UndefinedEntities => {
+                                undefined_entities = Some(into_entity_set(map.next_value()?))
+                            }
+                            CommitDeltasField::UndefinedRelations => {
+                                undefined_relations = Some(into_relation_set(map.next_value()?))
+                            }
+                            CommitDeltasField::UndefinedAttributes => {
+                                undefined_attributes = Some(into_attribute_set(map.next_value()?))
+                            }
+                            CommitDeltasField::UndefinedRoles => {
+                                undefined_roles = Some(into_role_set(map.next_value()?))
+                            }
                             CommitDeltasField::EntityDeltas => entity_deltas = Some(into_entity_map(map.next_value()?)),
                             CommitDeltasField::RelationDeltas => {
                                 relation_deltas = Some(into_relation_map(map.next_value()?))
@@ -531,6 +631,14 @@ mod serialize {
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitSequenceNumber.name()))?,
                         commit_sequence_number: commit_sequence_number
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitSequenceNumber.name()))?,
+                        undefined_entities: undefined_entities
+                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::UndefinedEntities.name()))?,
+                        undefined_relations: undefined_relations
+                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::UndefinedRelations.name()))?,
+                        undefined_attributes: undefined_attributes
+                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::UndefinedAttributes.name()))?,
+                        undefined_roles: undefined_roles
+                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::UndefinedRoles.name()))?,
                         entity_deltas: entity_deltas
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::EntityDeltas.name()))?,
                         relation_deltas: relation_deltas
