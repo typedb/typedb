@@ -300,7 +300,8 @@ impl Statistics {
                     self.sequence_number = seq;
                 }
                 SyncRecord::Deltas(deltas) => {
-                    self.update_deltas(&deltas, storage.durability()).unwrap();
+                    self.update_deltas(&deltas, storage.durability())
+                        .map_err(|typedb_source| DurablyWrite { typedb_source })?;
                 }
                 SyncRecord::Commit(record) => {
                     let commit_type = record.commit_type();
@@ -326,8 +327,8 @@ impl Statistics {
                             },
                             storage,
                         )
-                        .unwrap();
-                    self.total_count = self.total_count.checked_add_signed(delta).unwrap();
+                        .map_err(|source| StatisticsError::DataRead { source })?;
+                    Self::saturating_add(&mut self.total_count, delta, "total_count");
                     self.sequence_number = seq;
                 }
             }
@@ -466,7 +467,7 @@ impl Statistics {
             self.relation_role_counts.retain(|_, map| !map.is_empty());
         }
 
-        self.total_count = self.total_count.checked_add_signed(total_delta).unwrap();
+        Self::saturating_add(&mut self.total_count, total_delta, "total_count");
 
         self.sequence_number = *commit_sequence_number;
 
