@@ -139,8 +139,6 @@ impl KeyspaceSet for EncodingKeyspace {
             DBCompressionType::Lz4,
         ]);
 
-        // TODO: 2.x has   enable_index_compression: 1 set to 0
-
         let mut block_options = BlockBasedOptions::default();
         block_options.set_block_cache(&resources.cache());
         block_options.set_block_restart_interval(16);
@@ -149,7 +147,9 @@ impl KeyspaceSet for EncodingKeyspace {
         block_options.set_block_size(16 * 1024);
         block_options.set_whole_key_filtering(false);
 
-        block_options.set_bloom_filter(10.0, false);
+        // Ribbon filters match a 10 bits/key Bloom filter's false-positive rate in ~30% less memory. Memtable
+        // flushes (bloom_before_level = 0) still build Bloom filters, which are 3-4x cheaper to construct.
+        block_options.set_hybrid_ribbon_filter(10.0, 0);
         block_options.set_partition_filters(true);
         block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         block_options.set_optimize_filters_for_memory(true);
