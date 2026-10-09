@@ -103,24 +103,16 @@ features = {}
 	name = "test_database"
 
 [[test]]
-	path = "tests/test_transaction_isolation.rs"
-	name = "test_transaction_isolation"
-
-[[test]]
-	path = "tests/transaction.rs"
-	name = "test_transaction"
-
-[[test]]
 	path = "tests/cleanup_records.rs"
 	name = "test_cleanup_records"
 
 [[test]]
-	path = "tests/migration.rs"
-	name = "test_migration"
-
-[[test]]
 	path = "tests/statistics_synchronization.rs"
 	name = "test_statistics_synchronization"
+
+[[test]]
+	path = "tests/migration.rs"
+	name = "test_migration"
 
 [[test]]
 	path = "tests/diagnostics_posthog_pii.rs"
@@ -129,4 +121,12 @@ features = {}
 [[test]]
 	path = "tests/import.rs"
 	name = "test_import"
+
+[[test]]
+	path = "tests/test_transaction_isolation.rs"
+	name = "test_transaction_isolation"
+
+[[test]]
+	path = "tests/transaction.rs"
+	name = "test_transaction"
 
