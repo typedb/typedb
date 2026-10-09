@@ -750,3 +750,33 @@ fn return_check() {
         assert_eq!(rows[0].get(*positions.get("checked").unwrap()), &VariableValue::Value(Value::Boolean(false)));
     }
 }
+
+#[test]
+fn recursive_function_calls_recursive_function() {
+    // Regression against #7707
+    // A recursive function has to call another recursive function (which doesn't call it back)
+    let custom_schema = r#"define entity person;"#;
+    let context = setup_common(custom_schema);
+    let query = r#"
+with fun nat() -> { integer }:
+match
+  {let $x = 0;} or
+  { let $y in nat(); let $x = $y + 1; };
+return { $x };
+
+with fun sum_stuff() -> { integer }:
+match
+    { let $sum = 0; } or {
+        let $prev_sum = sum_stuff();
+        let $n in nat();
+        let $sum = $prev_sum + $n;
+    };
+return { $sum };
+
+match let $x in sum_stuff();
+limit 20;
+"#;
+
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 20);
+}
