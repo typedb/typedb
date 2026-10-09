@@ -23,10 +23,8 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        pattern_executor::PatternExecutor,
-        step_executor::create_executors_for_function,
+        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
         suspension::QueryPatternSuspensions,
-        tabled_call_executor::{TabledCallResult, TabledCallResult::Suspend},
     },
     row::MaybeOwnedRow,
 };
@@ -96,7 +94,11 @@ impl TabledFunctions {
                         guard.prepare_to_retry_suspended();
                     }
                 }
-                Err(TryLockError::WouldBlock) => continue, // Not one we can reset.
+                Err(TryLockError::WouldBlock) => {
+                    // This function is active elsewhere on the stack. Don't reset it.
+                    // It will be reset and retried from that part of the stack.
+                    continue;
+                }
                 Err(TryLockError::Poisoned(_)) => panic!("The mutex on a tabled function was poisoned"),
             }
         }
