@@ -68,7 +68,7 @@ impl QueryPatternSuspensions {
     }
 
     pub(crate) fn scc(&self) -> Option<&StronglyConnectedComponentID> {
-        return self.scc.as_ref();
+        self.scc.as_ref()
     }
 
     pub(super) fn prepare_restoring_from_suspending(&mut self) {

@@ -7,7 +7,7 @@
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock, TryLockError},
 };
 
 use compiler::executable::function::{
@@ -23,8 +23,10 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
+        pattern_executor::PatternExecutor,
+        step_executor::create_executors_for_function,
         suspension::QueryPatternSuspensions,
+        tabled_call_executor::{TabledCallResult, TabledCallResult::Suspend},
     },
     row::MaybeOwnedRow,
 };
@@ -88,9 +90,14 @@ impl TabledFunctions {
 
     pub(crate) fn may_prepare_to_retry_suspended(&self) {
         for function_state in self.iterate_states() {
-            let mut guard = function_state.executor_state.try_lock().unwrap();
-            if guard.pattern_executor.has_empty_control_stack() {
-                guard.prepare_to_retry_suspended();
+            match function_state.executor_state.try_lock() {
+                Ok(mut guard) => {
+                    if guard.pattern_executor.has_empty_control_stack() {
+                        guard.prepare_to_retry_suspended();
+                    }
+                }
+                Err(TryLockError::WouldBlock) => continue, // Not one we can reset.
+                Err(TryLockError::Poisoned(_)) => panic!("The mutex on a tabled function was poisoned"),
             }
         }
     }
