@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::borrow::Cow;
+
 use answer::variable::Variable;
 use concept::{
     error::ConceptReadError,
@@ -15,7 +17,7 @@ use encoding::value::{
 };
 use error::typedb_error;
 use expression::ExpressionCompileError;
-use ir::pipeline::{ParameterRegistry, VariableRegistry, function_signature::FunctionID};
+use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
@@ -130,8 +132,8 @@ typedb_error!(
         ),
         ValueTypeMismatch(
             19,
-            "The argument to the function {function_id} is expected to have value type '{expected}', found '{actual}'.",
-            function_id: FunctionID,
+            "The argument to the function {function_name} is expected to have value type '{expected}', found '{actual}'.",
+            function_name: Cow<'static, str>,
             expected: ValueType,
             actual: ExpressionValueType,
             source_span: Option<Span>,

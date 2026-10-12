@@ -87,6 +87,7 @@ impl AnnotatedFunctionReturn {
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunctionSignature {
+    pub name: Cow<'static, str>,
     pub is_stream: bool,
     pub arguments: Vec<FunctionParameterAnnotation>,
     pub returns: Vec<FunctionParameterAnnotation>,
@@ -154,6 +155,7 @@ fn get_builtin_function_annotated_signature(builtin_id: BuiltinConceptFunctionID
     macro_rules! function_signature {
         (($($param:ident),*) -> $($return:ident),*) => {
             AnnotatedFunctionSignature {
+                name: Cow::Borrowed(builtin_id.name()),
                 is_stream: false,
                 arguments: vec![$(param!($param)),*],
                 returns: vec![$(param!($return)),*],
@@ -161,6 +163,7 @@ fn get_builtin_function_annotated_signature(builtin_id: BuiltinConceptFunctionID
         };
         (($($param:ident),*) -> { $($return:ident),* }) => {
             AnnotatedFunctionSignature {
+                name: Cow::Borrowed(builtin_id.name()),
                 is_stream: true,
                 arguments: vec![$(param!($param)),*],
                 returns: vec![$(param!($return)),*],
@@ -319,7 +322,13 @@ fn annotate_function_impl(
     pipeline_origin: PipelineOrigin,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function {
-        name, context, parameters, function_body: FunctionBody { stages, return_operation }, arguments, ..
+        name,
+        context,
+        parameters,
+        function_body: FunctionBody { stages, return_operation },
+        arguments,
+        output,
+        ..
     } = function;
     let mut ctx = annotation_ctx.for_pipeline(&mut context.variable_registry, parameters);
     let (stages, output_annotations) = annotate_pipeline_stages(
@@ -334,13 +343,17 @@ fn annotate_function_impl(
     })?;
     let mapped_return = resolve_return_operators(&mut ctx, return_operation, &output_annotations)?;
     let return_annotations = annotate_return(&mapped_return, &output_annotations);
-    if let Some(output) = function.output.as_ref() {
-        validate_return_against_signature(&annotation_ctx, function.name.as_str(), &return_annotations, output)?;
+    if let Some(output) = output {
+        validate_return_against_signature(annotation_ctx, name.as_str(), &return_annotations, output)?;
     }
     let argument_annotations = annotate_arguments(stages.as_slice(), arguments, &argument_annotations_from_declaration);
-    let is_stream = matches!(function.output, Some(Output::Stream(_)));
-    let annotated_signature =
-        AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: return_annotations };
+    let is_stream = matches!(output, Some(Output::Stream(_)));
+    let annotated_signature = AnnotatedFunctionSignature {
+        name: Cow::Owned(name.clone()),
+        is_stream,
+        arguments: argument_annotations,
+        returns: return_annotations,
+    };
     Ok(AnnotatedFunction {
         variable_registry: ctx.variable_registry.clone(),
         parameter_registry: parameters.clone(),
@@ -408,7 +421,12 @@ fn annotate_signature_based_on_labels(
         Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
     })?;
     let is_stream = matches!(function.output, Some(Output::Stream(_)));
-    Ok(AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: returned })
+    Ok(AnnotatedFunctionSignature {
+        name: Cow::Owned(function.name.clone()),
+        is_stream,
+        arguments: argument_annotations,
+        returns: returned,
+    })
 }
 
 fn resolve_return_operators(
