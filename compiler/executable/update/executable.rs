@@ -104,7 +104,7 @@ impl ConditionalUpdate {
 
         let nested_updates = conjunction.nested_patterns().iter().map(|nested| {
             let NestedPattern::Optional(optional) = nested else {
-                unreachable!("Only optionals are allowed as nested patterns in insert")
+                unreachable!("Only optionals are allowed as nested patterns in updates")
             };
             Self::build_recursive(optional.conjunction(), block_annotations, variable_positions, variable_registry, stage_source_span)
         }).collect::<Result<Vec<_>, _>>()?;

@@ -33,7 +33,7 @@ use crate::{
 #[derive(Debug)]
 pub struct DeleteExecutable {
     pub executable_id: u64,
-    pub deletes: Vec<ConditionalDelete>,
+    pub root_delete: ConditionalDelete,
     pub output_row_schema: Vec<Option<Variable>>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
@@ -44,23 +44,8 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     block: &Block,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let mut deletes = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
-
     let root_delete =
-        ConditionalDelete::new(block.conjunction(), block_annotations, variable_registry, input_variables)?;
-    deletes.push(root_delete);
-
-    for nested_pattern in block.conjunction().nested_patterns() {
-        let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!("Only optionals are allowed as nested patterns in delete")
-        };
-        deletes.push(ConditionalDelete::new(
-            optional.conjunction(),
-            block_annotations,
-            variable_registry,
-            input_variables,
-        )?);
-    }
+        ConditionalDelete::build_recursive(block.conjunction(), block_annotations, variable_registry, input_variables)?;
 
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let deleted_variables_recursive = collect_deleted_variables(block);
@@ -76,18 +61,19 @@ pub fn compile(
         output_row_schema[pos_as_usize] = Some(variable);
     }
 
-    Ok(DeleteExecutable { executable_id: next_executable_id(), deletes, output_row_schema })
+    Ok(DeleteExecutable { executable_id: next_executable_id(), root_delete, output_row_schema })
 }
 
 #[derive(Debug)]
 pub struct ConditionalDelete {
+    pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub condition: WritePatternCondition,
+    pub nested_deletes: Vec<ConditionalDelete>
 }
 
 impl ConditionalDelete {
-    fn new(
+    fn build_recursive(
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_registry: &VariableRegistry,
@@ -105,7 +91,13 @@ impl ConditionalDelete {
         // We can't just use required_inputs because that's recursive and we only want those at this level.
         let condition = WritePatternCondition::build(conjunction, input_variables, conjunction_annotations);
 
-        Ok(Self { concept_instructions, connection_instructions, condition })
+        let nested_deletes = conjunction.nested_patterns().iter().map(|nested| {
+            let NestedPattern::Optional(optional) = nested else {
+                unreachable!("Only optionals are allowed as nested patterns in deletes")
+            };
+            Self::build_recursive(optional.conjunction(), block_annotations, variable_registry, input_variables)
+        }).collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_deletes })
     }
 }
 
