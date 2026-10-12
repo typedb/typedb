@@ -8,9 +8,8 @@ use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
 
 use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use error::unimplemented_feature;
-use lending_iterator::LendingIterator;
 use primitive::either::Either;
-use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
@@ -1040,11 +1039,11 @@ impl VectorAttributeID {
         }
     }
 
-    /// Same tail-byte disambiguation as [`HashedID::find_existing_or_next_disambiguated_hash`],
-    /// except value comparison is fetcher-aware: committed vector attributes have an empty value
-    /// in the KV store (the value lives in the vector store), so equal-hash candidates with an
-    /// empty stored value are compared against the vector fetched via `committed_vector` (keyed
-    /// by the candidate's 8-byte [hash|tail], see [`Self::as_vector_index_key`]).
+    /// [`HashedID::find_existing_or_next_disambiguated_hash_matching`] with a fetcher-aware value
+    /// comparison: committed vector attributes have an empty value in the KV store (the value
+    /// lives in the vector store), so equal-hash candidates with an empty stored value are
+    /// compared against the vector fetched via `committed_vector` (keyed by the candidate's
+    /// 8-byte [hash|tail], see [`Self::as_vector_index_key`]).
     fn find_existing_or_next_disambiguated_hash_vector<Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
@@ -1055,34 +1054,9 @@ impl VectorAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
-        let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
-        let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
-            ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
-        key_without_tail_byte[0..key_without_hash.len()].copy_from_slice(key_without_hash);
-        let hash_length = Self::write_hash(
-            &mut key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
-            hasher,
-            value_bytes,
-        );
-        let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_length];
-
-        let tail_byte_index = key_without_tail_byte.len();
-        let mut iter = snapshot.iterate_range(
-            &KeyRange::new_within(
-                StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, &key_without_tail_byte),
-                <Self as HashedID<{ Self::HASH_LENGTH + 1 }>>::FIXED_WIDTH_KEYS,
-            ),
-            StorageCounters::DISABLED,
-        );
-        let mut next = iter.next().transpose()?;
-        let mut first_unused_tail: Option<u8> = None;
-
-        let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
-        while let Some((key, value)) = next {
-            let key_tail = key.bytes()[tail_byte_index];
-            let value_matches = if value.is_empty() {
-                let index_key =
-                    u64::from_be_bytes(key.bytes()[key.bytes().len() - (Self::HASH_LENGTH + 1)..].try_into().unwrap());
+        let value_matches = |key: &[u8], stored_value: &[u8]| {
+            if stored_value.is_empty() {
+                let index_key = u64::from_be_bytes(key[key.len() - (Self::HASH_LENGTH + 1)..].try_into().unwrap());
                 let vector = committed_vector(index_key).ok_or_else(|| {
                     // treating a miss as a non-match would allocate a fresh attribute ID for a
                     // value that already exists, so it must surface as an error
@@ -1095,23 +1069,19 @@ impl VectorAttributeID {
                 // compare the encoded bytes, not decoded f32s: the hash is computed over the
                 // encoded bytes, and f32 `==` would disagree with it on NaN (never equal to
                 // itself) and on -0.0/0.0 (equal despite different bytes)
-                VectorBytes::<1>::build(&vector).bytes() == value_bytes
+                Ok(VectorBytes::<1>::build(&vector).bytes() == value_bytes)
             } else {
-                &*value == value_bytes
-            };
-            if value_matches {
-                return Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, key_tail)));
-            } else if next_tail != key_tail {
-                // found unused tail ID. This could be a hole. We have to complete iteration.
-                first_unused_tail = Some(next_tail);
+                Ok(stored_value == value_bytes)
             }
-            if next_tail == u8::MAX {
-                panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte);
-            }
-            next_tail += 1;
-            next = iter.next().transpose()?;
-        }
-        Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, first_unused_tail.unwrap_or(next_tail))))
+        };
+        Self::find_existing_or_next_disambiguated_hash_matching(
+            snapshot,
+            hasher,
+            AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector),
+            key_without_hash,
+            value_bytes,
+            &value_matches,
+        )
     }
 
     fn key_prefix(type_id: TypeID) -> ByteArray<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }> {

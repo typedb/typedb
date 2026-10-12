@@ -400,6 +400,7 @@ pub mod tests {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );

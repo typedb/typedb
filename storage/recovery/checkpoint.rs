@@ -260,11 +260,22 @@ impl CheckpointWriter {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
         fs::create_dir(&dir).map_err(io_err)?;
-        data.save_into_dir(&dir).map_err(io_err)?;
+        // the latest previous checkpoint (deleted only in finish()) lets implementations reuse
+        // files whose contents are unchanged instead of re-serialising them
+        let previous_dir = self.latest_previous_checkpoint().map(|checkpoint| checkpoint.join(T::NAME));
+        data.save_into_dir(&dir, previous_dir.as_deref().filter(|dir| dir.exists())).map_err(io_err)?;
         // fsync the directory entries: save_into_dir syncs file contents, but the names must
         // also survive power loss before the whole-checkpoint rename makes them visible
         File::open(&dir).and_then(|d| d.sync_all()).map_err(io_err)?;
         Ok(())
+    }
+
+    fn latest_previous_checkpoint(&self) -> Option<PathBuf> {
+        fs::read_dir(self.checkpoint_directory.parent().unwrap())
+            .ok()?
+            .filter_map(|entry| Some(entry.ok()?.path()))
+            .filter(|path| path.is_dir() && path.extension().is_none() && path != &self.checkpoint_directory)
+            .max()
     }
 
     pub fn finish(self) -> Result<CheckpointReader, CheckpointCreateError> {
@@ -322,9 +333,12 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
 /// Additional data rides the checkpoint as a subdirectory named `NAME`. Implementations lay out
 /// their own files inside it and must fsync everything they write; atomicity comes for free from
 /// the whole-checkpoint-directory rename in [`CheckpointWriter::finish`].
+///
+/// `previous` is this extension's directory in the latest previous checkpoint (if any), which
+/// outlives the save: implementations may hard-link or copy files whose contents are unchanged.
 pub trait CheckpointAdditionalData: Sized {
     const NAME: &'static str;
-    fn save_into_dir(&self, dir: &Path) -> io::Result<()>;
+    fn save_into_dir(&self, dir: &Path, previous: Option<&Path>) -> io::Result<()>;
     fn load_from_dir(dir: &Path) -> io::Result<Self>;
 }
 

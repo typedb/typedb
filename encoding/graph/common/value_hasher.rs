@@ -42,6 +42,30 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     where
         Snapshot: ReadableSnapshot,
     {
+        Self::find_existing_or_next_disambiguated_hash_matching(
+            snapshot,
+            hasher,
+            keyspace,
+            key_without_hash,
+            value_bytes,
+            &|_key, stored_value| Ok(stored_value == value_bytes),
+        )
+    }
+
+    /// Like [`Self::find_existing_or_next_disambiguated_hash`], but with a custom value-equality
+    /// test: `value_matches(candidate key, candidate stored value)` decides whether an equal-hash
+    /// candidate holds the same value, for IDs whose value lives outside the KV store.
+    fn find_existing_or_next_disambiguated_hash_matching<Snapshot>(
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        keyspace: EncodingKeyspace,
+        key_without_hash: &[u8],
+        value_bytes: &[u8],
+        value_matches: &impl Fn(&[u8], &[u8]) -> Result<bool, Arc<SnapshotIteratorError>>,
+    ) -> Result<Either<[u8; DISAMBIGUATED_HASH_LENGTH], [u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
         let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
             ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
         key_without_tail_byte[0..key_without_hash.len()].copy_from_slice(key_without_hash);
@@ -51,7 +75,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             value_bytes,
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
-        match Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_bytes)? {
+        match Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_matches)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
         }
@@ -69,7 +93,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         snapshot: &Snapshot,
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],
-        value_bytes: &[u8],
+        value_matches: &impl Fn(&[u8], &[u8]) -> Result<bool, Arc<SnapshotIteratorError>>,
     ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
@@ -88,7 +112,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
         while let Some((key, value)) = next {
             let key_tail = key.bytes()[tail_byte_index];
-            if &*value == value_bytes {
+            if value_matches(key.bytes(), &value)? {
                 return Ok(Either::First(key_tail));
             } else if next_tail != key_tail {
                 // found unused tail ID. This could be a hole. We have to complete iteration.

@@ -28,7 +28,10 @@ use std::{
     io,
     io::Write,
     path::Path,
-    sync::{Arc, RwLock},
+    sync::{
+        Arc, RwLock,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use bytes::{Bytes, byte_array::ByteArray};
@@ -55,6 +58,10 @@ struct TypeVectorIndex {
     // ponytail: one big RwLock per type index; usearch's internal locking allows finer
     // concurrency (lock-free adds after reserve) if this ever contends
     index: RwLock<Index>,
+    // set by every successful add, cleared when a checkpoint serialises this index: an index
+    // that is clean at save time is reused from the previous checkpoint instead of
+    // re-serialised (serialisation holds the read lock, stalling every vector commit)
+    dirty: AtomicBool,
 }
 
 type VectorStoreError = Box<dyn Error + Send + Sync>;
@@ -72,7 +79,7 @@ impl TypeVectorIndex {
         };
         let index = usearch::new_index(&options)
             .map_err(|err| format!("failed to create vector index (dimensions: {dimensions}): {err}"))?;
-        Ok(Self { index: RwLock::new(index) })
+        Ok(Self { index: RwLock::new(index), dirty: AtomicBool::new(false) })
     }
 
     fn dimensions(&self) -> usize {
@@ -119,7 +126,9 @@ impl TypeVectorIndex {
         }
         // the vector store is the only copy of the value: failing to add would silently lose
         // committed data, so a broken index must surface the error
-        index.add(key, vector).map_err(|err| format!("failed to add vector to index: {err}").into())
+        index.add(key, vector).map_err(|err| format!("failed to add vector to index: {err}"))?;
+        self.dirty.store(true, Ordering::Release);
+        Ok(())
     }
 
     fn get(&self, key: u64) -> Option<Vec<f32>> {
@@ -290,22 +299,41 @@ fn invalid_data(message: String) -> io::Error {
 impl CheckpointAdditionalData for VectorStore {
     const NAME: &'static str = "VECTOR_STORE";
 
-    fn save_into_dir(&self, dir: &Path) -> io::Result<()> {
+    fn save_into_dir(&self, dir: &Path, previous: Option<&Path>) -> io::Result<()> {
         let indexes = self.indexes.read().unwrap();
         let mut manifest = format!("{MANIFEST_VERSION_LINE}\n");
         for (type_id, type_index) in indexes.iter() {
             let type_id = u16::from_be_bytes(type_id.to_bytes());
             let file_name = index_file_name(type_id);
             let path = dir.join(&file_name);
-            let index = type_index.index.read().unwrap();
-            index
-                .save(path.to_str().unwrap())
-                .map_err(|err| io::Error::other(format!("failed to save vector index {file_name}: {err}")))?;
-            // usearch's save is fwrite+fclose with no fsync
-            let file = File::open(&path)?;
-            file.sync_all()?;
-            let file_length = file.metadata()?.len();
-            manifest.push_str(&format!("{type_id:#06x} {METRIC_NAME} {} {file_length}\n", index.dimensions()));
+
+            // clean index: its last serialisation is in the previous checkpoint (clean means no
+            // add since the last save, and load-from-checkpoint starts clean) - hard-link it
+            // (fall back to copy) instead of re-serialising under the index read lock
+            let reused = !type_index.dirty.swap(false, Ordering::Acquire)
+                && previous
+                    .map(|previous| previous.join(&file_name))
+                    .filter(|file| file.exists())
+                    .is_some_and(|prev| {
+                        fs::hard_link(&prev, &path).or_else(|_| fs::copy(&prev, &path).map(|_| ())).is_ok()
+                    });
+            let dimensions = if reused {
+                // contents were fsynced when the previous checkpoint wrote them
+                type_index.dimensions()
+            } else {
+                let index = type_index.index.read().unwrap();
+                index.save(path.to_str().unwrap()).map_err(|err| {
+                    // the swap above cleared the flag for a save that did not happen
+                    type_index.dirty.store(true, Ordering::Release);
+                    io::Error::other(format!("failed to save vector index {file_name}: {err}"))
+                })?;
+                // usearch's save is fwrite+fclose with no fsync
+                let file = File::open(&path)?;
+                file.sync_all()?;
+                index.dimensions()
+            };
+            let file_length = fs::metadata(&path)?.len();
+            manifest.push_str(&format!("{type_id:#06x} {METRIC_NAME} {dimensions} {file_length}\n"));
         }
         let mut manifest_file = File::create(dir.join(MANIFEST_FILE_NAME))?;
         manifest_file.write_all(manifest.as_bytes())?;
@@ -402,7 +430,7 @@ mod test {
         let dir = std::env::temp_dir().join(format!("vector_store_checkpoint_test_{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
-        store.save_into_dir(&dir).unwrap();
+        store.save_into_dir(&dir, None).unwrap();
 
         // the on-disk files are plain usearch indexes plus a text manifest
         assert!(dir.join("0x0001-cosine.usearch").exists());
@@ -420,5 +448,40 @@ mod test {
         assert!(VectorStore::load_from_dir(&dir).is_err());
 
         fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn checkpoint_save_reuses_clean_index_files_and_reserialises_dirty_ones() {
+        let store = VectorStore::new();
+        store.add(vertex(1, 100), &[1.0, 0.0]).unwrap();
+        store.add(vertex(7, 200), &[0.0, 1.0]).unwrap();
+
+        let root = std::env::temp_dir().join(format!("vector_store_dirty_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let (first, second) = (root.join("first"), root.join("second"));
+        fs::create_dir_all(&first).unwrap();
+        fs::create_dir_all(&second).unwrap();
+
+        store.save_into_dir(&first, None).unwrap();
+        store.add(vertex(7, 300), &[0.0, -1.0]).unwrap(); // dirties only type 7
+        store.save_into_dir(&second, Some(&first)).unwrap();
+
+        // type 1 was clean: its file is reused from the first checkpoint (hard link or identical copy)
+        let first_clean = fs::read(first.join("0x0001-cosine.usearch")).unwrap();
+        assert_eq!(fs::read(second.join("0x0001-cosine.usearch")).unwrap(), first_clean);
+
+        // the second checkpoint is complete and loadable, including the re-serialised dirty index
+        let loaded = VectorStore::load_from_dir(&second).unwrap();
+        assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
+        assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0]));
+        assert_eq!(loaded.get_vector(vertex(7, 300)), Some(vec![0.0, -1.0]));
+
+        // a loaded store starts clean: a save with no adds since reuses every file
+        let third = root.join("third");
+        fs::create_dir_all(&third).unwrap();
+        loaded.save_into_dir(&third, Some(&second)).unwrap();
+        assert_eq!(fs::read(third.join("0x0007-cosine.usearch")).unwrap(), fs::read(second.join("0x0007-cosine.usearch")).unwrap());
+
+        fs::remove_dir_all(&root).unwrap();
     }
 }

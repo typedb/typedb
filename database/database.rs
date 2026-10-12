@@ -300,10 +300,16 @@ impl Database<WALClient> {
         wal_client.register_record_type::<Statistics>();
 
         let vector_store = Arc::new(VectorStore::new());
-        let mut storage = MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
-            .map_err(|error| StorageOpen { typedb_source: error })?;
-        storage.set_commit_observer(vector_store.clone());
-        let storage = Arc::new(storage);
+        let storage = Arc::new(
+            MVCCStorage::create::<EncodingKeyspace>(
+                name,
+                path,
+                wal_client,
+                rocks_resources,
+                Some(vector_store.clone()),
+            )
+            .map_err(|error| StorageOpen { typedb_source: error })?,
+        );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
@@ -397,13 +403,13 @@ impl Database<WALClient> {
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         // the vector store must be loaded BEFORE storage recovery: recovery replays the WAL tail
         // through the commit observer, layering post-checkpoint vector writes onto the loaded store
-        let vector_store = match &checkpoint {
+        let (vector_store, vector_store_extension_missing) = match &checkpoint {
             Some(reader) => match reader.get_additional_data::<VectorStore>() {
-                Ok(store) => Arc::new(store),
-                Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => Arc::new(VectorStore::new()),
+                Ok(store) => (Arc::new(store), false),
+                Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => (Arc::new(VectorStore::new()), true),
                 Err(err) => return Err(CheckpointLoad { name: name.to_string(), typedb_source: err }),
             },
-            None => Arc::new(VectorStore::new()),
+            None => (Arc::new(VectorStore::new()), false),
         };
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(
@@ -416,6 +422,14 @@ impl Database<WALClient> {
             )
             .map_err(|error| StorageOpen { typedb_source: error })?,
         );
+        if vector_store_extension_missing {
+            // every checkpoint since vectors were introduced carries the extension, so a missing
+            // one (downgrade/upgrade cycle, hand-copied checkpoint) with committed vectors means
+            // the only copy of those values is gone: fail the load instead of losing data silently
+            validate_vector_store_backs_all_committed_vectors(&storage, &vector_store).map_err(|description| {
+                DatabaseOpenError::VectorStoreMissingData { name: name.to_string(), description }
+            })?;
+        }
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
@@ -595,6 +609,51 @@ impl Database<WALClient> {
     }
 }
 
+/// Checks that every committed vector attribute key is backed by a value in the vector store.
+/// Vectors committed after the loaded checkpoint are fine (WAL replay re-added them via the
+/// commit observer); only pre-checkpoint vectors can be missing, and only when the checkpoint
+/// lacked the vector store extension. Runs a scan of the vector-capable attribute keyspace, which
+/// is acceptable for that rare recovery path.
+fn validate_vector_store_backs_all_committed_vectors(
+    storage: &Arc<MVCCStorage<WALClient>>,
+    vector_store: &Arc<VectorStore>,
+) -> Result<(), String> {
+    use encoding::graph::thing::vertex_attribute::AttributeVertex;
+    use resource::profile::StorageCounters;
+    use storage::{key_range::KeyRange, key_value::StorageKey, snapshot::ReadableSnapshot};
+
+    let keyspace = AttributeVertex::keyspace_for_category(encoding::value::value_type::ValueTypeCategory::Vector);
+    let prefix = encoding::layout::prefix::Prefix::VertexAttribute.prefix_id().to_bytes();
+    let snapshot = storage.clone().open_snapshot_read();
+    let vector_store = vector_store.clone();
+    let missing = snapshot
+        .iterate_range(
+            &KeyRange::new_within(StorageKey::<1>::new_ref(keyspace, &prefix), false),
+            StorageCounters::DISABLED,
+        )
+        .collect_cloned_vec(move |key, _value| {
+            if AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes()) {
+                let vertex = AttributeVertex::decode(key.bytes());
+                vector_store
+                    .get_vector(vertex)
+                    .is_none()
+                    .then(|| vertex.attribute_id().unwrap_vector().as_vector_index_key())
+            } else {
+                None
+            }
+        })
+        .map_err(|err| format!("storage read failed during vector store check: {err}"))?
+        .into_iter()
+        .flatten()
+        .next();
+    match missing {
+        Some(index_key) => Err(format!(
+            "committed vector attribute (key: {index_key:#018x}) has no value in the vector store"
+        )),
+        None => Ok(()),
+    }
+}
+
 fn make_checkpoint_fn(
     database_name: String,
     path: PathBuf,
@@ -669,6 +728,7 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        VectorStoreMissingData(18, "Database '{name}' has committed vector values that are not in the vector store: {description}. The checkpoint was likely written by a server version without vector support - restore a matching checkpoint or roll back the server version.", name: String, description: String),
     }
 }
 
