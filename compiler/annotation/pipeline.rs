@@ -397,13 +397,8 @@ fn complete_block_annotations_with_value_types(
                 // this function only annotates value types
                 let actual = value_types_in_conjunction.get(&Vertex::Variable(argument_id)).unwrap();
                 if actual != &ExpressionValueType::Single(value_type.clone()) {
-                    let function_name = ctx
-                        .annotated_function_signatures
-                        .get_annotated_signature(&function_id)
-                        .map(|f| f.name.clone())
-                        .unwrap_or_else(|| Cow::Owned(function_id.to_string()));
                     return Err(AnnotationError::ValueTypeMismatch {
-                        function_name,
+                        function_name: signature.name.clone(),
                         expected: value_type.clone(),
                         actual: actual.clone(),
                         source_span: function_call_binding.source_span(),
