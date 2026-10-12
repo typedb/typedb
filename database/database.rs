@@ -647,9 +647,9 @@ fn validate_vector_store_backs_all_committed_vectors(
         .flatten()
         .next();
     match missing {
-        Some(index_key) => Err(format!(
-            "committed vector attribute (key: {index_key:#018x}) has no value in the vector store"
-        )),
+        Some(index_key) => {
+            Err(format!("committed vector attribute (key: {index_key:#018x}) has no value in the vector store"))
+        }
         None => Ok(()),
     }
 }

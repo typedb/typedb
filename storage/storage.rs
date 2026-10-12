@@ -343,10 +343,8 @@ impl<Durability> MVCCStorage<Durability> {
 
         commit_profile.commit_size(commit_record.operations().len());
 
-        let owned_values = self
-            .commit_observer
-            .as_ref()
-            .map(|observer| extract_owned_values(&**observer, commit_record.operations()));
+        let owned_values =
+            self.commit_observer.as_ref().map(|observer| extract_owned_values(&**observer, commit_record.operations()));
 
         // anything the observer cannot apply must abort here, before the commit is durably
         // written: a failure after the KV write cannot be rolled back

@@ -132,10 +132,8 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
 
         // the values themselves are intact and searchable
         let results = store.search(type_id, &[1.0, 0.0, 0.0], 3);
-        let mut found: Vec<Vec<f32>> = results
-            .iter()
-            .filter_map(|(id, _)| store.get_by_key(type_id, id.as_vector_index_key()))
-            .collect();
+        let mut found: Vec<Vec<f32>> =
+            results.iter().filter_map(|(id, _)| store.get_by_key(type_id, id.as_vector_index_key())).collect();
         found.sort_by(|a, b| a.partial_cmp(b).unwrap());
         assert_eq!(found, vec![vec![0.0, 0.0, 1.0], vec![0.0, 1.0, 0.0], vec![1.0, 0.0, 0.0]]);
     }
@@ -174,10 +172,7 @@ fn checkpoint_missing_the_vector_store_extension_fails_to_open_when_vectors_exis
     let resources = create_rocks_resources();
     let result = Database::<WALClient>::open(&db_path, &diagnostics_manager, &resources);
     let error = format!("{:?}", result.err().expect("open should fail without the vector store extension"));
-    assert!(
-        error.contains("vector values that are not in the vector store"),
-        "unexpected error: {error}"
-    );
+    assert!(error.contains("vector values that are not in the vector store"), "unexpected error: {error}");
 }
 
 #[test]

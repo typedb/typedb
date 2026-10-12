@@ -21,6 +21,7 @@ use concept::{
         },
     },
 };
+use durability::DurabilitySequenceNumber;
 use encoding::{
     graph::{
         Typed,
@@ -28,7 +29,6 @@ use encoding::{
     },
     value::value_type::ValueType,
 };
-use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use options::TransactionOptions;

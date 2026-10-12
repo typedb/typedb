@@ -202,9 +202,8 @@ pub(crate) fn annotate_pipeline_stages(
             annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage, pipeline_origin)?;
 
         // running_annotations.retain(|var| var.is_named());
-        let retain_running_var_fn = |var: &Variable| {
-            var.is_named() || return_variables.as_ref().map_or(false, |vars| vars.contains(var))
-        };
+        let retain_running_var_fn =
+            |var: &Variable| var.is_named() || return_variables.as_ref().map_or(false, |vars| vars.contains(var));
         running_annotations.retain(retain_running_var_fn);
         if let AnnotatedStage::Match { .. } = annotated_stage {
             latest_match_index = Some(annotated_stages.len());

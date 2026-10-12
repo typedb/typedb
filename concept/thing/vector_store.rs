@@ -154,7 +154,11 @@ impl VectorStore {
         Self { indexes: RwLock::new(HashMap::new()) }
     }
 
-    fn index_for_type(&self, type_id: TypeID, dimensions_if_created: usize) -> Result<Arc<TypeVectorIndex>, VectorStoreError> {
+    fn index_for_type(
+        &self,
+        type_id: TypeID,
+        dimensions_if_created: usize,
+    ) -> Result<Arc<TypeVectorIndex>, VectorStoreError> {
         if let Some(index) = self.indexes.read().unwrap().get(&type_id) {
             return Ok(index.clone());
         }
@@ -311,12 +315,9 @@ impl CheckpointAdditionalData for VectorStore {
             // add since the last save, and load-from-checkpoint starts clean) - hard-link it
             // (fall back to copy) instead of re-serialising under the index read lock
             let reused = !type_index.dirty.swap(false, Ordering::Acquire)
-                && previous
-                    .map(|previous| previous.join(&file_name))
-                    .filter(|file| file.exists())
-                    .is_some_and(|prev| {
-                        fs::hard_link(&prev, &path).or_else(|_| fs::copy(&prev, &path).map(|_| ())).is_ok()
-                    });
+                && previous.map(|previous| previous.join(&file_name)).filter(|file| file.exists()).is_some_and(
+                    |prev| fs::hard_link(&prev, &path).or_else(|_| fs::copy(&prev, &path).map(|_| ())).is_ok(),
+                );
             let dimensions = if reused {
                 // contents were fsynced when the previous checkpoint wrote them
                 type_index.dimensions()
@@ -480,7 +481,10 @@ mod test {
         let third = root.join("third");
         fs::create_dir_all(&third).unwrap();
         loaded.save_into_dir(&third, Some(&second)).unwrap();
-        assert_eq!(fs::read(third.join("0x0007-cosine.usearch")).unwrap(), fs::read(second.join("0x0007-cosine.usearch")).unwrap());
+        assert_eq!(
+            fs::read(third.join("0x0007-cosine.usearch")).unwrap(),
+            fs::read(second.join("0x0007-cosine.usearch")).unwrap()
+        );
 
         fs::remove_dir_all(&root).unwrap();
     }
