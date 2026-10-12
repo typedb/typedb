@@ -39,32 +39,22 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
-use itertools::Itertools;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
-
+use compiler::executable::match_::instructions::{thing, type_};
+use ir::pattern::Vertex;
 use crate::{pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 #[derive(Debug)]
 pub(crate) struct Checker<T: 'static> {
-    extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     pub checks: Vec<CheckInstruction<ExecutorVariable>>,
     inline_check_factory: InlineCheckFactory<T>,
 }
 
-type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>>;
-
 macro_rules! unwrap_or_result_false {
     ($value:expr => $variant:ident) => {{
         let VariableValue::$variant(x) = $value else { return Ok(false) };
-        x
-    }};
-}
-
-macro_rules! unwrap_or_return_false {
-    ($value:expr => $variant:ident) => {{
-        let VariableValue::$variant(x) = $value else { return false };
         x
     }};
 }
@@ -75,7 +65,7 @@ impl<T> Checker<T> {
         extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     ) -> Self {
         let inline_check_factory = InlineCheckFactory::new(&checks, &extractors);
-        Self { extractors, checks, inline_check_factory }
+        Self { checks, inline_check_factory }
     }
 
     pub(crate) fn filter_fn_for_row<Snapshot: ReadableSnapshot + 'static>(
@@ -174,7 +164,7 @@ impl Checker<()> {
         row: &MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        filter_impl(
+        all_checks_pass(
             checks,
             context.snapshot.as_ref(),
             context.thing_manager.as_ref(),
@@ -185,7 +175,7 @@ impl Checker<()> {
     }
 }
 
-pub(crate) fn filter_impl<Source, Var: ExtractFrom<Source>>(
+pub(crate) fn all_checks_pass<Source, Var: ExtractFrom<Source>>(
     checks: &[CheckInstruction<Var>],
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
@@ -448,9 +438,9 @@ fn filter_indexed_relation<Source, Var: ExtractFrom<Source>>(
     )
 }
 
-fn filter_is<Source, Var: ExtractFrom<Source>>(row: &Source, lhs: &Var, rhs: &Var) -> bool {
-    let lhs = Var::extract(lhs, row);
-    let rhs = Var::extract(rhs, row);
+fn filter_is<Source, Var: ExtractFrom<Source>>(source: &Source, lhs: &Var, rhs: &Var) -> bool {
+    let lhs = lhs.extract(source);
+    let rhs = rhs.extract(source);
     lhs == rhs
 }
 
@@ -702,44 +692,37 @@ impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for FilterFnVariable<T> {
 }
 
 #[derive(Debug)]
-pub(crate) struct InlineCheckFactory<T> {
+struct InlineCheckFactory<T> {
     checks: Arc<Vec<CheckInstruction<FilterFnVariable<T>>>>,
     subrow_schema: Vec<VariablePosition>,
 }
 
 impl<T: 'static> InlineCheckFactory<T> {
-    pub(crate) fn new(
+    fn new(
         outline_checks: &[CheckInstruction<ExecutorVariable>],
         extractors: &HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     ) -> Self {
         let mut subrow_schema = Vec::new();
-        let mut mapping = HashMap::new();
-        for check in outline_checks {
-            for variable in check.ids() {
-                if mapping.contains_key(&variable) {
-                    continue;
-                }
-                let mapped_variable = if let Some(extractor) = extractors.get(&variable) {
-                    FilterFnVariable::ExtractFromTuple(*extractor)
-                } else {
-                    let ExecutorVariable::RowPosition(position) = variable else {
-                        unreachable!("Check variables without an extractor must be in the row.")
-                    };
-                    let subrow_index = subrow_schema.len();
-                    subrow_schema.push(position);
-                    FilterFnVariable::ExtractFromSubRow(SubRowIndex(subrow_index))
+        let mut mapping = |variable| {
+            if let Some(extractor) = extractors.get(&variable) {
+                FilterFnVariable::ExtractFromTuple(*extractor)
+            } else {
+                let ExecutorVariable::RowPosition(position) = variable else {
+                    unreachable!("Check variables without an extractor must be in the row.")
                 };
-                mapping.insert(variable, mapped_variable);
+                let subrow_index = subrow_schema.len();
+                subrow_schema.push(position);
+                FilterFnVariable::ExtractFromSubRow(SubRowIndex(subrow_index))
             }
-        }
+        };
         let mut checks = Vec::with_capacity(outline_checks.len());
         for check in outline_checks {
-            checks.push(check.clone().map(&mapping));
+            checks.push(Self::map_check(check.clone(), &mut mapping));
         }
         Self { checks: Arc::new(checks), subrow_schema }
     }
 
-    pub(crate) fn filter_fn_for_row<Snapshot: ReadableSnapshot + 'static>(
+    fn filter_fn_for_row<Snapshot: ReadableSnapshot + 'static>(
         &self,
         context: &ExecutionContext<Snapshot>,
         row: &MaybeOwnedRow<'_>,
@@ -751,22 +734,85 @@ impl<T: 'static> InlineCheckFactory<T> {
         self.make_filter_fn_for_row(row).into_filter_fn(snapshot, thing_manager, parameters, storage_counters)
     }
 
-    fn make_filter_fn_for_row(&self, row: &MaybeOwnedRow<'_>) -> FilterFnWithSubRow<T> {
+    fn make_filter_fn_for_row(&self, row: &MaybeOwnedRow<'_>) -> RowBoundInlineCheck<T> {
         let mut subrow = Vec::with_capacity(self.subrow_schema.len());
         for &pos in &self.subrow_schema {
             subrow.push(row.get(pos).to_owned());
         }
         let checks = self.checks.clone();
-        FilterFnWithSubRow { checks, subrow }
+        RowBoundInlineCheck { checks, subrow }
+    }
+
+    fn map_check(check_instruction: CheckInstruction<ExecutorVariable>, mut mapping: impl FnMut(ExecutorVariable) -> FilterFnVariable<T>) -> CheckInstruction<FilterFnVariable<T>> {
+        let mut map_vertex = |vertex: CheckVertex<ExecutorVariable>| match vertex {
+            CheckVertex::Variable(var) => CheckVertex::Variable(mapping(var)),
+            CheckVertex::Type(label) => CheckVertex::Type(label),
+            CheckVertex::Parameter(param) => CheckVertex::Parameter(param)
+        };
+        match check_instruction {
+            CheckInstruction::TypeList { type_var, types } => CheckInstruction::TypeList { type_var: mapping(type_var), types },
+            CheckInstruction::ThingTypeList { thing_var, types } => {
+                CheckInstruction::ThingTypeList { thing_var: mapping(thing_var), types }
+            }
+            CheckInstruction::Iid { var, iid } => CheckInstruction::Iid { var: mapping(var), iid },
+            CheckInstruction::Sub { sub_kind: kind, subtype, supertype } => CheckInstruction::Sub {
+                sub_kind: kind,
+                subtype: map_vertex(subtype),
+                supertype: map_vertex(supertype),
+            },
+            CheckInstruction::Owns { owner, attribute } => {
+                CheckInstruction::Owns { owner: map_vertex(owner), attribute: map_vertex(attribute) }
+            }
+            CheckInstruction::Relates { relation, role_type } => {
+                CheckInstruction::Relates { relation: map_vertex(relation), role_type: map_vertex(role_type) }
+            }
+            CheckInstruction::Plays { player, role_type } => {
+                CheckInstruction::Plays { player: map_vertex(player), role_type: map_vertex(role_type) }
+            }
+            CheckInstruction::Isa { isa_kind: kind, type_, thing } => {
+                CheckInstruction::Isa { isa_kind: kind, type_: map_vertex(type_), thing: map_vertex(thing) }
+            }
+            CheckInstruction::Has { owner, attribute } => {
+                CheckInstruction::Has { owner: map_vertex(owner), attribute: map_vertex(attribute) }
+            }
+            CheckInstruction::Links { relation, player, role } => CheckInstruction::Links {
+                relation: map_vertex(relation),
+                player: map_vertex(player),
+                role: map_vertex(role),
+            },
+            CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                CheckInstruction::IndexedRelation {
+                    relation: map_vertex(relation),
+                    start_player: map_vertex(start_player),
+                    end_player: map_vertex(end_player),
+                    start_role: map_vertex(start_role),
+                    end_role: map_vertex(end_role),
+                }
+            }
+            CheckInstruction::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping(lhs), rhs: mapping(rhs) },
+            CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => CheckInstruction::LinksDeduplication {
+                role1: mapping(role1),
+                player1: mapping(player1),
+                role2: mapping(role2),
+                player2: mapping(player2),
+            },
+            CheckInstruction::NotNone { variables } => {
+                CheckInstruction::NotNone { variables: variables.into_iter().map(|v| mapping(v)).collect() }
+            }
+            CheckInstruction::Comparison { lhs, rhs, comparator } => {
+                CheckInstruction::Comparison { lhs: map_vertex(lhs), rhs: map_vertex(rhs), comparator }
+            }
+            CheckInstruction::Unsatisfiable => CheckInstruction::Unsatisfiable,
+        }
     }
 }
 
-pub(crate) struct FilterFnWithSubRow<T> {
+struct RowBoundInlineCheck<T> {
     checks: Arc<Vec<CheckInstruction<FilterFnVariable<T>>>>,
     subrow: Vec<VariableValue<'static>>,
 }
 
-impl<T> FilterFnWithSubRow<T> {
+impl<T> RowBoundInlineCheck<T> {
     fn into_filter_fn(
         self,
         snapshot: Arc<impl ReadableSnapshot + 'static>,
@@ -778,7 +824,7 @@ impl<T> FilterFnWithSubRow<T> {
             // returning Ok(true) on error just means the error is passed on to the next layer.
             let Ok(tuple) = res else { return Ok(true) };
             let value = TupleAndSubRow { tuple, subrow: &self.subrow };
-            filter_impl(&self.checks, &*snapshot, &thing_manager, &parameters, &value, storage_counters.clone())
+            all_checks_pass(&self.checks, &*snapshot, &thing_manager, &parameters, &value, storage_counters.clone())
         }
     }
 }
