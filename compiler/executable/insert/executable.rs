@@ -125,7 +125,7 @@ impl ConditionalInsert {
             };
             Self::build_recursive(optional.conjunction(), block_annotations, variable_positions, variable_registry, stage_source_span)
         }).collect::<Result<Vec<_>, _>>()?;
-        Ok(Self { concept_instructions, connection_instructions, condition, nested_inserts })
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_inserts })
     }
 }
 

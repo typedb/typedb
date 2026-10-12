@@ -36,7 +36,7 @@ use crate::{
 pub struct UpdateExecutable {
     pub executable_id: u64,
     // Reuse the insert's concept instruction for attributes. Other isas should be validated earlier
-    pub updates: Vec<ConditionalUpdate>,
+    pub root_update: ConditionalUpdate,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
 
@@ -54,46 +54,31 @@ pub fn compile(
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
     let mut variable_positions = input_variable_positions.clone();
-    let root_update = ConditionalUpdate::new(
+    let root_update = ConditionalUpdate::build_recursive(
         block.conjunction(),
         block_annotations,
         &mut variable_positions,
         variable_registry,
         source_span,
     )?;
-    let mut updates = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
-    updates.push(root_update);
-    for nested_pattern in block.conjunction().nested_patterns() {
-        let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!(
-                "Non-optional nested patterns in update are illegal and should have been rejected during translation"
-            )
-        };
-        updates.push(ConditionalUpdate::new(
-            optional.conjunction(),
-            block_annotations,
-            &mut variable_positions,
-            variable_registry,
-            source_span,
-        )?);
-    }
 
     Ok(UpdateExecutable {
         executable_id: next_executable_id(),
-        updates,
+        root_update,
         output_row_schema: prepare_output_row_schema(input_variable_positions, &variable_positions),
     })
 }
 
 #[derive(Debug)]
 pub struct ConditionalUpdate {
+    pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub condition: WritePatternCondition,
+    pub nested_updates: Vec<ConditionalUpdate>,
 }
 
 impl ConditionalUpdate {
-    fn new(
+    fn build_recursive(
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_positions: &mut HashMap<Variable, VariablePosition>,
@@ -117,7 +102,13 @@ impl ConditionalUpdate {
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instruction_map);
 
-        Ok(Self { concept_instructions, connection_instructions, condition })
+        let nested_updates = conjunction.nested_patterns().iter().map(|nested| {
+            let NestedPattern::Optional(optional) = nested else {
+                unreachable!("Only optionals are allowed as nested patterns in insert")
+            };
+            Self::build_recursive(optional.conjunction(), block_annotations, variable_positions, variable_registry, stage_source_span)
+        }).collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_updates })
     }
 }
 

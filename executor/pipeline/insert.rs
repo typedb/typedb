@@ -20,14 +20,13 @@ use resource::{
     constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS},
     profile::{PatternProfile, StepProfile},
 };
-use resource::profile::StageProfile;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     ExecutionInterrupt,
     batch::Batch,
     pipeline::{
-        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, RecursiveProfile, StageIterator, WrittenRowsIterator,
         stage::{ExecutionContext, StageAPI},
         write_condition_satisfied,
     },
@@ -71,9 +70,9 @@ where
 
         let stage_profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
         let mut next_subpattern: usize = 0;
-        let root_pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Insert pattern"));
-        let profiles =
-            build_profiles_recursive(&root_pattern_profile, &executable.root_insert, &mut next_subpattern)?;
+        let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Insert pattern"));
+        let recursive_profile =
+            build_profiles_recursive(pattern_profile, &executable.root_insert, &mut next_subpattern);
 
         // prepare_output_rows copies unmapped
         let input_output_mapping = executable
@@ -103,7 +102,7 @@ where
                 &context.thing_manager,
                 &context.parameters,
                 &mut row,
-                &profiles,
+                &recursive_profile,
             ) {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
@@ -118,34 +117,39 @@ where
     }
 }
 
-fn build_profiles_recursive(pattern_profile: PatternProfile, insert: &ConditionalInsert, next_subpattern: &mut usize) -> RecursiveProfile {
+pub(crate) fn build_profiles_recursive(
+    pattern_profile: Arc<PatternProfile>,
+    insert: &ConditionalInsert,
+    next_subpattern: &mut usize,
+) -> RecursiveProfile {
     let condition_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Condition pattern"));
+        pattern_profile.extend_or_get_subpattern(*next_subpattern, || "Condition pattern".to_owned());
     *next_subpattern += 1;
-    let condition_profile = condition_subpattern.extend_or_get_step(0, || format!("Condition step", &insert.condition));
+    let condition_profile = condition_subpattern.extend_or_get_step(0, || format!("Condition: {}", &insert.condition));
 
     let concept_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Concept instructions"));
+        pattern_profile.extend_or_get_subpattern(*next_subpattern, || "Concept instructions".to_owned());
     *next_subpattern += 1;
     let concept_instruction_profiles = reserve_step_profiles(&concept_subpattern, &insert.concept_instructions);
 
     let connection_subpattern =
-        pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Connection instructions"));
+        pattern_profile.extend_or_get_subpattern(*next_subpattern, || "Connection instructions".to_owned());
     *next_subpattern += 1;
     let connection_instruction_profiles =
         reserve_step_profiles(&connection_subpattern, &insert.connection_instructions);
 
-    let mut nested_insert_profiles = Vec::with_capacity(insert.nested_inserts.len());
+    let mut nested_profiles = Vec::with_capacity(insert.nested_inserts.len());
     for nested in &insert.nested_inserts {
-        let subpattern_profile = pattern_profile.extend_or_get_subpattern(next_subpattern, "Nested insert");
+        let subpattern_profile =
+            pattern_profile.extend_or_get_subpattern(*next_subpattern, || "Nested insert".to_owned());
         *next_subpattern += 1;
-        nested_insert_profiles.push(build_profiles_recursive(subpattern_profile, nested, next_subpattern))
+        nested_profiles.push(build_profiles_recursive(subpattern_profile, nested, next_subpattern))
     }
     RecursiveProfile {
         condition_profile,
         concept_instruction_profiles,
         connection_instruction_profiles,
-        nested_insert_profiles,
+        nested_profiles,
     }
 }
 
@@ -179,39 +183,6 @@ pub(crate) fn append_row_for_insert_mapped(
             appended.copy_mapped(with_multiplicity_one.as_reference(), mapping.iter().copied());
         })
     }
-}
-
-/// Build the step-profile vecs once at stage start. Each section (concept,
-/// connection, and per-optional concept/connection) gets its own subpattern
-/// under the stage's pattern profile, with step indices restarted at 0 inside
-/// it — so the profile output groups instructions by section in the tree.
-#[allow(clippy::type_complexity)]
-pub(crate) fn build_step_profiles(
-    executable: &InsertExecutable,
-    pattern_profile: &PatternProfile,
-) -> (Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
-    let mut next_subpattern: usize = 0;
-
-    let mut condition_profiles = Vec::with_capacity(executable.root_insert.len());
-    let mut concept_profiles = Vec::with_capacity(executable.root_insert.len());
-    let mut connection_profiles = Vec::with_capacity(executable.root_insert.len());
-    for (i, insert) in executable.root_insert.iter().enumerate() {
-        let condition_subpattern =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Inserts {i} condition"));
-        next_subpattern += 1;
-        condition_profiles.push(condition_subpattern.extend_or_get_step(0, || format!("{}", &insert.condition)));
-
-        let concept_subpattern =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Inserts {i} concept"));
-        next_subpattern += 1;
-        concept_profiles.push(reserve_step_profiles(&concept_subpattern, &insert.concept_instructions));
-
-        let connection_subpattern =
-            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Inserts {i} connection"));
-        next_subpattern += 1;
-        connection_profiles.push(reserve_step_profiles(&connection_subpattern, &insert.connection_instructions));
-    }
-    (condition_profiles, concept_profiles, connection_profiles)
 }
 
 fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
@@ -263,12 +234,13 @@ fn may_execute_concept_instructions_recursive(
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    if !write_condition_satisfied(&insert.condition, row, snapshot, thing_manager, parameters, &profile.condition_profile)? {
+    let RecursiveProfile { condition_profile, concept_instruction_profiles, nested_profiles, .. } = profile;
+    if !write_condition_satisfied(&insert.condition, row, snapshot, thing_manager, parameters, condition_profile)? {
         return Ok(());
     }
 
-    debug_assert_eq!(insert.concept_instructions.len(), profile.concept_instruction_profiles.len());
-    for (instruction, step_profile) in insert.concept_instructions.iter().zip(profile.concept_instruction_profiles.iter()) {
+    debug_assert_eq!(insert.concept_instructions.len(), concept_instruction_profiles.len());
+    for (instruction, step_profile) in insert.concept_instructions.iter().zip(concept_instruction_profiles.iter()) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
@@ -281,7 +253,7 @@ fn may_execute_concept_instructions_recursive(
         measurement.end(step_profile, 1, 1);
     }
 
-    for (nested, subprofile) in insert.nested_inserts.iter().zip(profile.nested_insert_profiles.iter()) {
+    for (nested, subprofile) in insert.nested_inserts.iter().zip(nested_profiles.iter()) {
         may_execute_concept_instructions_recursive(nested, subprofile, snapshot, thing_manager, parameters, row)?;
     }
     Ok(())
@@ -295,12 +267,14 @@ fn may_execute_connection_instructions_recursive(
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
-    if !write_condition_satisfied(&insert.condition, row, snapshot, thing_manager, parameters, &profile.condition_profile)? {
+    let RecursiveProfile { condition_profile, connection_instruction_profiles, nested_profiles, .. } = profile;
+    if !write_condition_satisfied(&insert.condition, row, snapshot, thing_manager, parameters, &condition_profile)? {
         return Ok(());
     }
 
-    debug_assert_eq!(insert.connection_instructions.len(), profile.connection_instruction_profiles.len());
-    for (instruction, step_profile) in insert.connection_instructions.iter().zip(profile.connection_instruction_profiles.iter()) {
+    debug_assert_eq!(insert.connection_instructions.len(), connection_instruction_profiles.len());
+    for (instruction, step_profile) in insert.connection_instructions.iter().zip(connection_instruction_profiles.iter())
+    {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
@@ -313,17 +287,9 @@ fn may_execute_connection_instructions_recursive(
         measurement.end(step_profile, 1, 1);
     }
 
-    for (nested, subprofile) in insert.nested_inserts.iter().zip(profile.nested_insert_profiles.iter()) {
+    for (nested, subprofile) in insert.nested_inserts.iter().zip(nested_profiles.iter()) {
         may_execute_connection_instructions_recursive(nested, subprofile, snapshot, thing_manager, parameters, row)?;
     }
 
     Ok(())
-}
-
-
-struct RecursiveProfile {
-    condition_profile: StepProfile,
-    concept_instruction_profiles: Vec<StepProfile>,
-    connection_instruction_profiles: Vec<StepProfile>,
-    nested_insert_profiles: Vec<PatternProfile>,
 }
