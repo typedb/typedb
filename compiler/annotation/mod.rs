@@ -132,7 +132,8 @@ typedb_error!(
         ),
         ValueTypeMismatch(
             19,
-            "The argument to the function {function_name} is expected to have value type '{expected}', found '{actual}'.",
+            "Argument #{index} to the function '{function_name}' is expected to have value type '{expected}', found '{actual}'.",
+            index: usize,
             function_name: Cow<'static, str>,
             expected: ValueType,
             actual: ExpressionValueType,
