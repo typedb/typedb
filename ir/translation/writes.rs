@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use answer::variable::Variable;
 use error::UnimplementedFeature;
 use typeql::{
-    Expression, Statement, TypeRef,
+    Expression, Pattern, Statement, TypeRef,
     common::Spanned,
     query::stage::{
         Put,
@@ -64,10 +64,20 @@ fn validate_insert_pattern(
     match pattern {
         WritePattern::Optional(typeql::pattern::Optional { patterns, .. }) => {
             for pattern in patterns {
-                if let typeql::Pattern::Optional(_) = pattern {
-                    return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                        feature: UnimplementedFeature::NestedOptionalWrites,
-                    }));
+                match pattern {
+                    Pattern::Optional(_) => {
+                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                            feature: UnimplementedFeature::NestedOptionalWrites,
+                        }));
+                    }
+                    Pattern::Conjunction(typeql::pattern::Conjunction { span, .. })
+                    | Pattern::Disjunction(typeql::pattern::Disjunction { span, .. })
+                    | Pattern::Negation(typeql::pattern::Negation { span, .. }) => {
+                        return Err(Box::new(RepresentationError::IllegalNestedPatternForInsert {
+                            source_span: *span,
+                        }));
+                    }
+                    Pattern::Statement(statement) => validate_insert_statement(context, statement)?,
                 }
             }
         }
@@ -75,7 +85,17 @@ fn validate_insert_pattern(
             validate_if_conditions(context, conditions)?;
             validate_insert_patterns(context, then)?;
         }
-        WritePattern::Statement(Statement::Thing(thing_stmt)) => {
+        WritePattern::Statement(statement) => validate_insert_statement(context, statement)?,
+    }
+    Ok(())
+}
+
+fn validate_insert_statement(
+    context: &PipelineTranslationContext,
+    statement: &Statement,
+) -> Result<(), Box<RepresentationError>> {
+    match statement {
+        Statement::Thing(thing_stmt) => {
             for constraint in &thing_stmt.constraints {
                 match constraint {
                     Constraint::Iid(_) => {
@@ -86,12 +106,10 @@ fn validate_insert_pattern(
                     Constraint::Isa(_) | Constraint::Has(_) | Constraint::Links(_) => (),
                 }
             }
+            Ok(())
         }
-        WritePattern::Statement(stmt) => {
-            return Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: stmt.span() }));
-        }
+        other => Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: other.span() })),
     }
-    Ok(())
 }
 
 fn validate_if_conditions(
