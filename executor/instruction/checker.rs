@@ -16,7 +16,7 @@ use answer::{Thing, Type, variable_value::VariableValue};
 use bytes::byte_array::ByteArray;
 use compiler::{
     ExecutorVariable, VariablePosition,
-    executable::match_::instructions::{CheckInstruction, CheckVertex},
+    executable::match_::instructions::{CheckInstruction, CheckVertex, thing, type_},
 };
 use concept::{
     error::ConceptReadError,
@@ -34,7 +34,7 @@ use encoding::{
 use error::unimplemented_feature;
 use ir::{
     pattern::{
-        IrID,
+        IrID, Vertex,
         constraint::{Comparator, IsaKind, SubKind},
     },
     pipeline::ParameterRegistry,
@@ -42,8 +42,7 @@ use ir::{
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
-use compiler::executable::match_::instructions::{thing, type_};
-use ir::pattern::Vertex;
+
 use crate::{pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 #[derive(Debug)]
@@ -605,74 +604,11 @@ enum FilterFnVariable<T> {
     ExtractFromTuple(fn(&T) -> VariableValue<'_>),
 }
 
-impl<T> Clone for FilterFnVariable<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<T> Copy for FilterFnVariable<T> {}
-
 impl<T> fmt::Debug for FilterFnVariable<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::ExtractFromSubRow(i) => write!(f, "SubRowIndex({:?})", i),
             Self::ExtractFromTuple(_) => f.write_str("ExtractFromTuple(...)"),
-        }
-    }
-}
-
-impl<T> Hash for FilterFnVariable<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Self::ExtractFromSubRow(i) => {
-                0u8.hash(state);
-                i.hash(state);
-            }
-            Self::ExtractFromTuple(f) => {
-                1u8.hash(state);
-                (*f as usize).hash(state);
-            }
-        }
-    }
-}
-
-impl<T> PartialEq for FilterFnVariable<T> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::ExtractFromSubRow(a), Self::ExtractFromSubRow(b)) => a == b,
-            (Self::ExtractFromTuple(a), Self::ExtractFromTuple(b)) => *a as usize == *b as usize,
-            _ => false,
-        }
-    }
-}
-
-impl<T> Eq for FilterFnVariable<T> {}
-
-impl<T> PartialOrd for FilterFnVariable<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<T> Ord for FilterFnVariable<T> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (self, other) {
-            (Self::ExtractFromSubRow(a), Self::ExtractFromSubRow(b)) => a.cmp(b),
-            (Self::ExtractFromTuple(a), Self::ExtractFromTuple(b)) => (*a as usize).cmp(&(*b as usize)),
-            (Self::ExtractFromSubRow(_), Self::ExtractFromTuple(_)) => std::cmp::Ordering::Less,
-            (Self::ExtractFromTuple(_), Self::ExtractFromSubRow(_)) => std::cmp::Ordering::Greater,
-        }
-    }
-}
-
-impl<T: 'static> IrID for FilterFnVariable<T> {}
-
-impl<T> fmt::Display for FilterFnVariable<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            FilterFnVariable::ExtractFromSubRow(index) => write!(f, "SubRowIndex[{}]", index.0),
-            FilterFnVariable::ExtractFromTuple(_) => f.write_str("<tuple-extractor>"),
         }
     }
 }
@@ -743,23 +679,26 @@ impl<T: 'static> InlineCheckFactory<T> {
         RowBoundInlineCheck { checks, subrow }
     }
 
-    fn map_check(check_instruction: CheckInstruction<ExecutorVariable>, mut mapping: impl FnMut(ExecutorVariable) -> FilterFnVariable<T>) -> CheckInstruction<FilterFnVariable<T>> {
+    fn map_check(
+        check_instruction: CheckInstruction<ExecutorVariable>,
+        mut mapping: impl FnMut(ExecutorVariable) -> FilterFnVariable<T>,
+    ) -> CheckInstruction<FilterFnVariable<T>> {
         let mut map_vertex = |vertex: CheckVertex<ExecutorVariable>| match vertex {
             CheckVertex::Variable(var) => CheckVertex::Variable(mapping(var)),
             CheckVertex::Type(label) => CheckVertex::Type(label),
-            CheckVertex::Parameter(param) => CheckVertex::Parameter(param)
+            CheckVertex::Parameter(param) => CheckVertex::Parameter(param),
         };
         match check_instruction {
-            CheckInstruction::TypeList { type_var, types } => CheckInstruction::TypeList { type_var: mapping(type_var), types },
+            CheckInstruction::TypeList { type_var, types } => {
+                CheckInstruction::TypeList { type_var: mapping(type_var), types }
+            }
             CheckInstruction::ThingTypeList { thing_var, types } => {
                 CheckInstruction::ThingTypeList { thing_var: mapping(thing_var), types }
             }
             CheckInstruction::Iid { var, iid } => CheckInstruction::Iid { var: mapping(var), iid },
-            CheckInstruction::Sub { sub_kind: kind, subtype, supertype } => CheckInstruction::Sub {
-                sub_kind: kind,
-                subtype: map_vertex(subtype),
-                supertype: map_vertex(supertype),
-            },
+            CheckInstruction::Sub { sub_kind: kind, subtype, supertype } => {
+                CheckInstruction::Sub { sub_kind: kind, subtype: map_vertex(subtype), supertype: map_vertex(supertype) }
+            }
             CheckInstruction::Owns { owner, attribute } => {
                 CheckInstruction::Owns { owner: map_vertex(owner), attribute: map_vertex(attribute) }
             }
@@ -790,12 +729,14 @@ impl<T: 'static> InlineCheckFactory<T> {
                 }
             }
             CheckInstruction::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping(lhs), rhs: mapping(rhs) },
-            CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => CheckInstruction::LinksDeduplication {
-                role1: mapping(role1),
-                player1: mapping(player1),
-                role2: mapping(role2),
-                player2: mapping(player2),
-            },
+            CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
+                CheckInstruction::LinksDeduplication {
+                    role1: mapping(role1),
+                    player1: mapping(player1),
+                    role2: mapping(role2),
+                    player2: mapping(player2),
+                }
+            }
             CheckInstruction::NotNone { variables } => {
                 CheckInstruction::NotNone { variables: variables.into_iter().map(|v| mapping(v)).collect() }
             }
