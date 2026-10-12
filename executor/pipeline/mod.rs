@@ -13,7 +13,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
-use resource::profile::{StepProfile, StorageCounters};
+use resource::profile::{PatternProfile, StepProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -71,7 +71,7 @@ fn write_condition_satisfied(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-    profile: &StepProfile,
+    profile: &[StepProfile],
 ) -> Result<bool, Box<WriteError>> {
     let row = MaybeOwnedRow::new_from_row(row);
     Checker::filter(&*condition, &row, snapshot, thing_manager, parameters, profile.storage_counters())
