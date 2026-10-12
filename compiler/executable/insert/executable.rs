@@ -119,12 +119,22 @@ impl ConditionalInsert {
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
         // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let nested_inserts = conjunction.nested_patterns().iter().map(|nested| {
-            let NestedPattern::Optional(optional) = nested else {
-                unreachable!("Only optionals are allowed as nested patterns in insert")
-            };
-            Self::build_recursive(optional.conjunction(), block_annotations, variable_positions, variable_registry, stage_source_span)
-        }).collect::<Result<Vec<_>, _>>()?;
+        let nested_inserts = conjunction
+            .nested_patterns()
+            .iter()
+            .map(|nested| {
+                let NestedPattern::Optional(optional) = nested else {
+                    unreachable!("Only optionals are allowed as nested patterns in insert")
+                };
+                Self::build_recursive(
+                    optional.conjunction(),
+                    block_annotations,
+                    variable_positions,
+                    variable_registry,
+                    stage_source_span,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(Self { condition, concept_instructions, connection_instructions, nested_inserts })
     }
 }

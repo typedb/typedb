@@ -69,7 +69,7 @@ pub struct ConditionalDelete {
     pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub nested_deletes: Vec<ConditionalDelete>
+    pub nested_deletes: Vec<ConditionalDelete>,
 }
 
 impl ConditionalDelete {
@@ -91,12 +91,16 @@ impl ConditionalDelete {
         // We can't just use required_inputs because that's recursive and we only want those at this level.
         let condition = WritePatternCondition::build(conjunction, input_variables, conjunction_annotations);
 
-        let nested_deletes = conjunction.nested_patterns().iter().map(|nested| {
-            let NestedPattern::Optional(optional) = nested else {
-                unreachable!("Only optionals are allowed as nested patterns in deletes")
-            };
-            Self::build_recursive(optional.conjunction(), block_annotations, variable_registry, input_variables)
-        }).collect::<Result<Vec<_>, _>>()?;
+        let nested_deletes = conjunction
+            .nested_patterns()
+            .iter()
+            .map(|nested| {
+                let NestedPattern::Optional(optional) = nested else {
+                    unreachable!("Only optionals are allowed as nested patterns in deletes")
+                };
+                Self::build_recursive(optional.conjunction(), block_annotations, variable_registry, input_variables)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(Self { condition, concept_instructions, connection_instructions, nested_deletes })
     }
 }
