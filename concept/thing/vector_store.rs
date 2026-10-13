@@ -4,22 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Primary store for vector attribute values.
-//!
-//! Vector attribute values are NOT materialised in the KV store: the attribute vertex key is
-//! written with an empty value (existence + MVCC visibility), and the single copy of the vector
-//! lives here, in one usearch HNSW index per attribute type. The mapping is derivable in both
-//! directions with no side table: the vector attribute ID's disambiguated hash is exactly 8
-//! bytes and is used as the usearch key ([`VectorAttributeID::as_vector_index_key`]).
-//!
-//! MVCC: this store is versionless. Attribute IDs are value-derived, so a key -> vector mapping
-//! is immutable; whether an attribute *exists* for a snapshot is answered by the KV store key.
-//! Vectors are therefore never removed on delete (older snapshots may still read them) and
-//! inserts are idempotent. Application happens inside the storage commit path (CommitObserver),
-//! after the KV write and before the watermark advances, so a checkpoint at watermark W always
-//! contains every vector of commits <= W; recovery replays only the WAL tail through the same
-//! observer.
-
 use std::{
     collections::HashMap,
     error::Error,
@@ -55,12 +39,7 @@ pub struct VectorStore {
 }
 
 struct TypeVectorIndex {
-    // ponytail: one big RwLock per type index; usearch's internal locking allows finer
-    // concurrency (lock-free adds after reserve) if this ever contends
     index: RwLock<Index>,
-    // set by every successful add, cleared when a checkpoint serialises this index: an index
-    // that is clean at save time is reused from the previous checkpoint instead of
-    // re-serialised (serialisation holds the read lock, stalling every vector commit)
     dirty: AtomicBool,
 }
 
@@ -72,9 +51,9 @@ impl TypeVectorIndex {
             dimensions,
             metric: MetricKind::Cos,
             quantization: ScalarKind::F32,
-            connectivity: 0,     // usearch defaults
-            expansion_add: 0,    // usearch defaults
-            expansion_search: 0, // usearch defaults
+            connectivity: 0,
+            expansion_add: 0,
+            expansion_search: 0,
             multi: false,
         };
         let index = usearch::new_index(&options)
@@ -86,8 +65,6 @@ impl TypeVectorIndex {
         self.index.read().unwrap().dimensions()
     }
 
-    /// Pre-commit validation: everything `add` needs that can fail is checked or allocated here,
-    /// so that failures abort the commit before it is durably written.
     fn prepare(&self, dimensions: usize, additional: usize) -> Result<(), VectorStoreError> {
         let index = self.index.write().unwrap();
         if index.dimensions() != dimensions {
@@ -109,7 +86,7 @@ impl TypeVectorIndex {
     fn add(&self, key: u64, vector: &[f32]) -> Result<(), VectorStoreError> {
         let index = self.index.write().unwrap();
         if index.contains(key) {
-            return Ok(()); // idempotent: value-derived key, same vector (WAL replay, duplicate puts)
+            return Ok(());
         }
         if index.dimensions() != vector.len() {
             return Err(format!(
@@ -124,8 +101,6 @@ impl TypeVectorIndex {
                 .reserve((index.capacity() * 2).max(1024))
                 .map_err(|err| format!("failed to grow vector index: {err}"))?;
         }
-        // the vector store is the only copy of the value: failing to add would silently lose
-        // committed data, so a broken index must surface the error
         index.add(key, vector).map_err(|err| format!("failed to add vector to index: {err}"))?;
         self.dirty.store(true, Ordering::Release);
         Ok(())
@@ -185,8 +160,6 @@ impl VectorStore {
         index.get(key)
     }
 
-    /// Approximate nearest neighbours: (attribute ID, cosine distance) pairs, nearest first.
-    /// Candidates only — existence for a snapshot must be re-checked against the KV store.
     pub fn search(&self, type_id: TypeID, query: &[f32], count: usize) -> Vec<(VectorAttributeID, f32)> {
         let Some(index) = self.indexes.read().unwrap().get(&type_id).cloned() else { return Vec::new() };
         index
@@ -200,18 +173,10 @@ impl VectorStore {
         self.indexes.read().unwrap().get(&type_id).map_or(0, |index| index.size())
     }
 
-    /// Drop indexes whose type is no longer a live vector attribute type (or whose dimensions no
-    /// longer match the schema): TypeIDs are reused after undefine, so a stale index would reject
-    /// every vector of a future type with the same TypeID and different dimensions.
-    ///
-    /// Called on schema commit. ponytail: a read snapshot opened before the undefine commit that
-    /// still iterates deleted instances of the undefined type loses access to their vectors; a
-    /// versioned drop (defer until the watermark passes all open readers) closes that window.
     pub fn retain_indexes(&self, is_live: impl Fn(TypeID, usize) -> bool) {
         self.indexes.write().unwrap().retain(|type_id, index| is_live(*type_id, index.dimensions()));
     }
 
-    /// Drop all indexes (database reset).
     pub fn clear(&self) {
         self.indexes.write().unwrap().clear();
     }
@@ -239,9 +204,6 @@ impl CommitObserver for VectorStore {
         AttributeVertex::is_vector_attribute_vertex(keyspace_id, key)
     }
 
-    /// Runs before the commit is durably written: creates missing indexes, checks dimensions, and
-    /// reserves capacity, so that `apply` (which runs after the KV write, where a failure can no
-    /// longer abort the commit) cannot fail for any data-dependent reason.
     fn validate(
         &self,
         owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
@@ -282,12 +244,6 @@ impl CommitObserver for VectorStore {
     }
 }
 
-/// Checkpoint format: a directory of plain usearch index files — one per attribute type, named
-/// `{type id hex}-{metric}.usearch`, each exactly usearch's own on-disk format (openable with any
-/// usearch tooling) — plus a text `MANIFEST`. The manifest carries what usearch's unverified file
-/// header can't be trusted for: a format version, the dimensions needed to reconstruct index
-/// options, and each file's byte length as a torn-file guard. One line per index:
-/// `{type id hex} {metric} {dimensions} {file length}`.
 const MANIFEST_FILE_NAME: &str = "MANIFEST";
 const MANIFEST_VERSION_LINE: &str = "version 1";
 const METRIC_NAME: &str = "cosine";
@@ -311,24 +267,18 @@ impl CheckpointAdditionalData for VectorStore {
             let file_name = index_file_name(type_id);
             let path = dir.join(&file_name);
 
-            // clean index: its last serialisation is in the previous checkpoint (clean means no
-            // add since the last save, and load-from-checkpoint starts clean) - hard-link it
-            // (fall back to copy) instead of re-serialising under the index read lock
             let reused = !type_index.dirty.swap(false, Ordering::Acquire)
                 && previous.map(|previous| previous.join(&file_name)).filter(|file| file.exists()).is_some_and(
                     |prev| fs::hard_link(&prev, &path).or_else(|_| fs::copy(&prev, &path).map(|_| ())).is_ok(),
                 );
             let dimensions = if reused {
-                // contents were fsynced when the previous checkpoint wrote them
                 type_index.dimensions()
             } else {
                 let index = type_index.index.read().unwrap();
                 index.save(path.to_str().unwrap()).map_err(|err| {
-                    // the swap above cleared the flag for a save that did not happen
                     type_index.dirty.store(true, Ordering::Release);
                     io::Error::other(format!("failed to save vector index {file_name}: {err}"))
                 })?;
-                // usearch's save is fwrite+fclose with no fsync
                 let file = File::open(&path)?;
                 file.sync_all()?;
                 index.dimensions()
@@ -410,7 +360,7 @@ mod test {
         let store = VectorStore::new();
         store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
         store.add(vertex(1, 200), &[0.0, 1.0, 0.0]).unwrap();
-        store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap(); // idempotent re-add
+        store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
 
         assert_eq!(store.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0, 0.0]));
         assert_eq!(store.get_vector(vertex(1, 300)), None);
@@ -433,7 +383,6 @@ mod test {
         fs::create_dir_all(&dir).unwrap();
         store.save_into_dir(&dir, None).unwrap();
 
-        // the on-disk files are plain usearch indexes plus a text manifest
         assert!(dir.join("0x0001-cosine.usearch").exists());
         assert!(dir.join("0x0007-cosine.usearch").exists());
         assert!(fs::read_to_string(dir.join(MANIFEST_FILE_NAME)).unwrap().starts_with(MANIFEST_VERSION_LINE));
@@ -442,7 +391,6 @@ mod test {
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0, 0.0, 0.0]));
 
-        // a truncated index file must be rejected by the manifest's length check
         let index_file = dir.join("0x0001-cosine.usearch");
         let bytes = fs::read(&index_file).unwrap();
         fs::write(&index_file, &bytes[..bytes.len() - 1]).unwrap();
@@ -464,20 +412,17 @@ mod test {
         fs::create_dir_all(&second).unwrap();
 
         store.save_into_dir(&first, None).unwrap();
-        store.add(vertex(7, 300), &[0.0, -1.0]).unwrap(); // dirties only type 7
+        store.add(vertex(7, 300), &[0.0, -1.0]).unwrap();
         store.save_into_dir(&second, Some(&first)).unwrap();
 
-        // type 1 was clean: its file is reused from the first checkpoint (hard link or identical copy)
         let first_clean = fs::read(first.join("0x0001-cosine.usearch")).unwrap();
         assert_eq!(fs::read(second.join("0x0001-cosine.usearch")).unwrap(), first_clean);
 
-        // the second checkpoint is complete and loadable, including the re-serialised dirty index
         let loaded = VectorStore::load_from_dir(&second).unwrap();
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0]));
         assert_eq!(loaded.get_vector(vertex(7, 300)), Some(vec![0.0, -1.0]));
 
-        // a loaded store starts clean: a save with no adds since reuses every file
         let third = root.join("third");
         fs::create_dir_all(&third).unwrap();
         loaded.save_into_dir(&third, Some(&second)).unwrap();

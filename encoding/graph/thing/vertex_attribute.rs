@@ -101,7 +101,6 @@ impl AttributeVertex {
         Self::is_valid_keyspace(storage_key.keyspace_id()) && Self::is_attribute_bytes(storage_key.bytes())
     }
 
-    /// Cheap byte-level test whether a raw storage key is a vector attribute vertex.
     pub fn is_vector_attribute_vertex(keyspace_id: KeyspaceId, bytes: &[u8]) -> bool {
         Self::keyspace_for_category(ValueTypeCategory::Vector).id() == keyspace_id
             && bytes.len() == THING_VERTEX_LENGTH_PREFIX_TYPE + VectorAttributeID::LENGTH
@@ -1039,11 +1038,6 @@ impl VectorAttributeID {
         }
     }
 
-    /// [`HashedID::find_existing_or_next_disambiguated_hash_matching`] with a fetcher-aware value
-    /// comparison: committed vector attributes have an empty value in the KV store (the value
-    /// lives in the vector store), so equal-hash candidates with an empty stored value are
-    /// compared against the vector fetched via `committed_vector` (keyed by the candidate's
-    /// 8-byte [hash|tail], see [`Self::as_vector_index_key`]).
     fn find_existing_or_next_disambiguated_hash_vector<Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
@@ -1058,17 +1052,12 @@ impl VectorAttributeID {
             if stored_value.is_empty() {
                 let index_key = u64::from_be_bytes(key[key.len() - (Self::HASH_LENGTH + 1)..].try_into().unwrap());
                 let vector = committed_vector(index_key).ok_or_else(|| {
-                    // treating a miss as a non-match would allocate a fresh attribute ID for a
-                    // value that already exists, so it must surface as an error
                     Arc::new(SnapshotIteratorError::ExternalValueMissing {
                         description: format!(
                             "vector attribute (key: {index_key:#018x}) exists in storage but its value is missing from the vector store"
                         ),
                     })
                 })?;
-                // compare the encoded bytes, not decoded f32s: the hash is computed over the
-                // encoded bytes, and f32 `==` would disagree with it on NaN (never equal to
-                // itself) and on -0.0/0.0 (equal despite different bytes)
                 Ok(VectorBytes::<1>::build(&vector).bytes() == value_bytes)
             } else {
                 Ok(stored_value == value_bytes)
@@ -1129,8 +1118,6 @@ impl VectorAttributeID {
         &self.bytes[0..Self::TAIL_INDEX]
     }
 
-    /// The disambiguated hash ([7: hash][1: tail]) is exactly 8 bytes: a unique-per-type u64 used
-    /// as the vector index key, derivable from the ID with no side table.
     pub fn as_vector_index_key(&self) -> u64 {
         u64::from_be_bytes(self.bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].try_into().unwrap())
     }

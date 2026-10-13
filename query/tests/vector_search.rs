@@ -88,7 +88,6 @@ fn try_define(context: &Context, query: &str) -> Result<(), String> {
             query,
         )
         .map_err(|err| format!("{err:?}"))?;
-    // the transaction commit flow runs commit-time schema validation before committing the snapshot
     context.type_manager.validate(&snapshot).map_err(|errs| format!("{errs:?}"))?;
     snapshot.commit(&mut CommitProfile::DISABLED).map_err(|err| format!("{err:?}"))?;
     Ok(())
@@ -164,11 +163,9 @@ fn committed_vectors_live_in_the_store_and_are_searchable() {
     let context = setup();
     run_write_query(&context, INSERT);
 
-    // the commit observer moved the vectors into the vector store
     let store = vector_store(&context);
     assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3);
 
-    // ANN search over committed vectors: [1,0,0] and [0.9,0.1,0] are close to [1,0,0]; [0,1,0] is not
     let rows = run_read_query(
         &context,
         r#"match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
@@ -187,7 +184,6 @@ fn committed_vector_values_are_read_back_from_the_store() {
     let context = setup();
     run_write_query(&context, INSERT);
 
-    // value read goes: KV key (existence, empty value) -> vector store (the value)
     let snapshot = context.storage.clone().open_snapshot_read();
     let attribute_type =
         context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
@@ -207,8 +203,6 @@ fn committed_vector_values_are_read_back_from_the_store() {
 #[test]
 fn uncommitted_vectors_are_found_by_search_in_the_same_transaction() {
     let context = setup();
-    // insert and search in ONE write pipeline: the vectors are only in the transaction's buffer,
-    // not in the vector store index - the executor merges buffered writes into the candidates
     let rows = run_write_query(
         &context,
         r#"insert
@@ -216,8 +210,6 @@ fn uncommitted_vectors_are_found_by_search_in_the_same_transaction() {
             $b isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
         match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
     );
-    // the insert stage produces a single row (binding $a and $b); the match stage joins the one
-    // buffered vector above the threshold onto it
     assert_eq!(rows.len(), 1, "1 insert row x 1 matching buffered vector, got: {rows:?}");
 }
 
@@ -225,8 +217,6 @@ fn uncommitted_vectors_are_found_by_search_in_the_same_transaction() {
 fn duplicate_vector_insert_is_deduplicated() {
     let context = setup();
     run_write_query(&context, INSERT);
-    // inserting an identical vector must reuse the existing attribute (value-derived identity),
-    // exercising the store-backed hash disambiguation against committed (stripped) values
     run_write_query(&context, r#"insert $d isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
     let store = vector_store(&context);
     assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3, "no new vector expected");
@@ -247,7 +237,6 @@ fn similarity_scores_are_returned_alongside_elements() {
         r#"match let $emb, $sim in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);
            sort $sim desc;"#,
     );
-    // in row order: the explicit sort returns the most similar vector first
     let scores: Vec<f64> = rows
         .iter()
         .flat_map(|row| {
@@ -284,9 +273,6 @@ fn vector_search_requires_two_assigned_variables() {
 
 #[test]
 fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
-    // NaN != NaN under f32 `==`, but the attribute ID hash is computed over the encoded bytes:
-    // identity resolution must also compare encoded bytes, or every put of a NaN-containing
-    // vector would allocate a fresh attribute (until the hash-disambiguation tail overflows)
     let context = setup();
     let snapshot = context.storage.clone().open_snapshot_read();
     let attribute_type =
@@ -311,7 +297,6 @@ fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
 #[test]
 fn vector_index_annotation_is_optional_and_vector_only() {
     let context = setup_empty();
-    // a cosine HNSW index is implicit for vector value types; @index(hnsw:cosine) is declarative
     let result = try_define(&context, r#"define attribute bare-embedding, value vector(3, "float32");"#);
     assert!(result.is_ok(), "vector attribute without @index(hnsw:cosine) should be accepted: {result:?}");
 

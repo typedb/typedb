@@ -77,15 +77,6 @@ pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
 
-/// Observer for commits whose values live outside the KV store (e.g. vector attribute values in
-/// a vector index). Keys for which `owns_value` returns true are written to the KV store with an
-/// empty value; the real value is handed to `apply` after the KV write and before the watermark
-/// advances past `sequence_number`. That ordering guarantees a checkpoint taken at watermark W
-/// has observed every commit <= W, so recovery only ever replays the WAL tail.
-///
-/// `validate` runs before the commit is durably written: anything that can fail must fail there,
-/// so the commit aborts cleanly. After a successful `validate`, `apply` failing is an internal
-/// error (the commit is already in the WAL and KV store) and poisons the commit pipeline.
 pub trait CommitObserver: Send + Sync + fmt::Debug {
     fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
     fn validate(
@@ -103,8 +94,6 @@ pub(crate) fn extract_owned_values(
     observer: &dyn CommitObserver,
     operations: &OperationsBuffer,
 ) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> {
-    // iterate the write buffers by reference, cloning only entries the observer owns: a commit
-    // with no externally-owned values pays one cheap `owns_value` check per key and zero clones
     operations
         .write_buffers()
         .flat_map(|buffer| {
@@ -243,10 +232,6 @@ impl<Durability> MVCCStorage<Durability> {
         })
     }
 
-    /// Test-only escape hatch for harnesses that assemble storage in layers (the observer lives
-    /// in a crate the storage-creating test utility cannot depend on). Production code passes the
-    /// observer to `create` / `load` instead. `&mut self` means the storage cannot be serving
-    /// commits yet.
     pub fn set_commit_observer(&mut self, observer: Arc<dyn CommitObserver>) {
         self.commit_observer = Some(observer);
     }
@@ -346,8 +331,6 @@ impl<Durability> MVCCStorage<Durability> {
         let owned_values =
             self.commit_observer.as_ref().map(|observer| extract_owned_values(&**observer, commit_record.operations()));
 
-        // anything the observer cannot apply must abort here, before the commit is durably
-        // written: a failure after the KV write cannot be rolled back
         if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
             if !owned.is_empty() {
                 observer.validate(owned).map_err(|error| StorageCommitError::CommitObserver {
@@ -386,10 +369,6 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
 
-                // Apply externally-owned values (e.g. vectors) before the watermark can advance
-                // past this commit, so checkpoints at watermark W always cover commits <= W.
-                // `validate` ran before the durable write, so a failure here is an internal error,
-                // handled like a keyspace write failure.
                 if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
                     observer.apply(commit_sequence_number, owned).map_err(|error| {
                         StorageCommitError::CommitObserver { name: self.name.clone(), source: Arc::from(error) }

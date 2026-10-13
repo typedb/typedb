@@ -1912,8 +1912,6 @@ impl ConjunctionPlan<'_> {
                 binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
             }
             ConstraintVertex::VectorSearch(_) => {
-                // a constraint is check-lowered only when it produces no variables, and the
-                // similarity variable's sole producer is the vector search constraint itself
                 unreachable!("vector search always produces its similarity variable")
             }
             ConstraintVertex::Has(planner) => {

@@ -157,8 +157,6 @@ impl ValueType {
         }
     }
 
-    /// Like `is_trivially_castable_to`, but exact on parameterised types: vectors must match
-    /// length and precision, not just the category.
     pub fn is_trivially_castable_to_exact(&self, other: &ValueType) -> bool {
         match (self, other) {
             (ValueType::Vector(params), ValueType::Vector(other_params)) => params == other_params,

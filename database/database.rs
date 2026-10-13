@@ -401,8 +401,6 @@ impl Database<WALClient> {
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
-        // the vector store must be loaded BEFORE storage recovery: recovery replays the WAL tail
-        // through the commit observer, layering post-checkpoint vector writes onto the loaded store
         let (vector_store, vector_store_extension_missing) = match &checkpoint {
             Some(reader) => match reader.get_additional_data::<VectorStore>() {
                 Ok(store) => (Arc::new(store), false),
@@ -423,9 +421,6 @@ impl Database<WALClient> {
             .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         if vector_store_extension_missing {
-            // every checkpoint since vectors were introduced carries the extension, so a missing
-            // one (downgrade/upgrade cycle, hand-copied checkpoint) with committed vectors means
-            // the only copy of those values is gone: fail the load instead of losing data silently
             validate_vector_store_backs_all_committed_vectors(&storage, &vector_store).map_err(|description| {
                 DatabaseOpenError::VectorStoreMissingData { name: name.to_string(), description }
             })?;
@@ -609,11 +604,6 @@ impl Database<WALClient> {
     }
 }
 
-/// Checks that every committed vector attribute key is backed by a value in the vector store.
-/// Vectors committed after the loaded checkpoint are fine (WAL replay re-added them via the
-/// commit observer); only pre-checkpoint vectors can be missing, and only when the checkpoint
-/// lacked the vector store extension. Runs a scan of the vector-capable attribute keyspace, which
-/// is acceptable for that rare recovery path.
 fn validate_vector_store_backs_all_committed_vectors(
     storage: &Arc<MVCCStorage<WALClient>>,
     vector_store: &Arc<VectorStore>,
@@ -679,8 +669,6 @@ fn checkpoint_storage(
     debug!("Starting checkpoint for database {database_name}");
     let checkpoint = CheckpointWriter::new(path)?;
     storage.checkpoint(&checkpoint)?;
-    // dumped after the storage watermark is read: commits apply to the vector store before the
-    // watermark advances, so the dump is a superset of the checkpoint - never missing anything
     checkpoint.add_extension(vector_store)?;
     fail_point!(UNFINISHED_CHECKPOINT);
     checkpoint.finish()?;

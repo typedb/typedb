@@ -21,9 +21,6 @@ use storage::{
     sequence_number::SequenceNumber,
 };
 
-// one VectorStore per storage, shared across repeated load_managers calls so commits and reads
-// see the same store. Keyed by storage identity because the commit-observer trait object cannot
-// be downcast back to a VectorStore.
 static VECTOR_STORES: Mutex<Vec<(Weak<MVCCStorage<WALClient>>, Arc<VectorStore>)>> = Mutex::new(Vec::new());
 
 pub fn setup_concept_storage(storage: &mut Arc<MVCCStorage<WALClient>>) {

@@ -52,9 +52,6 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         )
     }
 
-    /// Like [`Self::find_existing_or_next_disambiguated_hash`], but with a custom value-equality
-    /// test: `value_matches(candidate key, candidate stored value)` decides whether an equal-hash
-    /// candidate holds the same value, for IDs whose value lives outside the KV store.
     fn find_existing_or_next_disambiguated_hash_matching<Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,

@@ -38,8 +38,6 @@ impl WriteBatches {
                 let keyspace_id = buffer.keyspace_id;
                 let write_batch = write_batches[index].insert(WriteBatch::default());
                 for (key, write) in writes {
-                    // externally-owned values (e.g. vectors) are not materialised in the KV store:
-                    // the key is written with an empty value; the value lives with the CommitObserver
                     let value_owned_externally =
                         commit_observer.is_some_and(|observer| observer.owns_value(keyspace_id, key));
                     match write {

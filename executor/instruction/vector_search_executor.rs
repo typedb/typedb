@@ -120,7 +120,6 @@ impl VectorSearchExecutor {
     ) -> Self {
         let VectorSearchInstruction { vector_search, types, checks, inputs } = instruction;
         let var = vector_search.attribute().as_variable().unwrap();
-        // the iterator yields in attribute order (BTreeSet); the planner must not pick any other sort variable
         debug_assert_eq!(sort_by, var, "vector search can only be sorted by its attribute variable");
         let attribute_bound = inputs.iter().any(|&input| input == var);
         let similarity_var = vector_search.similarity().as_variable();
@@ -198,23 +197,13 @@ impl VectorSearchExecutor {
             let type_id = attribute_type.vertex().type_id_();
             let vector_store = thing_manager.vector_store();
 
-            // candidate set deduplicates index hits against this transaction's buffered writes
-            // (a put of an already-committed vector appears in both)
-            // BTreeSet: downstream tuple iterators require attribute-sorted yield order
             let mut candidates: BTreeSet<AttributeVertex> = BTreeSet::new();
 
-            // 1) committed vectors: ANN search on the vector store index.
-            // ponytail: threshold-only semantics on a top-k index via k-widening; replace with a
-            // planner-provided k when TypeQL exposes one
             let total = vector_store.indexed_vector_count(type_id);
             if total > 0 {
                 let mut k = 128.min(total);
                 loop {
                     let results = vector_store.search(type_id, &query, k);
-                    // results are nearest-first, so only the last (worst) hit decides whether more
-                    // hits above the threshold may exist beyond k. the stop decision uses usearch's
-                    // approximate distance while inclusion below re-scores with the exact simsimd
-                    // similarity — that asymmetry is intentional for an ANN path.
                     let last_above_threshold =
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;
@@ -228,7 +217,6 @@ impl VectorSearchExecutor {
                 }
             }
 
-            // 2) this transaction's buffered vector writes: not yet in the index
             for (key, write) in snapshot.iterate_writes() {
                 if matches!(write, Write::Delete)
                     || !AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes())
@@ -242,8 +230,6 @@ impl VectorSearchExecutor {
             }
 
             for vertex in candidates {
-                // MVCC re-check: the vector store is versionless; whether the attribute exists
-                // for this snapshot is decided by the KV key (delete tombstones, visibility)
                 let exists = snapshot
                     .get_mapped(vertex.into_storage_key().as_reference(), |_| (), storage_counters.clone())
                     .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?

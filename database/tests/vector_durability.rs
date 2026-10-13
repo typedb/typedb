@@ -4,10 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Vector attribute values live only in the usearch-backed VectorStore (RocksDB keeps just the
-//! existence key). These tests cover the two recovery paths after a restart:
-//! WAL-tail replay through the commit observer, and loading the checkpoint extension.
-
 use std::sync::Arc;
 
 use database::{
@@ -110,9 +106,6 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
         drop(db);
     }
 
-    // restart 1: no checkpoint contains the vectors yet -> they are recovered by replaying the
-    // WAL through the commit observer during storage recovery. Database::load then writes a
-    // fresh checkpoint (including the vector store extension) because the WAL is ahead of it.
     {
         let db = open_db(&db_path);
         assert_eq!(
@@ -123,14 +116,11 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
         drop(db);
     }
 
-    // restart 2: the previous load wrote a checkpoint with the vector store extension -> this
-    // load restores the store from the checkpoint file (plus an empty WAL tail).
     {
         let db = open_db(&db_path);
         let store = db.vector_store();
         assert_eq!(store.indexed_vector_count(type_id), 3, "vectors must be restored from the checkpoint extension");
 
-        // the values themselves are intact and searchable
         let results = store.search(type_id, &[1.0, 0.0, 0.0], 3);
         let mut found: Vec<Vec<f32>> =
             results.iter().filter_map(|(id, _)| store.get_by_key(type_id, id.as_vector_index_key())).collect();
@@ -149,13 +139,11 @@ fn checkpoint_missing_the_vector_store_extension_fails_to_open_when_vectors_exis
         insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
         drop(db);
     }
-    // this load finds the WAL ahead of any checkpoint and writes one (with the extension)
     {
         let db = open_db(&db_path);
         drop(db);
     }
 
-    // simulate a checkpoint written by a build without vector support
     let mut removed = 0;
     for entry in std::fs::read_dir(db_path.join("checkpoint")).expect("checkpoint dir") {
         let extension_dir = entry.expect("checkpoint entry").path().join("VECTOR_STORE");
@@ -166,8 +154,6 @@ fn checkpoint_missing_the_vector_store_extension_fails_to_open_when_vectors_exis
     }
     assert!(removed > 0, "expected at least one checkpoint with the vector store extension");
 
-    // pre-checkpoint vectors are not in the WAL tail: their only copy is gone, so the open
-    // must fail loudly instead of starting with an empty vector store
     let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
     let resources = create_rocks_resources();
     let result = Database::<WALClient>::open(&db_path, &diagnostics_manager, &resources);
@@ -184,16 +170,12 @@ fn undefining_a_vector_type_drops_its_index_so_the_type_id_is_reusable() {
     let old_type_id = lookup_embedding_type_id(&db);
     assert_eq!(db.vector_store().indexed_vector_count(old_type_id), 1);
 
-    // instances must be deleted before the type can be undefined
     insert_vectors(db.clone(), "match $x isa item; delete $x;");
     insert_vectors(db.clone(), "match $e isa embedding; delete $e;");
     run_schema_query(db.clone(), "undefine embedding;");
 
-    // the schema commit pruned the undefined type's index: TypeIDs are reused, and a stale
-    // 3-dimensional index would otherwise reject every vector of a future type with this TypeID
     assert_eq!(db.vector_store().indexed_vector_count(old_type_id), 0);
 
-    // a replacement vector type with different dimensions (possibly reusing the TypeID) works
     run_schema_query(
         db.clone(),
         r#"define attribute embedding2, value vector(4, "float32"); entity item owns embedding2 @card(0..);"#,

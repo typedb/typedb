@@ -432,8 +432,6 @@ impl ThingManager {
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
             AttributeID::Vector(_id) => {
-                // committed vector attributes have an empty KV value (existence only) - the value
-                // lives in the vector store; a non-empty value is this transaction's buffered write
                 let buffered = snapshot
                     .get_mapped(
                         attribute.vertex().into_storage_key().as_reference(),

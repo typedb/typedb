@@ -521,8 +521,6 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             schema.function_cache = Arc::new(function_cache);
             commit_profile.schema_update_caches_updated();
 
-            // prune vector indexes of undefined (or dimension-changed) vector attribute types:
-            // TypeIDs are reused, so a stale index would reject a future type's vectors
             let snapshot = database.storage.clone().open_snapshot_read_at(sequence_number);
             let live_vector_types: HashMap<TypeID, usize> = (|| {
                 let mut live = HashMap::new();

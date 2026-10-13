@@ -456,7 +456,6 @@ pub enum ValueType {
     Duration,
     String,
     Struct(Label),
-    // raw keeps the exact `vector(N, "encoding")` text for string comparisons with server output
     Vector { parameters: VectorTypeParameters, raw: String },
 }
 
@@ -570,8 +569,6 @@ impl Value {
                 self.raw_value
             }
         } else if let TypeDBValueType::Vector(parameters) = &value_type {
-            // a bare element list (e.g. a JSON array from the HTTP service) is wrapped into the
-            // full vector literal form expected by the TypeQL parser
             let trimmed = self.raw_value.trim();
             if trimmed.starts_with('[') {
                 format!("vector({trimmed}, \"{}\")", parameters.precision.name())

@@ -237,14 +237,8 @@ enum ReadyItemSource {
 
 #[derive(Debug)]
 pub enum SnapshotIteratorError {
-    MVCCRead {
-        source: MVCCReadError,
-    },
-    /// A key whose value lives outside the KV store (see `CommitObserver`) has no value in the
-    /// external store: a recoverable inconsistency (e.g. a checkpoint predating the store).
-    ExternalValueMissing {
-        description: String,
-    },
+    MVCCRead { source: MVCCReadError },
+    ExternalValueMissing { description: String },
 }
 
 impl fmt::Display for SnapshotIteratorError {
