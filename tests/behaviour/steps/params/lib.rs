@@ -25,7 +25,11 @@ use concept::{
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{label::Label as TypeDBLabel, value::Value as TypeDBValue, value_type::ValueType as TypeDBValueType},
+    value::{
+        label::Label as TypeDBLabel,
+        value::Value as TypeDBValue,
+        value_type::{ValueType as TypeDBValueType, VectorPrecision, VectorTypeParameters},
+    },
 };
 use ir::translation::literal::FromTypeQLLiteral;
 use itertools::{Either, Itertools};
@@ -439,7 +443,7 @@ impl FromStr for KindExtended {
 #[derive(Debug, Parameter)]
 #[param(
     name = "value_type",
-    regex = r"(boolean|integer|double|decimal|date|datetime(?:-tz)?|duration|string|struct|struct\([A-Za-z0-9_:-]+\))"
+    regex = r#"(boolean|integer|double|decimal|date|datetime(?:-tz)?|duration|string|struct|struct\([A-Za-z0-9_:-]+\)|vector\(\d+, "[A-Za-z0-9_]+"\))"#
 )]
 pub enum ValueType {
     Boolean,
@@ -452,6 +456,8 @@ pub enum ValueType {
     Duration,
     String,
     Struct(Label),
+    // raw keeps the exact `vector(N, "encoding")` text for string comparisons with server output
+    Vector { parameters: VectorTypeParameters, raw: String },
 }
 
 impl ValueType {
@@ -472,6 +478,7 @@ impl ValueType {
                     .unwrap()
                     .unwrap(),
             ),
+            ValueType::Vector { parameters, .. } => TypeDBValueType::Vector(parameters),
         }
     }
 
@@ -487,6 +494,7 @@ impl ValueType {
             ValueType::Duration => TypeDBValueType::Duration,
             ValueType::String => TypeDBValueType::String,
             ValueType::Struct(_) => panic!("Structs are not static value types. Use `into_typedb` instead"),
+            ValueType::Vector { parameters, .. } => TypeDBValueType::Vector(parameters),
         }
     }
 
@@ -502,6 +510,7 @@ impl ValueType {
             ValueType::Duration => "duration",
             ValueType::String => "string",
             ValueType::Struct(value) => &value.label_string,
+            ValueType::Vector { raw, .. } => raw,
         }
     }
 }
@@ -521,9 +530,17 @@ impl FromStr for ValueType {
             "string" => Self::String,
             "struct" => Self::Struct(Label { label_string: "struct".to_string() }),
             other => {
-                let re = Regex::new(r"^struct\(([A-Za-z0-9_:-]+)\)$").unwrap();
-                if let Some(caps) = re.captures(other) {
+                let struct_re = Regex::new(r"^struct\(([A-Za-z0-9_:-]+)\)$").unwrap();
+                let vector_re = Regex::new(r#"^vector\((\d+), "([A-Za-z0-9_]+)"\)$"#).unwrap();
+                if let Some(caps) = struct_re.captures(other) {
                     Self::Struct(Label { label_string: caps[1].to_string() })
+                } else if let Some(caps) = vector_re.captures(other) {
+                    let length: u16 = caps[1].parse().map_err(|_| format!("invalid vector length in '{other}'"))?;
+                    let precision = match &caps[2] {
+                        "float32" => VectorPrecision::Float32,
+                        unsupported => return Err(format!("unsupported vector precision '{unsupported}'")),
+                    };
+                    Self::Vector { parameters: VectorTypeParameters::new(length, precision), raw: other.to_string() }
                 } else {
                     panic!("Cannot parse value type '{other}'")
                 }
@@ -550,6 +567,15 @@ impl Value {
                 format!("\"{}\"", &self.raw_value.replace("\"", "\\\""))
             } else {
                 // or an already valid quoted and escaped string to parse
+                self.raw_value
+            }
+        } else if let TypeDBValueType::Vector(parameters) = &value_type {
+            // a bare element list (e.g. a JSON array from the HTTP service) is wrapped into the
+            // full vector literal form expected by the TypeQL parser
+            let trimmed = self.raw_value.trim();
+            if trimmed.starts_with('[') {
+                format!("vector({trimmed}, \"{}\")", parameters.precision.name())
+            } else {
                 self.raw_value
             }
         } else {
