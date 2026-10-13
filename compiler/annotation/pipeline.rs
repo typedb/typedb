@@ -400,7 +400,7 @@ fn complete_block_annotations_with_value_types(
                 let actual = value_types_in_conjunction.get(&Vertex::Variable(argument_id)).unwrap();
                 if actual != &ExpressionValueType::Single(value_type.clone()) {
                     return Err(AnnotationError::ValueTypeMismatch {
-                        index,
+                        index: index + 1,
                         function_name: signature.name.clone(),
                         expected: value_type.clone(),
                         actual: actual.clone(),
