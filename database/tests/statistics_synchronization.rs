@@ -300,7 +300,7 @@ fn remove_from_wal(db_dir: &Path, sequence_number: DurabilitySequenceNumber, rec
     let mut prev = DurabilitySequenceNumber::new(0);
     for record in source_wal.iter_from(DurabilitySequenceNumber::new(0)).unwrap() {
         let record = record.unwrap();
-        target_wal.register_record_type(record.record_type, &format!("<record {record_type}>"));
+        target_wal.register_record_type(record.record_type, &format!("<record {}>", record.record_type));
         if record.record_type == record_type && record.sequence_number == sequence_number {
             continue;
         }
