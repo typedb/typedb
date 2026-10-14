@@ -271,3 +271,60 @@ fn an_out_of_order_stream_is_rejected() {
     let result = late.apply(MigrationItem::Checksums(Checksums::new()));
     assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
 }
+
+#[test]
+fn a_relation_whose_players_arrive_later_survives_batch_commits() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_pending_players");
+    let database_manager = manager(&data_dir);
+    let person =
+        |id: String| MigrationItem::Entity { id, label: Label::build("person", None), owned_attributes: vec![] };
+    let padding = 12_000; // more writes than one import batch holds
+
+    let mut items = vec![
+        MigrationItem::Schema(SCHEMA.to_owned()),
+        MigrationItem::Relation {
+            id: "f1".to_owned(),
+            label: Label::build("friendship", None),
+            owned_attributes: vec![],
+            related_role_players: vec![(Label::build_scoped("friend", "friendship", None), vec!["p1".to_owned()])],
+        },
+    ];
+    items.extend((0..padding).map(|i| person(format!("pad{i}"))));
+    items.push(person("p1".to_owned()));
+    items.push(MigrationItem::Checksums(Checksums {
+        entity_count: padding + 1,
+        attribute_count: 0,
+        relation_count: 1,
+        role_count: 1,
+        ownership_count: 0,
+    }));
+    import_all(&database_manager, "pending", items);
+
+    let transaction = read_transaction(&database_manager, "pending");
+    let relations: Vec<MigrationItem> = export(&transaction, "pending")
+        .into_iter()
+        .filter(|item| matches!(item, MigrationItem::Relation { .. }))
+        .collect();
+    let [MigrationItem::Relation { related_role_players, .. }] = relations.as_slice() else {
+        panic!("one relation expected, got {relations:?}")
+    };
+    assert_eq!(related_role_players.iter().map(|(_, players)| players.len()).sum::<usize>(), 1);
+}
+
+#[test]
+fn a_relation_without_role_players_is_rejected() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_playerless_relation");
+    let database_manager = manager(&data_dir);
+
+    let mut importer = importer(&database_manager, "playerless");
+    importer.apply(MigrationItem::Schema(SCHEMA.to_owned())).expect("schema");
+    let result = importer.apply(MigrationItem::Relation {
+        id: "f1".to_owned(),
+        label: Label::build("friendship", None),
+        owned_attributes: vec![],
+        related_role_players: vec![(Label::build_scoped("friend", "friendship", None), vec![])],
+    });
+    assert!(matches!(result, Err(DatabaseImportError::RelationWithoutRolePlayers { .. })), "{result:?}");
+}

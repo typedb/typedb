@@ -458,6 +458,9 @@ impl DatabaseImporter {
         owned_attributes: Vec<String>,
         related_role_players: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
+        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
+            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
+        }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let relation_type = type_manager
                 .get_relation_type(&snapshot, &label)
@@ -1151,5 +1154,6 @@ typedb_error! {
         ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
+        RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It is a sign of a corrupted file or a client bug.", id: String),
     }
 }

@@ -356,7 +356,8 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::AccessAfterFinalisation { .. }
         | DatabaseImportError::ItemBeforeSchema { .. }
         | DatabaseImportError::SchemaAlreadyImported { .. }
-        | DatabaseImportError::ItemAfterChecksums { .. } => ErrorOrigin::Request,
+        | DatabaseImportError::ItemAfterChecksums { .. }
+        | DatabaseImportError::RelationWithoutRolePlayers { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
         | DatabaseImportError::DataCommitFailed { .. }
