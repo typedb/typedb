@@ -11,14 +11,11 @@ use std::{
 };
 
 use concept::{
-    error::{ConceptReadError, ConceptWriteError},
+    error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::{
-        TypeAPI,
-        type_manager::{
-            TypeManager,
-            type_cache::{TypeCache, TypeCacheCreateError},
-        },
+    type_::type_manager::{
+        TypeManager,
+        type_cache::{TypeCache, TypeCacheCreateError},
     },
 };
 use durability::DurabilitySequenceNumber;
@@ -521,19 +518,14 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             schema.function_cache = Arc::new(function_cache);
             commit_profile.schema_update_caches_updated();
 
-            let snapshot = database.storage.clone().open_snapshot_read_at(sequence_number);
-            let live_vector_types: HashMap<TypeID, usize> = (|| {
-                let mut live = HashMap::new();
-                for attribute_type in type_manager.get_attribute_types(&snapshot)? {
-                    if let Some(ValueType::Vector(params)) =
-                        attribute_type.get_value_type_without_source(&snapshot, &type_manager)?
-                    {
-                        live.insert(attribute_type.vertex().type_id_(), params.length as usize);
-                    }
-                }
-                Ok::<_, Box<ConceptReadError>>(live)
-            })()
-            .map_err(|typedb_source| SchemaCommitError::VectorIndexUpdate { typedb_source })?;
+            let live_vector_types: HashMap<TypeID, usize> = schema
+                .type_cache
+                .get_attribute_types_with_value_types()
+                .filter_map(|(attribute_type, value_type)| match value_type {
+                    ValueType::Vector(params) => Some((attribute_type.vertex().type_id_(), params.length as usize)),
+                    _ => None,
+                })
+                .collect();
             database
                 .vector_store
                 .retain_indexes(|type_id, dimensions| live_vector_types.get(&type_id) == Some(&dimensions));
@@ -616,7 +608,6 @@ typedb_error! {
         StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
         FunctionError(5, "Function error.", typedb_source: FunctionError),
         SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
-        VectorIndexUpdate(7, "Failed to update vector indexes against the committed schema.", typedb_source: Box<ConceptReadError>),
     }
 }
 

@@ -74,7 +74,7 @@ pub struct StructureVariableInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "tag")]
 pub enum StructureConstraint {
     Isa {
         instance: StructureVertex,
@@ -150,14 +150,11 @@ pub enum StructureConstraint {
         label: String,
     },
     Value {
-        #[serde(rename = "attributeType")]
         attribute_type: StructureVertex,
-        #[serde(rename = "valueType")]
         value_type: String,
     },
     VectorSearch {
         attribute: StructureVertex,
-        #[serde(rename = "attributeType")]
         attribute_type: StructureVertex,
         query: StructureVertex,
         threshold: StructureVertex,
