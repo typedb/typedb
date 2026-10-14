@@ -825,19 +825,17 @@ fn write_to_delta<D>(
                 }
             }
         }
-        Write::Put { action, .. } => {
+        Write::Put { action, value, .. } => {
             if open_sequence_number.next() >= commit_sequence_number {
                 // no concurrent commit could have occurred - fall back to the flag
                 if action.load(std::sync::atomic::Ordering::Relaxed) != PutAction::Nop { Ok(1) } else { Ok(0) }
             } else {
-                if storage
-                    .get::<0>(
-                        &IteratorPool::new(),
-                        write_key,
-                        commit_sequence_number.previous(),
-                        StorageCounters::DISABLED,
-                    )?
-                    .is_some()
+                if let Some(stored_value) = storage.get::<0>(
+                    &IteratorPool::new(),
+                    write_key,
+                    commit_sequence_number.previous(),
+                    StorageCounters::DISABLED,
+                )? && *stored_value == **value
                 {
                     // exists in storage before PUT is committed
                     Ok(0)
