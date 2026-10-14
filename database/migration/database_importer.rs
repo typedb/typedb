@@ -349,7 +349,7 @@ impl std::fmt::Debug for DatabaseImporter {
 }
 
 impl DatabaseImporter {
-    const MAX_WRITES_PER_COMMIT: usize = 10_000;
+    pub const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
 
     pub fn new(
@@ -1154,6 +1154,6 @@ typedb_error! {
         ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
-        RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It is a sign of a corrupted file or a client bug.", id: String),
+        RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It can be a sign of a corrupted file or a client bug.", id: String),
     }
 }

@@ -279,7 +279,7 @@ fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let database_manager = manager(&data_dir);
     let person =
         |id: String| MigrationItem::Entity { id, label: Label::build("person", None), owned_attributes: vec![] };
-    let padding = 12_000; // more writes than one import batch holds
+    let padding = DatabaseImporter::MAX_WRITES_PER_COMMIT * 2;
 
     let mut items = vec![
         MigrationItem::Schema(SCHEMA.to_owned()),
