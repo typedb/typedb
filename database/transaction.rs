@@ -534,16 +534,16 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
         };
 
         if let Some(CommitData { sequence_number, record }) = commit_data {
-            durability
-                .unsequenced_write(&self.cleanup_intervals.clone().into_record(sequence_number))
-                .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals);
-
+            database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals.clone());
             let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
+            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas.clone());
+
+            durability
+                .unsequenced_write(&self.cleanup_intervals.into_record(sequence_number))
+                .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
             durability
                 .unsequenced_write(&commit_deltas)
                 .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
         }
         Ok(())
     }
@@ -603,17 +603,23 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         let durability = database.storage.durability();
 
         // synchronise statistics
-        for (sequence_number, commit_deltas) in mem::take(&mut *database._commit_deltas_queue.write().unwrap()) {
-            debug_assert!(
-                thing_statistics.sequence_number.next() >= sequence_number,
-                "Attempting to apply deltas {} to Statistics at {} during schema commit.",
-                sequence_number,
-                thing_statistics.sequence_number,
-            );
-            if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
-                return Err(DurabilityError { typedb_source });
+        {
+            let mut commit_deltas_queue = database._commit_deltas_queue.write().unwrap();
+            for (&sequence_number, commit_deltas) in &*commit_deltas_queue {
+                debug_assert!(
+                    thing_statistics.sequence_number.next() >= sequence_number,
+                    "Attempting to apply deltas {} to Statistics at {} during schema commit.",
+                    sequence_number,
+                    thing_statistics.sequence_number,
+                );
+                if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
+                    return Err(DurabilityError { typedb_source });
+                }
             }
+            commit_deltas_queue.clear();
         }
+
+        schema.thing_statistics = Arc::new(thing_statistics.clone()); // save pre-schema commit statistics
 
         // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
