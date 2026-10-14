@@ -682,11 +682,13 @@ fn make_update_statistics_fn(
     move || {
         let watermark = storage.snapshot_watermark();
         if watermark > schema.read().unwrap().thing_statistics.sequence_number {
-            let schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
-            if schema_txn_guard.has_schema_transaction {
+            let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+            if schema_txn_guard.is_blocked(TransactionReservationKind::Write) {
                 // better luck next time
                 return;
             }
+            schema_txn_guard.admit(TransactionReservationKind::Write);
+            drop(schema_txn_guard);
 
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
@@ -719,6 +721,9 @@ fn make_update_statistics_fn(
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
+
+            let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+            schema_txn_guard.release(TransactionReservationKind::Write);
             debug!("Finished updating statistics for database {}", database_name.as_str());
         }
     }
