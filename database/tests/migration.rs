@@ -320,11 +320,15 @@ fn a_relation_without_role_players_is_rejected() {
 
     let mut importer = importer(&database_manager, "playerless");
     importer.apply(MigrationItem::Schema(SCHEMA.to_owned())).expect("schema");
-    let result = importer.apply(MigrationItem::Relation {
-        id: "f1".to_owned(),
-        label: Label::build("friendship", None),
-        owned_attributes: vec![],
-        related_role_players: vec![(Label::build_scoped("friend", "friendship", None), vec![])],
-    });
-    assert!(matches!(result, Err(DatabaseImportError::RelationWithoutRolePlayers { .. })), "{result:?}");
+    let no_roles = vec![];
+    let empty_role = vec![(Label::build_scoped("friend", "friendship", None), vec![])];
+    for related_role_players in [no_roles, empty_role] {
+        let result = importer.apply(MigrationItem::Relation {
+            id: "f1".to_owned(),
+            label: Label::build("friendship", None),
+            owned_attributes: vec![],
+            related_role_players,
+        });
+        assert!(matches!(result, Err(DatabaseImportError::RelationWithoutRolePlayers { .. })), "{result:?}");
+    }
 }
