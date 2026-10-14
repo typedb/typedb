@@ -28,7 +28,7 @@ pub(crate) fn load_sync_records(
 ) -> Result<BTreeMap<SequenceNumber, SyncRecord>, StatisticsError> {
     use StatisticsError::*;
 
-    let mut commits = BTreeMap::new();
+    let mut sync_records = BTreeMap::new();
     for deltas in
         durability_client.iter_type_from::<CommitDeltas>(start).map_err(|typedb_source| Durability { typedb_source })?
     {
@@ -38,13 +38,13 @@ pub(crate) fn load_sync_records(
             continue;
         }
 
-        if commits.insert(commit_sequence_number, SyncRecord::Deltas(deltas)).is_some() {
+        if sync_records.insert(commit_sequence_number, SyncRecord::Deltas(deltas)).is_some() {
             #[cfg(debug_assertions)]
             unreachable!("Encountered two sets of deltas for {commit_sequence_number:?}");
         }
     }
 
-    if let Some(first_gap) = first_gap(&commits, start, durability_client.previous()) {
+    if let Some(first_gap) = first_gap(&sync_records, start, durability_client.previous()) {
         let records = durability_client.iter_from(first_gap).map_err(|typedb_source| Durability { typedb_source })?;
         let mut pending = BTreeMap::new();
         for record in records {
@@ -52,7 +52,7 @@ pub(crate) fn load_sync_records(
                 record.map_err(|typedb_source| Durability { typedb_source })?;
             match record_type {
                 LegacyCommitRecordV1::RECORD_TYPE => {
-                    if commits.contains_key(&sequence_number) {
+                    if sync_records.contains_key(&sequence_number) {
                         continue;
                     }
                     let legacy = LegacyCommitRecordV1::deserialise_from(&mut &*bytes)
@@ -61,7 +61,7 @@ pub(crate) fn load_sync_records(
                     pending.insert(sequence_number, commit_record);
                 }
                 CommitRecord::RECORD_TYPE => {
-                    if commits.contains_key(&sequence_number) {
+                    if sync_records.contains_key(&sequence_number) {
                         continue;
                     }
                     let commit_record = CommitRecord::deserialise_from(&mut &*bytes)
@@ -71,7 +71,7 @@ pub(crate) fn load_sync_records(
                 StatusRecord::RECORD_TYPE => {
                     let status = StatusRecord::deserialise_from(&mut &*bytes)
                         .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
-                    if commits.contains_key(&status.commit_record_sequence_number())
+                    if sync_records.contains_key(&status.commit_record_sequence_number())
                         || status.commit_record_sequence_number() < start
                     {
                         continue;
@@ -80,9 +80,9 @@ pub(crate) fn load_sync_records(
                     let record = pending.remove(&commit_sequence_number);
                     if let Some(record) = record {
                         if status.was_committed() {
-                            commits.insert(commit_sequence_number, SyncRecord::Commit(record));
+                            sync_records.insert(commit_sequence_number, SyncRecord::Commit(record));
                         } else {
-                            commits.insert(commit_sequence_number, SyncRecord::Rejected);
+                            sync_records.insert(commit_sequence_number, SyncRecord::Rejected);
                         }
                     } else {
                         #[cfg(debug_assertions)]
@@ -96,11 +96,11 @@ pub(crate) fn load_sync_records(
         }
 
         if let Some((earliest_pending_commit, _)) = pending.first_key_value() {
-            commits.split_off(earliest_pending_commit);
+            sync_records.split_off(earliest_pending_commit);
         }
     }
 
-    Ok(commits)
+    Ok(sync_records)
 }
 
 fn first_gap(
