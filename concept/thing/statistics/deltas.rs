@@ -432,7 +432,7 @@ mod serialize {
         where
             S: Serializer,
         {
-            let mut state = serializer.serialize_struct("CommitDeltas", 8)?;
+            let mut state = serializer.serialize_struct("CommitDeltas", CommitDeltasField::NAMES.len())?;
             state.serialize_field(CommitDeltasField::EncodingVersion.name(), &self.encoding_version)?;
             state.serialize_field(CommitDeltasField::CommitType.name(), &self.commit_type)?;
             state.serialize_field(CommitDeltasField::CommitSequenceNumber.name(), &self.commit_sequence_number)?;
