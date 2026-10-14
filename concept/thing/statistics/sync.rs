@@ -94,6 +94,10 @@ pub(crate) fn load_sync_records(
                 _ => (),
             }
         }
+
+        if let Some((earliest_pending_commit, _)) = pending.first_key_value() {
+            commits.split_off(earliest_pending_commit);
+        }
     }
 
     Ok(commits)
