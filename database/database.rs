@@ -679,6 +679,13 @@ fn make_update_statistics_fn(
     query_cache: Arc<QueryCache>,
     commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 ) -> impl Fn() {
+    struct ScopeGuard<F: FnOnce()>(Option<F>);
+    impl<F: FnOnce()> Drop for ScopeGuard<F> {
+        fn drop(&mut self) {
+            (self.0.take().unwrap())()
+        }
+    }
+
     move || {
         let watermark = storage.snapshot_watermark();
         if watermark > schema.read().unwrap().thing_statistics.sequence_number {
@@ -692,6 +699,13 @@ fn make_update_statistics_fn(
 
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
+
+            let _scope_guard = ScopeGuard(Some(|| {
+                let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+                schema_txn_guard.release(TransactionReservationKind::Write);
+                debug!("Finished updating statistics for database {}", database_name.as_str());
+            }));
+
             let commit_deltas = {
                 let mut queue = commit_deltas_queue.write().unwrap();
                 let Some((&seq, _)) = queue.first_key_value() else { return };
@@ -721,10 +735,6 @@ fn make_update_statistics_fn(
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
-
-            let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
-            schema_txn_guard.release(TransactionReservationKind::Write);
-            debug!("Finished updating statistics for database {}", database_name.as_str());
         }
     }
 }
