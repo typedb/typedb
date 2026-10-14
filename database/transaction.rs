@@ -612,14 +612,14 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
                     sequence_number,
                     thing_statistics.sequence_number,
                 );
-                if let Err(typedb_source) = thing_statistics.update_deltas(&commit_deltas, durability) {
+                if let Err(typedb_source) = thing_statistics.update_deltas(commit_deltas, durability) {
                     return Err(DurabilityError { typedb_source });
                 }
             }
             commit_deltas_queue.clear();
         }
 
-        schema.thing_statistics = Arc::new(thing_statistics.clone()); // save pre-schema commit statistics
+        schema_commit_guard.thing_statistics = Arc::new(thing_statistics.clone()); // save pre-schema commit statistics
 
         // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
