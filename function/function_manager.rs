@@ -668,7 +668,7 @@ pub mod tests {
         );
         let parsed =
             functions_to_define.iter().map(|f| typeql::parse_definition_function(f).unwrap()).collect::<Vec<_>>();
-        let sequence_number = {
+        let commit = {
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
             let mut snapshot = storage.clone().open_snapshot_write();
             let stored_functions = function_manager.define_functions(&mut snapshot, parsed.iter()).unwrap();
@@ -719,8 +719,7 @@ pub mod tests {
 
         {
             // Read cached
-            let cache =
-                Arc::new(FunctionCache::new(storage.clone(), &type_manager, sequence_number.sequence_number).unwrap());
+            let cache = Arc::new(FunctionCache::new(storage.clone(), &type_manager, commit.sequence_number).unwrap());
             let snapshot = storage.clone().open_snapshot_read();
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), Some(cache.clone()));
             let index = ReadThroughFunctionSignatureIndex::new(
