@@ -713,6 +713,7 @@ fn make_update_statistics_fn(
             for commit_deltas in commit_deltas.into_values() {
                 if let Err(err) = new_statistics.update_deltas(&commit_deltas, storage.durability()) {
                     error!("Statistics update failed: {err:?}");
+                    return;
                 }
             }
             let new_statistics = Arc::new(new_statistics);
