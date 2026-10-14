@@ -161,7 +161,7 @@ pub struct Database<D> {
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
     pub(super) _commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
-    schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
+    schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
     _cleanup_worker: IntervalRunner,
@@ -357,7 +357,7 @@ impl Database<WALClient> {
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
-        let schema_txn_lock = Arc::new(RwLock::default());
+        let schema_write_transaction_exclusivity = Arc::new(Mutex::new(SchemaWriteTransactionState::new()));
 
         let query_cache = Arc::new(QueryCache::new());
         let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
@@ -365,7 +365,7 @@ impl Database<WALClient> {
             name.to_owned(),
             storage.clone(),
             schema.clone(),
-            schema_txn_lock.clone(),
+            schema_write_transaction_exclusivity.clone(),
             query_cache.clone(),
             commit_deltas_queue.clone(),
         );
@@ -387,7 +387,7 @@ impl Database<WALClient> {
             query_cache,
             _cleanup_queue: cleanup_queue,
             _commit_deltas_queue: commit_deltas_queue,
-            schema_write_transaction_exclusivity: Mutex::new(SchemaWriteTransactionState::new()),
+            schema_write_transaction_exclusivity,
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
             _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
@@ -479,9 +479,6 @@ impl Database<WALClient> {
             .map_err(|error| FunctionCacheInitialise { typedb_source: *error })?,
         );
 
-        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
-        let schema_txn_lock = Arc::new(RwLock::default());
-
         let checkpoint_sequence_number = match checkpoint {
             None => SequenceNumber::MIN,
             Some(checkpoint) => {
@@ -492,13 +489,16 @@ impl Database<WALClient> {
             }
         };
 
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
+        let schema_write_transaction_exclusivity = Arc::new(Mutex::new(SchemaWriteTransactionState::new()));
+
         let query_cache = Arc::new(QueryCache::new());
         let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
-            schema_txn_lock.clone(),
+            schema_write_transaction_exclusivity.clone(),
             query_cache.clone(),
             commit_deltas_queue.clone(),
         );
@@ -533,7 +533,7 @@ impl Database<WALClient> {
             query_cache,
             _cleanup_queue: cleanup_queue,
             _commit_deltas_queue: commit_deltas_queue,
-            schema_write_transaction_exclusivity: Mutex::new(SchemaWriteTransactionState::new()),
+            schema_write_transaction_exclusivity,
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
                 checkpoint_fn,
@@ -675,14 +675,18 @@ fn make_update_statistics_fn(
     database_name: String,
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
-    schema_txn_lock: Arc<RwLock<()>>,
+    schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
     query_cache: Arc<QueryCache>,
     commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 ) -> impl Fn() {
     move || {
         let watermark = storage.snapshot_watermark();
         if watermark > schema.read().unwrap().thing_statistics.sequence_number {
-            let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+            let schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+            if schema_txn_guard.has_schema_transaction {
+                // better luck next time
+                return;
+            }
 
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
