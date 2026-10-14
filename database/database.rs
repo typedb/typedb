@@ -159,7 +159,7 @@ pub struct Database<D> {
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
-    pub(super) _commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
+    pub(super) commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
     schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
     _statistics_updater: IntervalRunner,
@@ -386,7 +386,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
-            _commit_deltas_queue: commit_deltas_queue,
+            commit_deltas_queue,
             schema_write_transaction_exclusivity,
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
@@ -532,7 +532,7 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
-            _commit_deltas_queue: commit_deltas_queue,
+            commit_deltas_queue,
             schema_write_transaction_exclusivity,
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(

@@ -527,7 +527,7 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
                     durability
                         .unsequenced_write(&commit_deltas)
                         .map_err(|typedb_source| DataCommitError::DurabilityError { typedb_source })?;
-                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
+                    database.commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
                 }
                 return Err(DataCommitError::SnapshotError { typedb_source });
             }
@@ -536,7 +536,7 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
         if let Some(CommitData { sequence_number, record }) = commit_data {
             database._cleanup_queue.write().unwrap().insert(sequence_number, self.cleanup_intervals.clone());
             let commit_deltas = CommitDeltas::from_commit(&record, sequence_number);
-            database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas.clone());
+            database.commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas.clone());
 
             durability
                 .unsequenced_write(&self.cleanup_intervals.into_record(sequence_number))
@@ -604,7 +604,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
 
         // synchronise statistics
         {
-            let mut commit_deltas_queue = database._commit_deltas_queue.write().unwrap();
+            let mut commit_deltas_queue = database.commit_deltas_queue.write().unwrap();
             for (&sequence_number, commit_deltas) in &*commit_deltas_queue {
                 debug_assert!(
                     thing_statistics.sequence_number.next() >= sequence_number,
@@ -644,7 +644,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
                     durability
                         .unsequenced_write(&commit_deltas)
                         .map_err(|typedb_source| DurabilityError { typedb_source })?;
-                    database._commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
+                    database.commit_deltas_queue.write().unwrap().insert(sequence_number, commit_deltas);
                 }
                 return Err(SchemaCommitError::SnapshotError { typedb_source });
             }
