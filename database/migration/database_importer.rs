@@ -110,7 +110,7 @@ macro_rules! for_item_in_write_transaction {
         result?;
         $self.count_item();
         let pending_writes = $self.data_transaction.as_ref().unwrap().snapshot.operations().len();
-        if pending_writes >= DatabaseImporter::MAX_WRITES_PER_COMMIT {
+        if pending_writes >= $self.max_writes_per_commit {
             let transaction = $self.data_transaction.take().unwrap();
             $self.commit_write_transaction(transaction)?;
         }
@@ -338,6 +338,7 @@ pub struct DatabaseImporter {
     data_info: DataInfo,
     data_transaction: Option<TransactionWrite<WALClient>>,
     total_item_count: u64,
+    max_writes_per_commit: usize,
     interrupt: ExecutionInterrupt,
     schema_imported: bool,
 }
@@ -349,8 +350,7 @@ impl std::fmt::Debug for DatabaseImporter {
 }
 
 impl DatabaseImporter {
-    #[doc(hidden)]
-    pub const MAX_WRITES_PER_COMMIT: usize = 10_000;
+    const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
 
     pub fn new(
@@ -367,9 +367,15 @@ impl DatabaseImporter {
             data_info,
             data_transaction: None,
             total_item_count: 0,
+            max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
             schema_imported: false,
             interrupt,
         }
+    }
+
+    pub fn with_max_writes_per_commit(mut self, max_writes_per_commit: usize) -> Self {
+        self.max_writes_per_commit = max_writes_per_commit;
+        self
     }
 
     pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
@@ -459,14 +465,14 @@ impl DatabaseImporter {
         owned_attributes: Vec<String>,
         related_role_players: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
+        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
+            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
+        }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let relation_type = type_manager
                 .get_relation_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
                 .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
-            if related_role_players.iter().all(|(_, players)| players.is_empty()) {
-                return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
-            }
 
             debug_assert!(type_manager.get_is_relation_type_independent(&snapshot, relation_type).unwrap());
 

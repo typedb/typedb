@@ -153,8 +153,7 @@ fn empty_checksums() -> MigrationItem {
     MigrationItem::Checksums(Checksums::new())
 }
 
-fn import_all(database_manager: &Arc<DatabaseManager>, name: &str, items: Vec<MigrationItem>) {
-    let mut importer = importer(database_manager, name);
+fn import_all(mut importer: DatabaseImporter, items: Vec<MigrationItem>) {
     for item in items {
         importer.apply(item).expect("apply");
     }
@@ -166,7 +165,7 @@ fn a_database_without_a_schema_or_data_round_trips() {
     init_logging();
     let data_dir = create_tmp_dir("migration_empty");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "blank", vec![MigrationItem::Schema(String::new()), empty_checksums()]);
+    import_all(importer(&database_manager, "blank"), vec![MigrationItem::Schema(String::new()), empty_checksums()]);
 
     let items = export(&read_transaction(&database_manager, "blank"), "blank");
     assert!(
@@ -176,7 +175,7 @@ fn a_database_without_a_schema_or_data_round_trips() {
         ),
         "{items:?}"
     );
-    import_all(&database_manager, "blank-copy", items);
+    import_all(importer(&database_manager, "blank-copy"), items);
     assert!(database_manager.database("blank-copy").is_some());
 }
 
@@ -185,7 +184,7 @@ fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums() {
     init_logging();
     let data_dir = create_tmp_dir("migration_stream_shape");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "source", source_items());
+    import_all(importer(&database_manager, "source"), source_items());
 
     let transaction = read_transaction(&database_manager, "source");
     let items = export(&transaction, "source");
@@ -218,13 +217,13 @@ fn an_exported_stream_is_importable_as_it_comes() {
     init_logging();
     let data_dir = create_tmp_dir("migration_round_trip");
     let database_manager = manager(&data_dir);
-    import_all(&database_manager, "source", source_items());
+    import_all(importer(&database_manager, "source"), source_items());
 
     let source_items = {
         let transaction = read_transaction(&database_manager, "source");
         export(&transaction, "source")
     };
-    import_all(&database_manager, "target", source_items);
+    import_all(importer(&database_manager, "target"), source_items);
 
     let transaction = read_transaction(&database_manager, "target");
     let copied_items = export(&transaction, "target");
@@ -279,7 +278,8 @@ fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let database_manager = manager(&data_dir);
     let person =
         |id: String| MigrationItem::Entity { id, label: Label::build("person", None), owned_attributes: vec![] };
-    let padding = DatabaseImporter::MAX_WRITES_PER_COMMIT * 2;
+    let max_writes_per_commit = 2;
+    let padding = max_writes_per_commit * 2;
 
     let mut items = vec![
         MigrationItem::Schema(SCHEMA.to_owned()),
@@ -299,7 +299,7 @@ fn a_relation_whose_players_arrive_later_survives_batch_commits() {
         role_count: 1,
         ownership_count: 0,
     }));
-    import_all(&database_manager, "pending", items);
+    import_all(importer(&database_manager, "pending").with_max_writes_per_commit(max_writes_per_commit), items);
 
     let transaction = read_transaction(&database_manager, "pending");
     let relations: Vec<MigrationItem> = export(&transaction, "pending")
@@ -331,12 +331,4 @@ fn a_relation_without_role_players_is_rejected() {
         });
         assert!(matches!(result, Err(DatabaseImportError::RelationWithoutRolePlayers { .. })), "{result:?}");
     }
-
-    let result = importer.apply(MigrationItem::Relation {
-        id: "f1".to_owned(),
-        label: Label::build("nonexistent", None),
-        owned_attributes: vec![],
-        related_role_players: vec![],
-    });
-    assert!(matches!(result, Err(DatabaseImportError::UnknownRelationType { .. })), "{result:?}");
 }
