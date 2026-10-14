@@ -646,7 +646,7 @@ mod serialize {
                         encoding_version: encoding_version
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::EncodingVersion.name()))?,
                         commit_type: commit_type
-                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitSequenceNumber.name()))?,
+                            .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitType.name()))?,
                         commit_sequence_number: commit_sequence_number
                             .ok_or_else(|| de::Error::missing_field(CommitDeltasField::CommitSequenceNumber.name()))?,
                         undefined_entities: undefined_entities
