@@ -1756,10 +1756,10 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> IndexedRelationsIterator {
         let key_range =
             KeyRange::new_within(ThingEdgeIndexedRelation::prefix(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-        Ok(IndexedRelationsIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+        IndexedRelationsIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
     fn iterate_indexed_relations<const INLINE_SIZE: usize>(
