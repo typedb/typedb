@@ -52,6 +52,7 @@ pub struct ServerState {
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
+    is_vector_search_enabled: bool,
 
     server_operator: Arc<dyn ServerOperator>,
     database_operator: Arc<dyn DatabaseOperator>,
@@ -117,6 +118,7 @@ impl ServerState {
             database_diagnostics_updater,
             shutdown_receiver,
             background_task_spawner,
+            is_vector_search_enabled: config.experimental_vector_search.enabled,
             server_operator_override: None,
             database_operator_override: None,
             transaction_operator_override: None,
@@ -126,6 +128,10 @@ impl ServerState {
 
     pub fn distribution_info(&self) -> DistributionInfo {
         self.distribution_info
+    }
+
+    pub fn is_vector_search_enabled(&self) -> bool {
+        self.is_vector_search_enabled
     }
 
     pub fn grpc_listen_address(&self) -> SocketAddr {
@@ -294,6 +300,7 @@ pub struct ServerStateBuilder {
     database_diagnostics_updater: IntervalRunner,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
+    is_vector_search_enabled: bool,
 
     server_operator_override: Option<Arc<dyn ServerOperator>>,
     database_operator_override: Option<Arc<dyn DatabaseOperator>>,
@@ -367,6 +374,7 @@ impl ServerStateBuilder {
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,
             _database_diagnostics_updater: self.database_diagnostics_updater,
+            is_vector_search_enabled: self.is_vector_search_enabled,
             server_operator,
             database_operator,
             transaction_operator,

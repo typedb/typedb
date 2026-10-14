@@ -118,6 +118,11 @@ pub struct CLIArgs {
     /// logging, restricted functionalities, and reduced performance
     #[arg(long = "development-mode.enabled", hide = true)]
     pub development_mode_enabled: Option<bool>,
+
+    /// Enable the experimental vector search functionality. When disabled, schema definitions
+    /// using the vector value type are rejected
+    #[arg(long = "experimental-vector-search-enabled")]
+    pub experimental_vector_search_enabled: Option<bool>,
 }
 
 impl CLIArgs {
