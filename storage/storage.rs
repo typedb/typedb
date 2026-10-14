@@ -267,7 +267,7 @@ impl<Durability> MVCCStorage<Durability> {
         watermark
     }
 
-    pub fn snapshot_commit(
+    pub(crate) fn snapshot_commit(
         &self,
         commit: DurabilityPersistedCommit,
         commit_profile: &mut CommitProfile,
