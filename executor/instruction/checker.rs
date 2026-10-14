@@ -16,7 +16,7 @@ use answer::{Thing, Type, variable_value::VariableValue};
 use bytes::byte_array::ByteArray;
 use compiler::{
     ExecutorVariable, VariablePosition,
-    executable::match_::instructions::{CheckInstruction, CheckVertex, thing, type_},
+    executable::match_::instructions::{CheckInstruction, CheckVertex},
 };
 use concept::{
     error::ConceptReadError,
@@ -34,7 +34,7 @@ use encoding::{
 use error::unimplemented_feature;
 use ir::{
     pattern::{
-        IrID, Vertex,
+        IrID,
         constraint::{Comparator, IsaKind, SubKind},
     },
     pipeline::ParameterRegistry,
@@ -47,7 +47,7 @@ use crate::{pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 #[derive(Debug)]
 pub(crate) struct Checker<T: 'static> {
-    pub checks: Vec<CheckInstruction<ExecutorVariable>>,
+    checks: Vec<CheckInstruction<ExecutorVariable>>,
     inline_check_factory: InlineCheckFactory<T>,
 }
 
@@ -174,7 +174,7 @@ impl Checker<()> {
     }
 }
 
-pub(crate) fn all_checks_pass<Source, Var: ExtractFrom<Source>>(
+fn all_checks_pass<Source, Var: ExtractFrom<Source>>(
     checks: &[CheckInstruction<Var>],
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
@@ -267,7 +267,7 @@ fn filter_iid<Source, Var: ExtractFrom<Source>>(
 fn filter_type_list<Source, Var: ExtractFrom<Source>>(
     source: &Source,
     type_var: &Var,
-    types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
+    types: &Arc<std::collections::BTreeSet<Type>>,
 ) -> bool {
     let extracted = type_var.extract(source);
     let VariableValue::Type(t) = extracted else { return false };
@@ -277,7 +277,7 @@ fn filter_type_list<Source, Var: ExtractFrom<Source>>(
 fn filter_thing_type_list<Source, Var: ExtractFrom<Source>>(
     source: &Source,
     thing_var: &Var,
-    types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
+    types: &Arc<std::collections::BTreeSet<Type>>,
 ) -> bool {
     let extracted = thing_var.extract(source);
     let VariableValue::Thing(thing) = extracted else { return false };
@@ -444,22 +444,22 @@ fn filter_is<Source, Var: ExtractFrom<Source>>(source: &Source, lhs: &Var, rhs: 
 }
 
 fn filter_links_dedup<Source, Var: ExtractFrom<Source>>(
-    row: &Source,
+    source: &Source,
     role1: &Var,
     player1: &Var,
     role2: &Var,
     player2: &Var,
 ) -> bool {
-    let role1 = Var::extract(role1, row);
-    let player1 = Var::extract(player1, row);
-    let role2 = Var::extract(role2, row);
-    let player2 = Var::extract(player2, row);
+    let role1 = role1.extract(source);
+    let player1 = player1.extract(source);
+    let role2 = role2.extract(source);
+    let player2 = player2.extract(source);
     !(role1 == role2 && player1 == player2)
 }
 
-fn filter_not_none<Source, Var: ExtractFrom<Source>>(row: &Source, variables: &[Var]) -> bool {
+fn filter_not_none<Source, Var: ExtractFrom<Source>>(source: &Source, variables: &[Var]) -> bool {
     variables.iter().all(|var| {
-        let value = Var::extract(var, row);
+        let value = var.extract(source);
         !value.is_none()
     })
 }
@@ -599,15 +599,15 @@ impl<'r> ExtractFrom<MaybeOwnedRow<'r>> for ExecutorVariable {
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 struct SubRowIndex(usize);
 
-enum FilterFnVariable<T> {
+enum InlineCheckVariable<T> {
     ExtractFromSubRow(SubRowIndex),
     ExtractFromTuple(fn(&T) -> VariableValue<'_>),
 }
 
-impl<T> fmt::Debug for FilterFnVariable<T> {
+impl<T> fmt::Debug for InlineCheckVariable<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ExtractFromSubRow(i) => write!(f, "SubRowIndex({:?})", i),
+            Self::ExtractFromSubRow(i) => write!(f, "SubRowIndex({:?})", i.0),
             Self::ExtractFromTuple(_) => f.write_str("ExtractFromTuple(...)"),
         }
     }
@@ -618,7 +618,7 @@ struct TupleAndSubRow<'a, T> {
     subrow: &'a [VariableValue<'static>],
 }
 
-impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for FilterFnVariable<T> {
+impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for InlineCheckVariable<T> {
     fn extract<'a>(&'a self, from: &'a TupleAndSubRow<'_, T>) -> VariableValue<'a> {
         match self {
             Self::ExtractFromTuple(f) => f(from.tuple),
@@ -629,8 +629,8 @@ impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for FilterFnVariable<T> {
 
 #[derive(Debug)]
 struct InlineCheckFactory<T> {
-    checks: Arc<Vec<CheckInstruction<FilterFnVariable<T>>>>,
-    subrow_schema: Vec<VariablePosition>,
+    checks: Arc<Vec<CheckInstruction<InlineCheckVariable<T>>>>,
+    subrow_sources: Vec<VariablePosition>,
 }
 
 impl<T: 'static> InlineCheckFactory<T> {
@@ -638,24 +638,24 @@ impl<T: 'static> InlineCheckFactory<T> {
         outline_checks: &[CheckInstruction<ExecutorVariable>],
         extractors: &HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     ) -> Self {
-        let mut subrow_schema = Vec::new();
+        let mut subrow_sources = Vec::new();
         let mut mapping = |variable| {
             if let Some(extractor) = extractors.get(&variable) {
-                FilterFnVariable::ExtractFromTuple(*extractor)
+                InlineCheckVariable::ExtractFromTuple(*extractor)
             } else {
                 let ExecutorVariable::RowPosition(position) = variable else {
                     unreachable!("Check variables without an extractor must be in the row.")
                 };
-                let subrow_index = subrow_schema.len();
-                subrow_schema.push(position);
-                FilterFnVariable::ExtractFromSubRow(SubRowIndex(subrow_index))
+                let subrow_index = subrow_sources.len();
+                subrow_sources.push(position);
+                InlineCheckVariable::ExtractFromSubRow(SubRowIndex(subrow_index))
             }
         };
         let mut checks = Vec::with_capacity(outline_checks.len());
         for check in outline_checks {
             checks.push(Self::map_check(check.clone(), &mut mapping));
         }
-        Self { checks: Arc::new(checks), subrow_schema }
+        Self { checks: Arc::new(checks), subrow_sources }
     }
 
     fn filter_fn_for_row<Snapshot: ReadableSnapshot + 'static>(
@@ -667,12 +667,12 @@ impl<T: 'static> InlineCheckFactory<T> {
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
         let parameters = context.parameters.clone();
-        self.make_filter_fn_for_row(row).into_filter_fn(snapshot, thing_manager, parameters, storage_counters)
+        self.make_inline_check_for_row(row).into_filter_fn(snapshot, thing_manager, parameters, storage_counters)
     }
 
-    fn make_filter_fn_for_row(&self, row: &MaybeOwnedRow<'_>) -> RowBoundInlineCheck<T> {
-        let mut subrow = Vec::with_capacity(self.subrow_schema.len());
-        for &pos in &self.subrow_schema {
+    fn make_inline_check_for_row(&self, row: &MaybeOwnedRow<'_>) -> RowBoundInlineCheck<T> {
+        let mut subrow = Vec::with_capacity(self.subrow_sources.len());
+        for &pos in &self.subrow_sources {
             subrow.push(row.get(pos).to_owned());
         }
         let checks = self.checks.clone();
@@ -681,8 +681,8 @@ impl<T: 'static> InlineCheckFactory<T> {
 
     fn map_check(
         check_instruction: CheckInstruction<ExecutorVariable>,
-        mut mapping: impl FnMut(ExecutorVariable) -> FilterFnVariable<T>,
-    ) -> CheckInstruction<FilterFnVariable<T>> {
+        mut mapping: impl FnMut(ExecutorVariable) -> InlineCheckVariable<T>,
+    ) -> CheckInstruction<InlineCheckVariable<T>> {
         let mut map_vertex = |vertex: CheckVertex<ExecutorVariable>| match vertex {
             CheckVertex::Variable(var) => CheckVertex::Variable(mapping(var)),
             CheckVertex::Type(label) => CheckVertex::Type(label),
@@ -749,7 +749,7 @@ impl<T: 'static> InlineCheckFactory<T> {
 }
 
 struct RowBoundInlineCheck<T> {
-    checks: Arc<Vec<CheckInstruction<FilterFnVariable<T>>>>,
+    checks: Arc<Vec<CheckInstruction<InlineCheckVariable<T>>>>,
     subrow: Vec<VariableValue<'static>>,
 }
 
