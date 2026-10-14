@@ -349,6 +349,7 @@ impl std::fmt::Debug for DatabaseImporter {
 }
 
 impl DatabaseImporter {
+    #[doc(hidden)]
     pub const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
 
@@ -458,14 +459,14 @@ impl DatabaseImporter {
         owned_attributes: Vec<String>,
         related_role_players: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
-        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
-            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
-        }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let relation_type = type_manager
                 .get_relation_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
                 .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
+            if related_role_players.iter().all(|(_, players)| players.is_empty()) {
+                return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
+            }
 
             debug_assert!(type_manager.get_is_relation_type_independent(&snapshot, relation_type).unwrap());
 

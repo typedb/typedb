@@ -293,7 +293,7 @@ fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     items.extend((0..padding).map(|i| person(format!("pad{i}"))));
     items.push(person("p1".to_owned()));
     items.push(MigrationItem::Checksums(Checksums {
-        entity_count: padding + 1,
+        entity_count: (padding + 1) as i64,
         attribute_count: 0,
         relation_count: 1,
         role_count: 1,
@@ -331,4 +331,12 @@ fn a_relation_without_role_players_is_rejected() {
         });
         assert!(matches!(result, Err(DatabaseImportError::RelationWithoutRolePlayers { .. })), "{result:?}");
     }
+
+    let result = importer.apply(MigrationItem::Relation {
+        id: "f1".to_owned(),
+        label: Label::build("nonexistent", None),
+        owned_attributes: vec![],
+        related_role_players: vec![],
+    });
+    assert!(matches!(result, Err(DatabaseImportError::UnknownRelationType { .. })), "{result:?}");
 }
