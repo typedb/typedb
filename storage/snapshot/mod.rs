@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub(crate) use snapshot::DurabilityPersistedCommit;
+pub(crate) use snapshot::DurablyPersistedCommit;
 pub use snapshot::{
     CommittableSnapshot, PreloadedRangesSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
     SnapshotGetError, SnapshotLookupMode, WritableSnapshot, WriteSnapshot,

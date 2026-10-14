@@ -878,7 +878,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     }
 }
 
-pub(crate) struct DurabilityPersistedCommit {
+pub(crate) struct DurablyPersistedCommit {
     pub(crate) record: CommitRecord,
     pub(crate) sequence_number: SequenceNumber,
     pub(crate) reader_guard: WriteSnapshotDropGuard,
