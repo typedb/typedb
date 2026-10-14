@@ -484,6 +484,10 @@ impl Statistics {
     ) -> Result<i64, MVCCReadError> {
         type CleanupFn = Box<dyn FnOnce(&mut Statistics)>;
 
+        if commit_sequence_number <= self.sequence_number {
+            return Ok(0);
+        }
+
         let mut total_delta = 0;
         let mut deferred_type_cleanups: Vec<CleanupFn> = Vec::new();
 
