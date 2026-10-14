@@ -291,11 +291,11 @@ impl Statistics {
 
         let start = Instant::now();
 
-        let wal_commit_records = load_sync_records(self.sequence_number.next(), storage.durability())?;
+        let wal_sync_records = load_sync_records(self.sequence_number.next(), storage.durability())?;
 
-        for (seq, status) in wal_commit_records {
+        for (seq, sync_record) in wal_sync_records {
             debug_assert_eq!(seq, self.sequence_number.next());
-            match status {
+            match sync_record {
                 SyncRecord::Rejected => {
                     self.sequence_number = seq;
                 }
