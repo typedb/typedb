@@ -711,7 +711,7 @@ fn make_update_statistics_fn(
             debug!("Starting updating statistics for database {database_name}");
 
             let _scope_guard = ScopeGuard(Some(|| {
-                let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+                let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap();
                 schema_txn_guard.release(TransactionReservationKind::Write);
                 debug!("Finished updating statistics for database {}", database_name.as_str());
             }));
