@@ -22,7 +22,7 @@ use bytes::{Bytes, byte_array::ByteArray};
 use encoding::{
     graph::{
         Typed,
-        thing::vertex_attribute::{AttributeVertex, VectorAttributeID},
+        thing::vertex_attribute::{AttributeID, AttributeVertex, VectorAttributeID},
         type_::vertex::TypeID,
     },
     value::vector_bytes::VectorBytes,
@@ -163,11 +163,11 @@ impl VectorStore {
 
     pub fn add(&self, vertex: AttributeVertex, vector: &[f32]) -> Result<(), VectorStoreError> {
         let id = vertex.attribute_id().unwrap_vector();
-        self.index_for_type(vertex.type_id_(), vector.len())?.add(id.as_vector_index_key(), vector)
+        self.index_for_type(vertex.type_id_(), vector.len())?.add(id.as_type_vector_index_key(), vector)
     }
 
     pub fn get_vector(&self, vertex: AttributeVertex) -> Option<Vec<f32>> {
-        self.get_by_key(vertex.type_id_(), vertex.attribute_id().unwrap_vector().as_vector_index_key())
+        self.get_by_key(vertex.type_id_(), vertex.attribute_id().unwrap_vector().as_type_vector_index_key())
     }
 
     pub fn get_by_key(&self, type_id: TypeID, key: u64) -> Option<Vec<f32>> {
@@ -175,12 +175,15 @@ impl VectorStore {
         index.get(key)
     }
 
-    pub fn search(&self, type_id: TypeID, query: &[f32], count: usize) -> Vec<(VectorAttributeID, f32)> {
+    pub fn search(&self, type_id: TypeID, query: &[f32], count: usize) -> Vec<(AttributeVertex, f32)> {
         let Some(index) = self.indexes.read().unwrap().get(&type_id).cloned() else { return Vec::new() };
         index
             .search(query, count)
             .into_iter()
-            .map(|(key, distance)| (VectorAttributeID::from_vector_index_key(key), distance))
+            .map(|(key, distance)| {
+                let id = AttributeID::Vector(VectorAttributeID::from_type_vector_index_key(key));
+                (AttributeVertex::new(type_id, id), distance)
+            })
             .collect()
     }
 
@@ -366,7 +369,7 @@ mod test {
         use encoding::graph::thing::vertex_attribute::AttributeID;
         AttributeVertex::new(
             TypeID::decode(type_id.to_be_bytes()),
-            AttributeID::Vector(VectorAttributeID::from_vector_index_key(key)),
+            AttributeID::Vector(VectorAttributeID::from_type_vector_index_key(key)),
         )
     }
 
@@ -384,7 +387,7 @@ mod test {
 
         let results = store.search(TypeID::decode(1u16.to_be_bytes()), &[0.9, 0.1, 0.0], 2);
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0].0.as_vector_index_key(), 100);
+        assert_eq!(results[0].0, vertex(1, 100));
     }
 
     #[test]

@@ -100,16 +100,16 @@ impl AttributeVertex {
         Self::is_valid_keyspace(storage_key.keyspace_id()) && Self::is_attribute_bytes(storage_key.bytes())
     }
 
+    fn is_attribute_bytes(bytes: &[u8]) -> bool {
+        !bytes.is_empty() && bytes[Self::INDEX_PREFIX] == Prefix::VertexAttribute.prefix_id().byte
+    }
+
     pub fn is_vector_attribute_vertex(keyspace_id: KeyspaceId, bytes: &[u8]) -> bool {
         Self::keyspace_for_category(ValueTypeCategory::Vector).id() == keyspace_id
             && bytes.len() == THING_VERTEX_LENGTH_PREFIX_TYPE + VectorAttributeID::LENGTH
             && bytes[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte
             && bytes[Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ValueTypeBytes::CATEGORY_LENGTH]
                 == ValueTypeCategory::Vector.to_bytes()
-    }
-
-    fn is_attribute_bytes(bytes: &[u8]) -> bool {
-        !bytes.is_empty() && bytes[Self::INDEX_PREFIX] == Prefix::VertexAttribute.prefix_id().byte
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {
@@ -1051,19 +1051,20 @@ impl VectorAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
-        let value_matches = |key: &[u8], stored_value: &[u8]| {
-            if stored_value.is_empty() {
-                let index_key = u64::from_be_bytes(key[key.len() - (Self::HASH_LENGTH + 1)..].try_into().unwrap());
+        let vector_matches = |storage_key: &[u8], storage_value: &[u8]| {
+            if storage_value.is_empty() {
+                let vertex = AttributeVertex::decode(storage_key);
+                let index_key = vertex.attribute_id().unwrap_vector().as_type_vector_index_key();
                 let vector = committed_vector(index_key).ok_or_else(|| {
                     Arc::new(SnapshotIteratorError::ExternalValueMissing {
                         description: format!(
-                            "vector attribute (key: {index_key:#018x}) exists in storage but its value is missing from the vector store"
+                            "vector attribute {vertex:?} exists in storage but its value is missing from the vector store"
                         ),
                     })
                 })?;
                 Ok(VectorBytes::<1>::build(&vector).bytes() == value_bytes)
             } else {
-                Ok(stored_value == value_bytes)
+                Ok(storage_value == value_bytes)
             }
         };
         Self::find_existing_or_next_disambiguated_hash_matching(
@@ -1072,11 +1073,13 @@ impl VectorAttributeID {
             AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector),
             key_without_hash,
             value_bytes,
-            &value_matches,
+            &vector_matches,
         )
     }
 
-    fn key_prefix(type_id: TypeID) -> ByteArray<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }> {
+    pub fn key_prefix(
+        type_id: TypeID,
+    ) -> ByteArray<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }> {
         let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
         let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);
         ByteArray::copy_concat([attribute_prefix.bytes(), &ValueTypeCategory::Vector.to_bytes()])
@@ -1121,11 +1124,11 @@ impl VectorAttributeID {
         &self.bytes[0..Self::TAIL_INDEX]
     }
 
-    pub fn as_vector_index_key(&self) -> u64 {
+    pub fn as_type_vector_index_key(&self) -> u64 {
         u64::from_be_bytes(self.bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].try_into().unwrap())
     }
 
-    pub fn from_vector_index_key(key: u64) -> Self {
+    pub fn from_type_vector_index_key(key: u64) -> Self {
         Self::from_disambiguated_hash(key.to_be_bytes())
     }
 }

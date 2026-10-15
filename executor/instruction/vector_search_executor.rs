@@ -4,33 +4,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeSet, HashMap},
-    fmt, iter,
-    sync::Arc,
-    vec,
-};
+use std::{collections::BTreeSet, fmt, iter, sync::Arc, vec};
 
 use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::thing::VectorSearchInstruction};
 use concept::{
     error::ConceptReadError,
-    thing::{ThingAPI, attribute::Attribute, thing_manager::ThingManager},
-    type_::TypeAPI,
+    thing::{ThingAPI, attribute::Attribute},
 };
 use encoding::{
-    AsBytes, Keyable,
+    Keyable,
     graph::{
         Typed,
-        thing::vertex_attribute::{AttributeID, AttributeVertex},
+        thing::vertex_attribute::{AttributeVertex, VectorAttributeID},
         type_::vertex::TypeVertexEncoding,
     },
-    value::{ValueEncodable, value::Value, value_type::ValueType},
+    value::{
+        ValueEncodable,
+        value::Value,
+        value_type::{ValueType, ValueTypeCategory},
+    },
 };
 use ir::pattern::{ParameterID, constraint::VectorSearch};
 use lending_iterator::AsLendingIterator;
-use resource::profile::StorageCounters;
-use storage::snapshot::{ReadableSnapshot, write::Write};
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
+use storage::{
+    key_range::KeyRange,
+    key_value::StorageKey,
+    snapshot::{ReadableSnapshot, write::Write},
+};
 
 use crate::{
     instruction::{
@@ -50,20 +52,6 @@ pub(crate) fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
     match <f32 as simsimd::SpatialSimilarity>::cosine(a, b) {
         Some(distance) => 1.0 - distance,
         None => f64::NEG_INFINITY,
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::cosine_similarity;
-
-    #[test]
-    fn cosine_similarity_kernel() {
-        assert!((cosine_similarity(&[1.0, 0.0, 0.0], &[1.0, 0.0, 0.0]) - 1.0).abs() < 1e-5);
-        assert!(cosine_similarity(&[1.0, 0.0, 0.0], &[0.0, 1.0, 0.0]).abs() < 1e-5);
-        let expected = 0.9 / (0.81f64 + 0.01).sqrt();
-        assert!((cosine_similarity(&[1.0, 0.0, 0.0], &[0.9, 0.1, 0.0]) - expected).abs() < 1e-5);
-        assert_eq!(cosine_similarity(&[1.0, 0.0], &[1.0, 0.0, 0.0]), f64::NEG_INFINITY);
     }
 }
 
@@ -168,7 +156,7 @@ impl VectorSearchExecutor {
             }
         }
 
-        let mut matching: Vec<Result<VectorSearchItem, Box<ConceptReadError>>> = Vec::new();
+        let mut matching: Vec<VectorSearchItem> = Vec::new();
         if self.attribute_bound {
             let ExecutorVariable::RowPosition(position) = self.vector_search.attribute().as_variable().unwrap() else {
                 unreachable!("bound vector search attribute must have a row position")
@@ -179,18 +167,17 @@ impl VectorSearchExecutor {
                     if let Value::Vector(vector) = &value {
                         let similarity = cosine_similarity(&query, vector.as_ref());
                         if similarity >= threshold {
-                            matching.push(Ok((VariableValue::Thing(Thing::Attribute(attribute.clone())), similarity)));
+                            matching.push((VariableValue::Thing(Thing::Attribute(attribute.clone())), similarity));
                         }
                     }
                 }
             }
-            let as_tuples = matching.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
-            let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
-            return Ok(TupleIterator::VectorSearch(SortedTupleIterator::new(
-                lending_tuples,
-                self.tuple_positions.clone(),
+            return Ok(Self::into_tuple_iterator(
+                matching,
+                filter_for_row,
+                &self.tuple_positions,
                 &self.variable_modes,
-            )));
+            ));
         }
         for type_ in self.types.iter() {
             let attribute_type = type_.as_attribute_type();
@@ -208,25 +195,26 @@ impl VectorSearchExecutor {
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;
                     if !last_above_threshold || exhausted {
-                        candidates.extend(
-                            results.into_iter().map(|(id, _)| AttributeVertex::new(type_id, AttributeID::Vector(id))),
-                        );
+                        candidates.extend(results.into_iter().map(|(vertex, _)| vertex));
                         break;
                     }
                     k = (k * 4).min(total);
                 }
             }
 
-            for (key, write) in snapshot.iterate_writes() {
-                if matches!(write, Write::Delete)
-                    || !AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes())
-                {
+            let key_prefix = VectorAttributeID::key_prefix(type_id);
+            let range = KeyRange::new_within(
+                StorageKey::<BUFFER_KEY_INLINE>::new_ref(
+                    AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector),
+                    &key_prefix,
+                ),
+                true,
+            );
+            for (key, write) in snapshot.iterate_writes_range(&range) {
+                if matches!(write, Write::Delete) {
                     continue;
                 }
-                let vertex = AttributeVertex::decode(key.bytes());
-                if vertex.type_id_() == type_id {
-                    candidates.insert(vertex);
-                }
+                candidates.insert(AttributeVertex::decode(key.bytes()));
             }
 
             for vertex in candidates {
@@ -242,19 +230,25 @@ impl VectorSearchExecutor {
                 if let Value::Vector(vector) = &value {
                     let similarity = cosine_similarity(&query, vector.as_ref());
                     if similarity >= threshold {
-                        matching.push(Ok((VariableValue::Thing(Thing::Attribute(attribute)), similarity)));
+                        matching.push((VariableValue::Thing(Thing::Attribute(attribute)), similarity));
                     }
                 }
             }
         }
 
-        let as_tuples = matching.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
+        Ok(Self::into_tuple_iterator(matching, filter_for_row, &self.tuple_positions, &self.variable_modes))
+    }
+
+    fn into_tuple_iterator(
+        matching: Vec<VectorSearchItem>,
+        filter_for_row: Box<VectorSearchFilterMapFn>,
+        tuple_positions: &TuplePositions,
+        variable_modes: &VariableModes,
+    ) -> TupleIterator {
+        let results: Vec<Result<VectorSearchItem, Box<ConceptReadError>>> = matching.into_iter().map(Ok).collect();
+        let as_tuples = results.into_iter().filter_map(filter_for_row).map(to_tuple as VectorSearchToTupleFn);
         let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
-        Ok(TupleIterator::VectorSearch(SortedTupleIterator::new(
-            lending_tuples,
-            self.tuple_positions.clone(),
-            &self.variable_modes,
-        )))
+        TupleIterator::VectorSearch(SortedTupleIterator::new(lending_tuples, tuple_positions.clone(), variable_modes))
     }
 }
 
@@ -301,5 +295,19 @@ pub(crate) fn resolve_threshold(
 impl fmt::Display for VectorSearchExecutor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", &self.vector_search)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::cosine_similarity;
+
+    #[test]
+    fn cosine_similarity_kernel() {
+        assert!((cosine_similarity(&[1.0, 0.0, 0.0], &[1.0, 0.0, 0.0]) - 1.0).abs() < 1e-5);
+        assert!(cosine_similarity(&[1.0, 0.0, 0.0], &[0.0, 1.0, 0.0]).abs() < 1e-5);
+        let expected = 0.9 / (0.81f64 + 0.01).sqrt();
+        assert!((cosine_similarity(&[1.0, 0.0, 0.0], &[0.9, 0.1, 0.0]) - expected).abs() < 1e-5);
+        assert_eq!(cosine_similarity(&[1.0, 0.0], &[1.0, 0.0, 0.0]), f64::NEG_INFINITY);
     }
 }

@@ -293,6 +293,38 @@ impl fmt::Display for AnnotationRegex {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationIndex {
+    specs: Vec<IndexParameters>,
+}
+
+impl AnnotationIndex {
+    pub fn new(specs: Vec<IndexParameters>) -> Self {
+        Self { specs }
+    }
+
+    pub fn specs(&self) -> &[IndexParameters] {
+        &self.specs
+    }
+
+    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
+        matches!(value_type, Some(ValueType::Vector(_)))
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum IndexParameters {
+    Hnsw(HnswMetric),
+}
+
+impl fmt::Display for IndexParameters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IndexParameters::Hnsw(metric) => write!(f, "hnsw:{metric}"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum HnswMetric {
     Cosine,
@@ -303,38 +335,6 @@ impl fmt::Display for HnswMetric {
         match self {
             HnswMetric::Cosine => write!(f, "{}", typeql::token::HnswMetric::Cosine),
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum IndexSpec {
-    Hnsw(HnswMetric),
-}
-
-impl fmt::Display for IndexSpec {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            IndexSpec::Hnsw(metric) => write!(f, "hnsw:{metric}"),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationIndex {
-    specs: Vec<IndexSpec>,
-}
-
-impl AnnotationIndex {
-    pub fn new(specs: Vec<IndexSpec>) -> Self {
-        Self { specs }
-    }
-
-    pub fn specs(&self) -> &[IndexSpec] {
-        &self.specs
-    }
-
-    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
-        matches!(value_type, Some(ValueType::Vector(_)))
     }
 }
 

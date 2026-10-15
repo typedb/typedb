@@ -47,6 +47,8 @@ pub struct VectorTypeParameters {
 }
 
 impl VectorTypeParameters {
+    pub const MAX_LENGTH: u16 = u16::MAX;
+
     pub const fn new(length: u16, precision: VectorPrecision) -> Self {
         Self { length, precision }
     }

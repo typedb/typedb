@@ -432,19 +432,15 @@ impl ThingManager {
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
             AttributeID::Vector(_id) => {
-                let buffered = snapshot
-                    .get_mapped(
-                        attribute.vertex().into_storage_key().as_reference(),
-                        |bytes| (!bytes.is_empty()).then(|| VectorBytes::new(Bytes::<1>::Reference(bytes)).as_vector()),
-                        storage_counters,
-                    )
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                    .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
-                let vector = match buffered {
-                    Some(vector) => vector,
+                let vertex = attribute.vertex();
+                let vector = match snapshot.get_write(vertex.into_storage_key().as_reference()) {
+                    Some(Write::Insert { value }) | Some(Write::Put { value, .. }) => {
+                        VectorBytes::new(Bytes::<1>::Reference(value)).as_vector()
+                    }
+                    Some(Write::Delete) => return Err(Box::new(ConceptReadError::InternalMissingAttributeValue {})),
                     None => self
                         .vector_store
-                        .get_vector(attribute.vertex())
+                        .get_vector(vertex)
                         .ok_or(ConceptReadError::InternalMissingAttributeValue {})?,
                 };
                 Ok(Value::Vector(Cow::Owned(vector)))

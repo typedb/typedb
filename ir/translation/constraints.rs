@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use encoding::value::{label::Label, value::Value};
+use encoding::value::{label::Label, value::Value, value_type::VectorTypeParameters};
 use error::UnimplementedFeature;
 use typeql::{
     ScopedLabel, TypeRef, TypeRefAny,
@@ -32,7 +32,7 @@ use crate::{
         expression::{add_function_call, add_typeql_expression, build_expression},
         literal::translate_literal,
         parse_iid,
-        tokens::{MAX_VECTOR_LENGTH, checked_identifier, resolve_vector_value_type, translate_value_type},
+        tokens::{checked_identifier, resolve_vector_value_type, translate_value_type},
     },
 };
 
@@ -596,7 +596,7 @@ fn add_vector_search_call(
         typeql::Expression::Variable(var) => Vertex::Variable(register_typeql_var(constraints, var)?),
         typeql::Expression::Value(literal) => match translate_literal(literal) {
             Ok(Value::Vector(elements)) => {
-                if elements.is_empty() || elements.len() > MAX_VECTOR_LENGTH as usize {
+                if elements.is_empty() || elements.len() > VectorTypeParameters::MAX_LENGTH as usize {
                     return Err(invalid("query vector length out of range"));
                 }
                 Vertex::Parameter(constraints.parameters().register_value(

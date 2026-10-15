@@ -372,10 +372,15 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
             GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
         })
     }
+    const DECIMAL: &str = typeql::token::ValueType::Decimal.as_str();
+    const DATE: &str = typeql::token::ValueType::Date.as_str();
+    const DATETIME: &str = typeql::token::ValueType::DateTime.as_str();
+    const DATETIME_TZ: &str = typeql::token::ValueType::DateTimeTZ.as_str();
+    const DURATION: &str = typeql::token::ValueType::Duration.as_str();
     let as_str = value.value.to_string();
     match value.value_type.as_str() {
-        "decimal" => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
-        "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
+        DECIMAL => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
+        DATE | DATETIME | DATETIME_TZ | DURATION => decode(&as_str[1..as_str.len() - 1]),
         vector_type if vector_type.starts_with("vector") => {
             let elements: Vec<f32> = serde_json::from_value(value.value)
                 .map_err(|_| GivenRowDecodeError::InvalidVectorForGivenEntry { value: as_str })?;

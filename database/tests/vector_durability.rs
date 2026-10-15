@@ -122,8 +122,7 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
         assert_eq!(store.indexed_vector_count(type_id), 3, "vectors must be restored from the checkpoint extension");
 
         let results = store.search(type_id, &[1.0, 0.0, 0.0], 3);
-        let mut found: Vec<Vec<f32>> =
-            results.iter().filter_map(|(id, _)| store.get_by_key(type_id, id.as_vector_index_key())).collect();
+        let mut found: Vec<Vec<f32>> = results.iter().filter_map(|(vertex, _)| store.get_vector(*vertex)).collect();
         found.sort_by(|a, b| a.partial_cmp(b).unwrap());
         assert_eq!(found, vec![vec![0.0, 0.0, 1.0], vec![0.0, 1.0, 0.0], vec![1.0, 0.0, 0.0]]);
     }

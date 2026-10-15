@@ -540,11 +540,13 @@ impl Costed for VectorSearchPlanner<'_> {
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        let scan_size = self.unrestricted_expected_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE);
+        let scan_size = (self.unrestricted_expected_size / 2.0).max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE);
         let is_attribute_bound = inputs.contains(&VertexId::Variable(self.attribute));
         let cost = match is_attribute_bound {
             true => 0.0,
-            false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
+            false => {
+                OPEN_ITERATOR_RELATIVE_COST + scan_size * (ADVANCE_ITERATOR_RELATIVE_COST + OPEN_ITERATOR_RELATIVE_COST)
+            }
         };
         Ok((Cost { cost, io_ratio: scan_size }, CostMetaData::Direction(Direction::Canonical)))
     }

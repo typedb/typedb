@@ -627,7 +627,7 @@ fn validate_vector_store_backs_all_committed_vectors(
                 vector_store
                     .get_vector(vertex)
                     .is_none()
-                    .then(|| vertex.attribute_id().unwrap_vector().as_vector_index_key())
+                    .then(|| vertex.attribute_id().unwrap_vector().as_type_vector_index_key())
             } else {
                 None
             }
