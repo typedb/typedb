@@ -137,11 +137,11 @@ impl SchemaWriteTransactionState {
             TransactionReservationKind::Schema => self.has_schema_transaction = false,
             TransactionReservationKind::Write => self.running_write_transactions -= 1,
         }
-        self.fulfill_requests_until_blocked();
         trace!(
             "Released {:?} transaction. State of reservation: has_schema_transaction = {}, running_write_transactions = {}.",
             kind, self.has_schema_transaction, self.running_write_transactions,
         );
+        self.fulfill_requests_until_blocked();
     }
 
     fn fulfill_requests_until_blocked(&mut self) {
