@@ -451,7 +451,7 @@ label_flag(
 # Signed mac installer
 alias(
     name = "developer-id-certs",
-    actual = "@vaticle_developer_id_combined//file",
+    actual = "@typedb_developer_id_combined//file",
     tags = ["manual"],
 )
 
