@@ -178,7 +178,7 @@ fn undefining_a_vector_type_drops_its_index_so_the_type_id_is_reusable() {
 
     run_schema_query(
         db.clone(),
-        r#"define attribute embedding2, value vector(4, "float32"); entity item owns embedding2 @card(0..);"#,
+        r#"define attribute embedding2, value vector(4, "float32") @index(hnsw:cosine); entity item owns embedding2 @card(0..);"#,
     );
     insert_vectors(db.clone(), r#"insert $a isa item, has embedding2 vector([0.0, 1.0, 0.0, 0.0], "float32");"#);
     assert_eq!(db.vector_store().indexed_vector_count(lookup_attribute_type_id(&db, "embedding2")), 1);

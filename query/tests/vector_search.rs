@@ -295,10 +295,10 @@ fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
 }
 
 #[test]
-fn vector_index_annotation_is_optional_and_vector_only() {
+fn vector_attribute_requires_index_annotation() {
     let context = setup_empty();
     let result = try_define(&context, r#"define attribute bare-embedding, value vector(3, "float32");"#);
-    assert!(result.is_ok(), "vector attribute without @index(hnsw:cosine) should be accepted: {result:?}");
+    assert!(result.is_err(), "vector attribute without @index(hnsw:cosine) should be rejected at commit");
 
     let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
     assert!(result.is_err(), "@index on a non-vector value type should be rejected");
