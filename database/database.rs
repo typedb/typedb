@@ -79,7 +79,7 @@ pub(super) struct Schema {
 
 type ReservationRequestId = u64;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TransactionReservationKind {
     Write,
     Schema,
@@ -126,6 +126,10 @@ impl SchemaWriteTransactionState {
             TransactionReservationKind::Schema => self.has_schema_transaction = true,
             TransactionReservationKind::Write => self.running_write_transactions += 1,
         }
+        trace!(
+            "Admitted {:?} transaction. State of reservation: has_schema_transaction = {}, running_write_transactions = {}.",
+            kind, self.has_schema_transaction, self.running_write_transactions,
+        );
     }
 
     fn release(&mut self, kind: TransactionReservationKind) {
@@ -133,6 +137,10 @@ impl SchemaWriteTransactionState {
             TransactionReservationKind::Schema => self.has_schema_transaction = false,
             TransactionReservationKind::Write => self.running_write_transactions -= 1,
         }
+        trace!(
+            "Released {:?} transaction. State of reservation: has_schema_transaction = {}, running_write_transactions = {}.",
+            kind, self.has_schema_transaction, self.running_write_transactions,
+        );
     }
 
     fn fulfill_requests_until_blocked(&mut self) {
@@ -206,6 +214,7 @@ impl<D> Database<D> {
         }
         let (receiver, id) = guard.enqueue(kind);
         drop(guard);
+        trace!("Could not admit {kind:?} transaction immediately; waiting...");
         self.await_reservation(receiver, id, timeout_left)
     }
 
@@ -229,6 +238,7 @@ impl<D> Database<D> {
             .expect("Expected exclusive access to withdraw a reservation request");
         guard.queue.retain(|request| request.id != id);
         guard.fulfill_requests_until_blocked();
+        trace!("Reservation timed out (timeout = {timeout:?}).");
         Err(TransactionError::Timeout { source })
     }
 
