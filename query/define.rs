@@ -212,6 +212,11 @@ fn define_struct_fields(
     for field in &struct_definable.fields {
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
+        if matches!(value_type, ValueType::Vector(_)) {
+            return Err(DefineError::Unimplemented {
+                description: "Struct fields with a vector value type.".to_string(),
+            });
+        }
 
         let field_key = checked_identifier(&field.key)?;
         let definition_status = get_struct_field_status(

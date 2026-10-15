@@ -27,6 +27,7 @@ use encoding::{
     },
     value::vector_bytes::VectorBytes,
 };
+use error::{TypeDBError, typedb_error};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     CommitObserver, key_value::StorageKeyArray, keyspace::KeyspaceId, recovery::checkpoint::CheckpointAdditionalData,
@@ -43,7 +44,24 @@ struct TypeVectorIndex {
     dirty: AtomicBool,
 }
 
-type VectorStoreError = Box<dyn Error + Send + Sync>;
+typedb_error! {
+    pub VectorStoreError(component = "Vector store", prefix = "VEC") {
+        IndexCreate(1, "Failed to create vector index with {dimensions} dimensions: {reason}", dimensions: usize, reason: String),
+        IndexGrow(2, "Failed to grow vector index: {reason}", reason: String),
+        IndexAdd(3, "Failed to add vector to index: {reason}", reason: String),
+        DimensionMismatch(4, "Vector dimension mismatch: index has {index_dimensions} dimensions, vector has {vector_dimensions}.", index_dimensions: usize, vector_dimensions: usize),
+        ConflictingDimensionsInCommit(5, "Conflicting vector dimensions ({first} and {second}) for one attribute type in a single commit.", first: usize, second: usize),
+        CommittedWithoutValue(6, "Vector attribute committed without a value: {vertex}.", vertex: String),
+    }
+}
+
+impl fmt::Display for VectorStoreError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self as &dyn TypeDBError, f)
+    }
+}
+
+impl Error for VectorStoreError {}
 
 impl TypeVectorIndex {
     fn new(dimensions: usize) -> Result<Self, VectorStoreError> {
@@ -57,7 +75,7 @@ impl TypeVectorIndex {
             multi: false,
         };
         let index = usearch::new_index(&options)
-            .map_err(|err| format!("failed to create vector index (dimensions: {dimensions}): {err}"))?;
+            .map_err(|err| VectorStoreError::IndexCreate { dimensions, reason: err.to_string() })?;
         Ok(Self { index: RwLock::new(index), dirty: AtomicBool::new(false) })
     }
 
@@ -68,17 +86,16 @@ impl TypeVectorIndex {
     fn prepare(&self, dimensions: usize, additional: usize) -> Result<(), VectorStoreError> {
         let index = self.index.write().unwrap();
         if index.dimensions() != dimensions {
-            return Err(format!(
-                "vector dimension mismatch: index has {} dimensions, vector has {dimensions}",
-                index.dimensions()
-            )
-            .into());
+            return Err(VectorStoreError::DimensionMismatch {
+                index_dimensions: index.dimensions(),
+                vector_dimensions: dimensions,
+            });
         }
         let required = index.size() + additional;
         if required > index.capacity() {
             index
                 .reserve((index.capacity() * 2).max(1024).max(required))
-                .map_err(|err| format!("failed to grow vector index: {err}"))?;
+                .map_err(|err| VectorStoreError::IndexGrow { reason: err.to_string() })?;
         }
         Ok(())
     }
@@ -89,19 +106,17 @@ impl TypeVectorIndex {
             return Ok(());
         }
         if index.dimensions() != vector.len() {
-            return Err(format!(
-                "vector dimension mismatch: index has {} dimensions, vector has {}",
-                index.dimensions(),
-                vector.len()
-            )
-            .into());
+            return Err(VectorStoreError::DimensionMismatch {
+                index_dimensions: index.dimensions(),
+                vector_dimensions: vector.len(),
+            });
         }
         if index.size() >= index.capacity() {
             index
                 .reserve((index.capacity() * 2).max(1024))
-                .map_err(|err| format!("failed to grow vector index: {err}"))?;
+                .map_err(|err| VectorStoreError::IndexGrow { reason: err.to_string() })?;
         }
-        index.add(key, vector).map_err(|err| format!("failed to add vector to index: {err}"))?;
+        index.add(key, vector).map_err(|err| VectorStoreError::IndexAdd { reason: err.to_string() })?;
         self.dirty.store(true, Ordering::Release);
         Ok(())
     }
@@ -212,15 +227,15 @@ impl CommitObserver for VectorStore {
         for (key, value) in owned {
             let vertex = AttributeVertex::decode(key.bytes());
             if value.is_empty() {
-                return Err(format!("vector attribute committed without a value: {vertex:?}").into());
+                return Err(Box::new(VectorStoreError::CommittedWithoutValue { vertex: format!("{vertex:?}") }));
             }
             let dimensions = value.len() / VectorBytes::<BUFFER_VALUE_INLINE>::ELEMENT_LENGTH;
             let (existing_dimensions, count) = pending.entry(vertex.type_id_()).or_insert((dimensions, 0));
             if *existing_dimensions != dimensions {
-                return Err(format!(
-                    "conflicting vector dimensions ({existing_dimensions} and {dimensions}) for one attribute type in a single commit"
-                )
-                .into());
+                return Err(Box::new(VectorStoreError::ConflictingDimensionsInCommit {
+                    first: *existing_dimensions,
+                    second: dimensions,
+                }));
             }
             *count += 1;
         }

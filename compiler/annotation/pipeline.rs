@@ -493,20 +493,6 @@ fn annotate_write_stage(
         infer_types_for_block(ctx, running_annotations, block, TypeInferenceMode::ExactAndExplicit)
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
-    let compiled_expressions = compile_expressions(
-        ctx.snapshot,
-        ctx.type_manager,
-        block,
-        ctx.variable_registry,
-        ctx.parameters,
-        &block_annotations,
-        &mut running_annotations.values,
-    )
-    .map_err(|typedb_source| AnnotationError::ExpressionCompilation { typedb_source })?;
-    compiled_expressions.iter().for_each(|(binding, compiled)| {
-        running_annotations.values.insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
-    });
-
     complete_block_annotations_with_value_types(
         ctx,
         &running_annotations,

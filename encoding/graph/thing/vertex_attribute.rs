@@ -330,7 +330,7 @@ impl AttributeID {
             ValueType::Duration => DurationAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
             ValueType::Struct(_) => StructAttributeID::is_inlineable(),
-            ValueType::Vector(_) => false,
+            ValueType::Vector(_) => VectorAttributeID::is_inlineable(),
         }
     }
 
@@ -979,6 +979,10 @@ impl VectorAttributeID {
     pub(crate) const LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH + Self::VALUE_LENGTH_ID.length();
     pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
     const TAIL_INDEX: usize = Self::LENGTH - 1;
+
+    pub(crate) const fn is_inlineable() -> bool {
+        false
+    }
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }

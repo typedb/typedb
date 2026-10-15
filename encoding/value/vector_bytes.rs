@@ -42,11 +42,11 @@ impl<'a, const INLINE_LENGTH: usize> VectorBytes<'a, INLINE_LENGTH> {
         self.bytes.length()
     }
 
-    pub fn bytes(&'a self) -> &'a [u8] {
+    pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    pub fn as_reference(&'a self) -> VectorBytes<'a, INLINE_LENGTH> {
+    pub fn as_reference(&self) -> VectorBytes<'_, INLINE_LENGTH> {
         VectorBytes { bytes: Bytes::Reference(&self.bytes) }
     }
 
