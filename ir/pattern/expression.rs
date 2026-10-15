@@ -380,7 +380,7 @@ pub enum BuiltinConceptFunctionID {
 }
 
 impl BuiltinConceptFunctionID {
-    pub(crate) fn name(self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             Self::Iid => typeql::token::Function::Iid.as_str(),
             Self::Label => typeql::token::Function::Label.as_str(),

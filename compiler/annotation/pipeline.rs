@@ -5,6 +5,7 @@
  */
 
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
@@ -391,13 +392,16 @@ fn complete_block_annotations_with_value_types(
         let Some(signature) = ctx.annotated_function_signatures.get_annotated_signature(&function_id) else {
             return Err(AnnotationError::Internal { message: format!("No signature found for {function_id}") });
         };
-        for (argument_type, argument_id) in zip(&signature.arguments, function_call_binding.function_call_arg_ids()) {
+        for (index, (argument_type, argument_id)) in
+            zip(&signature.arguments, function_call_binding.function_call_arg_ids()).enumerate()
+        {
             if let FunctionParameterAnnotation::Value(value_type) = argument_type {
                 // this function only annotates value types
                 let actual = value_types_in_conjunction.get(&Vertex::Variable(argument_id)).unwrap();
                 if actual != &ExpressionValueType::Single(value_type.clone()) {
                     return Err(AnnotationError::ValueTypeMismatch {
-                        function_id,
+                        index: index + 1,
+                        function_name: signature.name.clone(),
                         expected: value_type.clone(),
                         actual: actual.clone(),
                         source_span: function_call_binding.source_span(),
