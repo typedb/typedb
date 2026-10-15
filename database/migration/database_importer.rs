@@ -1140,7 +1140,7 @@ typedb_error! {
         DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: ImportHandlerError),
         ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: ImportHandlerError),
         PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: ImportHandlerError),
-        FinalizationSchemaCommitFailed(9, "Import schema transaction commit failed on finalization. It is a sign of a bug.", typedb_source: ImportHandlerError),
+        FinalizationSchemaCommitFailed(9, "Import schema finalization failed: the imported data violates the schema's constraints.", typedb_source: ImportHandlerError),
         SchemaQueryParseFailed(10, "Import schema query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryFailed(11, "Import schema query failed.", typedb_source: Box<QueryError>),
         InvalidSchemaDefineQuery(12, "Import schema query is not a valid define query."),
