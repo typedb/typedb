@@ -87,8 +87,6 @@ impl ConditionalDelete {
 
         let connection_instructions =
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
-
-        // We can't just use required_inputs because that's recursive and we only want those at this level.
         let condition = WritePatternCondition::build(conjunction, input_variables, conjunction_annotations);
 
         let nested_deletes = conjunction

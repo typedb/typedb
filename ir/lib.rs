@@ -356,6 +356,11 @@ typedb_error! {
             actual_width: usize,
             source_span: Option<Span>,
         ),
+        IllegalTryInWriteStage(
+            57,
+            "Try blocks are no longer supported in write stages. Use `if` statements instead.",
+            source_span: Option<Span>,
+        ),
         InternalNotAValueBuiltin(
             100,
             "Attempted to translate function '{token}' as a builtin value function.",
@@ -378,11 +383,6 @@ typedb_error! {
             201,
             "Invalid timezone offset '{offset}'.",
             offset: String,
-            source_span: Option<Span>,
-        ),
-        IllegalTryInWriteStage(
-            252,
-            "Try blocks are not supported in write stages. Use `if` statements instead.",
             source_span: Option<Span>,
         ),
         UnimplementedExpressionsInWrite(

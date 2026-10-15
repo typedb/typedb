@@ -118,7 +118,6 @@ impl ConditionalInsert {
         let connection_instructions =
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
-        // We can't just use required_inputs because that's recursive and we only want those at this level.
         let nested_inserts = conjunction
             .nested_patterns()
             .iter()
