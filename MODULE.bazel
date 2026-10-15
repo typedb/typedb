@@ -165,7 +165,7 @@ bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "87a2092926b36a5c82cada9d21e1c3a6d6e32859",
+    commit = "3140b73924132511cfd4015479816f94351b90a8",
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
@@ -198,8 +198,8 @@ git_override(
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 http_file(
-    name = "vaticle_developer_id_combined",
-    url = "https://repo.typedb.com/basic/private-tools/raw/files/VaticleDeveloperIDCombined.p12",
-    sha256 = "e6da59e0698ea876c89ac2a19c87ac6e6936df98ee5df31d8895a09ef26b15c7",
-    downloaded_file_path = "VaticleDeveloperIDCombined.p12",
+    name = "typedb_developer_id_combined",
+    url = "https://repo.typedb.com/basic/private-tools/raw/files/TypeDBDeveloperIDCombined.p12",
+    sha256 = "a61b4c24292c584b11893a1e8c8d328dbbdfc46d1344c6c991ff1c55a615914a",
+    downloaded_file_path = "TypeDBDeveloperIDCombined.p12",
 )

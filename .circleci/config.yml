@@ -719,6 +719,7 @@ workflows:
             - test-deploy-snapshot-mac-x86_64
 
       - deploy-snapshot-installer-mac-arm64:
+          context: [default]
           filters:
             branches:
               only: [ master ]
@@ -726,6 +727,7 @@ workflows:
             - test-deploy-snapshot-mac-arm64
 
       - deploy-snapshot-installer-mac-x86_64:
+          context: [default]
           filters:
             branches:
               only: [ master ]
@@ -810,6 +812,7 @@ workflows:
             - deploy-release-mac-x86_64
 
       - deploy-release-installer-mac-arm64:
+          context: [default]
           filters:
             branches:
               only: [ release ]
@@ -817,6 +820,7 @@ workflows:
             - deploy-release-mac-arm64
 
       - deploy-release-installer-mac-x86_64:
+          context: [default]
           filters:
             branches:
               only: [ release ]
