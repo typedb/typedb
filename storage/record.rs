@@ -57,7 +57,7 @@ impl DurabilityRecord for LegacyCommitRecordV1 {
 
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        reader.read_to_end(&mut buf).map_err(bincode::ErrorKind::Io)?;
         bincode::deserialize(&buf)
     }
 }
@@ -83,7 +83,7 @@ impl fmt::Debug for CommitRecord {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommitType {
     Data,
     Schema,
@@ -147,25 +147,32 @@ impl CommitRecord {
             let predecessor_writes = pred_write_buffer.writes();
             for (_key, write, predecessor_write) in BTreeMapIntersectionIterator::new(writes, predecessor_writes) {
                 match (predecessor_write, write) {
-                    (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                        puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                    (
+                        Write::Insert { value: prev_value } | Write::Put { value: prev_value, .. },
+                        Write::Put { action, value, .. },
+                    ) => {
+                        if value == prev_value {
+                            puts_to_update.push(DependentPut::Inserted { action: action.clone() });
+                        } else {
+                            puts_to_update.push(DependentPut::DifferentValue { action: action.clone() });
+                        }
                     }
-                    (Write::Delete, Write::Put { reinsert, .. }) => {
-                        puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                    (Write::Delete, Write::Put { action, .. }) => {
+                        puts_to_update.push(DependentPut::Deleted { action: action.clone() });
                     }
                     _ => (),
                 }
             }
 
             for (_key, write, predecessor_lock) in BTreeMapIntersectionIterator::new(writes, predecessor_locks) {
-                if matches!(write, Write::Delete) && matches!(predecessor_lock, LockType::Unmodifiable) {
+                if write.is_delete() && matches!(predecessor_lock, LockType::Unmodifiable) {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
             }
 
             // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
             for (_key, lock, predecessor_write) in BTreeMapIntersectionIterator::new(locks, predecessor_writes) {
-                if matches!(lock, LockType::Unmodifiable) && matches!(predecessor_write, Write::Delete) {
+                if matches!(lock, LockType::Unmodifiable) && predecessor_write.is_delete() {
                     return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                 }
             }
@@ -204,7 +211,7 @@ impl DurabilityRecord for CommitRecord {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        reader.read_to_end(&mut buf).map_err(bincode::ErrorKind::Io)?;
         bincode::deserialize(&buf)
     }
 }
@@ -216,11 +223,11 @@ impl StatusRecord {
         StatusRecord { commit_record_sequence_number: sequence_number, was_committed: committed }
     }
 
-    pub(crate) fn was_committed(&self) -> bool {
+    pub fn was_committed(&self) -> bool {
         self.was_committed
     }
 
-    pub(crate) fn commit_record_sequence_number(&self) -> SequenceNumber {
+    pub fn commit_record_sequence_number(&self) -> SequenceNumber {
         self.commit_record_sequence_number
     }
 }
@@ -243,7 +250,7 @@ impl DurabilityRecord for StatusRecord {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        reader.read_to_end(&mut buf).map_err(bincode::ErrorKind::Io)?;
         bincode::deserialize(&buf)
     }
 }

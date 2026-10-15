@@ -51,7 +51,7 @@ fn cleanup_test() {
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.delete(key_1.clone());
     snapshot.delete(key_2.clone());
-    let seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log().unwrap();
+    let seq = snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log().unwrap().sequence_number;
 
     assert_eq!(count_keys(&storage), 6);
 
@@ -100,7 +100,7 @@ fn concurrent_reader_cleanup_test() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.delete(key_1.clone());
         snapshot.delete(key_2.clone());
-        snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log().unwrap()
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap_or_log().unwrap().sequence_number
     };
 
     assert_eq!(count_keys(&storage), 6);

@@ -7,7 +7,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use concept::thing::statistics::Statistics;
+use concept::thing::statistics::{Statistics, deltas::CommitDeltas};
 use diagnostics::metrics::FsyncMetrics;
 use durability::{DurabilitySequenceNumber, RawRecord, wal::WAL};
 use storage::{
@@ -71,6 +71,7 @@ fn print_record(record: RawRecord<'_>) {
         CommitRecord::RECORD_TYPE => print_commit(record.sequence_number, deserialise_record(&record.bytes)),
         StatusRecord::RECORD_TYPE => print_status(record.sequence_number, deserialise_record(&record.bytes)),
         Statistics::RECORD_TYPE => print_statistics(record.sequence_number, deserialise_record(&record.bytes)),
+        CommitDeltas::RECORD_TYPE => print_deltas(record.sequence_number, deserialise_record(&record.bytes)),
         _ => print_raw_record(record),
     }
     println!();
@@ -91,6 +92,11 @@ fn print_statistics(sequence_number: DurabilitySequenceNumber, statistics: Stati
     println!("{:#?}", statistics);
 }
 
+fn print_deltas(sequence_number: DurabilitySequenceNumber, deltas: CommitDeltas) {
+    println!("commit deltas @ {}", sequence_number.number());
+    println!("{:#?}", deltas);
+}
+
 fn print_raw_record(record: RawRecord<'_>) {
     const WIDTH: usize = 40;
     println!("Unrecognised record({}) @ {}", record.record_type, record.sequence_number.number());
@@ -102,7 +108,7 @@ fn print_raw_record(record: RawRecord<'_>) {
             print!(" ");
         }
     }
-    if record.bytes.len() % WIDTH != 0 {
+    if !record.bytes.len().is_multiple_of(WIDTH) {
         println!();
     }
 }

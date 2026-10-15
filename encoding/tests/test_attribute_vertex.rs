@@ -366,7 +366,7 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         snapshot_a.commit(&mut CommitProfile::disabled()).expect("First commit should succeed");
         match snapshot_b.commit(&mut CommitProfile::disabled()) {
             Ok(_) => panic!("Expected hash collision to cause isolation error"),
-            Err(err) => {
+            Err((_, err)) => {
                 assert!(matches!(
                     err,
                     SnapshotError::Commit {
@@ -409,7 +409,7 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         snapshot_a.commit(&mut CommitProfile::disabled()).expect("First commit should succeed");
         match snapshot_b.commit(&mut CommitProfile::disabled()) {
             Ok(_) => panic!("Expected hash collision to cause isolation error"),
-            Err(err) => {
+            Err((_, err)) => {
                 assert!(matches!(
                     err,
                     SnapshotError::Commit {
@@ -482,7 +482,7 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
         snapshot_delete.delete(vertex_key.clone());
 
         snapshot_put.commit(&mut CommitProfile::disabled()).expect("Re-putting an existing value should commit");
-        let err = snapshot_delete.commit(&mut CommitProfile::disabled()).expect_err("Delete should conflict");
+        let (_, err) = snapshot_delete.commit(&mut CommitProfile::disabled()).expect_err("Delete should conflict");
         assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
     }
 
@@ -495,7 +495,7 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
         snapshot_delete.delete(vertex_key.clone());
 
         snapshot_delete.commit(&mut CommitProfile::disabled()).expect("Delete should commit");
-        let err = snapshot_put.commit(&mut CommitProfile::disabled()).expect_err("Put should conflict");
+        let (_, err) = snapshot_put.commit(&mut CommitProfile::disabled()).expect_err("Put should conflict");
         assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
     }
 }
@@ -578,7 +578,7 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
         assert_eq!(reput, alpha_vertex);
 
         snapshot_reput.commit(&mut CommitProfile::disabled()).expect("Re-put of existing value should commit");
-        let err = snapshot_delete.commit(&mut CommitProfile::disabled()).expect_err("Delete should conflict");
+        let (_, err) = snapshot_delete.commit(&mut CommitProfile::disabled()).expect_err("Delete should conflict");
         assert_commit_conflict(err, IsolationConflict::DeletingRequiredKey);
     }
 
@@ -591,7 +591,7 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
         assert_eq!(reput, alpha_vertex);
 
         snapshot_delete.commit(&mut CommitProfile::disabled()).expect("Delete and allocate should commit");
-        let err = snapshot_reput.commit(&mut CommitProfile::disabled()).expect_err("Re-put should conflict");
+        let (_, err) = snapshot_reput.commit(&mut CommitProfile::disabled()).expect_err("Re-put should conflict");
         assert_commit_conflict(err, IsolationConflict::RequireDeletedKey);
     }
 }

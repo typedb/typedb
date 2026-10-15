@@ -2683,7 +2683,7 @@ fn attribute_string_concurrent_has_writers() {
         attach(&mut snapshot_1, owner_1, &new_long_string);
         attach(&mut snapshot_2, owner_2, &new_long_string);
         finalise_and_commit(snapshot_1).expect("first creator of a new hashed value should commit");
-        let err = finalise_and_commit(snapshot_2).expect_err("concurrent creator should conflict");
+        let (_, err) = finalise_and_commit(snapshot_2).expect_err("concurrent creator should conflict");
         assert_commit_conflict(err, IsolationConflict::ExclusiveLock);
     }
 

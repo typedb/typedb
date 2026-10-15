@@ -32,7 +32,7 @@ pub fn load_managers(
 ) -> (Arc<TypeManager>, Arc<ThingManager>) {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let mut statistics = Statistics::new(DurabilitySequenceNumber::MIN);
-    statistics.may_synchronise(storage.as_ref()).unwrap();
+    statistics.may_synchronise_from_wal(storage.as_ref()).unwrap();
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone()).unwrap());
     let cache = type_cache_at.map(|sequence_number| Arc::new(TypeCache::new(storage, sequence_number).unwrap()));

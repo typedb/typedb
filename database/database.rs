@@ -19,7 +19,7 @@ use std::{
 use concept::{
     thing::{
         cleanup::{CleanupIntervals, CleanupRecord},
-        statistics::{Statistics, StatisticsError},
+        statistics::{Statistics, StatisticsError, deltas::CommitDeltas},
     },
     type_::type_manager::{
         TypeManager,
@@ -159,8 +159,9 @@ pub struct Database<D> {
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
     pub(super) _cleanup_queue: Arc<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>,
+    pub(super) commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
-    schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
+    schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
     _cleanup_worker: IntervalRunner,
@@ -329,6 +330,7 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
         wal_client.register_record_type::<CleanupRecord>();
+        wal_client.register_record_type::<CommitDeltas>();
 
         let storage = Arc::new(
             MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
@@ -355,15 +357,17 @@ impl Database<WALClient> {
         );
 
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
-        let schema_txn_lock = Arc::new(RwLock::default());
+        let schema_write_transaction_exclusivity = Arc::new(Mutex::new(SchemaWriteTransactionState::new()));
 
         let query_cache = Arc::new(QueryCache::new());
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
-            schema_txn_lock.clone(),
+            schema_write_transaction_exclusivity.clone(),
             query_cache.clone(),
+            commit_deltas_queue.clone(),
         );
 
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
@@ -382,7 +386,8 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
-            schema_write_transaction_exclusivity: Mutex::new(SchemaWriteTransactionState::new()),
+            commit_deltas_queue,
+            schema_write_transaction_exclusivity,
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
             _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
@@ -423,6 +428,7 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
         wal_client.register_record_type::<CleanupRecord>();
+        wal_client.register_record_type::<CommitDeltas>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
@@ -448,11 +454,13 @@ impl Database<WALClient> {
             &name,
             thing_statistics.sequence_number
         );
-        thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        thing_statistics
+            .may_synchronise_from_wal(&storage)
+            .map_err(|err| StatisticsInitialise { typedb_source: err })?;
         if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
             thing_statistics
                 .durably_write(storage.durability())
-                .map_err(|err| StatisticsInitialise { typedb_source: err })?;
+                .map_err(|err| DatabaseOpenError::StatisticsPersist { typedb_source: err })?;
         }
         event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
@@ -471,9 +479,6 @@ impl Database<WALClient> {
             .map_err(|error| FunctionCacheInitialise { typedb_source: *error })?,
         );
 
-        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
-        let schema_txn_lock = Arc::new(RwLock::default());
-
         let checkpoint_sequence_number = match checkpoint {
             None => SequenceNumber::MIN,
             Some(checkpoint) => {
@@ -484,13 +489,18 @@ impl Database<WALClient> {
             }
         };
 
+        let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
+        let schema_write_transaction_exclusivity = Arc::new(Mutex::new(SchemaWriteTransactionState::new()));
+
         let query_cache = Arc::new(QueryCache::new());
+        let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
         let update_statistics = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
-            schema_txn_lock.clone(),
+            schema_write_transaction_exclusivity.clone(),
             query_cache.clone(),
+            commit_deltas_queue.clone(),
         );
         let checkpoint_fn =
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
@@ -522,7 +532,8 @@ impl Database<WALClient> {
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
-            schema_write_transaction_exclusivity: Mutex::new(SchemaWriteTransactionState::new()),
+            commit_deltas_queue,
+            schema_write_transaction_exclusivity,
             _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
                 checkpoint_fn,
@@ -664,19 +675,66 @@ fn make_update_statistics_fn(
     database_name: String,
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
-    schema_txn_lock: Arc<RwLock<()>>,
+    schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
     query_cache: Arc<QueryCache>,
+    commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 ) -> impl Fn() {
+    struct ScopeGuard<F: FnOnce()>(Option<F>);
+    impl<F: FnOnce()> Drop for ScopeGuard<F> {
+        fn drop(&mut self) {
+            (self.0.take().unwrap())()
+        }
+    }
+
     move || {
-        if storage.snapshot_watermark() > schema.read().unwrap().thing_statistics.sequence_number {
-            let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+        let watermark = storage.snapshot_watermark();
+        if watermark > schema.read().unwrap().thing_statistics.sequence_number {
+            let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+            if schema_txn_guard.is_blocked(TransactionReservationKind::Write) {
+                // better luck next time
+                return;
+            }
+            schema_txn_guard.admit(TransactionReservationKind::Write);
+            drop(schema_txn_guard);
+
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
-            new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
+
+            let _scope_guard = ScopeGuard(Some(|| {
+                let mut schema_txn_guard = schema_write_transaction_exclusivity.lock().unwrap(); // prevent Schema txns from opening during statistics update
+                schema_txn_guard.release(TransactionReservationKind::Write);
+                debug!("Finished updating statistics for database {}", database_name.as_str());
+            }));
+
+            let commit_deltas = {
+                let mut queue = commit_deltas_queue.write().unwrap();
+                let Some((&seq, _)) = queue.first_key_value() else { return };
+                if seq > new_statistics.sequence_number.next() {
+                    // waiting on commits between statistics and current front of the queue
+                    return;
+                }
+
+                let range_start = seq;
+                let range_end = queue
+                    .keys()
+                    .tuple_windows()
+                    .map_while(|(&prev, &cur)| (prev.next() == cur).then_some(cur))
+                    .last()
+                    .unwrap_or(range_start) // only one consecutive sequence number
+                    .next();
+                let tail = queue.split_off(&range_end);
+                mem::replace(&mut *queue, tail)
+            };
+
+            for commit_deltas in commit_deltas.into_values() {
+                if let Err(err) = new_statistics.update_deltas(&commit_deltas, storage.durability()) {
+                    error!("Statistics update failed: {err:?}");
+                    return;
+                }
+            }
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
-            debug!("Finished updating statistics for database {}", database_name.as_str());
         }
     }
 }
@@ -759,6 +817,7 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        StatisticsPersist(18, "Error persisting statistics at startup.", typedb_source: DurabilityClientError),
     }
 }
 

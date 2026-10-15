@@ -16,7 +16,10 @@ use super::{MVCCKey, StorageOperation};
 use crate::{
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     sequence_number::SequenceNumber,
-    snapshot::{buffer::OperationsBuffer, write::Write},
+    snapshot::{
+        buffer::OperationsBuffer,
+        write::{PutAction, Write},
+    },
 };
 
 pub(crate) struct WriteBatches {
@@ -36,8 +39,8 @@ impl WriteBatches {
                         Write::Insert { value } => {
                             write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                         }
-                        Write::Put { value, reinsert, .. } => {
-                            if reinsert.load(Ordering::SeqCst) {
+                        Write::Put { value, action, .. } => {
+                            if action.load(Ordering::SeqCst) != PutAction::Nop {
                                 write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }
