@@ -491,6 +491,7 @@ impl PatternVariableModes {
                         }
                         (PatternVariableMode::BoundByTry, BindingMode::AlwaysBinding(o)) => {
                             // Happens in the transition from optional to inner
+                            // Handily, this allows { try } or { bind }; as well.
                             PatternVariableMode::Binding(o.into())
                         }
                         (PatternVariableMode::BoundByTry, BindingMode::BoundInTry) => {
@@ -677,10 +678,12 @@ impl BitOr for BindingMode {
         match (self, rhs) {
             (Self::BoundInTry, Self::BoundInTry) => Self::BoundInTry,
             (Self::AlwaysBinding(a), Self::AlwaysBinding(b)) => Self::AlwaysBinding(a | b),
+            (Self::BoundInTry, Self::AlwaysBinding(_)) | (Self::AlwaysBinding(_), Self::BoundInTry) => Self::BoundInTry,
             (Self::Absent, Self::Absent) => Self::Absent,
-            (Self::Absent, Self::AlwaysBinding(_)) | (Self::AlwaysBinding(_), Self::Absent) => {
-                Self::LocallyBindingInChild
-            }
+            (Self::Absent, Self::BoundInTry)
+            | (Self::BoundInTry, Self::Absent)
+            | (Self::Absent, Self::AlwaysBinding(_))
+            | (Self::AlwaysBinding(_), Self::Absent) => Self::LocallyBindingInChild,
             (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
                 Self::LocallyBindingInChild
             }

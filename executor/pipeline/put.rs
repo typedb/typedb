@@ -19,6 +19,7 @@ use crate::{
     match_executor::MatchExecutor,
     pipeline::{
         PipelineExecutionError, WrittenRowsIterator,
+        insert::build_profiles_recursive,
         stage::{ExecutionContext, StageAPI, StageIterator},
     },
     row::MaybeOwnedRow,
@@ -147,8 +148,9 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
     let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
     let stage_profile = context.profile.profile_stage(|| String::from("Put"), executable.executable_id as _);
     let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Put pattern"));
-    let (condition_profiles, concept_profiles, connection_profiles) =
-        crate::pipeline::insert::build_step_profiles(&executable.insert, &pattern_profile);
+    let mut next_subpattern = 0;
+    let recursive_profile =
+        build_profiles_recursive(pattern_profile, &executable.insert.root_insert, &mut next_subpattern);
     for index in 0..output_batch.len() {
         // TODO: parallelise -- though this requires our snapshots support parallel writes!
         if must_insert[index] {
@@ -159,9 +161,7 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
                 &context.thing_manager,
                 &context.parameters,
                 &mut row,
-                &condition_profiles,
-                &concept_profiles,
-                &connection_profiles,
+                &recursive_profile,
             )
             .map_err(|typedb_source| Box::new(PipelineExecutionError::WriteError { typedb_source }))?;
         }

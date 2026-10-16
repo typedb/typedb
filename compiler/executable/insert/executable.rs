@@ -42,7 +42,7 @@ use crate::{
 #[derive(Debug)]
 pub struct InsertExecutable {
     pub executable_id: u64,
-    pub inserts: Vec<ConditionalInsert>,
+    pub root_insert: ConditionalInsert,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
 
@@ -73,50 +73,39 @@ pub fn compile(
             .unwrap_or(true)
     );
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variable_positions.clone());
-    let root_insert = ConditionalInsert::new(
+    let root_insert = ConditionalInsert::build_recursive(
         block.conjunction(),
         block_annotations,
         &mut variable_positions,
         variable_registry,
         source_span,
     )?;
-    let mut inserts = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
-    inserts.push(root_insert);
-    for nested_pattern in block.conjunction().nested_patterns() {
-        let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!("Only optionals are allowed as nested patterns in insert")
-        };
-        inserts.push(ConditionalInsert::new(
-            optional.conjunction(),
-            block_annotations,
-            &mut variable_positions,
-            variable_registry,
-            source_span,
-        )?);
-    }
 
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
-        inserts,
+        root_insert,
         output_row_schema: prepare_output_row_schema(input_variable_positions, &variable_positions),
     })
 }
 
 #[derive(Debug)]
 pub struct ConditionalInsert {
+    pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub condition: WritePatternCondition,
+    pub nested_inserts: Vec<ConditionalInsert>,
 }
 
 impl ConditionalInsert {
-    fn new(
+    fn build_recursive(
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_positions: &mut HashMap<Variable, VariablePosition>,
         variable_registry: &VariableRegistry,
         stage_source_span: Option<Span>,
     ) -> Result<Self, Box<WriteCompilationError>> {
+        let conjunction_annotations =
+            block_annotations.type_annotations_of(conjunction).expect("insert must have type annotations");
         let concept_instructions_map = add_inserted_concepts(
             conjunction,
             block_annotations,
@@ -124,15 +113,28 @@ impl ConditionalInsert {
             variable_positions,
             stage_source_span,
         )?;
+        let condition = WritePatternCondition::build(conjunction, variable_positions, conjunction_annotations);
 
         let connection_instructions =
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
-
-        // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let condition = WritePatternCondition::build(conjunction, variable_positions);
-
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
-        Ok(Self { concept_instructions, connection_instructions, condition })
+        let nested_inserts = conjunction
+            .nested_patterns()
+            .iter()
+            .map(|nested| {
+                let NestedPattern::Optional(optional) = nested else {
+                    unreachable!("Only optionals are allowed as nested patterns in insert")
+                };
+                Self::build_recursive(
+                    optional.conjunction(),
+                    block_annotations,
+                    variable_positions,
+                    variable_registry,
+                    stage_source_span,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_inserts })
     }
 }
 

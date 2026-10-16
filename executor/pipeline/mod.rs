@@ -5,15 +5,12 @@
  */
 use std::sync::Arc;
 
-use compiler::{
-    ExecutorVariable,
-    executable::{WritePatternCondition, match_::instructions::CheckInstruction},
-};
+use compiler::executable::WritePatternCondition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
-use resource::profile::{StepProfile, StorageCounters};
+use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -119,4 +116,11 @@ typedb_error! {
             column_index: usize,
         ),
     }
+}
+
+pub(crate) struct RecursiveProfile {
+    pub condition_profile: Arc<StepProfile>,
+    pub concept_instruction_profiles: Vec<Arc<StepProfile>>,
+    pub connection_instruction_profiles: Vec<Arc<StepProfile>>,
+    pub nested_profiles: Vec<RecursiveProfile>,
 }
