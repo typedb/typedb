@@ -52,7 +52,7 @@ rust_library(
 rust_test(
     name = "test_crate_database",
     crate = ":database",
-    deps = [],
+    deps = ["//util/test:test_utils"],
 )
 
 checkstyle_test(
