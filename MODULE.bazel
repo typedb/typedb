@@ -110,7 +110,7 @@ workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
         "typedb_protocol+": "856a6598867aeb24f0b2e538b8f2634d4b7391d0",
-        "typeql+": "7a3263d64510f56e11f800372a31443f9d272569",
+        "typeql+": "79b92bd7f775c3cd385535971883c48e6d44f32e",
     },
     workspace_tag_dict = {
 #        "typedb_protocol+": "3.12.0",
