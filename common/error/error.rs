@@ -398,6 +398,8 @@ pub enum UnimplementedFeature {
     NestedOptionalWrites,
     IfConditionComparison,
     IfConditionIsa,
+
+    ErrorsOnImplicitUnwrap,
 }
 
 impl std::fmt::Display for UnimplementedFeature {

@@ -618,12 +618,18 @@ fn optionally_bound_in_one_branch() {
         match $p has age $other_age;
     "#;
         let parsed = typeql::parse_query(query).unwrap().into_structure();
-        let translation_error = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap_err();
+        let Err(translation_error) = translate_pipeline(&empty_function_index, &parsed.into_pipeline()) else {
+            error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::ErrorsOnImplicitUnwrap);
+            return;
+        };
         assert!(match *translation_error {
             RepresentationError::UnsafeOptionalDereference { variable, .. } => {
                 variable == "p"
             }
-            _ => false,
+            other => {
+                Err::<(), _>(other).unwrap();
+                false
+            }
         });
     }
 
@@ -687,7 +693,10 @@ fn optionally_assigned_is_input_to_sibling_try() {
                 try { let $y = $x + 1; };
         "#;
         let parsed = typeql::parse_query(query).unwrap().into_structure();
-        let translation_error = translate_pipeline(&function_index, &parsed.into_pipeline()).unwrap_err();
+        let Err(translation_error) = translate_pipeline(&function_index, &parsed.into_pipeline()) else {
+            error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::ErrorsOnImplicitUnwrap);
+            return;
+        };
         assert!(match *translation_error {
             RepresentationError::UnsafeOptionalDereference { variable, .. } => {
                 variable == "x"

@@ -272,7 +272,7 @@ impl Context {
 
 fn is_ignore(tag: &str) -> bool {
     if tag == "ignore-optional-transition" {
-        use error::optional_usage_error; // Unused import so we break code on cleanup
+        error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::ErrorsOnImplicitUnwrap);
         return true;
     }
     tag == "ignore" || tag == "ignore-typedb"
