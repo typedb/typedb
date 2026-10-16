@@ -356,7 +356,9 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::AccessAfterFinalisation { .. }
         | DatabaseImportError::ItemBeforeSchema { .. }
         | DatabaseImportError::SchemaAlreadyImported { .. }
-        | DatabaseImportError::ItemAfterChecksums { .. } => ErrorOrigin::Request,
+        | DatabaseImportError::ItemAfterChecksums { .. }
+        | DatabaseImportError::RelationWithoutRolePlayers { .. }
+        | DatabaseImportError::FinalizationSchemaCommitFailed { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
         | DatabaseImportError::DataCommitFailed { .. }
@@ -364,8 +366,7 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::CacheError { .. }
         | DatabaseImportError::Interrupted { .. } => ErrorOrigin::System,
 
-        DatabaseImportError::PreparationSchemaCommitFailed { .. }
-        | DatabaseImportError::FinalizationSchemaCommitFailed { .. } => ErrorOrigin::Internal,
+        DatabaseImportError::PreparationSchemaCommitFailed { .. } => ErrorOrigin::Internal,
 
         DatabaseImportError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),
         DatabaseImportError::ConceptWrite { typedb_source } => concept_write_origin(typedb_source),

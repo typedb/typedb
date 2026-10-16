@@ -110,7 +110,7 @@ macro_rules! for_item_in_write_transaction {
         result?;
         $self.count_item();
         let pending_writes = $self.data_transaction.as_ref().unwrap().snapshot.operations().len();
-        if pending_writes >= DatabaseImporter::MAX_WRITES_PER_COMMIT {
+        if pending_writes >= $self.max_writes_per_commit {
             let transaction = $self.data_transaction.take().unwrap();
             $self.commit_write_transaction(transaction)?;
         }
@@ -338,6 +338,7 @@ pub struct DatabaseImporter {
     data_info: DataInfo,
     data_transaction: Option<TransactionWrite<WALClient>>,
     total_item_count: u64,
+    max_writes_per_commit: usize,
     interrupt: ExecutionInterrupt,
     schema_imported: bool,
 }
@@ -366,9 +367,15 @@ impl DatabaseImporter {
             data_info,
             data_transaction: None,
             total_item_count: 0,
+            max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
             schema_imported: false,
             interrupt,
         }
+    }
+
+    pub fn with_max_writes_per_commit(mut self, max_writes_per_commit: usize) -> Self {
+        self.max_writes_per_commit = max_writes_per_commit;
+        self
     }
 
     pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
@@ -458,6 +465,9 @@ impl DatabaseImporter {
         owned_attributes: Vec<String>,
         related_role_players: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
+        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
+            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
+        }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let relation_type = type_manager
                 .get_relation_type(&snapshot, &label)
@@ -1130,7 +1140,7 @@ typedb_error! {
         DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: ImportHandlerError),
         ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: ImportHandlerError),
         PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: ImportHandlerError),
-        FinalizationSchemaCommitFailed(9, "Import schema transaction commit failed on finalization. It is a sign of a bug.", typedb_source: ImportHandlerError),
+        FinalizationSchemaCommitFailed(9, "Import schema finalization failed: the imported data violates the schema's constraints.", typedb_source: ImportHandlerError),
         SchemaQueryParseFailed(10, "Import schema query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryFailed(11, "Import schema query failed.", typedb_source: Box<QueryError>),
         InvalidSchemaDefineQuery(12, "Import schema query is not a valid define query."),
@@ -1151,5 +1161,6 @@ typedb_error! {
         ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
+        RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It can be a sign of a corrupted file or a client bug.", id: String),
     }
 }
