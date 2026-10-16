@@ -277,6 +277,18 @@ impl Statistics {
         })
     }
 
+    pub fn synchronise_from_wal_and_persist(
+        &mut self,
+        storage: &MVCCStorage<impl DurabilityClient>,
+    ) -> Result<(), StatisticsError> {
+        self.may_synchronise_from_wal(storage)?;
+        if self.sequence_number > self.last_durable_write_sequence_number {
+            self.durably_write(storage.durability())
+                .map_err(|typedb_source| StatisticsError::DurablyWrite { typedb_source })?;
+        }
+        Ok(())
+    }
+
     pub fn may_synchronise_from_wal(
         &mut self,
         storage: &MVCCStorage<impl DurabilityClient>,

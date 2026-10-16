@@ -171,6 +171,10 @@ pub struct Database<D> {
     pub(super) commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
     schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
+    background_workers: BackgroundWorkers,
+}
+
+struct BackgroundWorkers {
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
     _cleanup_worker: IntervalRunner,
@@ -371,7 +375,7 @@ impl Database<WALClient> {
 
         let query_cache = Arc::new(QueryCache::new());
         let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
-        let update_statistics = make_update_statistics_fn(
+        let update_statistics_fn = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
@@ -398,9 +402,11 @@ impl Database<WALClient> {
             _cleanup_queue: cleanup_queue,
             commit_deltas_queue,
             schema_write_transaction_exclusivity,
-            _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
-            _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
-            _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            background_workers: BackgroundWorkers {
+                _statistics_updater: IntervalRunner::new(update_statistics_fn, STATISTICS_UPDATE_INTERVAL),
+                _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
+                _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            },
         })
     }
 
@@ -465,13 +471,8 @@ impl Database<WALClient> {
             thing_statistics.sequence_number
         );
         thing_statistics
-            .may_synchronise_from_wal(&storage)
+            .synchronise_from_wal_and_persist(&storage)
             .map_err(|err| StatisticsInitialise { typedb_source: err })?;
-        if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
-            thing_statistics
-                .durably_write(storage.durability())
-                .map_err(|err| DatabaseOpenError::StatisticsPersist { typedb_source: err })?;
-        }
         event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
 
@@ -504,7 +505,7 @@ impl Database<WALClient> {
 
         let query_cache = Arc::new(QueryCache::new());
         let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
-        let update_statistics = make_update_statistics_fn(
+        let update_statistics_fn = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
@@ -544,13 +545,15 @@ impl Database<WALClient> {
             _cleanup_queue: cleanup_queue,
             commit_deltas_queue,
             schema_write_transaction_exclusivity,
-            _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
-            _checkpointer: IntervalRunner::new_with_initial_delay(
-                checkpoint_fn,
-                CHECKPOINT_INTERVAL,
-                CHECKPOINT_INTERVAL,
-            ),
-            _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            background_workers: BackgroundWorkers {
+                _statistics_updater: IntervalRunner::new(update_statistics_fn, STATISTICS_UPDATE_INTERVAL),
+                _checkpointer: IntervalRunner::new_with_initial_delay(
+                    checkpoint_fn,
+                    CHECKPOINT_INTERVAL,
+                    CHECKPOINT_INTERVAL,
+                ),
+                _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            },
         };
 
         if checkpoint_sequence_number < wal_last_sequence_number {
@@ -566,12 +569,24 @@ impl Database<WALClient> {
         checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
+    pub(crate) fn checkpoint_and_close(self) -> Result<(), DatabaseCloseError> {
+        use DatabaseCloseError::{CheckpointCreate, StatisticsPersist};
+
+        let Self { name, path, storage, schema, background_workers, .. } = self;
+        drop(background_workers);
+
+        let mut statistics = (*schema.read().unwrap().thing_statistics).clone();
+        statistics
+            .synchronise_from_wal_and_persist(&storage)
+            .map_err(|typedb_source| StatisticsPersist { name: name.to_string(), typedb_source })?;
+
+        checkpoint_storage(&name, &path, &storage).map_err(|source| CheckpointCreate { name: name.to_string(), source })
+    }
+
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         trace!("Deleting database '{}'.", &self.name);
-        drop(self._statistics_updater);
-        drop(self._checkpointer);
-        drop(self._cleanup_worker);
+        drop(self.background_workers);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
         drop(Arc::into_inner(self.query_cache).expect("Cannot get exclusive ownership of inner of Arc<QueryCache>."));
         drop(
@@ -827,7 +842,6 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
-        StatisticsPersist(18, "Error persisting statistics at startup.", typedb_source: DurabilityClientError),
     }
 }
 
@@ -846,6 +860,13 @@ typedb_error! {
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
         ImportedDatabaseInUse(12, "Imported database '{name}' is still in use.", name: String),
         ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
+    }
+}
+
+typedb_error! {
+    pub DatabaseCloseError(component = "Database close", prefix = "DCL") {
+        StatisticsPersist(1, "Error persisting statistics of database '{name}'.", name: String, typedb_source: StatisticsError),
+        CheckpointCreate(2, "Error creating checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),
     }
 }
 
@@ -889,5 +910,80 @@ typedb_error! {
             10,
             "Corruption warning: Database reset failed partway because the query cache is still in use."
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use concept::thing::statistics::Statistics;
+    use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::FsyncMetrics};
+    use durability::wal::WAL;
+    use encoding::EncodingKeyspace;
+    use executor::ExecutionInterrupt;
+    use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
+    use query::given_rows::GivenRowsSimple;
+    use storage::{
+        durability_client::{DurabilityClient, WALClient},
+        keyspace::rocks_resources::RocksResources,
+        recovery::checkpoint::CheckpointReader,
+    };
+    use test_utils::{create_tmp_storage_dir, init_logging};
+
+    use crate::{
+        Database,
+        query::{execute_schema_query, execute_write_query_in_write},
+        transaction::{CommitIntent, TransactionSchema, TransactionWrite},
+    };
+
+    #[test]
+    fn checkpoint_and_close_leaves_nothing_to_recover() {
+        init_logging();
+        let tmp_dir = create_tmp_storage_dir();
+        let path = tmp_dir.as_ref().join("checkpoint-and-close");
+        let rocks_resources = RocksResources::new(ByteSize::mb(64), ByteSize::mb(64));
+        let database = Arc::new(
+            Database::<WALClient>::open(
+                &path,
+                &DiagnosticsManager::new_disabled(),
+                &rocks_resources,
+                MvccCleanupStrategy::Disabled,
+            )
+            .unwrap(),
+        );
+
+        let schema = "define entity person;";
+        let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
+        let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+        let (tx, result) = execute_schema_query(tx, schema_query, schema.to_string());
+        result.unwrap();
+        let (mut profile, intent) = tx.finalise();
+        intent.unwrap().commit(profile.commit_profile()).unwrap();
+
+        let insert = "insert $p isa person;";
+        let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+        let pipeline = typeql::parse_query(insert).unwrap().into_structure().into_pipeline();
+        let (tx, result) = execute_write_query_in_write(
+            tx,
+            QueryOptions::default_grpc(),
+            Arc::new(pipeline),
+            None::<GivenRowsSimple>,
+            insert.to_string(),
+            ExecutionInterrupt::new_uninterruptible(),
+        );
+        result.unwrap();
+        let (mut profile, intent) = tx.finalise();
+        intent.unwrap().commit(profile.commit_profile()).unwrap();
+
+        Arc::into_inner(database).unwrap().checkpoint_and_close().unwrap();
+
+        let mut wal = WALClient::new(WAL::load(&path, FsyncMetrics::disabled()).unwrap());
+        wal.register_record_type::<Statistics>();
+        let last_sequence_number = wal.previous();
+        let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(&path).unwrap().expect("checkpoint");
+        assert_eq!(checkpoint.read_metadata().unwrap().watermark, last_sequence_number);
+        let statistics = wal.find_last_unsequenced_type::<Statistics>().unwrap().expect("statistics record");
+        assert_eq!(statistics.sequence_number, last_sequence_number);
     }
 }
