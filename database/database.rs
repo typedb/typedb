@@ -171,6 +171,10 @@ pub struct Database<D> {
     pub(super) commit_deltas_queue: Arc<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>,
 
     schema_write_transaction_exclusivity: Arc<Mutex<SchemaWriteTransactionState>>,
+    background_workers: BackgroundWorkers,
+}
+
+struct BackgroundWorkers {
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
     _cleanup_worker: IntervalRunner,
@@ -371,7 +375,7 @@ impl Database<WALClient> {
 
         let query_cache = Arc::new(QueryCache::new());
         let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
-        let update_statistics = make_update_statistics_fn(
+        let update_statistics_fn = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
@@ -398,9 +402,11 @@ impl Database<WALClient> {
             _cleanup_queue: cleanup_queue,
             commit_deltas_queue,
             schema_write_transaction_exclusivity,
-            _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
-            _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
-            _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            background_workers: BackgroundWorkers {
+                _statistics_updater: IntervalRunner::new(update_statistics_fn, STATISTICS_UPDATE_INTERVAL),
+                _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
+                _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            },
         })
     }
 
@@ -544,13 +550,15 @@ impl Database<WALClient> {
             _cleanup_queue: cleanup_queue,
             commit_deltas_queue,
             schema_write_transaction_exclusivity,
-            _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
-            _checkpointer: IntervalRunner::new_with_initial_delay(
-                checkpoint_fn,
-                CHECKPOINT_INTERVAL,
-                CHECKPOINT_INTERVAL,
-            ),
-            _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            background_workers: BackgroundWorkers {
+                _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
+                _checkpointer: IntervalRunner::new_with_initial_delay(
+                    checkpoint_fn,
+                    CHECKPOINT_INTERVAL,
+                    CHECKPOINT_INTERVAL,
+                ),
+                _cleanup_worker: IntervalRunner::new(cleanup_fn, CLEANUP_WAKEUP_INTERVAL),
+            },
         };
 
         if checkpoint_sequence_number < wal_last_sequence_number {
@@ -566,19 +574,27 @@ impl Database<WALClient> {
         checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
-    pub(crate) fn checkpoint_and_close(self) -> Result<(), CheckpointCreateError> {
-        drop(self._statistics_updater);
-        drop(self._checkpointer);
-        drop(self._cleanup_worker);
-        checkpoint_storage(&self.name, &self.path, &self.storage)
+    pub(crate) fn checkpoint_and_close(self) -> Result<(), DatabaseCloseError> {
+        use DatabaseCloseError::{CheckpointCreate, StatisticsPersist, StatisticsSynchronise};
+
+        let Self { name, path, storage, schema, background_workers, .. } = self;
+        drop(background_workers);
+
+        let mut statistics = (*schema.read().unwrap().thing_statistics).clone();
+        statistics
+            .may_synchronise_from_wal(&storage)
+            .map_err(|typedb_source| StatisticsSynchronise { name: name.to_string(), typedb_source })?;
+        statistics
+            .durably_write(storage.durability())
+            .map_err(|typedb_source| StatisticsPersist { name: name.to_string(), typedb_source })?;
+
+        checkpoint_storage(&name, &path, &storage).map_err(|source| CheckpointCreate { name: name.to_string(), source })
     }
 
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         trace!("Deleting database '{}'.", &self.name);
-        drop(self._statistics_updater);
-        drop(self._checkpointer);
-        drop(self._cleanup_worker);
+        drop(self.background_workers);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
         drop(Arc::into_inner(self.query_cache).expect("Cannot get exclusive ownership of inner of Arc<QueryCache>."));
         drop(
@@ -853,6 +869,14 @@ typedb_error! {
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
         ImportedDatabaseInUse(12, "Imported database '{name}' is still in use.", name: String),
         ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
+    }
+}
+
+typedb_error! {
+    pub DatabaseCloseError(component = "Database close", prefix = "DBL") {
+        StatisticsSynchronise(1, "Error synchronising statistics of database '{name}'.", name: String, typedb_source: StatisticsError),
+        StatisticsPersist(2, "Error persisting statistics of database '{name}'.", name: String, typedb_source: DurabilityClientError),
+        CheckpointCreate(3, "Error creating checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),
     }
 }
 

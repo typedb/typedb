@@ -83,6 +83,40 @@ fn statistics_synchronization_under_concurrent_load() {
 }
 
 #[test]
+fn finalised_import_keeps_statistics_after_reopen() {
+    init_logging();
+    let tmp_dir = create_tmp_storage_dir();
+    let total_persons = BATCHES_PER_THREAD * OPS_PER_BATCH;
+
+    {
+        let dbm = manager(&tmp_dir);
+        let staged = dbm.prepare_imported_database(DB_NAME.to_string()).unwrap();
+
+        let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
+        let tx = TransactionSchema::open(staged.clone(), TransactionOptions::default()).unwrap();
+        let (tx, result) = execute_schema_query(tx, schema_query, SCHEMA.to_string());
+        result.unwrap();
+        let (mut profile, intent) = tx.finalise();
+        intent.unwrap().commit(profile.commit_profile()).unwrap();
+
+        for batch_id in 0..BATCHES_PER_THREAD {
+            run_insert_batch(&staged, batch_id);
+        }
+        drop(staged);
+        dbm.finalise_imported_database(DB_NAME).unwrap();
+
+        let metrics = dbm.database(DB_NAME).unwrap().get_metrics();
+        assert_eq!(metrics.data.entity_count, total_persons as u64, "entity_count after finalise");
+        assert_eq!(metrics.data.has_count, 2 * total_persons as u64, "has_count after finalise");
+    }
+
+    let (_dbm, database) = open_db(&tmp_dir);
+    let metrics = database.get_metrics();
+    assert_eq!(metrics.data.entity_count, total_persons as u64, "entity_count after reboot");
+    assert_eq!(metrics.data.has_count, 2 * total_persons as u64, "has_count after reboot");
+}
+
+#[test]
 fn test_wal_contains_only_commit_records() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
@@ -208,8 +242,8 @@ fn test_wal_missing_middle_deltas() {
     );
 }
 
-fn create_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
-    let dbm = DatabaseManager::new(
+fn manager(storage_dir: &Path) -> Arc<DatabaseManager> {
+    DatabaseManager::new(
         storage_dir,
         Arc::new(DiagnosticsManager::new_disabled()),
         ByteSize::mb(64),
@@ -217,22 +251,18 @@ fn create_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClien
         database::database_manager::ImportOwnership::Exclusive,
         MvccCleanupStrategy::Disabled,
     )
-    .unwrap();
+    .unwrap()
+}
+
+fn create_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
+    let dbm = manager(storage_dir);
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     (dbm, database)
 }
 
 fn open_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
-    let dbm = DatabaseManager::new(
-        storage_dir,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .unwrap();
+    let dbm = manager(storage_dir);
     let database = dbm.database(DB_NAME).unwrap();
     (dbm, database)
 }
