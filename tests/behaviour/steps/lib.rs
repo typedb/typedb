@@ -271,6 +271,10 @@ impl Context {
 }
 
 fn is_ignore(tag: &str) -> bool {
+    if tag == "ignore-optional-transition" {
+        use error::optional_usage_error; // Unused import so we break code on cleanup
+        return true;
+    }
     tag == "ignore" || tag == "ignore-typedb"
 }
 

@@ -81,9 +81,9 @@ pub trait Pattern {
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+    fn bound_by_try(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn bound_outside_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_;
+    fn bound_outside_try(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn optionality(&self, variable: &Variable) -> VariableOptionality;
 
@@ -111,12 +111,12 @@ macro_rules! impl_pattern_from_pattern_variables {
                 self.pattern_variables.required_inputs()
             }
 
-            fn bound_outside_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-                self.pattern_variables.bound_outside_try_in_pattern()
+            fn bound_outside_try(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.bound_outside_try()
             }
 
-            fn bound_by_try_in_pattern(&self) -> impl Iterator<Item = Variable> + '_ {
-                self.pattern_variables.bound_by_try_in_pattern()
+            fn bound_by_try(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.bound_by_try()
             }
 
             fn optionality(&self, variable: &Variable) -> crate::pattern::VariableOptionality {
