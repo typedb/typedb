@@ -159,6 +159,17 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_write"
 
+    test-behaviour-deprecated-optionals:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+            export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+            export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_deprecated_optionals"
+
     test-behaviour-query-analyze:
       image: typedb-ubuntu-22.04
       dependencies: [build]

@@ -271,6 +271,10 @@ impl Context {
 }
 
 fn is_ignore(tag: &str) -> bool {
+    if tag == "ignore-optional-transition" {
+        error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::ErrorsOnImplicitUnwrap);
+        return true;
+    }
     tag == "ignore" || tag == "ignore-typedb"
 }
 
