@@ -505,7 +505,7 @@ impl Database<WALClient> {
 
         let query_cache = Arc::new(QueryCache::new());
         let commit_deltas_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CommitDeltas>>>::default();
-        let update_statistics = make_update_statistics_fn(
+        let update_statistics_fn = make_update_statistics_fn(
             name.to_owned(),
             storage.clone(),
             schema.clone(),
@@ -546,7 +546,7 @@ impl Database<WALClient> {
             commit_deltas_queue,
             schema_write_transaction_exclusivity,
             background_workers: BackgroundWorkers {
-                _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
+                _statistics_updater: IntervalRunner::new(update_statistics_fn, STATISTICS_UPDATE_INTERVAL),
                 _checkpointer: IntervalRunner::new_with_initial_delay(
                     checkpoint_fn,
                     CHECKPOINT_INTERVAL,
