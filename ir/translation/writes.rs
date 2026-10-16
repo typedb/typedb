@@ -272,10 +272,8 @@ fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<Repr
                 }
             }
             DeletableKind::If { deletables, .. } => {
-                if deletables
-                    .iter()
-                    .any(|d| matches!(d.kind, DeletableKind::Optional { .. } | DeletableKind::If { .. }))
-                {
+                // Allows if in if
+                if deletables.iter().any(|d| matches!(d.kind, DeletableKind::Optional { .. })) {
                     return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
                         feature: UnimplementedFeature::NestedOptionalWrites,
                     }));
@@ -323,24 +321,12 @@ fn add_deletables(
                 add_deletables(function_index, deletables, &mut optional_builder, deleted_concepts_recursive)?;
             }
             DeletableKind::If { conditions, deletables } => {
-                debug_assert!(
-                    deletables
-                        .iter()
-                        .all(|d| !matches!(d.kind, DeletableKind::Optional { .. } | DeletableKind::If { .. }))
-                );
+                debug_assert!(deletables.iter().all(|d| !matches!(d.kind, DeletableKind::Optional { .. })));
                 let mut optional_builder = conjunction.add_optional(deletable.span())?;
                 for condition in conditions {
                     add_write_condition(function_index, &mut optional_builder, condition)?;
                 }
                 add_deletables(function_index, deletables, &mut optional_builder, deleted_concepts_recursive)?;
-            }
-            DeletableKind::IsSet { variables } => {
-                let mut constraints = conjunction.constraints_mut();
-                let translated_variables = variables
-                    .iter()
-                    .map(|variable| constraints.get_or_declare_variable(variable.name().unwrap(), variable.span()))
-                    .collect::<Result<Vec<_>, _>>()?;
-                constraints.add_is_set(translated_variables, deletable.span())?;
             }
         }
     }
@@ -509,13 +495,8 @@ fn validate_deleted_variable_availability_deletable(
                 validate_write_condition_variable_availability(context, condition)?;
             }
             for deletable in deletables {
-                debug_assert!(!matches!(deletable.kind, DeletableKind::Optional { .. } | DeletableKind::If { .. }));
+                debug_assert!(!matches!(deletable.kind, DeletableKind::Optional { .. }));
                 validate_deleted_variable_availability_deletable(context, deletable)?;
-            }
-        }
-        DeletableKind::IsSet { variables } => {
-            for variable in variables {
-                verify_variable_available!(context, variable => DeleteVariableUnavailable)?;
             }
         }
     };
