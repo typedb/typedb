@@ -597,32 +597,32 @@ impl<'r> ExtractFrom<MaybeOwnedRow<'r>> for ExecutorVariable {
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
-struct SubRowIndex(usize);
+struct CheckInputRowIndex(usize);
 
 enum InlineCheckVariable<T> {
-    ExtractFromSubRow(SubRowIndex),
+    ExtractFromRow(CheckInputRowIndex),
     ExtractFromTuple(fn(&T) -> VariableValue<'_>),
 }
 
 impl<T> fmt::Debug for InlineCheckVariable<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ExtractFromSubRow(i) => write!(f, "SubRowIndex({:?})", i.0),
+            Self::ExtractFromRow(i) => write!(f, "CheckInputRowIndex({:?})", i.0),
             Self::ExtractFromTuple(_) => f.write_str("ExtractFromTuple(...)"),
         }
     }
 }
 
-struct TupleAndSubRow<'a, T> {
+struct TupleAndInlineCheckRow<'a, T> {
     tuple: &'a T,
-    subrow: &'a [VariableValue<'static>],
+    check_input_row: &'a [VariableValue<'static>],
 }
 
-impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for InlineCheckVariable<T> {
-    fn extract<'a>(&'a self, from: &'a TupleAndSubRow<'_, T>) -> VariableValue<'a> {
+impl<T> ExtractFrom<TupleAndInlineCheckRow<'_, T>> for InlineCheckVariable<T> {
+    fn extract<'a>(&'a self, from: &'a TupleAndInlineCheckRow<'_, T>) -> VariableValue<'a> {
         match self {
             Self::ExtractFromTuple(f) => f(from.tuple),
-            Self::ExtractFromSubRow(index) => from.subrow[index.0].as_reference(),
+            Self::ExtractFromRow(index) => from.check_input_row[index.0].as_reference(),
         }
     }
 }
@@ -630,7 +630,7 @@ impl<T> ExtractFrom<TupleAndSubRow<'_, T>> for InlineCheckVariable<T> {
 #[derive(Debug)]
 struct InlineCheckFactory<T> {
     checks: Arc<Vec<CheckInstruction<InlineCheckVariable<T>>>>,
-    subrow_sources: Vec<VariablePosition>,
+    check_input_row_sources: Vec<VariablePosition>,
 }
 
 impl<T: 'static> InlineCheckFactory<T> {
@@ -638,24 +638,13 @@ impl<T: 'static> InlineCheckFactory<T> {
         outline_checks: &[CheckInstruction<ExecutorVariable>],
         extractors: &HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     ) -> Self {
-        let mut subrow_sources = Vec::new();
-        let mut mapping = |variable| {
-            if let Some(extractor) = extractors.get(&variable) {
-                InlineCheckVariable::ExtractFromTuple(*extractor)
-            } else {
-                let ExecutorVariable::RowPosition(position) = variable else {
-                    unreachable!("Check variables without an extractor must be in the row.")
-                };
-                let subrow_index = subrow_sources.len();
-                subrow_sources.push(position);
-                InlineCheckVariable::ExtractFromSubRow(SubRowIndex(subrow_index))
-            }
-        };
+        let mut check_input_row_sources = Vec::new();
+        let mut check_mapper = CheckMapper { extractors, check_input_row_sources: &mut check_input_row_sources };
         let mut checks = Vec::with_capacity(outline_checks.len());
         for check in outline_checks {
-            checks.push(Self::map_check(check.clone(), &mut mapping));
+            checks.push(check_mapper.map_check(check.clone()));
         }
-        Self { checks: Arc::new(checks), subrow_sources }
+        Self { checks: Arc::new(checks), check_input_row_sources }
     }
 
     fn filter_fn_for_row<Snapshot: ReadableSnapshot + 'static>(
@@ -671,86 +660,18 @@ impl<T: 'static> InlineCheckFactory<T> {
     }
 
     fn make_inline_check_for_row(&self, row: &MaybeOwnedRow<'_>) -> RowBoundInlineCheck<T> {
-        let mut subrow = Vec::with_capacity(self.subrow_sources.len());
-        for &pos in &self.subrow_sources {
-            subrow.push(row.get(pos).to_owned());
+        let mut check_input_row = Vec::with_capacity(self.check_input_row_sources.len());
+        for &pos in &self.check_input_row_sources {
+            check_input_row.push(row.get(pos).to_owned());
         }
         let checks = self.checks.clone();
-        RowBoundInlineCheck { checks, subrow }
-    }
-
-    fn map_check(
-        check_instruction: CheckInstruction<ExecutorVariable>,
-        mut mapping: impl FnMut(ExecutorVariable) -> InlineCheckVariable<T>,
-    ) -> CheckInstruction<InlineCheckVariable<T>> {
-        let mut map_vertex = |vertex: CheckVertex<ExecutorVariable>| match vertex {
-            CheckVertex::Variable(var) => CheckVertex::Variable(mapping(var)),
-            CheckVertex::Type(label) => CheckVertex::Type(label),
-            CheckVertex::Parameter(param) => CheckVertex::Parameter(param),
-        };
-        match check_instruction {
-            CheckInstruction::TypeList { type_var, types } => {
-                CheckInstruction::TypeList { type_var: mapping(type_var), types }
-            }
-            CheckInstruction::ThingTypeList { thing_var, types } => {
-                CheckInstruction::ThingTypeList { thing_var: mapping(thing_var), types }
-            }
-            CheckInstruction::Iid { var, iid } => CheckInstruction::Iid { var: mapping(var), iid },
-            CheckInstruction::Sub { sub_kind: kind, subtype, supertype } => {
-                CheckInstruction::Sub { sub_kind: kind, subtype: map_vertex(subtype), supertype: map_vertex(supertype) }
-            }
-            CheckInstruction::Owns { owner, attribute } => {
-                CheckInstruction::Owns { owner: map_vertex(owner), attribute: map_vertex(attribute) }
-            }
-            CheckInstruction::Relates { relation, role_type } => {
-                CheckInstruction::Relates { relation: map_vertex(relation), role_type: map_vertex(role_type) }
-            }
-            CheckInstruction::Plays { player, role_type } => {
-                CheckInstruction::Plays { player: map_vertex(player), role_type: map_vertex(role_type) }
-            }
-            CheckInstruction::Isa { isa_kind: kind, type_, thing } => {
-                CheckInstruction::Isa { isa_kind: kind, type_: map_vertex(type_), thing: map_vertex(thing) }
-            }
-            CheckInstruction::Has { owner, attribute } => {
-                CheckInstruction::Has { owner: map_vertex(owner), attribute: map_vertex(attribute) }
-            }
-            CheckInstruction::Links { relation, player, role } => CheckInstruction::Links {
-                relation: map_vertex(relation),
-                player: map_vertex(player),
-                role: map_vertex(role),
-            },
-            CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
-                CheckInstruction::IndexedRelation {
-                    relation: map_vertex(relation),
-                    start_player: map_vertex(start_player),
-                    end_player: map_vertex(end_player),
-                    start_role: map_vertex(start_role),
-                    end_role: map_vertex(end_role),
-                }
-            }
-            CheckInstruction::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping(lhs), rhs: mapping(rhs) },
-            CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
-                CheckInstruction::LinksDeduplication {
-                    role1: mapping(role1),
-                    player1: mapping(player1),
-                    role2: mapping(role2),
-                    player2: mapping(player2),
-                }
-            }
-            CheckInstruction::NotNone { variables } => {
-                CheckInstruction::NotNone { variables: variables.into_iter().map(|v| mapping(v)).collect() }
-            }
-            CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                CheckInstruction::Comparison { lhs: map_vertex(lhs), rhs: map_vertex(rhs), comparator }
-            }
-            CheckInstruction::Unsatisfiable => CheckInstruction::Unsatisfiable,
-        }
+        RowBoundInlineCheck { checks, check_input_row }
     }
 }
 
 struct RowBoundInlineCheck<T> {
     checks: Arc<Vec<CheckInstruction<InlineCheckVariable<T>>>>,
-    subrow: Vec<VariableValue<'static>>,
+    check_input_row: Vec<VariableValue<'static>>,
 }
 
 impl<T> RowBoundInlineCheck<T> {
@@ -764,8 +685,99 @@ impl<T> RowBoundInlineCheck<T> {
         move |res| {
             // returning Ok(true) on error just means the error is passed on to the next layer.
             let Ok(tuple) = res else { return Ok(true) };
-            let value = TupleAndSubRow { tuple, subrow: &self.subrow };
+            let value = TupleAndInlineCheckRow { tuple, check_input_row: &self.check_input_row };
             all_checks_pass(&self.checks, &*snapshot, &thing_manager, &parameters, &value, storage_counters.clone())
+        }
+    }
+}
+
+struct CheckMapper<'a, T> {
+    extractors: &'a HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
+    check_input_row_sources: &'a mut Vec<VariablePosition>,
+}
+
+impl<'a, T> CheckMapper<'a, T> {
+    fn map_check(
+        &mut self,
+        check_instruction: CheckInstruction<ExecutorVariable>,
+    ) -> CheckInstruction<InlineCheckVariable<T>> {
+        match check_instruction {
+            CheckInstruction::TypeList { type_var, types } => {
+                CheckInstruction::TypeList { type_var: self.map_var(type_var), types }
+            }
+            CheckInstruction::ThingTypeList { thing_var, types } => {
+                CheckInstruction::ThingTypeList { thing_var: self.map_var(thing_var), types }
+            }
+            CheckInstruction::Iid { var, iid } => CheckInstruction::Iid { var: self.map_var(var), iid },
+            CheckInstruction::Sub { sub_kind: kind, subtype, supertype } => {
+                CheckInstruction::Sub { sub_kind: kind, subtype: self.map(subtype), supertype: self.map(supertype) }
+            }
+            CheckInstruction::Owns { owner, attribute } => {
+                CheckInstruction::Owns { owner: self.map(owner), attribute: self.map(attribute) }
+            }
+            CheckInstruction::Relates { relation, role_type } => {
+                CheckInstruction::Relates { relation: self.map(relation), role_type: self.map(role_type) }
+            }
+            CheckInstruction::Plays { player, role_type } => {
+                CheckInstruction::Plays { player: self.map(player), role_type: self.map(role_type) }
+            }
+            CheckInstruction::Isa { isa_kind: kind, type_, thing } => {
+                CheckInstruction::Isa { isa_kind: kind, type_: self.map(type_), thing: self.map(thing) }
+            }
+            CheckInstruction::Has { owner, attribute } => {
+                CheckInstruction::Has { owner: self.map(owner), attribute: self.map(attribute) }
+            }
+            CheckInstruction::Links { relation, player, role } => {
+                CheckInstruction::Links { relation: self.map(relation), player: self.map(player), role: self.map(role) }
+            }
+            CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                CheckInstruction::IndexedRelation {
+                    relation: self.map(relation),
+                    start_player: self.map(start_player),
+                    end_player: self.map(end_player),
+                    start_role: self.map(start_role),
+                    end_role: self.map(end_role),
+                }
+            }
+            CheckInstruction::Is { lhs, rhs } => {
+                CheckInstruction::Is { lhs: self.map_var(lhs), rhs: self.map_var(rhs) }
+            }
+            CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
+                CheckInstruction::LinksDeduplication {
+                    role1: self.map_var(role1),
+                    player1: self.map_var(player1),
+                    role2: self.map_var(role2),
+                    player2: self.map_var(player2),
+                }
+            }
+            CheckInstruction::NotNone { variables } => {
+                CheckInstruction::NotNone { variables: variables.into_iter().map(|v| self.map_var(v)).collect() }
+            }
+            CheckInstruction::Comparison { lhs, rhs, comparator } => {
+                CheckInstruction::Comparison { lhs: self.map(lhs), rhs: self.map(rhs), comparator }
+            }
+            CheckInstruction::Unsatisfiable => CheckInstruction::Unsatisfiable,
+        }
+    }
+
+    fn map(&mut self, vertex: CheckVertex<ExecutorVariable>) -> CheckVertex<InlineCheckVariable<T>> {
+        match vertex {
+            CheckVertex::Variable(var) => CheckVertex::Variable(self.map_var(var)),
+            CheckVertex::Type(label) => CheckVertex::Type(label),
+            CheckVertex::Parameter(param) => CheckVertex::Parameter(param),
+        }
+    }
+
+    fn map_var(&mut self, variable: ExecutorVariable) -> InlineCheckVariable<T> {
+        if let Some(extractor) = self.extractors.get(&variable) {
+            InlineCheckVariable::ExtractFromTuple(*extractor)
+        } else {
+            let ExecutorVariable::RowPosition(position) = variable else {
+                unreachable!("Check variables without an extractor must be in the row.")
+            };
+            let check_input_row_index = self.check_input_row_sources.len();
+            self.check_input_row_sources.push(position);
+            InlineCheckVariable::ExtractFromRow(CheckInputRowIndex(check_input_row_index))
         }
     }
 }
