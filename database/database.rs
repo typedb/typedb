@@ -566,6 +566,11 @@ impl Database<WALClient> {
         checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
+    pub(crate) fn checkpoint_and_close(self) -> Result<(), CheckpointCreateError> {
+        drop(self._checkpointer);
+        checkpoint_storage(&self.name, &self.path, &self.storage)
+    }
+
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         trace!("Deleting database '{}'.", &self.name);
@@ -846,6 +851,7 @@ typedb_error! {
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
         ImportedDatabaseInUse(12, "Imported database '{name}' is still in use.", name: String),
         ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
+        ImportCheckpointFailed(14, "Error creating checkpoint for imported database '{name}'.", name: String, source: CheckpointCreateError),
     }
 }
 

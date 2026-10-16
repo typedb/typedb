@@ -439,7 +439,9 @@ impl DatabaseManager {
         database: Database<WALClient>,
     ) -> Result<(), Box<DatabaseCreateError>> {
         let staged_path = database.path.clone();
-        drop(database);
+        database
+            .checkpoint_and_close()
+            .map_err(|source| DatabaseCreateError::ImportCheckpointFailed { name: name.to_string(), source })?;
         self.move_directory_to_data(name, &staged_path)?;
         let map_fs_err =
             |source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) };
