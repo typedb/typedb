@@ -45,7 +45,7 @@ where
     result
 }
 
-fn submit_result_metrics<T>(
+pub(crate) fn submit_result_metrics<T>(
     diagnostics_manager: &DiagnosticsManager,
     database_name: Option<&str>,
     action_kind: ActionKind,
