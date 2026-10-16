@@ -316,8 +316,7 @@ fn database_create_origin(error: &DatabaseCreateError) -> ErrorOrigin {
         | DatabaseCreateError::AlreadyExistsAndCleanupBlocked { .. }
         | DatabaseCreateError::DirectoryWrite { .. }
         | DatabaseCreateError::DatabaseMove { .. }
-        | DatabaseCreateError::ImportCleanupFailed { .. }
-        | DatabaseCreateError::ImportCheckpointFailed { .. } => ErrorOrigin::System,
+        | DatabaseCreateError::ImportCleanupFailed { .. } => ErrorOrigin::System,
 
         DatabaseCreateError::IsNotBeingImported { .. } | DatabaseCreateError::ImportedDatabaseInUse { .. } => {
             ErrorOrigin::Internal

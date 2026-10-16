@@ -567,7 +567,9 @@ impl Database<WALClient> {
     }
 
     pub(crate) fn checkpoint_and_close(self) -> Result<(), CheckpointCreateError> {
+        drop(self._statistics_updater);
         drop(self._checkpointer);
+        drop(self._cleanup_worker);
         checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
@@ -851,7 +853,6 @@ typedb_error! {
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
         ImportedDatabaseInUse(12, "Imported database '{name}' is still in use.", name: String),
         ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
-        ImportCheckpointFailed(14, "Error creating checkpoint for imported database '{name}'.", name: String, source: CheckpointCreateError),
     }
 }
 
