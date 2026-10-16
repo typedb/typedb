@@ -197,7 +197,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 
     println!("Insert plan:\n");
     println!("-- Start root insert plan --\n");
-    println!("{plan}\n");
+    println!("{}\n", insert_plan.root_insert);
     println!("-- End root insert plan --\n");
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
 
