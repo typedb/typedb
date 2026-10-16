@@ -99,9 +99,9 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
 
 typedb_error! {
     pub ItemDecodeError(component = "Migration item decode", prefix = "MID") {
-        EmptyItem(1, "An empty item was received."),
+        EmptyItem(1, "An empty concept item was received. It is a sign of a corrupted file or a client bug."),
         AbsentAttributeValue(2, "An attribute item without a value was received."),
-        AttributesOwningAttributes(3, "An item with attributes owning attributes was received."),
+        AttributesOwningAttributes(3, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
         ConceptDecode(4, "Error decoding an item's concept.", typedb_source: Box<ConceptDecodeError>),
     }
 }

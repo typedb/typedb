@@ -12,7 +12,6 @@ use ::concept::{
 use answer::{Thing, Type};
 use axum::response::{IntoResponse, Response};
 use bytes::util::HexBytesFormatter;
-use clap::builder::TypedValueParser;
 use compiler::annotation::function::FunctionParameterAnnotation;
 use encoding::{
     graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
