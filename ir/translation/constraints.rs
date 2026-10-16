@@ -38,7 +38,7 @@ use crate::{
     },
 };
 
-pub(super) fn add_statement(
+pub(crate) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     stmt: &typeql::Statement,
@@ -352,7 +352,7 @@ fn add_typeql_value(
     Ok(())
 }
 
-fn add_typeql_isa(
+pub(crate) fn add_typeql_isa(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     thing: Variable,

@@ -245,12 +245,11 @@ typedb_error! {
             identifier: String,
             source_span: Option<Span>,
         ),
-        MultipleAssignmentsForVariable(
+        IfConditionVariableUnavailable(
             38,
-            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
+            "The variable '{variable}' referenced in an 'if' condition in a write stage is unavailable. It should be bound in the previous stage.",
             variable: String,
             source_span: Option<Span>,
-            other_span: Option<Span>,
         ),
         UpdateVariableUnavailable(
             39,
@@ -309,6 +308,13 @@ typedb_error! {
             source_span: Option<Span>,
             existing_span: Option<Span>,
         ),
+        MultipleAssignmentsForVariable(
+            49,
+            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
+            variable: String,
+            source_span: Option<Span>,
+            other_span: Option<Span>,
+        ),
         RegexExpectedStringLiteral(
             50,
             "Expected a string literal as regex.",
@@ -348,6 +354,11 @@ typedb_error! {
             "The function '{identifier}' returns a tuple of width '{actual_width}'. To be used inline, it must return a scalar.",
             identifier: String,
             actual_width: usize,
+            source_span: Option<Span>,
+        ),
+        IllegalTryInWriteStage(
+            57,
+            "Try blocks are no longer supported in write stages. Use `if` statements instead.",
             source_span: Option<Span>,
         ),
         InternalNotAValueBuiltin(

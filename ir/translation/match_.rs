@@ -64,7 +64,7 @@ fn add_negation(
     add_patterns(function_index, &mut negation_builder, &negation.patterns)
 }
 
-fn add_optional(
+pub(crate) fn add_optional(
     function_index: &impl FunctionSignatureIndex,
     parent_conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     optional: &typeql::pattern::Optional,

@@ -396,6 +396,8 @@ pub enum UnimplementedFeature {
     QueryingAnnotations,
 
     NestedOptionalWrites,
+    ComparisonInIfStatements,
+    IsaInIfStatements,
 }
 
 impl std::fmt::Display for UnimplementedFeature {
