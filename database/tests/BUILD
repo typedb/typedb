@@ -49,6 +49,7 @@ rust_test(
         "migration.rs",
     ]),
     deps = [
+        "//common/concurrency",
         "//common/options",
         "//database",
         "//diagnostics",

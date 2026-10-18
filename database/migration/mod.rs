@@ -5,11 +5,15 @@
  */
 
 use std::{fmt, fmt::Formatter};
+use std::sync::Arc;
+use error::TypeDBError;
 
 pub mod database_exporter;
-pub mod database_import_handler;
 pub mod database_importer;
+pub mod importing_database_handle;
 pub mod item;
+
+pub type MigrationOperationError = Arc<dyn TypeDBError + Send + Sync>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Checksums {

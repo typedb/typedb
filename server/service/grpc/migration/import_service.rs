@@ -13,7 +13,7 @@ use std::{
 };
 
 use database::migration::{
-    database_importer::{DatabaseImportError, ImporterHandle},
+    database_importer::{DatabaseImportError, DatabaseImporterHandle},
     item::MigrationItem,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
@@ -45,7 +45,6 @@ use crate::{
 };
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
-const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
 // const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
@@ -54,11 +53,11 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 struct ActiveImport {
     name: String,
     started: Instant,
-    importer: ImporterHandle,
+    importer: DatabaseImporterHandle,
 }
 
 impl ActiveImport {
-    fn new(name: String, importer: ImporterHandle) -> Self {
+    fn new(name: String, importer: DatabaseImporterHandle) -> Self {
         Self { name, started: Instant::now(), importer }
     }
 }
@@ -153,7 +152,7 @@ impl DatabaseImportService {
                 Ok(Continue(())) => (),
                 Ok(Break(())) => {
                     event!(Level::TRACE, "Stream ended, closing database import service.");
-                    return self.close().await;
+                    return Ok(());
                 }
                 Err(status) => {
                     event!(Level::TRACE, "Closing database import service after a failure.");
@@ -191,10 +190,14 @@ impl DatabaseImportService {
         next: Option<Result<ProtocolClient, Status>>,
     ) -> Result<ControlFlow<(), ()>, Status> {
         match next {
-            None => Ok(Break(())),
-            Some(Err(error)) => {
-                event!(Level::DEBUG, ?error, "GRPC error");
-                Ok(Break(()))
+            None | Some(Err(_)) => {
+                if let Some(Err(error)) = next {
+                    event!(Level::DEBUG, ?error, "GRPC error");
+                }
+                match self.active_import {
+                    Some(_) => Err(Self::error_import_status(DatabaseImportServiceError::ClientClosed {})),
+                    None => Ok(Break(())),
+                }
             }
             Some(Ok(message)) => match message.client {
                 None => Err(ProtocolError::MissingField {
@@ -250,8 +253,7 @@ impl DatabaseImportService {
             .databases()
             .import_prepare(&name, self.close_sender.clone())
             .await
-            .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?
-            .start(IMPORT_MESSAGE_BUFFER_SIZE);
+            .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
 
         // Recorded before anything can fail, so that closing the service cleans the import up.
         let active_import = self.active_import.insert(ActiveImport::new(name, importer));
@@ -302,14 +304,6 @@ impl DatabaseImportService {
             Self::log_imported(&name, started, total_items);
         }
         Self::send_done(&self.response_sender).await;
-    }
-
-    async fn close(&mut self) -> Result<(), Status> {
-        let abandoned = self.active_import.is_some();
-        if !abandoned || self.do_close().await {
-            return Ok(());
-        }
-        Err(Self::error_import_status(DatabaseImportServiceError::ClientClosed {}))
     }
 
     async fn close_with_error(&mut self, status: Status) -> Result<(), Status> {

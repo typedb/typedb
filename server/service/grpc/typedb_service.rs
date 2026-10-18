@@ -456,7 +456,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             self.server_state.shutdown_receiver(),
         );
 
-        // Unlike the other endpoints, this doesn't report diagnostics: the import service handles it internally
         self.server_state.databases().spawn_import_service(service).await.map_err(|err| err.into_status())?;
 
         let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);

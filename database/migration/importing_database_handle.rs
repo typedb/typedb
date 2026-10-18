@@ -6,7 +6,6 @@
 
 use std::{sync::Arc, time::Duration};
 
-use error::TypeDBError;
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_DAY;
 use storage::durability_client::WALClient;
@@ -15,22 +14,21 @@ use crate::{
     Database,
     transaction::{DataCommitIntent, SchemaCommitIntent, TransactionError, TransactionSchema, TransactionWrite},
 };
+use crate::migration::MigrationOperationError;
 
-pub trait DatabaseImportHandler: Send + Sync {
+pub trait ImportingDatabaseHandle: Send + Sync {
     fn database_name(&self) -> &str;
 
     fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError>;
 
     fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError>;
 
-    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), ImportHandlerError>;
+    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
 
-    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), ImportHandlerError>;
+    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
 
-    fn finalise(self: Box<Self>) -> Result<(), ImportHandlerError>;
+    fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError>;
 }
-
-pub type ImportHandlerError = Arc<dyn TypeDBError + Send + Sync>;
 
 const OPTIONS_PARALLEL: bool = true;
 const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
