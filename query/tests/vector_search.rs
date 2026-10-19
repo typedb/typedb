@@ -122,6 +122,14 @@ fn run_write_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>
 
 fn run_read_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    run_read_query_on(context, snapshot, query)
+}
+
+fn run_read_query_on(
+    context: &Context,
+    snapshot: Arc<storage::snapshot::ReadSnapshot<WALClient>>,
+    query: &str,
+) -> Vec<MaybeOwnedRow<'static>> {
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
     let pipeline = context
         .query_manager
@@ -158,6 +166,23 @@ const INSERT: &str = r#"insert
     $b isa item, has embedding vector([0.9, 0.1, 0.0], "float32");
     $c isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
 "#;
+
+#[test]
+fn snapshot_opened_before_commit_does_not_see_committed_vectors() {
+    let context = setup();
+    let early_snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    run_write_query(&context, INSERT);
+
+    let search =
+        r#"match let $e, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#;
+    let rows = run_read_query_on(&context, early_snapshot.clone(), search);
+    assert_eq!(rows.len(), 0, "snapshot opened before the commit must not see committed vectors, got: {rows:?}");
+    let rows = run_read_query_on(&context, early_snapshot, "match $e isa embedding;");
+    assert_eq!(rows.len(), 0, "snapshot opened before the commit must not see committed attributes, got: {rows:?}");
+
+    let rows = run_read_query(&context, search);
+    assert_eq!(rows.len(), 3, "a fresh snapshot must see all committed vectors, got: {rows:?}");
+}
 
 #[test]
 fn committed_vectors_live_in_the_store_and_are_searchable() {

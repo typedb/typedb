@@ -59,11 +59,11 @@ impl CheckpointReader {
     pub fn get_additional_data<T: CheckpointAdditionalData>(&self) -> Result<T, CheckpointLoadError> {
         use CheckpointLoadError::{AdditionalDataDeserialise, AdditionalDataNotFound};
 
-        let dir = self.directory.join(T::NAME);
-        if !dir.exists() {
+        let path = self.directory.join(T::NAME);
+        if !path.exists() {
             return Err(AdditionalDataNotFound { name: T::NAME.to_string() });
         }
-        T::load_from_dir(&dir)
+        T::load_from_path(&path)
             .map_err(|err| AdditionalDataDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })
     }
 
@@ -73,7 +73,7 @@ impl CheckpointReader {
         keyspaces_dir: &Path,
         durability_client: &Durability,
         rocks_resources: &RocksResources,
-        secondary_store: Option<&Arc<dyn SecondaryStore>>,
+        secondary_store: Option<&dyn SecondaryStore>,
     ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
         use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
 
@@ -255,23 +255,15 @@ impl CheckpointWriter {
         use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO};
         let io_err = |err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) };
 
-        let dir = self.temporary_directory.join(T::NAME);
-        if dir.exists() {
+        let path = self.temporary_directory.join(T::NAME);
+        if path.exists() {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
-        fs::create_dir(&dir).map_err(io_err)?;
-        let previous_dir = self.latest_previous_checkpoint().map(|checkpoint| checkpoint.join(T::NAME));
-        data.save_into_dir(&dir, previous_dir.as_deref().filter(|dir| dir.exists())).map_err(io_err)?;
-        File::open(&dir).and_then(|d| d.sync_all()).map_err(io_err)?;
+        let staging_path = path.with_extension(TEMP_FILE_EXTENSION);
+        data.save_to_path(&staging_path).map_err(io_err)?;
+        fs::rename(&staging_path, &path).map_err(io_err)?;
+        File::open(&self.temporary_directory).and_then(|dir| dir.sync_all()).map_err(io_err)?;
         Ok(())
-    }
-
-    fn latest_previous_checkpoint(&self) -> Option<PathBuf> {
-        fs::read_dir(self.checkpoint_directory.parent().unwrap())
-            .ok()?
-            .filter_map(|entry| Some(entry.ok()?.path()))
-            .filter(|path| path.is_dir() && path.extension().is_none() && path != &self.checkpoint_directory)
-            .max()
     }
 
     pub fn finish(self) -> Result<CheckpointReader, CheckpointCreateError> {
@@ -328,8 +320,8 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
 
 pub trait CheckpointAdditionalData: Sized {
     const NAME: &'static str;
-    fn save_into_dir(&self, dir: &Path, previous: Option<&Path>) -> io::Result<()>;
-    fn load_from_dir(dir: &Path) -> io::Result<Self>;
+    fn save_to_path(&self, path: &Path) -> io::Result<()>;
+    fn load_from_path(path: &Path) -> io::Result<Self>;
 }
 
 #[derive(Debug, Clone)]

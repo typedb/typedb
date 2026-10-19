@@ -220,7 +220,9 @@ impl TypeCache {
         self.attribute_types.iter().flatten().map(|cache| cache.common_type_cache().type_).collect()
     }
 
-    pub fn get_attribute_types_with_value_types(&self) -> impl Iterator<Item = (AttributeType, &ValueType)> + '_ {
+    pub(crate) fn get_attribute_types_with_value_types(
+        &self,
+    ) -> impl Iterator<Item = (AttributeType, &ValueType)> + '_ {
         self.attribute_types.iter().flatten().filter_map(|cache| {
             cache.value_type.as_ref().map(|(value_type, _)| (cache.common_type_cache().type_, value_type))
         })

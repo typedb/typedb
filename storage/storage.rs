@@ -173,7 +173,7 @@ impl<Durability> MVCCStorage<Durability> {
                     &storage_dir,
                     &durability_client,
                     rocks_resources,
-                    secondary_store.as_ref(),
+                    secondary_store.as_deref(),
                 )
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
@@ -192,7 +192,7 @@ impl<Durability> MVCCStorage<Durability> {
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-            apply_recovered(name, commits, &durability_client, &keyspaces, secondary_store.as_ref())
+            apply_recovered(name, commits, &durability_client, &keyspaces, secondary_store.as_deref())
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
             (keyspaces, next_sequence_number)
@@ -326,7 +326,7 @@ impl<Durability> MVCCStorage<Durability> {
             commit_sequence_number,
             commit_record,
             &self.durability_client,
-            self.secondary_store.as_ref().map(|observer| &**observer),
+            self.secondary_store.as_deref(),
         );
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();

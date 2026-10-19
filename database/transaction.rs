@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{
-    collections::HashMap,
     fmt::Formatter,
     ops::Deref,
     sync::{Arc, mpsc::RecvTimeoutError},
@@ -19,13 +18,6 @@ use concept::{
     },
 };
 use durability::DurabilitySequenceNumber;
-use encoding::{
-    graph::{
-        Typed,
-        type_::vertex::{TypeID, TypeVertexEncoding},
-    },
-    value::value_type::ValueType,
-};
 use error::typedb_error;
 use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use options::TransactionOptions;
@@ -518,17 +510,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             schema.function_cache = Arc::new(function_cache);
             commit_profile.schema_update_caches_updated();
 
-            let live_vector_types: HashMap<TypeID, usize> = schema
-                .type_cache
-                .get_attribute_types_with_value_types()
-                .filter_map(|(attribute_type, value_type)| match value_type {
-                    ValueType::Vector(params) => Some((attribute_type.vertex().type_id_(), params.length as usize)),
-                    _ => None,
-                })
-                .collect();
-            database
-                .vector_index
-                .retain_indexes(|type_id, dimensions| live_vector_types.get(&type_id) == Some(&dimensions));
+            database.vector_index.retain_live_types(&schema.type_cache);
         }
 
         // replace statistics

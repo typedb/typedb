@@ -11,7 +11,7 @@ use std::{
     fs::File,
     io,
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         Arc, RwLock,
         atomic::{AtomicBool, Ordering},
@@ -23,9 +23,12 @@ use encoding::{
     graph::{
         Typed,
         thing::vertex_attribute::{AttributeID, AttributeVertex, VectorAttributeID},
-        type_::vertex::TypeID,
+        type_::vertex::{TypeID, TypeVertexEncoding},
     },
-    value::{value_type::ValueTypeCategory, vector_bytes::VectorBytes},
+    value::{
+        value_type::{ValueType, ValueTypeCategory},
+        vector_bytes::VectorBytes,
+    },
 };
 use error::{TypeDBError, typedb_error};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -38,8 +41,11 @@ use storage::{
 };
 use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 
+use crate::type_::type_manager::type_cache::TypeCache;
+
 pub struct VectorIndex {
     indexes: RwLock<HashMap<TypeID, Arc<TypeVectorIndex>>>,
+    live_directory: RwLock<Option<PathBuf>>,
 }
 
 struct TypeVectorIndex {
@@ -79,7 +85,7 @@ impl TypeVectorIndex {
         };
         let index = usearch::new_index(&options)
             .map_err(|err| VectorIndexError::IndexCreate { dimensions, reason: err.to_string() })?;
-        Ok(Self { index: RwLock::new(index), dirty: AtomicBool::new(false) })
+        Ok(Self { index: RwLock::new(index), dirty: AtomicBool::new(true) })
     }
 
     fn dimensions(&self) -> usize {
@@ -144,7 +150,11 @@ impl TypeVectorIndex {
 
 impl VectorIndex {
     pub fn new() -> Self {
-        Self { indexes: RwLock::new(HashMap::new()) }
+        Self { indexes: RwLock::new(HashMap::new()), live_directory: RwLock::new(None) }
+    }
+
+    pub fn set_live_directory(&self, directory: PathBuf) {
+        *self.live_directory.write().unwrap() = Some(directory);
     }
 
     fn index_for_type(
@@ -194,8 +204,15 @@ impl VectorIndex {
         self.indexes.read().unwrap().get(&type_id).map_or(0, |index| index.size())
     }
 
-    pub fn retain_indexes(&self, is_live: impl Fn(TypeID, usize) -> bool) {
-        self.indexes.write().unwrap().retain(|type_id, index| is_live(*type_id, index.dimensions()));
+    pub fn retain_live_types(&self, type_cache: &TypeCache) {
+        let live: HashMap<TypeID, usize> = type_cache
+            .get_attribute_types_with_value_types()
+            .filter_map(|(attribute_type, value_type)| match value_type {
+                ValueType::Vector(parameters) => Some((attribute_type.vertex().type_id_(), parameters.length as usize)),
+                _ => None,
+            })
+            .collect();
+        self.indexes.write().unwrap().retain(|type_id, index| live.get(type_id) == Some(&index.dimensions()));
     }
 
     pub fn clear(&self) {
@@ -286,43 +303,59 @@ fn invalid_data(message: String) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
 }
 
+impl VectorIndex {
+    fn write_live_file(type_index: &TypeVectorIndex, live_file: &Path) -> io::Result<()> {
+        let staging = live_file.with_extension("tmp");
+        let index = type_index.index.read().unwrap();
+        index.save(staging.to_str().unwrap()).map_err(|err| {
+            type_index.dirty.store(true, Ordering::Release);
+            io::Error::other(format!("failed to save vector index {live_file:?}: {err}"))
+        })?;
+        File::open(&staging)?.sync_all()?;
+        fs::rename(&staging, live_file)?;
+        File::open(live_file.parent().unwrap())?.sync_all()?;
+        Ok(())
+    }
+}
+
 impl CheckpointAdditionalData for VectorIndex {
     const NAME: &'static str = "VECTOR_INDEX";
 
-    fn save_into_dir(&self, dir: &Path, previous: Option<&Path>) -> io::Result<()> {
+    fn save_to_path(&self, path: &Path) -> io::Result<()> {
+        fs::create_dir_all(path)?;
+        let live_directory = self.live_directory.read().unwrap().clone();
+        if let Some(live_directory) = &live_directory {
+            fs::create_dir_all(live_directory)?;
+        }
         let indexes = self.indexes.read().unwrap();
         let mut manifest = format!("{MANIFEST_VERSION_LINE}\n");
         for (type_id, type_index) in indexes.iter() {
             let type_id = u16::from_be_bytes(type_id.to_bytes());
             let file_name = index_file_name(type_id);
-            let path = dir.join(&file_name);
+            let checkpoint_file = path.join(&file_name);
 
-            let reused = !type_index.dirty.swap(false, Ordering::Acquire)
-                && previous.map(|previous| previous.join(&file_name)).filter(|file| file.exists()).is_some_and(
-                    |prev| fs::hard_link(&prev, &path).or_else(|_| fs::copy(&prev, &path).map(|_| ())).is_ok(),
-                );
-            let dimensions = if reused {
-                type_index.dimensions()
-            } else {
-                let index = type_index.index.read().unwrap();
-                index.save(path.to_str().unwrap()).map_err(|err| {
-                    type_index.dirty.store(true, Ordering::Release);
-                    io::Error::other(format!("failed to save vector index {file_name}: {err}"))
-                })?;
-                let file = File::open(&path)?;
-                file.sync_all()?;
-                index.dimensions()
-            };
-            let file_length = fs::metadata(&path)?.len();
-            manifest.push_str(&format!("{type_id:#06x} {METRIC_NAME} {dimensions} {file_length}\n"));
+            match &live_directory {
+                Some(live_directory) => {
+                    let live_file = live_directory.join(&file_name);
+                    if type_index.dirty.swap(false, Ordering::Acquire) || !live_file.exists() {
+                        Self::write_live_file(type_index, &live_file)?;
+                    }
+                    fs::hard_link(&live_file, &checkpoint_file)
+                        .or_else(|_| fs::copy(&live_file, &checkpoint_file).map(|_| ()))?;
+                }
+                None => Self::write_live_file(type_index, &checkpoint_file)?,
+            }
+            let file_length = fs::metadata(&checkpoint_file)?.len();
+            manifest.push_str(&format!("{type_id:#06x} {METRIC_NAME} {} {file_length}\n", type_index.dimensions()));
         }
-        let mut manifest_file = File::create(dir.join(MANIFEST_FILE_NAME))?;
+        let mut manifest_file = File::create(path.join(MANIFEST_FILE_NAME))?;
         manifest_file.write_all(manifest.as_bytes())?;
         manifest_file.sync_all()?;
+        File::open(path)?.sync_all()?;
         Ok(())
     }
 
-    fn load_from_dir(dir: &Path) -> io::Result<Self> {
+    fn load_from_path(dir: &Path) -> io::Result<Self> {
         let manifest = fs::read_to_string(dir.join(MANIFEST_FILE_NAME))?;
         let mut lines = manifest.lines();
         let version_line = lines.next().unwrap_or("");
@@ -408,54 +441,57 @@ mod test {
         store.add(vertex(1, 100), &[1.0, 0.0]).unwrap();
         store.add(vertex(7, 200), &[0.0, 1.0, 0.0, 0.0]).unwrap();
 
-        let dir = std::env::temp_dir().join(format!("vector_store_checkpoint_test_{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).unwrap();
-        store.save_into_dir(&dir, None).unwrap();
+        let root = std::env::temp_dir().join(format!("vector_index_checkpoint_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let dir = root.join("extension");
+        store.save_to_path(&dir).unwrap();
 
         assert!(dir.join("0x0001-cosine.usearch").exists());
         assert!(dir.join("0x0007-cosine.usearch").exists());
         assert!(fs::read_to_string(dir.join(MANIFEST_FILE_NAME)).unwrap().starts_with(MANIFEST_VERSION_LINE));
 
-        let loaded = VectorIndex::load_from_dir(&dir).unwrap();
+        let loaded = VectorIndex::load_from_path(&dir).unwrap();
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0, 0.0, 0.0]));
 
         let index_file = dir.join("0x0001-cosine.usearch");
         let bytes = fs::read(&index_file).unwrap();
         fs::write(&index_file, &bytes[..bytes.len() - 1]).unwrap();
-        assert!(VectorIndex::load_from_dir(&dir).is_err());
+        assert!(VectorIndex::load_from_path(&dir).is_err());
 
-        fs::remove_dir_all(&dir).unwrap();
+        fs::remove_dir_all(&root).unwrap();
     }
 
     #[test]
-    fn checkpoint_save_reuses_clean_index_files_and_reserialises_dirty_ones() {
+    fn checkpoint_save_reuses_live_files_for_clean_indexes_and_rewrites_dirty_ones() {
         let store = VectorIndex::new();
         store.add(vertex(1, 100), &[1.0, 0.0]).unwrap();
         store.add(vertex(7, 200), &[0.0, 1.0]).unwrap();
 
-        let root = std::env::temp_dir().join(format!("vector_store_dirty_test_{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("vector_index_dirty_test_{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
-        let (first, second) = (root.join("first"), root.join("second"));
-        fs::create_dir_all(&first).unwrap();
-        fs::create_dir_all(&second).unwrap();
+        fs::create_dir_all(&root).unwrap();
+        store.set_live_directory(root.join("live"));
 
-        store.save_into_dir(&first, None).unwrap();
+        let (first, second) = (root.join("first"), root.join("second"));
+        store.save_to_path(&first).unwrap();
+        assert!(root.join("live").join("0x0001-cosine.usearch").exists());
+
         store.add(vertex(7, 300), &[0.0, -1.0]).unwrap();
-        store.save_into_dir(&second, Some(&first)).unwrap();
+        store.save_to_path(&second).unwrap();
 
         let first_clean = fs::read(first.join("0x0001-cosine.usearch")).unwrap();
         assert_eq!(fs::read(second.join("0x0001-cosine.usearch")).unwrap(), first_clean);
 
-        let loaded = VectorIndex::load_from_dir(&second).unwrap();
+        let loaded = VectorIndex::load_from_path(&second).unwrap();
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0]));
         assert_eq!(loaded.get_vector(vertex(7, 300)), Some(vec![0.0, -1.0]));
 
         let third = root.join("third");
-        fs::create_dir_all(&third).unwrap();
-        loaded.save_into_dir(&third, Some(&second)).unwrap();
+        loaded.set_live_directory(root.join("live"));
+        loaded.save_to_path(&third).unwrap();
         assert_eq!(
             fs::read(third.join("0x0007-cosine.usearch")).unwrap(),
             fs::read(second.join("0x0007-cosine.usearch")).unwrap()

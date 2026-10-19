@@ -104,6 +104,7 @@ impl<D> fmt::Debug for Database<D> {
 
 impl<D> Database<D> {
     const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
+    const VECTOR_INDEX_DIR_NAME: &'static str = "vector-index";
 
     pub fn name(&self) -> &str {
         &self.name
@@ -298,6 +299,7 @@ impl Database<WALClient> {
         wal_client.register_record_type::<Statistics>();
 
         let vector_index = Arc::new(VectorIndex::new());
+        vector_index.set_live_directory(path.join(Self::VECTOR_INDEX_DIR_NAME));
         let storage = Arc::new(
             MVCCStorage::create::<EncodingKeyspace>(
                 name,
@@ -407,6 +409,7 @@ impl Database<WALClient> {
             },
             None => (Arc::new(VectorIndex::new()), false),
         };
+        vector_index.set_live_directory(path.join(Self::VECTOR_INDEX_DIR_NAME));
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(
                 &name,

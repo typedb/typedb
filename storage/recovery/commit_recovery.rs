@@ -149,7 +149,7 @@ pub(crate) fn apply_recovered(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
-    secondary_store: Option<&Arc<dyn SecondaryStore>>,
+    secondary_store: Option<&dyn SecondaryStore>,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
     use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
@@ -163,11 +163,8 @@ pub(crate) fn apply_recovered(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                let write_batches = WriteBatches::from_operations(
-                    commit_sequence_number,
-                    commit_record.operations(),
-                    secondary_store.map(|store| &**store),
-                );
+                let write_batches =
+                    WriteBatches::from_operations(commit_sequence_number, commit_record.operations(), secondary_store);
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
                 if let Some(store) = secondary_store {
                     store.apply_commit(commit_sequence_number, commit_record.operations()).map_err(|error| {
@@ -184,12 +181,7 @@ pub(crate) fn apply_recovered(
             RecoveryCommitStatus::Pending(commit_record) => {
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
-                    .validate_commit(
-                        commit_sequence_number,
-                        commit_record,
-                        durability_client,
-                        secondary_store.map(|store| &**store),
-                    )
+                    .validate_commit(commit_sequence_number, commit_record, durability_client, secondary_store)
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;
                 drop(read_guard);
                 match validated_commit {
