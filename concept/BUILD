@@ -32,6 +32,7 @@ rust_library(
     name = "concept",
     srcs = glob([
         "*.rs",
+        "index/**/*.rs",
         "type_/**/*.rs",
         "thing/**/*.rs",
     ]),
@@ -75,6 +76,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
+        "index/*",
         "thing/*",
         "thing/thing_manager/**/*",
         "type_/*",

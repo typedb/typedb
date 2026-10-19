@@ -14,7 +14,7 @@ use rocksdb::WriteBatch;
 
 use super::{MVCCKey, StorageOperation};
 use crate::{
-    CommitObserver,
+    SecondaryStore,
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
@@ -28,7 +28,7 @@ impl WriteBatches {
     pub(crate) fn from_operations(
         seq: SequenceNumber,
         operations: &OperationsBuffer,
-        commit_observer: Option<&dyn CommitObserver>,
+        secondary_store: Option<&dyn SecondaryStore>,
     ) -> Self {
         let mut write_batches = Self::default();
 
@@ -39,7 +39,7 @@ impl WriteBatches {
                 let write_batch = write_batches[index].insert(WriteBatch::default());
                 for (key, write) in writes {
                     let value_owned_externally =
-                        commit_observer.is_some_and(|observer| observer.owns_value(keyspace_id, key));
+                        secondary_store.is_some_and(|observer| observer.stores_value(keyspace_id, key));
                     match write {
                         Write::Insert { value } => {
                             let value: &[u8] = if value_owned_externally { &[] } else { value };

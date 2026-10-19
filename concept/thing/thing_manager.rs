@@ -73,6 +73,7 @@ use storage::{
 use crate::{
     ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
+    index::vector_index::VectorIndex,
     iterator::InstanceIterator,
     thing::{
         ThingAPI,
@@ -89,7 +90,6 @@ use crate::{
             cardinality_validation::{CardinalityChangeTracker, CardinalityValidation, collect_errors},
             operation_time_validation::OperationTimeValidation,
         },
-        vector_store::VectorStore,
     },
     type_::{
         Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
@@ -111,7 +111,7 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
-    vector_store: Arc<VectorStore>,
+    vector_index: Arc<VectorIndex>,
 }
 
 impl ThingManager {
@@ -119,9 +119,9 @@ impl ThingManager {
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
-        vector_store: Arc<VectorStore>,
+        vector_index: Arc<VectorIndex>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics, vector_store }
+        ThingManager { vertex_generator, type_manager, statistics, vector_index }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -132,8 +132,8 @@ impl ThingManager {
         &self.type_manager
     }
 
-    pub fn vector_store(&self) -> &Arc<VectorStore> {
-        &self.vector_store
+    pub fn vector_index(&self) -> &Arc<VectorIndex> {
+        &self.vector_index
     }
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
@@ -439,7 +439,7 @@ impl ThingManager {
                     }
                     Some(Write::Delete) => return Err(Box::new(ConceptReadError::InternalMissingAttributeValue {})),
                     None => self
-                        .vector_store
+                        .vector_index
                         .get_vector(vertex)
                         .ok_or(ConceptReadError::InternalMissingAttributeValue {})?,
                 };
@@ -517,7 +517,7 @@ impl ThingManager {
                     type_id,
                     value.encode_vector::<256>(),
                     snapshot,
-                    &|key| self.vector_store.get_by_key(type_id, key),
+                    &|key| self.vector_index.get_by_key(type_id, key),
                 ) {
                     Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
@@ -2484,7 +2484,7 @@ impl ThingManager {
                 let type_id = attribute_type.vertex().type_id_();
                 self.vertex_generator
                     .create_attribute_vector(type_id, encoded_vector, snapshot, &|key| {
-                        self.vector_store.get_by_key(type_id, key)
+                        self.vector_index.get_by_key(type_id, key)
                     })
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }

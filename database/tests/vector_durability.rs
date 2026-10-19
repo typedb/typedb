@@ -102,14 +102,14 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
             "#,
         );
         type_id = lookup_embedding_type_id(&db);
-        assert_eq!(db.vector_store().indexed_vector_count(type_id), 3);
+        assert_eq!(db.vector_index().indexed_vector_count(type_id), 3);
         drop(db);
     }
 
     {
         let db = open_db(&db_path);
         assert_eq!(
-            db.vector_store().indexed_vector_count(type_id),
+            db.vector_index().indexed_vector_count(type_id),
             3,
             "vectors must be rebuilt from the WAL tail on restart"
         );
@@ -118,7 +118,7 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
 
     {
         let db = open_db(&db_path);
-        let store = db.vector_store();
+        let store = db.vector_index();
         assert_eq!(store.indexed_vector_count(type_id), 3, "vectors must be restored from the checkpoint extension");
 
         let results = store.search(type_id, &[1.0, 0.0, 0.0], 3);
@@ -129,7 +129,7 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
 }
 
 #[test]
-fn checkpoint_missing_the_vector_store_extension_fails_to_open_when_vectors_exist() {
+fn checkpoint_missing_the_vector_index_extension_fails_to_open_when_vectors_exist() {
     let tmp = create_tmp_storage_dir();
     let db_path = tmp.join("vector-missing-extension");
     {
@@ -145,19 +145,19 @@ fn checkpoint_missing_the_vector_store_extension_fails_to_open_when_vectors_exis
 
     let mut removed = 0;
     for entry in std::fs::read_dir(db_path.join("checkpoint")).expect("checkpoint dir") {
-        let extension_dir = entry.expect("checkpoint entry").path().join("VECTOR_STORE");
+        let extension_dir = entry.expect("checkpoint entry").path().join("VECTOR_INDEX");
         if extension_dir.exists() {
             std::fs::remove_dir_all(&extension_dir).expect("remove extension");
             removed += 1;
         }
     }
-    assert!(removed > 0, "expected at least one checkpoint with the vector store extension");
+    assert!(removed > 0, "expected at least one checkpoint with the vector index extension");
 
     let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
     let resources = create_rocks_resources();
     let result = Database::<WALClient>::open(&db_path, &diagnostics_manager, &resources);
-    let error = format!("{:?}", result.err().expect("open should fail without the vector store extension"));
-    assert!(error.contains("vector values that are not in the vector store"), "unexpected error: {error}");
+    let error = format!("{:?}", result.err().expect("open should fail without the vector index extension"));
+    assert!(error.contains("vector values that are not in the vector index"), "unexpected error: {error}");
 }
 
 #[test]
@@ -167,18 +167,18 @@ fn undefining_a_vector_type_drops_its_index_so_the_type_id_is_reusable() {
     define_schema(db.clone());
     insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
     let old_type_id = lookup_embedding_type_id(&db);
-    assert_eq!(db.vector_store().indexed_vector_count(old_type_id), 1);
+    assert_eq!(db.vector_index().indexed_vector_count(old_type_id), 1);
 
     insert_vectors(db.clone(), "match $x isa item; delete $x;");
     insert_vectors(db.clone(), "match $e isa embedding; delete $e;");
     run_schema_query(db.clone(), "undefine embedding;");
 
-    assert_eq!(db.vector_store().indexed_vector_count(old_type_id), 0);
+    assert_eq!(db.vector_index().indexed_vector_count(old_type_id), 0);
 
     run_schema_query(
         db.clone(),
         r#"define attribute embedding2, value vector(4, "float32") @index(hnsw:cosine); entity item owns embedding2 @card(0..);"#,
     );
     insert_vectors(db.clone(), r#"insert $a isa item, has embedding2 vector([0.0, 1.0, 0.0, 0.0], "float32");"#);
-    assert_eq!(db.vector_store().indexed_vector_count(lookup_attribute_type_id(&db, "embedding2")), 1);
+    assert_eq!(db.vector_index().indexed_vector_count(lookup_attribute_type_id(&db, "embedding2")), 1);
 }

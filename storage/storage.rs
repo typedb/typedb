@@ -77,38 +77,16 @@ pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
 
-pub trait CommitObserver: Send + Sync + fmt::Debug {
-    fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
-    fn validate(
-        &self,
-        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
-    ) -> Result<(), Box<dyn Error + Send + Sync>>;
-    fn apply(
+pub trait SecondaryStore: Send + Sync + fmt::Debug {
+    fn stores_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
+
+    fn validate_commit(&self, operations: &OperationsBuffer) -> Result<(), Box<dyn Error + Send + Sync>>;
+
+    fn apply_commit(
         &self,
         sequence_number: SequenceNumber,
-        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
+        operations: &OperationsBuffer,
     ) -> Result<(), Box<dyn Error + Send + Sync>>;
-}
-
-pub(crate) fn extract_owned_values(
-    observer: &dyn CommitObserver,
-    operations: &OperationsBuffer,
-) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> {
-    operations
-        .write_buffers()
-        .flat_map(|buffer| {
-            buffer.writes().iter().filter_map(move |(key, write)| {
-                let value = match write {
-                    Write::Insert { value } => value,
-                    Write::Put { value, .. } => value,
-                    Write::Delete => return None,
-                };
-                observer
-                    .owns_value(buffer.keyspace_id, key)
-                    .then(|| (StorageKeyArray::new_raw(buffer.keyspace_id, key.clone()), value.clone()))
-            })
-        })
-        .collect()
 }
 
 #[derive(Debug)]
@@ -119,7 +97,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
-    commit_observer: Option<Arc<dyn CommitObserver>>,
+    secondary_store: Option<Arc<dyn SecondaryStore>>,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -130,7 +108,7 @@ impl<Durability> MVCCStorage<Durability> {
         path: &Path,
         mut durability_client: Durability,
         rocks_resources: &RocksResources,
-        commit_observer: Option<Arc<dyn CommitObserver>>,
+        secondary_store: Option<Arc<dyn SecondaryStore>>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -157,7 +135,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            commit_observer,
+            secondary_store,
         })
     }
 
@@ -177,7 +155,7 @@ impl<Durability> MVCCStorage<Durability> {
         mut durability_client: Durability,
         checkpoint: &Option<CheckpointReader>,
         rocks_resources: &RocksResources,
-        commit_observer: Option<Arc<dyn CommitObserver>>,
+        secondary_store: Option<Arc<dyn SecondaryStore>>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -195,7 +173,7 @@ impl<Durability> MVCCStorage<Durability> {
                     &storage_dir,
                     &durability_client,
                     rocks_resources,
-                    commit_observer.as_ref(),
+                    secondary_store.as_ref(),
                 )
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
@@ -214,7 +192,7 @@ impl<Durability> MVCCStorage<Durability> {
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-            apply_recovered(name, commits, &durability_client, &keyspaces, commit_observer.as_ref())
+            apply_recovered(name, commits, &durability_client, &keyspaces, secondary_store.as_ref())
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
             (keyspaces, next_sequence_number)
@@ -228,12 +206,13 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            commit_observer,
+            secondary_store,
         })
     }
 
-    pub fn set_commit_observer(&mut self, observer: Arc<dyn CommitObserver>) {
-        self.commit_observer = Some(observer);
+    // for tests: production code passes the secondary store to `create` / `load`
+    pub fn set_secondary_store(&mut self, secondary_store: Arc<dyn SecondaryStore>) {
+        self.secondary_store = Some(secondary_store);
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
@@ -328,16 +307,10 @@ impl<Durability> MVCCStorage<Durability> {
 
         commit_profile.commit_size(commit_record.operations().len());
 
-        let owned_values =
-            self.commit_observer.as_ref().map(|observer| extract_owned_values(&**observer, commit_record.operations()));
-
-        if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
-            if !owned.is_empty() {
-                observer.validate(owned).map_err(|error| StorageCommitError::CommitObserver {
-                    name: self.name.clone(),
-                    source: Arc::from(error),
-                })?;
-            }
+        if let Some(secondary_store) = self.secondary_store.as_ref() {
+            secondary_store.validate_commit(commit_record.operations()).map_err(|error| {
+                StorageCommitError::SecondaryStore { name: self.name.clone(), source: Arc::from(error) }
+            })?;
         }
 
         let commit_sequence_number = self
@@ -353,7 +326,7 @@ impl<Durability> MVCCStorage<Durability> {
             commit_sequence_number,
             commit_record,
             &self.durability_client,
-            self.commit_observer.as_ref().map(|observer| &**observer),
+            self.secondary_store.as_ref().map(|observer| &**observer),
         );
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
@@ -369,10 +342,15 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
 
-                if let (Some(observer), Some(owned)) = (self.commit_observer.as_ref(), owned_values.as_ref()) {
-                    observer.apply(commit_sequence_number, owned).map_err(|error| {
-                        StorageCommitError::CommitObserver { name: self.name.clone(), source: Arc::from(error) }
-                    })?;
+                if let Some(secondary_store) = self.secondary_store.as_ref() {
+                    self.isolation_manager
+                        .apply_to_commit_record(commit_sequence_number, |record| {
+                            secondary_store.apply_commit(commit_sequence_number, record.operations())
+                        })
+                        .map_err(|error| StorageCommitError::SecondaryStore {
+                            name: self.name.clone(),
+                            source: Arc::from(error),
+                        })?;
                 }
 
                 fail_point!(COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS);
@@ -692,7 +670,7 @@ typedb_error! {
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
         Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
-        CommitObserver(7, "Commit in database '{name}' was rejected by the commit observer.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
+        SecondaryStore(7, "Commit in database '{name}' was rejected by a secondary store.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
     }
 }
 

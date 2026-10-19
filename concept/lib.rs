@@ -9,6 +9,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 pub mod error;
+pub mod index;
 pub mod iterator;
 pub mod thing;
 pub mod type_;

@@ -1056,7 +1056,7 @@ impl VectorAttributeID {
                 let vertex = AttributeVertex::decode(storage_key);
                 let index_key = vertex.attribute_id().unwrap_vector().as_type_vector_index_key();
                 let vector = committed_vector(index_key).ok_or_else(|| {
-                    Arc::new(SnapshotIteratorError::ExternalValueMissing {
+                    Arc::new(SnapshotIteratorError::SecondaryStoreValueMissing {
                         description: format!(
                             "vector attribute {vertex:?} exists in storage but its value is missing from the vector store"
                         ),

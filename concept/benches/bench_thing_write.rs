@@ -65,7 +65,7 @@ fn write_entity_attributes(
             thing_vertex_generator.clone(),
             type_manager.clone(),
             statistics,
-            Arc::new(concept::thing::vector_store::VectorStore::new()),
+            Arc::new(concept::index::vector_index::VectorIndex::new()),
         );
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();

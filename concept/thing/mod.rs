@@ -32,7 +32,6 @@ pub mod relation;
 pub mod statistics;
 mod r#struct;
 pub mod thing_manager;
-pub mod vector_store;
 
 pub trait ThingAPI: Sized + Clone {
     type TypeAPI: TypeAPI;

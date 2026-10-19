@@ -23,7 +23,7 @@ use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
-    CommitObserver,
+    SecondaryStore,
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
     sequence_number::SequenceNumber,
@@ -84,12 +84,27 @@ impl IsolationManager {
         self.timeline.may_increment_watermark(sequence_number);
     }
 
+    pub(crate) fn apply_to_commit_record<T>(
+        &self,
+        sequence_number: SequenceNumber,
+        function: impl FnOnce(&CommitRecord) -> T,
+    ) -> T {
+        let window =
+            self.timeline.try_get_window(sequence_number).expect("window must exist for a commit being applied");
+        match window.get_status(sequence_number) {
+            CommitStatus::Validated(record) | CommitStatus::Applied(record) => function(&record),
+            CommitStatus::Empty | CommitStatus::Pending(_) | CommitStatus::Aborted => {
+                unreachable!("commit record must be validated when applying")
+            }
+        }
+    }
+
     pub(crate) fn validate_commit(
         &self,
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
         durability_client: &impl DurabilityClient,
-        commit_observer: Option<&dyn CommitObserver>,
+        secondary_store: Option<&dyn SecondaryStore>,
     ) -> Result<ValidatedCommit, DurabilityClientError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
@@ -111,7 +126,7 @@ impl IsolationManager {
                 Ok(ValidatedCommit::Write(WriteBatches::from_operations(
                     sequence_number,
                     commit_record.operations(),
-                    commit_observer,
+                    secondary_store,
                 )))
             }
         }

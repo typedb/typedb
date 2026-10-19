@@ -12,9 +12,8 @@ use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
 use tracing::{Level, event, trace};
 
 use crate::{
-    CommitObserver, MVCCStorage,
+    MVCCStorage, SecondaryStore,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
-    extract_owned_values,
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
@@ -150,7 +149,7 @@ pub(crate) fn apply_recovered(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
-    commit_observer: Option<&Arc<dyn CommitObserver>>,
+    secondary_store: Option<&Arc<dyn SecondaryStore>>,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
     use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
@@ -167,24 +166,15 @@ pub(crate) fn apply_recovered(
                 let write_batches = WriteBatches::from_operations(
                     commit_sequence_number,
                     commit_record.operations(),
-                    commit_observer.map(|observer| &**observer),
+                    secondary_store.map(|store| &**store),
                 );
-                let owned_values =
-                    commit_observer.map(|observer| extract_owned_values(&**observer, commit_record.operations()));
-                isolation_manager.load_validated(commit_sequence_number, commit_record);
-                if let (Some(observer), Some(owned)) = (commit_observer, owned_values.as_ref()) {
-                    observer.validate(owned).map_err(|error| Internal {
-                        name: Arc::<str>::from(database_name),
-                        source: Arc::from(error),
-                    })?;
-                }
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
-                if let (Some(observer), Some(owned)) = (commit_observer, owned_values) {
-                    observer.apply(commit_sequence_number, &owned).map_err(|error| Internal {
-                        name: Arc::<str>::from(database_name),
-                        source: Arc::from(error),
+                if let Some(store) = secondary_store {
+                    store.apply_commit(commit_sequence_number, commit_record.operations()).map_err(|error| {
+                        Internal { name: Arc::<str>::from(database_name), source: Arc::from(error) }
                     })?;
                 }
+                isolation_manager.load_validated(commit_sequence_number, commit_record);
                 fail_point!(RECOVERY_PARTIAL_WRITE);
                 isolation_manager
                     .applied(commit_sequence_number)
@@ -192,34 +182,30 @@ pub(crate) fn apply_recovered(
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
-                let owned_values =
-                    commit_observer.map(|observer| extract_owned_values(&**observer, commit_record.operations()));
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
                     .validate_commit(
                         commit_sequence_number,
                         commit_record,
                         durability_client,
-                        commit_observer.map(|observer| &**observer),
+                        secondary_store.map(|store| &**store),
                     )
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;
                 drop(read_guard);
                 match validated_commit {
                     ValidatedCommit::Write(write_batches) => {
-                        if let (Some(observer), Some(owned)) = (commit_observer, owned_values.as_ref()) {
-                            observer.validate(owned).map_err(|error| Internal {
-                                name: Arc::<str>::from(database_name),
-                                source: Arc::from(error),
-                            })?;
-                        }
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
-                        if let (Some(observer), Some(owned)) = (commit_observer, owned_values) {
-                            observer.apply(commit_sequence_number, &owned).map_err(|error| Internal {
-                                name: Arc::<str>::from(database_name),
-                                source: Arc::from(error),
-                            })?;
+                        if let Some(store) = secondary_store {
+                            isolation_manager
+                                .apply_to_commit_record(commit_sequence_number, |record| {
+                                    store.apply_commit(commit_sequence_number, record.operations())
+                                })
+                                .map_err(|error| Internal {
+                                    name: Arc::<str>::from(database_name),
+                                    source: Arc::from(error),
+                                })?;
                         }
                         fail_point!(RECOVERY_PARTIAL_WRITE);
                         isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {

@@ -8,7 +8,8 @@ use std::sync::Arc;
 
 use answer::variable_value::VariableValue;
 use concept::{
-    thing::{ThingAPI, thing_manager::ThingManager, vector_store::VectorStore},
+    index::vector_index::VectorIndex,
+    thing::{ThingAPI, thing_manager::ThingManager},
     type_::{TypeAPI, type_manager::TypeManager},
 };
 use encoding::{
@@ -141,8 +142,8 @@ fn run_read_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>>
         .unwrap()
 }
 
-fn vector_store(context: &Context) -> Arc<VectorStore> {
-    context.thing_manager.vector_store().clone()
+fn vector_index(context: &Context) -> Arc<VectorIndex> {
+    context.thing_manager.vector_index().clone()
 }
 
 fn embedding_type_id(context: &Context) -> encoding::graph::type_::vertex::TypeID {
@@ -163,7 +164,7 @@ fn committed_vectors_live_in_the_store_and_are_searchable() {
     let context = setup();
     run_write_query(&context, INSERT);
 
-    let store = vector_store(&context);
+    let store = vector_index(&context);
     assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3);
 
     let rows = run_read_query(
@@ -218,7 +219,7 @@ fn duplicate_vector_insert_is_deduplicated() {
     let context = setup();
     run_write_query(&context, INSERT);
     run_write_query(&context, r#"insert $d isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
-    let store = vector_store(&context);
+    let store = vector_index(&context);
     assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3, "no new vector expected");
 
     let rows = run_read_query(&context, r#"match $e isa embedding;"#);
@@ -291,7 +292,7 @@ fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     }
     assert_eq!(vertices[0], vertices[1], "an identical NaN vector must resolve to the same attribute ID");
-    assert_eq!(vector_store(&context).indexed_vector_count(embedding_type_id(&context)), 1);
+    assert_eq!(vector_index(&context).indexed_vector_count(embedding_type_id(&context)), 1);
 }
 
 #[test]

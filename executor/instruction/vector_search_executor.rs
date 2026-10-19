@@ -182,15 +182,15 @@ impl VectorSearchExecutor {
         for type_ in self.types.iter() {
             let attribute_type = type_.as_attribute_type();
             let type_id = attribute_type.vertex().type_id_();
-            let vector_store = thing_manager.vector_store();
+            let vector_index = thing_manager.vector_index();
 
             let mut candidates: BTreeSet<AttributeVertex> = BTreeSet::new();
 
-            let total = vector_store.indexed_vector_count(type_id);
+            let total = vector_index.indexed_vector_count(type_id);
             if total > 0 {
                 let mut k = 128.min(total);
                 loop {
-                    let results = vector_store.search(type_id, &query, k);
+                    let results = vector_index.search(type_id, &query, k);
                     let last_above_threshold =
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;

@@ -84,7 +84,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.thing_vertex_generator.clone(),
             type_manager.clone(),
             schema.thing_statistics.clone(),
-            database.vector_store.clone(),
+            database.vector_index.clone(),
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),
@@ -146,7 +146,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.thing_vertex_generator.clone(),
             type_manager.clone(),
             schema.thing_statistics.clone(),
-            database.vector_store.clone(),
+            database.vector_index.clone(),
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),
@@ -249,7 +249,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
                 database.thing_vertex_generator.clone(),
                 type_manager.clone(),
                 schema.thing_statistics.clone(),
-                database.vector_store.clone(),
+                database.vector_index.clone(),
             )
         };
         let function_manager = Arc::new(FunctionManager::new(database.definition_key_generator.clone(), None));
@@ -527,7 +527,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
                 })
                 .collect();
             database
-                .vector_store
+                .vector_index
                 .retain_indexes(|type_id, dimensions| live_vector_types.get(&type_id) == Some(&dimensions));
         }
 

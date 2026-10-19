@@ -24,7 +24,7 @@ use same_file::is_same_file;
 use tracing::{debug, trace};
 
 use crate::{
-    CommitObserver,
+    SecondaryStore,
     durability_client::DurabilityClient,
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces, rocks_resources::RocksResources},
     recovery::commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
@@ -73,7 +73,7 @@ impl CheckpointReader {
         keyspaces_dir: &Path,
         durability_client: &Durability,
         rocks_resources: &RocksResources,
-        commit_observer: Option<&Arc<dyn CommitObserver>>,
+        secondary_store: Option<&Arc<dyn SecondaryStore>>,
     ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
         use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
 
@@ -102,7 +102,7 @@ impl CheckpointReader {
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         trace!("Applying missing commits");
-        apply_recovered(database_name, recovered_commits, durability_client, &keyspaces, commit_observer)
+        apply_recovered(database_name, recovered_commits, durability_client, &keyspaces, secondary_store)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         Ok((keyspaces, next_sequence_number))
     }

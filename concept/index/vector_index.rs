@@ -25,17 +25,20 @@ use encoding::{
         thing::vertex_attribute::{AttributeID, AttributeVertex, VectorAttributeID},
         type_::vertex::TypeID,
     },
-    value::vector_bytes::VectorBytes,
+    value::{value_type::ValueTypeCategory, vector_bytes::VectorBytes},
 };
 use error::{TypeDBError, typedb_error};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    CommitObserver, key_value::StorageKeyArray, keyspace::KeyspaceId, recovery::checkpoint::CheckpointAdditionalData,
+    SecondaryStore,
+    keyspace::{KeyspaceId, KeyspaceSet},
+    recovery::checkpoint::CheckpointAdditionalData,
     sequence_number::SequenceNumber,
+    snapshot::{buffer::OperationsBuffer, write::Write as StorageWrite},
 };
 use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 
-pub struct VectorStore {
+pub struct VectorIndex {
     indexes: RwLock<HashMap<TypeID, Arc<TypeVectorIndex>>>,
 }
 
@@ -45,7 +48,7 @@ struct TypeVectorIndex {
 }
 
 typedb_error! {
-    pub VectorStoreError(component = "Vector store", prefix = "VEC") {
+    pub VectorIndexError(component = "Vector store", prefix = "VEC") {
         IndexCreate(1, "Failed to create vector index with {dimensions} dimensions: {reason}", dimensions: usize, reason: String),
         IndexGrow(2, "Failed to grow vector index: {reason}", reason: String),
         IndexAdd(3, "Failed to add vector to index: {reason}", reason: String),
@@ -55,16 +58,16 @@ typedb_error! {
     }
 }
 
-impl fmt::Display for VectorStoreError {
+impl fmt::Display for VectorIndexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self as &dyn TypeDBError, f)
     }
 }
 
-impl Error for VectorStoreError {}
+impl Error for VectorIndexError {}
 
 impl TypeVectorIndex {
-    fn new(dimensions: usize) -> Result<Self, VectorStoreError> {
+    fn new(dimensions: usize) -> Result<Self, VectorIndexError> {
         let options = IndexOptions {
             dimensions,
             metric: MetricKind::Cos,
@@ -75,7 +78,7 @@ impl TypeVectorIndex {
             multi: false,
         };
         let index = usearch::new_index(&options)
-            .map_err(|err| VectorStoreError::IndexCreate { dimensions, reason: err.to_string() })?;
+            .map_err(|err| VectorIndexError::IndexCreate { dimensions, reason: err.to_string() })?;
         Ok(Self { index: RwLock::new(index), dirty: AtomicBool::new(false) })
     }
 
@@ -83,10 +86,10 @@ impl TypeVectorIndex {
         self.index.read().unwrap().dimensions()
     }
 
-    fn prepare(&self, dimensions: usize, additional: usize) -> Result<(), VectorStoreError> {
+    fn prepare(&self, dimensions: usize, additional: usize) -> Result<(), VectorIndexError> {
         let index = self.index.write().unwrap();
         if index.dimensions() != dimensions {
-            return Err(VectorStoreError::DimensionMismatch {
+            return Err(VectorIndexError::DimensionMismatch {
                 index_dimensions: index.dimensions(),
                 vector_dimensions: dimensions,
             });
@@ -95,18 +98,18 @@ impl TypeVectorIndex {
         if required > index.capacity() {
             index
                 .reserve((index.capacity() * 2).max(1024).max(required))
-                .map_err(|err| VectorStoreError::IndexGrow { reason: err.to_string() })?;
+                .map_err(|err| VectorIndexError::IndexGrow { reason: err.to_string() })?;
         }
         Ok(())
     }
 
-    fn add(&self, key: u64, vector: &[f32]) -> Result<(), VectorStoreError> {
+    fn add(&self, key: u64, vector: &[f32]) -> Result<(), VectorIndexError> {
         let index = self.index.write().unwrap();
         if index.contains(key) {
             return Ok(());
         }
         if index.dimensions() != vector.len() {
-            return Err(VectorStoreError::DimensionMismatch {
+            return Err(VectorIndexError::DimensionMismatch {
                 index_dimensions: index.dimensions(),
                 vector_dimensions: vector.len(),
             });
@@ -114,9 +117,9 @@ impl TypeVectorIndex {
         if index.size() >= index.capacity() {
             index
                 .reserve((index.capacity() * 2).max(1024))
-                .map_err(|err| VectorStoreError::IndexGrow { reason: err.to_string() })?;
+                .map_err(|err| VectorIndexError::IndexGrow { reason: err.to_string() })?;
         }
-        index.add(key, vector).map_err(|err| VectorStoreError::IndexAdd { reason: err.to_string() })?;
+        index.add(key, vector).map_err(|err| VectorIndexError::IndexAdd { reason: err.to_string() })?;
         self.dirty.store(true, Ordering::Release);
         Ok(())
     }
@@ -139,7 +142,7 @@ impl TypeVectorIndex {
     }
 }
 
-impl VectorStore {
+impl VectorIndex {
     pub fn new() -> Self {
         Self { indexes: RwLock::new(HashMap::new()) }
     }
@@ -148,7 +151,7 @@ impl VectorStore {
         &self,
         type_id: TypeID,
         dimensions_if_created: usize,
-    ) -> Result<Arc<TypeVectorIndex>, VectorStoreError> {
+    ) -> Result<Arc<TypeVectorIndex>, VectorIndexError> {
         if let Some(index) = self.indexes.read().unwrap().get(&type_id) {
             return Ok(index.clone());
         }
@@ -161,7 +164,7 @@ impl VectorStore {
         Ok(index)
     }
 
-    pub fn add(&self, vertex: AttributeVertex, vector: &[f32]) -> Result<(), VectorStoreError> {
+    pub fn add(&self, vertex: AttributeVertex, vector: &[f32]) -> Result<(), VectorIndexError> {
         let id = vertex.attribute_id().unwrap_vector();
         self.index_for_type(vertex.type_id_(), vector.len())?.add(id.as_type_vector_index_key(), vector)
     }
@@ -200,13 +203,13 @@ impl VectorStore {
     }
 }
 
-impl Default for VectorStore {
+impl Default for VectorIndex {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl fmt::Debug for VectorStore {
+impl fmt::Debug for VectorIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indexes = self.indexes.read().unwrap();
         let mut map = f.debug_map();
@@ -217,25 +220,35 @@ impl fmt::Debug for VectorStore {
     }
 }
 
-impl CommitObserver for VectorStore {
-    fn owns_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool {
+fn stored_vector_writes(
+    operations: &OperationsBuffer,
+) -> impl Iterator<Item = (AttributeVertex, &ByteArray<BUFFER_VALUE_INLINE>)> + '_ {
+    let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
+    operations.writes_in_keyspace(keyspace.id()).filter_map(move |(key, write)| {
+        let value = match write {
+            StorageWrite::Insert { value } => value,
+            StorageWrite::Put { value, .. } => value,
+            StorageWrite::Delete => return None,
+        };
+        AttributeVertex::is_vector_attribute_vertex(keyspace.id(), key).then(|| (AttributeVertex::decode(key), value))
+    })
+}
+
+impl SecondaryStore for VectorIndex {
+    fn stores_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool {
         AttributeVertex::is_vector_attribute_vertex(keyspace_id, key)
     }
 
-    fn validate(
-        &self,
-        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn validate_commit(&self, operations: &OperationsBuffer) -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut pending: HashMap<TypeID, (usize, usize)> = HashMap::new();
-        for (key, value) in owned {
-            let vertex = AttributeVertex::decode(key.bytes());
+        for (vertex, value) in stored_vector_writes(operations) {
             if value.is_empty() {
-                return Err(Box::new(VectorStoreError::CommittedWithoutValue { vertex: format!("{vertex:?}") }));
+                return Err(Box::new(VectorIndexError::CommittedWithoutValue { vertex: format!("{vertex:?}") }));
             }
             let dimensions = value.len() / VectorBytes::<BUFFER_VALUE_INLINE>::ELEMENT_LENGTH;
             let (existing_dimensions, count) = pending.entry(vertex.type_id_()).or_insert((dimensions, 0));
             if *existing_dimensions != dimensions {
-                return Err(Box::new(VectorStoreError::ConflictingDimensionsInCommit {
+                return Err(Box::new(VectorIndexError::ConflictingDimensionsInCommit {
                     first: *existing_dimensions,
                     second: dimensions,
                 }));
@@ -248,13 +261,12 @@ impl CommitObserver for VectorStore {
         Ok(())
     }
 
-    fn apply(
+    fn apply_commit(
         &self,
         _sequence_number: SequenceNumber,
-        owned: &[(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)],
+        operations: &OperationsBuffer,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        for (key, value) in owned {
-            let vertex = AttributeVertex::decode(key.bytes());
+        for (vertex, value) in stored_vector_writes(operations) {
             let vector = VectorBytes::new(Bytes::<BUFFER_VALUE_INLINE>::Reference(value)).as_vector();
             self.add(vertex, &vector)?;
         }
@@ -274,8 +286,8 @@ fn invalid_data(message: String) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
 }
 
-impl CheckpointAdditionalData for VectorStore {
-    const NAME: &'static str = "VECTOR_STORE";
+impl CheckpointAdditionalData for VectorIndex {
+    const NAME: &'static str = "VECTOR_INDEX";
 
     fn save_into_dir(&self, dir: &Path, previous: Option<&Path>) -> io::Result<()> {
         let indexes = self.indexes.read().unwrap();
@@ -317,7 +329,7 @@ impl CheckpointAdditionalData for VectorStore {
         if version_line != MANIFEST_VERSION_LINE {
             return Err(invalid_data(format!("unsupported vector store manifest version: '{version_line}'")));
         }
-        let store = VectorStore::new();
+        let store = VectorIndex::new();
         let mut indexes = store.indexes.write().unwrap();
         for line in lines {
             let parts: Vec<&str> = line.split_whitespace().collect();
@@ -375,7 +387,7 @@ mod test {
 
     #[test]
     fn add_get_search_roundtrip() {
-        let store = VectorStore::new();
+        let store = VectorIndex::new();
         store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
         store.add(vertex(1, 200), &[0.0, 1.0, 0.0]).unwrap();
         store.add(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
@@ -392,7 +404,7 @@ mod test {
 
     #[test]
     fn checkpoint_roundtrip() {
-        let store = VectorStore::new();
+        let store = VectorIndex::new();
         store.add(vertex(1, 100), &[1.0, 0.0]).unwrap();
         store.add(vertex(7, 200), &[0.0, 1.0, 0.0, 0.0]).unwrap();
 
@@ -405,21 +417,21 @@ mod test {
         assert!(dir.join("0x0007-cosine.usearch").exists());
         assert!(fs::read_to_string(dir.join(MANIFEST_FILE_NAME)).unwrap().starts_with(MANIFEST_VERSION_LINE));
 
-        let loaded = VectorStore::load_from_dir(&dir).unwrap();
+        let loaded = VectorIndex::load_from_dir(&dir).unwrap();
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0, 0.0, 0.0]));
 
         let index_file = dir.join("0x0001-cosine.usearch");
         let bytes = fs::read(&index_file).unwrap();
         fs::write(&index_file, &bytes[..bytes.len() - 1]).unwrap();
-        assert!(VectorStore::load_from_dir(&dir).is_err());
+        assert!(VectorIndex::load_from_dir(&dir).is_err());
 
         fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
     fn checkpoint_save_reuses_clean_index_files_and_reserialises_dirty_ones() {
-        let store = VectorStore::new();
+        let store = VectorIndex::new();
         store.add(vertex(1, 100), &[1.0, 0.0]).unwrap();
         store.add(vertex(7, 200), &[0.0, 1.0]).unwrap();
 
@@ -436,7 +448,7 @@ mod test {
         let first_clean = fs::read(first.join("0x0001-cosine.usearch")).unwrap();
         assert_eq!(fs::read(second.join("0x0001-cosine.usearch")).unwrap(), first_clean);
 
-        let loaded = VectorStore::load_from_dir(&second).unwrap();
+        let loaded = VectorIndex::load_from_dir(&second).unwrap();
         assert_eq!(loaded.get_vector(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_vector(vertex(7, 200)), Some(vec![0.0, 1.0]));
         assert_eq!(loaded.get_vector(vertex(7, 300)), Some(vec![0.0, -1.0]));

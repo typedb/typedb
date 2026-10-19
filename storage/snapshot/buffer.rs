@@ -80,6 +80,10 @@ impl OperationsBuffer {
         self.locks.is_empty()
     }
 
+    pub fn writes_in_keyspace(&self, keyspace_id: KeyspaceId) -> impl Iterator<Item = (&[u8], &Write)> + '_ {
+        self.write_buffers[keyspace_id.0 as usize].writes().iter().map(|(key, write)| (&**key, write))
+    }
+
     pub fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
         self.write_buffers().flat_map(|buffer| {
             buffer.iterate_range(KeyRange::new_unbounded(RangeStart::Inclusive(Bytes::Array(ByteArray::<
