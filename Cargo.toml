@@ -82,74 +82,6 @@
 	[dev-dependencies.xoshiro]
 		workspace = true
 
-[[bin]]
-	name = "typedb_server_bin"
-	path = "main.rs"
-
-[[test]]
-	name = "bench_concurrency"
-	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
-
-[[test]]
-	name = "bench_iam"
-	path = "tests/benchmarks/iam/bench_iam.rs"
-
-[[test]]
-	name = "test_assembly"
-	path = "tests/assembly/assembly.rs"
-
-[[test]]
-	name = "test_concept"
-	path = "tests/behaviour/concept/main.rs"
-
-[[test]]
-	name = "test_connection"
-	path = "tests/behaviour/connection/main.rs"
-
-[[test]]
-	name = "test_debug"
-	path = "tests/behaviour/debug/debug.rs"
-
-[[test]]
-	name = "test_fail_points"
-	path = "tests/assembly/fail_points.rs"
-
-[[test]]
-	name = "test_http_database"
-	path = "tests/behaviour/service/http/connection/database.rs"
-
-[[test]]
-	name = "test_http_debug"
-	path = "tests/behaviour/service/http/debug/debug.rs"
-
-[[test]]
-	name = "test_http_driver_concept"
-	path = "tests/behaviour/service/http/driver/concept.rs"
-
-[[test]]
-	name = "test_http_driver_connection"
-	path = "tests/behaviour/service/http/driver/connection.rs"
-
-[[test]]
-	name = "test_http_driver_http"
-	path = "tests/behaviour/service/http/driver/http.rs"
-
-[[test]]
-	name = "test_http_driver_query"
-	path = "tests/behaviour/service/http/driver/query.rs"
-
-[[test]]
-	name = "test_http_driver_user"
-	path = "tests/behaviour/service/http/driver/user.rs"
-
-[[test]]
-	name = "test_http_transaction"
-	path = "tests/behaviour/service/http/connection/transaction.rs"
-
-[[test]]
-	name = "test_query"
-	path = "tests/behaviour/query/main.rs"
-
 [workspace]
 	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "user", "util/project", "util/test"]
 	resolver = "2"
@@ -672,3 +604,71 @@
 			default-features = false
 			features = ["default", "encoding"]
 			version = "0.10.4"
+
+[[bin]]
+	name = "typedb_server_bin"
+	path = "main.rs"
+
+[[test]]
+	name = "bench_concurrency"
+	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
+
+[[test]]
+	name = "bench_iam"
+	path = "tests/benchmarks/iam/bench_iam.rs"
+
+[[test]]
+	name = "test_assembly"
+	path = "tests/assembly/assembly.rs"
+
+[[test]]
+	name = "test_concept"
+	path = "tests/behaviour/concept/main.rs"
+
+[[test]]
+	name = "test_connection"
+	path = "tests/behaviour/connection/main.rs"
+
+[[test]]
+	name = "test_debug"
+	path = "tests/behaviour/debug/debug.rs"
+
+[[test]]
+	name = "test_fail_points"
+	path = "tests/assembly/fail_points.rs"
+
+[[test]]
+	name = "test_http_database"
+	path = "tests/behaviour/service/http/connection/database.rs"
+
+[[test]]
+	name = "test_http_debug"
+	path = "tests/behaviour/service/http/debug/debug.rs"
+
+[[test]]
+	name = "test_http_driver_concept"
+	path = "tests/behaviour/service/http/driver/concept.rs"
+
+[[test]]
+	name = "test_http_driver_connection"
+	path = "tests/behaviour/service/http/driver/connection.rs"
+
+[[test]]
+	name = "test_http_driver_http"
+	path = "tests/behaviour/service/http/driver/http.rs"
+
+[[test]]
+	name = "test_http_driver_query"
+	path = "tests/behaviour/service/http/driver/query.rs"
+
+[[test]]
+	name = "test_http_driver_user"
+	path = "tests/behaviour/service/http/driver/user.rs"
+
+[[test]]
+	name = "test_http_transaction"
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+
+[[test]]
+	name = "test_query"
+	path = "tests/behaviour/query/main.rs"
