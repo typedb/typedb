@@ -165,7 +165,7 @@ impl DatabaseImportService {
     /// Waits for the active import's importer to stop by itself. Never resolves without an active import.
     async fn importer_stopped(active_import: &mut Option<ActiveImport>) -> Result<u64, DatabaseImportError> {
         match active_import {
-            Some(active_import) => active_import.importer.finish().await,
+            Some(active_import) => active_import.importer.join().await,
             None => std::future::pending().await,
         }
     }
@@ -309,10 +309,11 @@ impl DatabaseImportService {
     async fn close_with_error(&mut self, status: Status) -> Result<(), Status> {
         if self.do_close().await {
             Self::send_done(&self.response_sender).await;
-            return Ok(());
+            Ok(())
+        } else {
+            Self::send_error(&self.response_sender, status.clone()).await;
+            Err(status)
         }
-        Self::send_error(&self.response_sender, status.clone()).await;
-        Err(status)
     }
 
     async fn do_close(&mut self) -> bool {

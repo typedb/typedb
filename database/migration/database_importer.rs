@@ -372,7 +372,7 @@ impl DatabaseImporterHandle {
             Some(sender) => sender.send(message).await.is_ok(),
             None => false,
         };
-        if sent { Ok(()) } else { Err(Self::stop_reason(self.finish().await)) }
+        if sent { Ok(()) } else { Err(Self::stop_reason(self.join().await)) }
     }
 
     pub async fn finalize(&mut self) -> ImportResult {
@@ -380,13 +380,13 @@ impl DatabaseImporterHandle {
             // If this fails, the importer has already stopped and its result carries the reason.
             let _ = sender.send(ImportMessage::Finalize).await;
         }
-        self.finish().await
+        self.join().await
     }
 
     /// Stops the importer without processing the queued items, and waits until it has stopped.
     pub async fn abort(mut self) -> ImportResult {
         self.interrupt();
-        self.finish().await
+        self.join().await
     }
 
     fn interrupt(&mut self) {
@@ -400,7 +400,7 @@ impl DatabaseImporterHandle {
 
     /// Waits for the importer task to finish, e.g. after failing. Only the first completed wait gets its result:
     /// later ones return `ImporterStopped`.
-    pub async fn finish(&mut self) -> ImportResult {
+    pub async fn join(&mut self) -> ImportResult {
         // The join handle is only cleared once the task ends, so a cancelled (dropped) wait can be retried.
         let Some(join_handle) = self.join_handle.as_mut() else {
             return Err(DatabaseImportError::ImporterStopped {});
