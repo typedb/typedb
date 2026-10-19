@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, fmt::Formatter};
-use std::sync::Arc;
+use std::{fmt, fmt::Formatter, sync::Arc};
+
 use error::TypeDBError;
 
 pub mod database_exporter;

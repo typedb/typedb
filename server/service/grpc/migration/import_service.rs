@@ -139,10 +139,9 @@ impl DatabaseImportService {
 
     async fn listen_loop(&mut self) -> Result<(), Status> {
         loop {
-            // The importer's own result comes first, so that its error is reported rather than a stop that follows it.
             let result = tokio::select! { biased;
-                import_result = Self::importer_stopped(&mut self.active_import) => {
-                    self.handle_importer_stopped(import_result).await
+                import_result = Self::join_active_import(&mut self.active_import) => {
+                    self.handle_importer_result(import_result).await
                 }
                 error = self.stop_signals.stopped() => Err(Self::error_import_status(error)),
                 next = self.request_stream.next() => self.handle_next(next).await,
@@ -162,15 +161,14 @@ impl DatabaseImportService {
         }
     }
 
-    /// Waits for the active import's importer to stop by itself. Never resolves without an active import.
-    async fn importer_stopped(active_import: &mut Option<ActiveImport>) -> Result<u64, DatabaseImportError> {
+    async fn join_active_import(active_import: &mut Option<ActiveImport>) -> Result<u64, DatabaseImportError> {
         match active_import {
             Some(active_import) => active_import.importer.join().await,
             None => std::future::pending().await,
         }
     }
 
-    async fn handle_importer_stopped(
+    async fn handle_importer_result(
         &mut self,
         result: Result<u64, DatabaseImportError>,
     ) -> Result<ControlFlow<(), ()>, Status> {
@@ -190,14 +188,10 @@ impl DatabaseImportService {
         next: Option<Result<ProtocolClient, Status>>,
     ) -> Result<ControlFlow<(), ()>, Status> {
         match next {
-            None | Some(Err(_)) => {
-                if let Some(Err(error)) = next {
-                    event!(Level::DEBUG, ?error, "GRPC error");
-                }
-                match self.active_import {
-                    Some(_) => Err(Self::error_import_status(DatabaseImportServiceError::ClientClosed {})),
-                    None => Ok(Break(())),
-                }
+            None => self.handle_request_stream_end(),
+            Some(Err(error)) => {
+                event!(Level::DEBUG, ?error, "GRPC error");
+                self.handle_request_stream_end()
             }
             Some(Ok(message)) => match message.client {
                 None => Err(ProtocolError::MissingField {
@@ -214,6 +208,14 @@ impl DatabaseImportService {
                     Some(client) => self.handle_request(client).await,
                 },
             },
+        }
+    }
+
+    /// The client stopped sending requests. An import that is still active can't complete, so it fails.
+    fn handle_request_stream_end(&self) -> Result<ControlFlow<(), ()>, Status> {
+        match self.active_import {
+            Some(_) => Err(Self::error_import_status(DatabaseImportServiceError::ClientClosed {})),
+            None => Ok(Break(())),
         }
     }
 
@@ -269,7 +271,7 @@ impl DatabaseImportService {
         &mut self,
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportDatabaseNotFound {})?;
+        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
         self.stop_signals
             .unless_stopped(active_import.importer.send_batch(items.into_iter().map(decode_item)))
             .await?
@@ -286,7 +288,7 @@ impl DatabaseImportService {
 
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         // The import stays active until it is finalised, so that a failure or a stop still cleans it up.
-        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportDatabaseNotFound {})?;
+        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
 
         event!(Level::DEBUG, "Finalising the imported database...");
         let total_items = self

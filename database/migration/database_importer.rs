@@ -345,7 +345,7 @@ enum ImportMessage {
 type ImportResult = Result<u64, DatabaseImportError>;
 
 pub struct DatabaseImporterHandle {
-    sender: Option<mpsc::Sender<ImportMessage>>,
+    message_sender: Option<mpsc::Sender<ImportMessage>>,
     interrupt: broadcast::Sender<InterruptType>,
     interrupted: bool,
     join_handle: Option<JoinHandle<ImportResult>>,
@@ -368,7 +368,7 @@ impl DatabaseImporterHandle {
     }
 
     async fn send_message(&mut self, message: ImportMessage) -> Result<(), DatabaseImportError> {
-        let sent = match &self.sender {
+        let sent = match &self.message_sender {
             Some(sender) => sender.send(message).await.is_ok(),
             None => false,
         };
@@ -376,14 +376,13 @@ impl DatabaseImporterHandle {
     }
 
     pub async fn finalize(&mut self) -> ImportResult {
-        if let Some(sender) = self.sender.take() {
+        if let Some(sender) = self.message_sender.take() {
             // If this fails, the importer has already stopped and its result carries the reason.
             let _ = sender.send(ImportMessage::Finalize).await;
         }
         self.join().await
     }
 
-    /// Stops the importer without processing the queued items, and waits until it has stopped.
     pub async fn abort(mut self) -> ImportResult {
         self.interrupt();
         self.join().await
@@ -395,7 +394,7 @@ impl DatabaseImporterHandle {
             self.interrupted = true;
         }
         // dropping sender closes channel to wake up receiver if required
-        self.sender = None;
+        self.message_sender = None;
     }
 
     /// Waits for the importer task to finish, e.g. after failing. Only the first completed wait gets its result:
@@ -432,7 +431,7 @@ impl Drop for DatabaseImporterHandle {
 
 impl std::fmt::Debug for DatabaseImporterHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ImporterHandle").finish_non_exhaustive()
+        f.debug_struct("DatabaseImporterHandle").finish_non_exhaustive()
     }
 }
 
@@ -496,7 +495,12 @@ impl DatabaseImporter {
             interrupt: ExecutionInterrupt::new(interrupt_receiver),
         };
         let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
-        DatabaseImporterHandle { sender: Some(sender), interrupt, interrupted: false, join_handle: Some(join_handle) }
+        DatabaseImporterHandle {
+            message_sender: Some(sender),
+            interrupt,
+            interrupted: false,
+            join_handle: Some(join_handle),
+        }
     }
 
     fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {

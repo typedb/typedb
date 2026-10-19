@@ -12,7 +12,7 @@ typedb_error! {
     pub DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {
         DatabaseImport(1, "Error while importing the database's schema and data.", typedb_source: DatabaseImportError),
         DuplicateImport(3, "Error importing '{name}': another import operation for database '{old_name}' was already initiated through this channel. It is a sign of a corrupted file or a client bug.", name: String, old_name: String),
-        ImportDatabaseNotFound(4, "Imported database not found. Make sure to use a correct client."),
+        ImportNotInitialised(4, "A migration item or completion request was received before the import was initialised. The initial request carrying the database name and schema must come first."),
         ImportPrepareFailed(8, "The server could not open a database import for this request.", typedb_source: ArcServerStateError),
         ImportClosed(10, "The import was closed by the server. The import is aborted and can be retried."),
         ShutdownInterrupt(11, "The import was interrupted by server shutdown. The import is aborted and can be retried."),

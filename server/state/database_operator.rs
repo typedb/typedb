@@ -6,18 +6,14 @@
 
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
-use crate::{
-    error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
-    service::grpc::migration::import_service::DatabaseImportService,
-};
 use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
-use database::migration::MigrationOperationError;
 use database::{
     Database, DatabaseDeleteError, DatabaseOpenError,
     database::DatabaseCreateError,
     database_manager::DatabaseManager,
     migration::{
+        MigrationOperationError,
         database_importer::{DatabaseImporter, DatabaseImporterHandle},
         importing_database_handle::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
@@ -38,6 +34,11 @@ use storage::{
 use tokio::{
     sync::{RwLock, Semaphore, mpsc::Sender},
     task::JoinHandle,
+};
+
+use crate::{
+    error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
+    service::grpc::migration::import_service::DatabaseImportService,
 };
 
 const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
@@ -196,7 +197,7 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    pub fn start_importer(&self, importing_database: Box<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
+    fn start_importer(&self, importing_database: Box<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         DatabaseImporter::start(
             importing_database,

@@ -54,12 +54,11 @@ rust_test(
         "//database",
         "//diagnostics",
         "//encoding",
-        "//executor",
         "//resource",
         "//storage",
         "//util/test:test_utils",
 
-        "@crates//:tokio"
+        "@crates//:tokio",
     ]
 )
 

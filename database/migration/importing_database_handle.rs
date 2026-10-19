@@ -12,9 +12,9 @@ use storage::durability_client::WALClient;
 
 use crate::{
     Database,
+    migration::MigrationOperationError,
     transaction::{DataCommitIntent, SchemaCommitIntent, TransactionError, TransactionSchema, TransactionWrite},
 };
-use crate::migration::MigrationOperationError;
 
 pub trait ImportingDatabaseHandle: Send + Sync {
     fn database_name(&self) -> &str;

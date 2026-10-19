@@ -266,7 +266,7 @@ impl ServerStateError for LocalServerStateError {
             },
             Self::DatabaseImport { typedb_source } => match typedb_source {
                 DatabaseImportServiceError::DuplicateImport { .. }
-                | DatabaseImportServiceError::ImportDatabaseNotFound { .. }
+                | DatabaseImportServiceError::ImportNotInitialised { .. }
                 | DatabaseImportServiceError::ClientClosed { .. } => Request,
                 DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { typedb_source } => database_import_origin(typedb_source),
@@ -353,7 +353,7 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::SchemaAlreadyImported { .. }
         | DatabaseImportError::ItemAfterChecksums { .. }
         | DatabaseImportError::RelationWithoutRolePlayers { .. }
-        | DatabaseImportError::FinalizationSchemaCommitFailed { .. } => ErrorOrigin::Request,
+        | DatabaseImportError::FinalizationSchemaCommitFailed { .. }
         | DatabaseImportError::ItemDecode { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
@@ -362,9 +362,9 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::CacheError { .. }
         | DatabaseImportError::Interrupted { .. } => ErrorOrigin::System,
 
-        DatabaseImportError::PreparationSchemaCommitFailed { .. }
-        | DatabaseImportError::FinalizationSchemaCommitFailed { .. }
-        | DatabaseImportError::ImporterStopped { .. } => ErrorOrigin::Internal,
+        DatabaseImportError::PreparationSchemaCommitFailed { .. } | DatabaseImportError::ImporterStopped { .. } => {
+            ErrorOrigin::Internal
+        }
 
         DatabaseImportError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),
         DatabaseImportError::ConceptWrite { typedb_source } => concept_write_origin(typedb_source),
