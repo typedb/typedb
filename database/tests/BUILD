@@ -49,14 +49,16 @@ rust_test(
         "migration.rs",
     ]),
     deps = [
+        "//common/concurrency",
         "//common/options",
         "//database",
         "//diagnostics",
         "//encoding",
-        "//executor",
         "//resource",
         "//storage",
         "//util/test:test_utils",
+
+        "@crates//:tokio",
     ]
 )
 

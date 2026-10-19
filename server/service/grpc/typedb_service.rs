@@ -456,15 +456,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             self.server_state.shutdown_receiver(),
         );
 
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::DatabasesImport,
-            || async {
-                self.server_state.databases().spawn_import_service(service).await.map_err(|err| err.into_status())
-            },
-        )
-        .await?;
+        self.server_state.databases().spawn_import_service(service).await.map_err(|err| err.into_status())?;
 
         let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))

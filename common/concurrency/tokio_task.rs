@@ -91,6 +91,14 @@ impl TokioTaskSpawner {
         self.tracker.spawn(task)
     }
 
+    pub fn spawn_blocking<F, T>(&self, task: F) -> JoinHandle<T>
+    where
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static,
+    {
+        self.tracker.spawn_blocking(task)
+    }
+
     /// Spawn a periodic task that runs `action()` every `interval` until a shutdown signal is received.
     /// The return handle can be used to await this single task's completion (only on shutdown), but also can be ignored.
     pub fn spawn_interval<F>(

@@ -12,17 +12,15 @@ use std::{
     time::Instant,
 };
 
-use database::migration::{database_importer::DatabaseImporter, item::MigrationItem};
+use database::migration::{
+    database_importer::{DatabaseImportError, DatabaseImporterHandle},
+    item::MigrationItem,
+};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use error::TypeDBError;
-use executor::{ExecutionInterrupt, InterruptType};
-use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{Receiver, Sender},
-        watch,
-    },
-    task::{JoinHandle, spawn_blocking},
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    watch,
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
@@ -36,7 +34,7 @@ use crate::{
     error::LocalServerStateError,
     service::{
         grpc::{
-            diagnostics::run_with_diagnostics_async,
+            diagnostics::submit_result_metrics,
             error::{IntoGrpcStatus, ProtocolError},
             response_builders::database_manager::database_import_res_done,
         },
@@ -47,7 +45,7 @@ use crate::{
 };
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
-const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
+// const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
@@ -55,24 +53,45 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 struct ActiveImport {
     name: String,
     started: Instant,
-    importer: Option<DatabaseImporter>,
+    importer: DatabaseImporterHandle,
 }
 
 impl ActiveImport {
-    fn new(name: String, importer: DatabaseImporter) -> Self {
-        Self { name, started: Instant::now(), importer: Some(importer) }
+    fn new(name: String, importer: DatabaseImporterHandle) -> Self {
+        Self { name, started: Instant::now(), importer }
+    }
+}
+
+#[derive(Debug)]
+struct StopSignals {
+    shutdown_receiver: watch::Receiver<()>,
+    close_receiver: Receiver<()>,
+    response_sender: ResponseSender,
+}
+
+impl StopSignals {
+    async fn stopped(&mut self) -> DatabaseImportServiceError {
+        tokio::select! { biased;
+            _ = self.shutdown_receiver.changed() => {
+                event!(Level::TRACE, "Shutdown signal received, closing database import service.");
+                DatabaseImportServiceError::ShutdownInterrupt {}
+            }
+            _ = self.close_receiver.recv() => {
+                event!(Level::TRACE, "Close signal received, closing database import service.");
+                DatabaseImportServiceError::ImportClosed {}
+            }
+            _ = self.response_sender.closed() => {
+                event!(Level::TRACE, "Response stream closed by the client, closing database import service.");
+                DatabaseImportServiceError::ClientClosed {}
+            }
+        }
     }
 
-    fn take_importer(&mut self) -> Option<DatabaseImporter> {
-        self.importer.take()
-    }
-
-    fn restore_importer(&mut self, importer: DatabaseImporter) {
-        self.importer = Some(importer);
-    }
-
-    fn elapsed_secs(&self) -> u64 {
-        self.started.elapsed().as_secs()
+    async fn unless_stopped<T>(&mut self, future: impl Future<Output = T>) -> Result<T, DatabaseImportServiceError> {
+        tokio::select! { biased;
+            error = self.stopped() => Err(error),
+            output = future => Ok(output),
+        }
     }
 }
 
@@ -82,12 +101,11 @@ pub struct DatabaseImportService {
     diagnostics_manager: Arc<DiagnosticsManager>,
     request_stream: Streaming<ProtocolClient>,
     response_sender: ResponseSender,
-    shutdown_receiver: watch::Receiver<()>,
+    stop_signals: StopSignals,
 
-    active: Option<ActiveImport>,
-    interrupt_sender: broadcast::Sender<InterruptType>,
+    active_import: Option<ActiveImport>,
+    database_name: Option<String>,
     close_sender: Sender<()>,
-    close_receiver: Receiver<()>,
 }
 
 impl DatabaseImportService {
@@ -99,94 +117,70 @@ impl DatabaseImportService {
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
-        let (interrupt_sender, _) = broadcast::channel(1);
+        let stop_signals = StopSignals { shutdown_receiver, close_receiver, response_sender: response_sender.clone() };
         Self {
             server_state,
             diagnostics_manager,
             request_stream,
             response_sender,
-            shutdown_receiver,
-            active: None,
-            interrupt_sender,
+            stop_signals,
+            active_import: None,
+            database_name: None,
             close_sender,
-            close_receiver,
         }
     }
 
     pub(crate) async fn listen(mut self) {
+        let result = self.listen_loop().await;
+        if let Some(database_name) = &self.database_name {
+            submit_result_metrics(&self.diagnostics_manager, Some(database_name), ActionKind::DatabasesImport, &result);
+        }
+    }
+
+    async fn listen_loop(&mut self) -> Result<(), Status> {
         loop {
             let result = tokio::select! { biased;
-                _ = self.shutdown_receiver.changed() => {
-                    event!(Level::TRACE, "Shutdown signal received, closing database import service.");
-                    self.close_with_error(Self::import_status(DatabaseImportServiceError::ShutdownInterrupt {})).await;
-                    return;
+                import_result = Self::join_active_import(&mut self.active_import) => {
+                    self.handle_importer_result(import_result).await
                 }
-                _ = self.close_receiver.recv() => {
-                    event!(Level::TRACE, "Close signal received, closing database import service.");
-                    self.close_with_error(Self::import_status(DatabaseImportServiceError::ImportClosed {})).await;
-                    return;
-                }
-                next = self.request_stream.next() => {
-                    self.handle_next(next).await
-                }
+                error = self.stop_signals.stopped() => Err(Self::error_import_status(error)),
+                next = self.request_stream.next() => self.handle_next(next).await,
             };
 
             match result {
                 Ok(Continue(())) => (),
                 Ok(Break(())) => {
                     event!(Level::TRACE, "Stream ended, closing database import service.");
-                    self.do_close().await;
-                    return;
+                    return Ok(());
                 }
                 Err(status) => {
                     event!(Level::TRACE, "Closing database import service after a failure.");
-                    self.close_with_error(status).await;
-                    return;
+                    return self.close_with_error(status).await;
                 }
             }
         }
     }
 
-    async fn run_importer_step<T: Send + 'static>(
-        &mut self,
-        phase: &'static str,
-        step: impl FnOnce(&mut DatabaseImporter) -> T + Send + 'static,
-    ) -> Result<T, DatabaseImportServiceError> {
-        let mut importer = self.take_importer(phase)?;
-        let (importer, value) = self
-            .run_step(
-                spawn_blocking(move || {
-                    let value = step(&mut importer);
-                    (importer, value)
-                }),
-                phase,
-            )
-            .await?;
-        self.active.as_mut().expect("Expected the import to be recorded").restore_importer(importer);
-        Ok(value)
+    async fn join_active_import(active_import: &mut Option<ActiveImport>) -> Result<u64, DatabaseImportError> {
+        match active_import {
+            Some(active_import) => active_import.importer.join().await,
+            None => std::future::pending().await,
+        }
     }
 
-    fn take_importer(&mut self, phase: &str) -> Result<DatabaseImporter, DatabaseImportServiceError> {
-        self.active
-            .as_mut()
-            .and_then(ActiveImport::take_importer)
-            .ok_or_else(|| DatabaseImportServiceError::ImportDatabaseNotFound { phase: phase.to_string() })
-    }
-
-    async fn run_step<T>(
+    async fn handle_importer_result(
         &mut self,
-        mut step: JoinHandle<T>,
-        phase: &'static str,
-    ) -> Result<T, DatabaseImportServiceError> {
-        let interrupted = tokio::select! { biased;
-            _ = self.shutdown_receiver.changed() => DatabaseImportServiceError::ShutdownInterrupt {},
-            _ = self.close_receiver.recv() => DatabaseImportServiceError::ImportClosed {},
-            _ = self.response_sender.closed() => DatabaseImportServiceError::ClientClosed {},
-            result = &mut step => return result.map_err(|_| Self::import_task_failed(phase)),
-        };
-        let _ = self.interrupt_sender.send(InterruptType::DatabaseImportAborted);
-        let _ = step.await;
-        Err(interrupted)
+        result: Result<u64, DatabaseImportError>,
+    ) -> Result<ControlFlow<(), ()>, Status> {
+        match result {
+            Ok(total_items) => {
+                self.notify_done(total_items).await;
+                Ok(Break(()))
+            }
+            Err(typedb_source) => {
+                Err(Self::error_import_status(DatabaseImportServiceError::DatabaseImport { typedb_source }))
+            }
+        }
     }
 
     async fn handle_next(
@@ -194,10 +188,10 @@ impl DatabaseImportService {
         next: Option<Result<ProtocolClient, Status>>,
     ) -> Result<ControlFlow<(), ()>, Status> {
         match next {
-            None => Ok(Break(())),
+            None => self.handle_request_stream_end(),
             Some(Err(error)) => {
                 event!(Level::DEBUG, ?error, "GRPC error");
-                Ok(Break(()))
+                self.handle_request_stream_end()
             }
             Some(Ok(message)) => match message.client {
                 None => Err(ProtocolError::MissingField {
@@ -217,25 +211,24 @@ impl DatabaseImportService {
         }
     }
 
+    /// The client stopped sending requests. An import that is still active can't complete, so it fails.
+    fn handle_request_stream_end(&self) -> Result<ControlFlow<(), ()>, Status> {
+        match self.active_import {
+            Some(_) => Err(Self::error_import_status(DatabaseImportServiceError::ClientClosed {})),
+            None => Ok(Break(())),
+        }
+    }
+
     async fn handle_request(
         &mut self,
         req: typedb_protocol::migration::import::client::Client,
     ) -> Result<ControlFlow<(), ()>, Status> {
         use typedb_protocol::migration::import::client::{Client, Done, InitialReq, ReqPart};
         match req {
-            Client::InitialReq(InitialReq { name, schema }) => {
-                run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
-                    Some(name.clone()),
-                    ActionKind::DatabasesImport,
-                    || async {
-                        self.handle_database_schema(name, schema).await.map_err(|typedb_source| {
-                            LocalServerStateError::DatabaseImport { typedb_source }.into_status()
-                        })
-                    },
-                )
+            Client::InitialReq(InitialReq { name, schema }) => self
+                .handle_initialize(name, schema)
                 .await
-            }
+                .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
             Client::ReqPart(ReqPart { items }) => self
                 .handle_items(items)
                 .await
@@ -247,30 +240,30 @@ impl DatabaseImportService {
         }
     }
 
-    async fn handle_database_schema(
+    async fn handle_initialize(
         &mut self,
         name: String,
         schema: String,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        if let Some(active) = self.active.as_ref() {
+        if let Some(active) = self.active_import.as_ref() {
             return Err(DatabaseImportServiceError::DuplicateImport { name, old_name: active.name.clone() });
         }
+        self.database_name = Some(name.clone());
 
         let importer = self
             .server_state
             .databases()
-            .import_prepare(
-                &name,
-                self.close_sender.clone(),
-                ExecutionInterrupt::new(self.interrupt_sender.subscribe()),
-            )
+            .import_prepare(&name, self.close_sender.clone())
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
-        self.active = Some(ActiveImport::new(name, importer));
 
-        self.run_importer_step("schema loading", move |importer| importer.apply(MigrationItem::Schema(schema)))
+        // Recorded before anything can fail, so that closing the service cleans the import up.
+        let active_import = self.active_import.insert(ActiveImport::new(name, importer));
+        self.stop_signals
+            .unless_stopped(active_import.importer.send(MigrationItem::Schema(schema)))
             .await?
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
+
         Ok(Continue(()))
     }
 
@@ -278,58 +271,63 @@ impl DatabaseImportService {
         &mut self,
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        self.run_importer_step("data loading", move |importer| -> Result<(), DatabaseImportServiceError> {
-            for item in items {
-                importer
-                    .apply(decode_item(item).map_err(DatabaseImportServiceError::from)?)
-                    .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
+        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
+        self.stop_signals
+            .unless_stopped(active_import.importer.send_batch(items.into_iter().map(decode_item)))
+            .await?
+            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
-                let total_items = importer.total_item_count();
-                if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
-                    let name = importer.database_name();
-                    event!(Level::DEBUG, "Processed {total_items} imported items of '{name}'...");
-                }
-            }
-            Ok(())
-        })
-        .await??;
+        // TODO: submitted data isn't really a good indicator but is at least a fixed lag. Maybe this actually reads a real value?
+        // let total_items = active_import.importer.total_item_count();
+        // if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
+        //     let name = &active_import.name;
+        //     event!(Level::DEBUG, "Submitted {total_items} imported items of '{name}'...");
+        // }
         Ok(Continue(()))
     }
 
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
-        let importer = self.take_importer("finalisation")?;
+        // The import stays active until it is finalised, so that a failure or a stop still cleans it up.
+        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
 
         event!(Level::DEBUG, "Finalising the imported database...");
-        let (total_items, result) = self
-            .run_step(
-                spawn_blocking(move || {
-                    let total_items = importer.total_item_count();
-                    (total_items, importer.import_done())
-                }),
-                "finalisation",
-            )
-            .await?;
-        result.map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
+        let total_items = self
+            .stop_signals
+            .unless_stopped(active_import.importer.finalize())
+            .await?
+            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
-        let active = self.active.take().expect("Expected the import to be recorded");
-        event!(
-            Level::INFO,
-            "Import to '{}' finished successfully. {total_items} items imported in {} seconds.",
-            active.name,
-            active.elapsed_secs(),
-        );
-        Self::send_done(&self.response_sender).await;
+        self.notify_done(total_items).await;
         Ok(Break(()))
     }
 
-    async fn do_close(&mut self) {
-        let Some(active) = self.active.take() else {
-            return;
+    async fn notify_done(&mut self, total_items: u64) {
+        if let Some(ActiveImport { name, started, .. }) = self.active_import.take() {
+            Self::log_imported(&name, started, total_items);
+        }
+        Self::send_done(&self.response_sender).await;
+    }
+
+    async fn close_with_error(&mut self, status: Status) -> Result<(), Status> {
+        if self.do_close().await {
+            Self::send_done(&self.response_sender).await;
+            Ok(())
+        } else {
+            Self::send_error(&self.response_sender, status.clone()).await;
+            Err(status)
+        }
+    }
+
+    async fn do_close(&mut self) -> bool {
+        let Some(ActiveImport { name, started, importer }) = self.active_import.take() else {
+            return false;
         };
-        let duration_secs = active.elapsed_secs();
-        let ActiveImport { name, importer, .. } = active;
-        drop(importer);
-        event!(Level::INFO, "Import to '{name}' finished without completion after {duration_secs} seconds.");
+        if let Ok(total_items) = importer.abort().await {
+            Self::log_imported(&name, started, total_items);
+            return true;
+        }
+        let elapsed = started.elapsed().as_secs();
+        event!(Level::INFO, "Import to '{name}' finished without completion after {elapsed} seconds.");
         if let Err(err) = self.server_state.databases().import_discard(&name).await {
             event!(
                 Level::ERROR,
@@ -337,20 +335,19 @@ impl DatabaseImportService {
                 err.format_code_and_description()
             );
         }
+        false
     }
 
-    async fn close_with_error(&mut self, status: Status) {
-        self.do_close().await;
-        Self::send_error(&self.response_sender, status).await;
+    fn log_imported(name: &str, started: Instant, total_items: u64) {
+        let elapsed = started.elapsed().as_secs();
+        event!(
+            Level::INFO,
+            "Import to '{name}' finished successfully. {total_items} items imported in {elapsed} seconds."
+        );
     }
 
-    fn import_status(error: DatabaseImportServiceError) -> Status {
+    fn error_import_status(error: DatabaseImportServiceError) -> Status {
         LocalServerStateError::DatabaseImport { typedb_source: error }.into_status()
-    }
-
-    fn import_task_failed(phase: &str) -> DatabaseImportServiceError {
-        event!(Level::ERROR, "Import processing panicked during {phase}; the import will be cancelled.");
-        DatabaseImportServiceError::ImportTaskFailed { phase: phase.to_string() }
     }
 
     async fn send_done(response_sender: &ResponseSender) {

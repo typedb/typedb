@@ -6,6 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    iter,
     marker::PhantomData,
     path::PathBuf,
     sync::Arc,
@@ -37,6 +38,7 @@ use concept::{
         type_manager::TypeManager,
     },
 };
+use concurrency::TokioTaskSpawner;
 use encoding::{
     graph::{
         Typed,
@@ -45,8 +47,8 @@ use encoding::{
     },
     value::{label::Label, value::Value},
 };
-use error::typedb_error;
-use executor::ExecutionInterrupt;
+use error::{TypeDBError, typedb_error};
+use executor::{ExecutionInterrupt, InterruptType};
 use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use serde::{Serialize, de::DeserializeOwned};
@@ -54,14 +56,16 @@ use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use tokio::{
+    sync::{broadcast, mpsc},
+    task::JoinHandle,
+};
 use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     migration::{
-        Checksums,
-        database_import_handler::{DatabaseImportHandler, ImportHandlerError},
-        item::MigrationItem,
+        Checksums, MigrationOperationError, importing_database_handle::ImportingDatabaseHandle, item::MigrationItem,
     },
     query::execute_schema_query,
     transaction::{TransactionError, TransactionSchema, TransactionWrite},
@@ -331,8 +335,108 @@ impl AttributesInfo {
     }
 }
 
+type ImportItems = Box<dyn Iterator<Item = Result<MigrationItem, MigrationOperationError>> + Send>;
+
+enum ImportMessage {
+    Items(ImportItems),
+    Finalize,
+}
+
+type ImportResult = Result<u64, DatabaseImportError>;
+
+pub struct DatabaseImporterHandle {
+    message_sender: Option<mpsc::Sender<ImportMessage>>,
+    interrupt: broadcast::Sender<InterruptType>,
+    interrupted: bool,
+    join_handle: Option<JoinHandle<ImportResult>>,
+}
+
+impl DatabaseImporterHandle {
+    pub async fn send(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(Box::new(iter::once(Ok(item))))).await
+    }
+
+    pub async fn send_batch<E>(
+        &mut self,
+        items: impl IntoIterator<Item = Result<MigrationItem, E>, IntoIter: Send + 'static>,
+    ) -> Result<(), DatabaseImportError>
+    where
+        E: TypeDBError + Send + Sync + 'static,
+    {
+        let items = items.into_iter().map(|item| item.map_err(|error| Arc::new(error) as MigrationOperationError));
+        self.send_message(ImportMessage::Items(Box::new(items))).await
+    }
+
+    async fn send_message(&mut self, message: ImportMessage) -> Result<(), DatabaseImportError> {
+        let sent = match &self.message_sender {
+            Some(sender) => sender.send(message).await.is_ok(),
+            None => false,
+        };
+        if sent { Ok(()) } else { Err(Self::stop_reason(self.join().await)) }
+    }
+
+    pub async fn finalize(&mut self) -> ImportResult {
+        if let Some(sender) = self.message_sender.take() {
+            // If this fails, the importer has already stopped and its result carries the reason.
+            let _ = sender.send(ImportMessage::Finalize).await;
+        }
+        self.join().await
+    }
+
+    pub async fn abort(mut self) -> ImportResult {
+        self.interrupt();
+        self.join().await
+    }
+
+    fn interrupt(&mut self) {
+        if !self.interrupted {
+            let _ = self.interrupt.send(InterruptType::DatabaseImportAborted);
+            self.interrupted = true;
+        }
+        // dropping sender closes channel to wake up receiver if required
+        self.message_sender = None;
+    }
+
+    /// Waits for the importer task to finish, e.g. after failing. Only the first completed wait gets its result:
+    /// later ones return `ImporterStopped`.
+    pub async fn join(&mut self) -> ImportResult {
+        // The join handle is only cleared once the task ends, so a cancelled (dropped) wait can be retried.
+        let Some(join_handle) = self.join_handle.as_mut() else {
+            return Err(DatabaseImportError::ImporterStopped {});
+        };
+        let result = join_handle.await.unwrap_or_else(|err| {
+            event!(Level::ERROR, "The importer task failed: {err}");
+            Err(DatabaseImportError::ImporterStopped {})
+        });
+        self.join_handle = None;
+        result
+    }
+
+    fn stop_reason(result: ImportResult) -> DatabaseImportError {
+        match result {
+            Ok(_) => DatabaseImportError::ImporterStopped {},
+            Err(err) => err,
+        }
+    }
+}
+
+impl Drop for DatabaseImporterHandle {
+    fn drop(&mut self) {
+        if self.join_handle.is_some() {
+            event!(Level::WARN, "An import was dropped before it was finalised or aborted. Aborting the import.");
+            self.interrupt();
+        }
+    }
+}
+
+impl std::fmt::Debug for DatabaseImporterHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseImporterHandle").finish_non_exhaustive()
+    }
+}
+
 pub struct DatabaseImporter {
-    import_handler: Option<Box<dyn DatabaseImportHandler>>,
+    importing_database: Option<Box<dyn ImportingDatabaseHandle>>,
     database_name: String,
     schema_info: SchemaInfo,
     data_info: DataInfo,
@@ -353,32 +457,72 @@ impl DatabaseImporter {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
 
-    pub fn new(
-        import_handler: Box<dyn DatabaseImportHandler>,
+    pub fn start(
+        importing_database: Box<dyn ImportingDatabaseHandle>,
         scratch_directory: PathBuf,
-        interrupt: ExecutionInterrupt,
-    ) -> Self {
-        let database_name = import_handler.database_name().to_owned();
+        buffer_size: usize,
+        task_spawner: &TokioTaskSpawner,
+    ) -> DatabaseImporterHandle {
+        Self::start_with_max_writes_per_commit(
+            importing_database,
+            scratch_directory,
+            buffer_size,
+            task_spawner,
+            Self::MAX_WRITES_PER_COMMIT,
+        )
+    }
+
+    pub fn start_with_max_writes_per_commit(
+        importing_database: Box<dyn ImportingDatabaseHandle>,
+        scratch_directory: PathBuf,
+        buffer_size: usize,
+        task_spawner: &TokioTaskSpawner,
+        max_writes_per_commit: usize,
+    ) -> DatabaseImporterHandle {
+        let (sender, receiver) = mpsc::channel(buffer_size);
+        let (interrupt, interrupt_receiver) = broadcast::channel(1);
+        let database_name = importing_database.database_name().to_owned();
         let data_info = DataInfo::new(&scratch_directory, &database_name);
-        Self {
-            import_handler: Some(import_handler),
+        let importer = Self {
+            importing_database: Some(importing_database),
             database_name,
             schema_info: SchemaInfo::new(),
             data_info,
             data_transaction: None,
             total_item_count: 0,
-            max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
+            max_writes_per_commit,
             schema_imported: false,
+            interrupt: ExecutionInterrupt::new(interrupt_receiver),
+        };
+        let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
+        DatabaseImporterHandle {
+            message_sender: Some(sender),
             interrupt,
+            interrupted: false,
+            join_handle: Some(join_handle),
         }
     }
 
-    pub fn with_max_writes_per_commit(mut self, max_writes_per_commit: usize) -> Self {
-        self.max_writes_per_commit = max_writes_per_commit;
-        self
+    fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
+        loop {
+            self.check_interrupt()?;
+            match receiver.blocking_recv() {
+                None => return Err(DatabaseImportError::Interrupted {}),
+                Some(ImportMessage::Items(items)) => {
+                    for item in items {
+                        self.check_interrupt()?;
+                        self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
+                    }
+                }
+                Some(ImportMessage::Finalize) => {
+                    let total_item_count = self.total_item_count();
+                    return self.finalize().map(|()| total_item_count);
+                }
+            }
+        }
     }
 
-    pub fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+    fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
         match item {
             MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
             MigrationItem::Schema(schema) => {
@@ -487,7 +631,7 @@ impl DatabaseImporter {
         })
     }
 
-    pub fn import_done(mut self) -> Result<(), DatabaseImportError> {
+    fn finalize(&mut self) -> Result<(), DatabaseImportError> {
         self.check_interrupt()?;
         self.drain_pending_ownerships()?;
         self.check_interrupt()?;
@@ -502,10 +646,10 @@ impl DatabaseImporter {
         self.restore_relaxed_schema()?;
         self.check_interrupt()?;
 
-        let Some(import_handler) = self.import_handler.take() else {
+        let Some(importing_database) = self.importing_database.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         };
-        import_handler.finalise().map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
+        importing_database.finalise().map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
     }
 
     fn process_owned_attributes(
@@ -671,11 +815,11 @@ impl DatabaseImporter {
         Ok(())
     }
 
-    pub fn database_name(&self) -> &str {
+    fn database_name(&self) -> &str {
         &self.database_name
     }
 
-    pub fn total_item_count(&self) -> u64 {
+    fn total_item_count(&self) -> u64 {
         self.total_item_count
     }
 
@@ -1080,14 +1224,14 @@ impl DatabaseImporter {
         match self.data_transaction.take() {
             Some(transaction) => Ok(transaction),
             None => self
-                .import_handler()?
+                .importing_database()?
                 .open_write()
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
 
     fn open_schema_transaction(&self) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
-        self.import_handler()?
+        self.importing_database()?
             .open_schema()
             .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
     }
@@ -1095,22 +1239,22 @@ impl DatabaseImporter {
     fn commit_schema_transaction(
         &self,
         transaction: TransactionSchema<WALClient>,
-        map_err: impl Fn(ImportHandlerError) -> DatabaseImportError,
+        map_err: impl Fn(MigrationOperationError) -> DatabaseImportError,
     ) -> Result<(), DatabaseImportError> {
         let (_, finalise_result) = transaction.finalise();
         let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
-        self.import_handler()?.commit_schema(intent).map_err(map_err)
+        self.importing_database()?.commit_schema(intent).map_err(map_err)
     }
 
     fn commit_write_transaction(&self, transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
         let map_err = |typedb_source| DatabaseImportError::DataCommitFailed { typedb_source };
         let (_, finalise_result) = transaction.finalise();
         let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
-        self.import_handler()?.commit_data(intent).map_err(map_err)
+        self.importing_database()?.commit_data(intent).map_err(map_err)
     }
 
-    fn import_handler(&self) -> Result<&dyn DatabaseImportHandler, DatabaseImportError> {
-        self.import_handler.as_deref().ok_or(DatabaseImportError::AccessAfterFinalisation {})
+    fn importing_database(&self) -> Result<&dyn ImportingDatabaseHandle, DatabaseImportError> {
+        self.importing_database.as_deref().ok_or(DatabaseImportError::AccessAfterFinalisation {})
     }
 }
 
@@ -1124,7 +1268,7 @@ impl Drop for DatabaseImporter {
     fn drop(&mut self) {
         if let Some(data_transaction) = self.data_transaction.take() {
             assert!(
-                self.import_handler.is_some(),
+                self.importing_database.is_some(),
                 "Unexpected open import transaction while the import is still not done"
             );
             data_transaction.close();
@@ -1137,10 +1281,10 @@ typedb_error! {
         TransactionFailed(1, "Import transaction failed.", typedb_source: TransactionError),
         ConceptRead(2, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
         ConceptWrite(3, "Error writing concepts.", typedb_source: Box<ConceptWriteError>),
-        DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: ImportHandlerError),
-        ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: ImportHandlerError),
-        PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: ImportHandlerError),
-        FinalizationSchemaCommitFailed(9, "Import schema finalization failed: the imported data violates the schema's constraints.", typedb_source: ImportHandlerError),
+        DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: MigrationOperationError),
+        ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: MigrationOperationError),
+        PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: MigrationOperationError),
+        FinalizationSchemaCommitFailed(9, "Import schema finalization failed: the imported data violates the schema's constraints.", typedb_source: MigrationOperationError),
         SchemaQueryParseFailed(10, "Import schema query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryFailed(11, "Import schema query failed.", typedb_source: Box<QueryError>),
         InvalidSchemaDefineQuery(12, "Import schema query is not a valid define query."),
@@ -1156,11 +1300,13 @@ typedb_error! {
         DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
         CacheError(25, "Error writing import data.", source: CacheError),
-        FinalisationFailed(26, "Import finalisation failed.", typedb_source: ImportHandlerError),
+        FinalisationFailed(26, "Import finalisation failed.", typedb_source: MigrationOperationError),
         Interrupted(27, "The import was interrupted by a close request or server shutdown before completion. The import is aborted and can be retried."),
         ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
         RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It can be a sign of a corrupted file or a client bug.", id: String),
+        ImporterStopped(32, "The importer stopped unexpectedly before the import completed."),
+        ItemDecode(33, "A migration item could not be decoded.", typedb_source: MigrationOperationError),
     }
 }
