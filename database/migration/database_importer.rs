@@ -9,7 +9,12 @@ use std::{
     iter,
     marker::PhantomData,
     path::PathBuf,
-    sync::Arc,
+    sync::{
+        Arc, Mutex, OnceLock,
+        atomic::AtomicU64,
+        mpsc::{Receiver, SyncSender, sync_channel},
+    },
+    thread,
 };
 
 use bytes::{Bytes, byte_array::ByteArray};
@@ -48,7 +53,6 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use error::{TypeDBError, typedb_error};
-use executor::{ExecutionInterrupt, InterruptType};
 use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use serde::{Serialize, de::DeserializeOwned};
@@ -56,10 +60,7 @@ use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use tokio::{
-    sync::{broadcast, mpsc},
-    task::JoinHandle,
-};
+use tokio::{sync::mpsc, task::JoinHandle};
 use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
@@ -155,61 +156,94 @@ type IID = ByteArray<BUFFER_KEY_INLINE>;
 
 #[derive(Debug)]
 struct DataInfo {
-    objects: ObjectsInfo,
-    attributes: AttributesInfo,
+    objects: Mutex<ObjectsInfo>,
+    attributes: Mutex<AttributesInfo>,
     checksums: Checksums,
-    expected_checksums: Option<Checksums>,
+    expected_checksums: OnceLock<Checksums>,
 }
 
 impl DataInfo {
     fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            objects: ObjectsInfo::new(&cache_directory, database_name),
-            attributes: AttributesInfo::new(cache_directory, database_name),
+            objects: Mutex::new(ObjectsInfo::new(&cache_directory, database_name)),
+            attributes: Mutex::new(AttributesInfo::new(cache_directory, database_name)),
             checksums: Checksums::new(),
-            expected_checksums: None,
+            expected_checksums: OnceLock::new(),
         }
     }
 
-    fn record_entity(&mut self, original_id: String, entity: Entity) -> Result<(), DatabaseImportError> {
-        self.checksums.entity_count += 1;
-        self.objects.instance_id_mapping.record(original_id, entity.into_object())
+    fn record_entity(&self, original_id: String, entity: Entity) -> Result<(), DatabaseImportError> {
+        self.checksums.increment_entity_count();
+        self.objects.lock().unwrap().instance_id_mapping.record(original_id, entity.into_object())
     }
 
-    fn record_relation(&mut self, original_id: String, relation: Relation) -> Result<(), DatabaseImportError> {
-        self.checksums.relation_count += 1;
-        self.objects.instance_id_mapping.record(original_id, relation.into_object())
+    fn record_relation(&self, original_id: String, relation: Relation) -> Result<(), DatabaseImportError> {
+        self.checksums.increment_relation_count();
+        self.objects.lock().unwrap().instance_id_mapping.record(original_id, relation.into_object())
     }
 
-    fn record_attribute(&mut self, original_id: String, attribute: Attribute) -> Result<(), DatabaseImportError> {
-        self.checksums.attribute_count += 1;
-        self.attributes.instance_id_mapping.record(original_id, attribute)
+    fn record_attribute(&self, original_id: String, attribute: Attribute) -> Result<(), DatabaseImportError> {
+        self.checksums.increment_attribute_count();
+        self.attributes.lock().unwrap().instance_id_mapping.record(original_id, attribute)
     }
 
-    fn record_ownership(&mut self) {
-        self.checksums.ownership_count += 1;
+    fn record_ownership(&self) {
+        self.checksums.increment_ownership_count();
     }
 
-    fn record_role(&mut self) {
-        self.checksums.role_count += 1;
+    fn record_role(&self) {
+        self.checksums.increment_role_count();
     }
 
-    fn record_expected_checksums(&mut self, checksums: Checksums) -> Result<(), DatabaseImportError> {
-        if self.expected_checksums.is_some() {
-            return Err(DatabaseImportError::DuplicateClientChecksums {});
-        }
-        self.expected_checksums = Some(checksums);
-        Ok(())
+    fn get_object_by_original_id(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        id: &str,
+    ) -> Result<Option<Object>, DatabaseImportError> {
+        self.objects.lock().unwrap().instance_id_mapping.get_by_original_id(snapshot, thing_manager, id)
+    }
+
+    fn get_attribute_by_original_id(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        id: &str,
+    ) -> Result<Option<Attribute>, DatabaseImportError> {
+        self.attributes.lock().unwrap().instance_id_mapping.get_by_original_id(snapshot, thing_manager, id)
+    }
+
+    fn append_pending_ownership(&self, pending: PendingOwnership) -> Result<(), DatabaseImportError> {
+        self.attributes.lock().unwrap().pending_ownerships.append(pending)
+    }
+
+    fn append_pending_role_player(&self, pending: PendingRolePlayer) -> Result<(), DatabaseImportError> {
+        self.objects.lock().unwrap().pending_role_players.append(pending)
+    }
+
+    fn take_pending_ownerships(&self) -> Option<SpilloverCache<PendingOwnership>> {
+        self.attributes.lock().unwrap().pending_ownerships.take()
+    }
+
+    fn take_pending_role_players(&self) -> Option<SpilloverCache<PendingRolePlayer>> {
+        self.objects.lock().unwrap().pending_role_players.take()
+    }
+
+    fn has_expected_checksums(&self) -> bool {
+        self.expected_checksums.get().is_some()
+    }
+
+    fn record_expected_checksums(&self, checksums: Checksums) -> Result<(), DatabaseImportError> {
+        self.expected_checksums.set(checksums).map_err(|_| DatabaseImportError::DuplicateClientChecksums {})
     }
 
     fn verify_checksums(&self) -> Result<(), DatabaseImportError> {
-        let self_checksums = &self.checksums;
-        match &self.expected_checksums {
+        match self.expected_checksums.get() {
             Some(client_checksums) => {
-                if self_checksums == client_checksums {
+                if &self.checksums == client_checksums {
                     Ok(())
                 } else {
-                    let details = format!("client expected {client_checksums}, but recorded {self_checksums}");
+                    let details = format!("client expected {client_checksums}, but recorded {}", &self.checksums);
                     Err(DatabaseImportError::InvalidChecksumsOnDone { details })
                 }
             }
@@ -346,8 +380,7 @@ type ImportResult = Result<u64, DatabaseImportError>;
 
 pub struct DatabaseImporterHandle {
     message_sender: Option<mpsc::Sender<ImportMessage>>,
-    interrupt: broadcast::Sender<InterruptType>,
-    interrupted: bool,
+    error_state: ErrorState,
     join_handle: Option<JoinHandle<ImportResult>>,
 }
 
@@ -389,10 +422,7 @@ impl DatabaseImporterHandle {
     }
 
     fn interrupt(&mut self) {
-        if !self.interrupted {
-            let _ = self.interrupt.send(InterruptType::DatabaseImportAborted);
-            self.interrupted = true;
-        }
+        self.error_state.stop_with_error(DatabaseImportError::Interrupted {});
         // dropping sender closes channel to wake up receiver if required
         self.message_sender = None;
     }
@@ -436,15 +466,17 @@ impl std::fmt::Debug for DatabaseImporterHandle {
 }
 
 pub struct DatabaseImporter {
-    importing_database: Option<Box<dyn ImportingDatabaseHandle>>,
+    importing_database: Option<Arc<dyn ImportingDatabaseHandle>>,
     database_name: String,
     schema_info: SchemaInfo,
-    data_info: DataInfo,
-    data_transaction: Option<TransactionWrite<WALClient>>,
-    total_item_count: u64,
+    data_info: Arc<DataInfo>,
+    total_item_count: Arc<AtomicU64>,
     max_writes_per_commit: usize,
-    interrupt: ExecutionInterrupt,
-    schema_imported: bool,
+    error_state: ErrorState,
+
+    phase: Option<DatabaseImporterPhase>,
+    batch: Vec<MigrationItem>,
+    data_transaction: Option<TransactionWrite<WALClient>>, // for the finalize phase
 }
 
 impl std::fmt::Debug for DatabaseImporter {
@@ -456,15 +488,20 @@ impl std::fmt::Debug for DatabaseImporter {
 impl DatabaseImporter {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
+    const BATCH_SIZE: usize = 1_000;
+
+    const WORKER_COUNT: usize = 1;
 
     pub fn start(
-        importing_database: Box<dyn ImportingDatabaseHandle>,
+        importing_database: Arc<dyn ImportingDatabaseHandle>,
+        schema: String,
         scratch_directory: PathBuf,
         buffer_size: usize,
         task_spawner: &TokioTaskSpawner,
     ) -> DatabaseImporterHandle {
         Self::start_with_max_writes_per_commit(
             importing_database,
+            schema,
             scratch_directory,
             buffer_size,
             task_spawner,
@@ -473,32 +510,36 @@ impl DatabaseImporter {
     }
 
     pub fn start_with_max_writes_per_commit(
-        importing_database: Box<dyn ImportingDatabaseHandle>,
+        importing_database: Arc<dyn ImportingDatabaseHandle>,
+        schema: String,
         scratch_directory: PathBuf,
         buffer_size: usize,
         task_spawner: &TokioTaskSpawner,
         max_writes_per_commit: usize,
     ) -> DatabaseImporterHandle {
         let (sender, receiver) = mpsc::channel(buffer_size);
-        let (interrupt, interrupt_receiver) = broadcast::channel(1);
+        let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
-        let data_info = DataInfo::new(&scratch_directory, &database_name);
-        let importer = Self {
+        let data_info = Arc::new(DataInfo::new(&scratch_directory, &database_name));
+        let mut importer = Self {
             importing_database: Some(importing_database),
             database_name,
             schema_info: SchemaInfo::new(),
             data_info,
-            data_transaction: None,
-            total_item_count: 0,
+            total_item_count: Arc::new(AtomicU64::new(0)),
             max_writes_per_commit,
-            schema_imported: false,
-            interrupt: ExecutionInterrupt::new(interrupt_receiver),
+            error_state: error_state.clone(),
+            phase: None,
+            batch: Vec::with_capacity(Self::BATCH_SIZE),
+            data_transaction: None,
         };
-        let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
+        let join_handle = task_spawner.spawn_blocking(move || {
+            importer.import_schema(schema)?;
+            importer.listen(receiver)
+        });
         DatabaseImporterHandle {
             message_sender: Some(sender),
-            interrupt,
-            interrupted: false,
+            error_state,
             join_handle: Some(join_handle),
         }
     }
@@ -515,6 +556,7 @@ impl DatabaseImporter {
                     }
                 }
                 Some(ImportMessage::Finalize) => {
+                    self.finish_phase()?;
                     let total_item_count = self.total_item_count();
                     return self.finalize().map(|()| total_item_count);
                 }
@@ -522,38 +564,70 @@ impl DatabaseImporter {
         }
     }
 
+    fn check_interrupt(&self) -> Result<(), DatabaseImportError> {
+        match self.error_state.error() {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+
     fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
         match item {
-            MigrationItem::Schema(_) if self.schema_imported => Err(DatabaseImportError::SchemaAlreadyImported {}),
-            MigrationItem::Schema(schema) => {
-                self.import_schema(schema)?;
-                self.schema_imported = true;
-                Ok(())
-            }
-            _ if !self.schema_imported => Err(DatabaseImportError::ItemBeforeSchema {}),
             MigrationItem::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
-            _ if self.data_info.expected_checksums.is_some() => Err(DatabaseImportError::ItemAfterChecksums {}),
+            _ if self.data_info.has_expected_checksums() => Err(DatabaseImportError::ItemAfterChecksums {}),
             MigrationItem::Header { typedb_version, original_database } => {
                 event!(
                     Level::DEBUG,
                     "Importing '{original_database}' from TypeDB {typedb_version} to '{}'.",
-                    self.database_name()
+                    self.database_name
                 );
                 Ok(())
             }
-            MigrationItem::Entity { id, label, owned_attributes } => self.import_entity(id, label, owned_attributes),
-            MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
-                self.import_relation(id, label, owned_attributes, related_role_players)
+            item
+            @ (MigrationItem::Entity { .. } | MigrationItem::Relation { .. } | MigrationItem::Attribute { .. }) => {
+                self.dispatch(item)
             }
-            MigrationItem::Attribute { id, label, value } => self.import_attribute(id, label, value),
         }
     }
 
-    fn check_interrupt(&mut self) -> Result<(), DatabaseImportError> {
-        match self.interrupt.check() {
-            Some(_) => Err(DatabaseImportError::Interrupted {}),
-            None => Ok(()),
+    fn dispatch(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+        if self.needs_new_phase(&item) {
+            self.finish_phase()?;
+            self.phase = Some(DatabaseImporterPhase::start(self, Self::WORKER_COUNT)?);
         }
+        self.batch.push(item);
+        if self.batch.len() >= Self::BATCH_SIZE {
+            self.send_batch()?;
+        }
+        Ok(())
+    }
+
+    fn needs_new_phase(&self, _item: &MigrationItem) -> bool {
+        // TODO: future - implement actual phases (now - only 1 phase)
+        self.phase.is_none()
+    }
+
+    fn send_batch(&mut self) -> Result<(), DatabaseImportError> {
+        if self.batch.is_empty() {
+            return Ok(());
+        }
+        let batch = std::mem::replace(&mut self.batch, Vec::with_capacity(Self::BATCH_SIZE));
+        let phase = self.phase.as_ref().expect("Batches are only built within a phase");
+        if phase.send(batch) {
+            Ok(())
+        } else {
+            self.finish_phase()?;
+            Err(DatabaseImportError::ImporterStopped {})
+        }
+    }
+
+    fn finish_phase(&mut self) -> Result<(), DatabaseImportError> {
+        if self.phase.is_none() {
+            return Ok(());
+        }
+        let sent = self.send_batch();
+        let finished = self.phase.take().map_or(Ok(()), DatabaseImporterPhase::finish);
+        finished.and(sent)
     }
 
     fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
@@ -562,73 +636,6 @@ impl DatabaseImporter {
         }
         self.submit_original_schema(schema)?;
         self.relax_schema()
-    }
-
-    fn import_attribute(&mut self, id: String, label: Label, value: Value<'static>) -> Result<(), DatabaseImportError> {
-        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let attribute_type = type_manager
-                .get_attribute_type(&snapshot, &label)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label })?;
-
-            debug_assert!(attribute_type.is_independent(&snapshot, &type_manager).unwrap());
-            let attribute = thing_manager
-                .create_attribute(&mut snapshot, attribute_type, value)
-                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-
-            self.data_info.record_attribute(id, attribute)
-        })
-    }
-
-    fn import_entity(
-        &mut self,
-        id: String,
-        label: Label,
-        owned_attributes: Vec<String>,
-    ) -> Result<(), DatabaseImportError> {
-        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let entity_type = type_manager
-                .get_entity_type(&snapshot, &label)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownEntityType { label })?;
-
-            let entity = thing_manager
-                .create_entity(&mut snapshot, entity_type)
-                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-
-            self.process_owned_attributes(&mut snapshot, &thing_manager, entity.into_object(), owned_attributes)?;
-
-            self.data_info.record_entity(id, entity)
-        })
-    }
-
-    fn import_relation(
-        &mut self,
-        id: String,
-        label: Label,
-        owned_attributes: Vec<String>,
-        related_role_players: Vec<(Label, Vec<String>)>,
-    ) -> Result<(), DatabaseImportError> {
-        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
-            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
-        }
-        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let relation_type = type_manager
-                .get_relation_type(&snapshot, &label)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
-
-            debug_assert!(type_manager.get_is_relation_type_independent(&snapshot, relation_type).unwrap());
-
-            let relation = thing_manager
-                .create_relation(&mut snapshot, relation_type)
-                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-
-            self.process_owned_attributes(&mut snapshot, &thing_manager, relation.into_object(), owned_attributes)?;
-            self.process_related_roles(&mut snapshot, &type_manager, &thing_manager, relation, related_role_players)?;
-
-            self.data_info.record_relation(id, relation)
-        })
     }
 
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
@@ -649,37 +656,17 @@ impl DatabaseImporter {
         let Some(importing_database) = self.importing_database.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         };
-        importing_database.finalise().map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source })
-    }
 
-    fn process_owned_attributes(
-        &mut self,
-        snapshot: &mut impl WritableSnapshot,
-        thing_manager: &ThingManager,
-        object: Object,
-        owned_attribute_ids: Vec<String>,
-    ) -> Result<(), DatabaseImportError> {
-        for id in owned_attribute_ids {
-            match self.data_info.attributes.instance_id_mapping.get_by_original_id(snapshot, thing_manager, &id)? {
-                Some(attribute) => {
-                    object
-                        .set_has_unordered(snapshot, thing_manager, &attribute, StorageCounters::DISABLED)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    self.data_info.record_ownership();
-                }
-                None => {
-                    self.data_info
-                        .attributes
-                        .pending_ownerships
-                        .append(PendingOwnership { attribute_original_id: id, owner_iid: object.iid().into_array() })?;
-                }
-            }
+        match importing_database.into_unique() {
+            Ok(importing_database) => importing_database
+                .finalise()
+                .map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source }),
+            Err(_) => Err(DatabaseImportError::ImportingDatabaseStillShared {}),
         }
-        Ok(())
     }
 
     fn drain_pending_ownerships(&mut self) -> Result<(), DatabaseImportError> {
-        let records = self.data_info.attributes.pending_ownerships.take();
+        let records = self.data_info.take_pending_ownerships();
         match self.drain_pending(records, "ownerships", Self::import_pending_ownership)? {
             0 => Ok(()),
             unresolved => Err(DatabaseImportError::IncompleteOwnershipsOnDone { count: unresolved }),
@@ -687,7 +674,7 @@ impl DatabaseImporter {
     }
 
     fn drain_pending_role_players(&mut self) -> Result<(), DatabaseImportError> {
-        let records = self.data_info.objects.pending_role_players.take();
+        let records = self.data_info.take_pending_role_players();
         match self.drain_pending(records, "role players", Self::import_pending_role_player)? {
             0 => Ok(()),
             unresolved => Err(DatabaseImportError::IncompleteRolesOnDone { count: unresolved }),
@@ -728,11 +715,8 @@ impl DatabaseImporter {
     ) -> Result<(), DatabaseImportError> {
         let PendingOwnership { attribute_original_id, owner_iid } = pending;
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let attribute_opt = self.data_info.attributes.instance_id_mapping.get_by_original_id(
-                &snapshot,
-                &thing_manager,
-                &attribute_original_id,
-            )?;
+            let attribute_opt =
+                self.data_info.get_attribute_by_original_id(&snapshot, &thing_manager, &attribute_original_id)?;
             match attribute_opt {
                 None => {
                     *unknown_attributes += 1;
@@ -758,11 +742,8 @@ impl DatabaseImporter {
         let PendingRolePlayer { player_original_id, relation_iid, role_type_id } = pending;
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let role_type = RoleType::build_from_type_id(TypeID::new(role_type_id));
-            let player_opt = self.data_info.objects.instance_id_mapping.get_by_original_id(
-                &snapshot,
-                &thing_manager,
-                &player_original_id,
-            )?;
+            let player_opt =
+                self.data_info.get_object_by_original_id(&snapshot, &thing_manager, &player_original_id)?;
             match player_opt {
                 None => {
                     *unknown_players += 1;
@@ -780,47 +761,12 @@ impl DatabaseImporter {
         })
     }
 
-    fn process_related_roles(
-        &mut self,
-        snapshot: &mut impl WritableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        relation: Relation,
-        related_roles: Vec<(Label, Vec<String>)>,
-    ) -> Result<(), DatabaseImportError> {
-        for (label, player_ids) in related_roles {
-            let role_type = type_manager
-                .get_role_type(snapshot, &label)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: label.clone() })?;
-
-            for id in player_ids {
-                match self.data_info.objects.instance_id_mapping.get_by_original_id(snapshot, thing_manager, &id)? {
-                    Some(player) => {
-                        relation
-                            .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
-                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                        self.data_info.record_role();
-                    }
-                    None => {
-                        self.data_info.objects.pending_role_players.append(PendingRolePlayer {
-                            player_original_id: id,
-                            relation_iid: relation.iid().into_array(),
-                            role_type_id: role_type.vertex().type_id_().as_u16(),
-                        })?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn database_name(&self) -> &str {
         &self.database_name
     }
 
     fn total_item_count(&self) -> u64 {
-        self.total_item_count
+        self.total_item_count.load(core::sync::atomic::Ordering::Relaxed) // TODO: right level?
     }
 
     fn submit_original_schema(&self, schema: String) -> Result<(), DatabaseImportError> {
@@ -1217,7 +1163,7 @@ impl DatabaseImporter {
     }
 
     fn count_item(&mut self) {
-        self.total_item_count += 1;
+        self.total_item_count.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     }
 
     fn get_data_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
@@ -1276,6 +1222,322 @@ impl Drop for DatabaseImporter {
     }
 }
 
+struct DatabaseImporterPhase {
+    sender: Option<SyncSender<Vec<MigrationItem>>>,
+    workers: Vec<thread::JoinHandle<()>>,
+    error_state: ErrorState,
+}
+
+#[derive(Default, Clone)]
+struct ErrorState {
+    state: Arc<OnceLock<DatabaseImportError>>
+}
+
+impl ErrorState {
+    fn stop_with_error(&self, error: DatabaseImportError) {
+        let _ = self.state.set(error);
+    }
+
+    fn is_errored(&self) -> bool {
+        self.state.get().is_some()
+    }
+
+    fn error(&self) -> Option<DatabaseImportError> {
+        self.state.get().cloned()
+    }
+}
+
+impl DatabaseImporterPhase {
+    const QUEUE_SIZE_MULTIPLIER: usize = 4;
+
+    fn start(importer: &DatabaseImporter, worker_count: usize) -> Result<Self, DatabaseImportError> {
+        let (sender, receiver) = sync_channel(worker_count * Self::QUEUE_SIZE_MULTIPLIER);
+        let receiver = Arc::new(Mutex::new(receiver));
+        let mut phase = Self {
+            sender: Some(sender),
+            workers: Vec::with_capacity(worker_count),
+            error_state: importer.error_state.clone(),
+        };
+        for index in 0..worker_count {
+            let worker = ImportWorker::new(importer)?;
+            let receiver = receiver.clone();
+            let error_state = phase.error_state.clone();
+            let spawned = thread::Builder::new()
+                .name(format!("importer-{}-{index}", importer.database_name))
+                .spawn(move || worker.run(receiver, error_state));
+            match spawned {
+                Ok(handle) => phase.workers.push(handle),
+                Err(err) => {
+                    event!(Level::ERROR, "Failed to start an import worker thread: {err}");
+                    return Err(DatabaseImportError::ImporterStopped {});
+                }
+            }
+        }
+        Ok(phase)
+    }
+
+    fn send(&self, batch: Vec<MigrationItem>) -> bool {
+        !self.error_state.is_errored() && self.sender.as_ref().is_some_and(|sender| sender.send(batch).is_ok())
+    }
+
+    fn finish(mut self) -> Result<(), DatabaseImportError> {
+        self.join();
+        self.error_state.error().map_or(Ok(()), Err)
+    }
+
+    fn join(&mut self) {
+        self.sender = None; // drop to drain queue
+        for worker in self.workers.drain(..) {
+            if worker.join().is_err() {
+                // TODO: get real error from worker?
+                self.error_state.stop_with_error(DatabaseImportError::WorkerStopped {} )
+            }
+        }
+    }
+
+    fn interrupt(&self) {
+        self.error_state.stop_with_error(DatabaseImportError::WorkerInterrupted {})
+    }
+}
+
+impl Drop for DatabaseImporterPhase {
+    fn drop(&mut self) {
+        // Unfinished phase, e.g. the import failed or was interrupted: abandon the queued batches
+        if !self.workers.is_empty() {
+            self.interrupt();
+            self.join();
+        }
+    }
+}
+
+struct ImportWorker {
+    importing_database: Arc<dyn ImportingDatabaseHandle>,
+    max_writes_per_commit: usize,
+    data_info: Arc<DataInfo>,
+    data_transaction: Option<TransactionWrite<WALClient>>,
+    total_item_count: Arc<AtomicU64>,
+}
+
+impl ImportWorker {
+    fn new(importer: &DatabaseImporter) -> Result<Self, DatabaseImportError> {
+        Ok(Self {
+            importing_database: importer
+                .importing_database
+                .clone()
+                .ok_or(DatabaseImportError::AccessAfterFinalisation {})?,
+            max_writes_per_commit: importer.max_writes_per_commit,
+            data_info: importer.data_info.clone(),
+            data_transaction: None,
+            total_item_count: importer.total_item_count.clone(),
+        })
+    }
+
+    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>, stop_state: ErrorState) {
+        if let Err(error) = self.import_batches(&receiver, &stop_state) {
+            stop_state.stop_with_error(error);
+        }
+    }
+
+    fn import_batches(
+        &mut self,
+        receiver: &Mutex<Receiver<Vec<MigrationItem>>>,
+        state: &ErrorState,
+    ) -> Result<(), DatabaseImportError> {
+        loop {
+            // The lock is released before importing, so the other workers can receive batches meanwhile
+            let received = receiver.lock().unwrap().recv();
+            let Ok(batch) = received else { break };
+            for item in batch {
+                // Set by an interrupt from the handle, or by a failed worker
+                if state.is_errored() {
+                    return Ok(());
+                }
+                self.apply(item)?;
+            }
+        }
+        // Stopped while waiting for a batch: the open transaction is dropped without committing
+        if state.is_errored() {
+            return Ok(());
+        }
+        // All batches of the phase are imported: commit so the next phase can see them
+        match self.data_transaction.take() {
+            Some(transaction) => self.commit_write_transaction(transaction),
+            None => Ok(()),
+        }
+    }
+
+    fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
+        match item {
+            MigrationItem::Entity { id, label, owned_attributes } => self.import_entity(id, label, owned_attributes),
+            MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
+                self.import_relation(id, label, owned_attributes, related_role_players)
+            }
+            MigrationItem::Attribute { id, label, value } => self.import_attribute(id, label, value),
+            MigrationItem::Header { .. } | MigrationItem::Checksums(_) => {
+                unreachable!("Only instance items are dispatched to import workers")
+            }
+        }
+    }
+
+    fn import_attribute(&mut self, id: String, label: Label, value: Value<'static>) -> Result<(), DatabaseImportError> {
+        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
+            let attribute_type = type_manager
+                .get_attribute_type(&snapshot, &label)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label })?;
+
+            debug_assert!(attribute_type.is_independent(&snapshot, &type_manager).unwrap());
+            let attribute = thing_manager
+                .create_attribute(&mut snapshot, attribute_type, value)
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+
+            self.data_info.record_attribute(id, attribute)
+        })
+    }
+
+    fn import_entity(
+        &mut self,
+        id: String,
+        label: Label,
+        owned_attributes: Vec<String>,
+    ) -> Result<(), DatabaseImportError> {
+        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
+            let entity_type = type_manager
+                .get_entity_type(&snapshot, &label)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .ok_or_else(|| DatabaseImportError::UnknownEntityType { label })?;
+
+            let entity = thing_manager
+                .create_entity(&mut snapshot, entity_type)
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+
+            self.process_owned_attributes(&mut snapshot, &thing_manager, entity.into_object(), owned_attributes)?;
+
+            self.data_info.record_entity(id, entity)
+        })
+    }
+
+    fn import_relation(
+        &mut self,
+        id: String,
+        label: Label,
+        owned_attributes: Vec<String>,
+        related_role_players: Vec<(Label, Vec<String>)>,
+    ) -> Result<(), DatabaseImportError> {
+        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
+            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
+        }
+        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
+            let relation_type = type_manager
+                .get_relation_type(&snapshot, &label)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
+
+            debug_assert!(type_manager.get_is_relation_type_independent(&snapshot, relation_type).unwrap());
+
+            let relation = thing_manager
+                .create_relation(&mut snapshot, relation_type)
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+
+            self.process_owned_attributes(&mut snapshot, &thing_manager, relation.into_object(), owned_attributes)?;
+            self.process_related_roles(&mut snapshot, &type_manager, &thing_manager, relation, related_role_players)?;
+
+            self.data_info.record_relation(id, relation)
+        })
+    }
+
+    fn process_owned_attributes(
+        &mut self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        object: Object,
+        owned_attribute_ids: Vec<String>,
+    ) -> Result<(), DatabaseImportError> {
+        for id in owned_attribute_ids {
+            match self.data_info.get_attribute_by_original_id(snapshot, thing_manager, &id)? {
+                Some(attribute) => {
+                    object
+                        .set_has_unordered(snapshot, thing_manager, &attribute, StorageCounters::DISABLED)
+                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                    self.data_info.record_ownership();
+                }
+                None => {
+                    self.data_info.append_pending_ownership(PendingOwnership {
+                        attribute_original_id: id,
+                        owner_iid: object.iid().into_array(),
+                    })?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn process_related_roles(
+        &mut self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        relation: Relation,
+        related_roles: Vec<(Label, Vec<String>)>,
+    ) -> Result<(), DatabaseImportError> {
+        for (label, player_ids) in related_roles {
+            let role_type = type_manager
+                .get_role_type(snapshot, &label)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: label.clone() })?;
+
+            for id in player_ids {
+                match self.data_info.get_object_by_original_id(snapshot, thing_manager, &id)? {
+                    Some(player) => {
+                        relation
+                            .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
+                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                        self.data_info.record_role();
+                    }
+                    None => {
+                        self.data_info.append_pending_role_player(PendingRolePlayer {
+                            player_original_id: id,
+                            relation_iid: relation.iid().into_array(),
+                            role_type_id: role_type.vertex().type_id_().as_u16(),
+                        })?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn commit_write_transaction(&self, transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
+        let map_err = |typedb_source| DatabaseImportError::DataCommitFailed { typedb_source };
+        let (_, finalise_result) = transaction.finalise();
+        let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
+        self.importing_database.commit_data(intent).map_err(map_err)
+    }
+
+    fn get_data_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
+        match self.data_transaction.take() {
+            Some(transaction) => Ok(transaction),
+            None => self
+                .importing_database
+                .open_write()
+                .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
+        }
+    }
+
+    fn count_item(&self) {
+        self.total_item_count.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+impl Drop for ImportWorker {
+    fn drop(&mut self) {
+        // Left open only if the worker stopped early: its writes are abandoned with the import
+        if let Some(data_transaction) = self.data_transaction.take() {
+            data_transaction.close();
+        }
+    }
+}
+
 typedb_error! {
     pub DatabaseImportError(component = "Database import", prefix = "DBI") {
         TransactionFailed(1, "Import transaction failed.", typedb_source: TransactionError),
@@ -1308,5 +1570,8 @@ typedb_error! {
         RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It can be a sign of a corrupted file or a client bug.", id: String),
         ImporterStopped(32, "The importer stopped unexpectedly before the import completed."),
         ItemDecode(33, "A migration item could not be decoded.", typedb_source: MigrationOperationError),
+        ImportingDatabaseStillShared(34, "Cannot finalise the import while the importing database is still in use. It is a sign of a bug."),
+        WorkerInterrupted(35, "Database import worker was interrupted."),
+        WorkerStopped(36, "Database import worker stopped unexpectedly before the import completed."),
     }
 }

@@ -19,9 +19,14 @@ use crate::{
     transaction::{DatabaseReadError, TransactionRead},
 };
 
+pub enum ExportMessage {
+    Schema(String),
+    Item(MigrationItem),
+}
+
 pub struct DatabaseExporter<'a> {
     transaction: &'a TransactionRead<WALClient>,
-    opening: std::vec::IntoIter<MigrationItem>,
+    opening: std::vec::IntoIter<ExportMessage>,
     attributes: Box<dyn Iterator<Item = Result<Attribute, Box<ConceptReadError>>> + Send + 'a>,
     entities: Box<dyn Iterator<Item = Result<Entity, Box<ConceptReadError>>> + Send + 'a>,
     relations: Box<dyn Iterator<Item = Result<Relation, Box<ConceptReadError>>> + Send + 'a>,
@@ -44,7 +49,7 @@ impl<'a> DatabaseExporter<'a> {
         };
         Ok(Self {
             transaction,
-            opening: vec![MigrationItem::Schema(transaction.schema()?), header].into_iter(),
+            opening: vec![ExportMessage::Schema(transaction.schema()?), ExportMessage::Item(header)].into_iter(),
             attributes: Box::new(attributes),
             entities: Box::new(entities),
             relations: Box::new(relations),
@@ -53,7 +58,7 @@ impl<'a> DatabaseExporter<'a> {
         })
     }
 
-    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<MigrationItem>>, DatabaseReadError> {
+    pub fn next_batch(&mut self, batch_size: usize) -> Result<Option<Vec<ExportMessage>>, DatabaseReadError> {
         let mut batch = Vec::with_capacity(batch_size);
         while batch.len() < batch_size {
             match self.next_item()? {
@@ -64,7 +69,7 @@ impl<'a> DatabaseExporter<'a> {
         Ok((!batch.is_empty()).then_some(batch))
     }
 
-    pub fn next_item(&mut self) -> Result<Option<MigrationItem>, DatabaseReadError> {
+    pub fn next_item(&mut self) -> Result<Option<ExportMessage>, DatabaseReadError> {
         if let Some(item) = self.opening.next() {
             return Ok(Some(item));
         }
@@ -78,8 +83,8 @@ impl<'a> DatabaseExporter<'a> {
                 &transaction.thing_manager,
                 attribute?,
             )?;
-            self.checksums.attribute_count += 1;
-            return Ok(Some(item));
+            self.checksums.increment_attribute_count();
+            return Ok(Some(ExportMessage::Item(item)));
         }
         if let Some(entity) = self.entities.next() {
             let item = encode_entity(
@@ -89,8 +94,8 @@ impl<'a> DatabaseExporter<'a> {
                 &mut self.checksums,
                 entity?,
             )?;
-            self.checksums.entity_count += 1;
-            return Ok(Some(item));
+            self.checksums.increment_entity_count();
+            return Ok(Some(ExportMessage::Item(item)));
         }
         if let Some(relation) = self.relations.next() {
             let item = encode_relation(
@@ -100,12 +105,12 @@ impl<'a> DatabaseExporter<'a> {
                 &mut self.checksums,
                 relation?,
             )?;
-            self.checksums.relation_count += 1;
-            return Ok(Some(item));
+            self.checksums.increment_relation_count();
+            return Ok(Some(ExportMessage::Item(item)));
         }
         if self.checksums_pending {
             self.checksums_pending = false;
-            return Ok(Some(MigrationItem::Checksums(self.checksums.clone())));
+            return Ok(Some(ExportMessage::Item(MigrationItem::Checksums(self.checksums.clone()))));
         }
         Ok(None)
     }

@@ -63,6 +63,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
     async fn import_prepare(
         &self,
         name: &str,
+        schema: String,
         close_sender: Sender<()>,
     ) -> Result<DatabaseImporterHandle, ArcServerStateError>;
 
@@ -136,6 +137,10 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
     }
 
+    fn into_unique(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
+        Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
+    }
+
     fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError> {
         let Self { database_manager, staged_database } = *self;
         let name = staged_database.name().to_owned();
@@ -197,10 +202,15 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    pub fn start_importer(&self, importing_database: Box<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
+    pub fn start_importer(
+        &self,
+        importing_database: Arc<dyn ImportingDatabaseHandle>,
+        schema: String,
+    ) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         DatabaseImporter::start(
             importing_database,
+            schema,
             scratch_directory,
             IMPORT_MESSAGE_BUFFER_SIZE,
             &self.background_task_spawner,
@@ -299,6 +309,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
     async fn import_prepare(
         &self,
         name: &str,
+        schema: String,
         close_sender: Sender<()>,
     ) -> Result<DatabaseImporterHandle, ArcServerStateError> {
         let map_err =
@@ -307,7 +318,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         let staged_database = self.prepare_imported_database(name.to_string())?;
         let importing_database =
             ImportingLocalDatabaseHandle { database_manager: self.database_manager.clone(), staged_database };
-        Ok(self.start_importer(Box::new(importing_database)))
+        Ok(self.start_importer(Arc::new(importing_database), schema))
     }
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError> {
