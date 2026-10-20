@@ -546,12 +546,12 @@ impl DatabaseImporter {
 
     fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
         loop {
-            self.check_interrupt()?;
+            self.check_stopped()?;
             match receiver.blocking_recv() {
                 None => return Err(DatabaseImportError::Interrupted {}),
                 Some(ImportMessage::Items(items)) => {
                     for item in items {
-                        self.check_interrupt()?;
+                        self.check_stopped()?;
                         self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
                     }
                 }
@@ -564,7 +564,7 @@ impl DatabaseImporter {
         }
     }
 
-    fn check_interrupt(&self) -> Result<(), DatabaseImportError> {
+    fn check_stopped(&self) -> Result<(), DatabaseImportError> {
         match self.error_state.error() {
             Some(error) => Err(error),
             None => Ok(()),
@@ -639,19 +639,19 @@ impl DatabaseImporter {
     }
 
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
-        self.check_interrupt()?;
+        self.check_stopped()?;
         self.drain_pending_ownerships()?;
-        self.check_interrupt()?;
+        self.check_stopped()?;
         self.drain_pending_role_players()?;
         if let Some(data_transaction) = self.data_transaction.take() {
             self.commit_write_transaction(data_transaction)?;
         }
 
-        self.check_interrupt()?;
+        self.check_stopped()?;
         self.validate_imported_data()?;
-        self.check_interrupt()?;
+        self.check_stopped()?;
         self.restore_relaxed_schema()?;
-        self.check_interrupt()?;
+        self.check_stopped()?;
 
         let Some(importing_database) = self.importing_database.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
@@ -693,7 +693,7 @@ impl DatabaseImporter {
         let Some(records) = records else { return Ok(0) };
         let (mut written, mut unresolved) = (0u64, 0);
         for chunk in records.into_chunks(Self::DRAIN_CHUNK_SIZE) {
-            self.check_interrupt()?;
+            self.check_stopped()?;
             for (_key, pending) in chunk.map_err(|source| DatabaseImportError::CacheError { source })? {
                 import_one(self, pending, &mut unresolved)?;
                 written += 1;
@@ -795,14 +795,14 @@ impl DatabaseImporter {
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
                 self.make_attribute_types_independent(&mut inner_snapshot, &type_manager, &thing_manager)?;
-                self.check_interrupt()?;
+                self.check_stopped()?;
                 self.make_relation_types_independent(&mut inner_snapshot, &type_manager)?;
-                self.check_interrupt()?;
+                self.check_stopped()?;
                 self.relax_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
         );
 
-        self.check_interrupt()?;
+        self.check_stopped()?;
         self.commit_schema_transaction(transaction, |typedb_source| {
             DatabaseImportError::PreparationSchemaCommitFailed { typedb_source }
         })
@@ -815,14 +815,14 @@ impl DatabaseImporter {
             transaction,
             |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
                 self.restore_independent_attribute_types(&mut inner_snapshot, &type_manager, &thing_manager)?;
-                self.check_interrupt()?;
+                self.check_stopped()?;
                 self.restore_independent_relation_types(&mut inner_snapshot, &type_manager)?;
-                self.check_interrupt()?;
+                self.check_stopped()?;
                 self.restore_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager)?;
             }
         );
 
-        self.check_interrupt()?;
+        self.check_stopped()?;
         self.commit_schema_transaction(transaction, |typedb_source| {
             DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source }
         })
