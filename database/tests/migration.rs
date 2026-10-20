@@ -334,6 +334,59 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
 }
 
 #[tokio::test]
+async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
+    const NESTED_SCHEMA: &str = r#"define
+  entity person, plays friendship:friend;
+  relation friendship, relates friend @card(0..2), plays endorsement:subject;
+  relation endorsement, relates subject;
+"#;
+    init_logging();
+    let data_dir = create_tmp_dir("migration_relation_players");
+    let database_manager = manager(&data_dir);
+    let person = |id: &str| MigrationItem::Entity {
+        id: id.to_owned(),
+        label: Label::build("person", None),
+        owned_attributes: vec![],
+    };
+
+    // The friendship is imported before the endorsement, but a relation player is deferred anyway
+    let items = vec![
+        person("p1"),
+        person("p2"),
+        MigrationItem::Relation {
+            id: "f1".to_owned(),
+            label: Label::build("friendship", None),
+            owned_attributes: vec![],
+            related_role_players: vec![(
+                Label::build_scoped("friend", "friendship", None),
+                vec!["p1".to_owned(), "p2".to_owned()],
+            )],
+        },
+        MigrationItem::Relation {
+            id: "e1".to_owned(),
+            label: Label::build("endorsement", None),
+            owned_attributes: vec![],
+            related_role_players: vec![(Label::build_scoped("subject", "endorsement", None), vec!["f1".to_owned()])],
+        },
+        MigrationItem::Checksums(Checksums::from_counts(2, 0, 2, 3, 0)),
+    ];
+    import_all(importer(&database_manager, "nested", NESTED_SCHEMA), items).await;
+
+    let (_, items) = export(&read_transaction(&database_manager, "nested"), "nested");
+    let player_counts: Vec<usize> = items
+        .iter()
+        .filter_map(|item| match item {
+            MigrationItem::Relation { related_role_players, .. } => {
+                Some(related_role_players.iter().map(|(_, players)| players.len()).sum())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(player_counts.iter().sum::<usize>(), 3, "{items:?}");
+    assert!(!player_counts.contains(&0), "{items:?}");
+}
+
+#[tokio::test]
 async fn a_relation_without_role_players_is_rejected() {
     init_logging();
     let data_dir = create_tmp_dir("migration_playerless_relation");

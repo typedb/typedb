@@ -29,17 +29,19 @@ pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
         ExportMessage::Schema(schema) => return EncodedItem::Schema(schema),
         ExportMessage::Item(item) => match item {
             MigrationItem::Header { typedb_version, original_database } => {
-                item::Item::Header(item::Header { typedb_version, original_database })
+                item::Item::Header(item::Header { typedb_version, original_database, guarantees: None })
             }
             MigrationItem::Entity { id, label, owned_attributes } => item::Item::Entity(item::Entity {
                 id,
                 label: label.to_string(),
+                label_scoped_id: None,
                 attributes: encode_owned_attributes(owned_attributes),
             }),
             MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
                 item::Item::Relation(item::Relation {
                     id,
                     label: label.to_string(),
+                    label_scoped_id: None,
                     attributes: encode_owned_attributes(owned_attributes),
                     roles: encode_relation_roles(related_role_players),
                 })
@@ -66,20 +68,23 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
     let Item { item } = item_proto;
     let item = item.ok_or(ItemDecodeError::EmptyItem {})?;
     let decoded = match item {
-        item::Item::Header(item::Header { typedb_version, original_database }) => {
+        // TODO: the header's guarantees, label-scoped ids and attributes owned by value aren't imported yet
+        item::Item::Header(item::Header { typedb_version, original_database, guarantees: _ }) => {
             MigrationItem::Header { typedb_version, original_database }
         }
-        item::Item::Entity(item::Entity { id, label, attributes }) => MigrationItem::Entity {
+        item::Item::Entity(item::Entity { id, label, label_scoped_id: _, attributes }) => MigrationItem::Entity {
             id,
             label: Label::parse_from(&label, None),
             owned_attributes: decode_owned_attributes(attributes),
         },
-        item::Item::Relation(item::Relation { id, label, attributes, roles }) => MigrationItem::Relation {
-            id,
-            label: Label::parse_from(&label, None),
-            owned_attributes: decode_owned_attributes(attributes),
-            related_role_players: decode_relation_roles(roles),
-        },
+        item::Item::Relation(item::Relation { id, label, label_scoped_id: _, attributes, roles }) => {
+            MigrationItem::Relation {
+                id,
+                label: Label::parse_from(&label, None),
+                owned_attributes: decode_owned_attributes(attributes),
+                related_role_players: decode_relation_roles(roles),
+            }
+        }
         item::Item::Attribute(item::Attribute { id, label, attributes, value }) => {
             if !attributes.is_empty() {
                 return Err(ItemDecodeError::AttributesOwningAttributes {});
@@ -109,11 +114,11 @@ typedb_error! {
 }
 
 fn encode_owned_attributes(owned_attributes: Vec<String>) -> Vec<item::OwnedAttribute> {
-    owned_attributes.into_iter().map(|id| item::OwnedAttribute { id }).collect()
+    owned_attributes.into_iter().map(|id| item::OwnedAttribute { id, attribute_by_value: None }).collect()
 }
 
 fn decode_owned_attributes(attributes: Vec<item::OwnedAttribute>) -> Vec<String> {
-    attributes.into_iter().map(|item::OwnedAttribute { id }| id).collect()
+    attributes.into_iter().map(|item::OwnedAttribute { id, attribute_by_value: _ }| id).collect()
 }
 
 fn encode_relation_roles(related_role_players: Vec<(Label, Vec<String>)>) -> Vec<item::relation::Role> {
@@ -121,7 +126,10 @@ fn encode_relation_roles(related_role_players: Vec<(Label, Vec<String>)>) -> Vec
         .into_iter()
         .map(|(label, players)| item::relation::Role {
             label: label.to_string(),
-            players: players.into_iter().map(|id| item::relation::role::Player { id }).collect(),
+            players: players
+                .into_iter()
+                .map(|id| item::relation::role::Player { id, player_by_label_scoped_id: None })
+                .collect(),
         })
         .collect()
 }
@@ -132,7 +140,10 @@ fn decode_relation_roles(roles: Vec<item::relation::Role>) -> Vec<(Label, Vec<St
         .map(|item::relation::Role { label, players }| {
             (
                 Label::parse_from(&label, None),
-                players.into_iter().map(|item::relation::role::Player { id }| id).collect(),
+                players
+                    .into_iter()
+                    .map(|item::relation::role::Player { id, player_by_label_scoped_id: _ }| id)
+                    .collect(),
             )
         })
         .collect()
@@ -215,6 +226,7 @@ mod tests {
                 wire(item::Item::Header(item::Header {
                     typedb_version: "3.12.3".to_owned(),
                     original_database: "source".to_owned(),
+                    guarantees: None,
                 })),
             ),
             (
@@ -226,9 +238,10 @@ mod tests {
                 wire(item::Item::Entity(item::Entity {
                     id: "e1".to_owned(),
                     label: "person".to_owned(),
+                    label_scoped_id: None,
                     attributes: vec![
-                        item::OwnedAttribute { id: "a1".to_owned() },
-                        item::OwnedAttribute { id: "a2".to_owned() },
+                        item::OwnedAttribute { id: "a1".to_owned(), attribute_by_value: None },
+                        item::OwnedAttribute { id: "a2".to_owned(), attribute_by_value: None },
                     ],
                 })),
             ),
@@ -245,12 +258,13 @@ mod tests {
                 wire(item::Item::Relation(item::Relation {
                     id: "r1".to_owned(),
                     label: "friendship".to_owned(),
-                    attributes: vec![item::OwnedAttribute { id: "a1".to_owned() }],
+                    label_scoped_id: None,
+                    attributes: vec![item::OwnedAttribute { id: "a1".to_owned(), attribute_by_value: None }],
                     roles: vec![item::relation::Role {
                         label: "friendship:friend".to_owned(),
                         players: vec![
-                            item::relation::role::Player { id: "e1".to_owned() },
-                            item::relation::role::Player { id: "e2".to_owned() },
+                            item::relation::role::Player { id: "e1".to_owned(), player_by_label_scoped_id: None },
+                            item::relation::role::Player { id: "e2".to_owned(), player_by_label_scoped_id: None },
                         ],
                     }],
                 })),

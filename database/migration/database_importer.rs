@@ -195,13 +195,11 @@ impl DataInfo {
         self.checksums.increment_role_count();
     }
 
-    fn get_object_by_original_id(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        id: &str,
-    ) -> Result<Option<Object>, DatabaseImportError> {
-        self.objects.lock().unwrap().instance_id_mapping.get_by_original_id(snapshot, thing_manager, id)
+    fn get_recorded_object(&self, id: &str) -> Result<Option<Object>, DatabaseImportError> {
+        match self.objects.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)? {
+            Some(iid) => Ok(Some(Object::new(decode_object_vertex(&iid)?))),
+            None => Ok(None),
+        }
     }
 
     fn get_attribute_by_original_id(
@@ -210,23 +208,29 @@ impl DataInfo {
         thing_manager: &ThingManager,
         id: &str,
     ) -> Result<Option<Attribute>, DatabaseImportError> {
-        self.attributes.lock().unwrap().instance_id_mapping.get_by_original_id(snapshot, thing_manager, id)
+        // The lock is released before reading storage, so other workers can use the mapping meanwhile
+        let Some(recorded_iid) = self.attributes.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)? else {
+            return Ok(None);
+        };
+        thing_manager
+            .get_instance::<Attribute>(snapshot, &Bytes::Array(recorded_iid), StorageCounters::DISABLED)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
     }
 
     fn append_pending_ownership(&self, pending: PendingOwnership) -> Result<(), DatabaseImportError> {
         self.attributes.lock().unwrap().pending_ownerships.append(pending)
     }
 
-    fn append_pending_role_player(&self, pending: PendingRolePlayer) -> Result<(), DatabaseImportError> {
-        self.objects.lock().unwrap().pending_role_players.append(pending)
+    fn append_pending_links(&self, pending: PendingLinks) -> Result<(), DatabaseImportError> {
+        self.objects.lock().unwrap().pending_links.append(pending)
     }
 
     fn take_pending_ownerships(&self) -> Option<SpilloverCache<PendingOwnership>> {
         self.attributes.lock().unwrap().pending_ownerships.take()
     }
 
-    fn take_pending_role_players(&self) -> Option<SpilloverCache<PendingRolePlayer>> {
-        self.objects.lock().unwrap().pending_role_players.take()
+    fn take_pending_links(&self) -> Option<SpilloverCache<PendingLinks>> {
+        self.objects.lock().unwrap().pending_links.take()
     }
 
     fn has_expected_checksums(&self) -> bool {
@@ -272,20 +276,8 @@ impl<T: ThingAPI> InstanceIDMapping<T> {
         }
     }
 
-    fn get_by_original_id(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        id: &str,
-    ) -> Result<Option<T>, DatabaseImportError> {
-        let buffered_id_opt =
-            self.original_to_buffered_ids.get(id).map_err(|source| DatabaseImportError::CacheError { source })?;
-        let Some(buffered_id) = buffered_id_opt else {
-            return Ok(None);
-        };
-        thing_manager
-            .get_instance::<T>(snapshot, &Bytes::Array(buffered_id), StorageCounters::DISABLED)
-            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
+    fn get_iid_by_original_id(&self, id: &str) -> Result<Option<IID>, DatabaseImportError> {
+        self.original_to_buffered_ids.get(id).map_err(|source| DatabaseImportError::CacheError { source })
     }
 
     fn record(&mut self, original_id: String, instance: T) -> Result<(), DatabaseImportError> {
@@ -302,10 +294,15 @@ struct PendingOwnership {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct PendingRolePlayer {
-    player_original_id: String,
+struct PendingLinks {
     relation_iid: IID,
+    links: Vec<PendingLink>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct PendingLink {
     role_type_id: TypeIDUInt,
+    player_original_id: String,
 }
 
 #[derive(Debug)]
@@ -342,14 +339,14 @@ impl<T: Serialize + DeserializeOwned + Clone> SpilloverLog<T> {
 #[derive(Debug)]
 struct ObjectsInfo {
     pub instance_id_mapping: InstanceIDMapping<Object>,
-    pub pending_role_players: SpilloverLog<PendingRolePlayer>,
+    pub pending_links: SpilloverLog<PendingLinks>,
 }
 
 impl ObjectsInfo {
     fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
             instance_id_mapping: InstanceIDMapping::new(cache_directory, database_name),
-            pending_role_players: SpilloverLog::new(cache_directory, database_name),
+            pending_links: SpilloverLog::new(cache_directory, database_name),
         }
     }
 }
@@ -639,7 +636,10 @@ impl DatabaseImporter {
         self.check_stopped()?;
         self.drain_pending_ownerships()?;
         self.check_stopped()?;
-        self.drain_pending_role_players()?;
+
+        // TODO: this could itself encompass a multithreaded phase
+        self.drain_pending_links()?;
+
         if let Some(data_transaction) = self.data_transaction.take() {
             self.commit_write_transaction(data_transaction)?;
         }
@@ -670,9 +670,9 @@ impl DatabaseImporter {
         }
     }
 
-    fn drain_pending_role_players(&mut self) -> Result<(), DatabaseImportError> {
-        let records = self.data_info.take_pending_role_players();
-        match self.drain_pending(records, "role players", Self::import_pending_role_player)? {
+    fn drain_pending_links(&mut self) -> Result<(), DatabaseImportError> {
+        let records = self.data_info.take_pending_links();
+        match self.drain_pending(records, "relations' pending links", Self::import_pending_links)? {
             0 => Ok(()),
             unresolved => Err(DatabaseImportError::IncompleteRolesOnDone { count: unresolved }),
         }
@@ -731,30 +731,26 @@ impl DatabaseImporter {
         })
     }
 
-    fn import_pending_role_player(
+    fn import_pending_links(
         &mut self,
-        pending: PendingRolePlayer,
+        pending: PendingLinks,
         unknown_players: &mut usize,
     ) -> Result<(), DatabaseImportError> {
-        let PendingRolePlayer { player_original_id, relation_iid, role_type_id } = pending;
+        let PendingLinks { relation_iid, links } = pending;
+        let relation = Relation::new(decode_object_vertex(&relation_iid)?);
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let role_type = RoleType::build_from_type_id(TypeID::new(role_type_id));
-            let player_opt =
-                self.data_info.get_object_by_original_id(&snapshot, &thing_manager, &player_original_id)?;
-            match player_opt {
-                None => {
+            for PendingLink { role_type_id, player_original_id } in links {
+                let Some(player) = self.data_info.get_recorded_object(&player_original_id)? else {
                     *unknown_players += 1;
-                    Ok(())
-                }
-                Some(player) => {
-                    let relation = Relation::new(decode_object_vertex(&relation_iid)?);
-                    relation
-                        .add_player(&mut snapshot, &thing_manager, role_type, player, StorageCounters::DISABLED)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    self.data_info.record_role();
-                    Ok(())
-                }
+                    continue;
+                };
+                let role_type = RoleType::build_from_type_id(TypeID::new(role_type_id));
+                relation
+                    .add_player(&mut snapshot, &thing_manager, role_type, player, StorageCounters::DISABLED)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                self.data_info.record_role();
             }
+            Ok(())
         })
     }
 
@@ -1431,9 +1427,9 @@ impl ImportWorker {
         id: String,
         label: Label,
         owned_attributes: Vec<String>,
-        related_role_players: Vec<(Label, Vec<String>)>,
+        links: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
-        if related_role_players.iter().all(|(_, players)| players.is_empty()) {
+        if links.iter().all(|(_, players)| players.is_empty()) {
             return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
         }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
@@ -1449,7 +1445,7 @@ impl ImportWorker {
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
 
             self.process_owned_attributes(&mut snapshot, &thing_manager, relation.into_object(), owned_attributes)?;
-            self.process_related_roles(&mut snapshot, &type_manager, &thing_manager, relation, related_role_players)?;
+            self.process_links(&mut snapshot, &type_manager, &thing_manager, relation, links)?;
 
             self.data_info.record_relation(id, relation)
         })
@@ -1481,37 +1477,40 @@ impl ImportWorker {
         Ok(())
     }
 
-    fn process_related_roles(
+    fn process_links(
         &mut self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         relation: Relation,
-        related_roles: Vec<(Label, Vec<String>)>,
+        links: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
-        for (label, player_ids) in related_roles {
+        let mut pending_links = Vec::new();
+        for (label, player_ids) in links {
             let role_type = type_manager
                 .get_role_type(snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
                 .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: label.clone() })?;
 
             for id in player_ids {
-                match self.data_info.get_object_by_original_id(snapshot, thing_manager, &id)? {
-                    Some(player) => {
+                // We defer ALL relation players to a later phase by which time all objects must exist
+                match self.data_info.get_recorded_object(&id)? {
+                    Some(player @ Object::Entity(_)) => {
                         relation
                             .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
                             .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
                         self.data_info.record_role();
                     }
-                    None => {
-                        self.data_info.append_pending_role_player(PendingRolePlayer {
-                            player_original_id: id,
-                            relation_iid: relation.iid().into_array(),
-                            role_type_id: role_type.vertex().type_id_().as_u16(),
-                        })?;
-                    }
+                    Some(Object::Relation(_)) | None => pending_links.push(PendingLink {
+                        role_type_id: role_type.vertex().type_id_().as_u16(),
+                        player_original_id: id,
+                    }),
                 }
             }
+        }
+        if !pending_links.is_empty() {
+            self.data_info
+                .append_pending_links(PendingLinks { relation_iid: relation.iid().into_array(), links: pending_links })?;
         }
         Ok(())
     }
