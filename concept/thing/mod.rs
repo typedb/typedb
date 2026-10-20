@@ -70,6 +70,15 @@ pub trait ThingAPI: Sized + Clone {
     ) -> Result<(), Box<ConceptWriteError>>;
 
     fn prefix_for_type(type_: Self::TypeAPI) -> Prefix;
+
+    fn thing_kind(&self) -> ThingKind;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ThingKind {
+    Entity,
+    Relation,
+    Attribute,
 }
 
 pub trait HKInstance: ThingAPI {}

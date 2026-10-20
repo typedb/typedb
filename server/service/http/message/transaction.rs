@@ -7,9 +7,7 @@
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::TransactionOptions;
-use resource::constants::server::{
-    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
-};
+use resource::constants::server::{DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -31,7 +29,6 @@ pub struct TransactionOpenPayload {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionOptionsPayload {
-    // pub parallel: Option<bool>, // TODO: Uncomment when introduced
     pub schema_lock_acquire_timeout_millis: Option<u64>,
     pub transaction_timeout_millis: Option<u64>,
 }
@@ -45,7 +42,6 @@ impl Default for TransactionOptionsPayload {
 impl Into<TransactionOptions> for TransactionOptionsPayload {
     fn into(self) -> TransactionOptions {
         TransactionOptions {
-            parallel: DEFAULT_TRANSACTION_PARALLEL,
             schema_lock_acquire_timeout_millis: self
                 .schema_lock_acquire_timeout_millis
                 .unwrap_or(DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS),

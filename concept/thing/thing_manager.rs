@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
+    fmt,
     iter::{self, Map, once},
     ops::RangeBounds,
     sync::Arc,
@@ -136,6 +137,13 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
+    instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+}
+
+pub trait InstanceExistenceOracle: fmt::Debug + Send + Sync {
+    fn known_persisted_object(&self, object: &Object) -> bool;
+
+    fn known_persisted_attribute(&self, attribute: &Attribute) -> bool;
 }
 
 impl ThingManager {
@@ -144,7 +152,16 @@ impl ThingManager {
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics }
+        Self::new_with_existence_oracle(vertex_generator, type_manager, statistics, None)
+    }
+
+    pub fn new_with_existence_oracle(
+        vertex_generator: Arc<ThingVertexGenerator>,
+        type_manager: Arc<TypeManager>,
+        statistics: Arc<Statistics>,
+        existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+    ) -> Self {
+        ThingManager { vertex_generator, type_manager, statistics, instance_existence_oracle: existence_oracle }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -1781,10 +1798,10 @@ impl ThingManager {
         vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        let key = vertex.into_storage_key();
+        let key = vertex.clone().into_storage_key();
         match self.get_buffered_status(snapshot, key.as_reference()) {
             Some(status) => Ok(status),
-            None if self.is_persisted_in_storage(snapshot, key, storage_counters)? => Ok(ConceptStatus::Persisted),
+            None if self.is_persisted_in_storage(snapshot, vertex, storage_counters)? => Ok(ConceptStatus::Persisted),
             None => Ok(ConceptStatus::Nonexistent),
         }
     }
@@ -1804,9 +1821,27 @@ impl ThingManager {
     pub(crate) fn is_persisted_in_storage(
         &self,
         snapshot: &impl ReadableSnapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
+        if let Some(existence_oracle) = &self.instance_existence_oracle {
+            // TODO: ugly hack to get around generic trait method: re-decode the concrete vertex from the generic one's bytes
+            let prefix = vertex.prefix();
+            let bytes = vertex.clone().to_bytes();
+            let known_to_exist = match prefix {
+                Prefix::VertexEntity | Prefix::VertexRelation => {
+                    existence_oracle.known_persisted_object(&Object::new(ObjectVertex::decode(&bytes)))
+                }
+                Prefix::VertexAttribute => {
+                    existence_oracle.known_persisted_attribute(&Attribute::new(AttributeVertex::decode(&bytes)))
+                }
+                _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
+            };
+            if known_to_exist {
+                return Ok(true);
+            }
+        }
+        let key = vertex.into_storage_key();
         Ok(snapshot
             .get_mapped_in_lookup_mode(key.as_reference(), SnapshotLookupMode::StorageOnly, |_| (), storage_counters)
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?

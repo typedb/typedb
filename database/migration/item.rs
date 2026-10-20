@@ -10,7 +10,7 @@ use bytes::util::Base64Formatter;
 use concept::{
     error::ConceptReadError,
     thing::{
-        ThingAPI, attribute::Attribute, entity::Entity, object::ObjectAPI, relation::Relation,
+        ThingAPI, ThingKind, attribute::Attribute, entity::Entity, object::ObjectAPI, relation::Relation,
         thing_manager::ThingManager,
     },
     type_::{TypeAPI, role_type::RoleType, type_manager::TypeManager},
@@ -44,6 +44,17 @@ pub enum MigrationItem {
         value: Value<'static>,
     },
     Checksums(Checksums),
+}
+
+impl MigrationItem {
+    pub(crate) fn thing_kind(&self) -> Option<ThingKind> {
+        match self {
+            MigrationItem::Entity { .. } => Some(ThingKind::Entity),
+            MigrationItem::Relation { .. } => Some(ThingKind::Relation),
+            MigrationItem::Attribute { .. } => Some(ThingKind::Attribute),
+            MigrationItem::Header { .. } | MigrationItem::Checksums(_) => None,
+        }
+    }
 }
 
 pub(crate) fn encode_entity(

@@ -7,6 +7,7 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
+use concept::thing::thing_manager::InstanceExistenceOracle;
 use concurrency::TokioTaskSpawner;
 use database::{
     Database, DatabaseDeleteError, DatabaseOpenError,
@@ -14,7 +15,7 @@ use database::{
     database_manager::DatabaseManager,
     migration::{
         MigrationOperationError,
-        database_importer::{DatabaseImporter, DatabaseImporterHandle},
+        database_importer::{DatabaseImporter, DatabaseImporterHandle, ImporterConfiguration},
         importing_database_handle::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
@@ -125,8 +126,11 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
         open_import_schema_transaction(&self.staged_database)
     }
 
-    fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database)
+    fn open_write(
+        &self,
+        instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        open_import_write_transaction(&self.staged_database, instance_existence_oracle)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
@@ -208,11 +212,12 @@ impl LocalDatabaseOperator {
         schema: String,
     ) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
+        let configuration = ImporterConfiguration::default().with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
         DatabaseImporter::start(
             importing_database,
             schema,
+            configuration,
             scratch_directory,
-            IMPORT_MESSAGE_BUFFER_SIZE,
             &self.background_task_spawner,
         )
     }

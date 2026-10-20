@@ -36,7 +36,7 @@ use crate::{
     ConceptAPI, ConceptStatus, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         object::{Object, ObjectAPI},
         thing_manager::{ObjectOrigin, ThingManager, validation::operation_time_validation::OperationTimeValidation},
     },
@@ -467,6 +467,10 @@ impl ThingAPI for Relation {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexRelation
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Relation
     }
 }
 

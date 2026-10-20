@@ -37,7 +37,7 @@ use crate::{
     ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         has::Has,
         object::{HasReverseIterator, Object},
         thing_manager::ThingManager,
@@ -182,6 +182,10 @@ impl ThingAPI for Attribute {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexAttribute
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Attribute
     }
 }
 

@@ -6,6 +6,7 @@
 
 use std::{sync::Arc, time::Duration};
 
+use concept::thing::thing_manager::InstanceExistenceOracle;
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_DAY;
 use storage::durability_client::WALClient;
@@ -21,7 +22,10 @@ pub trait ImportingDatabaseHandle: Send + Sync {
 
     fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError>;
 
-    fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError>;
+    fn open_write(
+        &self,
+        instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError>;
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
 
@@ -33,7 +37,6 @@ pub trait ImportingDatabaseHandle: Send + Sync {
     fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError>;
 }
 
-const OPTIONS_PARALLEL: bool = true;
 const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
 const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
 
@@ -45,13 +48,17 @@ pub fn open_import_schema_transaction(
 
 pub fn open_import_write_transaction(
     database: &Arc<Database<WALClient>>,
+    instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
 ) -> Result<TransactionWrite<WALClient>, TransactionError> {
-    TransactionWrite::open(database.clone(), import_transaction_options())
+    TransactionWrite::open_with_existence_oracle(
+        database.clone(),
+        import_transaction_options(),
+        instance_existence_oracle,
+    )
 }
 
 fn import_transaction_options() -> TransactionOptions {
     TransactionOptions {
-        parallel: OPTIONS_PARALLEL,
         schema_lock_acquire_timeout_millis: OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
         transaction_timeout_millis: OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
     }

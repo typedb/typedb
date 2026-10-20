@@ -6,6 +6,8 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt,
+    fmt::{Debug, Display, Formatter},
     iter,
     marker::PhantomData,
     path::PathBuf,
@@ -22,12 +24,12 @@ use cache::{CacheError, SpilloverCache};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        ThingAPI,
+        ThingAPI, ThingKind,
         attribute::Attribute,
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
-        thing_manager::ThingManager,
+        thing_manager::{InstanceExistenceOracle, ThingManager},
     },
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
@@ -115,7 +117,7 @@ macro_rules! for_item_in_write_transaction {
         result?;
         $self.count_item();
         let pending_writes = $self.data_transaction.as_ref().unwrap().snapshot.operations().len();
-        if pending_writes >= $self.max_writes_per_commit {
+        if pending_writes >= $self.configuration.max_writes_per_commit {
             let transaction = $self.data_transaction.take().unwrap();
             $self.commit_write_transaction(transaction)?;
         }
@@ -464,10 +466,10 @@ impl std::fmt::Debug for DatabaseImporterHandle {
 pub struct DatabaseImporter {
     importing_database: Option<Arc<dyn ImportingDatabaseHandle>>,
     database_name: String,
+    configuration: ImporterConfiguration,
     schema_info: SchemaInfo,
     data_info: Arc<DataInfo>,
     total_item_count: Arc<AtomicU64>,
-    max_writes_per_commit: usize,
     error_state: ErrorState,
 
     phase: Option<DatabaseImporterPhase>,
@@ -475,55 +477,96 @@ pub struct DatabaseImporter {
     data_transaction: Option<TransactionWrite<WALClient>>, // for the finalize phase
 }
 
-impl std::fmt::Debug for DatabaseImporter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Debug for DatabaseImporter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DatabaseImporter").field("database_name", &self.database_name).finish_non_exhaustive()
     }
 }
 
-impl DatabaseImporter {
+#[derive(Debug, Copy, Clone)]
+pub enum ItemOrder {
+    Unspecified,
+    AttributeEntityRelation,
+}
+
+impl Display for ItemOrder {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct ImporterConfiguration {
+    max_writes_per_commit: usize,
+    buffer_size: usize,
+    item_order: ItemOrder,
+
+    map_object_ids: bool,
+    map_inline_attribute_ids: bool,
+}
+
+impl Default for ImporterConfiguration {
+    fn default() -> Self {
+        Self {
+            max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
+            buffer_size: 2, // TODO,
+            item_order: ItemOrder::Unspecified,
+
+            map_object_ids: true,
+            map_inline_attribute_ids: true,
+        }
+    }
+}
+
+impl ImporterConfiguration {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
+
+    pub fn with_buffer_size(self, buffer_size: usize) -> Self {
+        Self { buffer_size, ..self }
+    }
+
+    pub fn with_max_writes_per_commit(self, max_writes_per_commit: usize) -> Self {
+        Self { max_writes_per_commit, ..self }
+    }
+
+    fn with_item_order(self, item_order: ItemOrder) -> Self {
+        Self { item_order, ..self }
+    }
+
+    fn worker_count(&self) -> usize {
+        match self.item_order {
+            ItemOrder::Unspecified => 1,
+            ItemOrder::AttributeEntityRelation => 8, // TODO use cpu count
+        }
+    }
+
+    fn skip_predecessor_phase_existence_checks(&self) -> bool {
+        matches!(self.item_order, ItemOrder::AttributeEntityRelation)
+    }
+}
+
+impl DatabaseImporter {
     const DRAIN_CHUNK_SIZE: usize = 10_000;
     const BATCH_SIZE: usize = 1_000;
-
-    const WORKER_COUNT: usize = 1;
 
     pub fn start(
         importing_database: Arc<dyn ImportingDatabaseHandle>,
         schema: String,
+        importer_configuration: ImporterConfiguration,
         scratch_directory: PathBuf,
-        buffer_size: usize,
         task_spawner: &TokioTaskSpawner,
     ) -> DatabaseImporterHandle {
-        Self::start_with_max_writes_per_commit(
-            importing_database,
-            schema,
-            scratch_directory,
-            buffer_size,
-            task_spawner,
-            Self::MAX_WRITES_PER_COMMIT,
-        )
-    }
-
-    pub fn start_with_max_writes_per_commit(
-        importing_database: Arc<dyn ImportingDatabaseHandle>,
-        schema: String,
-        scratch_directory: PathBuf,
-        buffer_size: usize,
-        task_spawner: &TokioTaskSpawner,
-        max_writes_per_commit: usize,
-    ) -> DatabaseImporterHandle {
-        let (sender, receiver) = mpsc::channel(buffer_size);
+        let (sender, receiver) = mpsc::channel(importer_configuration.buffer_size);
         let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
         let data_info = Arc::new(DataInfo::new(&scratch_directory, &database_name));
         let mut importer = Self {
             importing_database: Some(importing_database),
             database_name,
+            configuration: importer_configuration,
             schema_info: SchemaInfo::new(),
             data_info,
             total_item_count: Arc::new(AtomicU64::new(0)),
-            max_writes_per_commit,
             error_state: error_state.clone(),
             phase: None,
             batch: Vec::with_capacity(Self::BATCH_SIZE),
@@ -584,20 +627,23 @@ impl DatabaseImporter {
     }
 
     fn dispatch(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
-        if self.needs_new_phase(&item) {
-            self.finish_phase()?;
-            self.phase = Some(DatabaseImporterPhase::start(self, Self::WORKER_COUNT)?);
+        let thing_kind = item.thing_kind().ok_or_else(|| DatabaseImportError::ExpectedInstanceItem {})?;
+        let phase = ImportPhase::phase_for(thing_kind, self.configuration.item_order);
+        match self.phase.as_ref().map(|current| current.phase) {
+            None => self.phase = Some(DatabaseImporterPhase::start(self, phase)?),
+            Some(current_phase) => {
+                if current_phase != phase {
+                    current_phase.validate_transition(phase, self.configuration.item_order)?;
+                    self.finish_phase()?;
+                    self.phase = Some(DatabaseImporterPhase::start(self, phase)?);
+                }
+            }
         }
         self.batch.push(item);
         if self.batch.len() >= Self::BATCH_SIZE {
             self.send_batch()?;
         }
         Ok(())
-    }
-
-    fn needs_new_phase(&self, _item: &MigrationItem) -> bool {
-        // TODO: future - implement actual phases (now - only 1 phase)
-        self.phase.is_none()
     }
 
     fn send_batch(&mut self) -> Result<(), DatabaseImportError> {
@@ -1158,12 +1204,13 @@ impl DatabaseImporter {
         self.total_item_count.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     }
 
+    // TODO: this is only used for the pending phase right now, but isn't architected to show this
     fn get_data_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
         match self.data_transaction.take() {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database()?
-                .open_write()
+                .open_write(ImportPhase::Pending.existence_oracle(self.configuration.item_order))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1214,7 +1261,100 @@ impl Drop for DatabaseImporter {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum ImportPhase {
+    Default,
+    Attributes,
+    Entities,
+    Relations,
+    Pending,
+}
+
+impl ImportPhase {
+    fn existence_oracle(&self, item_order: ItemOrder) -> Option<Box<dyn InstanceExistenceOracle>> {
+        match item_order {
+            ItemOrder::Unspecified => None,
+            ItemOrder::AttributeEntityRelation => {
+                Some(Box::new(AttributeEntityRelationExistenceOracle { phase: *self }))
+            }
+        }
+    }
+
+    fn phase_for(thing_kind: ThingKind, item_order: ItemOrder) -> Self {
+        match item_order {
+            ItemOrder::Unspecified => Self::Default,
+            ItemOrder::AttributeEntityRelation => match thing_kind {
+                ThingKind::Entity => Self::Entities,
+                ThingKind::Relation => Self::Relations,
+                ThingKind::Attribute => Self::Attributes,
+            },
+        }
+    }
+
+    fn validate_transition(&self, next_phase: Self, item_order: ItemOrder) -> Result<(), DatabaseImportError> {
+        match item_order {
+            ItemOrder::Unspecified => match (self, next_phase) {
+                (Self::Default, Self::Default | Self::Pending) => Ok(()),
+                (_, _) => Err(DatabaseImportError::UnexpectedPhase { order: item_order, phase: next_phase }),
+            },
+            ItemOrder::AttributeEntityRelation => match (self, next_phase) {
+                (Self::Attributes, Self::Attributes | Self::Entities | Self::Relations | Self::Pending) => Ok(()),
+                (Self::Attributes, _) => {
+                    Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
+                }
+
+                (Self::Entities, Self::Entities | Self::Relations | Self::Pending) => Ok(()),
+                (Self::Entities, _) => {
+                    Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
+                }
+
+                (Self::Relations, Self::Relations | Self::Pending) => Ok(()),
+                (Self::Relations, _) => {
+                    Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
+                }
+
+                (Self::Pending, Self::Pending) => Ok(()),
+                (Self::Pending, _) => {
+                    Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
+                }
+
+                (Self::Default, _) => {
+                    Err(DatabaseImportError::UnexpectedPhase { order: item_order, phase: next_phase })
+                }
+            },
+        }
+    }
+
+    fn is_from_previous_phase(&self, thing_kind: ThingKind, item_order: ItemOrder) -> bool {
+        let thing_phase = Self::phase_for(thing_kind, item_order);
+        match item_order {
+            ItemOrder::Unspecified => false,
+            ItemOrder::AttributeEntityRelation => match (self, thing_phase) {
+                (Self::Attributes, _) => false,
+
+                (Self::Entities, Self::Attributes) => true,
+                (Self::Entities, _) => false,
+
+                (Self::Relations, Self::Entities | Self::Attributes) => true,
+                (Self::Relations, _) => false,
+
+                (Self::Pending, Self::Entities | Self::Attributes | Self::Relations) => true,
+                (Self::Pending, _) => false,
+
+                (Self::Default, _) => false,
+            },
+        }
+    }
+}
+
+impl Display for ImportPhase {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
 struct DatabaseImporterPhase {
+    phase: ImportPhase,
     sender: Option<SyncSender<Vec<MigrationItem>>>,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
@@ -1242,17 +1382,19 @@ impl ErrorState {
 impl DatabaseImporterPhase {
     const QUEUE_SIZE_MULTIPLIER: usize = 4;
 
-    fn start(importer: &DatabaseImporter, worker_count: usize) -> Result<Self, DatabaseImportError> {
-        let (sender, receiver) = sync_channel(worker_count * Self::QUEUE_SIZE_MULTIPLIER);
+    fn start(importer: &DatabaseImporter, import_phase: ImportPhase) -> Result<Self, DatabaseImportError> {
+        let (sender, receiver) = sync_channel(importer.configuration.worker_count() * Self::QUEUE_SIZE_MULTIPLIER);
         let receiver = Arc::new(Mutex::new(receiver));
         let mut phase = Self {
+            phase: import_phase,
             sender: Some(sender),
-            workers: Vec::with_capacity(worker_count),
+            workers: Vec::with_capacity(importer.configuration.worker_count()),
             error_state: importer.error_state.clone(),
         };
-        for index in 0..worker_count {
+        for index in 0..importer.configuration.worker_count() {
             let name = format!("importer-{}-{index}", importer.database_name);
-            let worker = ImportWorker::start(importer, receiver.clone(), phase.error_state.clone(), name)?;
+            let worker =
+                ImportWorker::start(importer, import_phase, receiver.clone(), phase.error_state.clone(), name)?;
             phase.workers.push(worker);
         }
         Ok(phase)
@@ -1301,7 +1443,8 @@ impl Drop for DatabaseImporterPhase {
 
 struct ImportWorker {
     importing_database: Arc<dyn ImportingDatabaseHandle>,
-    max_writes_per_commit: usize,
+    configuration: ImporterConfiguration,
+    phase: ImportPhase,
     data_info: Arc<DataInfo>,
     data_transaction: Option<TransactionWrite<WALClient>>,
     total_item_count: Arc<AtomicU64>,
@@ -1310,6 +1453,7 @@ struct ImportWorker {
 impl ImportWorker {
     fn start(
         importer: &DatabaseImporter,
+        phase: ImportPhase,
         receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>,
         error_state: ErrorState,
         name: String,
@@ -1319,7 +1463,8 @@ impl ImportWorker {
                 .importing_database
                 .clone()
                 .ok_or(DatabaseImportError::AccessAfterFinalisation {})?,
-            max_writes_per_commit: importer.max_writes_per_commit,
+            phase,
+            configuration: importer.configuration,
             data_info: importer.data_info.clone(),
             data_transaction: None,
             total_item_count: importer.total_item_count.clone(),
@@ -1532,7 +1677,7 @@ impl ImportWorker {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database
-                .open_write()
+                .open_write(self.phase.existence_oracle(self.configuration.item_order))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1548,6 +1693,26 @@ impl Drop for ImportWorker {
         if let Some(data_transaction) = self.data_transaction.take() {
             data_transaction.close();
         }
+    }
+}
+
+struct AttributeEntityRelationExistenceOracle {
+    phase: ImportPhase,
+}
+
+impl Debug for AttributeEntityRelationExistenceOracle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "AttributeEntityRelationExistenceOracle[phase={}]", self.phase)
+    }
+}
+
+impl InstanceExistenceOracle for AttributeEntityRelationExistenceOracle {
+    fn known_persisted_object(&self, object: &Object) -> bool {
+        self.phase.is_from_previous_phase(object.thing_kind(), ItemOrder::AttributeEntityRelation)
+    }
+
+    fn known_persisted_attribute(&self, attribute: &Attribute) -> bool {
+        self.phase.is_from_previous_phase(attribute.thing_kind(), ItemOrder::AttributeEntityRelation)
     }
 }
 
@@ -1586,5 +1751,8 @@ typedb_error! {
         ImportingDatabaseStillShared(34, "Cannot finalise the import while the importing database is still in use. It is a sign of a bug."),
         WorkerInterrupted(35, "Database import worker was interrupted."),
         WorkerStopped(36, "Database import worker stopped unexpectedly before the import completed."),
+        ItemOrderViolation(37, "Expected order {order}, but got an item from {current_phase} followed by one from {next_phase}.", order: ItemOrder, current_phase: ImportPhase, next_phase: ImportPhase),
+        UnexpectedPhase(38, "Internal error - mismatched item order {order} with phase {phase}.", order: ItemOrder, phase: ImportPhase),
+        ExpectedInstanceItem(39, "Internal error - expected an item message containing an instance."),
     }
 }

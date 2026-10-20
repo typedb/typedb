@@ -25,7 +25,7 @@ use crate::{
     ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         object::{Object, ObjectAPI},
         thing_manager::{ObjectOrigin, ThingManager},
     },
@@ -127,6 +127,10 @@ impl ThingAPI for Entity {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexEntity
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Entity
     }
 }
 

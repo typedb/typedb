@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use concept::thing::thing_manager::InstanceExistenceOracle;
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::{
     Database,
@@ -13,7 +14,7 @@ use database::{
     migration::{
         Checksums, MigrationOperationError,
         database_exporter::{DatabaseExporter, ExportMessage},
-        database_importer::{DatabaseImportError, DatabaseImporter, DatabaseImporterHandle},
+        database_importer::{DatabaseImportError, DatabaseImporter, DatabaseImporterHandle, ImporterConfiguration},
         importing_database_handle::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
@@ -53,8 +54,11 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
         open_import_schema_transaction(&self.staged_database)
     }
 
-    fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database)
+    fn open_write(
+        &self,
+        instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        open_import_write_transaction(&self.staged_database, instance_existence_oracle)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
@@ -118,8 +122,8 @@ fn importer_with_spawner(
     DatabaseImporter::start(
         importing_database(database_manager, name),
         schema.to_owned(),
+        ImporterConfiguration::default().with_buffer_size(BUFFER_SIZE),
         scratch_directory,
-        BUFFER_SIZE,
         task_spawner,
     )
 }
@@ -311,13 +315,15 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     items.extend((0..padding).map(|i| person(format!("pad{i}"))));
     items.push(person("p1".to_owned()));
     items.push(MigrationItem::Checksums(Checksums::from_counts((padding + 1) as i64, 0, 1, 1, 0)));
-    let importer = DatabaseImporter::start_with_max_writes_per_commit(
+    let configuration = ImporterConfiguration::default()
+        .with_buffer_size(BUFFER_SIZE)
+        .with_max_writes_per_commit(max_writes_per_commit);
+    let importer = DatabaseImporter::start(
         importing_database(&database_manager, "pending"),
         SCHEMA.to_owned(),
+        configuration,
         database_manager.import_directory().to_owned(),
-        BUFFER_SIZE,
         &task_spawner(),
-        max_writes_per_commit,
     );
     import_all(importer, items).await;
 
