@@ -22,15 +22,13 @@ pub mod item;
 
 pub type MigrationOperationError = Arc<dyn TypeDBError + Send + Sync>;
 
-// Counters are independent tallies, so Relaxed ordering is sufficient; readers that compare
-// totals must synchronise with the writers (e.g. by joining them) before loading
 #[derive(Debug)]
 pub struct Checksums {
-    pub entity_count: AtomicI64,
-    pub attribute_count: AtomicI64,
-    pub relation_count: AtomicI64,
-    pub role_count: AtomicI64,
-    pub ownership_count: AtomicI64,
+    entity_count: AtomicI64,
+    attribute_count: AtomicI64,
+    relation_count: AtomicI64,
+    role_count: AtomicI64,
+    ownership_count: AtomicI64,
 }
 
 impl Checksums {

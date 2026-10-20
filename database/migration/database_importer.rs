@@ -8,6 +8,7 @@ use std::{
     collections::{HashMap, HashSet},
     iter,
     marker::PhantomData,
+    panic,
     path::PathBuf,
     sync::{
         Arc, Mutex, OnceLock,
@@ -537,18 +538,15 @@ impl DatabaseImporter {
             importer.import_schema(schema)?;
             importer.listen(receiver)
         });
-        DatabaseImporterHandle {
-            message_sender: Some(sender),
-            error_state,
-            join_handle: Some(join_handle),
-        }
+        DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
     }
 
     fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
         loop {
             self.check_stopped()?;
             match receiver.blocking_recv() {
-                None => return Err(DatabaseImportError::Interrupted {}),
+                // The handle closed the channel: report an error already recorded, e.g. by a worker, over the interrupt
+                None => return Err(self.error_state.error().unwrap_or(DatabaseImportError::Interrupted {})),
                 Some(ImportMessage::Items(items)) => {
                     for item in items {
                         self.check_stopped()?;
@@ -1230,7 +1228,7 @@ struct DatabaseImporterPhase {
 
 #[derive(Default, Clone)]
 struct ErrorState {
-    state: Arc<OnceLock<DatabaseImportError>>
+    state: Arc<OnceLock<DatabaseImportError>>,
 }
 
 impl ErrorState {
@@ -1259,19 +1257,9 @@ impl DatabaseImporterPhase {
             error_state: importer.error_state.clone(),
         };
         for index in 0..worker_count {
-            let worker = ImportWorker::new(importer)?;
-            let receiver = receiver.clone();
-            let error_state = phase.error_state.clone();
-            let spawned = thread::Builder::new()
-                .name(format!("importer-{}-{index}", importer.database_name))
-                .spawn(move || worker.run(receiver, error_state));
-            match spawned {
-                Ok(handle) => phase.workers.push(handle),
-                Err(err) => {
-                    event!(Level::ERROR, "Failed to start an import worker thread: {err}");
-                    return Err(DatabaseImportError::ImporterStopped {});
-                }
-            }
+            let name = format!("importer-{}-{index}", importer.database_name);
+            let worker = ImportWorker::start(importer, receiver.clone(), phase.error_state.clone(), name)?;
+            phase.workers.push(worker);
         }
         Ok(phase)
     }
@@ -1289,8 +1277,7 @@ impl DatabaseImporterPhase {
         self.sender = None; // drop to drain queue
         for worker in self.workers.drain(..) {
             if worker.join().is_err() {
-                // TODO: get real error from worker?
-                self.error_state.stop_with_error(DatabaseImportError::WorkerStopped {} )
+                self.error_state.stop_with_error(DatabaseImportError::WorkerStopped {});
             }
         }
     }
@@ -1319,8 +1306,13 @@ struct ImportWorker {
 }
 
 impl ImportWorker {
-    fn new(importer: &DatabaseImporter) -> Result<Self, DatabaseImportError> {
-        Ok(Self {
+    fn start(
+        importer: &DatabaseImporter,
+        receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>,
+        error_state: ErrorState,
+        name: String,
+    ) -> Result<thread::JoinHandle<()>, DatabaseImportError> {
+        let worker = Self {
             importing_database: importer
                 .importing_database
                 .clone()
@@ -1329,19 +1321,42 @@ impl ImportWorker {
             data_info: importer.data_info.clone(),
             data_transaction: None,
             total_item_count: importer.total_item_count.clone(),
-        })
+        };
+
+        let spawned = thread::Builder::new().name(name).spawn(move || {
+            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| worker.run(receiver, error_state.clone())));
+            if let Err(err) = result {
+                // Attempt to downcast the panic message if it's a string literal or String
+                let error = if let Some(msg) = err.downcast_ref::<&str>() {
+                    DatabaseImportError::WorkerPanicked { message: msg.to_string() }
+                } else if let Some(msg) = err.downcast_ref::<String>() {
+                    DatabaseImportError::WorkerPanicked { message: msg.clone() }
+                } else {
+                    DatabaseImportError::WorkerPanicked { message: String::from("unknown reason") }
+                };
+                error_state.stop_with_error(error);
+            }
+        });
+
+        match spawned {
+            Ok(handle) => Ok(handle),
+            Err(err) => {
+                event!(Level::ERROR, "Failed to start an import worker thread: {err}");
+                Err(DatabaseImportError::ImporterStopped {})
+            }
+        }
     }
 
-    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>, stop_state: ErrorState) {
-        if let Err(error) = self.import_batches(&receiver, &stop_state) {
-            stop_state.stop_with_error(error);
+    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>, error_state: ErrorState) {
+        if let Err(error) = self.import_batches(&receiver, &error_state) {
+            error_state.stop_with_error(error);
         }
     }
 
     fn import_batches(
         &mut self,
         receiver: &Mutex<Receiver<Vec<MigrationItem>>>,
-        state: &ErrorState,
+        error_state: &ErrorState,
     ) -> Result<(), DatabaseImportError> {
         loop {
             // The lock is released before importing, so the other workers can receive batches meanwhile
@@ -1349,14 +1364,14 @@ impl ImportWorker {
             let Ok(batch) = received else { break };
             for item in batch {
                 // Set by an interrupt from the handle, or by a failed worker
-                if state.is_errored() {
+                if error_state.is_errored() {
                     return Ok(());
                 }
                 self.apply(item)?;
             }
         }
         // Stopped while waiting for a batch: the open transaction is dropped without committing
-        if state.is_errored() {
+        if error_state.is_errored() {
             return Ok(());
         }
         // All batches of the phase are imported: commit so the next phase can see them
@@ -1573,5 +1588,6 @@ typedb_error! {
         ImportingDatabaseStillShared(34, "Cannot finalise the import while the importing database is still in use. It is a sign of a bug."),
         WorkerInterrupted(35, "Database import worker was interrupted."),
         WorkerStopped(36, "Database import worker stopped unexpectedly before the import completed."),
+        WorkerPanicked(37, "Database import worker panicked: {message}", message: String),
     }
 }
