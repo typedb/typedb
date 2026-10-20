@@ -544,7 +544,6 @@ impl DatabaseImporter {
         loop {
             self.check_stopped()?;
             match receiver.blocking_recv() {
-                // The handle closed the channel: report an error already recorded, e.g. by a worker, over the interrupt
                 None => return Err(self.error_state.error().unwrap_or(DatabaseImportError::Interrupted {})),
                 Some(ImportMessage::Items(items)) => {
                     for item in items {
@@ -1296,7 +1295,6 @@ impl DatabaseImporterPhase {
 
 impl Drop for DatabaseImporterPhase {
     fn drop(&mut self) {
-        // Unfinished phase, e.g. the import failed or was interrupted: abandon the queued batches
         if !self.workers.is_empty() {
             self.interrupt();
             self.join();
@@ -1353,7 +1351,6 @@ impl ImportWorker {
         error_state: &ErrorState,
     ) -> Result<(), DatabaseImportError> {
         loop {
-            // The lock is released before importing, so the other workers can receive batches meanwhile
             let received = receiver.lock().unwrap().recv();
             let Ok(batch) = received else { break };
             for item in batch {
@@ -1364,11 +1361,9 @@ impl ImportWorker {
                 self.apply(item)?;
             }
         }
-        // Stopped while waiting for a batch: the open transaction is dropped without committing
         if error_state.is_errored() {
             return Ok(());
         }
-        // All batches of the phase are imported: commit so the next phase can see them
         match self.data_transaction.take() {
             Some(transaction) => self.commit_write_transaction(transaction),
             None => Ok(()),
@@ -1540,7 +1535,6 @@ impl ImportWorker {
 
 impl Drop for ImportWorker {
     fn drop(&mut self) {
-        // Left open only if the worker stopped early: its writes are abandoned with the import
         if let Some(data_transaction) = self.data_transaction.take() {
             data_transaction.close();
         }
