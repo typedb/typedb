@@ -23,7 +23,6 @@ use crate::migration::Checksums;
 
 #[derive(Debug)]
 pub enum MigrationItem {
-    Schema(String),
     Header {
         typedb_version: String,
         original_database: String,
@@ -115,7 +114,7 @@ fn encode_owned_attributes(
         let (has, count) = has?;
         for _ in 0..count {
             owned_attributes.push(encode_thing_iid(&has.attribute()));
-            checksums.ownership_count += 1;
+            checksums.increment_ownership_count();
         }
     }
     Ok(owned_attributes)
@@ -135,7 +134,7 @@ fn encode_relation_roles(
         let (role_player, count) = player?;
         for _ in 0..count {
             players_by_role.entry(role_player.role_type()).or_default().push(encode_thing_iid(&role_player.player()));
-            checksums.role_count += 1;
+            checksums.increment_role_count();
         }
     }
 
