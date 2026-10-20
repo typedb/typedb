@@ -198,7 +198,8 @@ pub(crate) fn encode_value_type(
             let name = type_manager.get_struct_definition(snapshot, struct_definition_key)?.name.clone();
             typedb_protocol::value_type::ValueType::Struct(typedb_protocol::value_type::Struct { name })
         }
-        ValueType::Vector(parameters) => {
+        ValueType::Vector(definition_key) => {
+            let parameters = type_manager.get_vector_definition(snapshot, definition_key)?.parameters;
             typedb_protocol::value_type::ValueType::Vector(typedb_protocol::value_type::Vector {
                 dimension: parameters.length as u32,
             })

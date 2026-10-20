@@ -208,7 +208,10 @@ impl VectorIndex {
         let live: HashMap<TypeID, usize> = type_cache
             .get_attribute_types_with_value_types()
             .filter_map(|(attribute_type, value_type)| match value_type {
-                ValueType::Vector(parameters) => Some((attribute_type.vertex().type_id_(), parameters.length as usize)),
+                ValueType::Vector(definition_key) => {
+                    let parameters = type_cache.get_vector_definition(definition_key).parameters;
+                    Some((attribute_type.vertex().type_id_(), parameters.length as usize))
+                }
                 _ => None,
             })
             .collect();

@@ -235,7 +235,7 @@ impl GivenRows for GivenRowsHttp {
                         _ => None,
                     }
                     .ok_or_else(|| GivenRowDecodeError::ValueTypeMismatch {
-                        expected_type: expected_type.clone(),
+                        expected_type: expected_type.to_string(),
                         actual_type: "json::number".to_owned(),
                         value: value.to_string(),
                     })?;
@@ -248,7 +248,7 @@ impl GivenRows for GivenRowsHttp {
                     match expected_type {
                         ValueType::Boolean => Ok(GivenRowEntry::Value(Value::Boolean(value))),
                         _ => Err(GivenRowDecodeError::ValueTypeMismatch {
-                            expected_type: expected_type.clone(),
+                            expected_type: expected_type.to_string(),
                             actual_type: "boolean".to_owned(),
                             value: value.to_string(),
                         }),
@@ -258,6 +258,11 @@ impl GivenRows for GivenRowsHttp {
                     FunctionParameterAnnotation::AnyConcept => unreachable!("Can't be"),
                     FunctionParameterAnnotation::Concept(expected_type) => decode_string_as_iid(value, expected_type),
                     FunctionParameterAnnotation::Value(expected_type) => decode_string_as_value(value, expected_type),
+                    FunctionParameterAnnotation::Vector(parameters) => Err(GivenRowDecodeError::ValueTypeMismatch {
+                        expected_type: parameters.to_string(),
+                        actual_type: "string".to_owned(),
+                        value,
+                    }),
                 },
                 GivenEntryPayload::Concept(tagged) => match tagged {
                     TaggedEntryPayload::Value(value) => {
@@ -352,12 +357,12 @@ fn decode_string_as_value(value: String, expected_type: &ValueType) -> Result<Gi
     let translated_value = Value::from_typeql_literal(&parsed_value, None).map_err(|typedb_source| {
         GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: value.clone(), typedb_source }
     })?;
-    if &translated_value.value_type() == expected_type {
+    if !matches!(translated_value, Value::Vector(_)) && &translated_value.value_type() == expected_type {
         Ok(GivenRowEntry::Value(translated_value))
     } else {
         Err(GivenRowDecodeError::ValueTypeMismatch {
-            expected_type: expected_type.clone(),
-            actual_type: translated_value.value_type().to_string(),
+            expected_type: expected_type.to_string(),
+            actual_type: translated_value.value_type_category().name().to_owned(),
             value: value.to_string(),
         })
     }

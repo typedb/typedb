@@ -7,10 +7,18 @@
 use bytes::byte_array::ByteArray;
 
 use self::{
-    boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
-    date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-    duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-    value_type::ValueType, vector_bytes::VectorBytes,
+    boolean_bytes::BooleanBytes,
+    date_bytes::DateBytes,
+    date_time_bytes::DateTimeBytes,
+    date_time_tz_bytes::DateTimeTZBytes,
+    decimal_bytes::DecimalBytes,
+    double_bytes::DoubleBytes,
+    duration_bytes::DurationBytes,
+    integer_bytes::IntegerBytes,
+    string_bytes::StringBytes,
+    struct_bytes::StructBytes,
+    value_type::{ValueType, ValueTypeCategory},
+    vector_bytes::VectorBytes,
 };
 
 pub mod boolean_bytes;
@@ -39,6 +47,8 @@ pub fn decode_value_u64(bytes: &[u8]) -> u64 {
 
 pub trait ValueEncodable: Clone {
     fn value_type(&self) -> ValueType;
+
+    fn value_type_category(&self) -> ValueTypeCategory;
 
     fn encode_boolean(&self) -> BooleanBytes;
 

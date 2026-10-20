@@ -1074,6 +1074,10 @@ impl<T> Checker<T> {
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                 VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
             };
+            if matches!(lhs, Value::Vector(_)) || matches!(rhs, Value::Vector(_)) {
+                return Ok(matches!((&lhs, &rhs), (Value::Vector(_), Value::Vector(_)))
+                    && Self::cmp_values_fn(&comparator)(&lhs, &rhs));
+            }
             if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) {
                 Ok(Self::cmp_values_fn(&comparator)(&lhs, &rhs.cast(lhs.value_type().category()).unwrap()))
             } else if lhs.value_type().is_trivially_castable_to(rhs.value_type().category()) {
@@ -1122,6 +1126,10 @@ impl<T> Checker<T> {
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
             VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
         };
+        if matches!(lhs, Value::Vector(_)) || matches!(rhs, Value::Vector(_)) {
+            return Ok(matches!((&lhs, &rhs), (Value::Vector(_), Value::Vector(_)))
+                && Self::cmp_values_fn(&comparator)(&lhs, &rhs));
+        }
         if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) {
             Ok(Self::cmp_values_fn(&comparator)(&lhs, &rhs.cast(lhs.value_type().category()).unwrap()))
         } else if lhs.value_type().is_trivially_castable_to(rhs.value_type().category()) {

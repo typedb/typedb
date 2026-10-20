@@ -143,9 +143,11 @@ impl VectorSearchExecutor {
 
         for type_ in self.types.iter() {
             let attribute_type = type_.as_attribute_type();
-            if let Some(ValueType::Vector(parameters)) =
+            if let Some(ValueType::Vector(definition_key)) =
                 attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?
             {
+                let parameters =
+                    thing_manager.type_manager().get_vector_definition(snapshot, definition_key)?.parameters;
                 if parameters.length as usize != query.len() {
                     return Err(Box::new(ConceptReadError::VectorSearchQueryDimensionMismatch {
                         attribute_type,

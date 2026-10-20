@@ -132,6 +132,7 @@ fn build_given_annotations(given: &AnnotatedGiven) -> GivenStructureAnnotations 
                     PipelineVariableAnnotation::Instance(types.iter().copied().collect())
                 }
                 FunctionParameterAnnotation::Value(value_type) => PipelineVariableAnnotation::Value(value_type.clone()),
+                FunctionParameterAnnotation::Vector(parameters) => PipelineVariableAnnotation::Vector(*parameters),
             };
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })
@@ -389,6 +390,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                         FunctionParameterAnnotation::Value(value_type) => {
                             FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.clone()]))
                         }
+                        FunctionParameterAnnotation::Vector(_) => FetchStructureAnnotations::Leaf(BTreeSet::new()),
                     }
                 }
             };

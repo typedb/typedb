@@ -75,7 +75,7 @@ impl AttributeVertex {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
-        let keyspace = Self::keyspace_for_category(value.value_type().category());
+        let keyspace = Self::keyspace_for_category(value.value_type_category());
         let (id_length, is_complete) = AttributeID::write_deterministic_value_or_prefix(
             &mut bytes[Self::RANGE_TYPE_ID.end..],
             value,
@@ -262,18 +262,20 @@ impl AttributeID {
 
     pub fn build_inline(value: Value<'_>) -> Self {
         debug_assert!(Self::is_inlineable(value.as_reference()));
-        match value.value_type() {
-            ValueType::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
-            ValueType::Integer => Self::Integer(IntegerAttributeID::build(value.encode_integer())),
-            ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
-            ValueType::Decimal => Self::Decimal(DecimalAttributeID::build(value.encode_decimal())),
-            ValueType::Date => Self::Date(DateAttributeID::build(value.encode_date())),
-            ValueType::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
-            ValueType::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz())),
-            ValueType::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
-            ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
-            ValueType::Struct(_) => unimplemented_feature!(Structs),
-            ValueType::Vector(_) => unreachable!("vector attributes are never inlineable"),
+        match value.value_type_category() {
+            ValueTypeCategory::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
+            ValueTypeCategory::Integer => Self::Integer(IntegerAttributeID::build(value.encode_integer())),
+            ValueTypeCategory::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
+            ValueTypeCategory::Decimal => Self::Decimal(DecimalAttributeID::build(value.encode_decimal())),
+            ValueTypeCategory::Date => Self::Date(DateAttributeID::build(value.encode_date())),
+            ValueTypeCategory::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
+            ValueTypeCategory::DateTimeTZ => {
+                Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz()))
+            }
+            ValueTypeCategory::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
+            ValueTypeCategory::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
+            ValueTypeCategory::Struct => unimplemented_feature!(Structs),
+            ValueTypeCategory::Vector => unreachable!("vector attributes are never inlineable"),
         }
     }
 
@@ -283,7 +285,7 @@ impl AttributeID {
         large_value_hasher: &impl Fn(&[u8]) -> u64,
     ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
-        match value.value_type().category() {
+        match value.value_type_category() {
             ValueTypeCategory::Boolean => (BooleanAttributeID::write(value.encode_boolean(), bytes), true),
             ValueTypeCategory::Integer => (IntegerAttributeID::write(value.encode_integer(), bytes), true),
             ValueTypeCategory::Double => (DoubleAttributeID::write(value.encode_double(), bytes), true),
@@ -319,18 +321,18 @@ impl AttributeID {
     /// Return false if the values are hashed or incomplete and may require a secondary lookup
     ///
     pub fn is_inlineable(value: impl ValueEncodable) -> bool {
-        match value.value_type() {
-            ValueType::Boolean => BooleanAttributeID::is_inlineable(),
-            ValueType::Integer => IntegerAttributeID::is_inlineable(),
-            ValueType::Double => DoubleAttributeID::is_inlineable(),
-            ValueType::Decimal => DecimalAttributeID::is_inlineable(),
-            ValueType::Date => DateAttributeID::is_inlineable(),
-            ValueType::DateTime => DateTimeAttributeID::is_inlineable(),
-            ValueType::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
-            ValueType::Duration => DurationAttributeID::is_inlineable(),
-            ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
-            ValueType::Struct(_) => StructAttributeID::is_inlineable(),
-            ValueType::Vector(_) => VectorAttributeID::is_inlineable(),
+        match value.value_type_category() {
+            ValueTypeCategory::Boolean => BooleanAttributeID::is_inlineable(),
+            ValueTypeCategory::Integer => IntegerAttributeID::is_inlineable(),
+            ValueTypeCategory::Double => DoubleAttributeID::is_inlineable(),
+            ValueTypeCategory::Decimal => DecimalAttributeID::is_inlineable(),
+            ValueTypeCategory::Date => DateAttributeID::is_inlineable(),
+            ValueTypeCategory::DateTime => DateTimeAttributeID::is_inlineable(),
+            ValueTypeCategory::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
+            ValueTypeCategory::Duration => DurationAttributeID::is_inlineable(),
+            ValueTypeCategory::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
+            ValueTypeCategory::Struct => StructAttributeID::is_inlineable(),
+            ValueTypeCategory::Vector => VectorAttributeID::is_inlineable(),
         }
     }
 

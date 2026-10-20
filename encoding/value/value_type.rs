@@ -37,10 +37,10 @@ pub enum ValueType {
 
     Struct(DefinitionKey),
 
-    Vector(VectorTypeParameters),
+    Vector(DefinitionKey),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct VectorTypeParameters {
     pub length: u16,
     pub precision: VectorPrecision,
@@ -60,7 +60,7 @@ impl fmt::Display for VectorTypeParameters {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum VectorPrecision {
     Float32,
 }
@@ -140,9 +140,8 @@ impl ValueType {
                 Self::Struct(definition_key)
             }
             ValueTypeCategory::Vector => {
-                let length = u16::from_be_bytes([tail[0], tail[1]]);
-                let precision = VectorPrecision::from_byte(tail[2]);
-                Self::Vector(VectorTypeParameters::new(length, precision))
+                let definition_key = DefinitionKey::new(Bytes::Array(ByteArray::copy(&tail)));
+                Self::Vector(definition_key)
             }
         }
     }
@@ -186,10 +185,7 @@ impl StructuralEquality for ValueType {
     fn hash(&self) -> u64 {
         mem::discriminant(self).hash()
             & match self {
-                ValueType::Struct(key) => (key.definition_id().as_uint() as usize).hash(),
-                ValueType::Vector(params) => {
-                    ((params.length as usize) ^ ((params.precision.to_byte() as usize) << 16)).hash()
-                }
+                ValueType::Struct(key) | ValueType::Vector(key) => (key.definition_id().as_uint() as usize).hash(),
                 _ => 0,
             }
     }
@@ -205,10 +201,9 @@ impl StructuralEquality for ValueType {
             (Self::DateTimeTZ, Self::DateTimeTZ) => true,
             (Self::Duration, Self::Duration) => true,
             (Self::String, Self::String) => true,
-            (Self::Struct(key), Self::Struct(other_key)) => {
+            (Self::Struct(key), Self::Struct(other_key)) | (Self::Vector(key), Self::Vector(other_key)) => {
                 (key.definition_id().as_uint() as usize).equals(&(other_key.definition_id().as_uint() as usize))
             }
-            (Self::Vector(params), Self::Vector(other_params)) => params == other_params,
             // note: this style forces updating the match when the variants change
             (Self::Boolean { .. }, _)
             | (Self::Integer { .. }, _)
@@ -234,10 +229,7 @@ impl fmt::Debug for ValueType {
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: Don't we want to display structs differently?
-        match self {
-            ValueType::Vector(params) => write!(f, "{params}"),
-            _ => write!(f, "{}", self.category().name()),
-        }
+        write!(f, "{}", self.category().name())
     }
 }
 
@@ -374,14 +366,8 @@ impl ValueTypeBytes {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
         match value_type {
-            ValueType::Struct(definition_key) => {
+            ValueType::Struct(definition_key) | ValueType::Vector(definition_key) => {
                 array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
-            }
-            ValueType::Vector(params) => {
-                let length_bytes = params.length.to_be_bytes();
-                array[Self::RANGE_TAIL.start] = length_bytes[0];
-                array[Self::RANGE_TAIL.start + 1] = length_bytes[1];
-                array[Self::RANGE_TAIL.start + 2] = params.precision.to_byte();
             }
             _ => {}
         }

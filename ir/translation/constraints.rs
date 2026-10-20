@@ -282,14 +282,14 @@ fn register_typeql_value_type(
             Ok(ValueType::Builtin(translate_value_type(token)))
         }
         NamedType::Vector(vector_type) => {
-            let value_type = resolve_vector_value_type(vector_type).map_err(|err| {
+            let parameters = resolve_vector_value_type(vector_type).map_err(|err| {
                 Box::new(RepresentationError::VectorLengthInvalid {
                     length: err.length,
                     max: err.max,
                     source_span: vector_type.span(),
                 })
             })?;
-            Ok(ValueType::Builtin(value_type))
+            Ok(ValueType::Vector(parameters))
         }
     }
 }

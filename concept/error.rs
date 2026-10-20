@@ -9,7 +9,10 @@ use std::{fmt, sync::Arc};
 use bytes::util::HexBytesFormatter;
 use encoding::{
     error::EncodingError,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, ValueTypeCategory},
+    },
 };
 use error::typedb_error;
 use storage::snapshot::{SnapshotError, SnapshotGetError, iterator::SnapshotIteratorError};
@@ -81,7 +84,7 @@ typedb_error! {
             "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.",
             attribute_type: AttributeType,
             expected: Option<ValueType>,
-            provided: ValueType,
+            provided: ValueTypeCategory,
         ),
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),

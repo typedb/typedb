@@ -10,7 +10,7 @@ use std::{
 };
 
 use encoding::{
-    graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
+    graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition, vector::VectorDefinition},
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
@@ -19,27 +19,31 @@ use storage::{
     snapshot::iterator::SnapshotIteratorError,
 };
 
-use crate::type_::{
-    Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
-    attribute_type::AttributeType,
-    constraint::{CapabilityConstraint, Constraint, ConstraintCategory, TypeConstraint},
-    entity_type::EntityType,
-    object_type::ObjectType,
-    owns::{Owns, OwnsAnnotation},
-    plays::{Plays, PlaysAnnotation},
-    relates::{Relates, RelatesAnnotation},
-    relation_type::RelationType,
-    role_type::RoleType,
-    sub::{Sub, SubAnnotation},
-    type_manager::{
-        preload_schema_from,
-        type_cache::{
-            kind_cache::{
-                AttributeTypeCache, CommonTypeCache, EntityTypeCache, ObjectCache, OwnsCache, PlaysCache, RelatesCache,
-                RelationTypeCache, RoleTypeCache,
+use crate::{
+    error::ConceptReadError,
+    type_::{
+        Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
+        attribute_type::AttributeType,
+        constraint::{CapabilityConstraint, Constraint, ConstraintCategory, TypeConstraint},
+        entity_type::EntityType,
+        object_type::ObjectType,
+        owns::{Owns, OwnsAnnotation},
+        plays::{Plays, PlaysAnnotation},
+        relates::{Relates, RelatesAnnotation},
+        relation_type::RelationType,
+        role_type::RoleType,
+        sub::{Sub, SubAnnotation},
+        type_manager::{
+            preload_schema_from,
+            type_cache::{
+                kind_cache::{
+                    AttributeTypeCache, CommonTypeCache, EntityTypeCache, ObjectCache, OwnsCache, PlaysCache,
+                    RelatesCache, RelationTypeCache, RoleTypeCache,
+                },
+                selection::{self, CacheGetter, HasCommonTypeCache, HasObjectCache},
+                struct_definition_cache::StructDefinitionCache,
             },
-            selection::{self, CacheGetter, HasCommonTypeCache, HasObjectCache},
-            struct_definition_cache::StructDefinitionCache,
+            type_reader::TypeReader,
         },
     },
 };
@@ -69,6 +73,8 @@ pub struct TypeCache {
     struct_definition_index_by_name: HashMap<String, DefinitionKey>,
 
     role_types_by_name: HashMap<String, Vec<RoleType>>,
+    vector_definitions: HashMap<DefinitionKey, VectorDefinition>,
+
     // specific caches to simplify architectures
     independent_attribute_types: Arc<HashSet<AttributeType>>,
 }
@@ -102,6 +108,8 @@ impl TypeCache {
         let role_type_caches = RoleTypeCache::create(&snapshot);
         let attribute_type_caches = AttributeTypeCache::create(&snapshot);
         let struct_definition_caches = StructDefinitionCache::create(&snapshot);
+        let vector_definitions = TypeReader::get_vector_definitions_all(&snapshot)
+            .map_err(|err| TypeCacheCreateError::ConceptRead { typedb_source: err })?;
 
         let entity_types_index_label = Self::build_label_to_type_index(&entity_type_caches);
         let relation_types_index_label = Self::build_label_to_type_index(&relation_type_caches);
@@ -152,6 +160,7 @@ impl TypeCache {
             attribute_types_index_label,
             struct_definition_index_by_name,
             role_types_by_name,
+            vector_definitions,
 
             independent_attribute_types: Arc::new(independent_attribute_types),
         })
@@ -218,6 +227,10 @@ impl TypeCache {
 
     pub(crate) fn get_attribute_types(&self) -> Vec<AttributeType> {
         self.attribute_types.iter().flatten().map(|cache| cache.common_type_cache().type_).collect()
+    }
+
+    pub(crate) fn get_vector_definition(&self, definition_key: &DefinitionKey) -> &VectorDefinition {
+        self.vector_definitions.get(definition_key).expect("vector definition must be cached")
     }
 
     pub(crate) fn get_attribute_types_with_value_types(
@@ -538,5 +551,6 @@ typedb_error! {
     pub TypeCacheCreateError(component = "TypeCache create", prefix = "TCC") {
         Empty(1, ""),
         SnapshotIterate(2, "Failed to load schema keyspace into the type cache.", source: Arc<SnapshotIteratorError>),
+        ConceptRead(3, "Failed to read vector definitions into the type cache.", typedb_source: Box<ConceptReadError>),
     }
 }

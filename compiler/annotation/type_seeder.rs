@@ -16,7 +16,7 @@ use concept::{
     error::ConceptReadError,
     type_::{OwnerAPI, PlayerAPI, TypeAPI, object_type::ObjectType, type_manager::TypeManager},
 };
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::{ValueType, ValueTypeCategory, VectorTypeParameters};
 use ir::{
     pattern::{
         Pattern, Vertex,
@@ -745,12 +745,16 @@ impl UnaryConstraint for Value<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        enum PatternValueType {
+            Exact(ValueType),
+            Vector(VectorTypeParameters),
+        }
         let pattern_value_type = match self.value_type() {
-            ir::pattern::ValueType::Builtin(value_type) => Ok(value_type.clone()),
+            ir::pattern::ValueType::Builtin(value_type) => Ok(PatternValueType::Exact(value_type.clone())),
             ir::pattern::ValueType::Struct(struct_name) => {
                 let pattern_key = context.type_manager.get_struct_definition_key(context.snapshot, struct_name);
                 match pattern_key {
-                    Ok(Some(key)) => Ok(ValueType::Struct(key)),
+                    Ok(Some(key)) => Ok(PatternValueType::Exact(ValueType::Struct(key))),
                     Ok(None) => Err(TypeInferenceError::ValueTypeNotFound {
                         name: struct_name.clone().to_owned(),
                         source_span: self.source_span(),
@@ -758,6 +762,7 @@ impl UnaryConstraint for Value<Variable> {
                     Err(source) => Err(TypeInferenceError::ConceptRead { typedb_source: source }),
                 }
             }
+            ir::pattern::ValueType::Vector(parameters) => Ok(PatternValueType::Vector(*parameters)),
         }?;
 
         let mut annotations = BTreeSet::new();
@@ -770,7 +775,18 @@ impl UnaryConstraint for Value<Variable> {
                 .get_value_type_without_source(context.snapshot, context.type_manager)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             if let Some(attribute_value_type) = attribute_value_type_opt {
-                if pattern_value_type == attribute_value_type {
+                let matches = match (&pattern_value_type, &attribute_value_type) {
+                    (PatternValueType::Exact(value_type), attribute_value_type) => value_type == attribute_value_type,
+                    (PatternValueType::Vector(parameters), ValueType::Vector(definition_key)) => {
+                        let definition = context
+                            .type_manager
+                            .get_vector_definition(context.snapshot, definition_key.clone())
+                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                        definition.parameters == *parameters
+                    }
+                    (PatternValueType::Vector(_), _) => false,
+                };
+                if matches {
                     annotations.insert(TypeAnnotation::Attribute(attribute_type));
                 }
             }

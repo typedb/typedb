@@ -15,12 +15,16 @@ use encoding::{
     error::EncodingError,
     graph::{
         definition::{
-            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
+            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
+            r#struct::StructDefinition, vector::VectorDefinition,
         },
         type_::{Kind, vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator},
     },
     layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, VectorTypeParameters},
+    },
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
@@ -444,6 +448,35 @@ impl TypeManager {
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(snapshot, definition_key.clone())?))
         }
+    }
+
+    pub fn get_vector_definition(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        definition_key: DefinitionKey,
+    ) -> Result<MaybeOwns<'_, VectorDefinition>, Box<ConceptReadError>> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_vector_definition(&definition_key)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_vector_definition(snapshot, definition_key)?))
+        }
+    }
+
+    pub fn create_vector_value_type(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        parameters: VectorTypeParameters,
+    ) -> Result<ValueType, Box<ConceptWriteError>> {
+        let definition_key = self
+            .definition_key_generator
+            .create_vector(snapshot)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_insert_vector_definition(
+            snapshot,
+            definition_key.clone(),
+            VectorDefinition::new(parameters),
+        );
+        Ok(ValueType::Vector(definition_key))
     }
 
     pub fn resolve_struct_field(

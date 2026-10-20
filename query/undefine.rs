@@ -46,10 +46,10 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        SymbolResolutionError, filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared,
-        resolve_plays_declared, resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
-        resolve_struct_definition_key, resolve_type, resolve_typeql_type, resolve_value_type,
-        type_ref_to_label_and_ordering, type_to_object_type,
+        ResolvedValueType, SymbolResolutionError, filter_variants, resolve_attribute_type, resolve_object_type,
+        resolve_or_create_vector_value_type, resolve_owns_declared, resolve_plays_declared, resolve_relates,
+        resolve_relates_declared, resolve_relation_type, resolve_role_type, resolve_struct_definition_key,
+        resolve_type, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering, type_to_object_type,
     },
     definable_status::{
         DefinableStatus, DefinableStatusMode, get_capability_annotation_category_status, get_owns_status,
@@ -778,8 +778,19 @@ fn undefine_type_capability_value_type(
     let TypeEnum::Attribute(attribute_type) = &type_ else {
         return Err(err_unsupported_capability(type_label, type_.kind(), capability_undefinable));
     };
-    let value_type = resolve_value_type(snapshot, type_manager, &typeql_value_type.value_type)
-        .map_err(|typedb_source| UndefineError::ValueTypeSymbolResolution { typedb_source })?;
+    let value_type = match resolve_value_type(snapshot, type_manager, &typeql_value_type.value_type)
+        .map_err(|typedb_source| UndefineError::ValueTypeSymbolResolution { typedb_source })?
+    {
+        ResolvedValueType::Value(value_type) => value_type,
+        ResolvedValueType::Vector(parameters) => resolve_or_create_vector_value_type(
+            snapshot,
+            type_manager,
+            *attribute_type,
+            parameters,
+            typeql_value_type.value_type.span(),
+        )
+        .map_err(|typedb_source| UndefineError::ValueTypeSymbolResolution { typedb_source })?,
+    };
 
     let definition_status = get_value_type_status(
         snapshot,

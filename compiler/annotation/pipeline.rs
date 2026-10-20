@@ -12,7 +12,7 @@ use std::{
 
 use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::{ValueType, ValueTypeCategory, VectorTypeParameters};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{
@@ -398,6 +398,7 @@ fn complete_block_annotations_with_value_types(
         .iter()
         .flat_map(|c| c.ids())
         .filter(|v| ctx.variable_registry.get_variable_category(*v) == Some(VariableCategory::Value))
+        .filter(|v| !source_running_annotations.vectors.contains_key(v))
         .map(|v| {
             (Vertex::Variable(v), source_running_annotations.values.get(&v).expect("Expected value annotation").clone())
         })
@@ -745,7 +746,9 @@ fn collect_value_types_of_function_call_assignments(
                         .insert(var.as_variable().unwrap(), ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
-                FunctionParameterAnnotation::AnyConcept | FunctionParameterAnnotation::Concept(_) => Ok(()),
+                FunctionParameterAnnotation::AnyConcept
+                | FunctionParameterAnnotation::Concept(_)
+                | FunctionParameterAnnotation::Vector(_) => Ok(()),
             })
         })?;
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
@@ -766,11 +769,12 @@ fn collect_value_types_of_function_call_assignments(
 pub struct RunningVariableAnnotations {
     pub(crate) concepts: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     pub(crate) values: BTreeMap<Variable, ExpressionValueType>,
+    pub(crate) vectors: BTreeMap<Variable, VectorTypeParameters>,
 }
 
 impl RunningVariableAnnotations {
     pub fn empty() -> Self {
-        Self { concepts: BTreeMap::new(), values: BTreeMap::new() }
+        Self { concepts: BTreeMap::new(), values: BTreeMap::new(), vectors: BTreeMap::new() }
     }
 
     pub(crate) fn from_iterator(
@@ -778,6 +782,7 @@ impl RunningVariableAnnotations {
     ) -> RunningVariableAnnotations {
         let mut concepts = BTreeMap::new();
         let mut values = BTreeMap::new();
+        let mut vectors = BTreeMap::new();
         iter.for_each(|(var, types)| match types {
             FunctionParameterAnnotation::AnyConcept => unreachable!("Unexpected"),
             FunctionParameterAnnotation::Value(value_type) => {
@@ -787,13 +792,17 @@ impl RunningVariableAnnotations {
             FunctionParameterAnnotation::Concept(types) => {
                 concepts.insert(var, Arc::new(types.clone()));
             }
+            FunctionParameterAnnotation::Vector(parameters) => {
+                vectors.insert(var, parameters);
+            }
         });
-        RunningVariableAnnotations { concepts, values }
+        RunningVariableAnnotations { concepts, values, vectors }
     }
 
     pub(crate) fn retain(&mut self, predicate: impl Fn(&Variable) -> bool) {
         self.concepts.retain(|var, _| predicate(var));
         self.values.retain(|var, _| predicate(var));
+        self.vectors.retain(|var, _| predicate(var));
     }
 
     pub(crate) fn get_as_parameter(&self, variable: &Variable) -> Option<FunctionParameterAnnotation> {
@@ -802,6 +811,8 @@ impl RunningVariableAnnotations {
             Some(FunctionParameterAnnotation::Concept((**types).clone()))
         } else if let Some(value_type) = self.values.get(&variable) {
             Some(FunctionParameterAnnotation::Value(value_type.value_type().clone()))
+        } else if let Some(parameters) = self.vectors.get(&variable) {
+            Some(FunctionParameterAnnotation::Vector(*parameters))
         } else {
             None
         }

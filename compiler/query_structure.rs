@@ -13,7 +13,10 @@ use std::{
 };
 
 use answer::variable::Variable;
-use encoding::value::{label::Label, value_type::ValueType};
+use encoding::value::{
+    label::Label,
+    value_type::{ValueType, VectorTypeParameters},
+};
 use ir::{
     pattern::{
         BranchID, IrID, Pattern, Scope, ScopeId, conjunction::Conjunction, constraint::Constraint,
@@ -167,6 +170,7 @@ pub enum PipelineVariableAnnotation {
     Instance(Vec<answer::Type>),
     Type(Vec<answer::Type>),
     Value(ValueType),
+    Vector(VectorTypeParameters),
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

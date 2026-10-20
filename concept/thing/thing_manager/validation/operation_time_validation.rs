@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
-use encoding::value::{value::Value, value_type::ValueType};
+use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
 use iterator::minmax_or;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -478,28 +478,51 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    fn value_matches_attribute_value_type(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        value: &Value<'_>,
+        type_value_type: &ValueType,
+        exact: bool,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        match (type_value_type, value) {
+            (ValueType::Vector(definition_key), Value::Vector(vector)) => {
+                let parameters =
+                    thing_manager.type_manager().get_vector_definition(snapshot, definition_key.clone())?.parameters;
+                Ok(vector.len() == parameters.length as usize)
+            }
+            (ValueType::Vector(_), _) | (_, Value::Vector(_)) => Ok(false),
+            (type_value_type, value) if exact => Ok(value.value_type().is_trivially_castable_to_exact(type_value_type)),
+            (type_value_type, value) => Ok(value.value_type().is_trivially_castable_to(type_value_type.category())),
+        }
+    }
+
     pub(crate) fn validate_value_type_matches_attribute_type_for_write(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
-        value_type: ValueType,
         value: Value<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to_exact(&type_value_type) => Ok(()),
-            Some(type_value_type) => Err(Box::new(ConceptWriteError::DataValidation {
-                typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
-                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
-                    expected_value_type: type_value_type,
-                    provided_value_type: value_type,
-                    provided_value: value.into_owned(),
-                }),
-            })),
+            Some(type_value_type) => {
+                if Self::value_matches_attribute_value_type(snapshot, thing_manager, &value, &type_value_type, true)? {
+                    Ok(())
+                } else {
+                    Err(Box::new(ConceptWriteError::DataValidation {
+                        typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
+                            attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
+                            expected_value_type: type_value_type,
+                            provided_value_type: value.value_type_category(),
+                            provided_value: value.into_owned(),
+                        }),
+                    }))
+                }
+            }
             None => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::AttributeTypeHasNoValueType {
                     attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
-                    provided_value_type: value_type,
+                    provided_value_type: value.value_type_category(),
                     provided_value: value.into_owned(),
                 }),
             })),
@@ -510,16 +533,23 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
-        value_type: ValueType,
+        value: Value<'_>,
     ) -> Result<(), Box<ConceptReadError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
-        match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
-            _ => Err(Box::new(ConceptReadError::ValueTypeMismatchWithAttributeType {
+        let matches = match &type_value_type {
+            Some(type_value_type) => {
+                Self::value_matches_attribute_value_type(snapshot, thing_manager, &value, type_value_type, false)?
+            }
+            None => false,
+        };
+        if matches {
+            Ok(())
+        } else {
+            Err(Box::new(ConceptReadError::ValueTypeMismatchWithAttributeType {
                 attribute_type,
                 expected: type_value_type,
-                provided: value_type,
-            })),
+                provided: value.value_type_category(),
+            }))
         }
     }
 

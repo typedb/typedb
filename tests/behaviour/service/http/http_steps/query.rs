@@ -146,13 +146,12 @@ fn check_is_value(
             _ => value.to_string(), // Handle non-numbers normally
         }
     }
-    let actual_value_type_converted = params::ValueType::from_str(actual_value_type)
-        .expect("Expected actual value type conversion")
-        .into_typedb_static();
+    let actual_value_type_category =
+        params::ValueType::from_str(actual_value_type).expect("Expected actual value type conversion").category();
     let actual_value_converted = params::Value::from_str(&format(&actual_value))
         .expect("Expected actual value conversion")
-        .into_typedb(actual_value_type_converted.clone());
-    is_or_not.compare(expected_value.into_typedb(actual_value_type_converted), actual_value_converted);
+        .into_typedb(actual_value_type_category);
+    is_or_not.compare(expected_value.into_typedb(actual_value_type_category), actual_value_converted);
 }
 
 #[cucumber::given(expr = "set answers of typeql read query as given rows with order: {variable_list}")]

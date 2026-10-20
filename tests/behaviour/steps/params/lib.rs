@@ -28,7 +28,7 @@ use encoding::{
     value::{
         label::Label as TypeDBLabel,
         value::Value as TypeDBValue,
-        value_type::{ValueType as TypeDBValueType, VectorPrecision, VectorTypeParameters},
+        value_type::{ValueType as TypeDBValueType, ValueTypeCategory, VectorPrecision, VectorTypeParameters},
     },
 };
 use ir::translation::literal::FromTypeQLLiteral;
@@ -477,7 +477,9 @@ impl ValueType {
                     .unwrap()
                     .unwrap(),
             ),
-            ValueType::Vector { parameters, .. } => TypeDBValueType::Vector(parameters),
+            ValueType::Vector { .. } => {
+                panic!("vector value types are schema definitions; resolve them via the owning attribute type")
+            }
         }
     }
 
@@ -493,7 +495,25 @@ impl ValueType {
             ValueType::Duration => TypeDBValueType::Duration,
             ValueType::String => TypeDBValueType::String,
             ValueType::Struct(_) => panic!("Structs are not static value types. Use `into_typedb` instead"),
-            ValueType::Vector { parameters, .. } => TypeDBValueType::Vector(parameters),
+            ValueType::Vector { .. } => {
+                panic!("vector value types are schema definitions; resolve them via the owning attribute type")
+            }
+        }
+    }
+
+    pub fn category(&self) -> ValueTypeCategory {
+        match self {
+            ValueType::Boolean => ValueTypeCategory::Boolean,
+            ValueType::Integer => ValueTypeCategory::Integer,
+            ValueType::Double => ValueTypeCategory::Double,
+            ValueType::Decimal => ValueTypeCategory::Decimal,
+            ValueType::Date => ValueTypeCategory::Date,
+            ValueType::Datetime => ValueTypeCategory::DateTime,
+            ValueType::DatetimeTZ => ValueTypeCategory::DateTimeTZ,
+            ValueType::Duration => ValueTypeCategory::Duration,
+            ValueType::String => ValueTypeCategory::String,
+            ValueType::Struct(_) => ValueTypeCategory::Struct,
+            ValueType::Vector { .. } => ValueTypeCategory::Vector,
         }
     }
 
@@ -559,8 +579,8 @@ impl Value {
         &self.raw_value
     }
 
-    pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
-        let value = if value_type == TypeDBValueType::String {
+    pub fn into_typedb(self, value_type_category: ValueTypeCategory) -> TypeDBValue<'static> {
+        let value = if value_type_category == ValueTypeCategory::String {
             // we are either given an in-memory string that is already unquoted and un-escaped
             if !self.raw_value.starts_with('"') && !self.raw_value.ends_with('"') {
                 format!("\"{}\"", &self.raw_value.replace("\"", "\\\""))
@@ -568,10 +588,10 @@ impl Value {
                 // or an already valid quoted and escaped string to parse
                 self.raw_value
             }
-        } else if let TypeDBValueType::Vector(parameters) = &value_type {
+        } else if value_type_category == ValueTypeCategory::Vector {
             let trimmed = self.raw_value.trim();
             if trimmed.starts_with('[') {
-                format!("vector({trimmed}, \"{}\")", parameters.precision.name())
+                format!("vector({trimmed}, \"{}\")", VectorPrecision::Float32.name())
             } else {
                 self.raw_value
             }
@@ -581,9 +601,9 @@ impl Value {
         let parsed_literal = typeql::parse_value(value.trim()).unwrap();
         let value = TypeDBValue::from_typeql_literal(&parsed_literal, None)
             .expect("Unable to parse TypeQL literal into TypeDB Value");
-        value
-            .cast(value_type.category())
-            .unwrap_or_else(|| panic!("Could not convert {} into expected value type {:?}", parsed_literal, value_type))
+        value.cast(value_type_category).unwrap_or_else(|| {
+            panic!("Could not convert {} into expected value type {:?}", parsed_literal, value_type_category)
+        })
     }
 }
 
@@ -627,7 +647,7 @@ fn parse_values_annotation(values: &str, value_type: Option<TypeDBValueType>) ->
     let values = values["@values(".len()..values.len() - ")".len()].trim();
     let values = values.split(',');
     TypeDBAnnotation::Values(AnnotationValues::new(
-        values.map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone())).collect_vec(),
+        values.map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.category())).collect_vec(),
     ))
 }
 
@@ -641,8 +661,8 @@ fn parse_range_annotation(range: &str, value_type: Option<TypeDBValueType>) -> T
     let range = range["@range(".len()..range.len() - ")".len()].trim();
     let (min, max) = range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
     TypeDBAnnotation::Range(AnnotationRange::new(
-        if min.is_empty() { None } else { Some(Value::from_str(min).unwrap().into_typedb(value_type.clone())) },
-        if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
+        if min.is_empty() { None } else { Some(Value::from_str(min).unwrap().into_typedb(value_type.category())) },
+        if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type.category())) },
     ))
 }
 

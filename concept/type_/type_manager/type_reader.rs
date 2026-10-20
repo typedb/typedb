@@ -11,7 +11,10 @@ use encoding::{
     Keyable,
     error::EncodingError,
     graph::{
-        definition::{DefinitionValueEncoding, definition_key::DefinitionKey, r#struct::StructDefinition},
+        definition::{
+            DefinitionValueEncoding, definition_key::DefinitionKey, r#struct::StructDefinition,
+            vector::VectorDefinition,
+        },
         type_::{
             CapabilityKind,
             edge::{TypeEdge, TypeEdgeEncoding},
@@ -123,6 +126,36 @@ impl TypeReader {
             )
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
         Ok(StructDefinition::from_bytes(&bytes.unwrap()))
+    }
+
+    pub(crate) fn get_vector_definition(
+        snapshot: &impl ReadableSnapshot,
+        definition_key: DefinitionKey,
+    ) -> Result<VectorDefinition, Box<ConceptReadError>> {
+        let bytes = snapshot
+            .get::<BUFFER_VALUE_INLINE>(
+                definition_key.clone().into_storage_key().as_reference(),
+                StorageCounters::DISABLED,
+            )
+            .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
+        Ok(VectorDefinition::from_bytes(&bytes.unwrap()))
+    }
+
+    pub(crate) fn get_vector_definitions_all(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<HashMap<DefinitionKey, VectorDefinition>, Box<ConceptReadError>> {
+        snapshot
+            .iterate_range(
+                &KeyRange::new_within(
+                    DefinitionKey::build_prefix(VectorDefinition::PREFIX),
+                    VectorDefinition::PREFIX.fixed_width_keys(),
+                ),
+                StorageCounters::DISABLED,
+            )
+            .collect_cloned_hashmap(|key, value| {
+                (DefinitionKey::new(Bytes::Array(key.bytes().into())), VectorDefinition::from_bytes(value))
+            })
+            .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))
     }
 
     pub(crate) fn get_struct_definitions_all(

@@ -239,9 +239,9 @@ impl<'a> Value<'a> {
     }
 
     pub fn cast(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        if self.value_type().category() == value_type_category {
+        if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if matches!(self, Value::Vector(_)) || !self.value_type().is_trivially_castable_to(value_type_category) {
             return None;
         }
 
@@ -267,9 +267,11 @@ impl<'a> Value<'a> {
     }
 
     pub fn approximate_cast_lower_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        if self.value_type().category() == value_type_category {
+        if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
+        } else if matches!(self, Value::Vector(_))
+            || !self.value_type().is_approximately_castable_to(value_type_category)
+        {
             return None;
         } else if self.value_type().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
@@ -310,9 +312,11 @@ impl<'a> Value<'a> {
     }
 
     pub fn approximate_cast_upper_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        if self.value_type().category() == value_type_category {
+        if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
+        } else if matches!(self, Value::Vector(_))
+            || !self.value_type().is_approximately_castable_to(value_type_category)
+        {
             return None;
         } else if self.value_type().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
@@ -379,9 +383,28 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
-            Value::Vector(vector) => {
-                ValueType::Vector(VectorTypeParameters::new(vector.len() as u16, VectorPrecision::Float32))
+            Value::Vector(_) => {
+                unreachable!(
+                    "vector value types are schema definitions: use value_type_category() or resolve the \
+                     attribute type's vector definition"
+                )
             }
+        }
+    }
+
+    fn value_type_category(&self) -> ValueTypeCategory {
+        match self {
+            Value::Boolean(_) => ValueTypeCategory::Boolean,
+            Value::Integer(_) => ValueTypeCategory::Integer,
+            Value::Double(_) => ValueTypeCategory::Double,
+            Value::Decimal(_) => ValueTypeCategory::Decimal,
+            Value::Date(_) => ValueTypeCategory::Date,
+            Value::DateTime(_) => ValueTypeCategory::DateTime,
+            Value::DateTimeTZ(_) => ValueTypeCategory::DateTimeTZ,
+            Value::Duration(_) => ValueTypeCategory::Duration,
+            Value::String(_) => ValueTypeCategory::String,
+            Value::Struct(_) => ValueTypeCategory::Struct,
+            Value::Vector(_) => ValueTypeCategory::Vector,
         }
     }
 

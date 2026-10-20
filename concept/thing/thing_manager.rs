@@ -455,13 +455,24 @@ impl ThingManager {
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
-        let value_type = value.value_type();
-        let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value_type {
+        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
+        else {
+            return Ok(None);
+        };
+        let matches = match (&attribute_value_type, &value) {
+            (ValueType::Vector(definition_key), Value::Vector(vector)) => {
+                let parameters =
+                    self.type_manager().get_vector_definition(snapshot, definition_key.clone())?.parameters;
+                vector.len() == parameters.length as usize
+            }
+            (ValueType::Vector(_), _) | (_, Value::Vector(_)) => false,
+            (attribute_value_type, value) => attribute_value_type == &value.value_type(),
+        };
+        if !matches {
             return Ok(None);
         }
 
-        let attribute = match value_type {
+        let attribute = match attribute_value_type {
             | ValueType::Boolean
             | ValueType::Integer
             | ValueType::Double
@@ -687,7 +698,10 @@ impl ThingManager {
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value.value_type() {
+        if matches!(value, Value::Vector(_))
+            || attribute_value_type.is_none()
+            || attribute_value_type.as_ref().unwrap() != &value.value_type()
+        {
             return Ok(None);
         }
         let vertex = AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
@@ -752,12 +766,11 @@ impl ThingManager {
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let value_type = value.value_type();
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_read(
             snapshot,
             self,
             attribute_type,
-            value_type.clone(),
+            value.as_reference(),
         )?;
 
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
@@ -1778,6 +1791,7 @@ impl ThingManager {
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<Bound<Value<'a>>> {
         let start_value_type = match range.start_bound() {
+            Bound::Included(Value::Vector(_)) | Bound::Excluded(Value::Vector(_)) => return None,
             Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
@@ -1801,6 +1815,7 @@ impl ThingManager {
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<Bound<Value<'a>>> {
         let end_value_type = match range.end_bound() {
+            Bound::Included(Value::Vector(_)) | Bound::Excluded(Value::Vector(_)) => return None,
             Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
@@ -2396,7 +2411,6 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type,
-            value.value_type(),
             value.as_reference(),
         )?;
 
@@ -2609,7 +2623,6 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type,
-            value.value_type(),
             value.as_reference(),
         )?;
 

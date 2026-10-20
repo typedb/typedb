@@ -295,11 +295,16 @@ impl TypeQLSyntax for ValueType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
-        if let ValueType::Struct(definition_key) = self {
-            write!(f, "{}", type_manager.get_struct_definition(snapshot, definition_key.clone())?.name)
-                .map_err(|err| Box::new(err.into()))
-        } else {
-            write!(f, "{}", self).map_err(|err| Box::new(err.into()))
+        match self {
+            ValueType::Struct(definition_key) => {
+                write!(f, "{}", type_manager.get_struct_definition(snapshot, definition_key.clone())?.name)
+                    .map_err(|err| Box::new(err.into()))
+            }
+            ValueType::Vector(definition_key) => {
+                write!(f, "{}", type_manager.get_vector_definition(snapshot, definition_key.clone())?.parameters)
+                    .map_err(|err| Box::new(err.into()))
+            }
+            _ => write!(f, "{}", self).map_err(|err| Box::new(err.into())),
         }
     }
 }

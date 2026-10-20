@@ -133,7 +133,7 @@ pub fn translate_vector_precision(typeql_precision: token::VectorPrecision) -> V
     }
 }
 
-pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<ValueType, VectorLengthError> {
+pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<VectorTypeParameters, VectorLengthError> {
     let raw_length = vector_type.length.value.as_str();
     let length = raw_length
         .parse::<u16>()
@@ -141,7 +141,7 @@ pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<ValueType, 
         .filter(|length| *length > 0)
         .ok_or_else(|| VectorLengthError { length: raw_length.to_owned(), max: VectorTypeParameters::MAX_LENGTH })?;
     let precision = translate_vector_precision(vector_type.precision);
-    Ok(ValueType::Vector(VectorTypeParameters::new(length, precision)))
+    Ok(VectorTypeParameters::new(length, precision))
 }
 
 #[derive(Debug, Clone)]
