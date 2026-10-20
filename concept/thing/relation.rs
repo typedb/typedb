@@ -68,6 +68,11 @@ impl Relation {
             ConceptStatus::Persisted => Ok(thing_manager.has_links(snapshot, self, false)),
             ConceptStatus::Put => unreachable!("Encountered a `put` relation"),
             ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept."),
+            ConceptStatus::Nonexistent => {
+                unreachable!(
+                    "Attempting to retrieve players of a nonexistent (not buffered, deleted, or persisted) relation."
+                )
+            }
         }
     }
 
@@ -402,7 +407,7 @@ impl ThingAPI for Relation {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(

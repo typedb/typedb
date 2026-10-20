@@ -93,7 +93,7 @@ impl ThingAPI for Entity {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<crate::error::ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(

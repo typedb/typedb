@@ -208,7 +208,6 @@ impl DataInfo {
         thing_manager: &ThingManager,
         id: &str,
     ) -> Result<Option<Attribute>, DatabaseImportError> {
-        // The lock is released before reading storage, so other workers can use the mapping meanwhile
         let Some(recorded_iid) = self.attributes.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)? else {
             return Ok(None);
         };
@@ -1509,8 +1508,10 @@ impl ImportWorker {
             }
         }
         if !pending_links.is_empty() {
-            self.data_info
-                .append_pending_links(PendingLinks { relation_iid: relation.iid().into_array(), links: pending_links })?;
+            self.data_info.append_pending_links(PendingLinks {
+                relation_iid: relation.iid().into_array(),
+                links: pending_links,
+            })?;
         }
         Ok(())
     }

@@ -89,6 +89,11 @@ impl Attribute {
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
+            ConceptStatus::Nonexistent => {
+                unreachable!(
+                    "Attempting to retrieve owners of a nonexistent (not buffered, deleted, or persisted) attribute."
+                )
+            }
         }
     }
 
@@ -158,7 +163,7 @@ impl ThingAPI for Attribute {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(

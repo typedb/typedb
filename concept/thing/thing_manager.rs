@@ -71,10 +71,10 @@ use storage::{
         write::{KnownToExist, Write},
     },
 };
-use tracing::trace;
+use tracing::{trace, warn};
 
 use crate::{
-    ConceptStatus,
+    ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
@@ -232,10 +232,8 @@ impl ThingManager {
         let Some(vertex) = T::Vertex::try_decode(iid) else {
             return Err(Box::new(ConceptReadError::IidRepresentsWrongInstanceKind {}));
         };
-        let exists = snapshot
-            .contains(StorageKeyReference::new(vertex.keyspace(), iid), storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
-        Ok(exists.then_some(T::new(vertex)))
+        let as_concept = T::new(vertex);
+        Ok(self.instance_exists(snapshot, &as_concept, storage_counters)?.then_some(as_concept))
     }
 
     pub fn get_objects_in(
@@ -1780,13 +1778,14 @@ impl ThingManager {
     pub(crate) fn get_status(
         &self,
         snapshot: &impl ReadableSnapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
+        let key = vertex.into_storage_key();
         match self.get_buffered_status(snapshot, key.as_reference()) {
             Some(status) => Ok(status),
             None if self.is_persisted_in_storage(snapshot, key, storage_counters)? => Ok(ConceptStatus::Persisted),
-            None => Ok(ConceptStatus::Deleted),
+            None => Ok(ConceptStatus::Nonexistent),
         }
     }
 
@@ -1809,9 +1808,32 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(snapshot
-            .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
+            .get_mapped_in_lookup_mode(key.as_reference(), SnapshotLookupMode::StorageOnly, |_| (), storage_counters)
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?
             .is_some())
+    }
+
+    pub fn instance_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        instance: &impl ThingAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        match self.get_status(snapshot, instance.vertex(), storage_counters)? {
+            ConceptStatus::Inserted | ConceptStatus::Put | ConceptStatus::Persisted => Ok(true),
+            ConceptStatus::Deleted | ConceptStatus::Nonexistent => Ok(false),
+        }
+    }
+
+    pub fn type_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: impl TypeAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        snapshot
+            .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -1917,28 +1939,6 @@ impl ThingManager {
             },
         )?;
         flush(snapshot, group.take())
-    }
-
-    pub fn instance_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        instance: &impl ThingAPI,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        snapshot
-            .contains(instance.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
-    }
-
-    pub fn type_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        snapshot
-            .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
@@ -2830,7 +2830,7 @@ impl ThingManager {
         entity: Entity,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.delete_object(snapshot, entity.vertex().into_storage_key(), storage_counters)
+        self.delete_object(snapshot, entity.vertex(), storage_counters)
     }
 
     pub(crate) fn delete_relation(
@@ -2839,23 +2839,26 @@ impl ThingManager {
         relation: Relation,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.delete_object(snapshot, relation.vertex().into_storage_key(), storage_counters)
+        self.delete_object(snapshot, relation.vertex(), storage_counters)
     }
 
     fn delete_object(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        vertex: ObjectVertex,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters)?;
-        let key = key.into_owned_array();
+        let status = self.get_status(snapshot, vertex, storage_counters)?;
+        let key = vertex.into_storage_key().into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         match status {
             ConceptStatus::Inserted => snapshot.uninsert(key),
             ConceptStatus::Persisted => snapshot.delete(key),
             ConceptStatus::Deleted => (),
             ConceptStatus::Put => unreachable!("Encountered a `put` object"),
+            ConceptStatus::Nonexistent => {
+                warn!("Skipping delete of an object not in the buffer or in storage");
+            }
         }
         Ok(())
     }
@@ -2867,7 +2870,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let key = attribute.vertex().into_storage_key();
-        match self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters.clone())? {
+        match self.get_status(snapshot, attribute.vertex(), storage_counters.clone())? {
             ConceptStatus::Put => {
                 self.unput_attribute(snapshot, &attribute, storage_counters.clone())?;
                 if self.instance_exists(snapshot, &attribute, storage_counters)? {
@@ -2877,6 +2880,9 @@ impl ThingManager {
             ConceptStatus::Persisted => snapshot.delete(key.into_owned_array()),
             ConceptStatus::Deleted => (),
             ConceptStatus::Inserted => unreachable!("Encountered an `insert`ed attribute"),
+            ConceptStatus::Nonexistent => {
+                warn!("Skipping delete of an attribute not in the buffer or in storage");
+            }
         }
         Ok(())
     }

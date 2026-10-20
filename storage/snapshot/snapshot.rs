@@ -59,6 +59,7 @@ macro_rules! get_mapped_method {
 pub enum SnapshotLookupMode {
     BufferOnly,
     BufferAndStorage,
+    StorageOnly,
 }
 
 pub trait ReadableSnapshot {
@@ -75,14 +76,6 @@ pub trait ReadableSnapshot {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
 
     get_mapped_method!(get_mapped, get);
-
-    fn get_last_existing<const INLINE_BYTES: usize>(
-        &self,
-        key: StorageKeyReference<'_>,
-        storage_counters: StorageCounters,
-    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
-
-    get_mapped_method!(get_last_existing_mapped, get_last_existing);
 
     fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
@@ -347,14 +340,6 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         self.get_in_lookup_mode(key, SnapshotLookupMode::BufferAndStorage, storage_counters)
     }
 
-    fn get_last_existing<const INLINE_BYTES: usize>(
-        &self,
-        key: StorageKeyReference<'_>,
-        storage_counters: StorageCounters,
-    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.get(key, storage_counters)
-    }
-
     fn get_in_lookup_mode<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
@@ -367,7 +352,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
                 // There's no buffer, so if we bypass the storage, it's not there
                 Ok(None)
             }
-            SnapshotLookupMode::BufferAndStorage => self
+            SnapshotLookupMode::BufferAndStorage | SnapshotLookupMode::StorageOnly => self
                 .storage
                 .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
@@ -393,7 +378,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
                 debug_assert!(false, "Unreachable at the time of writing.");
                 SnapshotRangeIterator::new_empty()
             }
-            SnapshotLookupMode::BufferAndStorage => {
+            SnapshotLookupMode::BufferAndStorage | SnapshotLookupMode::StorageOnly => {
                 let mvcc_iterator = self.storage.iterate_range(
                     self.iterator_pool(),
                     range,
@@ -500,7 +485,6 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         self.id
     }
 
-    /// Get the Value for the key, returning an empty Option if it does not exist
     fn get<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
@@ -515,31 +499,23 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.get_write(key) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) => Ok(None),
-            None => match lookup_mode {
-                SnapshotLookupMode::BufferOnly => Ok(None),
-                SnapshotLookupMode::BufferAndStorage => self
-                    .storage
-                    .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                    .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
-            },
-        }
-    }
-
-    /// Get the last existing Value for the key, returning an empty Option if it did not exist
-    fn get_last_existing<const INLINE_BYTES: usize>(
-        &self,
-        key: StorageKeyReference<'_>,
-        storage_counters: StorageCounters,
-    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.get_write(key) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) | None => self
-                .storage
+        let get_from_buffer = |key| match self.get_write(key) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Some(Some(ByteArray::copy(value))),
+            Some(Write::Delete) => Some(None),
+            None => None,
+        };
+        let get_from_storage = |key| {
+            self.storage
                 .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+        };
+        match lookup_mode {
+            SnapshotLookupMode::BufferOnly => Ok(get_from_buffer(key).flatten()),
+            SnapshotLookupMode::BufferAndStorage => match get_from_buffer(key) {
+                Some(buffered) => Ok(buffered),
+                None => get_from_storage(key),
+            },
+            SnapshotLookupMode::StorageOnly => get_from_storage(key),
         }
     }
 
@@ -549,21 +525,19 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        let buffered_iterator = self
-            .operations
-            .writes_in(range.start().get_value().keyspace_id())
-            .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
+        let buffered_iterator = || {
+            self.operations
+                .writes_in(range.start().get_value().keyspace_id())
+                .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed))
+        };
+        let storage_iterator =
+            || self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
         match lookup_mode {
-            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator),
+            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator()),
             SnapshotLookupMode::BufferAndStorage => {
-                let storage_iterator = self.storage.iterate_range(
-                    self.iterator_pool(),
-                    range,
-                    self.open_sequence_number,
-                    storage_counters,
-                );
-                SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+                SnapshotRangeIterator::new(storage_iterator(), Some(buffered_iterator()))
             }
+            SnapshotLookupMode::StorageOnly => SnapshotRangeIterator::new(storage_iterator(), None),
         }
     }
 
@@ -720,7 +694,6 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         self.id
     }
 
-    /// Get the Value for the key, returning an empty Option if it does not exist
     fn get<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
@@ -735,30 +708,23 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.get_write(key) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) => Ok(None),
-            None => match lookup_mode {
-                SnapshotLookupMode::BufferOnly => Ok(None),
-                SnapshotLookupMode::BufferAndStorage => self
-                    .storage
-                    .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                    .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
-            },
-        }
-    }
-    /// Get the last existing Value for the key, returning an empty Option if it did not exist
-    fn get_last_existing<const INLINE_BYTES: usize>(
-        &self,
-        key: StorageKeyReference<'_>,
-        storage_counters: StorageCounters,
-    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.get_write(key) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) | None => self
-                .storage
+        let get_from_buffer = |key| match self.get_write(key) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Some(Some(ByteArray::copy(value))),
+            Some(Write::Delete) => Some(None),
+            None => None,
+        };
+        let get_from_storage = |key| {
+            self.storage
                 .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+        };
+        match lookup_mode {
+            SnapshotLookupMode::BufferOnly => Ok(get_from_buffer(key).flatten()),
+            SnapshotLookupMode::BufferAndStorage => match get_from_buffer(key) {
+                Some(buffered) => Ok(buffered),
+                None => get_from_storage(key),
+            },
+            SnapshotLookupMode::StorageOnly => get_from_storage(key),
         }
     }
 
@@ -768,21 +734,19 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         lookup_mode: SnapshotLookupMode,
         storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
-        let buffered_iterator = self
-            .operations
-            .writes_in(range.start().get_value().keyspace_id())
-            .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
+        let buffered_iterator = || {
+            self.operations
+                .writes_in(range.start().get_value().keyspace_id())
+                .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed))
+        };
+        let storage_iterator =
+            || self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
         match lookup_mode {
-            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator),
+            SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator()),
             SnapshotLookupMode::BufferAndStorage => {
-                let storage_iterator = self.storage.iterate_range(
-                    self.iterator_pool(),
-                    range,
-                    self.open_sequence_number,
-                    storage_counters,
-                );
-                SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+                SnapshotRangeIterator::new(storage_iterator(), Some(buffered_iterator()))
             }
+            SnapshotLookupMode::StorageOnly => SnapshotRangeIterator::new(storage_iterator(), None),
         }
     }
 
@@ -948,14 +912,6 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let Some(map) = self.keyspace_map(key.keyspace_id()) else { return Ok(None) };
         Ok(map.get(key.bytes()).map(|v| ByteArray::copy(&**v)))
-    }
-
-    fn get_last_existing<const INLINE_BYTES: usize>(
-        &self,
-        key: StorageKeyReference<'_>,
-        storage_counters: StorageCounters,
-    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.get(key, storage_counters)
     }
 
     fn get_in_lookup_mode<const INLINE_BYTES: usize>(
