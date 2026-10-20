@@ -336,9 +336,9 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
 #[tokio::test]
 async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
     const NESTED_SCHEMA: &str = r#"define
-  entity person, plays friendship:friend;
+  entity person, plays friendship:friend, plays endorsement:endorser;
   relation friendship, relates friend @card(0..2), plays endorsement:subject;
-  relation endorsement, relates subject;
+  relation endorsement, relates subject, relates endorser;
 "#;
     init_logging();
     let data_dir = create_tmp_dir("migration_relation_players");
@@ -349,7 +349,8 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
         owned_attributes: vec![],
     };
 
-    // The friendship is imported before the endorsement, but a relation player is deferred anyway
+    // The friendship is imported before the endorsement, but a relation player is deferred anyway, and with it
+    // the endorsement's entity player
     let items = vec![
         person("p1"),
         person("p2"),
@@ -366,9 +367,12 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
             id: "e1".to_owned(),
             label: Label::build("endorsement", None),
             owned_attributes: vec![],
-            related_role_players: vec![(Label::build_scoped("subject", "endorsement", None), vec!["f1".to_owned()])],
+            related_role_players: vec![
+                (Label::build_scoped("subject", "endorsement", None), vec!["f1".to_owned()]),
+                (Label::build_scoped("endorser", "endorsement", None), vec!["p1".to_owned()]),
+            ],
         },
-        MigrationItem::Checksums(Checksums::from_counts(2, 0, 2, 3, 0)),
+        MigrationItem::Checksums(Checksums::from_counts(2, 0, 2, 4, 0)),
     ];
     import_all(importer(&database_manager, "nested", NESTED_SCHEMA), items).await;
 
@@ -382,8 +386,7 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
             _ => None,
         })
         .collect();
-    assert_eq!(player_counts.iter().sum::<usize>(), 3, "{items:?}");
-    assert!(!player_counts.contains(&0), "{items:?}");
+    assert_eq!(player_counts, vec![2, 2], "{items:?}");
 }
 
 #[tokio::test]

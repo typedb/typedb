@@ -1484,34 +1484,38 @@ impl ImportWorker {
         relation: Relation,
         links: Vec<(Label, Vec<String>)>,
     ) -> Result<(), DatabaseImportError> {
-        let mut pending_links = Vec::new();
+        let mut resolved_links = Vec::new();
+        let mut defer_links = false;
         for (label, player_ids) in links {
             let role_type = type_manager
                 .get_role_type(snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
                 .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: label.clone() })?;
-
             for id in player_ids {
-                // We defer ALL relation players to a later phase by which time all objects must exist
-                match self.data_info.get_recorded_object(&id)? {
-                    Some(player @ Object::Entity(_)) => {
-                        relation
-                            .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
-                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                        self.data_info.record_role();
-                    }
-                    Some(Object::Relation(_)) | None => pending_links.push(PendingLink {
-                        role_type_id: role_type.vertex().type_id_().as_u16(),
-                        player_original_id: id,
-                    }),
-                }
+                let player = self.data_info.get_recorded_object(&id)?;
+                defer_links |= !matches!(player, Some(Object::Entity(_)));
+                resolved_links.push((role_type, id, player));
             }
         }
-        if !pending_links.is_empty() {
-            self.data_info.append_pending_links(PendingLinks {
-                relation_iid: relation.iid().into_array(),
-                links: pending_links,
-            })?;
+
+        if defer_links {
+            let links = resolved_links
+                .into_iter()
+                .map(|(role_type, id, _)| PendingLink {
+                    role_type_id: role_type.vertex().type_id_().as_u16(),
+                    player_original_id: id,
+                })
+                .collect();
+            return self
+                .data_info
+                .append_pending_links(PendingLinks { relation_iid: relation.iid().into_array(), links });
+        }
+        for (role_type, _, player) in resolved_links {
+            let player = player.expect("Every player is a recorded entity unless the links are deferred");
+            relation
+                .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+            self.data_info.record_role();
         }
         Ok(())
     }
