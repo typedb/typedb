@@ -8,7 +8,6 @@ use std::{
     collections::{HashMap, HashSet},
     iter,
     marker::PhantomData,
-    panic,
     path::PathBuf,
     sync::{
         Arc, Mutex, OnceLock,
@@ -1276,7 +1275,15 @@ impl DatabaseImporterPhase {
     fn join(&mut self) {
         self.sender = None; // drop to drain queue
         for worker in self.workers.drain(..) {
-            if worker.join().is_err() {
+            // A panicked worker. The server's panic hook exits the process first, so this only applies without it
+            let name = worker.thread().name().unwrap_or("import worker").to_owned();
+            if let Err(payload) = worker.join() {
+                let message = payload
+                    .downcast_ref::<&str>()
+                    .copied()
+                    .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+                    .unwrap_or("unknown reason");
+                event!(Level::ERROR, "Import worker '{name}' panicked: {message}");
                 self.error_state.stop_with_error(DatabaseImportError::WorkerStopped {});
             }
         }
@@ -1323,20 +1330,7 @@ impl ImportWorker {
             total_item_count: importer.total_item_count.clone(),
         };
 
-        let spawned = thread::Builder::new().name(name).spawn(move || {
-            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| worker.run(receiver, error_state.clone())));
-            if let Err(err) = result {
-                // Attempt to downcast the panic message if it's a string literal or String
-                let error = if let Some(msg) = err.downcast_ref::<&str>() {
-                    DatabaseImportError::WorkerPanicked { message: msg.to_string() }
-                } else if let Some(msg) = err.downcast_ref::<String>() {
-                    DatabaseImportError::WorkerPanicked { message: msg.clone() }
-                } else {
-                    DatabaseImportError::WorkerPanicked { message: String::from("unknown reason") }
-                };
-                error_state.stop_with_error(error);
-            }
-        });
+        let spawned = thread::Builder::new().name(name).spawn(move || worker.run(receiver, error_state));
 
         match spawned {
             Ok(handle) => Ok(handle),
@@ -1588,6 +1582,5 @@ typedb_error! {
         ImportingDatabaseStillShared(34, "Cannot finalise the import while the importing database is still in use. It is a sign of a bug."),
         WorkerInterrupted(35, "Database import worker was interrupted."),
         WorkerStopped(36, "Database import worker stopped unexpectedly before the import completed."),
-        WorkerPanicked(37, "Database import worker panicked: {message}", message: String),
     }
 }
