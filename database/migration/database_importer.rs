@@ -12,7 +12,7 @@ use std::{
     marker::PhantomData,
     path::PathBuf,
     sync::{
-        Arc, Mutex, OnceLock,
+        Arc, Mutex, OnceLock, RwLock,
         atomic::AtomicU64,
         mpsc::{Receiver, SyncSender, sync_channel},
     },
@@ -158,8 +158,8 @@ type IID = ByteArray<BUFFER_KEY_INLINE>;
 
 #[derive(Debug)]
 struct DataInfo {
-    objects: Mutex<ObjectsInfo>,
-    attributes: Mutex<AttributesInfo>,
+    objects: RwLock<ObjectsInfo>,
+    attributes: RwLock<AttributesInfo>,
     checksums: Checksums,
     expected_checksums: OnceLock<Checksums>,
 }
@@ -167,8 +167,8 @@ struct DataInfo {
 impl DataInfo {
     fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            objects: Mutex::new(ObjectsInfo::new(&cache_directory, database_name)),
-            attributes: Mutex::new(AttributesInfo::new(cache_directory, database_name)),
+            objects: RwLock::new(ObjectsInfo::new(&cache_directory, database_name)),
+            attributes: RwLock::new(AttributesInfo::new(cache_directory, database_name)),
             checksums: Checksums::new(),
             expected_checksums: OnceLock::new(),
         }
@@ -176,17 +176,17 @@ impl DataInfo {
 
     fn record_entity(&self, original_id: String, entity: Entity) -> Result<(), DatabaseImportError> {
         self.checksums.increment_entity_count();
-        self.objects.lock().unwrap().instance_id_mapping.record(original_id, entity.into_object())
+        self.objects.write().unwrap().instance_id_mapping.record(original_id, entity.into_object())
     }
 
     fn record_relation(&self, original_id: String, relation: Relation) -> Result<(), DatabaseImportError> {
         self.checksums.increment_relation_count();
-        self.objects.lock().unwrap().instance_id_mapping.record(original_id, relation.into_object())
+        self.objects.write().unwrap().instance_id_mapping.record(original_id, relation.into_object())
     }
 
     fn record_attribute(&self, original_id: String, attribute: Attribute) -> Result<(), DatabaseImportError> {
         self.checksums.increment_attribute_count();
-        self.attributes.lock().unwrap().instance_id_mapping.record(original_id, attribute)
+        self.attributes.write().unwrap().instance_id_mapping.record(original_id, attribute)
     }
 
     fn record_ownership(&self) {
@@ -198,7 +198,7 @@ impl DataInfo {
     }
 
     fn get_recorded_object(&self, id: &str) -> Result<Option<Object>, DatabaseImportError> {
-        match self.objects.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)? {
+        match self.objects.read().unwrap().instance_id_mapping.get_iid_by_original_id(id)? {
             Some(iid) => Ok(Some(Object::new(decode_object_vertex(&iid)?))),
             None => Ok(None),
         }
@@ -210,7 +210,7 @@ impl DataInfo {
         thing_manager: &ThingManager,
         id: &str,
     ) -> Result<Option<Attribute>, DatabaseImportError> {
-        let Some(recorded_iid) = self.attributes.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)? else {
+        let Some(recorded_iid) = self.attributes.read().unwrap().instance_id_mapping.get_iid_by_original_id(id)? else {
             return Ok(None);
         };
         thing_manager
@@ -219,19 +219,19 @@ impl DataInfo {
     }
 
     fn append_pending_ownership(&self, pending: PendingOwnership) -> Result<(), DatabaseImportError> {
-        self.attributes.lock().unwrap().pending_ownerships.append(pending)
+        self.attributes.write().unwrap().pending_ownerships.append(pending)
     }
 
     fn append_pending_links(&self, pending: PendingLinks) -> Result<(), DatabaseImportError> {
-        self.objects.lock().unwrap().pending_links.append(pending)
+        self.objects.write().unwrap().pending_links.append(pending)
     }
 
     fn take_pending_ownerships(&self) -> Option<SpilloverCache<PendingOwnership>> {
-        self.attributes.lock().unwrap().pending_ownerships.take()
+        self.attributes.write().unwrap().pending_ownerships.take()
     }
 
     fn take_pending_links(&self) -> Option<SpilloverCache<PendingLinks>> {
-        self.objects.lock().unwrap().pending_links.take()
+        self.objects.write().unwrap().pending_links.take()
     }
 
     fn has_expected_checksums(&self) -> bool {
@@ -1412,16 +1412,13 @@ impl DatabaseImporterPhase {
     fn join(&mut self) {
         self.sender = None; // drop to drain queue
         for worker in self.workers.drain(..) {
-            // A panicked worker. The server's panic hook exits the process first, so this only applies without it
-            let name = worker.thread().name().unwrap_or("import worker").to_owned();
             if let Err(payload) = worker.join() {
                 let message = payload
                     .downcast_ref::<&str>()
-                    .copied()
-                    .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
-                    .unwrap_or("unknown reason");
-                event!(Level::ERROR, "Import worker '{name}' panicked: {message}");
-                self.error_state.stop_with_error(DatabaseImportError::WorkerStopped {});
+                    .map(|message| message.to_string())
+                    .or_else(|| payload.downcast_ref::<String>().cloned())
+                    .unwrap_or_else(|| "unknown reason".to_string());
+                self.error_state.stop_with_error(DatabaseImportError::WorkerPanicked { message });
             }
         }
     }
@@ -1750,7 +1747,7 @@ typedb_error! {
         ItemDecode(33, "A migration item could not be decoded.", typedb_source: MigrationOperationError),
         ImportingDatabaseStillShared(34, "Cannot finalise the import while the importing database is still in use. It is a sign of a bug."),
         WorkerInterrupted(35, "Database import worker was interrupted."),
-        WorkerStopped(36, "Database import worker stopped unexpectedly before the import completed."),
+        WorkerPanicked(36, "Database import worker panicked: {message}", message: String),
         ItemOrderViolation(37, "Expected order {order}, but got an item from {current_phase} followed by one from {next_phase}.", order: ItemOrder, current_phase: ImportPhase, next_phase: ImportPhase),
         UnexpectedPhase(38, "Internal error - mismatched item order {order} with phase {phase}.", order: ItemOrder, phase: ImportPhase),
         ExpectedInstanceItem(39, "Internal error - expected an item message containing an instance."),

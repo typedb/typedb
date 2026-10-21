@@ -366,7 +366,7 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
 
         DatabaseImportError::PreparationSchemaCommitFailed { .. }
         | DatabaseImportError::ImporterStopped { .. }
-        | DatabaseImportError::WorkerStopped { .. }
+        | DatabaseImportError::WorkerPanicked { .. }
         | DatabaseImportError::UnexpectedPhase { .. }
         | DatabaseImportError::ExpectedInstanceItem { .. }
         | DatabaseImportError::ImportingDatabaseStillShared { .. } => ErrorOrigin::Internal,
