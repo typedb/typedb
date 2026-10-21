@@ -197,7 +197,7 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    fn start_importer(&self, importing_database: Box<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
+    pub fn start_importer(&self, importing_database: Box<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         DatabaseImporter::start(
             importing_database,
