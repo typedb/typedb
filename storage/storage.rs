@@ -210,7 +210,7 @@ impl<Durability> MVCCStorage<Durability> {
         })
     }
 
-    // for tests: production code passes the secondary store to `create` / `load`
+    // for tests only
     pub fn set_secondary_store(&mut self, secondary_store: Arc<dyn SecondaryStore>) {
         self.secondary_store = Some(secondary_store);
     }
