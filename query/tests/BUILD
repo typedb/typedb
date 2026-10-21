@@ -80,6 +80,7 @@ rustfmt_test(
         ":test_unimplemented",
         ":test_pipeline_stages_limit",
         ":test_query_profile",
+        ":test_query_cache",
     ],
     size = "small",
 )

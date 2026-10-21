@@ -103,7 +103,8 @@ impl QueryCache {
             .as_ref()
             .is_some_and(|statistics| is_pipeline_type_populations_outdated(statistics, &found));
         if is_outdated {
-            self.executable_cache.invalidate(&key);
+            // do not evict: the next compilation will update it, and eviction here could remove
+            // a valid plan inserted concurrently
             return None;
         }
         let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();

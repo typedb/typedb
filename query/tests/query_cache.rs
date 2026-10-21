@@ -161,7 +161,7 @@ fn plan_outdated_by_statistics_is_not_reused() {
     context.cache.set_statistics(Arc::new(statistics));
     assert!(get_executable().is_none(), "a plan outdated by the latest statistics should not be reused");
 
-    // The outdated plan was evicted, so it stays gone even once the statistics match it again.
+    // An outdated plan is not evicted, only skipped: it is reusable again once the statistics match it.
     context.cache.set_statistics(Arc::new(Statistics::new(SequenceNumber::MIN)));
-    assert!(get_executable().is_none(), "an outdated plan should be evicted from the cache");
+    assert!(get_executable().is_some(), "a plan matching the latest statistics again should be reused");
 }
