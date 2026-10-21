@@ -60,7 +60,7 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters}
 use serde::{Serialize, de::DeserializeOwned};
 use storage::{
     durability_client::WALClient,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
+    snapshot::{ReadableSnapshot, WritableSnapshot, write::KnownToExist},
 };
 use tokio::{sync::mpsc, task::JoinHandle};
 use tracing::{Level, event};
@@ -501,6 +501,7 @@ pub struct ImporterConfiguration {
     buffer_size: usize,
     item_order: ItemOrder,
 
+    attributes_unique: bool,
     map_object_ids: bool,
     map_inline_attribute_ids: bool,
 }
@@ -512,6 +513,7 @@ impl Default for ImporterConfiguration {
             buffer_size: 2, // TODO,
             item_order: ItemOrder::Unspecified,
 
+            attributes_unique: false,
             map_object_ids: true,
             map_inline_attribute_ids: true,
         }
@@ -1210,7 +1212,7 @@ impl DatabaseImporter {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database()?
-                .open_write(ImportPhase::Pending.existence_oracle(self.configuration.item_order))
+                .open_write(ImportPhase::Pending.existence_oracle(&self.configuration))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1271,12 +1273,13 @@ pub enum ImportPhase {
 }
 
 impl ImportPhase {
-    fn existence_oracle(&self, item_order: ItemOrder) -> Option<Box<dyn InstanceExistenceOracle>> {
-        match item_order {
+    fn existence_oracle(&self, configuration: &ImporterConfiguration) -> Option<Box<dyn InstanceExistenceOracle>> {
+        match configuration.item_order {
             ItemOrder::Unspecified => None,
-            ItemOrder::AttributeEntityRelation => {
-                Some(Box::new(AttributeEntityRelationExistenceOracle { phase: *self }))
-            }
+            ItemOrder::AttributeEntityRelation => Some(Box::new(AttributeEntityRelationExistenceOracle {
+                phase: *self,
+                attributes_unique: configuration.attributes_unique,
+            })),
         }
     }
 
@@ -1674,7 +1677,7 @@ impl ImportWorker {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database
-                .open_write(self.phase.existence_oracle(self.configuration.item_order))
+                .open_write(self.phase.existence_oracle(&self.configuration))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1695,6 +1698,7 @@ impl Drop for ImportWorker {
 
 struct AttributeEntityRelationExistenceOracle {
     phase: ImportPhase,
+    attributes_unique: bool,
 }
 
 impl Debug for AttributeEntityRelationExistenceOracle {
@@ -1704,12 +1708,27 @@ impl Debug for AttributeEntityRelationExistenceOracle {
 }
 
 impl InstanceExistenceOracle for AttributeEntityRelationExistenceOracle {
-    fn known_persisted_object(&self, object: &Object) -> bool {
-        self.phase.is_from_previous_phase(object.thing_kind(), ItemOrder::AttributeEntityRelation)
+    fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist {
+        let thing_kind = match type_ {
+            ObjectType::Entity(_) => ThingKind::Entity,
+            ObjectType::Relation(_) => ThingKind::Relation,
+        };
+        if self.phase.is_from_previous_phase(thing_kind, ItemOrder::AttributeEntityRelation) {
+            KnownToExist::Exists
+        } else {
+            KnownToExist::Unknown
+        }
     }
 
-    fn known_persisted_attribute(&self, attribute: &Attribute) -> bool {
-        self.phase.is_from_previous_phase(attribute.thing_kind(), ItemOrder::AttributeEntityRelation)
+    fn attribute_known_to_exist(&self, _type: AttributeType) -> KnownToExist {
+        if self.phase == ImportPhase::Attributes && self.attributes_unique {
+            // we can skip Put existence check, if attributes are unique
+            KnownToExist::NonExistent
+        } else if self.phase.is_from_previous_phase(ThingKind::Attribute, ItemOrder::AttributeEntityRelation) {
+            KnownToExist::Exists
+        } else {
+            KnownToExist::Unknown
+        }
     }
 }
 

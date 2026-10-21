@@ -8,14 +8,14 @@ pub(crate) mod schema_id_allocator;
 pub(crate) mod value_hasher;
 
 pub(crate) enum ExistingOrNew<T> {
-    Existing(T),
-    New(T),
+    Existing { item: T, in_storage: bool },
+    New { item: T },
 }
 
 impl<T> ExistingOrNew<T> {
     pub(crate) fn into_inner(self) -> T {
         match self {
-            ExistingOrNew::Existing(inner) | ExistingOrNew::New(inner) => inner,
+            ExistingOrNew::Existing { item, .. } | ExistingOrNew::New { item } => item,
         }
     }
 
@@ -24,8 +24,8 @@ impl<T> ExistingOrNew<T> {
         F: FnOnce(T) -> U,
     {
         match self {
-            ExistingOrNew::Existing(existing) => ExistingOrNew::Existing(mapper(existing)),
-            ExistingOrNew::New(new) => ExistingOrNew::New(mapper(new)),
+            ExistingOrNew::Existing { item, in_storage } => ExistingOrNew::Existing { item: mapper(item), in_storage },
+            ExistingOrNew::New { item } => ExistingOrNew::New { item: mapper(item) },
         }
     }
 }

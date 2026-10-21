@@ -772,8 +772,8 @@ impl StringAttributeID {
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         match Self::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
-            ExistingOrNew::Existing(hashed_id) => Ok(Some(hashed_id)),
-            ExistingOrNew::New(_) => Ok(None),
+            ExistingOrNew::Existing { item: hashed_id, .. } => Ok(Some(hashed_id)),
+            ExistingOrNew::New { .. } => Ok(None),
         }
     }
 
@@ -936,8 +936,8 @@ impl StructAttributeID {
         Snapshot: ReadableSnapshot,
     {
         match Self::build_or_find_hashed_id(type_id, struct_bytes, snapshot, hasher)? {
-            ExistingOrNew::Existing(hashed_id) => Ok(Some(hashed_id)),
-            ExistingOrNew::New(_) => Ok(None),
+            ExistingOrNew::Existing { item: hashed_id, .. } => Ok(Some(hashed_id)),
+            ExistingOrNew::New { .. } => Ok(None),
         }
     }
 

@@ -75,7 +75,7 @@ use storage::{
 use tracing::{trace, warn};
 
 use crate::{
-    ConceptAPI, ConceptStatus,
+    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
@@ -140,10 +140,14 @@ pub struct ThingManager {
     instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
 }
 
+/// Answers, per type, whether an instance being written or looked up already exists in storage, so that the usual
+/// commit-time storage read can be skipped. Answers are applied to every instance of the type in this transaction:
+/// `Exists` turns puts into no-ops and `NonExistent` counts every put as an insert, so an answer other than `Unknown`
+/// must hold for every instance of that type the transaction touches.
 pub trait InstanceExistenceOracle: fmt::Debug + Send + Sync {
-    fn known_persisted_object(&self, object: &Object) -> bool;
+    fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist;
 
-    fn known_persisted_attribute(&self, attribute: &Attribute) -> bool;
+    fn attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist;
 }
 
 impl ThingManager {
@@ -1825,20 +1829,24 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(existence_oracle) = &self.instance_existence_oracle {
-            // TODO: ugly hack to get around generic trait method: re-decode the concrete vertex from the generic one's bytes
+            // TODO: ugly hack to get around generic trait method: re-decode
             let prefix = vertex.prefix();
-            let bytes = vertex.clone().to_bytes();
+            let type_id = vertex.type_id_();
             let known_to_exist = match prefix {
-                Prefix::VertexEntity | Prefix::VertexRelation => {
-                    existence_oracle.known_persisted_object(&Object::new(ObjectVertex::decode(&bytes)))
+                Prefix::VertexEntity => {
+                    existence_oracle.object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id)))
                 }
+                Prefix::VertexRelation => existence_oracle
+                    .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
                 Prefix::VertexAttribute => {
-                    existence_oracle.known_persisted_attribute(&Attribute::new(AttributeVertex::decode(&bytes)))
+                    existence_oracle.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
                 }
                 _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
             };
-            if known_to_exist {
-                return Ok(true);
+            match known_to_exist {
+                KnownToExist::Exists => return Ok(true),
+                KnownToExist::NonExistent => return Ok(false),
+                KnownToExist::Unknown => {}
             }
         }
         let key = vertex.into_storage_key();
@@ -2757,6 +2765,12 @@ impl ThingManager {
             value.as_reference(),
         )?;
 
+        let known_to_exist = self
+            .instance_existence_oracle
+            .as_ref()
+            .map(|oracle| oracle.attribute_known_to_exist(attribute_type))
+            .unwrap_or(KnownToExist::Unknown);
+
         let vertex = match value
             .cast(attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap().category())
             .expect("value type compatibility should have been verified by this point")
@@ -2767,6 +2781,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_boolean,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Integer(integer) => {
@@ -2775,6 +2790,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_integer,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Double(double) => {
@@ -2783,6 +2799,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_double,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Decimal(decimal) => {
@@ -2791,11 +2808,17 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_decimal,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Date(date) => {
                 let encoded_date = DateBytes::build(date);
-                self.vertex_generator.create_attribute_date(attribute_type.vertex().type_id_(), encoded_date, snapshot)
+                self.vertex_generator.create_attribute_date(
+                    attribute_type.vertex().type_id_(),
+                    encoded_date,
+                    snapshot,
+                    known_to_exist,
+                )
             }
             Value::DateTime(date_time) => {
                 let encoded_date_time = DateTimeBytes::build(date_time);
@@ -2803,6 +2826,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_date_time,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::DateTimeTZ(date_time_tz) => {
@@ -2811,6 +2835,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_date_time_tz,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Duration(duration) => {
@@ -2819,12 +2844,18 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_duration,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::String(string) => {
                 let encoded_string: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                 self.vertex_generator
-                    .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
+                    .create_attribute_string(
+                        attribute_type.vertex().type_id_(),
+                        encoded_string,
+                        snapshot,
+                        known_to_exist,
+                    )
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }
             Value::Struct(struct_) => {

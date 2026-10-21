@@ -15,7 +15,7 @@ use storage::{
     MVCCStorage,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    snapshot::{ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
+    snapshot::{ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError, write::KnownToExist},
 };
 
 use super::vertex_attribute::{
@@ -188,13 +188,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: BooleanBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let boolean_attribute_id = self.create_attribute_id_boolean(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Boolean(boolean_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -203,13 +204,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: IntegerBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let integer_attribute_id = self.create_attribute_id_integer(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Integer(integer_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -218,13 +220,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: DoubleBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let double_attribute_id = self.create_attribute_id_double(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Double(double_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -233,13 +236,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: DecimalBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let decimal_attribute_id = self.create_attribute_id_decimal(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Decimal(decimal_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -248,13 +252,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: DateBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let date_attribute_id = self.create_attribute_id_date(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Date(date_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -263,13 +268,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: DateTimeBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let date_time_attribute_id = self.create_attribute_id_date_time(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::DateTime(date_time_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -278,13 +284,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: DateTimeTZBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -293,13 +300,14 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: DurationBytes,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
         let duration_attribute_id = self.create_attribute_id_duration(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Duration(duration_attribute_id));
-        snapshot.put(vertex.into_storage_key().into_owned_array());
+        snapshot.put_with_known_to_exist(vertex.into_storage_key().into_owned_array(), known_to_exist);
         vertex
     }
 
@@ -346,11 +354,13 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
+    /// `known_to_exist` applies to inline IDs only: hashed IDs learn their existence from the bucket scan.
     pub fn create_attribute_string<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         value: StringBytes<INLINE_LENGTH>,
         snapshot: &mut Snapshot,
+        known_to_exist: KnownToExist,
     ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
     where
         Snapshot: WritableSnapshot,
@@ -359,22 +369,36 @@ impl ThingVertexGenerator {
         if StringAttributeID::is_inlineable(string.as_reference()) {
             let inline_id = StringAttributeID::build_inline_id(string);
             let inlined_vertex = AttributeVertex::new(type_id, AttributeID::String(inline_id));
-            snapshot.put(inlined_vertex.into_storage_key().into_owned_array());
+            snapshot.put_with_known_to_exist(inlined_vertex.into_storage_key().into_owned_array(), known_to_exist);
             Ok(inlined_vertex)
         } else {
             let hasher = &self.large_value_hasher;
             let hashed_vertex = match StringAttributeID::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
-                ExistingOrNew::Existing(hashed_id) => {
+                ExistingOrNew::Existing { item: hashed_id, in_storage } => {
                     let vertex = AttributeVertex::new(type_id, AttributeID::String(hashed_id));
                     Self::lock_existing_hashed_attribute(&vertex, snapshot);
+                    if in_storage {
+                        snapshot.put_val_with_known_to_exist(
+                            vertex.clone().into_storage_key().into_owned_array(),
+                            ByteArray::from(value.bytes()),
+                            KnownToExist::Exists,
+                        );
+                    } // else in buffer so don't need to re-put
                     vertex
                 }
-                ExistingOrNew::New(hashed_id) => {
+                ExistingOrNew::New { item: hashed_id } => {
                     Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
-                    AttributeVertex::new(type_id, AttributeID::String(hashed_id))
+                    let vertex = AttributeVertex::new(type_id, AttributeID::String(hashed_id));
+                    // must be a brand new attribute value if commit succeeds: we have exclusive lock on the bucket
+                    // and did not discover an existing matching value
+                    snapshot.put_val_with_known_to_exist(
+                        vertex.into_storage_key().into_owned_array(),
+                        ByteArray::from(value.bytes()),
+                        KnownToExist::NonExistent,
+                    );
+                    vertex
                 }
             };
-            snapshot.put_val(hashed_vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
             Ok(hashed_vertex)
         }
     }
@@ -404,17 +428,31 @@ impl ThingVertexGenerator {
         let hasher = &self.large_value_hasher;
         let hashed_vertex =
             match StructAttributeID::build_or_find_hashed_id(type_id, value.as_reference(), snapshot, hasher)? {
-                ExistingOrNew::Existing(hashed_id) => {
+                ExistingOrNew::Existing { item: hashed_id, in_storage } => {
                     let vertex = AttributeVertex::new(type_id, AttributeID::Struct(hashed_id));
                     Self::lock_existing_hashed_attribute(&vertex, snapshot);
+                    if in_storage {
+                        snapshot.put_val_with_known_to_exist(
+                            vertex.clone().into_storage_key().into_owned_array(),
+                            ByteArray::from(value.bytes()),
+                            KnownToExist::Exists,
+                        );
+                    } // else in buffer so don't need to re-put
                     vertex
                 }
-                ExistingOrNew::New(hashed_id) => {
+                ExistingOrNew::New { item: hashed_id } => {
                     Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
-                    AttributeVertex::new(type_id, AttributeID::Struct(hashed_id))
+                    let vertex = AttributeVertex::new(type_id, AttributeID::Struct(hashed_id));
+                    // must be a brand new attribute value if commit succeeds: we have exclusive lock on the bucket
+                    // and did not discover an existing matching value
+                    snapshot.put_val_with_known_to_exist(
+                        vertex.into_storage_key().into_owned_array(),
+                        ByteArray::from(value.bytes()),
+                        KnownToExist::NonExistent,
+                    );
+                    vertex
                 }
             };
-        snapshot.put_val(hashed_vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(hashed_vertex)
     }
 

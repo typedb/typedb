@@ -199,6 +199,10 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.put_val(key, ByteArray::empty())
     }
 
+    fn put_with_known_to_exist(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, known_to_exist: KnownToExist) {
+        self.put_val_with_known_to_exist(key, ByteArray::empty(), known_to_exist);
+    }
+
     fn put_val(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
