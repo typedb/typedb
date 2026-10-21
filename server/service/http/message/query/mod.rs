@@ -16,7 +16,7 @@ use clap::builder::TypedValueParser;
 use compiler::annotation::function::FunctionParameterAnnotation;
 use encoding::{
     graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
-    value::{ValueEncodable, value::Value, value_type::ValueType},
+    value::{ValueEncodable, value::Value, value_type::{ValueType, ValueTypeCategory}},
 };
 use ir::translation::{literal::FromTypeQLLiteral, parse_iid};
 use options::QueryOptions;
@@ -386,7 +386,7 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
     match value.value_type.as_str() {
         DECIMAL => decode(&format!("{}dec", &as_str[1..as_str.len() - 1])),
         DATE | DATETIME | DATETIME_TZ | DURATION => decode(&as_str[1..as_str.len() - 1]),
-        vector_type if vector_type.starts_with("vector") => {
+        vector_type if vector_type.starts_with(ValueTypeCategory::Vector.name()) => {
             let elements: Vec<f32> = serde_json::from_value(value.value)
                 .map_err(|_| GivenRowDecodeError::InvalidVectorForGivenEntry { value: as_str })?;
             Ok(Value::Vector(std::borrow::Cow::Owned(elements)))
