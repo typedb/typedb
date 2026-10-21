@@ -709,7 +709,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &player).lookup_mode;
         Iterator::map(
             LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
@@ -781,7 +781,7 @@ impl ThingManager {
         };
 
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
         let has_exists = snapshot
             .get_mapped_in_lookup_mode(
                 has.into_storage_key().as_reference(),
@@ -802,7 +802,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
         let has_exists = snapshot
             .get_mapped_in_lookup_mode(
                 has.into_storage_key().as_reference(),
@@ -1061,7 +1061,7 @@ impl ThingManager {
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
         Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
@@ -1110,7 +1110,7 @@ impl ThingManager {
                     end_attribute_key.bytes(),
                 ));
                 let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-                let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+                let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
                 Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(
                     &key_range,
                     snapshot_lookup_mode,
@@ -1159,7 +1159,7 @@ impl ThingManager {
             end_value_bound,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
         Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
@@ -1204,7 +1204,7 @@ impl ThingManager {
                     attribute_key.bytes(),
                 );
                 let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-                let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+                let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
                 HasIterator::new(snapshot.iterate_range_in_lookup_mode(
                     &key_range,
                     snapshot_lookup_mode,
@@ -1248,7 +1248,7 @@ impl ThingManager {
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
         HasIterator::new(snapshot.iterate_range_in_lookup_mode(&range, snapshot_lookup_mode, storage_counters))
     }
 
@@ -1317,7 +1317,7 @@ impl ThingManager {
             None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &owner).lookup_mode;
         let attributes = snapshot
             .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
@@ -1476,7 +1476,7 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &relation).lookup_mode;
         LinksIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters))
     }
 
@@ -1488,7 +1488,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &relation).lookup_mode;
         LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
             snapshot_lookup_mode,
@@ -1546,7 +1546,7 @@ impl ThingManager {
                 ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
             }
         };
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &player).lookup_mode;
         LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new(
                 RangeStart::Inclusive(range_start),
@@ -1567,8 +1567,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::between_objects(snapshot, &relation, &player).lookup_mode;
         let links_exists = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -1588,7 +1587,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &relation).lookup_mode;
         Iterator::map(
             LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
@@ -1607,7 +1606,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &relation).lookup_mode;
         let players = snapshot
             .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
@@ -3044,7 +3043,7 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
+            let edge_is_known_to_exist = EdgesExistence::from_single_object(snapshot, &owner).known_to_exist;
             owner.set_required(snapshot, self, storage_counters.clone())?;
             attribute.set_required(snapshot, self, storage_counters.clone())?;
             snapshot.put_val_with_known_to_exist(
@@ -3107,7 +3106,7 @@ impl ThingManager {
             attribute_value_type.category(),
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
-        let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
+        let edge_is_known_to_exist = EdgesExistence::from_single_object(snapshot, &owner).known_to_exist;
 
         snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
 
@@ -3142,8 +3141,7 @@ impl ThingManager {
         player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
-        let edge_is_known_to_exist =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
+        let edge_is_known_to_exist = EdgesExistence::between_objects(snapshot, &relation, &player).known_to_exist;
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         snapshot.put_val_with_known_to_exist(
             links.into_storage_key().into_owned_array(),
@@ -3182,7 +3180,7 @@ impl ThingManager {
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
 
-        let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &relation).is_edge_known_to_exist();
+        let edge_is_known_to_exist = EdgesExistence::from_single_object(snapshot, &relation).known_to_exist;
 
         snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
 
@@ -3206,8 +3204,7 @@ impl ThingManager {
         if count == 0 {
             self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
-            let edge_is_known_to_exist =
-                ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
+            let edge_is_known_to_exist = EdgesExistence::between_objects(snapshot, &relation, &player).known_to_exist;
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
@@ -3279,8 +3276,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::between_objects(snapshot, &relation, &player).lookup_mode;
         let count = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -3319,8 +3315,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = EdgesExistence::between_objects(snapshot, &relation, &player).lookup_mode;
         let count = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -3372,13 +3367,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
+        let edge_is_known_to_exist = EdgesExistence::between_objects(snapshot, &relation, &player).known_to_exist;
         let players = relation
             .get_players(snapshot, self, storage_counters)
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
         for rp in players {
             let (rp_player, rp_role_type, rp_count) = rp?;
-            let edge_is_known_to_exist =
-                ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
             if rp_player.is_same_role_player(rp_role_type, player, role_type) {
                 let player_repetitions = count_for_player - 1;
                 if player_repetitions > 0 {
@@ -3497,7 +3491,7 @@ impl ThingManager {
             );
             let index_range =
                 KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-            let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+            let snapshot_lookup_mode = EdgesExistence::from_single_object(snapshot, &relation).lookup_mode;
             let collected = snapshot
                 .iterate_range_in_lookup_mode(&index_range, snapshot_lookup_mode, storage_counters.clone())
                 .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
@@ -3636,39 +3630,42 @@ impl ObjectOrigin {
     }
 
     pub(crate) fn is_this_transaction(&self) -> bool {
-        *self == Self::ThisTransaction
+        matches!(*self, Self::ThisTransaction)
     }
 
     pub(crate) fn is_unknown_transaction(&self) -> bool {
-        *self == Self::UnknownTransaction
+        matches!(self, Self::UnknownTransaction)
     }
+}
 
-    fn in_this_transaction_if_either(
-        snapshot: &impl ReadableSnapshot,
-        first: &impl ObjectAPI,
-        second: &impl ObjectAPI,
-    ) -> Self {
-        Self::either(Self::of(snapshot, first), Self::of(snapshot, second))
-    }
+struct EdgesExistence {
+    known_to_exist: KnownToExist,
+    lookup_mode: SnapshotLookupMode,
+}
 
-    fn either(first: Self, second: Self) -> Self {
-        match (first, second) {
-            (Self::ThisTransaction, _) | (_, Self::ThisTransaction) => Self::ThisTransaction,
-            (Self::UnknownTransaction, Self::UnknownTransaction) => Self::UnknownTransaction,
+impl EdgesExistence {
+    fn from_single_object(snapshot: &impl ReadableSnapshot, object: &impl ObjectAPI) -> Self {
+        let object_origin = ObjectOrigin::of(snapshot, object);
+        match object_origin {
+            ObjectOrigin::ThisTransaction => {
+                Self { known_to_exist: KnownToExist::NonExistent, lookup_mode: SnapshotLookupMode::BufferOnly }
+            }
+            ObjectOrigin::UnknownTransaction => {
+                Self { known_to_exist: KnownToExist::Unknown, lookup_mode: SnapshotLookupMode::BufferAndStorage }
+            }
         }
     }
 
-    pub(crate) fn is_edge_known_to_exist(&self) -> KnownToExist {
-        match self {
-            ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
-            ObjectOrigin::UnknownTransaction => KnownToExist::Unknown,
-        }
-    }
-
-    pub(crate) fn edge_lookup_mode(&self) -> SnapshotLookupMode {
-        match self {
-            ObjectOrigin::ThisTransaction => SnapshotLookupMode::BufferOnly,
-            ObjectOrigin::UnknownTransaction => SnapshotLookupMode::BufferAndStorage,
+    fn between_objects(snapshot: &impl ReadableSnapshot, first: &impl ObjectAPI, second: &impl ObjectAPI) -> Self {
+        let first_origin = ObjectOrigin::of(snapshot, first);
+        let second_origin = ObjectOrigin::of(snapshot, second);
+        match (first_origin, second_origin) {
+            (ObjectOrigin::ThisTransaction, _) | (_, ObjectOrigin::ThisTransaction) => {
+                Self { known_to_exist: KnownToExist::NonExistent, lookup_mode: SnapshotLookupMode::BufferOnly }
+            }
+            (ObjectOrigin::UnknownTransaction, ObjectOrigin::UnknownTransaction) => {
+                Self { known_to_exist: KnownToExist::Unknown, lookup_mode: SnapshotLookupMode::BufferAndStorage }
+            }
         }
     }
 }
