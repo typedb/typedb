@@ -189,8 +189,9 @@ fn redefine_struct_fields(
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
     for field in &struct_definable.fields {
-        let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
-            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
+        let (value_type, optional) =
+            get_struct_field_value_type_optionality(snapshot, type_manager, struct_key.clone(), field)
+                .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         let definition_status = get_struct_field_status(
             snapshot,

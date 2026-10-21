@@ -130,10 +130,19 @@ impl<'a> StructValue<'a> {
     ) -> Result<(), Arc<SnapshotIteratorError>> {
         for (idx, value) in fields.iter() {
             path.push(*idx);
-            if let Value::Struct(struct_val) = value {
-                Self::create_index_entries_recursively(snapshot, hasher, attribute, struct_val.fields(), path, acc)?;
-            } else {
-                acc.push(StructIndexEntry::build(snapshot, hasher, path, value, attribute)?);
+            match value {
+                Value::Struct(struct_val) => {
+                    Self::create_index_entries_recursively(
+                        snapshot,
+                        hasher,
+                        attribute,
+                        struct_val.fields(),
+                        path,
+                        acc,
+                    )?;
+                }
+                Value::Vector(_) => {}
+                _ => acc.push(StructIndexEntry::build(snapshot, hasher, path, value, attribute)?),
             }
             let popped = path.pop().unwrap();
             debug_assert_eq!(*idx, popped);

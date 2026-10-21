@@ -329,3 +329,30 @@ fn vector_attribute_requires_index_annotation() {
     let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
     assert!(result.is_err(), "@index on a non-vector value type should be rejected");
 }
+
+#[test]
+fn struct_fields_accept_vector_value_types() {
+    use encoding::value::value_type::{ValueType, VectorPrecision, VectorTypeParameters};
+
+    let context = setup_empty();
+    let define = r#"define struct doc: content value string, embedding value vector(3, "float32");"#;
+    try_define(&context, define).unwrap();
+
+    let embedding_vector_definition = || {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let struct_key = context.type_manager.get_struct_definition_key(&snapshot, "doc").unwrap().unwrap();
+        let definition = context.type_manager.get_struct_definition(&snapshot, struct_key).unwrap();
+        let ValueType::Vector(vector_key) = definition.get_field("embedding").unwrap().value_type.clone() else {
+            panic!("expected the embedding field to have a vector value type");
+        };
+        let parameters = context.type_manager.get_vector_definition(&snapshot, vector_key.clone()).unwrap().parameters;
+        (vector_key, parameters)
+    };
+
+    let (vector_key, parameters) = embedding_vector_definition();
+    assert_eq!(parameters, VectorTypeParameters::new(3, VectorPrecision::Float32));
+
+    try_define(&context, define).expect("re-defining the same struct must be idempotent");
+    let (vector_key_after_redefine, _) = embedding_vector_definition();
+    assert_eq!(vector_key, vector_key_after_redefine, "unchanged vector field must reuse its definition key");
+}

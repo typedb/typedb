@@ -73,8 +73,9 @@ pub(crate) fn type_to_object_type(type_: &Type) -> Result<ObjectType, ()> {
 }
 
 pub(crate) fn get_struct_field_value_type_optionality(
-    snapshot: &impl ReadableSnapshot,
+    snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
+    struct_key: DefinitionKey,
     field: &Field,
 ) -> Result<(ValueType, bool), Box<SymbolResolutionError>> {
     let optional = matches!(&field.type_, NamedTypeAny::Optional(_));
@@ -82,10 +83,17 @@ pub(crate) fn get_struct_field_value_type_optionality(
         NamedTypeAny::Simple(named) | NamedTypeAny::Optional(NamedTypeOptional { inner: named, .. }) => {
             match resolve_value_type(snapshot, type_manager, named)? {
                 ResolvedValueType::Value(value_type) => Ok((value_type, optional)),
-                ResolvedValueType::Vector(_) => Err(Box::new(SymbolResolutionError::StructFieldIllegalVector {
-                    declaration: field.clone(),
-                    source_span: field.span(),
-                })),
+                ResolvedValueType::Vector(parameters) => {
+                    let value_type = resolve_or_create_struct_field_vector_value_type(
+                        snapshot,
+                        type_manager,
+                        struct_key,
+                        checked_identifier(&field.key)?,
+                        parameters,
+                        field.span(),
+                    )?;
+                    Ok((value_type, optional))
+                }
             }
         }
         NamedTypeAny::List(_) => Err(Box::new(SymbolResolutionError::StructFieldIllegalList {
@@ -171,6 +179,33 @@ pub(crate) fn resolve_value_type(
             Ok(ResolvedValueType::Vector(parameters))
         }
     }
+}
+
+fn resolve_or_create_struct_field_vector_value_type(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    struct_key: DefinitionKey,
+    field_name: &str,
+    parameters: VectorTypeParameters,
+    source_span: Option<Span>,
+) -> Result<ValueType, Box<SymbolResolutionError>> {
+    let struct_definition = type_manager.get_struct_definition(snapshot, struct_key).map_err(|typedb_source| {
+        Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source, source_span })
+    })?;
+    if let Some(ValueType::Vector(definition_key)) =
+        struct_definition.get_field(field_name).map(|field| field.value_type.clone())
+    {
+        let definition =
+            type_manager.get_vector_definition(snapshot, definition_key.clone()).map_err(|typedb_source| {
+                Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source, source_span })
+            })?;
+        if definition.parameters == parameters {
+            return Ok(ValueType::Vector(definition_key));
+        }
+    }
+    type_manager
+        .create_vector_value_type(snapshot, parameters)
+        .map_err(|typedb_source| Box::new(SymbolResolutionError::UnexpectedConceptWrite { typedb_source, source_span }))
 }
 
 pub(crate) fn resolve_or_create_vector_value_type(
@@ -610,7 +645,6 @@ typedb_error! {
         IllegalKeywordAsIdentifier(16, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier, source_span: Option<Span>),
         SubNotFound(17, "The type '{subtype_label}' does not subtype '{supertype_label}'.", subtype_label: Label, supertype_label: Label, source_span: Option<Span>),
         VectorLengthInvalid(18, "The vector length '{length}' is invalid: it must be a positive integer no greater than {max}.", length: String, max: u16, source_span: Option<Span>),
-        StructFieldIllegalVector(19, "Struct fields cannot have vector value types.\nSource:\n{declaration}", declaration: Field, source_span: Option<Span>),
         UnexpectedConceptWrite(20, "Unexpected concept write error.", typedb_source: Box<ConceptWriteError>, source_span: Option<Span>),
     }
 }
