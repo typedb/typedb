@@ -109,12 +109,12 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
-        "typedb_protocol+": "fd631d5d4c980e8cb30e4403229862776d07b17b",
-        "typeql+": "fec3db1ff4b0881477f57426e8278e7e577d5656",
+#        "typedb_protocol+": "fd631d5d4c980e8cb30e4403229862776d07b17b",
+#        "typeql+": "fec3db1ff4b0881477f57426e8278e7e577d5656",
     },
     workspace_tag_dict = {
-#        "typedb_protocol+": "3.13.4",
-#        "typeql+": "3.13.4",
+        "typedb_protocol+": "3.14.0",
+        "typeql+": "3.14.0",
     },
 )
 
@@ -125,13 +125,13 @@ native_artifact_files.artifact(
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
     archive_strip_prefix = "typedb-console-{platform}-{version}",
-    tag = "3.14.0-rc0",
+    tag = "3.14.0",
 )
 native_artifact_files.artifact(
     name = "typedb_loader_artifact",
     group_name = "typedb-loader-{platform}",
     artifact_name = "typedb-loader-{platform}-{version}.{ext}",
-    tag = "3.14.0-rc0",
+    tag = "3.14.0",
 )
 use_repo(
     native_artifact_files,
@@ -165,28 +165,28 @@ bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "3140b73924132511cfd4015479816f94351b90a8",
+    commit = "72be1943c483b80682566b02bae75a19167d7797",
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "502af30cfbe6b52e968c4ee16305483e88f4b854",
+    commit = "fe2ebb134286267b423ec2f3378a797e24f2d900",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "fec3db1ff4b0881477f57426e8278e7e577d5656",
+    tag = "3.14.0",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "fd631d5d4c980e8cb30e4403229862776d07b17b",
+    tag = "3.14.0",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
