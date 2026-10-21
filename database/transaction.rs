@@ -17,7 +17,7 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         statistics::{StatisticsError, deltas::CommitDeltas},
-        thing_manager::{InstanceExistenceOracle, ThingManager},
+        thing_manager::{ConceptPersistenceOracle, ThingManager},
     },
     type_::type_manager::{
         TypeManager,
@@ -143,13 +143,13 @@ pub struct TransactionWrite<D> {
 
 impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
-        Self::open_with_existence_oracle(database, transaction_options, None)
+        Self::open_with_persisted_concepts_oracle(database, transaction_options, None)
     }
 
-    pub fn open_with_existence_oracle(
+    pub fn open_with_persisted_concepts_oracle(
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
-        existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+        persisted_concepts_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
     ) -> Result<Self, TransactionError> {
         database
             .reserve_write_transaction(Duration::from_millis(transaction_options.schema_lock_acquire_timeout_millis))?;
@@ -161,11 +161,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
         ));
-        let thing_manager = Arc::new(ThingManager::new_with_existence_oracle(
+        let thing_manager = Arc::new(ThingManager::new_with_persisted_concepts_oracle(
             database.thing_vertex_generator.clone(),
             type_manager.clone(),
             schema.thing_statistics.clone(),
-            existence_oracle,
+            persisted_concepts_oracle,
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),

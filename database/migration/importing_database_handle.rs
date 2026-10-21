@@ -6,7 +6,7 @@
 
 use std::{sync::Arc, time::Duration};
 
-use concept::thing::thing_manager::InstanceExistenceOracle;
+use concept::thing::thing_manager::ConceptPersistenceOracle;
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_DAY;
 use storage::durability_client::WALClient;
@@ -24,7 +24,7 @@ pub trait ImportingDatabaseHandle: Send + Sync {
 
     fn open_write(
         &self,
-        instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+        persisted_concepts_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
     ) -> Result<TransactionWrite<WALClient>, TransactionError>;
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
@@ -48,12 +48,12 @@ pub fn open_import_schema_transaction(
 
 pub fn open_import_write_transaction(
     database: &Arc<Database<WALClient>>,
-    instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+    persisted_concepts_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
 ) -> Result<TransactionWrite<WALClient>, TransactionError> {
-    TransactionWrite::open_with_existence_oracle(
+    TransactionWrite::open_with_persisted_concepts_oracle(
         database.clone(),
         import_transaction_options(),
-        instance_existence_oracle,
+        persisted_concepts_oracle,
     )
 }
 

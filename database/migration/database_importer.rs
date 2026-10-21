@@ -29,7 +29,7 @@ use concept::{
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
-        thing_manager::{InstanceExistenceOracle, ThingManager},
+        thing_manager::{ConceptPersistenceOracle, ThingManager},
     },
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
@@ -1212,7 +1212,7 @@ impl DatabaseImporter {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database()?
-                .open_write(ImportPhase::Pending.existence_oracle(&self.configuration))
+                .open_write(ImportPhase::Pending.persisted_concepts_oracle(&self.configuration))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1273,10 +1273,13 @@ pub enum ImportPhase {
 }
 
 impl ImportPhase {
-    fn existence_oracle(&self, configuration: &ImporterConfiguration) -> Option<Box<dyn InstanceExistenceOracle>> {
+    fn persisted_concepts_oracle(
+        &self,
+        configuration: &ImporterConfiguration,
+    ) -> Option<Box<dyn ConceptPersistenceOracle>> {
         match configuration.item_order {
             ItemOrder::Unspecified => None,
-            ItemOrder::AttributeEntityRelation => Some(Box::new(AttributeEntityRelationExistenceOracle {
+            ItemOrder::AttributeEntityRelation => Some(Box::new(AttributeEntityRelationPersistedConceptsOracle {
                 phase: *self,
                 attributes_unique: configuration.attributes_unique,
             })),
@@ -1677,7 +1680,7 @@ impl ImportWorker {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database
-                .open_write(self.phase.existence_oracle(&self.configuration))
+                .open_write(self.phase.persisted_concepts_oracle(&self.configuration))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1696,18 +1699,13 @@ impl Drop for ImportWorker {
     }
 }
 
-struct AttributeEntityRelationExistenceOracle {
+#[derive(Debug)]
+struct AttributeEntityRelationPersistedConceptsOracle {
     phase: ImportPhase,
     attributes_unique: bool,
 }
 
-impl Debug for AttributeEntityRelationExistenceOracle {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "AttributeEntityRelationExistenceOracle[phase={}]", self.phase)
-    }
-}
-
-impl InstanceExistenceOracle for AttributeEntityRelationExistenceOracle {
+impl ConceptPersistenceOracle for AttributeEntityRelationPersistedConceptsOracle {
     fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist {
         let thing_kind = match type_ {
             ObjectType::Entity(_) => ThingKind::Entity,
@@ -1721,13 +1719,45 @@ impl InstanceExistenceOracle for AttributeEntityRelationExistenceOracle {
     }
 
     fn attribute_known_to_exist(&self, _type: AttributeType) -> KnownToExist {
-        if self.phase == ImportPhase::Attributes && self.attributes_unique {
-            // we can skip Put existence check, if attributes are unique
-            KnownToExist::NonExistent
-        } else if self.phase.is_from_previous_phase(ThingKind::Attribute, ItemOrder::AttributeEntityRelation) {
+        if self.phase.is_from_previous_phase(ThingKind::Attribute, ItemOrder::AttributeEntityRelation) {
             KnownToExist::Exists
         } else {
             KnownToExist::Unknown
+        }
+    }
+
+    fn new_attribute_known_to_exist(&self, _type: AttributeType) -> KnownToExist {
+        if self.phase == ImportPhase::Attributes && self.attributes_unique {
+            // unique attribute values make every put in the attributes phase a fresh insert
+            KnownToExist::NonExistent
+        } else {
+            KnownToExist::Unknown
+        }
+    }
+
+    fn links_edges_known_to_exist_from_relation(&self) -> KnownToExist {
+        match self.phase {
+            // a relation's links are all written with the relation, or all deferred together till later
+            ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Pending => KnownToExist::NonExistent,
+            ImportPhase::Default | ImportPhase::Attributes => KnownToExist::Unknown,
+        }
+    }
+
+    fn links_reverse_edges_known_to_exist_from_player(&self) -> KnownToExist {
+        match self.phase {
+            ImportPhase::Default | ImportPhase::Relations | ImportPhase::Pending => KnownToExist::Unknown,
+            ImportPhase::Attributes | ImportPhase::Entities => KnownToExist::NonExistent,
+        }
+    }
+
+    fn has_edges_known_to_exist_from_owner(&self) -> KnownToExist {
+        match self.phase {
+            // an owner's ownerships are all written in the transaction that creates it
+            ImportPhase::Entities | ImportPhase::Relations => KnownToExist::NonExistent,
+            // a pending ownership's owner already has its other ownerships in storage
+            ImportPhase::Pending => KnownToExist::Unknown,
+            // no edges are read or written in these phases
+            ImportPhase::Default | ImportPhase::Attributes => KnownToExist::Unknown,
         }
     }
 }

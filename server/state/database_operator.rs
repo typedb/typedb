@@ -7,7 +7,7 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
-use concept::thing::thing_manager::InstanceExistenceOracle;
+use concept::thing::thing_manager::ConceptPersistenceOracle;
 use concurrency::TokioTaskSpawner;
 use database::{
     Database, DatabaseDeleteError, DatabaseOpenError,
@@ -128,9 +128,9 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
 
     fn open_write(
         &self,
-        instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+        persisted_concepts_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
     ) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database, instance_existence_oracle)
+        open_import_write_transaction(&self.staged_database, persisted_concepts_oracle)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
