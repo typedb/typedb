@@ -81,6 +81,20 @@ fn prepare(context: &Context) {
         .unwrap();
 }
 
+fn is_executable_reusable(context: &Context) -> bool {
+    let TranslatedPipeline { translated_preamble, translated_given, translated_stages, translated_fetch, .. } =
+        context.cache.get_translated(QUERY).unwrap();
+    context
+        .cache
+        .get_executable(
+            Arc::new(translated_preamble),
+            Arc::new(translated_given),
+            Arc::new(translated_stages),
+            Arc::new(translated_fetch),
+        )
+        .is_some()
+}
+
 #[test]
 fn identical_query_string_hits_parse_cache() {
     let context = setup();
@@ -129,11 +143,21 @@ fn schema_reset_invalidates_translation_but_keeps_parse_cache() {
 fn statistics_updates_do_not_retain_superseded_statistics() {
     let context = setup();
 
-    // e.g. an import: statistics are replaced after every commit, with no queries in between
+    // A cached plan, as on a server that answered queries before a long import.
+    prepare(&context);
+    assert!(is_executable_reusable(&context), "the prepared plan should be cached");
+
+    // The import: statistics are replaced after every commit, with no queries in between.
     let superseded = Arc::new(Statistics::new(SequenceNumber::MIN));
     context.cache.set_statistics(superseded.clone());
-    context.cache.set_statistics(Arc::new(Statistics::new(SequenceNumber::MIN)));
+    let latest = Arc::new(Statistics::new(SequenceNumber::MIN));
+    context.cache.set_statistics(latest.clone());
     assert_eq!(Arc::strong_count(&superseded), 1, "superseded statistics should not be retained by the query cache");
+
+    // A lookup checks the plan against the latest statistics, which must not be retained either once superseded.
+    assert!(is_executable_reusable(&context), "the plan matches the latest statistics and should still be cached");
+    context.cache.set_statistics(Arc::new(Statistics::new(SequenceNumber::MIN)));
+    assert_eq!(Arc::strong_count(&latest), 1, "a plan lookup should not retain the statistics it was checked against");
 }
 
 #[test]
@@ -141,17 +165,7 @@ fn plan_outdated_by_statistics_is_not_reused() {
     let context = setup();
 
     prepare(&context);
-    let TranslatedPipeline { translated_preamble, translated_given, translated_stages, translated_fetch, .. } =
-        context.cache.get_translated(QUERY).unwrap();
-    let (preamble, given, stages, fetch) = (
-        Arc::new(translated_preamble),
-        Arc::new(translated_given),
-        Arc::new(translated_stages),
-        Arc::new(translated_fetch),
-    );
-    let get_executable =
-        || context.cache.get_executable(preamble.clone(), given.clone(), stages.clone(), fetch.clone());
-    assert!(get_executable().is_some(), "the prepared plan should be cached");
+    assert!(is_executable_reusable(&context), "the prepared plan should be cached");
 
     // The plan was compiled for an empty database: a million people make it outdated.
     let snapshot = context.storage.clone().open_snapshot_read();
@@ -159,9 +173,9 @@ fn plan_outdated_by_statistics_is_not_reused() {
     let mut statistics = Statistics::new(SequenceNumber::MIN);
     statistics.entity_counts.insert(person, 1_000_000);
     context.cache.set_statistics(Arc::new(statistics));
-    assert!(get_executable().is_none(), "a plan outdated by the latest statistics should not be reused");
+    assert!(!is_executable_reusable(&context), "a plan outdated by the latest statistics should not be reused");
 
     // An outdated plan is not evicted, only skipped: it is reusable again once the statistics match it.
     context.cache.set_statistics(Arc::new(Statistics::new(SequenceNumber::MIN)));
-    assert!(get_executable().is_some(), "a plan matching the latest statistics again should be reused");
+    assert!(is_executable_reusable(&context), "a plan matching the latest statistics again should be reused");
 }
