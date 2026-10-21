@@ -20,5 +20,6 @@ pub enum ConceptStatus {
     Inserted,
     Put,
     Persisted,
-    Deleted, // should generally be unused in the Concept layer
+    Deleted,     // should generally be unused in the Concept layer
+    Nonexistent, // Not Created or Deleted or Peristed
 }

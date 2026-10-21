@@ -37,7 +37,7 @@ use crate::{
     ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         has::Has,
         object::{HasReverseIterator, Object},
         thing_manager::ThingManager,
@@ -88,6 +88,11 @@ impl Attribute {
             ConceptStatus::Put | ConceptStatus::Persisted => Ok(thing_manager.has_owners(snapshot, self, false)),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
+            }
+            ConceptStatus::Nonexistent => {
+                unreachable!(
+                    "Attempting to retrieve owners of a nonexistent (not buffered, deleted, or persisted) attribute."
+                )
             }
         }
     }
@@ -158,7 +163,7 @@ impl ThingAPI for Attribute {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(
@@ -177,6 +182,10 @@ impl ThingAPI for Attribute {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexAttribute
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Attribute
     }
 }
 

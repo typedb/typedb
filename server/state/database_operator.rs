@@ -7,6 +7,7 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
+use concept::thing::thing_manager::InstanceExistenceOracle;
 use concurrency::TokioTaskSpawner;
 use database::{
     Database, DatabaseDeleteError, DatabaseOpenError,
@@ -14,7 +15,7 @@ use database::{
     database_manager::DatabaseManager,
     migration::{
         MigrationOperationError,
-        database_importer::{DatabaseImporter, DatabaseImporterHandle},
+        database_importer::{DatabaseImporter, DatabaseImporterHandle, ImporterConfiguration},
         importing_database_handle::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
@@ -63,6 +64,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
     async fn import_prepare(
         &self,
         name: &str,
+        schema: String,
         close_sender: Sender<()>,
     ) -> Result<DatabaseImporterHandle, ArcServerStateError>;
 
@@ -124,8 +126,11 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
         open_import_schema_transaction(&self.staged_database)
     }
 
-    fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database)
+    fn open_write(
+        &self,
+        instance_existence_oracle: Option<Box<dyn InstanceExistenceOracle>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        open_import_write_transaction(&self.staged_database, instance_existence_oracle)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
@@ -134,6 +139,10 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+    }
+
+    fn into_unique(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
+        Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
 
     fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError> {
@@ -197,12 +206,18 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    fn start_importer(&self, importing_database: Box<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
+    fn start_importer(
+        &self,
+        importing_database: Arc<dyn ImportingDatabaseHandle>,
+        schema: String,
+    ) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
+        let configuration = ImporterConfiguration::default().with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
         DatabaseImporter::start(
             importing_database,
+            schema,
+            configuration,
             scratch_directory,
-            IMPORT_MESSAGE_BUFFER_SIZE,
             &self.background_task_spawner,
         )
     }
@@ -299,6 +314,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
     async fn import_prepare(
         &self,
         name: &str,
+        schema: String,
         close_sender: Sender<()>,
     ) -> Result<DatabaseImporterHandle, ArcServerStateError> {
         let map_err =
@@ -307,7 +323,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         let staged_database = self.prepare_imported_database(name.to_string())?;
         let importing_database =
             ImportingLocalDatabaseHandle { database_manager: self.database_manager.clone(), staged_database };
-        Ok(self.start_importer(Box::new(importing_database)))
+        Ok(self.start_importer(Arc::new(importing_database), schema))
     }
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError> {

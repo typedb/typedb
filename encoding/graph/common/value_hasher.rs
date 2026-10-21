@@ -12,7 +12,7 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters}
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError, write::Write},
+    snapshot::{ReadableSnapshot, SnapshotLookupMode, iterator::SnapshotIteratorError, write::Write},
 };
 
 use crate::{EncodingKeyspace, graph::common::ExistingOrNew};
@@ -75,38 +75,52 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
             Self::FIXED_WIDTH_KEYS,
         );
-        // occupied tails, indexed by the tail with the hash flag stripped
-        let mut occupied_tails = [false; 1 << 7];
+        const SLOTS: usize = 1 << 7;
+        let slot_of = |key_tail: u8| (key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize;
+        let is_in_bucket = |key_tail: u8| key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0;
 
-        // search for visible/live keys in the 128 slots in the bucket
-        let mut iter = snapshot.iterate_range(&range, StorageCounters::DISABLED);
-        while let Some((key, value)) = iter.next().transpose()? {
+        // occupied tails, indexed by the tail with the hash flag stripped
+        let mut occupied_tails = [false; SLOTS];
+
+        // 1) A buffered insert or put of the same value is a match we can reuse
+        // 2) Any buffered write blocks the storage key at that tail.
+        //      Insert/Put with different value: is occupied
+        //      Delete: treat as occupied - concurrent transaction may hold the deleted vertex as unmodifiable
+        //              and re-putting its key would replace our buffered delete and hide the conflict.
+        for (key, write) in snapshot.iterate_writes_range(&range) {
             let key_tail = key.bytes()[tail_byte_index];
-            if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG == 0 {
+            if !is_in_bucket(key_tail) {
                 // an inlined ID that happens to share the hashed prefix bytes: not part of this bucket - at most one
                 continue;
             }
-            if &*value == value_bytes {
-                // found existing matching value
-                return Ok(ExistingOrNew::Existing(key_tail));
-            }
-            occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;
-        }
-
-        // Keys deleted in this transaction are hidden by the iteration above, but their tails must not be reused
-        // within the same transaction: a concurrent transaction may hold the deleted vertex as unmodifiable,
-        // and re-putting its key here would replace our buffered delete and hide the conflict.
-        for (key, write) in snapshot.iterate_writes_range(&range) {
-            if matches!(write, Write::Delete) {
-                let key_tail = key.bytes()[tail_byte_index];
-                if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0 {
-                    occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;
+            occupied_tails[slot_of(key_tail)] = true;
+            if let Write::Insert { value } | Write::Put { value, .. } = write {
+                if &value[..] == value_bytes {
+                    return Ok(ExistingOrNew::Existing { item: key_tail, in_storage: false });
                 }
             }
         }
 
+        let mut storage_iter =
+            snapshot.iterate_range_in_lookup_mode(&range, SnapshotLookupMode::StorageOnly, StorageCounters::DISABLED);
+        while let Some((key, value)) = storage_iter.next().transpose()? {
+            let key_tail = key.bytes()[tail_byte_index];
+            if !is_in_bucket(key_tail) || occupied_tails[slot_of(key_tail)] {
+                // skip inlined ID that happens to share hashed prefix bytes (not part of this bucket) - at most one
+                // skip any tails occupied by the buffered writes
+                continue;
+            }
+            if &*value == value_bytes {
+                // found existing match in storage
+                return Ok(ExistingOrNew::Existing { item: key_tail, in_storage: true });
+            }
+            occupied_tails[slot_of(key_tail)] = true;
+        }
+
         match occupied_tails.iter().position(|occupied| !occupied) {
-            Some(free_tail) => Ok(ExistingOrNew::New(Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG | free_tail as u8)),
+            Some(free_tail) => {
+                Ok(ExistingOrNew::New { item: Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG | free_tail as u8 })
+            }
             None => panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte),
         }
     }

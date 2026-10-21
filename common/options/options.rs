@@ -9,7 +9,7 @@ pub mod byte_size;
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES,
     DEFAULT_INCLUDE_STRUCTURE_GRPC, DEFAULT_INCLUDE_STRUCTURE_HTTP, DEFAULT_PREFETCH_SIZE,
-    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
+    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
 
 #[derive(Debug, Clone)]
@@ -20,7 +20,6 @@ pub enum MvccCleanupStrategy {
 
 #[derive(Debug)]
 pub struct TransactionOptions {
-    pub parallel: bool,
     pub schema_lock_acquire_timeout_millis: u64,
     pub transaction_timeout_millis: u64,
 }
@@ -28,7 +27,6 @@ pub struct TransactionOptions {
 impl Default for TransactionOptions {
     fn default() -> Self {
         Self {
-            parallel: DEFAULT_TRANSACTION_PARALLEL,
             schema_lock_acquire_timeout_millis: DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
             transaction_timeout_millis: DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
         }

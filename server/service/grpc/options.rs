@@ -7,7 +7,7 @@
 use options::{QueryOptions, TransactionOptions};
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
-    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
+    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
 use typedb_protocol::options::{Query as QueryOptionsProto, Transaction as TransactionOptionsProto};
 
@@ -17,7 +17,6 @@ pub(crate) fn transaction_options_from_proto(proto: Option<TransactionOptionsPro
     };
 
     TransactionOptions {
-        parallel: proto.parallel.unwrap_or(DEFAULT_TRANSACTION_PARALLEL),
         schema_lock_acquire_timeout_millis: proto
             .schema_lock_acquire_timeout_millis
             .unwrap_or(DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS),

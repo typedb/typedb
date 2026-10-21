@@ -75,7 +75,6 @@ pub(crate) struct DatabaseExportService {
 impl DatabaseExportService {
     const ITEM_BATCH_SIZE: usize = 250;
 
-    const OPTIONS_PARALLEL: bool = true;
     const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
     const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
 
@@ -233,7 +232,6 @@ impl DatabaseExportService {
 
     fn transaction_options() -> TransactionOptions {
         TransactionOptions {
-            parallel: Self::OPTIONS_PARALLEL,
             schema_lock_acquire_timeout_millis: Self::OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
             transaction_timeout_millis: Self::OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
         }

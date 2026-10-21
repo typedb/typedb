@@ -39,7 +39,7 @@ use crate::{
     ConceptStatus, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         attribute::Attribute,
         entity::Entity,
         has::Has,
@@ -149,6 +149,13 @@ impl ThingAPI for Object {
         match type_ {
             ObjectType::Entity(entity) => Entity::prefix_for_type(entity),
             ObjectType::Relation(relation) => Relation::prefix_for_type(relation),
+        }
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        match self {
+            Object::Entity(entity) => entity.thing_kind(),
+            Object::Relation(relation) => relation.thing_kind(),
         }
     }
 }
