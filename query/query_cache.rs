@@ -52,7 +52,7 @@ impl QueryCache {
     pub fn new() -> Self {
         let parse_cache = CacheBuilder::new(QUERY_PARSE_CACHE_SIZE).build();
         let translation_cache = CacheBuilder::new(QUERY_TRANSLATION_CACHE_SIZE).build();
-        let executable_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
+        let executable_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).build();
         let validity_requirements =
             RwLock::new(ValidityRequirements { latest_statistics: None, latest_schema_commit: None });
         QueryCache { parse_cache, translation_cache, executable_cache, validity_requirements }
@@ -86,7 +86,7 @@ impl QueryCache {
         drop(read_lock);
     }
 
-    pub(crate) fn get_executable(
+    pub fn get_executable(
         &self,
         preamble: Arc<Vec<Function>>,
         given: Arc<Option<TranslatedGiven>>,
@@ -94,11 +94,21 @@ impl QueryCache {
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
         let key = IRQuery::new(preamble.clone(), given, stages, fetch);
-        self.executable_cache.get(&key).map(|mut found| {
-            let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
-            found.executable_functions.replace_preamble_parameters(replacement);
-            found
-        })
+        let mut found = self.executable_cache.get(&key)?;
+        let is_outdated = self
+            .validity_requirements
+            .read()
+            .unwrap()
+            .latest_statistics
+            .as_ref()
+            .is_some_and(|statistics| is_pipeline_type_populations_outdated(statistics, &found));
+        if is_outdated {
+            self.executable_cache.invalidate(&key);
+            return None;
+        }
+        let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
+        found.executable_functions.replace_preamble_parameters(replacement);
+        Some(found)
     }
 
     pub(crate) fn may_insert_executable(
@@ -124,14 +134,8 @@ impl QueryCache {
         drop(read_lock);
     }
 
-    pub fn set_statistics_and_invalidate_outdated(&self, new_statistics: Arc<Statistics>) {
-        let mut write_lock = self.validity_requirements.write().unwrap();
-        (*write_lock).latest_statistics = Some(new_statistics.clone());
-        drop(write_lock);
-        let _predicate_id = self
-            .executable_cache
-            .invalidate_entries_if(move |_, pipeline| is_pipeline_type_populations_outdated(&*new_statistics, pipeline))
-            .unwrap();
+    pub fn set_statistics(&self, new_statistics: Arc<Statistics>) {
+        self.validity_requirements.write().unwrap().latest_statistics = Some(new_statistics);
     }
 
     pub fn force_reset(&self, statistics: &Statistics) {

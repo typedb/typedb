@@ -758,7 +758,7 @@ fn make_update_statistics_fn(
                 }
             }
             let new_statistics = Arc::new(new_statistics);
-            query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
+            query_cache.set_statistics(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
         }
     }

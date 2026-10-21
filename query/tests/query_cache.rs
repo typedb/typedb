@@ -10,8 +10,9 @@ use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
+use encoding::{graph::definition::definition_key_generator::DefinitionKeyGenerator, value::label::Label};
 use function::function_manager::FunctionManager;
+use ir::translation::pipeline::TranslatedPipeline;
 use query::{
     given_rows::GivenRowsSimple,
     query_cache::{ParsedQuery, QueryCache},
@@ -122,4 +123,45 @@ fn schema_reset_invalidates_translation_but_keeps_parse_cache() {
     context.cache.force_reset(&Statistics::new(SequenceNumber::MIN));
     assert!(context.cache.get_translated(QUERY).is_none(), "a schema reset should invalidate the translation cache");
     assert!(context.cache.get_parsed(QUERY).is_some(), "a schema reset must not invalidate the parse cache");
+}
+
+#[test]
+fn statistics_updates_do_not_retain_superseded_statistics() {
+    let context = setup();
+
+    // e.g. an import: statistics are replaced after every commit, with no queries in between
+    let superseded = Arc::new(Statistics::new(SequenceNumber::MIN));
+    context.cache.set_statistics(superseded.clone());
+    context.cache.set_statistics(Arc::new(Statistics::new(SequenceNumber::MIN)));
+    assert_eq!(Arc::strong_count(&superseded), 1, "superseded statistics should not be retained by the query cache");
+}
+
+#[test]
+fn plan_outdated_by_statistics_is_not_reused() {
+    let context = setup();
+
+    prepare(&context);
+    let TranslatedPipeline { translated_preamble, translated_given, translated_stages, translated_fetch, .. } =
+        context.cache.get_translated(QUERY).unwrap();
+    let (preamble, given, stages, fetch) = (
+        Arc::new(translated_preamble),
+        Arc::new(translated_given),
+        Arc::new(translated_stages),
+        Arc::new(translated_fetch),
+    );
+    let get_executable =
+        || context.cache.get_executable(preamble.clone(), given.clone(), stages.clone(), fetch.clone());
+    assert!(get_executable().is_some(), "the prepared plan should be cached");
+
+    // The plan was compiled for an empty database: a million people make it outdated.
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let person = context.type_manager.get_entity_type(&snapshot, &Label::new_static("person")).unwrap().unwrap();
+    let mut statistics = Statistics::new(SequenceNumber::MIN);
+    statistics.entity_counts.insert(person, 1_000_000);
+    context.cache.set_statistics(Arc::new(statistics));
+    assert!(get_executable().is_none(), "a plan outdated by the latest statistics should not be reused");
+
+    // The outdated plan was evicted, so it stays gone even once the statistics match it again.
+    context.cache.set_statistics(Arc::new(Statistics::new(SequenceNumber::MIN)));
+    assert!(get_executable().is_none(), "an outdated plan should be evicted from the cache");
 }
