@@ -121,6 +121,9 @@ pub mod database {
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
     pub const QUERY_PARSE_CACHE_SIZE: u64 = 200;
     pub const QUERY_TRANSLATION_CACHE_SIZE: u64 = 200;
+    // Cached queries weigh the length of their source text, but at least this many bytes: each query cache holds at
+    // most its size in queries up to this length, and proportionally fewer longer ones (e.g. bulk inserts)
+    pub const QUERY_CACHE_MIN_ENTRY_WEIGHT: u32 = 4096;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_COUNT: u64 = 10_000;
     pub const STATISTICS_DURABLE_WRITE_SEQ_NUMBERS: usize = 1_000;
     pub const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(50);

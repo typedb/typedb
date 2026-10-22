@@ -231,6 +231,7 @@ impl QueryManager {
                     let seq = thing_manager.statistics().sequence_number;
                     cache.may_insert_executable(
                         seq,
+                        source_query,
                         arced_preamble,
                         arced_given,
                         arced_stages,
@@ -332,6 +333,7 @@ impl QueryManager {
                         if let Some(cache) = self.cache.as_ref() {
                             cache.may_insert_executable(
                                 thing_manager.statistics().sequence_number,
+                                source_query,
                                 arced_preamble,
                                 arced_given,
                                 arced_stages,
