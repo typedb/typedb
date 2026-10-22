@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.14.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.14.0)
+[Distributions for 3.14.1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.14.1)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.14.0```
+```docker pull typedb/typedb:3.14.1```
 
 
 ## New Features
@@ -170,6 +170,10 @@
   
 
 ## Other Improvements
+- **Prepare release 3.14.0**
+  
+  Bump version to 3.14.0, update TypeQL, TypeDB Protocol, Console and Loader to their 3.14.0 releases, and generate release notes.
+  
 - **Activate cargo-toml-sync job in CI**
   
   Return `cargo-toml-sync` job to CI runs to validate the correctness of the generated Cargo files. This uses updated dependencies (https://github.com/typedb/typedb-dependencies/pull/633) that always generate entries in the same order, preventing accidental CI failures.
