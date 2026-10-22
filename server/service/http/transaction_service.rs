@@ -395,7 +395,7 @@ impl TransactionService {
     }
 
     async fn handle_commit(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
+        // let running reads finish, finish any running write query, clear queued reads, finish all queued writes
         //   note: if any write query errors, the whole transaction errors
         if let Break(()) = self.finish_running_read_queries().await {
             return Break(());
@@ -460,7 +460,7 @@ impl TransactionService {
     }
 
     async fn handle_rollback(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        // interrupt all queries, cancel writes, then rollback
+        // let running reads finish, cancel queued reads, finish the running write, cancel queued writes, then rollback
         if let Break(()) = self.finish_running_read_queries().await {
             return Break(());
         }
@@ -468,7 +468,7 @@ impl TransactionService {
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
             return Break(());
         }
-        if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await {
+        if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionRolledback).await {
             return Break(());
         }
         if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
@@ -711,7 +711,13 @@ impl TransactionService {
             source_query,
             StorageCounters::DISABLED,
         );
-        self.running_read_queries.spawn(async move { worker.await.expect("Expected read query completion") });
+        self.running_read_queries.spawn(async move {
+            // a failed read closes the transaction, which interrupts and drains any sibling reads
+            worker.await.unwrap_or_else(|err| {
+                event!(Level::ERROR, "Read query worker failed: {:?}", err);
+                Break(())
+            })
+        });
     }
 
     async fn handle_query_schema(
@@ -1009,7 +1015,7 @@ impl TransactionService {
         source_query: String,
         storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {
-        debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
+        debug_assert!(self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
         let diagnostics_manager = self.server_state.diagnostics_manager();
@@ -1243,7 +1249,7 @@ impl TransactionService {
         pipeline: Arc<TypeQLPipeline>,
         source_query: String,
     ) -> ControlFlow<(), ()> {
-        debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
+        debug_assert!(self.running_write_query.is_none() && self.transaction.is_some());
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
