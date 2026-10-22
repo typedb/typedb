@@ -1735,29 +1735,14 @@ impl ConceptPersistenceOracle for AttributeEntityRelationPersistedConceptsOracle
         }
     }
 
-    fn links_edges_known_to_exist_from_relation(&self) -> KnownToExist {
+    fn new_edge_known_to_exist(&self) -> KnownToExist {
         match self.phase {
-            // a relation's links are all written with the relation, or all deferred together till later
-            ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Pending => KnownToExist::NonExistent,
-            ImportPhase::Default | ImportPhase::Attributes => KnownToExist::Unknown,
-        }
-    }
-
-    fn links_reverse_edges_known_to_exist_from_player(&self) -> KnownToExist {
-        match self.phase {
-            ImportPhase::Default | ImportPhase::Relations | ImportPhase::Pending => KnownToExist::Unknown,
-            ImportPhase::Attributes | ImportPhase::Entities => KnownToExist::NonExistent,
-        }
-    }
-
-    fn has_edges_known_to_exist_from_owner(&self) -> KnownToExist {
-        match self.phase {
-            // an owner's ownerships are all written in the transaction that creates it
-            ImportPhase::Entities | ImportPhase::Relations => KnownToExist::NonExistent,
-            // a pending ownership's owner already has its other ownerships in storage
-            ImportPhase::Pending => KnownToExist::Unknown,
-            // no edges are read or written in these phases
-            ImportPhase::Default | ImportPhase::Attributes => KnownToExist::Unknown,
+            // the export lists each ownership and each links edge once, and a relation's links are all written in
+            // one transaction, so no edge put, nor any index edge derived from one, targets a persisted edge
+            ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Pending => {
+                KnownToExist::NonExistent
+            }
+            ImportPhase::Default => KnownToExist::Unknown,
         }
     }
 }
