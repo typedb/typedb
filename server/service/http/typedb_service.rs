@@ -565,8 +565,9 @@ impl HTTPTypeDBService {
         path: TransactionPath,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
-        let senders = service.transaction_services.read().await;
-        let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
+        // clone the entry so the table lock is not held while awaiting the response
+        let transaction = service.transaction_services.read().await.get(&uuid).cloned();
+        let transaction = transaction.ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
@@ -589,8 +590,9 @@ impl HTTPTypeDBService {
         path: TransactionPath,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
-        let senders = service.transaction_services.read().await;
-        let Some(transaction) = senders.get(&uuid) else {
+        // clone the entry so the table lock is not held while awaiting the response
+        let transaction = service.transaction_services.read().await.get(&uuid).cloned();
+        let Some(transaction) = transaction else {
             return Ok(TransactionServiceResponse::Ok);
         };
 
@@ -615,8 +617,9 @@ impl HTTPTypeDBService {
         path: TransactionPath,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
-        let senders = service.transaction_services.read().await;
-        let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
+        // clone the entry so the table lock is not held while awaiting the response
+        let transaction = service.transaction_services.read().await.get(&uuid).cloned();
+        let transaction = transaction.ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
@@ -640,8 +643,9 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<TransactionAnalyzePayload>,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
-        let senders = service.transaction_services.read().await;
-        let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
+        // clone the entry so the table lock is not held while awaiting the response
+        let transaction = service.transaction_services.read().await.get(&uuid).cloned();
+        let transaction = transaction.ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
@@ -665,8 +669,9 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<TransactionQueryPayload>,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
-        let senders = service.transaction_services.read().await;
-        let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
+        // clone the entry so the table lock is not held while awaiting the response
+        let transaction = service.transaction_services.read().await.get(&uuid).cloned();
+        let transaction = transaction.ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
