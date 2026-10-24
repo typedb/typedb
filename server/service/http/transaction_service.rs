@@ -459,14 +459,11 @@ impl TransactionService {
     }
 
     async fn handle_rollback(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        // interrupt running reads, cancel queued reads, finish the running write, cancel queued writes, then rollback
+        // interrupt and finish running queries, cancel queued reads and writes, then rollback
         if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionRolledback).await {
             return Break(());
         }
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
-            return Break(());
-        }
-        if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionRolledback).await {
             return Break(());
         }
         if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
@@ -508,7 +505,6 @@ impl TransactionService {
     async fn do_close(&mut self) {
         let _ = self.interrupt_running_queries(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
-        let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
 
         match self.transaction.take() {
@@ -521,9 +517,10 @@ impl TransactionService {
     }
 
     async fn interrupt_running_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
-        // interrupts the running reads or write; only the reads are awaited, callers finish the write themselves
         self.interrupt(interrupt).await;
-        self.finish_running_read_queries().await
+        let reads = self.finish_running_read_queries().await;
+        let write = self.finish_running_write_query_no_transmit(interrupt).await;
+        if reads.is_break() { reads } else { write }
     }
 
     async fn finish_running_read_queries(&mut self) -> ControlFlow<(), ()> {
