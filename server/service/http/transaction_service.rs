@@ -395,18 +395,17 @@ impl TransactionService {
     }
 
     async fn handle_commit(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        // interrupt running reads, finish any running write query, clear queued reads, finish all queued writes
+        // finish any running write query, interrupt running reads, clear queued reads, finish all queued writes
         //   note: if any write query errors, the whole transaction errors
-        if let Break(()) = self.interrupt_running_read_queries(InterruptType::TransactionCommitted).await {
-            return Break(());
-        }
         // finish any active write query
         if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await {
             return Break(());
         }
 
         // interrupt active queries
-        self.interrupt(InterruptType::TransactionCommitted).await;
+        if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionCommitted).await {
+            return Break(());
+        }
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
             respond_error_and_return_break!(responder, TransactionServiceError::QueueCleanupFailed {});
         }
@@ -461,10 +460,9 @@ impl TransactionService {
 
     async fn handle_rollback(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
         // interrupt running reads, cancel queued reads, finish the running write, cancel queued writes, then rollback
-        if let Break(()) = self.interrupt_running_read_queries(InterruptType::TransactionRolledback).await {
+        if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionRolledback).await {
             return Break(());
         }
-        self.interrupt(InterruptType::TransactionRolledback).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
             return Break(());
         }
@@ -508,8 +506,7 @@ impl TransactionService {
     }
 
     async fn do_close(&mut self) {
-        self.interrupt(InterruptType::TransactionClosed).await;
-        let _ = self.finish_running_read_queries().await;
+        let _ = self.interrupt_running_queries(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
         let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
@@ -523,11 +520,9 @@ impl TransactionService {
         self.txn_metrics.take(); // drop -> submit
     }
 
-    async fn interrupt_running_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
-        // Only signal while reads are running: no write can be running then, so the interrupt reaches reads only.
-        if !self.running_read_queries.is_empty() {
-            self.interrupt(interrupt).await;
-        }
+    async fn interrupt_running_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
+        // interrupts the running reads or write; only the reads are awaited, callers finish the write themselves
+        self.interrupt(interrupt).await;
         self.finish_running_read_queries().await
     }
 
@@ -720,7 +715,6 @@ impl TransactionService {
             StorageCounters::DISABLED,
         );
         self.running_read_queries.spawn(async move {
-            // like gRPC, a failed read only fails its own query; a crashed worker closes the transaction
             worker.await.map(|_| Continue(())).unwrap_or_else(|err| {
                 event!(Level::ERROR, "Read query worker failed: {:?}", err);
                 Break(())
@@ -733,10 +727,9 @@ impl TransactionService {
         query: SchemaQuery,
         source_query: String,
     ) -> Result<TransactionServiceResponse, TransactionServiceError> {
-        if let Break(()) = self.interrupt_running_read_queries(InterruptType::SchemaQueryExecution).await {
+        if let Break(()) = self.interrupt_running_queries(InterruptType::SchemaQueryExecution).await {
             return Err(TransactionServiceError::QueueCleanupFailed {});
         }
-        self.interrupt(InterruptType::SchemaQueryExecution).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await {
             return Err(TransactionServiceError::QueueCleanupFailed {});
         }
@@ -783,8 +776,7 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
         // writes need exclusive access to the snapshot
-        self.interrupt_running_read_queries(InterruptType::WriteQueryExecution).await?;
-        self.interrupt(InterruptType::WriteQueryExecution).await;
+        self.interrupt_running_queries(InterruptType::WriteQueryExecution).await?;
         match self.spawn_blocking_execute_write_query(query_options, pipeline, given_rows, source_query) {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
@@ -1258,7 +1250,6 @@ impl TransactionService {
         source_query: String,
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none() && self.transaction.is_some());
-        // like reads, a failed analyse only fails its own request
         let _ = with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
