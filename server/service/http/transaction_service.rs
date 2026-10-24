@@ -162,7 +162,6 @@ pub(crate) struct TransactionService {
     query_manager: Option<QueryManager>,
     query_queue: VecDeque<(TransactionResponder, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsHttp>, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
-    // read queries share the transaction's snapshot, so they run concurrently with each other but never with writes
     running_read_queries: JoinSet<ControlFlow<(), ()>>,
 
     close_sender: Sender<()>,
