@@ -567,13 +567,12 @@ impl TransactionService {
             }
 
             // transmission of interrupt signal is ok if it fails
-            respond_error_and_return_break!(
+            let _ = respond_transaction_response(
                 responder,
-                TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }
+                TransactionServiceResponse::Err(TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }),
             );
-        } else {
-            Continue(())
         }
+        Continue(())
     }
 
     async fn transmit_write_results(
