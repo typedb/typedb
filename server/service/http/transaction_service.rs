@@ -44,7 +44,7 @@ use tokio::{
         mpsc::{Receiver, Sender},
         oneshot,
     },
-    task::{JoinHandle, spawn_blocking},
+    task::{JoinHandle, JoinSet, spawn_blocking},
     time::Instant,
 };
 use tracing::{Level, event};
@@ -162,6 +162,8 @@ pub(crate) struct TransactionService {
     query_manager: Option<QueryManager>,
     query_queue: VecDeque<(TransactionResponder, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsHttp>, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
+    // read queries share the transaction's snapshot, so they run concurrently with each other but never with writes
+    running_read_queries: JoinSet<ControlFlow<(), ()>>,
 
     close_sender: Sender<()>,
     close_receiver: Receiver<()>,
@@ -258,6 +260,7 @@ impl TransactionService {
             query_manager: None,
             query_queue: VecDeque::with_capacity(20),
             running_write_query: None,
+            running_read_queries: JoinSet::new(),
 
             close_sender,
             close_receiver,
@@ -355,6 +358,9 @@ impl TransactionService {
                         self.do_close().await;
                         return;
                     }
+                    Some(read_query_result) = self.running_read_queries.join_next(), if !self.running_read_queries.is_empty() => {
+                        read_query_result.expect("Expected read query completion")
+                    }
                     next = self.request_stream.recv() => {
                         self.handle_next(next).await
                     }
@@ -389,7 +395,7 @@ impl TransactionService {
     }
 
     async fn handle_commit(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
+        // finish any running write query, interrupt running reads, clear queued reads, finish all queued writes
         //   note: if any write query errors, the whole transaction errors
         // finish any active write query
         if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await {
@@ -397,7 +403,9 @@ impl TransactionService {
         }
 
         // interrupt active queries
-        self.interrupt(InterruptType::TransactionCommitted).await;
+        if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionCommitted).await {
+            return Break(());
+        }
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
             respond_error_and_return_break!(responder, TransactionServiceError::QueueCleanupFailed {});
         }
@@ -451,12 +459,14 @@ impl TransactionService {
     }
 
     async fn handle_rollback(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        // interrupt all queries, cancel writes, then rollback
-        self.interrupt(InterruptType::TransactionRolledback).await;
+        // interrupt running reads, cancel queued reads, finish the running write, cancel queued writes, then rollback
+        if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionRolledback).await {
+            return Break(());
+        }
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
             return Break(());
         }
-        if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await {
+        if let Break(()) = self.finish_running_write_query_no_transmit(InterruptType::TransactionRolledback).await {
             return Break(());
         }
         if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
@@ -496,7 +506,7 @@ impl TransactionService {
     }
 
     async fn do_close(&mut self) {
-        self.interrupt(InterruptType::TransactionClosed).await;
+        let _ = self.interrupt_running_queries(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
         let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
@@ -508,6 +518,22 @@ impl TransactionService {
             Some(Transaction::Schema(transaction)) => transaction.close(),
         }
         self.txn_metrics.take(); // drop -> submit
+    }
+
+    async fn interrupt_running_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
+        // interrupts the running reads or write; only the reads are awaited, callers finish the write themselves
+        self.interrupt(interrupt).await;
+        self.finish_running_read_queries().await
+    }
+
+    async fn finish_running_read_queries(&mut self) -> ControlFlow<(), ()> {
+        let mut control = Continue(());
+        while let Some(result) = self.running_read_queries.join_next().await {
+            if let Break(()) = result.expect("Expected read query completion") {
+                control = Break(());
+            }
+        }
+        control
     }
 
     async fn interrupt(&mut self, interrupt: InterruptType) {
@@ -620,16 +646,7 @@ impl TransactionService {
                     return self.run_write_query(responder, query_options, pipeline, given_rows, source_query).await;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    self.blocking_read_query_worker(
-                        responder,
-                        query_options,
-                        pipeline,
-                        given_rows,
-                        source_query,
-                        StorageCounters::DISABLED,
-                    )
-                    .await
-                    .expect("Expected read query completion")?;
+                    self.spawn_read_query(responder, query_options, pipeline, given_rows, source_query);
                 }
             }
         }
@@ -676,17 +693,33 @@ impl TransactionService {
         } else if is_write_pipeline(&pipeline) {
             self.run_write_query(responder, query_options, pipeline, given_rows, query).await
         } else {
-            self.blocking_read_query_worker(
-                responder,
-                query_options,
-                pipeline,
-                given_rows,
-                query,
-                StorageCounters::DISABLED,
-            )
-            .await
-            .expect("Expected read query completion")
+            self.spawn_read_query(responder, query_options, pipeline, given_rows, query);
+            Continue(())
         }
+    }
+
+    fn spawn_read_query(
+        &mut self,
+        responder: TransactionResponder,
+        query_options: QueryOptions,
+        pipeline: Arc<TypeQLPipeline>,
+        given_rows: Option<GivenRowsHttp>,
+        source_query: String,
+    ) {
+        let worker = self.blocking_read_query_worker(
+            responder,
+            query_options,
+            pipeline,
+            given_rows,
+            source_query,
+            StorageCounters::DISABLED,
+        );
+        self.running_read_queries.spawn(async move {
+            worker.await.map(|_| Continue(())).unwrap_or_else(|err| {
+                event!(Level::ERROR, "Read query worker failed: {:?}", err);
+                Break(())
+            })
+        });
     }
 
     async fn handle_query_schema(
@@ -694,7 +727,9 @@ impl TransactionService {
         query: SchemaQuery,
         source_query: String,
     ) -> Result<TransactionServiceResponse, TransactionServiceError> {
-        self.interrupt(InterruptType::SchemaQueryExecution).await;
+        if let Break(()) = self.interrupt_running_queries(InterruptType::SchemaQueryExecution).await {
+            return Err(TransactionServiceError::QueueCleanupFailed {});
+        }
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await {
             return Err(TransactionServiceError::QueueCleanupFailed {});
         }
@@ -740,7 +775,8 @@ impl TransactionService {
         source_query: String,
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
-        self.interrupt(InterruptType::WriteQueryExecution).await;
+        // writes need exclusive access to the snapshot
+        self.interrupt_running_queries(InterruptType::WriteQueryExecution).await?;
         match self.spawn_blocking_execute_write_query(query_options, pipeline, given_rows, source_query) {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
@@ -979,7 +1015,7 @@ impl TransactionService {
         source_query: String,
         storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {
-        debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
+        debug_assert!(self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
         let diagnostics_manager = self.server_state.diagnostics_manager();
@@ -1213,8 +1249,8 @@ impl TransactionService {
         pipeline: Arc<TypeQLPipeline>,
         source_query: String,
     ) -> ControlFlow<(), ()> {
-        debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
-        with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
+        debug_assert!(self.running_write_query.is_none() && self.transaction.is_some());
+        let _ = with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
@@ -1248,7 +1284,8 @@ impl TransactionService {
             })
         })
         .await
-        .expect("Expected read query completion")
+        .expect("Expected read query completion");
+        Continue(())
     }
 }
 
