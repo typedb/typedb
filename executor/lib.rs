@@ -99,7 +99,8 @@ impl ExecutionInterrupt {
             Some(signal) => match signal.try_recv() {
                 Ok(type_) => Some(type_),
                 Err(TryRecvError::Empty) => None,
-                // several interrupts arrived since the last check (e.g. a rollback, then a close): the latest is next
+                // If lagged, the interrupt has been triggered multiple times.
+                // Once we take that error state, we return the latest
                 Err(TryRecvError::Lagged(_)) => signal.try_recv().ok(),
                 Err(TryRecvError::Closed) => {
                     unreachable!(
