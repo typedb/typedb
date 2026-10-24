@@ -775,7 +775,6 @@ impl TransactionService {
         source_query: String,
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
-        // writes need exclusive access to the snapshot
         self.interrupt_running_queries(InterruptType::WriteQueryExecution).await?;
         match self.spawn_blocking_execute_write_query(query_options, pipeline, given_rows, source_query) {
             Ok(handle) => {
