@@ -99,9 +99,12 @@ impl ExecutionInterrupt {
             Some(signal) => match signal.try_recv() {
                 Ok(type_) => Some(type_),
                 Err(TryRecvError::Empty) => None,
-                Err(TryRecvError::Closed) | Err(TryRecvError::Lagged(_)) => {
+                // If lagged, the interrupt has been triggered multiple times.
+                // Once we take that error state, we return the latest
+                Err(TryRecvError::Lagged(_)) => signal.try_recv().ok(),
+                Err(TryRecvError::Closed) => {
                     unreachable!(
-                        "Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers."
+                        "Unexpected interrupt signal state. They should never be closed before cleaning up the receivers."
                     )
                 }
             },
