@@ -169,6 +169,7 @@ build:
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="test_deprecated_optionals"
+        bazel test --config=ci  //tests/behaviour/service/http/driver:test_http_driver_deprecated_optionals --test_output=streamed --test_arg="test_deprecated_optionals"
 
     test-behaviour-query-analyze:
       image: typedb-ubuntu-22.04

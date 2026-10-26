@@ -627,7 +627,7 @@ fn optionally_bound_in_one_branch() {
                 variable == "p"
             }
             other => {
-                Err::<(), _>(other).unwrap();
+                panic!("unexpected error: {other:?}");
                 false
             }
         });
@@ -702,7 +702,7 @@ fn optionally_assigned_is_input_to_sibling_try() {
                 variable == "x"
             }
             other => {
-                Err::<(), _>(other).unwrap();
+                panic!("unexpected error: {other:?}");
                 false
             }
         });

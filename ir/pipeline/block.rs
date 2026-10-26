@@ -272,8 +272,8 @@ fn validate_all_optional_dereferences_are_safe(
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
     if let Err(err) = original__validate_all_optional_dereferences_are_safe(conjunction, context) {
-        optional_usage_error!(err);
         tmp__recheck_root_optional_dereference_if_write_stage(conjunction, context)?;
+        optional_usage_error!(err);
         tmp__fix_all_optional_dereferences_are_safe(conjunction, context);
     }
     Ok(())
@@ -585,6 +585,10 @@ impl<'a> BlockBuilderContext<'a> {
     ) -> BlockBuilderContext<'a> {
         debug_assert!(available_input_names.values().all(|v| variable_optionalities.contains_key(v)));
         let mut block_context = BlockContext::new(variable_optionalities.clone());
+        error::needs_update_when_feature_is_implemented!(
+            // the tmp__is_write_stage has to go.
+            error::UnimplementedFeature::ErrorsOnImplicitUnwrap
+        );
         Self {
             variable_registry,
             variable_names_index: available_input_names,

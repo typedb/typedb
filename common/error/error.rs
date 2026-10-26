@@ -396,8 +396,8 @@ pub enum UnimplementedFeature {
     QueryingAnnotations,
 
     NestedOptionalWrites,
-    IfConditionComparison,
-    IfConditionIsa,
+    ComparisonInIfStatements,
+    IsaInIfStatements,
 
     ErrorsOnImplicitUnwrap,
 }
