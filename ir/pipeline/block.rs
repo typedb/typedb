@@ -279,19 +279,25 @@ fn validate_all_optional_dereferences_are_safe(
     Ok(())
 }
 
-fn original__validate_all_optional_dereferences_are_safe(
+fn find_unsafe_dereference_in_constraints(
     conjunction: &Conjunction,
-    context: &BlockBuilderContext<'_>,
-) -> Result<(), Box<RepresentationError>> {
-    let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
+) -> impl Iterator<Item = (Variable, &Constraint<Variable>)> {
+    conjunction.constraints().iter().filter_map(|constraint| {
         let (id, _) = constraint.variable_reference_optionalities().find(|(id, reference_optionality)| {
             conjunction.optionality(id) == VariableOptionality::Optional
                 && *reference_optionality == ReferenceOptionality::Required
         })?;
-        Some((id, constraint.source_span()))
-    });
-    if let Some((id, source_span)) = bad_unwrap {
+        Some((id, constraint))
+    })
+}
+
+fn original__validate_all_optional_dereferences_are_safe(
+    conjunction: &Conjunction,
+    context: &BlockBuilderContext<'_>,
+) -> Result<(), Box<RepresentationError>> {
+    if let Some((id, constraint)) = find_unsafe_dereference_in_constraints(conjunction).next() {
         let variable = context.get_variable_name_or_unnamed(id).to_owned();
+        let source_span = constraint.source_span();
         return Err(Box::new(RepresentationError::UnsafeOptionalDereference { variable, source_span }));
     }
 
@@ -310,15 +316,9 @@ fn tmp__recheck_root_optional_dereference_if_write_stage(
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
     if context.tmp__is_write_stage {
-        let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
-            let (id, _) = constraint
-                .variable_binding_modes()
-                .filter(|(_, mode)| mode != &BindingMode::AlwaysBinding(BindingOptionality::MaybeNone))
-                .find(|(id, _)| conjunction.optionality(id) == VariableOptionality::Optional)?;
-            Some((id, constraint.source_span()))
-        });
-        if let Some((id, source_span)) = bad_unwrap {
+        if let Some((id, constraint)) = find_unsafe_dereference_in_constraints(conjunction).next() {
             let variable = context.get_variable_name_or_unnamed(id).to_owned();
+            let source_span = constraint.source_span();
             return Err(Box::new(RepresentationError::Tmp__OptionalVariableUsedOutsideTry { variable, source_span }));
         }
     }
@@ -327,17 +327,7 @@ fn tmp__recheck_root_optional_dereference_if_write_stage(
 
 fn tmp__fix_all_optional_dereferences_are_safe(conjunction: &mut Conjunction, context: &BlockBuilderContext<'_>) {
     // Will inject a fixing `isset` in ALL patterns which unsafely unwrap a variable.
-    let vars_to_unwrap = conjunction
-        .constraints()
-        .iter()
-        .flat_map(|constraint| {
-            constraint
-                .variable_binding_modes()
-                .filter(|(_, mode)| mode != &BindingMode::AlwaysBinding(BindingOptionality::MaybeNone))
-                .filter(|(id, _)| conjunction.optionality(id) == VariableOptionality::Optional)
-                .map(|(id, _)| id)
-        })
-        .collect::<Vec<_>>();
+    let vars_to_unwrap = find_unsafe_dereference_in_constraints(conjunction).map(|(id, _)| id).collect::<Vec<_>>();
     conjunction.constraints_mut().constraints_mut().push(Constraint::IsSet(IsSet::new(vars_to_unwrap, None)));
     conjunction.nested_patterns_mut().iter_mut().for_each(|nested| match nested {
         NestedPattern::Disjunction(disjunction) => disjunction
