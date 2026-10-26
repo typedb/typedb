@@ -12,7 +12,7 @@ pub(crate) mod authenticator;
 pub(crate) mod concept;
 mod diagnostics;
 mod document;
-pub(crate) mod encryption;
+pub mod encryption;
 mod error;
 pub(crate) mod migration;
 mod options;

@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-pub(crate) use tokio_rustls::rustls::ServerConfig as HttpTlsConfig;
+pub use tokio_rustls::rustls::ServerConfig as HttpTlsConfig;
 use tokio_rustls::rustls::{
     RootCertStore,
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
@@ -15,9 +15,7 @@ use tokio_rustls::rustls::{
 
 use crate::{error::ServerOpenError, parameters::config::EncryptionConfig};
 
-pub(crate) fn prepare_tls_config(
-    encryption_config: &EncryptionConfig,
-) -> Result<Option<HttpTlsConfig>, ServerOpenError> {
+pub fn prepare_tls_config(encryption_config: &EncryptionConfig) -> Result<Option<HttpTlsConfig>, ServerOpenError> {
     if !encryption_config.enabled {
         return Ok(None);
     }
@@ -59,6 +57,7 @@ pub(crate) fn prepare_tls_config(
             }
             Some(
                 WebPkiClientVerifier::builder(Arc::new(client_auth_roots))
+                    .allow_unauthenticated()
                     .build()
                     .map_err(|source| ServerOpenError::HttpInvalidRootCa { source: Arc::new(source) })?,
             )

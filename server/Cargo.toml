@@ -203,3 +203,7 @@
 [[test]]
 	name = "test_admin_service"
 	path = "service/admin/admin_service_test.rs"
+
+[[test]]
+	name = "test_encryption"
+	path = "tests/encryption.rs"
