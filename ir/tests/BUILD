@@ -52,6 +52,7 @@ rust_test(
     crate_root = "binding_modes.rs",
     srcs =  ["binding_modes.rs"],
     deps = [
+        "//common/error",
         "//ir:ir",
         "@typeql//rust:typeql",
 

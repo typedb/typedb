@@ -10,6 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use error::optional_usage_error;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -17,9 +18,10 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableModes, ReferenceOptionality, ScopeId,
+        AssignmentStatus, BindingMode, BindingOptionality, BranchID, Pattern, PatternVariableModes,
+        ReferenceOptionality, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
-        constraint::Constraint,
+        constraint::{Constraint, IsSet},
         expression::{Expression, ExpressionTree, ExpressionTreeNodeId},
         nested_pattern::NestedPattern,
         variable_category::{VariableCategory, VariableOptionality},
@@ -266,18 +268,36 @@ fn validate_optional_returns_recursive(
 }
 
 fn validate_all_optional_dereferences_are_safe(
-    conjunction: &Conjunction,
+    conjunction: &mut Conjunction,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
-    let bad_unwrap = conjunction.constraints().iter().find_map(|constraint| {
+    if let Err(err) = original__validate_all_optional_dereferences_are_safe(conjunction, context) {
+        tmp__recheck_root_optional_dereference_if_write_stage(conjunction, context)?;
+        optional_usage_error!(err);
+        tmp__fix_all_optional_dereferences_are_safe(conjunction, context);
+    }
+    Ok(())
+}
+
+fn find_unsafe_dereference_in_constraints(
+    conjunction: &Conjunction,
+) -> impl Iterator<Item = (Variable, &Constraint<Variable>)> {
+    conjunction.constraints().iter().filter_map(|constraint| {
         let (id, _) = constraint.variable_reference_optionalities().find(|(id, reference_optionality)| {
             conjunction.optionality(id) == VariableOptionality::Optional
                 && *reference_optionality == ReferenceOptionality::Required
         })?;
-        Some((id, constraint.source_span()))
-    });
-    if let Some((id, source_span)) = bad_unwrap {
+        Some((id, constraint))
+    })
+}
+
+fn original__validate_all_optional_dereferences_are_safe(
+    conjunction: &Conjunction,
+    context: &BlockBuilderContext<'_>,
+) -> Result<(), Box<RepresentationError>> {
+    if let Some((id, constraint)) = find_unsafe_dereference_in_constraints(conjunction).next() {
         let variable = context.get_variable_name_or_unnamed(id).to_owned();
+        let source_span = constraint.source_span();
         return Err(Box::new(RepresentationError::UnsafeOptionalDereference { variable, source_span }));
     }
 
@@ -287,8 +307,44 @@ fn validate_all_optional_dereferences_are_safe(
 
     conjunction
         .nested_patterns_flattened()
-        .try_for_each(|nested| validate_all_optional_dereferences_are_safe(nested, context))?;
+        .try_for_each(|nested| original__validate_all_optional_dereferences_are_safe(nested, context))?;
     Ok(())
+}
+
+fn tmp__recheck_root_optional_dereference_if_write_stage(
+    conjunction: &mut Conjunction,
+    context: &BlockBuilderContext<'_>,
+) -> Result<(), Box<RepresentationError>> {
+    if context.tmp__is_write_stage {
+        if let Some((id, constraint)) = find_unsafe_dereference_in_constraints(conjunction).next() {
+            let variable = context.get_variable_name_or_unnamed(id).to_owned();
+            let source_span = constraint.source_span();
+            return Err(Box::new(RepresentationError::Tmp__OptionalVariableUsedOutsideTry { variable, source_span }));
+        }
+    }
+    Ok(())
+}
+
+fn tmp__fix_all_optional_dereferences_are_safe(conjunction: &mut Conjunction, context: &BlockBuilderContext<'_>) {
+    // Will inject a fixing `isset` in ALL patterns which unsafely unwrap a variable.
+    let vars_to_unwrap =
+        find_unsafe_dereference_in_constraints(conjunction).map(|(id, _)| id).dedup().collect::<Vec<_>>();
+    if !vars_to_unwrap.is_empty() {
+        conjunction.constraints_mut().constraints_mut().push(Constraint::IsSet(IsSet::new(vars_to_unwrap, None)));
+    }
+
+    conjunction.nested_patterns_mut().iter_mut().for_each(|nested| match nested {
+        NestedPattern::Disjunction(disjunction) => disjunction
+            .conjunctions_mut()
+            .iter_mut()
+            .for_each(|branch| tmp__fix_all_optional_dereferences_are_safe(branch, context)),
+        NestedPattern::Negation(negation) => {
+            tmp__fix_all_optional_dereferences_are_safe(negation.conjunction_mut(), context)
+        }
+        NestedPattern::Optional(optional) => {
+            tmp__fix_all_optional_dereferences_are_safe(optional.conjunction_mut(), context)
+        }
+    });
 }
 
 fn validate_expressions_assignments_are_unique(
@@ -511,7 +567,7 @@ pub struct BlockBuilderContext<'a> {
     block_context: BlockContext,
     scope_id_allocator: u16,
 
-    pub is_write_stage: bool,
+    pub(crate) tmp__is_write_stage: bool,
 }
 
 impl<'a> BlockBuilderContext<'a> {
@@ -523,6 +579,10 @@ impl<'a> BlockBuilderContext<'a> {
     ) -> BlockBuilderContext<'a> {
         debug_assert!(available_input_names.values().all(|v| variable_optionalities.contains_key(v)));
         let mut block_context = BlockContext::new(variable_optionalities.clone());
+        error::needs_update_when_feature_is_implemented!(
+            // the tmp__is_write_stage has to go.
+            error::UnimplementedFeature::ErrorsOnImplicitUnwrap
+        );
         Self {
             variable_registry,
             variable_names_index: available_input_names,
@@ -530,7 +590,7 @@ impl<'a> BlockBuilderContext<'a> {
             parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             block_context,
-            is_write_stage: false,
+            tmp__is_write_stage: false,
         }
     }
 

@@ -91,7 +91,7 @@ impl PipelineTranslationContext {
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
         let mut new_context = Self::new_block_builder_context(self, parameters);
-        new_context.is_write_stage = true;
+        new_context.tmp__is_write_stage = true;
         new_context
     }
 
