@@ -23,27 +23,33 @@ use crate::migration::Checksums;
 
 #[derive(Debug)]
 pub enum MigrationItem {
-    Header {
-        typedb_version: String,
-        original_database: String,
-    },
-    Entity {
-        id: String,
-        label: Label,
-        owned_attributes: Vec<String>,
-    },
-    Relation {
-        id: String,
-        label: Label,
-        owned_attributes: Vec<String>,
-        related_role_players: Vec<(Label, Vec<String>)>,
-    },
-    Attribute {
-        id: String,
-        label: Label,
-        value: Value<'static>,
-    },
+    Header { typedb_version: String, original_database: String },
+    Entity(EntityItem),
+    Relation(RelationItem),
+    Attribute(AttributeItem),
     Checksums(Checksums),
+}
+
+#[derive(Debug)]
+pub struct EntityItem {
+    pub id: String,
+    pub label: Label,
+    pub owned_attributes: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct RelationItem {
+    pub id: String,
+    pub label: Label,
+    pub owned_attributes: Vec<String>,
+    pub related_role_players: Vec<(Label, Vec<String>)>,
+}
+
+#[derive(Debug)]
+pub struct AttributeItem {
+    pub id: String,
+    pub label: Label,
+    pub value: Value<'static>,
 }
 
 pub(crate) fn encode_entity(
@@ -53,11 +59,11 @@ pub(crate) fn encode_entity(
     checksums: &mut Checksums,
     entity: Entity,
 ) -> Result<MigrationItem, Box<ConceptReadError>> {
-    Ok(MigrationItem::Entity {
+    Ok(MigrationItem::Entity(EntityItem {
         id: encode_thing_iid(&entity),
         label: encode_type_label(snapshot, type_manager, entity.type_())?,
         owned_attributes: encode_owned_attributes(snapshot, thing_manager, checksums, entity)?,
-    })
+    }))
 }
 
 pub(crate) fn encode_relation(
@@ -67,12 +73,12 @@ pub(crate) fn encode_relation(
     checksums: &mut Checksums,
     relation: Relation,
 ) -> Result<MigrationItem, Box<ConceptReadError>> {
-    Ok(MigrationItem::Relation {
+    Ok(MigrationItem::Relation(RelationItem {
         id: encode_thing_iid(&relation),
         label: encode_type_label(snapshot, type_manager, relation.type_())?,
         owned_attributes: encode_owned_attributes(snapshot, thing_manager, checksums, relation)?,
         related_role_players: encode_relation_roles(snapshot, type_manager, thing_manager, checksums, relation)?,
-    })
+    }))
 }
 
 pub(crate) fn encode_attribute(
@@ -82,11 +88,11 @@ pub(crate) fn encode_attribute(
     attribute: Attribute,
 ) -> Result<MigrationItem, Box<ConceptReadError>> {
     let value = attribute.get_value(snapshot, thing_manager, StorageCounters::DISABLED)?.into_owned();
-    Ok(MigrationItem::Attribute {
+    Ok(MigrationItem::Attribute(AttributeItem {
         id: encode_thing_iid(&attribute),
         label: encode_type_label(snapshot, type_manager, attribute.type_())?,
         value,
-    })
+    }))
 }
 
 fn encode_thing_iid(thing: &impl ThingAPI) -> String {

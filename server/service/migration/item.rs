@@ -6,7 +6,11 @@
 use std::borrow::Cow;
 
 use concept::error::ConceptDecodeError;
-use database::migration::{Checksums, Counts, database_exporter::ExportMessage, item::MigrationItem};
+use database::migration::{
+    Checksums, Counts,
+    database_exporter::ExportMessage,
+    item::{AttributeItem, EntityItem, MigrationItem, RelationItem},
+};
 use encoding::value::{label::Label, value::Value};
 use error::{typedb_error, unimplemented_feature};
 use typedb_protocol::{
@@ -31,12 +35,12 @@ pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
             MigrationItem::Header { typedb_version, original_database } => {
                 item::Item::Header(item::Header { typedb_version, original_database })
             }
-            MigrationItem::Entity { id, label, owned_attributes } => item::Item::Entity(item::Entity {
+            MigrationItem::Entity(EntityItem { id, label, owned_attributes }) => item::Item::Entity(item::Entity {
                 id,
                 label: label.to_string(),
                 attributes: encode_owned_attributes(owned_attributes),
             }),
-            MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
+            MigrationItem::Relation(RelationItem { id, label, owned_attributes, related_role_players }) => {
                 item::Item::Relation(item::Relation {
                     id,
                     label: label.to_string(),
@@ -44,7 +48,7 @@ pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
                     roles: encode_relation_roles(related_role_players),
                 })
             }
-            MigrationItem::Attribute { id, label, value } => item::Item::Attribute(item::Attribute {
+            MigrationItem::Attribute(AttributeItem { id, label, value }) => item::Item::Attribute(item::Attribute {
                 id,
                 label: label.to_string(),
                 attributes: vec![], // attributes used to own attributes in 2.x, not anymore
@@ -73,24 +77,26 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
         item::Item::Header(item::Header { typedb_version, original_database }) => {
             MigrationItem::Header { typedb_version, original_database }
         }
-        item::Item::Entity(item::Entity { id, label, attributes }) => MigrationItem::Entity {
+        item::Item::Entity(item::Entity { id, label, attributes }) => MigrationItem::Entity(EntityItem {
             id,
             label: Label::parse_from(&label, None),
             owned_attributes: decode_owned_attributes(attributes),
-        },
-        item::Item::Relation(item::Relation { id, label, attributes, roles }) => MigrationItem::Relation {
-            id,
-            label: Label::parse_from(&label, None),
-            owned_attributes: decode_owned_attributes(attributes),
-            related_role_players: decode_relation_roles(roles),
-        },
+        }),
+        item::Item::Relation(item::Relation { id, label, attributes, roles }) => {
+            MigrationItem::Relation(RelationItem {
+                id,
+                label: Label::parse_from(&label, None),
+                owned_attributes: decode_owned_attributes(attributes),
+                related_role_players: decode_relation_roles(roles),
+            })
+        }
         item::Item::Attribute(item::Attribute { id, label, attributes, value }) => {
             if !attributes.is_empty() {
                 return Err(ItemDecodeError::AttributesOwningAttributes {});
             }
             let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentAttributeValue {})?)
                 .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
-            MigrationItem::Attribute { id, label: Label::parse_from(&label, None), value }
+            MigrationItem::Attribute(AttributeItem { id, label: Label::parse_from(&label, None), value })
         }
         item::Item::Checksums(item::Checksums {
             entity_count,
@@ -195,9 +201,9 @@ mod tests {
         for (item, expected) in samples() {
             match &item {
                 MigrationItem::Header { .. }
-                | MigrationItem::Entity { .. }
-                | MigrationItem::Relation { .. }
-                | MigrationItem::Attribute { .. }
+                | MigrationItem::Entity(_)
+                | MigrationItem::Relation(_)
+                | MigrationItem::Attribute(_)
                 | MigrationItem::Checksums(_) => (),
             }
             assert_eq!(wire_item(encode_item(ExportMessage::Item(item))), expected);
@@ -228,11 +234,11 @@ mod tests {
                 })),
             ),
             (
-                MigrationItem::Entity {
+                MigrationItem::Entity(EntityItem {
                     id: "e1".to_owned(),
                     label: Label::build("person", None),
                     owned_attributes: vec!["a1".to_owned(), "a2".to_owned()],
-                },
+                }),
                 wire(item::Item::Entity(item::Entity {
                     id: "e1".to_owned(),
                     label: "person".to_owned(),
@@ -243,7 +249,7 @@ mod tests {
                 })),
             ),
             (
-                MigrationItem::Relation {
+                MigrationItem::Relation(RelationItem {
                     id: "r1".to_owned(),
                     label: Label::build("friendship", None),
                     owned_attributes: vec!["a1".to_owned()],
@@ -251,7 +257,7 @@ mod tests {
                         Label::build_scoped("friend", "friendship", None),
                         vec!["e1".to_owned(), "e2".to_owned()],
                     )],
-                },
+                }),
                 wire(item::Item::Relation(item::Relation {
                     id: "r1".to_owned(),
                     label: "friendship".to_owned(),
@@ -266,11 +272,11 @@ mod tests {
                 })),
             ),
             (
-                MigrationItem::Attribute {
+                MigrationItem::Attribute(AttributeItem {
                     id: "a1".to_owned(),
                     label: Label::build("name", None),
                     value: Value::String(Cow::Borrowed("Alice")),
-                },
+                }),
                 wire(item::Item::Attribute(item::Attribute {
                     id: "a1".to_owned(),
                     label: "name".to_owned(),

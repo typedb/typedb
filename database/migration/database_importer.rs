@@ -11,7 +11,7 @@ use std::{
     path::PathBuf,
     sync::{
         Arc, Mutex, OnceLock,
-        atomic::AtomicU64,
+        atomic::{AtomicU64, AtomicUsize, Ordering},
         mpsc::{Receiver, SyncSender, sync_channel},
     },
     thread,
@@ -30,7 +30,7 @@ use concept::{
         thing_manager::ThingManager,
     },
     type_::{
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, KindAPI, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
@@ -66,7 +66,9 @@ use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     migration::{
-        Checksums, MigrationOperationError, importing_database_handle::ImportingDatabaseHandle, item::MigrationItem,
+        Checksums, MigrationOperationError,
+        importing_database_handle::ImportingDatabaseHandle,
+        item::{AttributeItem, EntityItem, MigrationItem, RelationItem},
     },
     query::execute_schema_query,
     transaction::{TransactionError, TransactionSchema, TransactionWrite},
@@ -132,7 +134,7 @@ struct SchemaInfo {
     original_cardinalities_owns: HashMap<Owns, Option<AnnotationCardinality>>,
     original_cardinalities_plays: HashMap<Plays, Option<AnnotationCardinality>>,
     original_cardinalities_relates: HashMap<Relates, Option<AnnotationCardinality>>,
-    temporarily_removed_specializing_owns: HashMap<Owns, (HashSet<OwnsAnnotation>, Ordering)>,
+    temporarily_removed_specializing_owns: HashMap<Owns, (HashSet<OwnsAnnotation>, concept::type_::Ordering)>,
     temporarily_removed_specializing_plays: HashMap<Plays, HashSet<PlaysAnnotation>>,
 }
 
@@ -160,6 +162,8 @@ struct DataInfo {
     attributes: Mutex<AttributesInfo>,
     checksums: Checksums,
     expected_checksums: OnceLock<Checksums>,
+    unresolved_ownerships: AtomicUsize,
+    unresolved_role_players: AtomicUsize,
 }
 
 impl DataInfo {
@@ -169,6 +173,8 @@ impl DataInfo {
             attributes: Mutex::new(AttributesInfo::new(cache_directory, database_name)),
             checksums: Checksums::new(),
             expected_checksums: OnceLock::new(),
+            unresolved_ownerships: AtomicUsize::new(0),
+            unresolved_role_players: AtomicUsize::new(0),
         }
     }
 
@@ -193,6 +199,14 @@ impl DataInfo {
 
     fn record_role(&self) {
         self.checksums.increment_role_count();
+    }
+
+    fn record_unresolved_ownership(&self) {
+        self.unresolved_ownerships.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn record_unresolved_role_player(&self) {
+        self.unresolved_role_players.fetch_add(1, Ordering::Relaxed);
     }
 
     fn record_expected_checksums(&self, checksums: Checksums) -> Result<(), DatabaseImportError> {
@@ -229,20 +243,28 @@ impl DataInfo {
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
     }
 
-    fn append_pending_ownership(&self, pending: PendingOwnership) -> Result<(), DatabaseImportError> {
-        self.attributes.lock().unwrap().pending_ownerships.append(pending)
+    fn append_deferred_ownership(&self, deferred: DeferredOwnership) -> Result<(), DatabaseImportError> {
+        self.attributes.lock().unwrap().deferred_ownerships.append(deferred)
     }
 
-    fn append_pending_role_player(&self, pending: PendingRolePlayer) -> Result<(), DatabaseImportError> {
-        self.objects.lock().unwrap().pending_role_players.append(pending)
+    fn append_deferred_role_player(&self, deferred: DeferredRolePlayer) -> Result<(), DatabaseImportError> {
+        self.objects.lock().unwrap().deferred_role_players.append(deferred)
     }
 
-    fn take_pending_ownerships(&self) -> Option<SpilloverCache<PendingOwnership>> {
-        self.attributes.lock().unwrap().pending_ownerships.take()
+    fn take_deferred_ownerships(&self) -> Option<SpilloverCache<DeferredOwnership>> {
+        self.attributes.lock().unwrap().deferred_ownerships.take()
     }
 
-    fn take_pending_role_players(&self) -> Option<SpilloverCache<PendingRolePlayer>> {
-        self.objects.lock().unwrap().pending_role_players.take()
+    fn take_deferred_role_players(&self) -> Option<SpilloverCache<DeferredRolePlayer>> {
+        self.objects.lock().unwrap().deferred_role_players.take()
+    }
+
+    fn unresolved_ownerships(&self) -> usize {
+        self.unresolved_ownerships.load(Ordering::Relaxed)
+    }
+
+    fn unresolved_role_players(&self) -> usize {
+        self.unresolved_role_players.load(Ordering::Relaxed)
     }
 
     fn has_expected_checksums(&self) -> bool {
@@ -296,16 +318,24 @@ impl<T: ThingAPI> InstanceIDMapping<T> {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct PendingOwnership {
+struct DeferredOwnership {
     attribute_original_id: String,
     owner_iid: IID,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct PendingRolePlayer {
+struct DeferredRolePlayer {
     player_original_id: String,
     relation_iid: IID,
     role_type_id: TypeIDUInt,
+}
+
+enum ConceptImport {
+    Entity(EntityItem),
+    Relation(RelationItem),
+    Attribute(AttributeItem),
+    DeferredOwnership(DeferredOwnership),
+    DeferredRolePlayer(DeferredRolePlayer),
 }
 
 #[derive(Debug)]
@@ -329,7 +359,7 @@ impl<T: Serialize + DeserializeOwned + Clone> SpilloverLog<T> {
         self.next_sequence += 1;
         self.records
             .as_mut()
-            .expect("Pending records are only appended before the import stream is done")
+            .expect("Deferred records are only appended before the import stream is done")
             .insert(key, record)
             .map_err(|source| DatabaseImportError::CacheError { source })
     }
@@ -342,14 +372,14 @@ impl<T: Serialize + DeserializeOwned + Clone> SpilloverLog<T> {
 #[derive(Debug)]
 struct ObjectsInfo {
     pub instance_id_mapping: InstanceIDMapping<Object>,
-    pub pending_role_players: SpilloverLog<PendingRolePlayer>,
+    pub deferred_role_players: SpilloverLog<DeferredRolePlayer>,
 }
 
 impl ObjectsInfo {
     fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
             instance_id_mapping: InstanceIDMapping::new(cache_directory, database_name),
-            pending_role_players: SpilloverLog::new(cache_directory, database_name),
+            deferred_role_players: SpilloverLog::new(cache_directory, database_name),
         }
     }
 }
@@ -357,14 +387,14 @@ impl ObjectsInfo {
 #[derive(Debug)]
 struct AttributesInfo {
     pub instance_id_mapping: InstanceIDMapping<Attribute>,
-    pub pending_ownerships: SpilloverLog<PendingOwnership>,
+    pub deferred_ownerships: SpilloverLog<DeferredOwnership>,
 }
 
 impl AttributesInfo {
     fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
             instance_id_mapping: InstanceIDMapping::new(cache_directory, database_name),
-            pending_ownerships: SpilloverLog::new(cache_directory, database_name),
+            deferred_ownerships: SpilloverLog::new(cache_directory, database_name),
         }
     }
 }
@@ -481,8 +511,6 @@ pub struct DatabaseImporter {
 
     schema_imported: bool,
     phase: Option<DatabaseImporterPhase>,
-    batch: Vec<MigrationItem>,
-    data_transaction: Option<TransactionWrite<WALClient>>, // for the finalize phase
 }
 
 impl std::fmt::Debug for DatabaseImporter {
@@ -494,7 +522,6 @@ impl std::fmt::Debug for DatabaseImporter {
 impl DatabaseImporter {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
     const DRAIN_CHUNK_SIZE: usize = 10_000;
-    const BATCH_SIZE: usize = 1_000;
 
     const WORKER_COUNT: usize = 1;
 
@@ -524,7 +551,7 @@ impl DatabaseImporter {
         let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
         let data_info = Arc::new(DataInfo::new(&scratch_directory, &database_name));
-        let mut importer = Self {
+        let importer = Self {
             importing_database: Some(importing_database),
             database_name,
             schema_info: SchemaInfo::new(),
@@ -534,8 +561,6 @@ impl DatabaseImporter {
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
-            batch: Vec::with_capacity(Self::BATCH_SIZE),
-            data_transaction: None,
         };
         let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
         DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
@@ -590,51 +615,27 @@ impl DatabaseImporter {
                 );
                 Ok(())
             }
-            item
-            @ (MigrationItem::Entity { .. } | MigrationItem::Relation { .. } | MigrationItem::Attribute { .. }) => {
-                self.dispatch(item)
-            }
+            MigrationItem::Entity(entity) => self.import_concept(ConceptImport::Entity(entity)),
+            MigrationItem::Relation(relation) => self.import_concept(ConceptImport::Relation(relation)),
+            MigrationItem::Attribute(attribute) => self.import_concept(ConceptImport::Attribute(attribute)),
         }
     }
 
-    fn dispatch(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
-        if self.needs_new_phase(&item) {
+    fn import_concept(&mut self, concept: ConceptImport) -> Result<(), DatabaseImportError> {
+        if self.needs_new_phase(&concept) {
             self.finish_phase()?;
             self.phase = Some(DatabaseImporterPhase::start(self, Self::WORKER_COUNT)?);
         }
-        self.batch.push(item);
-        if self.batch.len() >= Self::BATCH_SIZE {
-            self.send_batch()?;
-        }
-        Ok(())
+        self.phase.as_mut().expect("a phase runs while dispatching").import_concept(concept)
     }
 
-    fn needs_new_phase(&self, _item: &MigrationItem) -> bool {
+    fn needs_new_phase(&self, _concept: &ConceptImport) -> bool {
         // TODO: future - implement actual phases (now - only 1 phase)
         self.phase.is_none()
     }
 
-    fn send_batch(&mut self) -> Result<(), DatabaseImportError> {
-        if self.batch.is_empty() {
-            return Ok(());
-        }
-        let batch = std::mem::replace(&mut self.batch, Vec::with_capacity(Self::BATCH_SIZE));
-        let phase = self.phase.as_ref().expect("Batches are only built within a phase");
-        if phase.send(batch) {
-            Ok(())
-        } else {
-            self.finish_phase()?;
-            Err(DatabaseImportError::ImporterStopped {})
-        }
-    }
-
     fn finish_phase(&mut self) -> Result<(), DatabaseImportError> {
-        if self.phase.is_none() {
-            return Ok(());
-        }
-        let sent = self.send_batch();
-        let finished = self.phase.take().map_or(Ok(()), DatabaseImporterPhase::finish);
-        finished.and(sent)
+        self.phase.take().map_or(Ok(()), DatabaseImporterPhase::finish)
     }
 
     fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
@@ -647,13 +648,9 @@ impl DatabaseImporter {
 
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
         self.check_stopped()?;
-        self.drain_pending_ownerships()?;
+        self.import_deferred_ownerships()?;
         self.check_stopped()?;
-        self.drain_pending_role_players()?;
-        if let Some(data_transaction) = self.data_transaction.take() {
-            self.commit_write_transaction(data_transaction)?;
-        }
-
+        self.import_deferred_role_players()?;
         self.check_stopped()?;
         self.validate_imported_data()?;
         self.check_stopped()?;
@@ -672,100 +669,50 @@ impl DatabaseImporter {
         }
     }
 
-    fn drain_pending_ownerships(&mut self) -> Result<(), DatabaseImportError> {
-        let records = self.data_info.take_pending_ownerships();
-        match self.drain_pending(records, "ownerships", Self::import_pending_ownership)? {
+    fn import_deferred_ownerships(&mut self) -> Result<(), DatabaseImportError> {
+        let records = self.data_info.take_deferred_ownerships();
+        self.import_deferred(records, "ownerships", ConceptImport::DeferredOwnership)?;
+        match self.data_info.unresolved_ownerships() {
             0 => Ok(()),
-            unresolved => Err(DatabaseImportError::IncompleteOwnershipsOnDone { count: unresolved }),
+            count => Err(DatabaseImportError::IncompleteOwnershipsOnDone { count }),
         }
     }
 
-    fn drain_pending_role_players(&mut self) -> Result<(), DatabaseImportError> {
-        let records = self.data_info.take_pending_role_players();
-        match self.drain_pending(records, "role players", Self::import_pending_role_player)? {
+    fn import_deferred_role_players(&mut self) -> Result<(), DatabaseImportError> {
+        let records = self.data_info.take_deferred_role_players();
+        self.import_deferred(records, "role players", ConceptImport::DeferredRolePlayer)?;
+        match self.data_info.unresolved_role_players() {
             0 => Ok(()),
-            unresolved => Err(DatabaseImportError::IncompleteRolesOnDone { count: unresolved }),
+            count => Err(DatabaseImportError::IncompleteRolesOnDone { count }),
         }
     }
 
-    fn drain_pending<T>(
+    fn import_deferred<T>(
         &mut self,
         records: Option<SpilloverCache<T>>,
-        concept_name: &str,
-        import_one: impl Fn(&mut Self, T, &mut usize) -> Result<(), DatabaseImportError>,
-    ) -> Result<usize, DatabaseImportError>
+        deferred_name: &str,
+        to_concept_import: impl Fn(T) -> ConceptImport,
+    ) -> Result<(), DatabaseImportError>
     where
         T: Serialize + DeserializeOwned + Clone,
     {
-        let Some(records) = records else { return Ok(0) };
-        let (mut written, mut unresolved) = (0u64, 0);
+        let Some(records) = records else { return Ok(()) };
+        let mut written = 0u64;
         for chunk in records.into_chunks(Self::DRAIN_CHUNK_SIZE) {
             self.check_stopped()?;
-            for (_key, pending) in chunk.map_err(|source| DatabaseImportError::CacheError { source })? {
-                import_one(self, pending, &mut unresolved)?;
+            for (_key, deferred) in chunk.map_err(|source| DatabaseImportError::CacheError { source })? {
+                self.import_concept(to_concept_import(deferred))?;
                 written += 1;
             }
         }
+        self.finish_phase()?;
         if written > 0 {
             event!(
                 Level::DEBUG,
-                "Wrote {written} {concept_name} deferred until their referenced instances were imported."
+                "Wrote {written} {deferred_name} deferred until their referenced instances were imported."
             );
         }
-        Ok(unresolved)
-    }
-
-    fn import_pending_ownership(
-        &mut self,
-        pending: PendingOwnership,
-        unknown_attributes: &mut usize,
-    ) -> Result<(), DatabaseImportError> {
-        let PendingOwnership { attribute_original_id, owner_iid } = pending;
-        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let attribute_opt =
-                self.data_info.get_attribute_by_original_id(&snapshot, &thing_manager, &attribute_original_id)?;
-            match attribute_opt {
-                None => {
-                    *unknown_attributes += 1;
-                    Ok(())
-                }
-                Some(attribute) => {
-                    let owner = Object::new(decode_object_vertex(&owner_iid)?);
-                    owner
-                        .set_has_unordered(&mut snapshot, &thing_manager, &attribute, StorageCounters::DISABLED)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    self.data_info.record_ownership();
-                    Ok(())
-                }
-            }
-        })
-    }
-
-    fn import_pending_role_player(
-        &mut self,
-        pending: PendingRolePlayer,
-        unknown_players: &mut usize,
-    ) -> Result<(), DatabaseImportError> {
-        let PendingRolePlayer { player_original_id, relation_iid, role_type_id } = pending;
-        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
-            let role_type = RoleType::build_from_type_id(TypeID::new(role_type_id));
-            let player_opt =
-                self.data_info.get_object_by_original_id(&snapshot, &thing_manager, &player_original_id)?;
-            match player_opt {
-                None => {
-                    *unknown_players += 1;
-                    Ok(())
-                }
-                Some(player) => {
-                    let relation = Relation::new(decode_object_vertex(&relation_iid)?);
-                    relation
-                        .add_player(&mut snapshot, &thing_manager, role_type, player, StorageCounters::DISABLED)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    self.data_info.record_role();
-                    Ok(())
-                }
-            }
-        })
+        Ok(())
     }
 
     fn database_name(&self) -> &str {
@@ -773,7 +720,7 @@ impl DatabaseImporter {
     }
 
     fn total_item_count(&self) -> u64 {
-        self.total_item_count.load(core::sync::atomic::Ordering::Relaxed) // TODO: right level?
+        self.total_item_count.load(Ordering::Relaxed)
     }
 
     fn submit_original_schema(&self, schema: String) -> Result<(), DatabaseImportError> {
@@ -1169,20 +1116,6 @@ impl DatabaseImporter {
         self.data_info.verify_checksums()
     }
 
-    fn count_item(&mut self) {
-        self.total_item_count.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
-    }
-
-    fn get_data_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
-        match self.data_transaction.take() {
-            Some(transaction) => Ok(transaction),
-            None => self
-                .importing_database()?
-                .open_write()
-                .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
-        }
-    }
-
     fn open_schema_transaction(&self) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
         self.importing_database()?
             .open_schema()
@@ -1199,13 +1132,6 @@ impl DatabaseImporter {
         self.importing_database()?.commit_schema(intent).map_err(map_err)
     }
 
-    fn commit_write_transaction(&self, transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
-        let map_err = |typedb_source| DatabaseImportError::DataCommitFailed { typedb_source };
-        let (_, finalise_result) = transaction.finalise();
-        let intent = finalise_result.map_err(|source| map_err(Arc::new(source)))?;
-        self.importing_database()?.commit_data(intent).map_err(map_err)
-    }
-
     fn importing_database(&self) -> Result<&dyn ImportingDatabaseHandle, DatabaseImportError> {
         self.importing_database.as_deref().ok_or(DatabaseImportError::AccessAfterFinalisation {})
     }
@@ -1217,20 +1143,9 @@ fn decode_object_vertex(iid: &[u8]) -> Result<ObjectVertex, DatabaseImportError>
     })
 }
 
-impl Drop for DatabaseImporter {
-    fn drop(&mut self) {
-        if let Some(data_transaction) = self.data_transaction.take() {
-            assert!(
-                self.importing_database.is_some(),
-                "Unexpected open import transaction while the import is still not done"
-            );
-            data_transaction.close();
-        }
-    }
-}
-
 struct DatabaseImporterPhase {
-    sender: Option<SyncSender<Vec<MigrationItem>>>,
+    sender: Option<SyncSender<Vec<ConceptImport>>>,
+    batch_builder: Vec<ConceptImport>,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
 }
@@ -1256,12 +1171,14 @@ impl ErrorState {
 
 impl DatabaseImporterPhase {
     const QUEUE_SIZE_MULTIPLIER: usize = 4;
+    const BATCH_SIZE: usize = 1_000;
 
     fn start(importer: &DatabaseImporter, worker_count: usize) -> Result<Self, DatabaseImportError> {
         let (sender, receiver) = sync_channel(worker_count * Self::QUEUE_SIZE_MULTIPLIER);
         let receiver = Arc::new(Mutex::new(receiver));
         let mut phase = Self {
             sender: Some(sender),
+            batch_builder: Vec::with_capacity(Self::BATCH_SIZE),
             workers: Vec::with_capacity(worker_count),
             error_state: importer.error_state.clone(),
         };
@@ -1273,13 +1190,34 @@ impl DatabaseImporterPhase {
         Ok(phase)
     }
 
-    fn send(&self, batch: Vec<MigrationItem>) -> bool {
-        !self.error_state.is_errored() && self.sender.as_ref().is_some_and(|sender| sender.send(batch).is_ok())
+    fn import_concept(&mut self, concept: ConceptImport) -> Result<(), DatabaseImportError> {
+        self.batch_builder.push(concept);
+        if self.batch_builder.len() >= Self::BATCH_SIZE {
+            self.send_batch()?;
+        }
+        Ok(())
+    }
+
+    fn send_batch(&mut self) -> Result<(), DatabaseImportError> {
+        if self.batch_builder.is_empty() {
+            return Ok(());
+        }
+        let batch = std::mem::replace(&mut self.batch_builder, Vec::with_capacity(Self::BATCH_SIZE));
+        let sent =
+            !self.error_state.is_errored() && self.sender.as_ref().is_some_and(|sender| sender.send(batch).is_ok());
+        if sent {
+            Ok(())
+        } else {
+            // the workers have stopped: join them to learn why
+            self.join();
+            Err(self.error_state.error().unwrap_or(DatabaseImportError::ImporterStopped {}))
+        }
     }
 
     fn finish(mut self) -> Result<(), DatabaseImportError> {
+        let sent = self.send_batch();
         self.join();
-        self.error_state.error().map_or(Ok(()), Err)
+        self.error_state.error().map_or(Ok(()), Err).and(sent)
     }
 
     fn join(&mut self) {
@@ -1324,7 +1262,7 @@ struct ImportWorker {
 impl ImportWorker {
     fn start(
         importer: &DatabaseImporter,
-        receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>,
+        receiver: Arc<Mutex<Receiver<Vec<ConceptImport>>>>,
         error_state: ErrorState,
         name: String,
     ) -> Result<thread::JoinHandle<()>, DatabaseImportError> {
@@ -1350,7 +1288,7 @@ impl ImportWorker {
         }
     }
 
-    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<MigrationItem>>>>, error_state: ErrorState) {
+    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<ConceptImport>>>>, error_state: ErrorState) {
         if let Err(error) = self.import_batches(&receiver, &error_state) {
             error_state.stop_with_error(error);
         }
@@ -1358,7 +1296,7 @@ impl ImportWorker {
 
     fn import_batches(
         &mut self,
-        receiver: &Mutex<Receiver<Vec<MigrationItem>>>,
+        receiver: &Mutex<Receiver<Vec<ConceptImport>>>,
         error_state: &ErrorState,
     ) -> Result<(), DatabaseImportError> {
         loop {
@@ -1381,16 +1319,17 @@ impl ImportWorker {
         }
     }
 
-    fn apply(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
-        match item {
-            MigrationItem::Entity { id, label, owned_attributes } => self.import_entity(id, label, owned_attributes),
-            MigrationItem::Relation { id, label, owned_attributes, related_role_players } => {
+    fn apply(&mut self, concept: ConceptImport) -> Result<(), DatabaseImportError> {
+        match concept {
+            ConceptImport::Entity(EntityItem { id, label, owned_attributes }) => {
+                self.import_entity(id, label, owned_attributes)
+            }
+            ConceptImport::Relation(RelationItem { id, label, owned_attributes, related_role_players }) => {
                 self.import_relation(id, label, owned_attributes, related_role_players)
             }
-            MigrationItem::Attribute { id, label, value } => self.import_attribute(id, label, value),
-            MigrationItem::Header { .. } | MigrationItem::Checksums(_) => {
-                unreachable!("Only instance items are dispatched to import workers")
-            }
+            ConceptImport::Attribute(AttributeItem { id, label, value }) => self.import_attribute(id, label, value),
+            ConceptImport::DeferredOwnership(deferred) => self.import_deferred_ownership(deferred),
+            ConceptImport::DeferredRolePlayer(deferred) => self.import_deferred_role_player(deferred),
         }
     }
 
@@ -1477,7 +1416,7 @@ impl ImportWorker {
                     self.data_info.record_ownership();
                 }
                 None => {
-                    self.data_info.append_pending_ownership(PendingOwnership {
+                    self.data_info.append_deferred_ownership(DeferredOwnership {
                         attribute_original_id: id,
                         owner_iid: object.iid().into_array(),
                     })?;
@@ -1510,7 +1449,7 @@ impl ImportWorker {
                         self.data_info.record_role();
                     }
                     None => {
-                        self.data_info.append_pending_role_player(PendingRolePlayer {
+                        self.data_info.append_deferred_role_player(DeferredRolePlayer {
                             player_original_id: id,
                             relation_iid: relation.iid().into_array(),
                             role_type_id: role_type.vertex().type_id_().as_u16(),
@@ -1520,6 +1459,51 @@ impl ImportWorker {
             }
         }
         Ok(())
+    }
+
+    fn import_deferred_ownership(&mut self, deferred: DeferredOwnership) -> Result<(), DatabaseImportError> {
+        let DeferredOwnership { attribute_original_id, owner_iid } = deferred;
+        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
+            let attribute_opt =
+                self.data_info.get_attribute_by_original_id(&snapshot, &thing_manager, &attribute_original_id)?;
+            match attribute_opt {
+                None => {
+                    self.data_info.record_unresolved_ownership();
+                    Ok(())
+                }
+                Some(attribute) => {
+                    let owner = Object::new(decode_object_vertex(&owner_iid)?);
+                    owner
+                        .set_has_unordered(&mut snapshot, &thing_manager, &attribute, StorageCounters::DISABLED)
+                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                    self.data_info.record_ownership();
+                    Ok(())
+                }
+            }
+        })
+    }
+
+    fn import_deferred_role_player(&mut self, deferred: DeferredRolePlayer) -> Result<(), DatabaseImportError> {
+        let DeferredRolePlayer { player_original_id, relation_iid, role_type_id } = deferred;
+        for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
+            let role_type = RoleType::build_from_type_id(TypeID::new(role_type_id));
+            let player_opt =
+                self.data_info.get_object_by_original_id(&snapshot, &thing_manager, &player_original_id)?;
+            match player_opt {
+                None => {
+                    self.data_info.record_unresolved_role_player();
+                    Ok(())
+                }
+                Some(player) => {
+                    let relation = Relation::new(decode_object_vertex(&relation_iid)?);
+                    relation
+                        .add_player(&mut snapshot, &thing_manager, role_type, player, StorageCounters::DISABLED)
+                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                    self.data_info.record_role();
+                    Ok(())
+                }
+            }
+        })
     }
 
     fn commit_write_transaction(&self, transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
@@ -1540,7 +1524,7 @@ impl ImportWorker {
     }
 
     fn count_item(&self) {
-        self.total_item_count.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+        self.total_item_count.fetch_add(1, Ordering::Relaxed);
     }
 }
 

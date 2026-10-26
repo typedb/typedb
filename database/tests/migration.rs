@@ -17,7 +17,7 @@ use database::{
         importing_database_handle::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
-        item::MigrationItem,
+        item::{AttributeItem, EntityItem, MigrationItem, RelationItem},
     },
     transaction::{
         CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionError, TransactionRead, TransactionSchema,
@@ -158,23 +158,27 @@ fn source_items() -> Vec<MigrationItem> {
     let alice = "alice".to_owned();
     let bob = "bob".to_owned();
     vec![
-        MigrationItem::Attribute {
+        MigrationItem::Attribute(AttributeItem {
             id: alice.clone(),
             label: Label::build("name", None),
             value: Value::String("Alice".into()),
-        },
-        MigrationItem::Attribute {
+        }),
+        MigrationItem::Attribute(AttributeItem {
             id: bob.clone(),
             label: Label::build("name", None),
             value: Value::String("Bob".into()),
-        },
-        MigrationItem::Entity {
+        }),
+        MigrationItem::Entity(EntityItem {
             id: "p1".to_owned(),
             label: Label::build("person", None),
             owned_attributes: vec![alice],
-        },
-        MigrationItem::Entity { id: "p2".to_owned(), label: Label::build("person", None), owned_attributes: vec![bob] },
-        MigrationItem::Relation {
+        }),
+        MigrationItem::Entity(EntityItem {
+            id: "p2".to_owned(),
+            label: Label::build("person", None),
+            owned_attributes: vec![bob],
+        }),
+        MigrationItem::Relation(RelationItem {
             id: "f1".to_owned(),
             label: Label::build("friendship", None),
             owned_attributes: vec![],
@@ -182,7 +186,7 @@ fn source_items() -> Vec<MigrationItem> {
                 Label::build_scoped("friend", "friendship", None),
                 vec!["p1".to_owned(), "p2".to_owned()],
             )],
-        },
+        }),
         MigrationItem::Checksums(Checksums::from_counts(Counts {
             entity_count: 2,
             attribute_count: 2,
@@ -292,11 +296,11 @@ async fn an_out_of_order_stream_is_rejected() {
     for item in source_items() {
         late.send(item).await.expect("send");
     }
-    late.send(MigrationItem::Entity {
+    late.send(MigrationItem::Entity(EntityItem {
         id: "p3".to_owned(),
         label: Label::build("person", None),
         owned_attributes: vec![],
-    })
+    }))
     .await
     .expect("send");
     let result = late.finalize().await;
@@ -315,17 +319,18 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     init_logging();
     let data_dir = create_tmp_dir("migration_pending_players");
     let database_manager = manager(&data_dir);
-    let person =
-        |id: String| MigrationItem::Entity { id, label: Label::build("person", None), owned_attributes: vec![] };
+    let person = |id: String| {
+        MigrationItem::Entity(EntityItem { id, label: Label::build("person", None), owned_attributes: vec![] })
+    };
     let max_writes_per_commit = 2;
     let padding = max_writes_per_commit * 2;
 
-    let mut items = vec![MigrationItem::Relation {
+    let mut items = vec![MigrationItem::Relation(RelationItem {
         id: "f1".to_owned(),
         label: Label::build("friendship", None),
         owned_attributes: vec![],
         related_role_players: vec![(Label::build_scoped("friend", "friendship", None), vec!["p1".to_owned()])],
-    }];
+    })];
     items.extend((0..padding).map(|i| person(format!("pad{i}"))));
     items.push(person("p1".to_owned()));
     items.push(MigrationItem::Checksums(Checksums::from_counts(Counts {
@@ -348,9 +353,9 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let relations: Vec<MigrationItem> = export(&transaction, "pending")
         .1
         .into_iter()
-        .filter(|item| matches!(item, MigrationItem::Relation { .. }))
+        .filter(|item| matches!(item, MigrationItem::Relation(_)))
         .collect();
-    let [MigrationItem::Relation { related_role_players, .. }] = relations.as_slice() else {
+    let [MigrationItem::Relation(RelationItem { related_role_players, .. })] = relations.as_slice() else {
         panic!("one relation expected, got {relations:?}")
     };
     assert_eq!(related_role_players.iter().map(|(_, players)| players.len()).sum::<usize>(), 1);
@@ -367,12 +372,12 @@ async fn a_relation_without_role_players_is_rejected() {
     for (name, related_role_players) in [("no-roles", no_roles), ("empty-role", empty_role)] {
         let mut importer = importer_with_schema(&database_manager, name, SCHEMA).await;
         importer
-            .send(MigrationItem::Relation {
+            .send(MigrationItem::Relation(RelationItem {
                 id: "f1".to_owned(),
                 label: Label::build("friendship", None),
                 owned_attributes: vec![],
                 related_role_players,
-            })
+            }))
             .await
             .expect("send");
         let result = importer.finalize().await;
