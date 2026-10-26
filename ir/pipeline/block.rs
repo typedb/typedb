@@ -327,8 +327,12 @@ fn tmp__recheck_root_optional_dereference_if_write_stage(
 
 fn tmp__fix_all_optional_dereferences_are_safe(conjunction: &mut Conjunction, context: &BlockBuilderContext<'_>) {
     // Will inject a fixing `isset` in ALL patterns which unsafely unwrap a variable.
-    let vars_to_unwrap = find_unsafe_dereference_in_constraints(conjunction).map(|(id, _)| id).collect::<Vec<_>>();
-    conjunction.constraints_mut().constraints_mut().push(Constraint::IsSet(IsSet::new(vars_to_unwrap, None)));
+    let vars_to_unwrap =
+        find_unsafe_dereference_in_constraints(conjunction).map(|(id, _)| id).dedup().collect::<Vec<_>>();
+    if !vars_to_unwrap.is_empty() {
+        conjunction.constraints_mut().constraints_mut().push(Constraint::IsSet(IsSet::new(vars_to_unwrap, None)));
+    }
+
     conjunction.nested_patterns_mut().iter_mut().for_each(|nested| match nested {
         NestedPattern::Disjunction(disjunction) => disjunction
             .conjunctions_mut()
