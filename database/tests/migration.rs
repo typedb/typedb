@@ -11,7 +11,7 @@ use database::{
     Database,
     database_manager::{DatabaseManager, ImportOwnership},
     migration::{
-        Checksums, MigrationOperationError,
+        Checksums, Counts, MigrationOperationError,
         database_exporter::{DatabaseExporter, ExportMessage},
         database_importer::{DatabaseImportError, DatabaseImporter, DatabaseImporterHandle},
         importing_database_handle::{
@@ -104,24 +104,27 @@ fn task_spawner() -> TokioTaskSpawner {
     TokioTaskTracker::new(shutdown_receiver).get_spawner()
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str, schema: &str) -> DatabaseImporterHandle {
-    importer_with_spawner(database_manager, name, schema, &task_spawner())
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle {
+    importer_with_spawner(database_manager, name, &task_spawner())
 }
 
 fn importer_with_spawner(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
-    schema: &str,
     task_spawner: &TokioTaskSpawner,
 ) -> DatabaseImporterHandle {
     let scratch_directory = database_manager.import_directory().to_owned();
-    DatabaseImporter::start(
-        importing_database(database_manager, name),
-        schema.to_owned(),
-        scratch_directory,
-        BUFFER_SIZE,
-        task_spawner,
-    )
+    DatabaseImporter::start(importing_database(database_manager, name), scratch_directory, BUFFER_SIZE, task_spawner)
+}
+
+async fn importer_with_schema(
+    database_manager: &Arc<DatabaseManager>,
+    name: &str,
+    schema: &str,
+) -> DatabaseImporterHandle {
+    let mut importer = importer(database_manager, name);
+    importer.send_schema(schema.to_owned()).await.expect("schema");
+    importer
 }
 
 fn read_transaction(database_manager: &Arc<DatabaseManager>, name: &str) -> TransactionRead<WALClient> {
@@ -180,7 +183,13 @@ fn source_items() -> Vec<MigrationItem> {
                 vec!["p1".to_owned(), "p2".to_owned()],
             )],
         },
-        MigrationItem::Checksums(Checksums::from_counts(2, 2, 1, 2, 2)),
+        MigrationItem::Checksums(Checksums::from_counts(Counts {
+            entity_count: 2,
+            attribute_count: 2,
+            relation_count: 1,
+            role_count: 2,
+            ownership_count: 2,
+        })),
     ]
 }
 
@@ -198,11 +207,11 @@ async fn a_database_without_a_schema_or_data_round_trips() {
     init_logging();
     let data_dir = create_tmp_dir("migration_empty");
     let database_manager = manager(&data_dir);
-    import_all(importer(&database_manager, "blank", ""), vec![empty_checksums()]).await;
+    import_all(importer_with_schema(&database_manager, "blank", "").await, vec![empty_checksums()]).await;
 
     let (schema, items) = export(&read_transaction(&database_manager, "blank"), "blank");
     assert!(matches!(items.as_slice(), [MigrationItem::Header { .. }, MigrationItem::Checksums(_)]), "{items:?}");
-    import_all(importer(&database_manager, "blank-copy", &schema), items).await;
+    import_all(importer_with_schema(&database_manager, "blank-copy", &schema).await, items).await;
     assert!(database_manager.database("blank-copy").is_some());
 }
 
@@ -211,7 +220,7 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
     init_logging();
     let data_dir = create_tmp_dir("migration_stream_shape");
     let database_manager = manager(&data_dir);
-    import_all(importer(&database_manager, "source", SCHEMA), source_items()).await;
+    import_all(importer_with_schema(&database_manager, "source", SCHEMA).await, source_items()).await;
 
     let transaction = read_transaction(&database_manager, "source");
     let (schema, items) = export(&transaction, "source");
@@ -226,11 +235,10 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
     }
     match items.last().expect("a non-empty stream") {
         MigrationItem::Checksums(checksums) => {
-            assert_eq!(checksums.entity_count(), 2);
-            assert_eq!(checksums.attribute_count(), 2);
-            assert_eq!(checksums.relation_count(), 1);
-            assert_eq!(checksums.role_count(), 2);
-            assert_eq!(checksums.ownership_count(), 2);
+            assert_eq!(
+                checksums.counts(),
+                Counts { entity_count: 2, attribute_count: 2, relation_count: 1, role_count: 2, ownership_count: 2 }
+            );
         }
         other => panic!("the stream must close with the checksums, not {other:?}"),
     }
@@ -241,13 +249,13 @@ async fn an_exported_stream_is_importable_as_it_comes() {
     init_logging();
     let data_dir = create_tmp_dir("migration_round_trip");
     let database_manager = manager(&data_dir);
-    import_all(importer(&database_manager, "source", SCHEMA), source_items()).await;
+    import_all(importer_with_schema(&database_manager, "source", SCHEMA).await, source_items()).await;
 
     let (source_schema, source_items) = {
         let transaction = read_transaction(&database_manager, "source");
         export(&transaction, "source")
     };
-    import_all(importer(&database_manager, "target", &source_schema), source_items).await;
+    import_all(importer_with_schema(&database_manager, "target", &source_schema).await, source_items).await;
 
     let transaction = read_transaction(&database_manager, "target");
     let (_, copied_items) = export(&transaction, "target");
@@ -257,11 +265,7 @@ async fn an_exported_stream_is_importable_as_it_comes() {
     ) else {
         panic!("both streams must close with the checksums")
     };
-    assert_eq!(copied.entity_count(), original.entity_count());
-    assert_eq!(copied.attribute_count(), original.attribute_count());
-    assert_eq!(copied.relation_count(), original.relation_count());
-    assert_eq!(copied.role_count(), original.role_count());
-    assert_eq!(copied.ownership_count(), original.ownership_count());
+    assert_eq!(copied.counts(), original.counts());
 }
 
 #[tokio::test]
@@ -270,7 +274,21 @@ async fn an_out_of_order_stream_is_rejected() {
     let data_dir = create_tmp_dir("migration_stream_order");
     let database_manager = manager(&data_dir);
 
-    let mut late = importer(&database_manager, "late", SCHEMA);
+    let mut early = importer(&database_manager, "early");
+    early
+        .send(MigrationItem::Header { typedb_version: "3.0.0-test".to_owned(), original_database: "source".to_owned() })
+        .await
+        .expect("send");
+    let result = early.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::ItemBeforeSchema { .. })), "{result:?}");
+
+    let mut twice = importer(&database_manager, "twice");
+    twice.send_schema(SCHEMA.to_owned()).await.expect("first schema");
+    twice.send_schema(SCHEMA.to_owned()).await.expect("second schema");
+    let result = twice.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::SchemaAlreadyImported { .. })), "{result:?}");
+
+    let mut late = importer_with_schema(&database_manager, "late", SCHEMA).await;
     for item in source_items() {
         late.send(item).await.expect("send");
     }
@@ -284,7 +302,7 @@ async fn an_out_of_order_stream_is_rejected() {
     let result = late.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ItemAfterChecksums { .. })), "{result:?}");
 
-    let mut duplicate = importer(&database_manager, "duplicate", SCHEMA);
+    let mut duplicate = importer_with_schema(&database_manager, "duplicate", SCHEMA).await;
     for item in [empty_checksums(), empty_checksums()] {
         duplicate.send(item).await.expect("send");
     }
@@ -310,15 +328,20 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     }];
     items.extend((0..padding).map(|i| person(format!("pad{i}"))));
     items.push(person("p1".to_owned()));
-    items.push(MigrationItem::Checksums(Checksums::from_counts((padding + 1) as i64, 0, 1, 1, 0)));
-    let importer = DatabaseImporter::start_with_max_writes_per_commit(
+    items.push(MigrationItem::Checksums(Checksums::from_counts(Counts {
+        entity_count: (padding + 1) as i64,
+        relation_count: 1,
+        role_count: 1,
+        ..Counts::default()
+    })));
+    let mut importer = DatabaseImporter::start_with_max_writes_per_commit(
         importing_database(&database_manager, "pending"),
-        SCHEMA.to_owned(),
         database_manager.import_directory().to_owned(),
         BUFFER_SIZE,
         &task_spawner(),
         max_writes_per_commit,
     );
+    importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
     import_all(importer, items).await;
 
     let transaction = read_transaction(&database_manager, "pending");
@@ -342,7 +365,7 @@ async fn a_relation_without_role_players_is_rejected() {
     let no_roles = vec![];
     let empty_role = vec![(Label::build_scoped("friend", "friendship", None), vec![])];
     for (name, related_role_players) in [("no-roles", no_roles), ("empty-role", empty_role)] {
-        let mut importer = importer(&database_manager, name, SCHEMA);
+        let mut importer = importer_with_schema(&database_manager, name, SCHEMA).await;
         importer
             .send(MigrationItem::Relation {
                 id: "f1".to_owned(),
@@ -363,7 +386,7 @@ async fn an_item_that_fails_to_decode_fails_the_import() {
     let data_dir = create_tmp_dir("migration_decode_failure");
     let database_manager = manager(&data_dir);
 
-    let mut importer = importer(&database_manager, "undecodable", SCHEMA);
+    let mut importer = importer_with_schema(&database_manager, "undecodable", SCHEMA).await;
     // Any TypeDB error stands in for the server's item decoding error.
     let batch = [Ok(empty_checksums()), Err(DatabaseImportError::ImporterStopped {})];
     importer.send_batch(batch).await.expect("send");
@@ -377,7 +400,7 @@ async fn an_aborted_import_stops_the_importer() {
     let data_dir = create_tmp_dir("migration_abort");
     let database_manager = manager(&data_dir);
 
-    let aborted = importer(&database_manager, "aborted", SCHEMA);
+    let aborted = importer_with_schema(&database_manager, "aborted", SCHEMA).await;
     let result = aborted.abort().await;
     assert!(matches!(result, Err(DatabaseImportError::Interrupted { .. })), "{result:?}");
 }
@@ -390,7 +413,8 @@ async fn shutdown_waits_for_an_importer_whose_handle_was_dropped() {
     let (shutdown_sender, shutdown_receiver) = watch::channel(());
     let task_tracker = TokioTaskTracker::new(shutdown_receiver);
 
-    let dropped = importer_with_spawner(&database_manager, "dropped", SCHEMA, &task_tracker.get_spawner());
+    let mut dropped = importer_with_spawner(&database_manager, "dropped", &task_tracker.get_spawner());
+    dropped.send_schema(SCHEMA.to_owned()).await.expect("schema");
     drop(dropped);
     shutdown_sender.send(()).expect("shutdown");
     task_tracker.join().await;

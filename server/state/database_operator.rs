@@ -63,7 +63,6 @@ pub trait DatabaseOperator: Debug + Send + Sync {
     async fn import_prepare(
         &self,
         name: &str,
-        schema: String,
         close_sender: Sender<()>,
     ) -> Result<DatabaseImporterHandle, ArcServerStateError>;
 
@@ -202,15 +201,10 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    pub fn start_importer(
-        &self,
-        importing_database: Arc<dyn ImportingDatabaseHandle>,
-        schema: String,
-    ) -> DatabaseImporterHandle {
+    pub fn start_importer(&self, importing_database: Arc<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         DatabaseImporter::start(
             importing_database,
-            schema,
             scratch_directory,
             IMPORT_MESSAGE_BUFFER_SIZE,
             &self.background_task_spawner,
@@ -309,7 +303,6 @@ impl DatabaseOperator for LocalDatabaseOperator {
     async fn import_prepare(
         &self,
         name: &str,
-        schema: String,
         close_sender: Sender<()>,
     ) -> Result<DatabaseImporterHandle, ArcServerStateError> {
         let map_err =
@@ -318,7 +311,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         let staged_database = self.prepare_imported_database(name.to_string())?;
         let importing_database =
             ImportingLocalDatabaseHandle { database_manager: self.database_manager.clone(), staged_database };
-        Ok(self.start_importer(Arc::new(importing_database), schema))
+        Ok(self.start_importer(Arc::new(importing_database)))
     }
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError> {

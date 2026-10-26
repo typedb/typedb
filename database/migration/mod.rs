@@ -31,18 +31,22 @@ pub struct Checksums {
     ownership_count: AtomicI64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Counts {
+    pub entity_count: i64,
+    pub attribute_count: i64,
+    pub relation_count: i64,
+    pub role_count: i64,
+    pub ownership_count: i64,
+}
+
 impl Checksums {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn from_counts(
-        entity_count: i64,
-        attribute_count: i64,
-        relation_count: i64,
-        role_count: i64,
-        ownership_count: i64,
-    ) -> Self {
+    pub fn from_counts(counts: Counts) -> Self {
+        let Counts { entity_count, attribute_count, relation_count, role_count, ownership_count } = counts;
         Self {
             entity_count: AtomicI64::new(entity_count),
             attribute_count: AtomicI64::new(attribute_count),
@@ -52,24 +56,14 @@ impl Checksums {
         }
     }
 
-    pub fn entity_count(&self) -> i64 {
-        self.entity_count.load(Ordering::Relaxed)
-    }
-
-    pub fn attribute_count(&self) -> i64 {
-        self.attribute_count.load(Ordering::Relaxed)
-    }
-
-    pub fn relation_count(&self) -> i64 {
-        self.relation_count.load(Ordering::Relaxed)
-    }
-
-    pub fn role_count(&self) -> i64 {
-        self.role_count.load(Ordering::Relaxed)
-    }
-
-    pub fn ownership_count(&self) -> i64 {
-        self.ownership_count.load(Ordering::Relaxed)
+    pub fn counts(&self) -> Counts {
+        Counts {
+            entity_count: self.entity_count.load(Ordering::Relaxed),
+            attribute_count: self.attribute_count.load(Ordering::Relaxed),
+            relation_count: self.relation_count.load(Ordering::Relaxed),
+            role_count: self.role_count.load(Ordering::Relaxed),
+            ownership_count: self.ownership_count.load(Ordering::Relaxed),
+        }
     }
 
     pub fn increment_entity_count(&self) {
@@ -91,22 +85,17 @@ impl Checksums {
     pub fn increment_ownership_count(&self) {
         self.ownership_count.fetch_add(1, Ordering::Relaxed);
     }
-
-    fn counts(&self) -> (i64, i64, i64, i64, i64) {
-        (self.entity_count(), self.attribute_count(), self.relation_count(), self.role_count(), self.ownership_count())
-    }
 }
 
 impl Default for Checksums {
     fn default() -> Self {
-        Self::from_counts(0, 0, 0, 0, 0)
+        Self::from_counts(Counts::default())
     }
 }
 
 impl Clone for Checksums {
     fn clone(&self) -> Self {
-        let (entity_count, attribute_count, relation_count, role_count, ownership_count) = self.counts();
-        Self::from_counts(entity_count, attribute_count, relation_count, role_count, ownership_count)
+        Self::from_counts(self.counts())
     }
 }
 
@@ -120,7 +109,7 @@ impl Eq for Checksums {}
 
 impl fmt::Display for Checksums {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let (entity_count, attribute_count, relation_count, role_count, ownership_count) = self.counts();
+        let Counts { entity_count, attribute_count, relation_count, role_count, ownership_count } = self.counts();
         write!(
             f,
             "[{entity_count} entities, {attribute_count} attributes, {relation_count} relations, {role_count} roles, {ownership_count} ownerships]"

@@ -250,12 +250,16 @@ impl DatabaseImportService {
         let importer = self
             .server_state
             .databases()
-            .import_prepare(&name, schema, self.close_sender.clone())
+            .import_prepare(&name, self.close_sender.clone())
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
-
-        // The importer imports the schema first: its failure is reported like any other importer error
         self.active_import = Some(ActiveImport::new(name, importer));
+
+        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
+        self.stop_signals
+            .unless_stopped(active_import.importer.send_schema(schema))
+            .await?
+            .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
         Ok(Continue(()))
     }
 

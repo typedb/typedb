@@ -195,13 +195,18 @@ impl DataInfo {
         self.checksums.increment_role_count();
     }
 
+    fn record_expected_checksums(&self, checksums: Checksums) -> Result<(), DatabaseImportError> {
+        self.expected_checksums.set(checksums).map_err(|_| DatabaseImportError::DuplicateClientChecksums {})
+    }
+
     fn get_object_by_original_id(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         id: &str,
     ) -> Result<Option<Object>, DatabaseImportError> {
-        self.objects.lock().unwrap().instance_id_mapping.get_by_original_id(snapshot, thing_manager, id)
+        let iid = self.objects.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)?;
+        iid.map_or(Ok(None), |iid| Self::get_instance(snapshot, thing_manager, iid))
     }
 
     fn get_attribute_by_original_id(
@@ -210,7 +215,18 @@ impl DataInfo {
         thing_manager: &ThingManager,
         id: &str,
     ) -> Result<Option<Attribute>, DatabaseImportError> {
-        self.attributes.lock().unwrap().instance_id_mapping.get_by_original_id(snapshot, thing_manager, id)
+        let iid = self.attributes.lock().unwrap().instance_id_mapping.get_iid_by_original_id(id)?;
+        iid.map_or(Ok(None), |iid| Self::get_instance(snapshot, thing_manager, iid))
+    }
+
+    fn get_instance<T: ThingAPI>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        iid: IID,
+    ) -> Result<Option<T>, DatabaseImportError> {
+        thing_manager
+            .get_instance::<T>(snapshot, &Bytes::Array(iid), StorageCounters::DISABLED)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
     }
 
     fn append_pending_ownership(&self, pending: PendingOwnership) -> Result<(), DatabaseImportError> {
@@ -231,10 +247,6 @@ impl DataInfo {
 
     fn has_expected_checksums(&self) -> bool {
         self.expected_checksums.get().is_some()
-    }
-
-    fn record_expected_checksums(&self, checksums: Checksums) -> Result<(), DatabaseImportError> {
-        self.expected_checksums.set(checksums).map_err(|_| DatabaseImportError::DuplicateClientChecksums {})
     }
 
     fn verify_checksums(&self) -> Result<(), DatabaseImportError> {
@@ -272,20 +284,8 @@ impl<T: ThingAPI> InstanceIDMapping<T> {
         }
     }
 
-    fn get_by_original_id(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        id: &str,
-    ) -> Result<Option<T>, DatabaseImportError> {
-        let buffered_id_opt =
-            self.original_to_buffered_ids.get(id).map_err(|source| DatabaseImportError::CacheError { source })?;
-        let Some(buffered_id) = buffered_id_opt else {
-            return Ok(None);
-        };
-        thing_manager
-            .get_instance::<T>(snapshot, &Bytes::Array(buffered_id), StorageCounters::DISABLED)
-            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
+    fn get_iid_by_original_id(&self, id: &str) -> Result<Option<IID>, DatabaseImportError> {
+        self.original_to_buffered_ids.get(id).map_err(|source| DatabaseImportError::CacheError { source })
     }
 
     fn record(&mut self, original_id: String, instance: T) -> Result<(), DatabaseImportError> {
@@ -372,6 +372,7 @@ impl AttributesInfo {
 type ImportItems = Box<dyn Iterator<Item = Result<MigrationItem, MigrationOperationError>> + Send>;
 
 enum ImportMessage {
+    Schema(String),
     Items(ImportItems),
     Finalize,
 }
@@ -385,6 +386,10 @@ pub struct DatabaseImporterHandle {
 }
 
 impl DatabaseImporterHandle {
+    pub async fn send_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Schema(schema)).await
+    }
+
     pub async fn send(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
         self.send_message(ImportMessage::Items(Box::new(iter::once(Ok(item))))).await
     }
@@ -474,6 +479,7 @@ pub struct DatabaseImporter {
     max_writes_per_commit: usize,
     error_state: ErrorState,
 
+    schema_imported: bool,
     phase: Option<DatabaseImporterPhase>,
     batch: Vec<MigrationItem>,
     data_transaction: Option<TransactionWrite<WALClient>>, // for the finalize phase
@@ -494,14 +500,12 @@ impl DatabaseImporter {
 
     pub fn start(
         importing_database: Arc<dyn ImportingDatabaseHandle>,
-        schema: String,
         scratch_directory: PathBuf,
         buffer_size: usize,
         task_spawner: &TokioTaskSpawner,
     ) -> DatabaseImporterHandle {
         Self::start_with_max_writes_per_commit(
             importing_database,
-            schema,
             scratch_directory,
             buffer_size,
             task_spawner,
@@ -511,7 +515,6 @@ impl DatabaseImporter {
 
     pub fn start_with_max_writes_per_commit(
         importing_database: Arc<dyn ImportingDatabaseHandle>,
-        schema: String,
         scratch_directory: PathBuf,
         buffer_size: usize,
         task_spawner: &TokioTaskSpawner,
@@ -529,14 +532,12 @@ impl DatabaseImporter {
             total_item_count: Arc::new(AtomicU64::new(0)),
             max_writes_per_commit,
             error_state: error_state.clone(),
+            schema_imported: false,
             phase: None,
             batch: Vec::with_capacity(Self::BATCH_SIZE),
             data_transaction: None,
         };
-        let join_handle = task_spawner.spawn_blocking(move || {
-            importer.import_schema(schema)?;
-            importer.listen(receiver)
-        });
+        let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
         DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
     }
 
@@ -545,6 +546,16 @@ impl DatabaseImporter {
             self.check_stopped()?;
             match receiver.blocking_recv() {
                 None => return Err(self.error_state.error().unwrap_or(DatabaseImportError::Interrupted {})),
+                Some(ImportMessage::Schema(_)) if self.schema_imported => {
+                    return Err(DatabaseImportError::SchemaAlreadyImported {});
+                }
+                Some(ImportMessage::Schema(schema)) => {
+                    self.import_schema(schema)?;
+                    self.schema_imported = true;
+                }
+                Some(ImportMessage::Items(_)) if !self.schema_imported => {
+                    return Err(DatabaseImportError::ItemBeforeSchema {});
+                }
                 Some(ImportMessage::Items(items)) => {
                     for item in items {
                         self.check_stopped()?;
@@ -1567,7 +1578,7 @@ typedb_error! {
         CacheError(25, "Error writing import data.", source: CacheError),
         FinalisationFailed(26, "Import finalisation failed.", typedb_source: MigrationOperationError),
         Interrupted(27, "The import was interrupted by a close request or server shutdown before completion. The import is aborted and can be retried."),
-        ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first item of an import."),
+        ItemBeforeSchema(28, "A migration item was received before the schema. The schema is the first message of an import."),
         SchemaAlreadyImported(29, "The schema of this import was already received. An import carries exactly one schema."),
         ItemAfterChecksums(30, "A migration item was received after the checksums. The checksums are the last item of an import."),
         RelationWithoutRolePlayers(31, "Cannot process relation '{id}': it has no role players, and a relation cannot exist without them. It can be a sign of a corrupted file or a client bug.", id: String),

@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 
 use concept::error::ConceptDecodeError;
-use database::migration::{Checksums, database_exporter::ExportMessage, item::MigrationItem};
+use database::migration::{Checksums, Counts, database_exporter::ExportMessage, item::MigrationItem};
 use encoding::value::{label::Label, value::Value};
 use error::{typedb_error, unimplemented_feature};
 use typedb_protocol::{
@@ -47,16 +47,20 @@ pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
             MigrationItem::Attribute { id, label, value } => item::Item::Attribute(item::Attribute {
                 id,
                 label: label.to_string(),
-                attributes: vec![], // attributes cannot own attributes anymore
+                attributes: vec![], // attributes used to own attributes in 2.x, not anymore
                 value: Some(encode_migration_value(value)),
             }),
-            MigrationItem::Checksums(checksums) => item::Item::Checksums(item::Checksums {
-                entity_count: checksums.entity_count(),
-                attribute_count: checksums.attribute_count(),
-                relation_count: checksums.relation_count(),
-                role_count: checksums.role_count(),
-                ownership_count: checksums.ownership_count(),
-            }),
+            MigrationItem::Checksums(checksums) => {
+                let Counts { entity_count, attribute_count, relation_count, role_count, ownership_count } =
+                    checksums.counts();
+                item::Item::Checksums(item::Checksums {
+                    entity_count,
+                    attribute_count,
+                    relation_count,
+                    role_count,
+                    ownership_count,
+                })
+            }
         },
     };
     EncodedItem::Item(Item { item: Some(encoded) })
@@ -88,13 +92,19 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
                 .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
             MigrationItem::Attribute { id, label: Label::parse_from(&label, None), value }
         }
-        item::Item::Checksums(checksums) => MigrationItem::Checksums(Checksums::from_counts(
-            checksums.entity_count,
-            checksums.attribute_count,
-            checksums.relation_count,
-            checksums.role_count,
-            checksums.ownership_count,
-        )),
+        item::Item::Checksums(item::Checksums {
+            entity_count,
+            attribute_count,
+            relation_count,
+            role_count,
+            ownership_count,
+        }) => MigrationItem::Checksums(Checksums::from_counts(Counts {
+            entity_count,
+            attribute_count,
+            relation_count,
+            role_count,
+            ownership_count,
+        })),
     };
     Ok(decoded)
 }
@@ -271,7 +281,13 @@ mod tests {
                 })),
             ),
             (
-                MigrationItem::Checksums(Checksums::from_counts(1, 2, 3, 4, 5)),
+                MigrationItem::Checksums(Checksums::from_counts(Counts {
+                    entity_count: 1,
+                    attribute_count: 2,
+                    relation_count: 3,
+                    role_count: 4,
+                    ownership_count: 5,
+                })),
                 wire(item::Item::Checksums(item::Checksums {
                     entity_count: 1,
                     attribute_count: 2,
