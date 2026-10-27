@@ -567,7 +567,7 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			rev = "a247524c3a83524bf0a41a8c69739adfb812fad6"
+			rev = "0c9a6c46d658a1db593d57b33fc6ad4faf0a3e98"
 
 		[workspace.dependencies.typeql]
 			default-features = false

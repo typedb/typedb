@@ -9,7 +9,10 @@ use std::{fmt, sync::Arc};
 use bytes::util::HexBytesFormatter;
 use encoding::{
     error::EncodingError,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, ValueTypeCategory},
+    },
 };
 use error::typedb_error;
 use storage::snapshot::{SnapshotError, SnapshotGetError, iterator::SnapshotIteratorError};
@@ -89,6 +92,12 @@ typedb_error! {
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
         FunctionNotFound(28, "Function named '{function_name}' not found.", function_name: String),
         LoadSchemaSnapshot(29, "Failed to load schema keyspace into cached read snapshot.", typedb_source: SnapshotError),
+        ValueTypeMismatchWithAttribute(
+            30,
+            "Attribute required value type {expected} but was given value {actual}.",
+            expected: ValueTypeCategory,
+            actual: ValueTypeCategory,
+        ),
     }
 }
 

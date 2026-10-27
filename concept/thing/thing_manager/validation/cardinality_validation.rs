@@ -84,7 +84,7 @@ macro_rules! capability_cardinality_validation {
             }
             let constraints = Self::$collect_func_name(snapshot, thing_manager, object.type_(), interface_types)?;
             if constraints.is_empty()
-                || !thing_manager.is_persisted_in_storage(snapshot, key, storage_counters.clone())?
+                || !thing_manager.is_persisted_in_storage(snapshot, object.vertex(), storage_counters.clone())?
             {
                 return Ok(());
             }
