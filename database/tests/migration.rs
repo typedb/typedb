@@ -19,8 +19,8 @@ use database::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
         item::{
-            AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player, RelationItem,
-            RolePlayers,
+            AttributeByValue, AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player,
+            PlayerByLabelScopedId, RelationItem, RolePlayers,
         },
     },
     transaction::{
@@ -258,12 +258,36 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
                 Guarantees {
                     ordering: ItemOrder::AttributeEntityRelation,
                     attributes_unique: true,
-                    players_by_label_scoped_ids: false,
-                    owned_attributes_by_value: false,
+                    players_by_label_scoped_ids: true,
+                    owned_attributes_by_value: true,
                 }
             );
         }
         other => panic!("the schema must be followed by the header, not {other:?}"),
+    }
+    for item in &items {
+        match item {
+            MigrationItem::Entity(EntityItem { label_scoped_id, owned_attributes, .. }) => {
+                assert!(label_scoped_id.is_some(), "entities carry their label-scoped id: {item:?}");
+                for OwnedAttribute { attribute_by_value, .. } in owned_attributes {
+                    let Some(AttributeByValue { label, value }) = attribute_by_value else {
+                        panic!("inline attributes are owned by value: {item:?}")
+                    };
+                    assert_eq!(*label, Label::build("name", None));
+                    assert!(matches!(value, Value::String(name) if name == "Alice" || name == "Bob"), "{item:?}");
+                }
+            }
+            MigrationItem::Relation(RelationItem { label_scoped_id, related_role_players, .. }) => {
+                assert!(label_scoped_id.is_some(), "relations carry their label-scoped id: {item:?}");
+                for player in related_role_players.iter().flat_map(|role_players| &role_players.players) {
+                    let Some(PlayerByLabelScopedId { label, .. }) = &player.player_by_label_scoped_id else {
+                        panic!("players are referenced by label-scoped id: {item:?}")
+                    };
+                    assert_eq!(*label, Label::build("person", None));
+                }
+            }
+            _ => (),
+        }
     }
     match items.last().expect("a non-empty stream") {
         MigrationItem::Checksums(checksums) => {
@@ -298,6 +322,67 @@ async fn an_exported_stream_is_importable_as_it_comes() {
         panic!("both streams must close with the checksums")
     };
     assert_eq!(copied.counts(), original.counts());
+}
+
+#[tokio::test]
+async fn an_ownership_of_a_hashed_attribute_is_exported_by_id() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_hashed_attribute");
+    let database_manager = manager(&data_dir);
+    let long_name = "A".repeat(200);
+    let counts = Counts { entity_count: 2, attribute_count: 2, relation_count: 0, role_count: 0, ownership_count: 2 };
+    let items = vec![
+        MigrationItem::Attribute(AttributeItem {
+            id: "long".to_owned(),
+            label: Label::build("name", None),
+            value: Value::String(long_name.clone().into()),
+        }),
+        MigrationItem::Attribute(AttributeItem {
+            id: "bob".to_owned(),
+            label: Label::build("name", None),
+            value: Value::String("Bob".into()),
+        }),
+        MigrationItem::Entity(EntityItem {
+            id: "p1".to_owned(),
+            label: Label::build("person", None),
+            label_scoped_id: None,
+            owned_attributes: vec![OwnedAttribute::by_id("long".to_owned())],
+        }),
+        MigrationItem::Entity(EntityItem {
+            id: "p2".to_owned(),
+            label: Label::build("person", None),
+            label_scoped_id: None,
+            owned_attributes: vec![OwnedAttribute::by_id("bob".to_owned())],
+        }),
+        MigrationItem::Checksums(Checksums::from_counts(counts)),
+    ];
+    import_all(importer_with_schema(&database_manager, "source", SCHEMA).await, items).await;
+
+    let (schema, exported) = export(&read_transaction(&database_manager, "source"), "source");
+    let owned_attributes: Vec<&OwnedAttribute> = exported
+        .iter()
+        .filter_map(|item| match item {
+            MigrationItem::Entity(EntityItem { owned_attributes, .. }) => Some(owned_attributes),
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    let values: Vec<Option<&Value<'static>>> = owned_attributes
+        .iter()
+        .map(|OwnedAttribute { attribute_by_value, .. }| attribute_by_value.as_ref().map(|by_value| &by_value.value))
+        .collect();
+    assert!(
+        matches!(values.as_slice(), [None, Some(Value::String(bob))] | [Some(Value::String(bob)), None] if bob == "Bob"),
+        "the hashed name must be referenced by id and the inline name sent by value: {owned_attributes:?}"
+    );
+
+    import_all(importer_with_schema(&database_manager, "target", &schema).await, exported).await;
+    let MigrationItem::Checksums(copied) =
+        export(&read_transaction(&database_manager, "target"), "target").1.pop().unwrap()
+    else {
+        panic!("the stream must close with the checksums")
+    };
+    assert_eq!(copied.counts(), counts);
 }
 
 #[tokio::test]
