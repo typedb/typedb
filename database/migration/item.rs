@@ -14,7 +14,11 @@ use bytes::util::Base64Formatter;
 use concept::{
     error::ConceptReadError,
     thing::{
-        ThingAPI, attribute::Attribute, entity::Entity, object::ObjectAPI, relation::Relation,
+        ThingAPI,
+        attribute::Attribute,
+        entity::Entity,
+        object::{Object, ObjectAPI},
+        relation::Relation,
         thing_manager::ThingManager,
     },
     type_::{TypeAPI, role_type::RoleType, type_manager::TypeManager},
@@ -131,8 +135,8 @@ pub(crate) fn encode_entity(
     Ok(MigrationItem::Entity(EntityItem {
         id: encode_thing_iid(&entity),
         label: encode_type_label(snapshot, type_manager, entity.type_())?,
-        label_scoped_id: None,
-        owned_attributes: encode_owned_attributes(snapshot, thing_manager, checksums, entity)?,
+        label_scoped_id: Some(encode_label_scoped_id(&entity)),
+        owned_attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, entity)?,
     }))
 }
 
@@ -146,8 +150,8 @@ pub(crate) fn encode_relation(
     Ok(MigrationItem::Relation(RelationItem {
         id: encode_thing_iid(&relation),
         label: encode_type_label(snapshot, type_manager, relation.type_())?,
-        label_scoped_id: None,
-        owned_attributes: encode_owned_attributes(snapshot, thing_manager, checksums, relation)?,
+        label_scoped_id: Some(encode_label_scoped_id(&relation)),
+        owned_attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, relation)?,
         related_role_players: encode_relation_roles(snapshot, type_manager, thing_manager, checksums, relation)?,
     }))
 }
@@ -170,6 +174,11 @@ fn encode_thing_iid(thing: &impl ThingAPI) -> String {
     Base64Formatter::borrowed(thing.iid().borrow()).format()
 }
 
+/// The object's id within its type, which an importer with the same schema can reuse as is
+fn encode_label_scoped_id(object: &impl ObjectAPI) -> u64 {
+    object.vertex().object_id().as_u64()
+}
+
 fn encode_type_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -180,6 +189,7 @@ fn encode_type_label(
 
 fn encode_owned_attributes(
     snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
     thing_manager: &ThingManager,
     checksums: &mut Checksums,
     object: impl ObjectAPI,
@@ -190,11 +200,32 @@ fn encode_owned_attributes(
     for has in all_has {
         let (has, count) = has?;
         for _ in 0..count {
-            owned_attributes.push(OwnedAttribute::by_id(encode_thing_iid(&has.attribute())));
+            owned_attributes.push(encode_owned_attribute(snapshot, type_manager, thing_manager, has.attribute())?);
             checksums.increment_ownership_count();
         }
     }
     Ok(owned_attributes)
+}
+
+/// An inline attribute id is derived from the value alone, so sending the value lets the importer rebuild the
+/// attribute without looking it up. Hashed ids (long strings, structs) would cost a storage read to resolve here,
+/// and the importer has to look them up anyway, so they are sent by id only.
+fn encode_owned_attribute(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    attribute: Attribute,
+) -> Result<OwnedAttribute, Box<ConceptReadError>> {
+    let id = encode_thing_iid(&attribute);
+    let attribute_by_value = if attribute.vertex().attribute_id().is_inline() {
+        Some(AttributeByValue {
+            label: encode_type_label(snapshot, type_manager, attribute.type_())?,
+            value: attribute.get_value(snapshot, thing_manager, StorageCounters::DISABLED)?.into_owned(),
+        })
+    } else {
+        None
+    };
+    Ok(OwnedAttribute { id, attribute_by_value })
 }
 
 fn encode_relation_roles(
@@ -210,10 +241,11 @@ fn encode_relation_roles(
     for player in all_players {
         let (role_player, count) = player?;
         for _ in 0..count {
-            players_by_role
-                .entry(role_player.role_type())
-                .or_default()
-                .push(Player::by_id(encode_thing_iid(&role_player.player())));
+            players_by_role.entry(role_player.role_type()).or_default().push(encode_player(
+                snapshot,
+                type_manager,
+                role_player.player(),
+            )?);
             checksums.increment_role_count();
         }
     }
@@ -223,4 +255,18 @@ fn encode_relation_roles(
         roles.push(RolePlayers { role: encode_type_label(snapshot, type_manager, role_type)?, players });
     }
     Ok(roles)
+}
+
+fn encode_player(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    player: Object,
+) -> Result<Player, Box<ConceptReadError>> {
+    Ok(Player {
+        id: encode_thing_iid(&player),
+        player_by_label_scoped_id: Some(PlayerByLabelScopedId {
+            label: encode_type_label(snapshot, type_manager, player.type_())?,
+            label_scoped_id: encode_label_scoped_id(&player),
+        }),
+    })
 }

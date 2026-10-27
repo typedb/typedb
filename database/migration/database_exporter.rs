@@ -38,8 +38,8 @@ impl<'a> DatabaseExporter<'a> {
     const GUARANTEES: Guarantees = Guarantees {
         ordering: ItemOrder::AttributeEntityRelation,
         attributes_unique: true,
-        players_by_label_scoped_ids: false,
-        owned_attributes_by_value: false,
+        players_by_label_scoped_ids: true,
+        owned_attributes_by_value: true,
     };
 
     pub fn new(
@@ -82,8 +82,7 @@ impl<'a> DatabaseExporter<'a> {
             return Ok(Some(item));
         }
         let transaction = self.transaction;
-        // Stream attributes first so future exported ownerships find them directly,
-        // reducing the need of import-side caches of "unknown" owned attributes
+        // Guarantee ordering: attributes, entities, relations
         if let Some(attribute) = self.attributes.next() {
             let item = encode_attribute(
                 transaction.snapshot(),
