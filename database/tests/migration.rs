@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use concept::thing::thing_manager::ConceptPersistenceOracle;
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::{
     Database,
@@ -13,11 +14,14 @@ use database::{
     migration::{
         Checksums, Counts, MigrationOperationError,
         database_exporter::{DatabaseExporter, ExportMessage},
-        database_importer::{DatabaseImportError, DatabaseImporter, DatabaseImporterHandle},
+        database_importer::{DatabaseImportError, DatabaseImporter, DatabaseImporterHandle, ImporterConfiguration},
         importing_database_handle::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
-        item::{AttributeItem, EntityItem, MigrationItem, RelationItem},
+        item::{
+            AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player, RelationItem,
+            RolePlayers,
+        },
     },
     transaction::{
         CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionError, TransactionRead, TransactionSchema,
@@ -53,8 +57,11 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
         open_import_schema_transaction(&self.staged_database)
     }
 
-    fn open_write(&self) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database)
+    fn open_write(
+        &self,
+        concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        open_import_write_transaction(&self.staged_database, concept_persistence_oracle)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
@@ -114,7 +121,12 @@ fn importer_with_spawner(
     task_spawner: &TokioTaskSpawner,
 ) -> DatabaseImporterHandle {
     let scratch_directory = database_manager.import_directory().to_owned();
-    DatabaseImporter::start(importing_database(database_manager, name), scratch_directory, BUFFER_SIZE, task_spawner)
+    DatabaseImporter::start(
+        importing_database(database_manager, name),
+        ImporterConfiguration::default().with_buffer_size(BUFFER_SIZE),
+        scratch_directory,
+        task_spawner,
+    )
 }
 
 async fn importer_with_schema(
@@ -171,21 +183,21 @@ fn source_items() -> Vec<MigrationItem> {
         MigrationItem::Entity(EntityItem {
             id: "p1".to_owned(),
             label: Label::build("person", None),
-            owned_attributes: vec![alice],
+            label_scoped_id: None,
+            owned_attributes: vec![OwnedAttribute::by_id(alice)],
         }),
         MigrationItem::Entity(EntityItem {
             id: "p2".to_owned(),
             label: Label::build("person", None),
-            owned_attributes: vec![bob],
+            label_scoped_id: None,
+            owned_attributes: vec![OwnedAttribute::by_id(bob)],
         }),
         MigrationItem::Relation(RelationItem {
             id: "f1".to_owned(),
             label: Label::build("friendship", None),
+            label_scoped_id: None,
             owned_attributes: vec![],
-            related_role_players: vec![(
-                Label::build_scoped("friend", "friendship", None),
-                vec!["p1".to_owned(), "p2".to_owned()],
-            )],
+            related_role_players: vec![friends(["p1", "p2"])],
         }),
         MigrationItem::Checksums(Checksums::from_counts(Counts {
             entity_count: 2,
@@ -195,6 +207,13 @@ fn source_items() -> Vec<MigrationItem> {
             ownership_count: 2,
         })),
     ]
+}
+
+fn friends<const N: usize>(ids: [&str; N]) -> RolePlayers {
+    RolePlayers {
+        role: Label::build_scoped("friend", "friendship", None),
+        players: ids.into_iter().map(|id| Player::by_id(id.to_owned())).collect(),
+    }
 }
 
 fn empty_checksums() -> MigrationItem {
@@ -231,9 +250,18 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
 
     assert!(schema.contains("entity person"), "unexpected schema: {schema}");
     match &items[0] {
-        MigrationItem::Header { typedb_version, original_database } => {
+        MigrationItem::Header { typedb_version, original_database, guarantees } => {
             assert_eq!(typedb_version, "3.0.0-test");
             assert_eq!(original_database, "source");
+            assert_eq!(
+                *guarantees,
+                Guarantees {
+                    ordering: ItemOrder::AttributeEntityRelation,
+                    attributes_unique: true,
+                    players_by_label_scoped_ids: false,
+                    owned_attributes_by_value: false,
+                }
+            );
         }
         other => panic!("the schema must be followed by the header, not {other:?}"),
     }
@@ -280,7 +308,11 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut early = importer(&database_manager, "early");
     early
-        .send(MigrationItem::Header { typedb_version: "3.0.0-test".to_owned(), original_database: "source".to_owned() })
+        .send(MigrationItem::Header {
+            typedb_version: "3.0.0-test".to_owned(),
+            original_database: "source".to_owned(),
+            guarantees: Guarantees::default(),
+        })
         .await
         .expect("send");
     let result = early.finalize().await;
@@ -299,6 +331,7 @@ async fn an_out_of_order_stream_is_rejected() {
     late.send(MigrationItem::Entity(EntityItem {
         id: "p3".to_owned(),
         label: Label::build("person", None),
+        label_scoped_id: None,
         owned_attributes: vec![],
     }))
     .await
@@ -320,7 +353,12 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let data_dir = create_tmp_dir("migration_pending_players");
     let database_manager = manager(&data_dir);
     let person = |id: String| {
-        MigrationItem::Entity(EntityItem { id, label: Label::build("person", None), owned_attributes: vec![] })
+        MigrationItem::Entity(EntityItem {
+            id,
+            label: Label::build("person", None),
+            label_scoped_id: None,
+            owned_attributes: vec![],
+        })
     };
     let max_writes_per_commit = 2;
     let padding = max_writes_per_commit * 2;
@@ -328,8 +366,9 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let mut items = vec![MigrationItem::Relation(RelationItem {
         id: "f1".to_owned(),
         label: Label::build("friendship", None),
+        label_scoped_id: None,
         owned_attributes: vec![],
-        related_role_players: vec![(Label::build_scoped("friend", "friendship", None), vec!["p1".to_owned()])],
+        related_role_players: vec![friends(["p1"])],
     })];
     items.extend((0..padding).map(|i| person(format!("pad{i}"))));
     items.push(person("p1".to_owned()));
@@ -339,12 +378,14 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
         role_count: 1,
         ..Counts::default()
     })));
-    let mut importer = DatabaseImporter::start_with_max_writes_per_commit(
+    let configuration = ImporterConfiguration::default()
+        .with_buffer_size(BUFFER_SIZE)
+        .with_max_writes_per_commit(max_writes_per_commit);
+    let mut importer = DatabaseImporter::start(
         importing_database(&database_manager, "pending"),
+        configuration,
         database_manager.import_directory().to_owned(),
-        BUFFER_SIZE,
         &task_spawner(),
-        max_writes_per_commit,
     );
     importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
     import_all(importer, items).await;
@@ -358,7 +399,76 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let [MigrationItem::Relation(RelationItem { related_role_players, .. })] = relations.as_slice() else {
         panic!("one relation expected, got {relations:?}")
     };
-    assert_eq!(related_role_players.iter().map(|(_, players)| players.len()).sum::<usize>(), 1);
+    assert_eq!(related_role_players.iter().map(|role_players| role_players.players.len()).sum::<usize>(), 1);
+}
+
+#[tokio::test]
+async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
+    const NESTED_SCHEMA: &str = r#"define
+  entity person, plays friendship:friend, plays endorsement:endorser;
+  relation friendship, relates friend @card(0..2), plays endorsement:subject;
+  relation endorsement, relates subject, relates endorser;
+"#;
+    init_logging();
+    let data_dir = create_tmp_dir("migration_relation_players");
+    let database_manager = manager(&data_dir);
+    let person = |id: &str| {
+        MigrationItem::Entity(EntityItem {
+            id: id.to_owned(),
+            label: Label::build("person", None),
+            label_scoped_id: None,
+            owned_attributes: vec![],
+        })
+    };
+
+    // The friendship is imported before the endorsement, but a relation player is deferred anyway, and with it
+    // the endorsement's entity player
+    let items = vec![
+        person("p1"),
+        person("p2"),
+        MigrationItem::Relation(RelationItem {
+            id: "f1".to_owned(),
+            label: Label::build("friendship", None),
+            label_scoped_id: None,
+            owned_attributes: vec![],
+            related_role_players: vec![friends(["p1", "p2"])],
+        }),
+        MigrationItem::Relation(RelationItem {
+            id: "e1".to_owned(),
+            label: Label::build("endorsement", None),
+            label_scoped_id: None,
+            owned_attributes: vec![],
+            related_role_players: vec![
+                RolePlayers {
+                    role: Label::build_scoped("subject", "endorsement", None),
+                    players: vec![Player::by_id("f1".to_owned())],
+                },
+                RolePlayers {
+                    role: Label::build_scoped("endorser", "endorsement", None),
+                    players: vec![Player::by_id("p1".to_owned())],
+                },
+            ],
+        }),
+        MigrationItem::Checksums(Checksums::from_counts(Counts {
+            entity_count: 2,
+            relation_count: 2,
+            role_count: 4,
+            ..Counts::default()
+        })),
+    ];
+    import_all(importer_with_schema(&database_manager, "nested", NESTED_SCHEMA).await, items).await;
+
+    let (_, items) = export(&read_transaction(&database_manager, "nested"), "nested");
+    let player_counts: Vec<usize> = items
+        .iter()
+        .filter_map(|item| match item {
+            MigrationItem::Relation(RelationItem { related_role_players, .. }) => {
+                Some(related_role_players.iter().map(|role_players| role_players.players.len()).sum())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(player_counts, vec![2, 2], "{items:?}");
 }
 
 #[tokio::test]
@@ -368,13 +478,14 @@ async fn a_relation_without_role_players_is_rejected() {
     let database_manager = manager(&data_dir);
 
     let no_roles = vec![];
-    let empty_role = vec![(Label::build_scoped("friend", "friendship", None), vec![])];
+    let empty_role = vec![friends([])];
     for (name, related_role_players) in [("no-roles", no_roles), ("empty-role", empty_role)] {
         let mut importer = importer_with_schema(&database_manager, name, SCHEMA).await;
         importer
             .send(MigrationItem::Relation(RelationItem {
                 id: "f1".to_owned(),
                 label: Label::build("friendship", None),
+                label_scoped_id: None,
                 owned_attributes: vec![],
                 related_role_players,
             }))

@@ -14,7 +14,7 @@ use storage::durability_client::WALClient;
 use crate::{
     migration::{
         Checksums,
-        item::{MigrationItem, encode_attribute, encode_entity, encode_relation},
+        item::{Guarantees, ItemOrder, MigrationItem, encode_attribute, encode_entity, encode_relation},
     },
     transaction::{DatabaseReadError, TransactionRead},
 };
@@ -35,6 +35,13 @@ pub struct DatabaseExporter<'a> {
 }
 
 impl<'a> DatabaseExporter<'a> {
+    const GUARANTEES: Guarantees = Guarantees {
+        ordering: ItemOrder::AttributeEntityRelation,
+        attributes_unique: true,
+        players_by_label_scoped_ids: false,
+        owned_attributes_by_value: false,
+    };
+
     pub fn new(
         transaction: &'a TransactionRead<WALClient>,
         typedb_version: impl Into<String>,
@@ -46,6 +53,7 @@ impl<'a> DatabaseExporter<'a> {
         let header = MigrationItem::Header {
             typedb_version: typedb_version.into(),
             original_database: original_database.into(),
+            guarantees: Self::GUARANTEES,
         };
         Ok(Self {
             transaction,

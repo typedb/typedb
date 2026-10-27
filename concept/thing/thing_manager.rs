@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
+    fmt,
     iter::{self, Map, once},
     ops::RangeBounds,
     sync::Arc,
@@ -27,7 +28,7 @@ use encoding::{
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
-            vertex_object::ObjectVertex,
+            vertex_object::{ObjectID, ObjectVertex},
         },
         type_::{
             property::{TypeVertexProperty, TypeVertexPropertyEncoding},
@@ -71,7 +72,7 @@ use storage::{
         write::{KnownToExist, Write},
     },
 };
-use tracing::trace;
+use tracing::{trace, warn};
 
 use crate::{
     ConceptStatus,
@@ -136,6 +137,17 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
+    concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+}
+
+pub trait ConceptPersistenceOracle: fmt::Debug + Send + Sync {
+    fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist;
+
+    fn attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist;
+
+    fn new_attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist;
+
+    fn new_edge_known_to_exist(&self) -> KnownToExist;
 }
 
 impl ThingManager {
@@ -144,7 +156,16 @@ impl ThingManager {
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics }
+        Self::new_with_concept_persistence_oracle(vertex_generator, type_manager, statistics, None)
+    }
+
+    pub fn new_with_concept_persistence_oracle(
+        vertex_generator: Arc<ThingVertexGenerator>,
+        type_manager: Arc<TypeManager>,
+        statistics: Arc<Statistics>,
+        concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+    ) -> Self {
+        ThingManager { vertex_generator, type_manager, statistics, concept_persistence_oracle }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -232,10 +253,8 @@ impl ThingManager {
         let Some(vertex) = T::Vertex::try_decode(iid) else {
             return Err(Box::new(ConceptReadError::IidRepresentsWrongInstanceKind {}));
         };
-        let exists = snapshot
-            .contains(StorageKeyReference::new(vertex.keyspace(), iid), storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
-        Ok(exists.then_some(T::new(vertex)))
+        let as_concept = T::new(vertex);
+        Ok(self.instance_exists(snapshot, &as_concept, storage_counters)?.then_some(as_concept))
     }
 
     pub fn get_objects_in(
@@ -690,7 +709,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edges_lookup_mode();
         Iterator::map(
             LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
@@ -762,7 +781,7 @@ impl ThingManager {
         };
 
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
         let has_exists = snapshot
             .get_mapped_in_lookup_mode(
                 has.into_storage_key().as_reference(),
@@ -783,7 +802,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
         let has_exists = snapshot
             .get_mapped_in_lookup_mode(
                 has.into_storage_key().as_reference(),
@@ -1042,7 +1061,7 @@ impl ThingManager {
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
         Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
@@ -1091,7 +1110,7 @@ impl ThingManager {
                     end_attribute_key.bytes(),
                 ));
                 let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-                let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+                let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
                 Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(
                     &key_range,
                     snapshot_lookup_mode,
@@ -1140,7 +1159,7 @@ impl ThingManager {
             end_value_bound,
         );
         let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
         Ok(HasIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters)))
     }
 
@@ -1185,7 +1204,7 @@ impl ThingManager {
                     attribute_key.bytes(),
                 );
                 let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-                let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+                let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
                 HasIterator::new(snapshot.iterate_range_in_lookup_mode(
                     &key_range,
                     snapshot_lookup_mode,
@@ -1229,7 +1248,7 @@ impl ThingManager {
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
         HasIterator::new(snapshot.iterate_range_in_lookup_mode(&range, snapshot_lookup_mode, storage_counters))
     }
 
@@ -1298,7 +1317,7 @@ impl ThingManager {
             None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &owner).edges_lookup_mode();
         let attributes = snapshot
             .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
@@ -1457,7 +1476,7 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edges_lookup_mode();
         LinksIterator::new(snapshot.iterate_range_in_lookup_mode(&key_range, snapshot_lookup_mode, storage_counters))
     }
 
@@ -1469,7 +1488,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
         LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
             snapshot_lookup_mode,
@@ -1527,7 +1546,7 @@ impl ThingManager {
                 ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
             }
         };
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &player).edges_lookup_mode();
         LinksReverseIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new(
                 RangeStart::Inclusive(range_start),
@@ -1548,8 +1567,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
         let links_exists = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -1569,7 +1587,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edges_lookup_mode();
         Iterator::map(
             LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
                 &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
@@ -1588,7 +1606,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edges_lookup_mode();
         let players = snapshot
             .get_mapped_in_lookup_mode(
                 key.into_storage_key().as_reference(),
@@ -1780,13 +1798,14 @@ impl ThingManager {
     pub(crate) fn get_status(
         &self,
         snapshot: &impl ReadableSnapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
+        let key = vertex.clone().into_storage_key();
         match self.get_buffered_status(snapshot, key.as_reference()) {
             Some(status) => Ok(status),
-            None if self.is_persisted_in_storage(snapshot, key, storage_counters)? => Ok(ConceptStatus::Persisted),
-            None => Ok(ConceptStatus::Deleted),
+            None if self.is_persisted_in_storage(snapshot, vertex, storage_counters)? => Ok(ConceptStatus::Persisted),
+            None => Ok(ConceptStatus::Nonexistent),
         }
     }
 
@@ -1805,13 +1824,57 @@ impl ThingManager {
     pub(crate) fn is_persisted_in_storage(
         &self,
         snapshot: &impl ReadableSnapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
+        if let Some(concept_persistence_oracle) = &self.concept_persistence_oracle {
+            // TODO: ugly hack to get around generic trait method: re-decode
+            let prefix = vertex.prefix();
+            let type_id = vertex.type_id_();
+            let known_to_exist = match prefix {
+                Prefix::VertexEntity => concept_persistence_oracle
+                    .object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id))),
+                Prefix::VertexRelation => concept_persistence_oracle
+                    .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
+                Prefix::VertexAttribute => {
+                    concept_persistence_oracle.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
+                }
+                _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
+            };
+            match known_to_exist {
+                KnownToExist::Exists => return Ok(true),
+                KnownToExist::NonExistent => return Ok(false),
+                KnownToExist::Unknown => {}
+            }
+        }
+        let key = vertex.into_storage_key();
         Ok(snapshot
-            .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
+            .get_mapped_in_lookup_mode(key.as_reference(), SnapshotLookupMode::StorageOnly, |_| (), storage_counters)
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?
             .is_some())
+    }
+
+    pub fn instance_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        instance: &impl ThingAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        match self.get_status(snapshot, instance.vertex(), storage_counters)? {
+            ConceptStatus::Inserted | ConceptStatus::Put | ConceptStatus::Persisted => Ok(true),
+            ConceptStatus::Deleted | ConceptStatus::Nonexistent => Ok(false),
+        }
+    }
+
+    pub fn type_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: impl TypeAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        snapshot
+            .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
     pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
@@ -1917,28 +1980,6 @@ impl ThingManager {
             },
         )?;
         flush(snapshot, group.take())
-    }
-
-    pub fn instance_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        instance: &impl ThingAPI,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        snapshot
-            .contains(instance.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
-    }
-
-    pub fn type_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        snapshot
-            .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
@@ -2661,6 +2702,26 @@ impl ThingManager {
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
     }
 
+    /// Create an entity with the given id, which the caller guarantees is unused within the type.
+    ///
+    /// WARNING: using this will forever bump the internal ID generator to higher than this number.
+    /// Do not over-allocate!
+    pub fn create_entity_with_id(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        entity_type: EntityType,
+        object_id: ObjectID,
+    ) -> Result<Entity, Box<ConceptWriteError>> {
+        OperationTimeValidation::validate_entity_type_is_not_abstract(snapshot, self, entity_type)
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+
+        let vertex = self
+            .vertex_generator
+            .create_entity_with_id(entity_type.vertex().type_id_(), object_id, snapshot)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        Ok(Entity::new(vertex))
+    }
+
     pub fn create_relation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2670,6 +2731,26 @@ impl ThingManager {
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
+    }
+
+    /// Create a relation with the given id, which the caller guarantees is unused within the type.
+    ///
+    /// WARNING: using this will forever bump the internal ID generator to higher than this number.
+    /// Do not over-allocate!
+    pub fn create_relation_with_id(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+        object_id: ObjectID,
+    ) -> Result<Relation, Box<ConceptWriteError>> {
+        OperationTimeValidation::validate_relation_type_is_not_abstract(snapshot, self, relation_type)
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+
+        let vertex = self
+            .vertex_generator
+            .create_relation_with_id(relation_type.vertex().type_id_(), object_id, snapshot)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        Ok(Relation::new(vertex))
     }
 
     pub fn create_attribute(
@@ -2719,8 +2800,14 @@ impl ThingManager {
             self,
             attribute_type,
             value.value_type(),
-            value.as_reference(),
+            || Ok(value.as_reference()),
         )?;
+
+        let known_to_exist = self
+            .concept_persistence_oracle
+            .as_ref()
+            .map(|oracle| oracle.new_attribute_known_to_exist(attribute_type))
+            .unwrap_or(KnownToExist::Unknown);
 
         let vertex = match value
             .cast(attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap().category())
@@ -2732,6 +2819,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_boolean,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Integer(integer) => {
@@ -2740,6 +2828,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_integer,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Double(double) => {
@@ -2748,6 +2837,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_double,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Decimal(decimal) => {
@@ -2756,11 +2846,17 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_decimal,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Date(date) => {
                 let encoded_date = DateBytes::build(date);
-                self.vertex_generator.create_attribute_date(attribute_type.vertex().type_id_(), encoded_date, snapshot)
+                self.vertex_generator.create_attribute_date(
+                    attribute_type.vertex().type_id_(),
+                    encoded_date,
+                    snapshot,
+                    known_to_exist,
+                )
             }
             Value::DateTime(date_time) => {
                 let encoded_date_time = DateTimeBytes::build(date_time);
@@ -2768,6 +2864,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_date_time,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::DateTimeTZ(date_time_tz) => {
@@ -2776,6 +2873,7 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_date_time_tz,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::Duration(duration) => {
@@ -2784,12 +2882,18 @@ impl ThingManager {
                     attribute_type.vertex().type_id_(),
                     encoded_duration,
                     snapshot,
+                    known_to_exist,
                 )
             }
             Value::String(string) => {
                 let encoded_string: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                 self.vertex_generator
-                    .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
+                    .create_attribute_string(
+                        attribute_type.vertex().type_id_(),
+                        encoded_string,
+                        snapshot,
+                        known_to_exist,
+                    )
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }
             Value::Struct(struct_) => {
@@ -2830,7 +2934,7 @@ impl ThingManager {
         entity: Entity,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.delete_object(snapshot, entity.vertex().into_storage_key(), storage_counters)
+        self.delete_object(snapshot, entity.vertex(), storage_counters)
     }
 
     pub(crate) fn delete_relation(
@@ -2839,23 +2943,26 @@ impl ThingManager {
         relation: Relation,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.delete_object(snapshot, relation.vertex().into_storage_key(), storage_counters)
+        self.delete_object(snapshot, relation.vertex(), storage_counters)
     }
 
     fn delete_object(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        vertex: ObjectVertex,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters)?;
-        let key = key.into_owned_array();
+        let status = self.get_status(snapshot, vertex, storage_counters)?;
+        let key = vertex.into_storage_key().into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         match status {
             ConceptStatus::Inserted => snapshot.uninsert(key),
             ConceptStatus::Persisted => snapshot.delete(key),
             ConceptStatus::Deleted => (),
             ConceptStatus::Put => unreachable!("Encountered a `put` object"),
+            ConceptStatus::Nonexistent => {
+                warn!("Skipping delete of an object not in the buffer or in storage");
+            }
         }
         Ok(())
     }
@@ -2867,7 +2974,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let key = attribute.vertex().into_storage_key();
-        match self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters.clone())? {
+        match self.get_status(snapshot, attribute.vertex(), storage_counters.clone())? {
             ConceptStatus::Put => {
                 self.unput_attribute(snapshot, &attribute, storage_counters.clone())?;
                 if self.instance_exists(snapshot, &attribute, storage_counters)? {
@@ -2877,6 +2984,9 @@ impl ThingManager {
             ConceptStatus::Persisted => snapshot.delete(key.into_owned_array()),
             ConceptStatus::Deleted => (),
             ConceptStatus::Inserted => unreachable!("Encountered an `insert`ed attribute"),
+            ConceptStatus::Nonexistent => {
+                warn!("Skipping delete of an attribute not in the buffer or in storage");
+            }
         }
         Ok(())
     }
@@ -2919,14 +3029,14 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let attribute_type = attribute.type_();
-        let value = attribute.get_value(snapshot, self, storage_counters.clone())?.into_owned();
-
+        let value_type = attribute_type.get_value_type_without_source(snapshot, &self.type_manager)?.unwrap();
+        let get_value = || attribute.get_value(snapshot, self, storage_counters.clone());
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
             self,
             attribute_type,
-            value.value_type(),
-            value.as_reference(),
+            value_type,
+            get_value,
         )?;
 
         OperationTimeValidation::validate_has_unique_constraint(
@@ -2934,37 +3044,19 @@ impl ThingManager {
             self,
             owner,
             attribute.type_(),
-            value.as_reference(),
+            get_value,
             storage_counters.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_has_regex_constraints(
-            snapshot,
-            self,
-            owner,
-            attribute_type,
-            value.as_reference(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_has_regex_constraints(snapshot, self, owner, attribute_type, get_value)
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_has_range_constraints(
-            snapshot,
-            self,
-            owner,
-            attribute_type,
-            value.as_reference(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_has_range_constraints(snapshot, self, owner, attribute_type, get_value)
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_has_values_constraints(
-            snapshot,
-            self,
-            owner,
-            attribute_type,
-            value.as_reference(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_has_values_constraints(snapshot, self, owner, attribute_type, get_value)
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         if count == 0 {
             self.unset_has(snapshot, owner, attribute, storage_counters.clone())
@@ -2972,18 +3064,18 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
+            let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of(snapshot, &owner));
             owner.set_required(snapshot, self, storage_counters.clone())?;
             attribute.set_required(snapshot, self, storage_counters.clone())?;
             snapshot.put_val_with_known_to_exist(
                 has.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
-                edge_is_known_to_exist,
+                edge_known_to_exist,
             );
             snapshot.put_val_with_known_to_exist(
                 has_reverse.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
-                edge_is_known_to_exist,
+                edge_known_to_exist,
             );
             Ok(())
         }
@@ -3035,9 +3127,9 @@ impl ThingManager {
             attribute_value_type.category(),
             attributes.iter().map(|attr| attr.vertex().attribute_id()),
         );
-        let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &owner).is_edge_known_to_exist();
+        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of(snapshot, &owner));
 
-        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
+        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
         if ObjectOrigin::of(snapshot, &owner).is_unknown_transaction() {
@@ -3070,20 +3162,19 @@ impl ThingManager {
         player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
-        let edge_is_known_to_exist =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
+        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, &relation, &player));
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         snapshot.put_val_with_known_to_exist(
             links.into_storage_key().into_owned_array(),
             ByteArray::copy(&encode_u64(count)),
-            edge_is_known_to_exist,
+            edge_known_to_exist,
         );
         let links_reverse =
             ThingEdgeLinks::new_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
         snapshot.put_val_with_known_to_exist(
             links_reverse.into_storage_key().into_owned_array(),
             ByteArray::copy(&encode_u64(count)),
-            edge_is_known_to_exist,
+            edge_known_to_exist,
         );
 
         if relation.type_().relation_index_available(snapshot, self.type_manager())? {
@@ -3110,9 +3201,9 @@ impl ThingManager {
         let storage_key = key.into_storage_key().into_owned_array();
         let value = encode_role_players(players.iter().map(|player| player.vertex()));
 
-        let edge_is_known_to_exist = ObjectOrigin::of(snapshot, &relation).is_edge_known_to_exist();
+        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of(snapshot, &relation));
 
-        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_is_known_to_exist);
+        snapshot.put_val_with_known_to_exist(storage_key.clone(), value, edge_known_to_exist);
 
         // must lock to fail concurrent transactions updating the same counters
         if ObjectOrigin::of(snapshot, &relation).is_unknown_transaction() {
@@ -3134,8 +3225,8 @@ impl ThingManager {
         if count == 0 {
             self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
-            let edge_is_known_to_exist =
-                ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
+            let edge_known_to_exist =
+                self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, &relation, &player));
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
@@ -3145,12 +3236,12 @@ impl ThingManager {
             snapshot.put_val_with_known_to_exist(
                 links.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
-                edge_is_known_to_exist,
+                edge_known_to_exist,
             );
             snapshot.put_val_with_known_to_exist(
                 links_reverse.into_storage_key().into_owned_array(),
                 ByteArray::copy(&encode_u64(count)),
-                edge_is_known_to_exist,
+                edge_known_to_exist,
             );
 
             if relation.type_().relation_index_available(snapshot, self.type_manager())? {
@@ -3207,8 +3298,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
         let count = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -3247,8 +3337,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode =
-            ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).edge_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
         let count = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -3300,13 +3389,12 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
+        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, &relation, &player));
         let players = relation
             .get_players(snapshot, self, storage_counters)
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
         for rp in players {
             let (rp_player, rp_role_type, rp_count) = rp?;
-            let edge_is_known_to_exist =
-                ObjectOrigin::in_this_transaction_if_either(snapshot, &relation, &player).is_edge_known_to_exist();
             if rp_player.is_same_role_player(rp_role_type, player, role_type) {
                 let player_repetitions = count_for_player - 1;
                 if player_repetitions > 0 {
@@ -3320,7 +3408,7 @@ impl ThingManager {
                     snapshot.put_val_with_known_to_exist(
                         index.into_storage_key().into_owned_array(),
                         ByteArray::copy(&encode_u64(player_repetitions)),
-                        edge_is_known_to_exist,
+                        edge_known_to_exist,
                     );
                 }
             } else {
@@ -3335,7 +3423,7 @@ impl ThingManager {
                 snapshot.put_val_with_known_to_exist(
                     index.into_storage_key().into_owned_array(),
                     ByteArray::copy(&encode_u64(rp_repetitions)),
-                    edge_is_known_to_exist,
+                    edge_known_to_exist,
                 );
                 let player_repetitions = count_for_player;
                 let index_reverse = ThingEdgeIndexedRelation::new(
@@ -3348,7 +3436,7 @@ impl ThingManager {
                 snapshot.put_val_with_known_to_exist(
                     index_reverse.into_storage_key().into_owned_array(),
                     ByteArray::copy(&encode_u64(player_repetitions)),
-                    edge_is_known_to_exist,
+                    edge_known_to_exist,
                 );
             }
         }
@@ -3425,7 +3513,7 @@ impl ThingManager {
             );
             let index_range =
                 KeyRange::new_within(index_edge.into_storage_key(), ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
-            let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edge_lookup_mode();
+            let snapshot_lookup_mode = ObjectOrigin::of(snapshot, &relation).edges_lookup_mode();
             let collected = snapshot
                 .iterate_range_in_lookup_mode(&index_range, snapshot_lookup_mode, storage_counters.clone())
                 .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
@@ -3564,39 +3652,47 @@ impl ObjectOrigin {
     }
 
     pub(crate) fn is_this_transaction(&self) -> bool {
-        *self == Self::ThisTransaction
+        matches!(*self, Self::ThisTransaction)
     }
 
     pub(crate) fn is_unknown_transaction(&self) -> bool {
-        *self == Self::UnknownTransaction
+        matches!(self, Self::UnknownTransaction)
     }
 
-    fn in_this_transaction_if_either(
+    /// The origin of a links edge: this transaction's whenever either endpoint is, since neither can have a persisted edge
+    pub(crate) fn of_links(
         snapshot: &impl ReadableSnapshot,
-        first: &impl ObjectAPI,
-        second: &impl ObjectAPI,
+        relation: &impl ObjectAPI,
+        player: &impl ObjectAPI,
     ) -> Self {
-        Self::either(Self::of(snapshot, first), Self::of(snapshot, second))
-    }
-
-    fn either(first: Self, second: Self) -> Self {
-        match (first, second) {
-            (Self::ThisTransaction, _) | (_, Self::ThisTransaction) => Self::ThisTransaction,
-            (Self::UnknownTransaction, Self::UnknownTransaction) => Self::UnknownTransaction,
+        if Self::of(snapshot, relation).is_this_transaction() || Self::of(snapshot, player).is_this_transaction() {
+            Self::ThisTransaction
+        } else {
+            Self::UnknownTransaction
         }
     }
 
-    pub(crate) fn is_edge_known_to_exist(&self) -> KnownToExist {
+    /// Where to read the edges of an object: only this transaction's buffer when the object is its own
+    pub(crate) fn edges_lookup_mode(&self) -> SnapshotLookupMode {
         match self {
+            Self::ThisTransaction => SnapshotLookupMode::BufferOnly,
+            Self::UnknownTransaction => SnapshotLookupMode::BufferAndStorage,
+        }
+    }
+}
+
+impl ThingManager {
+    /// Whether an edge about to be put from an object of the given origin can already be persisted
+    fn new_edge_known_to_exist(&self, origin: ObjectOrigin) -> KnownToExist {
+        match origin {
             ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
-            ObjectOrigin::UnknownTransaction => KnownToExist::Unknown,
-        }
-    }
-
-    pub(crate) fn edge_lookup_mode(&self) -> SnapshotLookupMode {
-        match self {
-            ObjectOrigin::ThisTransaction => SnapshotLookupMode::BufferOnly,
-            ObjectOrigin::UnknownTransaction => SnapshotLookupMode::BufferAndStorage,
+            ObjectOrigin::UnknownTransaction => {
+                match self.concept_persistence_oracle.as_ref().map(|oracle| oracle.new_edge_known_to_exist()) {
+                    Some(KnownToExist::NonExistent) => KnownToExist::NonExistent,
+                    // a put never assumes the edge is present
+                    Some(KnownToExist::Unknown) | Some(KnownToExist::Exists) | None => KnownToExist::Unknown,
+                }
+            }
         }
     }
 }

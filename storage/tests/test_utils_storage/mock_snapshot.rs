@@ -58,14 +58,6 @@ impl ReadableSnapshot for MockSnapshot {
         Err(SnapshotGetError::MockError {})
     }
 
-    fn get_last_existing<const INLINE_BYTES: usize>(
-        &self,
-        _: StorageKeyReference<'_>,
-        _storage_counters: StorageCounters,
-    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        Err(SnapshotGetError::MockError {})
-    }
-
     fn iterate_range<const PS: usize>(
         &self,
         _: &KeyRange<StorageKey<'_, PS>>,

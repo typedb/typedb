@@ -14,7 +14,7 @@ use std::{
 
 use bytes::Bytes;
 use encoding::{
-    AsBytes, Keyable,
+    AsBytes,
     graph::{
         Typed,
         thing::{
@@ -25,7 +25,7 @@ use encoding::{
         type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
     },
     layout::prefix::Prefix,
-    value::value::Value,
+    value::{ValueEncodable, value::Value},
 };
 use iterator::State;
 use itertools::Itertools;
@@ -37,7 +37,7 @@ use crate::{
     ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         has::Has,
         object::{HasReverseIterator, Object},
         thing_manager::ThingManager,
@@ -78,6 +78,30 @@ impl Attribute {
         Ok(self.value.get().unwrap().as_reference())
     }
 
+    pub fn cache_value(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        value: Arc<Value<'static>>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), ConceptReadError> {
+        if self.vertex.value_type_category() != value.value_type().category() {
+            return Err(ConceptReadError::ValueTypeMismatchWithAttribute {
+                expected: self.vertex.value_type_category(),
+                actual: value.value_type().category(),
+            });
+        }
+        debug_assert_eq!(
+            thing_manager
+                .get_attribute_value(snapshot, self, storage_counters)
+                .expect("the value of an attribute must be readable to cache it"),
+            *value,
+            "the cached value must be the attribute's stored value"
+        );
+        let _ = self.value.set(value);
+        Ok(())
+    }
+
     pub fn has_owners(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -88,6 +112,11 @@ impl Attribute {
             ConceptStatus::Put | ConceptStatus::Persisted => Ok(thing_manager.has_owners(snapshot, self, false)),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
+            }
+            ConceptStatus::Nonexistent => {
+                unreachable!(
+                    "Attempting to retrieve owners of a nonexistent (not buffered, deleted, or persisted) attribute."
+                )
             }
         }
     }
@@ -158,7 +187,7 @@ impl ThingAPI for Attribute {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(
@@ -177,6 +206,10 @@ impl ThingAPI for Attribute {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexAttribute
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Attribute
     }
 }
 
