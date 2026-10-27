@@ -330,7 +330,7 @@ struct DeferredRolePlayer {
     role_type_id: TypeIDUInt,
 }
 
-enum ConceptImport {
+enum ImportConcept {
     Entity(EntityItem),
     Relation(RelationItem),
     Attribute(AttributeItem),
@@ -615,13 +615,13 @@ impl DatabaseImporter {
                 );
                 Ok(())
             }
-            MigrationItem::Entity(entity) => self.import_concept(ConceptImport::Entity(entity)),
-            MigrationItem::Relation(relation) => self.import_concept(ConceptImport::Relation(relation)),
-            MigrationItem::Attribute(attribute) => self.import_concept(ConceptImport::Attribute(attribute)),
+            MigrationItem::Entity(entity) => self.import_concept(ImportConcept::Entity(entity)),
+            MigrationItem::Relation(relation) => self.import_concept(ImportConcept::Relation(relation)),
+            MigrationItem::Attribute(attribute) => self.import_concept(ImportConcept::Attribute(attribute)),
         }
     }
 
-    fn import_concept(&mut self, concept: ConceptImport) -> Result<(), DatabaseImportError> {
+    fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         if self.needs_new_phase(&concept) {
             self.finish_phase()?;
             self.phase = Some(DatabaseImporterPhase::start(self, Self::WORKER_COUNT)?);
@@ -629,7 +629,7 @@ impl DatabaseImporter {
         self.phase.as_mut().expect("a phase runs while dispatching").import_concept(concept)
     }
 
-    fn needs_new_phase(&self, _concept: &ConceptImport) -> bool {
+    fn needs_new_phase(&self, _concept: &ImportConcept) -> bool {
         // TODO: future - implement actual phases (now - only 1 phase)
         self.phase.is_none()
     }
@@ -661,7 +661,7 @@ impl DatabaseImporter {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         };
 
-        match importing_database.into_unique() {
+        match importing_database.try_unwrap() {
             Ok(importing_database) => importing_database
                 .finalise()
                 .map_err(|typedb_source| DatabaseImportError::FinalisationFailed { typedb_source }),
@@ -671,7 +671,7 @@ impl DatabaseImporter {
 
     fn import_deferred_ownerships(&mut self) -> Result<(), DatabaseImportError> {
         let records = self.data_info.take_deferred_ownerships();
-        self.import_deferred(records, "ownerships", ConceptImport::DeferredOwnership)?;
+        self.import_deferred(records, "ownerships", ImportConcept::DeferredOwnership)?;
         match self.data_info.unresolved_ownerships() {
             0 => Ok(()),
             count => Err(DatabaseImportError::IncompleteOwnershipsOnDone { count }),
@@ -680,7 +680,7 @@ impl DatabaseImporter {
 
     fn import_deferred_role_players(&mut self) -> Result<(), DatabaseImportError> {
         let records = self.data_info.take_deferred_role_players();
-        self.import_deferred(records, "role players", ConceptImport::DeferredRolePlayer)?;
+        self.import_deferred(records, "role players", ImportConcept::DeferredRolePlayer)?;
         match self.data_info.unresolved_role_players() {
             0 => Ok(()),
             count => Err(DatabaseImportError::IncompleteRolesOnDone { count }),
@@ -691,7 +691,7 @@ impl DatabaseImporter {
         &mut self,
         records: Option<SpilloverCache<T>>,
         deferred_name: &str,
-        to_concept_import: impl Fn(T) -> ConceptImport,
+        to_import_concept: impl Fn(T) -> ImportConcept,
     ) -> Result<(), DatabaseImportError>
     where
         T: Serialize + DeserializeOwned + Clone,
@@ -701,7 +701,7 @@ impl DatabaseImporter {
         for chunk in records.into_chunks(Self::DRAIN_CHUNK_SIZE) {
             self.check_stopped()?;
             for (_key, deferred) in chunk.map_err(|source| DatabaseImportError::CacheError { source })? {
-                self.import_concept(to_concept_import(deferred))?;
+                self.import_concept(to_import_concept(deferred))?;
                 written += 1;
             }
         }
@@ -1144,8 +1144,8 @@ fn decode_object_vertex(iid: &[u8]) -> Result<ObjectVertex, DatabaseImportError>
 }
 
 struct DatabaseImporterPhase {
-    sender: Option<SyncSender<Vec<ConceptImport>>>,
-    batch_builder: Vec<ConceptImport>,
+    sender: Option<SyncSender<Vec<ImportConcept>>>,
+    batch_builder: Vec<ImportConcept>,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
 }
@@ -1190,7 +1190,7 @@ impl DatabaseImporterPhase {
         Ok(phase)
     }
 
-    fn import_concept(&mut self, concept: ConceptImport) -> Result<(), DatabaseImportError> {
+    fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.batch_builder.push(concept);
         if self.batch_builder.len() >= Self::BATCH_SIZE {
             self.send_batch()?;
@@ -1262,7 +1262,7 @@ struct ImportWorker {
 impl ImportWorker {
     fn start(
         importer: &DatabaseImporter,
-        receiver: Arc<Mutex<Receiver<Vec<ConceptImport>>>>,
+        receiver: Arc<Mutex<Receiver<Vec<ImportConcept>>>>,
         error_state: ErrorState,
         name: String,
     ) -> Result<thread::JoinHandle<()>, DatabaseImportError> {
@@ -1288,7 +1288,7 @@ impl ImportWorker {
         }
     }
 
-    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<ConceptImport>>>>, error_state: ErrorState) {
+    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<ImportConcept>>>>, error_state: ErrorState) {
         if let Err(error) = self.import_batches(&receiver, &error_state) {
             error_state.stop_with_error(error);
         }
@@ -1296,7 +1296,7 @@ impl ImportWorker {
 
     fn import_batches(
         &mut self,
-        receiver: &Mutex<Receiver<Vec<ConceptImport>>>,
+        receiver: &Mutex<Receiver<Vec<ImportConcept>>>,
         error_state: &ErrorState,
     ) -> Result<(), DatabaseImportError> {
         loop {
@@ -1319,17 +1319,17 @@ impl ImportWorker {
         }
     }
 
-    fn apply(&mut self, concept: ConceptImport) -> Result<(), DatabaseImportError> {
+    fn apply(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         match concept {
-            ConceptImport::Entity(EntityItem { id, label, owned_attributes }) => {
+            ImportConcept::Entity(EntityItem { id, label, owned_attributes }) => {
                 self.import_entity(id, label, owned_attributes)
             }
-            ConceptImport::Relation(RelationItem { id, label, owned_attributes, related_role_players }) => {
+            ImportConcept::Relation(RelationItem { id, label, owned_attributes, related_role_players }) => {
                 self.import_relation(id, label, owned_attributes, related_role_players)
             }
-            ConceptImport::Attribute(AttributeItem { id, label, value }) => self.import_attribute(id, label, value),
-            ConceptImport::DeferredOwnership(deferred) => self.import_deferred_ownership(deferred),
-            ConceptImport::DeferredRolePlayer(deferred) => self.import_deferred_role_player(deferred),
+            ImportConcept::Attribute(AttributeItem { id, label, value }) => self.import_attribute(id, label, value),
+            ImportConcept::DeferredOwnership(deferred) => self.import_deferred_ownership(deferred),
+            ImportConcept::DeferredRolePlayer(deferred) => self.import_deferred_role_player(deferred),
         }
     }
 

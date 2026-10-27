@@ -136,7 +136,7 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
     }
 
-    fn into_unique(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
+    fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
 

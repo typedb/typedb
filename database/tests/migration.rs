@@ -65,7 +65,7 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
         intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
     }
 
-    fn into_unique(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
+    fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
 
