@@ -6,12 +6,14 @@
 
 use std::{fs, sync::Arc};
 
-pub use tonic::transport::ServerTlsConfig as GrpcTlsConfig;
+pub(crate) use tonic::transport::ServerTlsConfig as GrpcTlsConfig;
 use tonic::transport::{Certificate, Identity};
 
 use crate::{error::ServerOpenError, parameters::config::EncryptionConfig};
 
-pub fn prepare_tls_config(encryption_config: &EncryptionConfig) -> Result<Option<GrpcTlsConfig>, ServerOpenError> {
+pub(crate) fn prepare_tls_config(
+    encryption_config: &EncryptionConfig,
+) -> Result<Option<GrpcTlsConfig>, ServerOpenError> {
     if !encryption_config.enabled {
         return Ok(None);
     }

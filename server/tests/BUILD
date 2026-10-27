@@ -8,16 +8,15 @@ package(default_visibility = ["//visibility:public",])
 
 rust_test(
     name = "test_encryption",
-    srcs = glob([
-        "encryption.rs",
-    ]),
+    srcs = ["encryption.rs"],
+    data = ["//server:config.yml"],
     deps = [
+        "//resource",
         "//server",
+        "//util/test:test_utils",
 
         "@crates//:tokio",
         "@crates//:tokio-rustls",
-        "@crates//:tokio-stream",
-        "@crates//:tonic",
     ]
 )
 

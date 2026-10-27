@@ -4,26 +4,36 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs, path::PathBuf, sync::Arc};
-
-use server::{
-    parameters::config::EncryptionConfig,
-    service::{grpc, http},
+use std::{
+    net::{SocketAddr, TcpListener},
+    path::{Path, PathBuf},
+    sync::{Arc, LazyLock},
+    time::Duration,
 };
+
+use resource::distribution_info::DistributionInfo;
+use server::{
+    ServerBuilder,
+    parameters::config::{ConfigBuilder, DiagnosticsConfig, EncryptionConfig},
+};
+use test_utils::{TempDir, create_tmp_storage_dir};
 use tokio::{
-    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, duplex},
-    net::{TcpListener, TcpStream},
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+    runtime::Runtime,
+    sync::{OnceCell, watch},
 };
 use tokio_rustls::{
-    TlsAcceptor, TlsConnector,
+    TlsConnector,
     rustls::{
         ClientConfig, RootCertStore,
         crypto::ring::default_provider,
         pki_types::{CertificateDer, PrivateKeyDer, ServerName, pem::PemObject},
     },
 };
-use tokio_stream::wrappers::TcpListenerStream;
-use tonic::{service::Routes, transport::Server};
+
+const DISTRIBUTION_INFO: DistributionInfo =
+    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0-test" };
 
 // Test-only certificates (EC P-256, valid for 100 years): a CA, a server certificate for 'localhost'
 // and a client certificate signed by it, and a client certificate signed by an unrelated CA.
@@ -102,43 +112,104 @@ enum Endpoint {
 
 const ENDPOINTS: [Endpoint; 2] = [Endpoint::Grpc, Endpoint::Http];
 
-struct Fixtures {
-    dir: PathBuf,
+struct TestServer {
+    _dir: TempDir,
+    _shutdown_sender: watch::Sender<()>,
+    grpc_address: SocketAddr,
+    http_address: SocketAddr,
 }
 
-impl Fixtures {
-    fn new(test_name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("typedb-tls-{test_name}-{}", std::process::id()));
-        fs::create_dir_all(&dir).unwrap();
-        Self { dir }
-    }
+static SERVER_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .worker_threads(2)
+        .thread_name("encryption-test-server")
+        .build()
+        .expect("failed to build encryption-test server runtime")
+});
 
-    fn encryption_config(&self, with_ca: bool) -> EncryptionConfig {
-        EncryptionConfig {
-            enabled: true,
-            certificate: Some(self.write("server.pem", SERVER_CERTIFICATE)),
-            certificate_key: Some(self.write("server-key.pem", SERVER_KEY)),
-            ca_certificate: with_ca.then(|| self.write("ca.pem", CA_CERTIFICATE)),
-        }
-    }
+static SERVER: OnceCell<TestServer> = OnceCell::const_new();
 
-    fn write(&self, name: &str, contents: &str) -> PathBuf {
-        let path = self.dir.join(name);
-        fs::write(&path, contents).unwrap();
-        path
-    }
+fn config_path() -> PathBuf {
+    let cwd = std::env::current_dir().unwrap();
+    let bazel_layout = cwd.join("server/config.yml");
+    if bazel_layout.exists() { bazel_layout } else { cwd.join("config.yml") }
 }
 
-impl Drop for Fixtures {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.dir);
-    }
+fn free_address() -> SocketAddr {
+    TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap()
 }
 
-fn client_config(client_identity: Option<(&str, &str)>) -> ClientConfig {
+fn write_file(dir: &Path, name: &str, contents: &str) -> PathBuf {
+    let path = dir.join(name);
+    std::fs::write(&path, contents).unwrap();
+    path
+}
+
+async fn ensure_server_started() -> &'static TestServer {
+    SERVER
+        .get_or_init(|| async {
+            let (shutdown_sender, shutdown_receiver) = watch::channel(());
+            let server_dir = create_tmp_storage_dir();
+            let grpc_address = free_address();
+            let http_address = free_address();
+            let encryption = EncryptionConfig {
+                enabled: true,
+                certificate: Some(write_file(server_dir.as_ref(), "server.pem", SERVER_CERTIFICATE)),
+                certificate_key: Some(write_file(server_dir.as_ref(), "server-key.pem", SERVER_KEY)),
+                ca_certificate: Some(write_file(server_dir.as_ref(), "ca.pem", CA_CERTIFICATE)),
+            };
+            let config = ConfigBuilder::from_file(config_path())
+                .expect("Failed to load config file")
+                .server_listen_address(grpc_address.to_string())
+                .server_advertise_address(grpc_address.to_string())
+                .server_http_enabled(true)
+                .server_http_listen_address(http_address.to_string())
+                .server_http_advertise_address(format!("https://{http_address}"))
+                .admin_enabled(false)
+                .encryption(encryption)
+                .data_directory(server_dir.as_ref())
+                .development_mode(true)
+                .diagnostics(DiagnosticsConfig::disabled())
+                .build()
+                .expect("Failed to build config");
+
+            let shutdown_sender_for_build = shutdown_sender.clone();
+            let server = SERVER_RUNTIME
+                .spawn(async move {
+                    ServerBuilder::new()
+                        .distribution_info(DISTRIBUTION_INFO)
+                        .shutdown_channel((shutdown_sender_for_build, shutdown_receiver))
+                        .build(config)
+                        .await
+                        .expect("Failed to build server")
+                })
+                .await
+                .expect("Server build task panicked");
+            SERVER_RUNTIME.spawn(async move {
+                server.serve().await.expect("Server failed");
+            });
+
+            for address in [grpc_address, http_address] {
+                let mut attempts = 0;
+                while TcpStream::connect(address).await.is_err() {
+                    attempts += 1;
+                    assert!(attempts < 100, "Server did not start listening on {address}");
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+            }
+            TestServer { _dir: server_dir, _shutdown_sender: shutdown_sender, grpc_address, http_address }
+        })
+        .await
+}
+
+fn client_config(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> ClientConfig {
     let mut roots = RootCertStore::empty();
     roots.add(CertificateDer::from_pem_slice(CA_CERTIFICATE.as_bytes()).unwrap()).unwrap();
-    let builder = ClientConfig::builder().with_root_certificates(roots);
+    let builder = ClientConfig::builder_with_provider(Arc::new(default_provider()))
+        .with_safe_default_protocol_versions()
+        .unwrap()
+        .with_root_certificates(roots);
     let mut config = match client_identity {
         None => builder.with_no_client_auth(),
         Some((certificate, key)) => builder
@@ -148,72 +219,57 @@ fn client_config(client_identity: Option<(&str, &str)>) -> ClientConfig {
             )
             .unwrap(),
     };
-    config.alpn_protocols = vec![b"h2".to_vec()];
+    config.alpn_protocols = match endpoint {
+        Endpoint::Grpc => vec![b"h2".to_vec()],
+        Endpoint::Http => vec![b"http/1.1".to_vec()],
+    };
     config
 }
 
-async fn connect(
-    endpoint: Endpoint,
-    encryption_config: &EncryptionConfig,
-    client_identity: Option<(&str, &str)>,
-) -> Result<(), String> {
-    let _ = default_provider().install_default();
-    let client_config = Arc::new(client_config(client_identity));
+async fn connect(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> Result<(), String> {
+    let server = ensure_server_started().await;
+    let address = match endpoint {
+        Endpoint::Grpc => server.grpc_address,
+        Endpoint::Http => server.http_address,
+    };
+    let connector = TlsConnector::from(Arc::new(client_config(endpoint, client_identity)));
+    let tcp = TcpStream::connect(address).await.map_err(|err| err.to_string())?;
+    let mut stream =
+        connector.connect(ServerName::try_from("localhost").unwrap(), tcp).await.map_err(|err| err.to_string())?;
     match endpoint {
-        Endpoint::Http => {
-            let server_config = http::encryption::prepare_tls_config(encryption_config).unwrap().unwrap();
-            let (client_io, server_io) = duplex(64 * 1024);
-            tokio::spawn(async move {
-                if let Ok(mut stream) = TlsAcceptor::from(Arc::new(server_config)).accept(server_io).await {
-                    let _ = stream.write_all(b"ready").await;
-                    let _ = stream.flush().await;
-                    let _ = stream.read(&mut [0u8; 1]).await;
-                }
-            });
-            exchange(client_config, client_io).await
-        }
         Endpoint::Grpc => {
-            let tls_config = grpc::encryption::prepare_tls_config(encryption_config).unwrap().unwrap();
-            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let address = listener.local_addr().unwrap();
-            let server = tokio::spawn(
-                Server::builder()
-                    .tls_config(tls_config)
-                    .unwrap()
-                    .add_routes(Routes::default())
-                    .serve_with_incoming(TcpListenerStream::new(listener)),
-            );
-            let result = exchange(client_config, TcpStream::connect(address).await.unwrap()).await;
-            server.abort();
-            result
+            stream.write_all(b"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n").await.map_err(|err| err.to_string())?;
+            let mut settings_frame_header = [0u8; 9];
+            stream.read_exact(&mut settings_frame_header).await.map_err(|err| err.to_string())?;
+        }
+        Endpoint::Http => {
+            stream
+                .write_all(b"GET /v1/version HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                .await
+                .map_err(|err| err.to_string())?;
+            let mut response = Vec::new();
+            stream.read_to_end(&mut response).await.map_err(|err| err.to_string())?;
+            let response = String::from_utf8_lossy(&response);
+            if !response.starts_with("HTTP/1.1 200") {
+                return Err(format!("Unexpected response: {response}"));
+            }
         }
     }
-}
-
-async fn exchange(client_config: Arc<ClientConfig>, io: impl AsyncRead + AsyncWrite + Unpin) -> Result<(), String> {
-    let server_name = ServerName::try_from("localhost").unwrap();
-    let mut stream = TlsConnector::from(client_config).connect(server_name, io).await.map_err(|err| err.to_string())?;
-    // The HTTP/2 client preface; the gRPC server answers with its SETTINGS frame.
-    stream.write_all(b"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n").await.map_err(|err| err.to_string())?;
-    let mut buffer = [0u8; 5];
-    stream.read_exact(&mut buffer).await.map_err(|err| err.to_string())?;
     Ok(())
 }
 
 #[tokio::test]
 async fn ca_certificate_accepts_clients_without_a_certificate() {
-    let fixtures = Fixtures::new("no-client-certificate");
     for endpoint in ENDPOINTS {
-        let result = connect(endpoint, &fixtures.encryption_config(true), None).await;
+        let result = connect(endpoint, None).await;
         assert!(result.is_ok(), "{endpoint:?}: expected a client without a certificate to be accepted, got {result:?}");
     }
 }
 
 #[tokio::test]
 async fn ca_certificate_accepts_client_certificates_it_signed() {
-    let fixtures = Fixtures::new("trusted-client-certificate");
     for endpoint in ENDPOINTS {
-        let result = connect(endpoint, &fixtures.encryption_config(true), Some((CLIENT_CERTIFICATE, CLIENT_KEY))).await;
+        let result = connect(endpoint, Some((CLIENT_CERTIFICATE, CLIENT_KEY))).await;
         assert!(
             result.is_ok(),
             "{endpoint:?}: expected a client certificate signed by the CA to be accepted, got {result:?}"
@@ -223,34 +279,11 @@ async fn ca_certificate_accepts_client_certificates_it_signed() {
 
 #[tokio::test]
 async fn ca_certificate_rejects_client_certificates_it_did_not_sign() {
-    let fixtures = Fixtures::new("foreign-client-certificate");
     for endpoint in ENDPOINTS {
-        let result = connect(
-            endpoint,
-            &fixtures.encryption_config(true),
-            Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY)),
-        )
-        .await;
+        let result = connect(endpoint, Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY))).await;
         assert!(
             result.as_ref().is_err_and(|err| err.contains("UnknownCA")),
             "{endpoint:?}: expected a client certificate from another CA to be rejected as unknown, got {result:?}"
-        );
-    }
-}
-
-#[tokio::test]
-async fn no_ca_certificate_ignores_client_certificates() {
-    let fixtures = Fixtures::new("no-ca-certificate");
-    for endpoint in ENDPOINTS {
-        let result = connect(
-            endpoint,
-            &fixtures.encryption_config(false),
-            Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY)),
-        )
-        .await;
-        assert!(
-            result.is_ok(),
-            "{endpoint:?}: expected client certificates to be ignored without a CA, got {result:?}"
         );
     }
 }

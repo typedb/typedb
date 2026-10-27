@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-pub use tokio_rustls::rustls::ServerConfig as HttpTlsConfig;
+pub(crate) use tokio_rustls::rustls::ServerConfig as HttpTlsConfig;
 use tokio_rustls::rustls::{
     RootCertStore,
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
@@ -15,7 +15,9 @@ use tokio_rustls::rustls::{
 
 use crate::{error::ServerOpenError, parameters::config::EncryptionConfig};
 
-pub fn prepare_tls_config(encryption_config: &EncryptionConfig) -> Result<Option<HttpTlsConfig>, ServerOpenError> {
+pub(crate) fn prepare_tls_config(
+    encryption_config: &EncryptionConfig,
+) -> Result<Option<HttpTlsConfig>, ServerOpenError> {
     if !encryption_config.enabled {
         return Ok(None);
     }

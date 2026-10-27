@@ -76,8 +76,8 @@ pub struct CLIArgs {
     #[arg(long = "server.encryption.certificate-key", value_name = "FILE")]
     pub server_encryption_certificate_key: Option<String>,
 
-    /// CA certificate in PEM format, usually the one that signed the server certificate. Clients that present a
-    /// certificate are verified against it; clients without one are still accepted
+    /// CA certificate in PEM format used to verify client certificates, if clients present one. Clients without a
+    /// certificate are still accepted
     #[arg(long = "server.encryption.ca-certificate", value_name = "FILE")]
     pub server_encryption_ca_certificate: Option<String>,
 

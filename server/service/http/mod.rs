@@ -6,7 +6,7 @@
 
 pub(crate) mod authenticator;
 mod diagnostics;
-pub mod encryption;
+pub(crate) mod encryption;
 mod error;
 pub mod message;
 pub(crate) mod transaction_service;
