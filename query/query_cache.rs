@@ -19,7 +19,7 @@ use ir::{
 use moka::sync::{Cache, CacheBuilder};
 use resource::{
     constants::database::{
-        QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION,
+        QUERY_CACHE_MIN_ENTRY_WEIGHT, QUERY_PARSE_CACHE_SIZE, QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION,
         QUERY_PLAN_CACHE_FLUSH_STATIC_SMOOTH_THRESHOLD, QUERY_PLAN_CACHE_SIZE, QUERY_TRANSLATION_CACHE_SIZE,
     },
     perf_counters::QUERY_CACHE_FLUSH,
@@ -38,7 +38,7 @@ struct ValidityRequirements {
 pub struct QueryCache {
     parse_cache: Cache<String, Arc<Pipeline>>,
     translation_cache: Cache<String, TranslatedPipeline>,
-    executable_cache: Cache<IRQuery, ExecutablePipeline>,
+    executable_cache: Cache<IRQuery, (ExecutablePipeline, u32)>,
     validity_requirements: RwLock<ValidityRequirements>,
 }
 
@@ -50,9 +50,16 @@ pub enum ParsedQuery {
 
 impl QueryCache {
     pub fn new() -> Self {
-        let parse_cache = CacheBuilder::new(QUERY_PARSE_CACHE_SIZE).build();
-        let translation_cache = CacheBuilder::new(QUERY_TRANSLATION_CACHE_SIZE).build();
-        let executable_cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).build();
+        // Parsed, translated and compiled queries grow with the query, so the caches are bounded by weight, not count
+        let parse_cache = CacheBuilder::new(weighted_capacity(QUERY_PARSE_CACHE_SIZE))
+            .weigher(|source_query: &String, _: &Arc<Pipeline>| query_weight(source_query))
+            .build();
+        let translation_cache = CacheBuilder::new(weighted_capacity(QUERY_TRANSLATION_CACHE_SIZE))
+            .weigher(|source_query: &String, _: &TranslatedPipeline| query_weight(source_query))
+            .build();
+        let executable_cache = CacheBuilder::new(weighted_capacity(QUERY_PLAN_CACHE_SIZE))
+            .weigher(|_: &IRQuery, (_, weight): &(ExecutablePipeline, u32)| *weight)
+            .build();
         let validity_requirements =
             RwLock::new(ValidityRequirements { latest_statistics: None, latest_schema_commit: None });
         QueryCache { parse_cache, translation_cache, executable_cache, validity_requirements }
@@ -94,7 +101,7 @@ impl QueryCache {
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
         let key = IRQuery::new(preamble.clone(), given, stages, fetch);
-        let mut found = self.executable_cache.get(&key)?;
+        let (mut found, _) = self.executable_cache.get(&key)?;
         let is_outdated = self
             .validity_requirements
             .read()
@@ -115,6 +122,7 @@ impl QueryCache {
     pub(crate) fn may_insert_executable(
         &self,
         statistics_sequence_number: SequenceNumber,
+        source_query: &str,
         preamble: Arc<Vec<Function>>,
         given: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
@@ -130,7 +138,7 @@ impl QueryCache {
                 .as_ref()
                 .map_or(true, |stats| !is_pipeline_type_populations_outdated(&stats, &pipeline));
         if may_insert {
-            self.executable_cache.insert(key, pipeline);
+            self.executable_cache.insert(key, (pipeline, query_weight(source_query)));
         }
         drop(read_lock);
     }
@@ -182,6 +190,14 @@ fn smoothstep(pop: u64, min: u64, max: u64) -> f64 {
     (3.0 - 2.0 * x) * x * x
 }
 
+fn query_weight(source_query: &str) -> u32 {
+    u32::try_from(source_query.len()).unwrap_or(u32::MAX).max(QUERY_CACHE_MIN_ENTRY_WEIGHT)
+}
+
+fn weighted_capacity(max_entries: u64) -> u64 {
+    max_entries * u64::from(QUERY_CACHE_MIN_ENTRY_WEIGHT)
+}
+
 #[derive(Debug)]
 struct IRQuery {
     preamble: Arc<Vec<Function>>,
@@ -230,5 +246,47 @@ impl StructuralEquality for IRQuery {
             && self.given.equals(&other.given)
             && self.stages.equals(&other.stages)
             && self.fetch.equals(&other.fetch)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use resource::constants::database::QUERY_PARSE_CACHE_SIZE;
+    use typeql::query::QueryStructure;
+
+    use super::QueryCache;
+
+    fn insert_query(people: usize, seed: u64) -> String {
+        let statements: Vec<_> = (0..people).map(|i| format!("$p{i} isa person, has name \"{seed}-{i}\";")).collect();
+        format!("insert {}", statements.join(" "))
+    }
+
+    fn fill_parse_cache(people: usize) -> QueryCache {
+        let cache = QueryCache::new();
+        let pipeline = match typeql::parse_query(&insert_query(1, 0)).unwrap().into_structure() {
+            QueryStructure::Pipeline(pipeline) => Arc::new(pipeline),
+            QueryStructure::Schema(_) => unreachable!("an insert is a data pipeline"),
+        };
+        for seed in 0..2 * QUERY_PARSE_CACHE_SIZE {
+            cache.insert_parsed(&insert_query(people, seed), pipeline.clone());
+        }
+        cache.parse_cache.run_pending_tasks();
+        cache
+    }
+
+    #[test]
+    fn small_queries_are_bounded_by_count() {
+        let cache = fill_parse_cache(1);
+        assert_eq!(cache.parse_cache.entry_count(), QUERY_PARSE_CACHE_SIZE);
+    }
+
+    #[test]
+    fn large_queries_are_bounded_by_length() {
+        // ~37 KB per query, as when bulk loading a thousand concepts per query
+        let cache = fill_parse_cache(1000);
+        let count = cache.parse_cache.entry_count();
+        assert!(count <= QUERY_PARSE_CACHE_SIZE / 8, "the parse cache holds {count} large queries");
     }
 }
