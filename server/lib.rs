@@ -584,8 +584,8 @@ impl Server {
     }
 
     fn install_default_encryption_provider() {
-        // `install_default` only returns `Err` if another crate has already installed a provider.
-        // Intentionally ignore this error.
+        // `install_default` fails only if a process-wide provider is already installed (by an earlier server in
+        // this process or another crate), which rustls then uses
         let _ = tokio_rustls::rustls::crypto::ring::default_provider().install_default();
     }
 
