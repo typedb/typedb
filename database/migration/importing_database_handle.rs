@@ -27,6 +27,9 @@ pub trait ImportingDatabaseHandle: Send + Sync {
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
 
+    /// Unwraps the handle if this is its only reference, and gives it back otherwise - the Arc::try_unwrap of a trait object
+    fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>>;
+
     fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError>;
 }
 

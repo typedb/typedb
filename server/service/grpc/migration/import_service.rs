@@ -12,10 +12,7 @@ use std::{
     time::Instant,
 };
 
-use database::migration::{
-    database_importer::{DatabaseImportError, DatabaseImporterHandle},
-    item::MigrationItem,
-};
+use database::migration::database_importer::{DatabaseImportError, DatabaseImporterHandle};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use error::TypeDBError;
 use tokio::sync::{
@@ -256,14 +253,13 @@ impl DatabaseImportService {
             .import_prepare(&name, self.close_sender.clone())
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
+        self.active_import = Some(ActiveImport::new(name, importer));
 
-        // Recorded before anything can fail, so that closing the service cleans the import up.
-        let active_import = self.active_import.insert(ActiveImport::new(name, importer));
+        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
         self.stop_signals
-            .unless_stopped(active_import.importer.send(MigrationItem::Schema(schema)))
+            .unless_stopped(active_import.importer.send_schema(schema))
             .await?
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
-
         Ok(Continue(()))
     }
 

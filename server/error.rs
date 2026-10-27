@@ -360,11 +360,13 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::DataCommitFailed { .. }
         | DatabaseImportError::FinalisationFailed { .. }
         | DatabaseImportError::CacheError { .. }
-        | DatabaseImportError::Interrupted { .. } => ErrorOrigin::System,
+        | DatabaseImportError::Interrupted { .. }
+        | DatabaseImportError::WorkerInterrupted { .. } => ErrorOrigin::System,
 
-        DatabaseImportError::PreparationSchemaCommitFailed { .. } | DatabaseImportError::ImporterStopped { .. } => {
-            ErrorOrigin::Internal
-        }
+        DatabaseImportError::PreparationSchemaCommitFailed { .. }
+        | DatabaseImportError::ImporterStopped { .. }
+        | DatabaseImportError::WorkerStopped { .. }
+        | DatabaseImportError::ImportingDatabaseStillShared { .. } => ErrorOrigin::Internal,
 
         DatabaseImportError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),
         DatabaseImportError::ConceptWrite { typedb_source } => concept_write_origin(typedb_source),
