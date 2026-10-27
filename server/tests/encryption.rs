@@ -7,21 +7,22 @@
 use std::{
     net::{SocketAddr, TcpListener},
     path::{Path, PathBuf},
-    sync::{Arc, LazyLock},
+    sync::Arc,
     time::Duration,
 };
 
 use resource::distribution_info::DistributionInfo;
 use server::{
     ServerBuilder,
+    error::ServerOpenError,
     parameters::config::{ConfigBuilder, DiagnosticsConfig, EncryptionConfig},
 };
 use test_utils::{TempDir, create_tmp_storage_dir};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
-    runtime::Runtime,
-    sync::{OnceCell, watch},
+    sync::watch,
+    task::JoinHandle,
 };
 use tokio_rustls::{
     TlsConnector,
@@ -31,6 +32,8 @@ use tokio_rustls::{
         pki_types::{CertificateDer, PrivateKeyDer, ServerName, pem::PemObject},
     },
 };
+
+const HTTP2_SETTINGS_FRAME_TYPE: u8 = 0x4;
 
 const DISTRIBUTION_INFO: DistributionInfo =
     DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0-test" };
@@ -114,21 +117,66 @@ const ENDPOINTS: [Endpoint; 2] = [Endpoint::Grpc, Endpoint::Http];
 
 struct TestServer {
     _dir: TempDir,
-    _shutdown_sender: watch::Sender<()>,
+    shutdown_sender: watch::Sender<()>,
+    serving: JoinHandle<Result<(), ServerOpenError>>,
     grpc_address: SocketAddr,
     http_address: SocketAddr,
 }
 
-static SERVER_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .worker_threads(2)
-        .thread_name("encryption-test-server")
-        .build()
-        .expect("failed to build encryption-test server runtime")
-});
+impl TestServer {
+    async fn start(with_ca_certificate: bool) -> Self {
+        let (shutdown_sender, shutdown_receiver) = watch::channel(());
+        let dir = create_tmp_storage_dir();
+        let [grpc_address, http_address] = free_addresses();
+        let encryption = EncryptionConfig {
+            enabled: true,
+            certificate: Some(write_file(dir.as_ref(), "server.pem", SERVER_CERTIFICATE)),
+            certificate_key: Some(write_file(dir.as_ref(), "server-key.pem", SERVER_KEY)),
+            ca_certificate: with_ca_certificate.then(|| write_file(dir.as_ref(), "ca.pem", CA_CERTIFICATE)),
+        };
+        let config = ConfigBuilder::from_file(config_path())
+            .expect("Failed to load config file")
+            .server_listen_address(grpc_address.to_string())
+            .server_advertise_address(grpc_address.to_string())
+            .server_http_enabled(true)
+            .server_http_listen_address(http_address.to_string())
+            .server_http_advertise_address(format!("https://{http_address}"))
+            .admin_enabled(false)
+            .encryption(encryption)
+            .data_directory(dir.as_ref())
+            .development_mode(true)
+            .diagnostics(DiagnosticsConfig::disabled())
+            .build()
+            .expect("Failed to build config");
+        let server = ServerBuilder::new()
+            .distribution_info(DISTRIBUTION_INFO)
+            .shutdown_channel((shutdown_sender.clone(), shutdown_receiver))
+            .build(config)
+            .await
+            .expect("Failed to build server");
+        let serving = tokio::spawn(server.serve());
 
-static SERVER: OnceCell<TestServer> = OnceCell::const_new();
+        for address in [grpc_address, http_address] {
+            let mut attempts = 0;
+            while TcpStream::connect(address).await.is_err() {
+                assert!(!serving.is_finished(), "Server stopped before listening on {address}");
+                attempts += 1;
+                assert!(attempts < 100, "Server did not start listening on {address}");
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        }
+        Self { _dir: dir, shutdown_sender, serving, grpc_address, http_address }
+    }
+
+    async fn stop(self) {
+        let _ = self.shutdown_sender.send(());
+        tokio::time::timeout(Duration::from_secs(30), self.serving)
+            .await
+            .expect("Server did not stop within 30 seconds")
+            .expect("Server task panicked")
+            .expect("Server failed");
+    }
+}
 
 fn config_path() -> PathBuf {
     let cwd = std::env::current_dir().unwrap();
@@ -136,71 +184,15 @@ fn config_path() -> PathBuf {
     if bazel_layout.exists() { bazel_layout } else { cwd.join("config.yml") }
 }
 
-fn free_address() -> SocketAddr {
-    TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap()
+fn free_addresses() -> [SocketAddr; 2] {
+    let listeners = [TcpListener::bind("127.0.0.1:0").unwrap(), TcpListener::bind("127.0.0.1:0").unwrap()];
+    listeners.map(|listener| listener.local_addr().unwrap())
 }
 
 fn write_file(dir: &Path, name: &str, contents: &str) -> PathBuf {
     let path = dir.join(name);
     std::fs::write(&path, contents).unwrap();
     path
-}
-
-async fn ensure_server_started() -> &'static TestServer {
-    SERVER
-        .get_or_init(|| async {
-            let (shutdown_sender, shutdown_receiver) = watch::channel(());
-            let server_dir = create_tmp_storage_dir();
-            let grpc_address = free_address();
-            let http_address = free_address();
-            let encryption = EncryptionConfig {
-                enabled: true,
-                certificate: Some(write_file(server_dir.as_ref(), "server.pem", SERVER_CERTIFICATE)),
-                certificate_key: Some(write_file(server_dir.as_ref(), "server-key.pem", SERVER_KEY)),
-                ca_certificate: Some(write_file(server_dir.as_ref(), "ca.pem", CA_CERTIFICATE)),
-            };
-            let config = ConfigBuilder::from_file(config_path())
-                .expect("Failed to load config file")
-                .server_listen_address(grpc_address.to_string())
-                .server_advertise_address(grpc_address.to_string())
-                .server_http_enabled(true)
-                .server_http_listen_address(http_address.to_string())
-                .server_http_advertise_address(format!("https://{http_address}"))
-                .admin_enabled(false)
-                .encryption(encryption)
-                .data_directory(server_dir.as_ref())
-                .development_mode(true)
-                .diagnostics(DiagnosticsConfig::disabled())
-                .build()
-                .expect("Failed to build config");
-
-            let shutdown_sender_for_build = shutdown_sender.clone();
-            let server = SERVER_RUNTIME
-                .spawn(async move {
-                    ServerBuilder::new()
-                        .distribution_info(DISTRIBUTION_INFO)
-                        .shutdown_channel((shutdown_sender_for_build, shutdown_receiver))
-                        .build(config)
-                        .await
-                        .expect("Failed to build server")
-                })
-                .await
-                .expect("Server build task panicked");
-            SERVER_RUNTIME.spawn(async move {
-                server.serve().await.expect("Server failed");
-            });
-
-            for address in [grpc_address, http_address] {
-                let mut attempts = 0;
-                while TcpStream::connect(address).await.is_err() {
-                    attempts += 1;
-                    assert!(attempts < 100, "Server did not start listening on {address}");
-                    tokio::time::sleep(Duration::from_millis(100)).await;
-                }
-            }
-            TestServer { _dir: server_dir, _shutdown_sender: shutdown_sender, grpc_address, http_address }
-        })
-        .await
 }
 
 fn client_config(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> ClientConfig {
@@ -226,8 +218,7 @@ fn client_config(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> C
     config
 }
 
-async fn connect(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> Result<(), String> {
-    let server = ensure_server_started().await;
+async fn connect(server: &TestServer, endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> Result<(), String> {
     let address = match endpoint {
         Endpoint::Grpc => server.grpc_address,
         Endpoint::Http => server.http_address,
@@ -239,8 +230,11 @@ async fn connect(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> R
     match endpoint {
         Endpoint::Grpc => {
             stream.write_all(b"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n").await.map_err(|err| err.to_string())?;
-            let mut settings_frame_header = [0u8; 9];
-            stream.read_exact(&mut settings_frame_header).await.map_err(|err| err.to_string())?;
+            let mut frame_header = [0u8; 9];
+            stream.read_exact(&mut frame_header).await.map_err(|err| err.to_string())?;
+            if frame_header[3] != HTTP2_SETTINGS_FRAME_TYPE {
+                return Err(format!("Unexpected HTTP/2 frame header: {frame_header:?}"));
+            }
         }
         Endpoint::Http => {
             stream
@@ -258,32 +252,51 @@ async fn connect(endpoint: Endpoint, client_identity: Option<(&str, &str)>) -> R
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn ca_certificate_accepts_clients_without_a_certificate() {
+    let server = TestServer::start(true).await;
     for endpoint in ENDPOINTS {
-        let result = connect(endpoint, None).await;
+        let result = connect(&server, endpoint, None).await;
         assert!(result.is_ok(), "{endpoint:?}: expected a client without a certificate to be accepted, got {result:?}");
     }
+    server.stop().await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn ca_certificate_accepts_client_certificates_it_signed() {
+    let server = TestServer::start(true).await;
     for endpoint in ENDPOINTS {
-        let result = connect(endpoint, Some((CLIENT_CERTIFICATE, CLIENT_KEY))).await;
+        let result = connect(&server, endpoint, Some((CLIENT_CERTIFICATE, CLIENT_KEY))).await;
         assert!(
             result.is_ok(),
             "{endpoint:?}: expected a client certificate signed by the CA to be accepted, got {result:?}"
         );
     }
+    server.stop().await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn ca_certificate_rejects_client_certificates_it_did_not_sign() {
+    let server = TestServer::start(true).await;
     for endpoint in ENDPOINTS {
-        let result = connect(endpoint, Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY))).await;
+        let result = connect(&server, endpoint, Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY))).await;
         assert!(
             result.as_ref().is_err_and(|err| err.contains("UnknownCA")),
             "{endpoint:?}: expected a client certificate from another CA to be rejected as unknown, got {result:?}"
         );
     }
+    server.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn no_ca_certificate_ignores_client_certificates() {
+    let server = TestServer::start(false).await;
+    for endpoint in ENDPOINTS {
+        let result = connect(&server, endpoint, Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY))).await;
+        assert!(
+            result.is_ok(),
+            "{endpoint:?}: expected client certificates to be ignored without a CA, got {result:?}"
+        );
+    }
+    server.stop().await;
 }
