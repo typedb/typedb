@@ -7,7 +7,7 @@
 use std::{
     net::{SocketAddr, TcpListener},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock},
     time::Duration,
 };
 
@@ -21,7 +21,7 @@ use test_utils::{TempDir, create_tmp_storage_dir};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
-    sync::watch,
+    sync::{Mutex, watch},
     task::JoinHandle,
 };
 use tokio_rustls::{
@@ -114,6 +114,8 @@ enum Endpoint {
 }
 
 const ENDPOINTS: [Endpoint; 2] = [Endpoint::Grpc, Endpoint::Http];
+
+static SERVER_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 struct TestServer {
     _dir: TempDir,
@@ -254,6 +256,7 @@ async fn connect(server: &TestServer, endpoint: Endpoint, client_identity: Optio
 
 #[tokio::test(flavor = "multi_thread")]
 async fn ca_certificate_accepts_clients_without_a_certificate() {
+    let _guard = SERVER_LOCK.lock().await;
     let server = TestServer::start(true).await;
     for endpoint in ENDPOINTS {
         let result = connect(&server, endpoint, None).await;
@@ -264,6 +267,7 @@ async fn ca_certificate_accepts_clients_without_a_certificate() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn ca_certificate_accepts_client_certificates_it_signed() {
+    let _guard = SERVER_LOCK.lock().await;
     let server = TestServer::start(true).await;
     for endpoint in ENDPOINTS {
         let result = connect(&server, endpoint, Some((CLIENT_CERTIFICATE, CLIENT_KEY))).await;
@@ -277,6 +281,7 @@ async fn ca_certificate_accepts_client_certificates_it_signed() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn ca_certificate_rejects_client_certificates_it_did_not_sign() {
+    let _guard = SERVER_LOCK.lock().await;
     let server = TestServer::start(true).await;
     for endpoint in ENDPOINTS {
         let result = connect(&server, endpoint, Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY))).await;
@@ -290,6 +295,7 @@ async fn ca_certificate_rejects_client_certificates_it_did_not_sign() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn no_ca_certificate_ignores_client_certificates() {
+    let _guard = SERVER_LOCK.lock().await;
     let server = TestServer::start(false).await;
     for endpoint in ENDPOINTS {
         let result = connect(&server, endpoint, Some((FOREIGN_CLIENT_CERTIFICATE, FOREIGN_CLIENT_KEY))).await;
