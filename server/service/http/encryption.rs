@@ -59,6 +59,7 @@ pub(crate) fn prepare_tls_config(
             }
             Some(
                 WebPkiClientVerifier::builder(Arc::new(client_auth_roots))
+                    .allow_unauthenticated()
                     .build()
                     .map_err(|source| ServerOpenError::HttpInvalidRootCa { source: Arc::new(source) })?,
             )

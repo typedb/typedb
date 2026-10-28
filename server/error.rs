@@ -93,7 +93,6 @@ typedb_error! {
         HttpCouldNotReadRootCa(21, "Could not read root CA from '{path}' for the HTTP server.", path: String, source: Arc<RustlsCertError>),
         HttpInvalidRootCa(22, "Invalid root CA for the HTTP server.", source: Arc<RustlsVerifierError>),
         HttpTlsFailedConfiguration(23, "Failed to configure TLS for the HTTP server.", source: Arc<tokio_rustls::rustls::Error>),
-        HttpTlsUnsetDefaultCryptoProvider(24, "Failed to install default crypto provider for the HTTP server TLS configuration."),
         HttpTlsPemFileError(25, "Invalid PEM file specified for the HTTP server.", source: Arc<tokio_rustls::rustls::pki_types::pem::Error>),
         ServerState(26, "Invalid server state.", typedb_source: ArcServerStateError),
         AddressResolutionFailed(27, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),

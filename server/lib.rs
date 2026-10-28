@@ -299,7 +299,7 @@ impl Server {
         background_tasks_spawner: TokioTaskSpawner,
         admin_serve_override: Option<AdminServeFuture>,
     ) -> Result<(), ServerOpenError> {
-        Self::install_default_encryption_provider()?;
+        Self::install_default_encryption_provider();
 
         let mut servers: Vec<Pin<Box<dyn Future<Output = Result<(), ServerOpenError>> + Send>>> = Vec::new();
 
@@ -583,10 +583,10 @@ impl Server {
         }
     }
 
-    fn install_default_encryption_provider() -> Result<(), ServerOpenError> {
-        tokio_rustls::rustls::crypto::ring::default_provider()
-            .install_default()
-            .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
+    fn install_default_encryption_provider() {
+        // `install_default` fails only if a process-wide provider is already installed (by an earlier server in
+        // this process or another crate), which rustls then uses
+        let _ = tokio_rustls::rustls::crypto::ring::default_provider().install_default();
     }
 
     pub fn server_state(&self) -> Arc<ServerState> {
