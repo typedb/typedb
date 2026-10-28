@@ -3010,23 +3010,6 @@ impl ThingManager {
         Ok(())
     }
 
-    fn new_edge_known_to_exist(&self, origin: ObjectOrigin) -> KnownToExist {
-        match origin {
-            ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
-            ObjectOrigin::UnknownTransaction => {
-                match self
-                    .concept_persistence_guarantees
-                    .as_ref()
-                    .map(|guarantees| guarantees.new_edge_known_to_exist())
-                {
-                    Some(KnownToExist::NonExistent) => KnownToExist::NonExistent,
-                    // a put never assumes the edge is present
-                    Some(KnownToExist::Unknown) | Some(KnownToExist::Exists) | None => KnownToExist::Unknown,
-                }
-            }
-        }
-    }
-
     pub(crate) fn set_has_unordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -3548,6 +3531,23 @@ impl ThingManager {
             Write::Delete => None,
             Write::Insert { .. } => {
                 unreachable!("Encountered an `insert` while a `put` was expected in the snapshot.")
+            }
+        }
+    }
+
+    fn new_edge_known_to_exist(&self, origin: ObjectOrigin) -> KnownToExist {
+        match origin {
+            ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
+            ObjectOrigin::UnknownTransaction => {
+                match self
+                    .concept_persistence_guarantees
+                    .as_ref()
+                    .map(|guarantees| guarantees.new_edge_known_to_exist())
+                {
+                    Some(KnownToExist::NonExistent) => KnownToExist::NonExistent,
+                    // a put never assumes the edge is present
+                    Some(KnownToExist::Unknown) | Some(KnownToExist::Exists) | None => KnownToExist::Unknown,
+                }
             }
         }
     }
