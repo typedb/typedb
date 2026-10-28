@@ -11,6 +11,7 @@ pub mod definition_key;
 pub mod definition_key_generator;
 pub mod function;
 pub mod r#struct;
+pub mod vector;
 
 pub trait DefinitionValueEncoding {
     fn from_bytes(value: &[u8]) -> Self;

@@ -85,14 +85,21 @@ impl<'this> ExpressionCompilationContext<'this> {
     }
 
     fn compile_constant(&mut self, constant: &ParameterID) -> Result<(), Box<ExpressionCompileError>> {
-        self.constant_stack.push(constant.clone());
-        let ParameterID::Value(_, ir_value_type, _) = constant else {
+        let ParameterID::Value(_, ir_value_type, source_span) = constant else {
             unreachable!("Expected constant ParameterID to be ParameterID::Value");
         };
-        let ir::pattern::ValueType::Builtin(value_type) = ir_value_type else {
-            unimplemented_feature!(Structs);
+        let value_type = match ir_value_type {
+            ir::pattern::ValueType::Builtin(value_type) => *value_type,
+            ir::pattern::ValueType::Vector(_) => {
+                return Err(Box::new(ExpressionCompileError::UnsupportedConstantValueType {
+                    category: ValueTypeCategory::Vector,
+                    source_span: Some(*source_span),
+                }));
+            }
+            ir::pattern::ValueType::Struct(_) => unimplemented_feature!(Structs),
         };
-        self.push_type_single(*value_type);
+        self.constant_stack.push(constant.clone());
+        self.push_type_single(value_type);
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())

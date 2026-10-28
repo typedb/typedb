@@ -5,7 +5,11 @@
  */
 
 use bytes::util::HexBytesFormatter;
-use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use encoding::value::{
+    label::Label,
+    value::Value,
+    value_type::{ValueType, ValueTypeCategory},
+};
 use error::typedb_error;
 
 use crate::{
@@ -120,7 +124,7 @@ typedb_error!(
             "Attribute type '{attribute_type}' has no defined value type, but received value '{provided_value}' of type '{provided_value_type}'.",
             attribute_type: Label,
             provided_value: Value<'static>,
-            provided_value_type: ValueType
+            provided_value_type: ValueTypeCategory
         ),
         ValueTypeMismatchWithAttributeType(
             15,
@@ -128,7 +132,7 @@ typedb_error!(
             attribute_type: Label,
             expected_value_type: ValueType,
             provided_value: Value<'static>,
-            provided_value_type: ValueType
+            provided_value_type: ValueTypeCategory
         ),
         SetHasOnDeletedOwner(
             16,
@@ -170,6 +174,11 @@ typedb_error!(
             role: Label,
             decrement_count: u64,
             current_count: u64,
+        ),
+        VectorValueMustBeFinite(
+            23,
+            "Attribute type '{attribute_type}' received a vector containing a non-finite element (NaN or infinity); cosine similarity is undefined for these.",
+            attribute_type: Label,
         ),
     }
 );

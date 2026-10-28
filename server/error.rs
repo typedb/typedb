@@ -251,6 +251,7 @@ impl ServerStateError for LocalServerStateError {
                 SchemaCommitError::TypeCacheUpdateError { typedb_source } => match typedb_source {
                     TypeCacheCreateError::Empty { .. } => Internal,
                     TypeCacheCreateError::SnapshotIterate { .. } => System,
+                    TypeCacheCreateError::ConceptRead { .. } => System,
                 },
                 SchemaCommitError::StatisticsError { .. } => System,
                 SchemaCommitError::DurabilityError { .. } => System,
@@ -407,6 +408,8 @@ fn concept_write_origin(error: &ConceptWriteError) -> ErrorOrigin {
 
         ConceptWriteError::Encoding { .. } => ErrorOrigin::Internal,
 
+        ConceptWriteError::UnimplementedFunctionality { .. } => ErrorOrigin::Internal,
+
         ConceptWriteError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),
 
         ConceptWriteError::UnimplementedLanguageFeatureCascade { .. } => ErrorOrigin::Request,
@@ -438,6 +441,7 @@ fn snapshot_commit_origin(error: &SnapshotError) -> ErrorOrigin {
             | StorageCommitError::Keyspace { .. }
             | StorageCommitError::Durability { .. } => ErrorOrigin::System,
             StorageCommitError::Internal { .. } => ErrorOrigin::Internal,
+            StorageCommitError::SecondaryStore { .. } => ErrorOrigin::Request,
         },
     }
 }

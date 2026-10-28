@@ -126,6 +126,7 @@ fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALCl
             storage_path,
             WALClient::new(WAL::create(storage_path, FsyncMetrics::disabled()).unwrap()),
             &resources,
+            None,
         )
         .unwrap(),
     );

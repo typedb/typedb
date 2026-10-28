@@ -12,7 +12,7 @@ use std::{
 
 use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::{ValueType, ValueTypeCategory, VectorTypeParameters};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{
@@ -588,7 +588,10 @@ fn resolve_reduce_instruction_by_value_type(
             _ => err(),
         },
 
-        ValueTypeCategory::Boolean | ValueTypeCategory::Duration | ValueTypeCategory::Struct => err(),
+        ValueTypeCategory::Boolean
+        | ValueTypeCategory::Duration
+        | ValueTypeCategory::Struct
+        | ValueTypeCategory::Vector => err(),
     }
 }
 
@@ -610,11 +613,12 @@ pub fn collect_deleted_variables(block: &Block) -> BTreeSet<Variable> {
 pub struct RunningVariableAnnotations {
     pub(crate) concepts: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     pub(crate) values: BTreeMap<Variable, ExpressionValueType>,
+    pub(crate) vectors: BTreeMap<Variable, VectorTypeParameters>,
 }
 
 impl RunningVariableAnnotations {
     pub fn empty() -> Self {
-        Self { concepts: BTreeMap::new(), values: BTreeMap::new() }
+        Self { concepts: BTreeMap::new(), values: BTreeMap::new(), vectors: BTreeMap::new() }
     }
 
     pub(crate) fn from_iterator(
@@ -622,6 +626,7 @@ impl RunningVariableAnnotations {
     ) -> RunningVariableAnnotations {
         let mut concepts = BTreeMap::new();
         let mut values = BTreeMap::new();
+        let mut vectors = BTreeMap::new();
         iter.for_each(|(var, types)| match types {
             FunctionParameterAnnotation::AnyConcept => unreachable!("Unexpected"),
             FunctionParameterAnnotation::Value(value_type) => {
@@ -631,8 +636,11 @@ impl RunningVariableAnnotations {
             FunctionParameterAnnotation::Concept(types) => {
                 concepts.insert(var, Arc::new(types.clone()));
             }
+            FunctionParameterAnnotation::Vector(parameters) => {
+                vectors.insert(var, parameters);
+            }
         });
-        RunningVariableAnnotations { concepts, values }
+        RunningVariableAnnotations { concepts, values, vectors }
     }
 
     pub(crate) fn update_with(&mut self, stage_root_annotations: &TypeAnnotations) {
@@ -651,6 +659,7 @@ impl RunningVariableAnnotations {
     pub(crate) fn retain(&mut self, predicate: impl Fn(&Variable) -> bool) {
         self.concepts.retain(|var, _| predicate(var));
         self.values.retain(|var, _| predicate(var));
+        self.vectors.retain(|var, _| predicate(var));
     }
 
     pub(crate) fn get_as_parameter(&self, variable: &Variable) -> Option<FunctionParameterAnnotation> {
@@ -659,6 +668,8 @@ impl RunningVariableAnnotations {
             Some(FunctionParameterAnnotation::Concept((**types).clone()))
         } else if let Some(value_type) = self.values.get(&variable) {
             Some(FunctionParameterAnnotation::Value(value_type.value_type().clone()))
+        } else if let Some(parameters) = self.vectors.get(&variable) {
+            Some(FunctionParameterAnnotation::Vector(*parameters))
         } else {
             None
         }

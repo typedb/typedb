@@ -43,6 +43,7 @@ typedb_error!(
         SetPlayersOrderedRoleUnordered(12, "Concept write failed, cannot set relation's ordered role players as unordered."),
 
         UnimplementedLanguageFeatureCascade(254,"The cascade feature is not yet implemented."),
+        UnimplementedFunctionality(13, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
     }
 );
 
@@ -85,7 +86,7 @@ typedb_error! {
             "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.",
             attribute_type: AttributeType,
             expected: Option<ValueType>,
-            provided: ValueType,
+            provided: ValueTypeCategory,
         ),
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
@@ -99,6 +100,23 @@ typedb_error! {
             "Attribute required value type {expected} but was given value {actual}.",
             expected: ValueTypeCategory,
             actual: ValueTypeCategory,
+        ),
+        VectorSearchQueryDimensionMismatch(
+            31,
+            "Vector search query vector has dimension {provided}, but attribute type '{attribute_type}' expects dimension {expected}.",
+            attribute_type: AttributeType,
+            expected: u16,
+            provided: usize,
+        ),
+        VectorSearchQueryNotAVector(
+            32,
+            "Vector search query variable is bound to a non-vector value of type '{actual_type}'.",
+            actual_type: String,
+        ),
+        VectorSearchQueryInvalid(
+            33,
+            "Vector search query vector is invalid: {reason}.",
+            reason: String,
         ),
     }
 }

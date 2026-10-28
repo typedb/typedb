@@ -119,6 +119,9 @@ fn encode_function_parameter_annotations(
         FunctionParameterAnnotation::Value(v) => {
             TypeAnnotationResponse::Value { value_types: vec![encode_value_type(v, snapshot, type_manager)?] }
         }
+        FunctionParameterAnnotation::Vector(parameters) => {
+            TypeAnnotationResponse::Value { value_types: vec![parameters.to_string()] }
+        }
     };
     Ok(VariableAnnotationsResponse { is_optional: false, annotations })
 }
@@ -138,6 +141,9 @@ pub fn encode_variable_type_annotations_and_modifiers(
         PipelineVariableAnnotation::Value(v) => {
             let value_types = vec![encode_value_type(v.clone(), snapshot, type_manager)?];
             TypeAnnotationResponse::Value { value_types }
+        }
+        PipelineVariableAnnotation::Vector(parameters) => {
+            TypeAnnotationResponse::Value { value_types: vec![parameters.to_string()] }
         }
     };
     let is_optional = annotations_modifiers.is_optional;

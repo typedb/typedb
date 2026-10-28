@@ -16,7 +16,7 @@ use concept::{
     error::ConceptReadError,
     type_::{OwnerAPI, PlayerAPI, TypeAPI, type_manager::TypeManager},
 };
-use encoding::value::value_type::ValueType;
+use encoding::value::value_type::{ValueType, ValueTypeCategory, VectorTypeParameters};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{
@@ -24,7 +24,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links,
-            Owns, Plays, Relates, RoleName, Sub, SubKind, Value,
+            Owns, Plays, Relates, RoleName, Sub, SubKind, Value, VectorSearch,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -201,6 +201,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
                 Constraint::Value(c) => c.apply(self, vertices)?,
+                Constraint::VectorSearch(c) => {
+                    vertices.add_or_intersect::<ValueVertexTypes>(
+                        &Vertex::Variable(c.similarity()),
+                        Cow::Owned(ValueVertexTypes(BTreeSet::from([ValueType::Double]))),
+                    );
+                }
                 | Constraint::Iid(_)
                 | Constraint::IsSet(_)
                 | Constraint::Is(_)
@@ -414,6 +420,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<bool, Box<ConceptReadError>> {
         let any_modified = match constraint {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
+            Constraint::VectorSearch(search) => self.try_propagating_vertex_annotation_impl(search, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
             Constraint::Links(links) => {
                 let relation_role = RelationRoleEdge { links };
@@ -525,6 +532,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
+                Constraint::VectorSearch(search) => edges.push(self.seed_edge(constraint, search, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
                 Constraint::Links(links) => {
                     let relation_role = RelationRoleEdge { links };
@@ -783,12 +791,16 @@ impl UnaryConstraint for Value<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        enum PatternValueType {
+            Exact(ValueType),
+            ParametrizedVector(VectorTypeParameters),
+        }
         let pattern_value_type = match self.value_type() {
-            ir::pattern::ValueType::Builtin(value_type) => Ok(value_type.clone()),
+            ir::pattern::ValueType::Builtin(value_type) => Ok(PatternValueType::Exact(value_type.clone())),
             ir::pattern::ValueType::Struct(struct_name) => {
                 let pattern_key = context.type_manager.get_struct_definition_key(context.snapshot, struct_name);
                 match pattern_key {
-                    Ok(Some(key)) => Ok(ValueType::Struct(key)),
+                    Ok(Some(key)) => Ok(PatternValueType::Exact(ValueType::Struct(key))),
                     Ok(None) => Err(TypeInferenceError::ValueTypeNotFound {
                         name: struct_name.clone().to_owned(),
                         source_span: self.source_span(),
@@ -796,6 +808,7 @@ impl UnaryConstraint for Value<Variable> {
                     Err(source) => Err(TypeInferenceError::ConceptRead { typedb_source: source }),
                 }
             }
+            ir::pattern::ValueType::Vector(parameters) => Ok(PatternValueType::ParametrizedVector(*parameters)),
         }?;
 
         let mut annotations = ConceptVertexTypes::new();
@@ -804,7 +817,18 @@ impl UnaryConstraint for Value<Variable> {
             let attribute_value_type_opt =
                 attribute_type.get_value_type_without_source(context.snapshot, context.type_manager)?;
             if let Some(attribute_value_type) = attribute_value_type_opt {
-                if pattern_value_type == attribute_value_type {
+                let matches = match (&pattern_value_type, &attribute_value_type) {
+                    (PatternValueType::Exact(value_type), attribute_value_type) => value_type == attribute_value_type,
+                    (PatternValueType::ParametrizedVector(parameters), ValueType::Vector(definition_key)) => {
+                        let definition = context
+                            .type_manager
+                            .get_vector_definition(context.snapshot, definition_key.clone())
+                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                        definition.parameters == *parameters
+                    }
+                    (PatternValueType::ParametrizedVector(_), _) => false,
+                };
+                if matches {
                     annotations.insert(attribute_type.into());
                 }
             }
@@ -843,6 +867,9 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                     FunctionParameterAnnotation::AnyConcept => {
                         debug_assert!(false, "We can't return AnyConcept");
                     }
+                    FunctionParameterAnnotation::Vector(_) => {
+                        // vector-valued variables are tracked outside type inference
+                    }
                 }
             }
             // TODO: Should we be pruning, or should we be error-ing?
@@ -861,7 +888,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                             Cow::Owned(ValueVertexTypes(BTreeSet::from([*value_type]))),
                         );
                     }
-                    FunctionParameterAnnotation::AnyConcept => {
+                    FunctionParameterAnnotation::AnyConcept | FunctionParameterAnnotation::Vector(_) => {
                         // Let other constraints seed it
                     }
                 }
@@ -1033,6 +1060,54 @@ impl BinaryConstraint for Owns<Variable> {
             return Ok(());
         };
         collector.extend_into_ref(attribute.get_owner_types(context.snapshot, context.type_manager)?.keys());
+        Ok(())
+    }
+}
+
+impl BinaryConstraint for VectorSearch<Variable> {
+    fn left(&self) -> &Vertex<Variable> {
+        self.attribute_vertex()
+    }
+
+    fn right(&self) -> &Vertex<Variable> {
+        self.attribute_type()
+    }
+
+    // like a non-exact Isa: the search covers the named attribute type and all its subtypes
+    fn annotate_left_to_right_for_type(
+        &self,
+        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut ConceptVertexTypes,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if let TypeAnnotation::Attribute(attribute) = left_type {
+            attribute.get_supertypes_transitive(context.snapshot, context.type_manager)?.iter().for_each(|supertype| {
+                collector.insert(TypeAnnotation::Attribute(*supertype));
+            });
+        }
+        collector.insert(*left_type);
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut ConceptVertexTypes,
+    ) -> Result<(), Box<ConceptReadError>> {
+        // only vector-valued attribute types are searchable: anything else contributes nothing,
+        // so a non-vector label leaves the attribute variable without types (an annotation error)
+        // instead of reaching the executor
+        if let TypeAnnotation::Attribute(attribute) = right_type {
+            for subtype in std::iter::once(attribute)
+                .chain(attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?.iter())
+            {
+                let value_type = subtype.get_value_type_without_source(context.snapshot, context.type_manager)?;
+                if matches!(value_type, Some(ValueType::Vector(_))) {
+                    collector.insert(TypeAnnotation::Attribute(*subtype));
+                }
+            }
+        }
         Ok(())
     }
 }

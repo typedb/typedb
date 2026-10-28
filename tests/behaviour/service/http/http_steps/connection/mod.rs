@@ -48,6 +48,7 @@ pub(crate) async fn start_typedb()
             .admin_enabled(false)
             .data_directory(server_dir.as_ref())
             .development_mode(true)
+            .experimental_vector_search(true)
             .authentication(AuthenticationConfig { token_expiration: TEST_TOKEN_EXPIRATION })
             .build()
             .unwrap();

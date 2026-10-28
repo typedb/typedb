@@ -16,6 +16,7 @@ use crate::{
 pub struct DefinitionKeyGenerator {
     next_struct: DefinitionKeyAllocator,
     next_function: DefinitionKeyAllocator,
+    next_vector: DefinitionKeyAllocator,
 }
 
 impl Default for DefinitionKeyGenerator {
@@ -29,6 +30,7 @@ impl DefinitionKeyGenerator {
         Self {
             next_struct: DefinitionKeyAllocator::new(Prefix::DefinitionStruct),
             next_function: DefinitionKeyAllocator::new(Prefix::DefinitionFunction),
+            next_vector: DefinitionKeyAllocator::new(Prefix::DefinitionVector),
         }
     }
 
@@ -50,6 +52,15 @@ impl DefinitionKeyGenerator {
         snapshot: &mut Snapshot,
     ) -> Result<DefinitionKey, EncodingError> {
         let definition_key = self.next_function.allocate(snapshot)?;
+        snapshot.put(definition_key.clone().into_storage_key().into_owned_array());
+        Ok(definition_key)
+    }
+
+    pub fn create_vector<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+    ) -> Result<DefinitionKey, EncodingError> {
+        let definition_key = self.next_vector.allocate(snapshot)?;
         snapshot.put(definition_key.clone().into_storage_key().into_owned_array());
         Ok(definition_key)
     }

@@ -443,6 +443,11 @@
 			features = []
 			path = "server/service/admin/proto"
 
+		[workspace.dependencies.simsimd]
+			default-features = false
+			features = ["default"]
+			version = "6.5.16"
+
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
@@ -582,13 +587,13 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.15.0"
+			rev = "6eaaaf2ac1df5a08894badfbe3bed9b7d9aac294"
 
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			tag = "3.15.0"
+			rev = "d9b9141e39cc1268151d147784f0df3778acf77e"
 
 		[workspace.dependencies.unicase]
 			default-features = false
@@ -599,6 +604,11 @@
 			default-features = false
 			features = ["default", "serde", "std"]
 			version = "2.5.8"
+
+		[workspace.dependencies.usearch]
+			default-features = false
+			features = []
+			version = "2.26.2"
 
 		[workspace.dependencies.user]
 			default-features = false

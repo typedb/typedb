@@ -85,10 +85,10 @@ impl Attribute {
         value: Arc<Value<'static>>,
         storage_counters: StorageCounters,
     ) -> Result<(), ConceptReadError> {
-        if self.vertex.value_type_category() != value.value_type().category() {
+        if self.vertex.value_type_category() != value.value_type_category() {
             return Err(ConceptReadError::ValueTypeMismatchWithAttribute {
                 expected: self.vertex.value_type_category(),
-                actual: value.value_type().category(),
+                actual: value.value_type_category(),
             });
         }
         if cfg!(debug_assertions) {

@@ -129,10 +129,19 @@ impl<'a> StructValue<'a> {
     ) -> Result<(), Arc<SnapshotIteratorError>> {
         for (idx, value) in fields.iter() {
             path.push(*idx);
-            if let Value::Struct(struct_val) = value {
-                Self::create_index_entries_recursively(snapshot, hasher, attribute, struct_val.fields(), path, acc)?;
-            } else {
-                acc.push(StructIndexEntry::build(snapshot, hasher, path, value, attribute)?);
+            match value {
+                Value::Struct(struct_val) => {
+                    Self::create_index_entries_recursively(
+                        snapshot,
+                        hasher,
+                        attribute,
+                        struct_val.fields(),
+                        path,
+                        acc,
+                    )?;
+                }
+                Value::Vector(_) => {}
+                _ => acc.push(StructIndexEntry::build(snapshot, hasher, path, value, attribute)?),
             }
             let popped = path.pop().unwrap();
             debug_assert_eq!(*idx, popped);
@@ -226,7 +235,7 @@ impl StructIndexEntry<'static> {
             | Value::DateTimeTZ(_)
             | Value::Duration(_) => None,
             Value::String(value) => Some(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(value).to_bytes()),
-            Value::Struct(_) => unreachable!(),
+            Value::Struct(_) | Value::Vector(_) => unreachable!(),
         };
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
@@ -265,7 +274,7 @@ impl StructIndexEntry<'static> {
         );
 
         buf.push(Self::PREFIX.prefix_id().byte);
-        buf.extend_from_slice(&value.value_type().category().to_bytes());
+        buf.extend_from_slice(&value.value_type_category().to_bytes());
         buf.extend_from_slice(&attribute_type_id.to_bytes());
         for p in path_to_field {
             buf.extend_from_slice(&p.to_be_bytes())
@@ -283,7 +292,7 @@ impl StructIndexEntry<'static> {
                 let string_bytes = StringBytes::<0>::build_ref(value);
                 Self::encode_string_into(snapshot, hasher, string_bytes.as_reference(), &mut buf)?;
             }
-            Value::Struct(_) => unreachable!(),
+            Value::Struct(_) | Value::Vector(_) => unreachable!(),
         };
         Ok(buf)
     }

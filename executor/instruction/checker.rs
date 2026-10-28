@@ -485,10 +485,13 @@ fn filter_comparison<Source, Var: ExtractFrom<Source>>(
         VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
         VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
     };
-    if rhs.value_type().category().is_trivially_castable_to(lhs.value_type().category()) {
-        Ok(cmp_values(&comparator)(&lhs, &rhs.cast(lhs.value_type().category()).unwrap()))
-    } else if lhs.value_type().category().is_trivially_castable_to(rhs.value_type().category()) {
-        Ok(cmp_values(&comparator)(&lhs.cast(rhs.value_type().category()).unwrap(), &rhs))
+    if matches!(lhs, Value::Vector(_)) || matches!(rhs, Value::Vector(_)) {
+        return Ok(matches!((&lhs, &rhs), (Value::Vector(_), Value::Vector(_))) && cmp_values(&comparator)(&lhs, &rhs));
+    }
+    if rhs.value_type_category().is_trivially_castable_to(lhs.value_type_category()) {
+        Ok(cmp_values(&comparator)(&lhs, &rhs.cast(lhs.value_type_category()).unwrap()))
+    } else if lhs.value_type_category().is_trivially_castable_to(rhs.value_type_category()) {
+        Ok(cmp_values(&comparator)(&lhs.cast(rhs.value_type_category()).unwrap(), &rhs))
     } else {
         Ok(false)
     }

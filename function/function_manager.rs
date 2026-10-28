@@ -305,6 +305,7 @@ impl FunctionManager {
                     }
 
                     Infix::PropertyAnnotationAbstract
+                    | Infix::PropertyAnnotationIndex
                     | Infix::PropertyAnnotationDistinct
                     | Infix::PropertyAnnotationIndependent
                     | Infix::PropertyAnnotationCardinality
@@ -629,6 +630,7 @@ pub mod tests {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -647,6 +649,7 @@ pub mod tests {
             Arc::new(ThingVertexGenerator::new()),
             type_manager.clone(),
             Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+            Arc::new(concept::index::vector_index::VectorIndex::new()),
         );
 
         let ((_type_animal, type_cat, _type_dog), _) =

@@ -76,6 +76,29 @@ rust_test(
 )
 
 rust_test(
+    name = "test_vector_durability",
+    srcs = glob([
+        "vector_durability.rs",
+    ]),
+    deps = [
+        "//common/lending_iterator",
+        "//common/options",
+        "//concept",
+        "//database",
+        "//diagnostics",
+        "//encoding",
+        "//executor",
+        "//query",
+        "//resource",
+        "//storage",
+        "//storage/tests:test_utils_storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
+rust_test(
     name = "test_transaction",
     srcs = glob([
         "transaction.rs",
@@ -198,6 +221,7 @@ rustfmt_test(
         ":test_database",
         ":test_import",
         ":test_migration",
+        ":test_vector_durability",
         ":test_transaction",
         ":test_statistics_synchronization",
         ":test_transaction_isolation",

@@ -8,7 +8,7 @@ use std::{marker::PhantomData, sync::Arc};
 use answer::variable_value::VariableValue;
 use compiler::{annotation::function::FunctionParameterAnnotation, executable::pipeline::GivenExecutable};
 use concept::thing::ThingAPI;
-use encoding::value::ValueEncodable;
+use encoding::value::{ValueEncodable, value::Value};
 use error::needs_update_when_feature_is_implemented;
 use ir::pattern::variable_category::VariableOptionality;
 use lending_iterator::LendingIterator;
@@ -131,9 +131,12 @@ fn row_entry_satisfies_types(
     entry: &VariableValue<'_>,
 ) -> bool {
     match (entry, expected_type) {
-        (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => {
-            *value_type == value.value_type()
+        (VariableValue::Value(Value::Vector(vector)), FunctionParameterAnnotation::Vector(parameters)) => {
+            vector.len() == parameters.length as usize
         }
+        // a vector value cannot name its schema-defined value type (`value_type()` is unreachable for vectors)
+        (VariableValue::Value(Value::Vector(_)), FunctionParameterAnnotation::Value(_)) => false,
+        (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => *value_type == value.value_type(),
         (VariableValue::Thing(thing), FunctionParameterAnnotation::Concept(types)) => types.contains(&thing.type_()),
         (VariableValue::None, _) => optionality == VariableOptionality::Optional,
         (_, FunctionParameterAnnotation::AnyConcept) => unreachable!("Unexpected"),

@@ -10,7 +10,10 @@ use bytes::byte_array::ByteArray;
 use encoding::{
     AsBytes, Keyable,
     graph::{
-        definition::{DefinitionValueEncoding, definition_key::DefinitionKey, r#struct::StructDefinition},
+        definition::{
+            DefinitionValueEncoding, definition_key::DefinitionKey, r#struct::StructDefinition,
+            vector::VectorDefinition,
+        },
         type_::{
             edge::TypeEdgeEncoding,
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
@@ -47,6 +50,21 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
             definition_key.into_storage_key().into_owned_array(),
             struct_definition.into_bytes().unwrap().into_array(),
         );
+    }
+
+    pub(crate) fn storage_insert_vector_definition(
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey,
+        vector_definition: VectorDefinition,
+    ) {
+        snapshot.insert_val(
+            definition_key.into_storage_key().into_owned_array(),
+            vector_definition.into_bytes().unwrap().into_array(),
+        );
+    }
+
+    pub(crate) fn storage_delete_vector_definition(snapshot: &mut Snapshot, definition_key: &DefinitionKey) {
+        snapshot.delete(definition_key.clone().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_struct(snapshot: &mut Snapshot, definition_key: &DefinitionKey) {

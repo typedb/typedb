@@ -27,7 +27,7 @@ use crate::{
         ValueEncodable, boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
-        value_struct::StructValue, value_type::ValueTypeCategory,
+        value_struct::StructValue, value_type::ValueTypeCategory, vector_bytes::VectorBytes,
     },
 };
 
@@ -93,13 +93,18 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
     append_length_as_vle(sorted_fields.len(), buf)?;
     for (idx, value) in sorted_fields {
         buf.extend_from_slice(&idx.to_be_bytes());
-        buf.extend_from_slice(&value.value_type().category().to_bytes());
+        buf.extend_from_slice(&value.value_type_category().to_bytes());
         match value {
             Value::String(value) => {
                 append_length_as_vle(value.len(), buf)?;
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes())
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
+            Value::Vector(value) => {
+                let vector_bytes = VectorBytes::<0>::build(value.borrow());
+                append_length_as_vle(vector_bytes.length(), buf)?;
+                buf.extend_from_slice(vector_bytes.bytes())
+            }
             Value::Boolean(_)
             | Value::Integer(_)
             | Value::Double(_)
@@ -178,6 +183,12 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                 ))
             }
             ValueTypeCategory::Struct => Value::Struct(Cow::Owned(decode_struct_increment_offset(offset, buf)?)),
+            ValueTypeCategory::Vector => {
+                let len: usize = read_vle_increment_offset(offset, buf)?;
+                Value::Vector(Cow::Owned(
+                    VectorBytes::new(Bytes::<0>::reference(read_slice_increment_offset(offset, len, buf)?)).as_vector(),
+                ))
+            }
         };
         fields.insert(field_idx, value);
     }
@@ -285,7 +296,8 @@ pub mod test {
         ];
         for (string_value, integer_value) in test_values {
             let nested_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));
-            let nested_fields = HashMap::from([(0, string_value), (1, integer_value)]);
+            let vector_value = Value::Vector(Cow::Owned(vec![1.0f32, -0.0, 0.5, f32::MIN_POSITIVE, 384.25]));
+            let nested_fields = HashMap::from([(0, string_value), (1, integer_value), (2, vector_value)]);
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
             let struct_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));

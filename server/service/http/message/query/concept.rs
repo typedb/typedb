@@ -16,7 +16,11 @@ use concept::{
         role_type::RoleType, type_manager::TypeManager,
     },
 };
-use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
+use encoding::value::{
+    ValueEncodable,
+    value::Value,
+    value_type::{ValueType, VectorPrecision, VectorTypeParameters},
+};
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
 use serde::{Deserialize, Serialize};
@@ -291,7 +295,10 @@ pub fn encode_value(value: Value<'_>) -> ValueResponse {
 }
 
 pub fn encode_value_value_type(value: &Value<'_>) -> String {
-    value.value_type().to_string()
+    match value {
+        Value::Vector(vector) => VectorTypeParameters::new(vector.len() as u16, VectorPrecision::Float32).to_string(),
+        _ => value.value_type().to_string(),
+    }
 }
 
 pub fn encode_value_value(value: Value<'_>) -> serde_json::Value {
@@ -307,6 +314,7 @@ pub fn encode_value_value(value: Value<'_>) -> serde_json::Value {
             json!(value.to_string())
         }
         Value::Struct(_) => unimplemented_feature!(Structs),
+        Value::Vector(elements) => json!(elements.as_ref()),
     }
 }
 
@@ -327,6 +335,9 @@ pub fn encode_value_type(
         | ValueType::String) => value_type.category().name().to_string(),
         ValueType::Struct(struct_definition_key) => {
             type_manager.get_struct_definition(snapshot, struct_definition_key)?.name.clone()
+        }
+        ValueType::Vector(definition_key) => {
+            type_manager.get_vector_definition(snapshot, definition_key)?.parameters.to_string()
         }
     };
     Ok(value_type)
