@@ -167,11 +167,16 @@ git_override(
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-git_override(
+# TEMPORARY(cargo-toml-sync fix verification): restore git_override before push
+local_path_override(
     module_name = "typedb_dependencies",
-    remote = "https://github.com/typedb/dependencies",
-    commit = "4380af4bb002c35af9de5c841af7f896eb7ad8c0",  # TODO(vector-search): mainline typedb_dependencies pin
+    path = "../dependencies",
 )
+# git_override(
+#     module_name = "typedb_dependencies",
+#     remote = "https://github.com/typedb/dependencies",
+#     commit = "4380af4bb002c35af9de5c841af7f896eb7ad8c0",  # TODO(vector-search): mainline typedb_dependencies pin
+# )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
