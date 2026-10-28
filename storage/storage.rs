@@ -23,7 +23,7 @@ use std::{
     time::Duration,
 };
 
-use ::error::typedb_error;
+use ::error::{TypeDBError, typedb_error};
 use bytes::{Bytes, byte_array::ByteArray};
 use durability::DurabilitySequenceNumber;
 use fail_point::{
@@ -724,6 +724,20 @@ typedb_error! {
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
         Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
+    }
+}
+
+impl StorageCommitError {
+    pub fn is_isolation_conflict(error: &(dyn TypeDBError + Sync)) -> bool {
+        let isolation = Self::Isolation { name: Arc::from(""), conflict: IsolationConflict::ExclusiveLock };
+        let mut source = Some(error);
+        while let Some(error) = source {
+            if error.code() == isolation.code() {
+                return true;
+            }
+            source = error.source_typedb_error();
+        }
+        false
     }
 }
 

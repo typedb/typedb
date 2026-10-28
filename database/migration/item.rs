@@ -38,7 +38,7 @@ pub enum MigrationItem {
     Checksums(Checksums),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EntityItem {
     pub id: String,
     pub label: Label,
@@ -46,7 +46,7 @@ pub struct EntityItem {
     pub owned_attributes: Vec<OwnedAttribute>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RelationItem {
     pub id: String,
     pub label: Label,
@@ -55,7 +55,7 @@ pub struct RelationItem {
     pub related_role_players: Vec<RolePlayers>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AttributeItem {
     pub id: String,
     pub label: Label,
@@ -83,7 +83,7 @@ pub struct Guarantees {
     pub owned_attributes_by_value: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OwnedAttribute {
     pub id: String,
     pub attribute_by_value: Option<AttributeByValue>,
@@ -95,19 +95,19 @@ impl OwnedAttribute {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AttributeByValue {
     pub label: Label,
     pub value: Value<'static>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RolePlayers {
     pub role: Label,
     pub players: Vec<Player>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Player {
     pub id: String,
     pub player_by_label_scoped_id: Option<PlayerByLabelScopedId>,
@@ -119,7 +119,7 @@ impl Player {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlayerByLabelScopedId {
     pub label: Label,
     pub label_scoped_id: u64,

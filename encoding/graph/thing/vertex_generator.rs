@@ -27,7 +27,7 @@ use crate::{
     error::EncodingError,
     graph::{
         Typed,
-        common::ExistingOrNew,
+        common::FoundOrAbsent,
         thing::{
             ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex, IntegerAttributeID, StringAttributeID},
@@ -418,7 +418,7 @@ impl ThingVertexGenerator {
         } else {
             let hasher = &self.large_value_hasher;
             let hashed_vertex = match StringAttributeID::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
-                ExistingOrNew::Existing { item: hashed_id, in_storage } => {
+                FoundOrAbsent::Found { item: hashed_id, in_storage } => {
                     let vertex = AttributeVertex::new(type_id, AttributeID::String(hashed_id));
                     Self::lock_existing_hashed_attribute(&vertex, snapshot);
                     if in_storage {
@@ -430,7 +430,7 @@ impl ThingVertexGenerator {
                     } // else in buffer so don't need to re-put
                     vertex
                 }
-                ExistingOrNew::New { item: hashed_id } => {
+                FoundOrAbsent::Absent { item: hashed_id } => {
                     Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
                     let vertex = AttributeVertex::new(type_id, AttributeID::String(hashed_id));
                     // must be a brand new attribute value if commit succeeds: we have exclusive lock on the bucket
@@ -472,7 +472,7 @@ impl ThingVertexGenerator {
         let hasher = &self.large_value_hasher;
         let hashed_vertex =
             match StructAttributeID::build_or_find_hashed_id(type_id, value.as_reference(), snapshot, hasher)? {
-                ExistingOrNew::Existing { item: hashed_id, in_storage } => {
+                FoundOrAbsent::Found { item: hashed_id, in_storage } => {
                     let vertex = AttributeVertex::new(type_id, AttributeID::Struct(hashed_id));
                     Self::lock_existing_hashed_attribute(&vertex, snapshot);
                     if in_storage {
@@ -484,7 +484,7 @@ impl ThingVertexGenerator {
                     } // else in buffer so don't need to re-put
                     vertex
                 }
-                ExistingOrNew::New { item: hashed_id } => {
+                FoundOrAbsent::Absent { item: hashed_id } => {
                     Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
                     let vertex = AttributeVertex::new(type_id, AttributeID::Struct(hashed_id));
                     // must be a brand new attribute value if commit succeeds: we have exclusive lock on the bucket

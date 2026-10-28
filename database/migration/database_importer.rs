@@ -63,6 +63,7 @@ use query::error::QueryError;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters, system_info::SystemInfo};
 use serde::{Serialize, de::DeserializeOwned};
 use storage::{
+    StorageCommitError,
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot, write::KnownToExist},
 };
@@ -72,7 +73,7 @@ use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     migration::{
-        Checksums, MigrationOperationError,
+        Checksums, Counts, MigrationOperationError,
         importing_database_handle::ImportingDatabaseHandle,
         item::{
             AttributeByValue, AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player,
@@ -124,13 +125,8 @@ macro_rules! for_item_in_write_transaction {
 
         $self.data_transaction = Some(transaction);
         result?;
-        $self.count_item();
-        let pending_writes = $self.data_transaction.as_ref().unwrap().snapshot.operations().len();
-        if pending_writes >= $self.configuration.max_writes_per_commit {
-            let transaction = $self.data_transaction.take().unwrap();
-            $self.commit_write_transaction(transaction)?;
-        }
-        Ok(())
+        $self.transaction_data_info.item_count += 1;
+        $self.commit_if_full()
     }};
 }
 
@@ -165,6 +161,18 @@ impl SchemaInfo {
 
 type IID = ByteArray<BUFFER_KEY_INLINE>;
 
+#[derive(Debug, Default)]
+struct TransactionDataInfo {
+    counts: Counts,
+    item_count: u64,
+    objects: HashMap<String, Object>,
+    attributes: HashMap<String, Attribute>,
+    deferred_ownerships: Vec<DeferredOwnership>,
+    deferred_links: Vec<DeferredLinks>,
+    unresolved_ownerships: usize,
+    unresolved_role_players: usize,
+}
+
 #[derive(Debug)]
 struct DataInfo {
     objects: RwLock<ObjectsInfo>,
@@ -187,36 +195,39 @@ impl DataInfo {
         }
     }
 
-    fn count_entity(&self) {
-        self.checksums.increment_entity_count();
-    }
-
-    fn count_relation(&self) {
-        self.checksums.increment_relation_count();
-    }
-
-    fn count_attribute(&self) {
-        self.checksums.increment_attribute_count();
-    }
-
-    fn record_entity(&self, original_id: String, entity: Entity) -> Result<(), DatabaseImportError> {
-        self.objects.write().unwrap().instance_id_mapping.record(original_id, entity.into_object())
-    }
-
-    fn record_relation(&self, original_id: String, relation: Relation) -> Result<(), DatabaseImportError> {
-        self.objects.write().unwrap().instance_id_mapping.record(original_id, relation.into_object())
-    }
-
-    fn record_attribute(&self, original_id: String, attribute: Attribute) -> Result<(), DatabaseImportError> {
-        self.attributes.write().unwrap().instance_id_mapping.record(original_id, attribute)
-    }
-
-    fn record_ownership(&self) {
-        self.checksums.increment_ownership_count();
-    }
-
-    fn record_role(&self) {
-        self.checksums.increment_role_count();
+    fn merge(&self, transaction_data_info: TransactionDataInfo) -> Result<(), DatabaseImportError> {
+        let TransactionDataInfo {
+            counts,
+            unresolved_ownerships,
+            unresolved_role_players,
+            item_count: _,
+            objects,
+            attributes,
+            deferred_ownerships,
+            deferred_links,
+        } = transaction_data_info;
+        self.checksums.add(counts);
+        {
+            let mut objects_info = self.objects.write().unwrap();
+            for (original_id, object) in objects {
+                objects_info.instance_id_mapping.record(original_id, object)?;
+            }
+            for deferred in deferred_links {
+                objects_info.deferred_links.append(deferred)?;
+            }
+        }
+        {
+            let mut attributes_info = self.attributes.write().unwrap();
+            for (original_id, attribute) in attributes {
+                attributes_info.instance_id_mapping.record(original_id, attribute)?;
+            }
+            for deferred in deferred_ownerships {
+                attributes_info.deferred_ownerships.append(deferred)?;
+            }
+        }
+        self.unresolved_ownerships.fetch_add(unresolved_ownerships, core::sync::atomic::Ordering::Relaxed);
+        self.unresolved_role_players.fetch_add(unresolved_role_players, core::sync::atomic::Ordering::Relaxed);
+        Ok(())
     }
 
     fn get_recorded_object(&self, id: &str) -> Result<Option<Object>, DatabaseImportError> {
@@ -240,28 +251,12 @@ impl DataInfo {
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
     }
 
-    fn append_deferred_ownership(&self, deferred: DeferredOwnership) -> Result<(), DatabaseImportError> {
-        self.attributes.write().unwrap().deferred_ownerships.append(deferred)
-    }
-
-    fn append_deferred_links(&self, deferred: DeferredLinks) -> Result<(), DatabaseImportError> {
-        self.objects.write().unwrap().deferred_links.append(deferred)
-    }
-
     fn take_deferred_ownerships(&self) -> Option<SpilloverCache<DeferredOwnership>> {
         self.attributes.write().unwrap().deferred_ownerships.take()
     }
 
     fn take_deferred_links(&self) -> Option<SpilloverCache<DeferredLinks>> {
         self.objects.write().unwrap().deferred_links.take()
-    }
-
-    fn record_unresolved_ownership(&self) {
-        self.unresolved_ownerships.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
-    }
-
-    fn record_unresolved_role_player(&self) {
-        self.unresolved_role_players.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     }
 
     fn unresolved_ownerships(&self) -> usize {
@@ -356,6 +351,7 @@ enum ResolvedPlayer {
     Missing(String),
 }
 
+#[derive(Clone)]
 enum ImportConcept {
     Entity(EntityItem),
     Relation(RelationItem),
@@ -1243,6 +1239,15 @@ impl DatabaseImporter {
     }
 }
 
+fn is_isolation_conflict(error: &DatabaseImportError) -> bool {
+    match error {
+        DatabaseImportError::DataCommitFailed { typedb_source } => {
+            StorageCommitError::is_isolation_conflict(typedb_source.as_ref())
+        }
+        _ => false,
+    }
+}
+
 fn decode_object_vertex(iid: &[u8]) -> Result<ObjectVertex, DatabaseImportError> {
     ObjectVertex::try_decode(iid).ok_or_else(|| DatabaseImportError::ConceptRead {
         typedb_source: Box::new(ConceptReadError::IidRepresentsWrongInstanceKind {}),
@@ -1459,10 +1464,15 @@ struct ImportWorker {
     phase: ImportPhase,
     data_info: Arc<DataInfo>,
     data_transaction: Option<TransactionWrite<WALClient>>,
+    transaction_items: Vec<ImportConcept>,
+    transaction_data_info: TransactionDataInfo,
+    replaying: bool,
     total_item_count: Arc<AtomicU64>,
 }
 
 impl ImportWorker {
+    const MAX_COMMIT_RETRIES: usize = 3;
+
     fn start(
         importer: &DatabaseImporter,
         phase: ImportPhase,
@@ -1479,6 +1489,9 @@ impl ImportWorker {
             configuration: importer.configuration.clone(),
             data_info: importer.data_info.clone(),
             data_transaction: None,
+            transaction_items: Vec::new(),
+            transaction_data_info: TransactionDataInfo::default(),
+            replaying: false,
             total_item_count: importer.total_item_count.clone(),
         };
 
@@ -1517,13 +1530,13 @@ impl ImportWorker {
         if error_state.is_errored() {
             return Ok(());
         }
-        match self.data_transaction.take() {
-            Some(transaction) => self.commit_write_transaction(transaction),
-            None => Ok(()),
-        }
+        self.commit_transaction()
     }
 
     fn apply(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
+        if !self.replaying {
+            self.transaction_items.push(concept.clone());
+        }
         match concept {
             ImportConcept::Entity(EntityItem { id, label, label_scoped_id, owned_attributes }) => {
                 self.import_entity(id, label, label_scoped_id, owned_attributes)
@@ -1553,11 +1566,11 @@ impl ImportWorker {
                 .create_attribute(&mut snapshot, attribute_type, value.as_reference())
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
 
-            self.data_info.count_attribute();
+            self.transaction_data_info.counts.attribute_count += 1;
             if !(self.configuration.skip_recording_of_inline_attributes()
                 && attribute.vertex().attribute_id().is_inline())
             {
-                self.data_info.record_attribute(id, attribute)?;
+                self.transaction_data_info.attributes.insert(id, attribute);
             }
 
             Ok(())
@@ -1586,10 +1599,10 @@ impl ImportWorker {
                 let entity = thing_manager
                     .create_entity(&mut snapshot, entity_type)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.data_info.record_entity(id, entity)?;
+                self.transaction_data_info.objects.insert(id, entity.into_object());
                 entity
             };
-            self.data_info.count_entity();
+            self.transaction_data_info.counts.entity_count += 1;
 
             self.process_owned_attributes(&mut snapshot, &thing_manager, entity.into_object(), owned_attributes)?;
             Ok(())
@@ -1624,10 +1637,10 @@ impl ImportWorker {
                 let relation = thing_manager
                     .create_relation(&mut snapshot, relation_type)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.data_info.record_relation(id, relation)?;
+                self.transaction_data_info.objects.insert(id, relation.into_object());
                 relation
             };
-            self.data_info.count_relation();
+            self.transaction_data_info.counts.relation_count += 1;
             self.process_owned_attributes(&mut snapshot, &thing_manager, relation.into_object(), owned_attributes)?;
             self.process_links(&mut snapshot, &type_manager, &thing_manager, relation, role_players)?;
             Ok(())
@@ -1688,7 +1701,7 @@ impl ImportWorker {
             let attribute = match attribute {
                 None => {
                     // unoptimized path: map attribute
-                    match self.data_info.get_attribute_by_original_id(snapshot, thing_manager, &id)? {
+                    match self.lookup_attribute(snapshot, thing_manager, &id)? {
                         Some(attribute) => {
                             // if we have it, pre-cache the value so validations in set_owns can access it without going to disk
                             if let Some(value) = value {
@@ -1699,10 +1712,10 @@ impl ImportWorker {
                             attribute
                         }
                         None => {
-                            self.data_info.append_deferred_ownership(DeferredOwnership {
+                            self.transaction_data_info.deferred_ownerships.push(DeferredOwnership {
                                 attribute_original_id: id,
                                 owner_iid: object.iid().into_array(),
-                            })?;
+                            });
                             continue;
                         }
                     }
@@ -1712,7 +1725,7 @@ impl ImportWorker {
             object
                 .set_has_unordered(snapshot, thing_manager, &attribute, StorageCounters::DISABLED)
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-            self.data_info.record_ownership();
+            self.transaction_data_info.counts.ownership_count += 1;
         }
         Ok(())
     }
@@ -1754,7 +1767,10 @@ impl ImportWorker {
                     },
                 })
                 .collect();
-            self.data_info.append_deferred_links(DeferredLinks { relation_iid: relation.iid().into_array(), links })
+            self.transaction_data_info
+                .deferred_links
+                .push(DeferredLinks { relation_iid: relation.iid().into_array(), links });
+            Ok(())
         } else {
             for (role_type, resolved) in resolved_links {
                 let player = match resolved {
@@ -1764,7 +1780,7 @@ impl ImportWorker {
                 relation
                     .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.data_info.record_role();
+                self.transaction_data_info.counts.role_count += 1;
             }
             Ok(())
         }
@@ -1772,7 +1788,7 @@ impl ImportWorker {
 
     fn resolve_player_by_original_id(&self, player: Player) -> Result<ResolvedPlayer, DatabaseImportError> {
         let Player { id, player_by_label_scoped_id: _ } = player;
-        Ok(match self.data_info.get_recorded_object(&id)? {
+        Ok(match self.lookup_object(&id)? {
             Some(object) => ResolvedPlayer::Player(object),
             None => ResolvedPlayer::Missing(id),
         })
@@ -1809,7 +1825,7 @@ impl ImportWorker {
                 self.data_info.get_attribute_by_original_id(&snapshot, &thing_manager, &attribute_original_id)?;
             match attribute_opt {
                 None => {
-                    self.data_info.record_unresolved_ownership();
+                    self.transaction_data_info.unresolved_ownerships += 1;
                     Ok(())
                 }
                 Some(attribute) => {
@@ -1817,7 +1833,7 @@ impl ImportWorker {
                     owner
                         .set_has_unordered(&mut snapshot, &thing_manager, &attribute, StorageCounters::DISABLED)
                         .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    self.data_info.record_ownership();
+                    self.transaction_data_info.counts.ownership_count += 1;
                     Ok(())
                 }
             }
@@ -1830,10 +1846,10 @@ impl ImportWorker {
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             for DeferredLink { role_type_id, player } in links {
                 let player = match player {
-                    DeferredPlayer::ByOriginalId(id) => match self.data_info.get_recorded_object(&id)? {
+                    DeferredPlayer::ByOriginalId(id) => match self.lookup_object(&id)? {
                         Some(player) => player,
                         None => {
-                            self.data_info.record_unresolved_role_player();
+                            self.transaction_data_info.unresolved_role_players += 1;
                             continue;
                         }
                     },
@@ -1843,7 +1859,7 @@ impl ImportWorker {
                 relation
                     .add_player(&mut snapshot, &thing_manager, role_type, player, StorageCounters::DISABLED)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.data_info.record_role();
+                self.transaction_data_info.counts.role_count += 1;
             }
             Ok(())
         })
@@ -1866,8 +1882,70 @@ impl ImportWorker {
         }
     }
 
-    fn count_item(&self) {
-        self.total_item_count.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+    fn commit_if_full(&mut self) -> Result<(), DatabaseImportError> {
+        if self.replaying {
+            return Ok(());
+        }
+        let pending_writes =
+            self.data_transaction.as_ref().map_or(0, |transaction| transaction.snapshot.operations().len());
+        if pending_writes >= self.configuration.max_writes_per_commit { self.commit_transaction() } else { Ok(()) }
+    }
+
+    fn commit_transaction(&mut self) -> Result<(), DatabaseImportError> {
+        let Some(mut transaction) = self.data_transaction.take() else { return Ok(()) };
+        let mut retries = 0;
+        loop {
+            match self.commit_write_transaction(transaction) {
+                Ok(()) => return self.merge_transaction_data_info(),
+                Err(error) if retries < Self::MAX_COMMIT_RETRIES && is_isolation_conflict(&error) => {
+                    retries += 1;
+                    event!(
+                        Level::DEBUG,
+                        "Import commit was rejected by an isolation conflict, retrying ({retries}/{}).",
+                        Self::MAX_COMMIT_RETRIES
+                    );
+                    transaction = self.replay_transaction()?;
+                }
+                Err(error) => return Err(error),
+            }
+        }
+    }
+
+    fn replay_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
+        self.transaction_data_info = TransactionDataInfo::default();
+        let items = std::mem::take(&mut self.transaction_items);
+        self.replaying = true;
+        let replayed = items.iter().try_for_each(|item| self.apply(item.clone()));
+        self.replaying = false;
+        self.transaction_items = items;
+        replayed?;
+        self.get_data_transaction()
+    }
+
+    fn merge_transaction_data_info(&mut self) -> Result<(), DatabaseImportError> {
+        self.transaction_items.clear();
+        let transaction_data_info = std::mem::take(&mut self.transaction_data_info);
+        self.total_item_count.fetch_add(transaction_data_info.item_count, core::sync::atomic::Ordering::Relaxed);
+        self.data_info.merge(transaction_data_info)
+    }
+
+    fn lookup_object(&self, id: &str) -> Result<Option<Object>, DatabaseImportError> {
+        match self.transaction_data_info.objects.get(id) {
+            Some(object) => Ok(Some(*object)),
+            None => self.data_info.get_recorded_object(id),
+        }
+    }
+
+    fn lookup_attribute(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        id: &str,
+    ) -> Result<Option<Attribute>, DatabaseImportError> {
+        match self.transaction_data_info.attributes.get(id) {
+            Some(attribute) => Ok(Some(attribute.clone())),
+            None => self.data_info.get_attribute_by_original_id(snapshot, thing_manager, id),
+        }
     }
 }
 

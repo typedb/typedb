@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
 
 use concept::thing::thing_manager::ConceptPersistenceGuarantees;
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
@@ -32,7 +35,7 @@ use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::value::{label::Label, value::Value};
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use resource::profile::CommitProfile;
-use storage::durability_client::WALClient;
+use storage::{StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict};
 use test_utils::{TempDir, create_tmp_dir, init_logging};
 use tokio::sync::watch;
 
@@ -84,6 +87,53 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
     }
 }
 
+#[derive(Debug)]
+struct RejectingCommitsHandle {
+    inner: TestImportingDatabaseHandle,
+    rejections_left: Arc<AtomicUsize>,
+}
+
+impl ImportingDatabaseHandle for RejectingCommitsHandle {
+    fn database_name(&self) -> &str {
+        self.inner.database_name()
+    }
+
+    fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError> {
+        self.inner.open_schema()
+    }
+
+    fn open_write(
+        &self,
+        concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        self.inner.open_write(concept_persistence_guarantees)
+    }
+
+    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
+        self.inner.commit_schema(intent)
+    }
+
+    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
+        let rejected =
+            self.rejections_left.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |left| left.checked_sub(1));
+        if rejected.is_ok() {
+            drop(intent);
+            let conflict = IsolationConflict::ExclusiveLock;
+            Err(Arc::new(StorageCommitError::Isolation { name: Arc::from(self.database_name()), conflict }) as _)
+        } else {
+            self.inner.commit_data(intent)
+        }
+    }
+
+    fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
+        Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
+    }
+
+    fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError> {
+        Box::new(self.inner).finalise()
+    }
+}
+
 fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
     let diagnostics = Arc::new(DiagnosticsManager::new_disabled());
     DatabaseManager::new(
@@ -100,8 +150,30 @@ fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
 const BUFFER_SIZE: usize = 10;
 
 fn importing_database(database_manager: &Arc<DatabaseManager>, name: &str) -> Arc<dyn ImportingDatabaseHandle> {
+    Arc::new(test_importing_database(database_manager, name))
+}
+
+fn test_importing_database(database_manager: &Arc<DatabaseManager>, name: &str) -> TestImportingDatabaseHandle {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
-    Arc::new(TestImportingDatabaseHandle { database_manager: database_manager.clone(), staged_database })
+    TestImportingDatabaseHandle { database_manager: database_manager.clone(), staged_database }
+}
+
+fn importer_with_rejected_commits(
+    database_manager: &Arc<DatabaseManager>,
+    name: &str,
+    rejections: usize,
+) -> (DatabaseImporterHandle, Arc<AtomicUsize>) {
+    let rejections_left = Arc::new(AtomicUsize::new(rejections));
+    let handle = RejectingCommitsHandle {
+        inner: test_importing_database(database_manager, name),
+        rejections_left: rejections_left.clone(),
+    };
+    let importer = DatabaseImporter::start(
+        Arc::new(handle),
+        ImporterConfiguration::new(database_manager.import_directory().to_owned()).with_buffer_size(BUFFER_SIZE),
+        &task_spawner(),
+    );
+    (importer, rejections_left)
 }
 
 // Tests that don't exercise shutdown use an untracked spawner: without a shutdown sender the tracker is closed, but
@@ -549,6 +621,44 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
         })
         .collect();
     assert_eq!(player_counts, vec![2, 2], "{items:?}");
+}
+
+#[tokio::test]
+async fn a_commit_rejected_by_an_isolation_conflict_is_retried() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_commit_retried");
+    let database_manager = manager(&data_dir);
+    let (mut importer, rejections_left) = importer_with_rejected_commits(&database_manager, "retried", 2);
+    importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
+    import_all(importer, source_items()).await;
+    assert_eq!(rejections_left.load(Ordering::Relaxed), 0);
+
+    let transaction = read_transaction(&database_manager, "retried");
+    let (_, items) = export(&transaction, "retried");
+    let counts = items
+        .iter()
+        .find_map(|item| match item {
+            MigrationItem::Checksums(checksums) => Some(checksums.counts()),
+            _ => None,
+        })
+        .expect("checksums");
+    assert_eq!(
+        counts,
+        Counts { entity_count: 2, attribute_count: 2, relation_count: 1, role_count: 2, ownership_count: 2 }
+    );
+}
+
+#[tokio::test]
+async fn a_commit_rejected_more_often_than_the_retries_fails_the_import() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_commit_rejected");
+    let database_manager = manager(&data_dir);
+    let (mut importer, rejections_left) = importer_with_rejected_commits(&database_manager, "rejected", 4);
+    importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
+    importer.send_batch(source_items().into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    let result = importer.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::DataCommitFailed { .. })), "{result:?}");
+    assert_eq!(rejections_left.load(Ordering::Relaxed), 0);
 }
 
 #[tokio::test]

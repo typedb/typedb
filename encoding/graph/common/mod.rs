@@ -7,25 +7,25 @@
 pub(crate) mod schema_id_allocator;
 pub(crate) mod value_hasher;
 
-pub(crate) enum ExistingOrNew<T> {
-    Existing { item: T, in_storage: bool },
-    New { item: T },
+pub(crate) enum FoundOrAbsent<T> {
+    Found { item: T, in_storage: bool },
+    Absent { item: T },
 }
 
-impl<T> ExistingOrNew<T> {
+impl<T> FoundOrAbsent<T> {
     pub(crate) fn into_inner(self) -> T {
         match self {
-            ExistingOrNew::Existing { item, .. } | ExistingOrNew::New { item } => item,
+            FoundOrAbsent::Found { item, .. } | FoundOrAbsent::Absent { item } => item,
         }
     }
 
-    pub(crate) fn map<U, F>(self, mapper: F) -> ExistingOrNew<U>
+    pub(crate) fn map<U, F>(self, mapper: F) -> FoundOrAbsent<U>
     where
         F: FnOnce(T) -> U,
     {
         match self {
-            ExistingOrNew::Existing { item, in_storage } => ExistingOrNew::Existing { item: mapper(item), in_storage },
-            ExistingOrNew::New { item } => ExistingOrNew::New { item: mapper(item) },
+            FoundOrAbsent::Found { item, in_storage } => FoundOrAbsent::Found { item: mapper(item), in_storage },
+            FoundOrAbsent::Absent { item } => FoundOrAbsent::Absent { item: mapper(item) },
         }
     }
 }
