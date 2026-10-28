@@ -171,7 +171,6 @@ struct DataInfo {
     attributes: RwLock<AttributesInfo>,
     checksums: Checksums,
     expected_checksums: OnceLock<Checksums>,
-    // deferred records whose referenced instance never arrived
     unresolved_ownerships: AtomicUsize,
     unresolved_role_players: AtomicUsize,
 }
@@ -357,8 +356,6 @@ enum ResolvedPlayer {
     Missing(String),
 }
 
-/// A unit of work for an import worker: an instance item of the stream, or a record deferred until the instances it
-/// references have been imported
 enum ImportConcept {
     Entity(EntityItem),
     Relation(RelationItem),
@@ -456,7 +453,6 @@ pub struct DatabaseImporterHandle {
 }
 
 impl DatabaseImporterHandle {
-    /// The schema is the first message of an import, like it is the first message of an export
     pub async fn send_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
         self.send_message(ImportMessage::Schema(schema)).await
     }
@@ -712,7 +708,6 @@ impl DatabaseImporter {
             MigrationItem::Checksums(checksums) => self.data_info.record_expected_checksums(checksums),
             _ if self.data_info.has_expected_checksums() => Err(DatabaseImportError::ItemAfterChecksums {}),
             MigrationItem::Header { typedb_version, original_database, guarantees } => {
-                // the guarantees decide how instance items are processed, so they must precede all of them
                 if self.phase.is_some() {
                     return Err(DatabaseImportError::HeaderAfterItems {});
                 }
@@ -798,7 +793,6 @@ impl DatabaseImporter {
         }
     }
 
-    /// Runs the deferred records of one kind through a phase of workers, like the items of the stream
     fn import_deferred<T>(
         &mut self,
         records: Option<SpilloverCache<T>>,
