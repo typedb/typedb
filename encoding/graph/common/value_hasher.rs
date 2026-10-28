@@ -15,7 +15,7 @@ use storage::{
     snapshot::{ReadableSnapshot, SnapshotLookupMode, iterator::SnapshotIteratorError, write::Write},
 };
 
-use crate::{EncodingKeyspace, graph::common::ExistingOrNew};
+use crate::{EncodingKeyspace, graph::common::FoundOrAbsent};
 
 pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;
@@ -37,7 +37,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         keyspace: EncodingKeyspace,
         key_without_hash: &[u8],
         value_bytes: &[u8],
-    ) -> Result<ExistingOrNew<[u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
+    ) -> Result<FoundOrAbsent<[u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -66,7 +66,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],
         value_bytes: &[u8],
-    ) -> Result<ExistingOrNew<u8>, Arc<SnapshotIteratorError>>
+    ) -> Result<FoundOrAbsent<u8>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -96,7 +96,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             occupied_tails[slot_of(key_tail)] = true;
             if let Write::Insert { value } | Write::Put { value, .. } = write {
                 if &value[..] == value_bytes {
-                    return Ok(ExistingOrNew::Existing { item: key_tail, in_storage: false });
+                    return Ok(FoundOrAbsent::Found { item: key_tail, in_storage: false });
                 }
             }
         }
@@ -112,14 +112,14 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             }
             if &*value == value_bytes {
                 // found existing match in storage
-                return Ok(ExistingOrNew::Existing { item: key_tail, in_storage: true });
+                return Ok(FoundOrAbsent::Found { item: key_tail, in_storage: true });
             }
             occupied_tails[slot_of(key_tail)] = true;
         }
 
         match occupied_tails.iter().position(|occupied| !occupied) {
             Some(free_tail) => {
-                Ok(ExistingOrNew::New { item: Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG | free_tail as u8 })
+                Ok(FoundOrAbsent::Absent { item: Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG | free_tail as u8 })
             }
             None => panic!("Too many hash collisions when allocating hash for prefix: {:?}", key_without_tail_byte),
         }
