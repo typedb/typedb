@@ -177,7 +177,7 @@ impl ThingVertexGenerator {
     ///
     /// WARNING: this bumps the type's id generator past the given id, so later generated ids never collide with it.
     /// Do not over-allocate!
-    pub fn create_entity_with_id<Snapshot>(
+    pub fn unsafe_create_entity_with_id<Snapshot>(
         &self,
         type_id: TypeID,
         id: ObjectID,
@@ -207,7 +207,7 @@ impl ThingVertexGenerator {
     ///
     /// WARNING: this bumps the type's id generator past the given id, so later generated ids never collide with it.
     /// Do not over-allocate!
-    pub fn create_relation_with_id<Snapshot>(
+    pub fn unsafe_create_relation_with_id<Snapshot>(
         &self,
         type_id: TypeID,
         id: ObjectID,

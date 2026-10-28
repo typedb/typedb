@@ -254,7 +254,6 @@ impl DatabaseImportService {
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
 
-        // Recorded before anything can fail, so that closing the service cleans the import up
         let active_import = self.active_import.insert(ActiveImport::new(name, importer));
         self.stop_signals
             .unless_stopped(active_import.importer.send_schema(schema))

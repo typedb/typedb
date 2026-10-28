@@ -29,7 +29,7 @@ use concept::{
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
-        thing_manager::{ConceptPersistenceOracle, ThingManager},
+        thing_manager::{ConceptPersistenceGuarantees, ThingManager},
     },
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
@@ -60,7 +60,7 @@ use encoding::{
 };
 use error::{TypeDBError, typedb_error};
 use query::error::QueryError;
-use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters, system_info::SystemInfo};
 use serde::{Serialize, de::DeserializeOwned};
 use storage::{
     durability_client::WALClient,
@@ -373,7 +373,7 @@ impl ImportConcept {
             Self::Entity(_) => ImportPhase::phase_for(ThingKind::Entity, item_order),
             Self::Relation(_) => ImportPhase::phase_for(ThingKind::Relation, item_order),
             Self::Attribute(_) => ImportPhase::phase_for(ThingKind::Attribute, item_order),
-            Self::DeferredOwnership(_) | Self::DeferredLinks(_) => ImportPhase::Pending,
+            Self::DeferredOwnership(_) | Self::DeferredLinks(_) => ImportPhase::Deferred,
         }
     }
 }
@@ -560,31 +560,33 @@ impl Debug for DatabaseImporter {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct ImporterConfiguration {
+    scratch_directory: PathBuf,
     max_writes_per_commit: usize,
     buffer_size: usize,
+    worker_count: usize,
     item_order: ItemOrder,
     attributes_unique: bool,
     players_by_label_scoped_ids: bool,
     owned_attributes_by_value: bool,
 }
 
-impl Default for ImporterConfiguration {
-    fn default() -> Self {
+impl ImporterConfiguration {
+    const MAX_WRITES_PER_COMMIT: usize = 10_000;
+
+    pub fn new(scratch_directory: PathBuf) -> Self {
         Self {
+            scratch_directory,
             max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
-            buffer_size: 2, // TODO,
+            buffer_size: 48,
+            worker_count: 1,
             item_order: ItemOrder::Unspecified,
             attributes_unique: false,
             players_by_label_scoped_ids: false,
             owned_attributes_by_value: false,
         }
     }
-}
-
-impl ImporterConfiguration {
-    const MAX_WRITES_PER_COMMIT: usize = 10_000;
 
     pub fn with_buffer_size(self, buffer_size: usize) -> Self {
         Self { buffer_size, ..self }
@@ -597,7 +599,18 @@ impl ImporterConfiguration {
     pub fn with_guarantees(self, guarantees: Guarantees) -> Self {
         let Guarantees { ordering, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value } =
             guarantees;
-        Self { item_order: ordering, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value, ..self }
+        let worker_count = match ordering {
+            ItemOrder::Unspecified => 1,
+            ItemOrder::AttributeEntityRelation => SystemInfo::get_cpu_count().saturating_sub(1).max(1),
+        };
+        Self {
+            worker_count,
+            item_order: ordering,
+            attributes_unique,
+            players_by_label_scoped_ids,
+            owned_attributes_by_value,
+            ..self
+        }
     }
 
     fn as_guarantees(&self) -> Guarantees {
@@ -610,10 +623,7 @@ impl ImporterConfiguration {
     }
 
     fn worker_count(&self) -> usize {
-        match self.item_order {
-            ItemOrder::Unspecified => 1,
-            ItemOrder::AttributeEntityRelation => 8, // TODO use cpu count
-        }
+        self.worker_count
     }
 
     fn use_external_label_scoped_ids(&self) -> bool {
@@ -639,13 +649,12 @@ impl DatabaseImporter {
     pub fn start(
         importing_database: Arc<dyn ImportingDatabaseHandle>,
         importer_configuration: ImporterConfiguration,
-        scratch_directory: PathBuf,
         task_spawner: &TokioTaskSpawner,
     ) -> DatabaseImporterHandle {
         let (sender, receiver) = mpsc::channel(importer_configuration.buffer_size);
         let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
-        let data_info = Arc::new(DataInfo::new(&scratch_directory, &database_name));
+        let data_info = Arc::new(DataInfo::new(&importer_configuration.scratch_directory, &database_name));
         let importer = Self {
             importing_database: Some(importing_database),
             database_name,
@@ -707,7 +716,7 @@ impl DatabaseImporter {
                 if self.phase.is_some() {
                     return Err(DatabaseImportError::HeaderAfterItems {});
                 }
-                self.configuration = self.configuration.with_guarantees(guarantees);
+                self.configuration = self.configuration.clone().with_guarantees(guarantees);
                 event!(
                     Level::DEBUG,
                     "Importing '{original_database}' from TypeDB {typedb_version} to '{}' with {:?}.",
@@ -1252,17 +1261,17 @@ pub enum ImportPhase {
     Attributes,
     Entities,
     Relations,
-    Pending,
+    Deferred,
 }
 
 impl ImportPhase {
-    fn concept_persistence_oracle(
+    fn concept_persistence_guarantees(
         &self,
         configuration: &ImporterConfiguration,
-    ) -> Option<Box<dyn ConceptPersistenceOracle>> {
+    ) -> Option<Box<dyn ConceptPersistenceGuarantees>> {
         match configuration.item_order {
             ItemOrder::Unspecified => None,
-            ItemOrder::AttributeEntityRelation => Some(Box::new(AttributeEntityRelationConceptPersistenceOracle {
+            ItemOrder::AttributeEntityRelation => Some(Box::new(AttributeEntityRelationConceptPersistenceGuarantees {
                 phase: *self,
                 attributes_unique: configuration.attributes_unique,
             })),
@@ -1283,27 +1292,27 @@ impl ImportPhase {
     fn validate_transition(&self, next_phase: Self, item_order: ItemOrder) -> Result<(), DatabaseImportError> {
         match item_order {
             ItemOrder::Unspecified => match (self, next_phase) {
-                (Self::Default, Self::Default | Self::Pending) => Ok(()),
+                (Self::Default, Self::Default | Self::Deferred) => Ok(()),
                 (_, _) => Err(DatabaseImportError::UnexpectedPhase { order: item_order, phase: next_phase }),
             },
             ItemOrder::AttributeEntityRelation => match (self, next_phase) {
-                (Self::Attributes, Self::Attributes | Self::Entities | Self::Relations | Self::Pending) => Ok(()),
+                (Self::Attributes, Self::Attributes | Self::Entities | Self::Relations | Self::Deferred) => Ok(()),
                 (Self::Attributes, _) => {
                     Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
                 }
 
-                (Self::Entities, Self::Entities | Self::Relations | Self::Pending) => Ok(()),
+                (Self::Entities, Self::Entities | Self::Relations | Self::Deferred) => Ok(()),
                 (Self::Entities, _) => {
                     Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
                 }
 
-                (Self::Relations, Self::Relations | Self::Pending) => Ok(()),
+                (Self::Relations, Self::Relations | Self::Deferred) => Ok(()),
                 (Self::Relations, _) => {
                     Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
                 }
 
-                (Self::Pending, Self::Pending) => Ok(()),
-                (Self::Pending, _) => {
+                (Self::Deferred, Self::Deferred) => Ok(()),
+                (Self::Deferred, _) => {
                     Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
                 }
 
@@ -1327,8 +1336,8 @@ impl ImportPhase {
                 (Self::Relations, Self::Entities | Self::Attributes) => true,
                 (Self::Relations, _) => false,
 
-                (Self::Pending, Self::Entities | Self::Attributes | Self::Relations) => true,
-                (Self::Pending, _) => false,
+                (Self::Deferred, Self::Entities | Self::Attributes | Self::Relations) => true,
+                (Self::Deferred, _) => false,
 
                 (Self::Default, _) => false,
             },
@@ -1473,7 +1482,7 @@ impl ImportWorker {
                 .clone()
                 .ok_or(DatabaseImportError::AccessAfterFinalisation {})?,
             phase,
-            configuration: importer.configuration,
+            configuration: importer.configuration.clone(),
             data_info: importer.data_info.clone(),
             data_transaction: None,
             total_item_count: importer.total_item_count.clone(),
@@ -1577,7 +1586,7 @@ impl ImportWorker {
             let entity = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id.ok_or_else(|| DatabaseImportError::LabelScopedIdMissing { id })?;
                 thing_manager
-                    .create_entity_with_id(&mut snapshot, entity_type, ObjectID::new(scoped_id))
+                    .unsafe_create_entity_with_id(&mut snapshot, entity_type, ObjectID::new(scoped_id))
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?
             } else {
                 let entity = thing_manager
@@ -1615,7 +1624,7 @@ impl ImportWorker {
             let relation = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id.ok_or_else(|| DatabaseImportError::LabelScopedIdMissing { id })?;
                 thing_manager
-                    .create_relation_with_id(&mut snapshot, relation_type, ObjectID::new(scoped_id))
+                    .unsafe_create_relation_with_id(&mut snapshot, relation_type, ObjectID::new(scoped_id))
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?
             } else {
                 let relation = thing_manager
@@ -1858,7 +1867,7 @@ impl ImportWorker {
             Some(transaction) => Ok(transaction),
             None => self
                 .importing_database
-                .open_write(self.phase.concept_persistence_oracle(&self.configuration))
+                .open_write(self.phase.concept_persistence_guarantees(&self.configuration))
                 .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source }),
         }
     }
@@ -1877,12 +1886,12 @@ impl Drop for ImportWorker {
 }
 
 #[derive(Debug)]
-struct AttributeEntityRelationConceptPersistenceOracle {
+struct AttributeEntityRelationConceptPersistenceGuarantees {
     phase: ImportPhase,
     attributes_unique: bool,
 }
 
-impl ConceptPersistenceOracle for AttributeEntityRelationConceptPersistenceOracle {
+impl ConceptPersistenceGuarantees for AttributeEntityRelationConceptPersistenceGuarantees {
     fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist {
         let thing_kind = match type_ {
             ObjectType::Entity(_) => ThingKind::Entity,
@@ -1915,7 +1924,7 @@ impl ConceptPersistenceOracle for AttributeEntityRelationConceptPersistenceOracl
     fn new_edge_known_to_exist(&self) -> KnownToExist {
         match self.phase {
             // an Import guarantees that edges are only ever added once
-            ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Pending => {
+            ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred => {
                 KnownToExist::NonExistent
             }
             ImportPhase::Default => KnownToExist::Unknown,

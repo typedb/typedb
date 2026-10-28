@@ -174,7 +174,6 @@ fn encode_thing_iid(thing: &impl ThingAPI) -> String {
     Base64Formatter::borrowed(thing.iid().borrow()).format()
 }
 
-/// The object's id within its type, which an importer with the same schema can reuse as is
 fn encode_label_scoped_id(object: &impl ObjectAPI) -> u64 {
     object.vertex().object_id().as_u64()
 }
@@ -207,9 +206,6 @@ fn encode_owned_attributes(
     Ok(owned_attributes)
 }
 
-/// An inline attribute id is derived from the value alone, so sending the value lets the importer rebuild the
-/// attribute without looking it up. Hashed ids (long strings, structs) would cost a storage read to resolve here,
-/// and the importer has to look them up anyway, so they are sent by id only.
 fn encode_owned_attribute(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
