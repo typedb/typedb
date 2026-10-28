@@ -92,8 +92,8 @@ use crate::{
         },
         may_encode_pipeline_structure,
         transaction_service::{
-            Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
-            init_transaction_timeout, is_write_pipeline, with_readable_transaction,
+            Transaction, TransactionServiceError, check_vector_definitions_enabled, commit_schema_transaction,
+            commit_write_transaction, init_transaction_timeout, is_write_pipeline, with_readable_transaction,
         },
     },
     state::ServerState,
@@ -816,6 +816,12 @@ impl TransactionService {
         let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(schema_query)) => {
+                if let Err(error) =
+                    check_vector_definitions_enabled(&schema_query, self.server_state.is_vector_search_enabled())
+                {
+                    let response = ImmediateQueryResponse::non_fatal_err(error);
+                    return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+                }
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 let response = self.handle_query_schema(schema_query, query).await?;
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);

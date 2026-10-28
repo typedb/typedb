@@ -12,7 +12,7 @@ use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
 use tracing::{Level, event, trace};
 
 use crate::{
-    MVCCStorage,
+    MVCCStorage, SecondaryStore,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
@@ -129,6 +129,7 @@ pub(crate) fn apply_recovered(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
+    secondary_store: Option<&dyn SecondaryStore>,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
     use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
@@ -142,9 +143,15 @@ pub(crate) fn apply_recovered(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                let write_batches = WriteBatches::from_operations(commit_sequence_number, commit_record.operations());
-                isolation_manager.load_validated(commit_sequence_number, commit_record);
+                let write_batches =
+                    WriteBatches::from_operations(commit_sequence_number, commit_record.operations(), secondary_store);
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                if let Some(store) = secondary_store {
+                    store.apply_commit(commit_sequence_number, commit_record.operations()).map_err(|error| {
+                        Internal { name: Arc::<str>::from(database_name), source: Arc::from(error) }
+                    })?;
+                }
+                isolation_manager.load_validated(commit_sequence_number, commit_record);
                 fail_point!(RECOVERY_PARTIAL_WRITE);
                 isolation_manager
                     .applied(commit_sequence_number)
@@ -155,14 +162,19 @@ pub(crate) fn apply_recovered(
                 let read_guard =
                     isolation_manager.opened_for_read_by_write_snapshot(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
-                    .validate_commit(commit_sequence_number, commit_record, durability_client)
+                    .validate_commit(commit_sequence_number, commit_record, durability_client, secondary_store)
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;
                 drop(read_guard);
                 match validated_commit {
-                    ValidatedCommit::Write(write_batches, _commit_record) => {
+                    ValidatedCommit::Write(write_batches, commit_record) => {
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                        if let Some(store) = secondary_store {
+                            store.apply_commit(commit_sequence_number, commit_record.operations()).map_err(
+                                |error| Internal { name: Arc::<str>::from(database_name), source: Arc::from(error) },
+                            )?;
+                        }
                         fail_point!(RECOVERY_PARTIAL_WRITE);
                         isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {
                             name: Arc::<str>::from(database_name),

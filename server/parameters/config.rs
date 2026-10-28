@@ -29,6 +29,8 @@ pub struct Config {
     pub logging: LoggingConfig,
     #[serde(default)]
     pub development_mode: DevelopmentModeConfig,
+    #[serde(default)]
+    pub experimental_vector_search: ExperimentalVectorSearchConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -263,6 +265,13 @@ impl Default for DevelopmentModeConfig {
     }
 }
 
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ExperimentalVectorSearchConfig {
+    #[serde(default)]
+    pub enabled: bool,
+}
+
 #[macro_export]
 macro_rules! override_config {
     ($($target:expr => $field:expr;)*) => {
@@ -378,6 +387,7 @@ impl ConfigBuilder {
             diagnostics_monitoring_enabled,
             diagnostics_monitoring_port,
             development_mode_enabled,
+            experimental_vector_search_enabled,
         } = cliargs;
         let Self { config, raw_yaml: _ } = self;
         override_config! {
@@ -402,6 +412,7 @@ impl ConfigBuilder {
             config.diagnostics.monitoring.port => diagnostics_monitoring_port;
 
             config.development_mode.enabled => development_mode_enabled;
+            config.experimental_vector_search.enabled => experimental_vector_search_enabled;
         }
         override_optional_config! {
             config.server.advertise_address => server_advertise_address;
@@ -509,6 +520,11 @@ impl ConfigBuilder {
         self.config.development_mode.enabled = is_enabled;
         self
     }
+
+    pub fn experimental_vector_search(mut self, is_enabled: bool) -> Self {
+        self.config.experimental_vector_search.enabled = is_enabled;
+        self
+    }
 }
 
 #[cfg(test)]
@@ -544,6 +560,14 @@ pub mod tests {
     #[test]
     fn server_toml_parser_properly() {
         assert_true!(load_and_parse(config_path(), vec![]).is_ok());
+    }
+
+    #[test]
+    fn experimental_vector_search_defaults_off_and_can_be_enabled_via_cli() {
+        let result = load_and_parse(config_path(), vec![]).unwrap();
+        assert_true!(!result.experimental_vector_search.enabled);
+        let result = load_and_parse(config_path(), vec!["--experimental-vector-search-enabled", "true"]).unwrap();
+        assert_true!(result.experimental_vector_search.enabled);
     }
 
     #[test]

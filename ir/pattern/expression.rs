@@ -648,6 +648,7 @@ impl StructuralEquality for ListConstructor {
         self.item_expression_ids.equals(&other.item_expression_ids) && self.len_id.equals(&other.len_id)
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ListIndexRange<ID> {
     list_variable: ID,

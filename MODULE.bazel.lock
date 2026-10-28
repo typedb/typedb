@@ -232,6 +232,7 @@
     "https://bcr.bazel.build/modules/rules_python/1.0.0/MODULE.bazel": "898a3d999c22caa585eb062b600f88654bf92efb204fa346fb55f6f8edffca43",
     "https://bcr.bazel.build/modules/rules_python/1.4.1/MODULE.bazel": "8991ad45bdc25018301d6b7e1d3626afc3c8af8aaf4bc04f23d0b99c938b73a6",
     "https://bcr.bazel.build/modules/rules_python/1.6.0/MODULE.bazel": "7e04ad8f8d5bea40451cf80b1bd8262552aa73f841415d20db96b7241bd027d8",
+    "https://bcr.bazel.build/modules/rules_python/2.0.0/MODULE.bazel": "1459089e2d4194d2a49e07896f5334fb230a8f2966ae945b1f793bef87a292fd",
     "https://bcr.bazel.build/modules/rules_python/2.3.2/MODULE.bazel": "5fdf04732b804f4e75011007ba91a68a37f6639665e2e5f8e26294cee1d56750",
     "https://bcr.bazel.build/modules/rules_python/2.3.2/source.json": "40ebd885174966190b81190f00b0ab3af52dad0cd768624b26d27ac9f42567e2",
     "https://bcr.bazel.build/modules/rules_robolectric/4.14.1.2/MODULE.bazel": "d44fec647d0aeb67b9f3b980cf68ba634976f3ae7ccd6c07d790b59b87a4f251",

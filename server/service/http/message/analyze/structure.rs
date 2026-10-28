@@ -74,7 +74,7 @@ pub struct StructureVariableInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "tag")]
 pub enum StructureConstraint {
     Isa {
         instance: StructureVertex,
@@ -150,13 +150,18 @@ pub enum StructureConstraint {
         label: String,
     },
     Value {
-        #[serde(rename = "attributeType")]
         attribute_type: StructureVertex,
-        #[serde(rename = "valueType")]
         value_type: String,
     },
     DeleteConcepts {
         variables: Vec<StructureVertex>,
+    },
+    VectorSearch {
+        attribute: StructureVertex,
+        attribute_type: StructureVertex,
+        query: StructureVertex,
+        threshold: StructureVertex,
+        similarity: StructureVertex,
     },
 
     // Nested patterns are now constraints too
@@ -459,6 +464,13 @@ fn encode_structure_constraint(
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Optimisations don't represent the structure
+        Constraint::VectorSearch(search) => push(StructureConstraint::VectorSearch {
+            attribute: encode_structure_vertex(context, search.attribute())?,
+            attribute_type: encode_structure_vertex(context, search.attribute_type())?,
+            query: encode_structure_vertex(context, search.query())?,
+            threshold: encode_structure_vertex(context, &Vertex::Parameter(search.threshold()))?,
+            similarity: encode_structure_vertex(context, search.similarity())?,
+        }),
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
     Ok(())
@@ -602,6 +614,7 @@ pub mod bdd {
         Label { r#type, label, } |
         Value { attribute_type, value_type, } |
         DeleteConcepts { variables, } |
+        VectorSearch { attribute, attribute_type, query, threshold, similarity, } |
         Or { branches, } |
         Not { conjunction, } |
         Try { conjunction, } |

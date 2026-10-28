@@ -447,7 +447,8 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
             key_type
                 .get_value_type_without_source(&*tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
+                .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type"))
+                .category(),
         );
         let mut attr_iter: Box<dyn Iterator<Item = Result<(Attribute, u64), Box<ConceptReadError>>>> = match thing {
             Thing::Entity(entity) => Box::new(
@@ -502,7 +503,8 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
             attr_type
                 .get_value_type_without_source(&*tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
+                .unwrap_or_else(|| panic!("expected the key type {label} to have a value type"))
+                .category(),
         );
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED).unwrap();
         actual == expected
@@ -530,7 +532,7 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, _context: &Context)
     };
     let (id_type, id_value) = id.split_once(":").unwrap();
     let expected_value_type = parse_value_type(id_type);
-    let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
+    let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type.category());
     if expected.value_type() == ValueType::Double {
         let precision = id_value.split_once(".").map(|(_, decimal)| decimal.len()).unwrap_or(5) as i32;
         let epsilon = 0.5 * 10.0f64.powi(-precision);
@@ -799,8 +801,17 @@ fn parse_query_given_row_entry(entry: &String) -> GivenRowEntry {
         "value" => {
             let value_type_str = parts.next().expect("value:<value-type>:<value>");
             let value_str = parts.collect::<Vec<&str>>().join(":");
+            if value_type_str.starts_with("vector") {
+                let elements = value_str
+                    .trim_start_matches('[')
+                    .trim_end_matches(']')
+                    .split(',')
+                    .map(|element| element.trim().parse::<f32>().expect("Bad vector element"))
+                    .collect::<Vec<f32>>();
+                return GivenRowEntry::Value(encoding::value::value::Value::Vector(std::borrow::Cow::Owned(elements)));
+            }
             let expected_value_type = parse_value_type(value_type_str);
-            let value = params::Value::from_str(&value_str).unwrap().into_typedb(expected_value_type);
+            let value = params::Value::from_str(&value_str).unwrap().into_typedb(expected_value_type.category());
             GivenRowEntry::Value(value)
         }
         "iid" => {

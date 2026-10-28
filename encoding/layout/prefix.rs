@@ -124,6 +124,7 @@ make_prefix_enum! {
     VertexRoleType => 15 = 0x0F, Width::Fixed, Domain::Schema;
     DefinitionStruct => 20 = 0x14, Width::Fixed, Domain::Schema;
     DefinitionFunction => 21 = 0x15, Width::Fixed, Domain::Schema;
+    DefinitionVector => 22 = 0x16, Width::Fixed, Domain::Schema;
 
     // All objects are stored consecutively for iteration
     VertexEntity => 30 = 0x1E, Width::Fixed, Domain::Data;

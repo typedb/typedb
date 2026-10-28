@@ -51,6 +51,7 @@ use encoding::{
         value::{Value, ValueRestriction},
         value_struct::{StructIndexEntry, StructValue},
         value_type::{ValueType, ValueTypeCategory},
+        vector_bytes::VectorBytes,
     },
 };
 use itertools::Itertools;
@@ -76,6 +77,7 @@ use tracing::trace;
 use crate::{
     ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
+    index::vector_index::VectorIndex,
     iterator::InstanceIterator,
     thing::{
         ThingAPI,
@@ -136,6 +138,7 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
+    vector_index: Arc<VectorIndex>,
 }
 
 impl ThingManager {
@@ -143,8 +146,9 @@ impl ThingManager {
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
+        vector_index: Arc<VectorIndex>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics }
+        ThingManager { vertex_generator, type_manager, statistics, vector_index }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -153,6 +157,10 @@ impl ThingManager {
 
     pub fn type_manager(&self) -> &TypeManager {
         &self.type_manager
+    }
+
+    pub fn vector_index(&self) -> &Arc<VectorIndex> {
+        &self.vector_index
     }
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
@@ -450,6 +458,20 @@ impl ThingManager {
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
+            AttributeID::Vector(_id) => {
+                let vertex = attribute.vertex();
+                let vector = match snapshot.get_write(vertex.into_storage_key().as_reference()) {
+                    Some(Write::Insert { value }) | Some(Write::Put { value, .. }) => {
+                        VectorBytes::new(Bytes::<1>::Reference(value)).as_vector()
+                    }
+                    Some(Write::Delete) => return Err(Box::new(ConceptReadError::InternalMissingAttributeValue {})),
+                    None => self
+                        .vector_index
+                        .get_vector(vertex)
+                        .ok_or(ConceptReadError::InternalMissingAttributeValue {})?,
+                };
+                Ok(Value::Vector(Cow::Owned(vector)))
+            }
         }
     }
 
@@ -460,13 +482,24 @@ impl ThingManager {
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
-        let value_type = value.value_type();
-        let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value_type {
+        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
+        else {
+            return Ok(None);
+        };
+        let matches = match (&attribute_value_type, &value) {
+            (ValueType::Vector(definition_key), Value::Vector(vector)) => {
+                let parameters =
+                    self.type_manager().get_vector_definition(snapshot, definition_key.clone())?.parameters;
+                vector.len() == parameters.length as usize
+            }
+            (ValueType::Vector(_), _) | (_, Value::Vector(_)) => false,
+            (attribute_value_type, value) => attribute_value_type == &value.value_type(),
+        };
+        if !matches {
             return Ok(None);
         }
 
-        let attribute = match value_type {
+        let attribute = match attribute_value_type {
             ValueType::Boolean
             | ValueType::Integer
             | ValueType::Double
@@ -511,6 +544,22 @@ impl ThingManager {
                     Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
                         AttributeID::Struct(id),
+                    )),
+                    Ok(None) => return Ok(None),
+                    Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
+                }
+            }
+            ValueType::Vector(_) => {
+                let type_id = attribute_type.vertex().type_id_();
+                match self.vertex_generator.find_attribute_id_vector(
+                    type_id,
+                    value.encode_vector::<256>(),
+                    snapshot,
+                    &|key| self.vector_index.get_by_key(type_id, key),
+                ) {
+                    Ok(Some(id)) => Attribute::new(AttributeVertex::new(
+                        attribute_type.vertex().type_id_(),
+                        AttributeID::Vector(id),
                     )),
                     Ok(None) => return Ok(None),
                     Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
@@ -674,7 +723,10 @@ impl ThingManager {
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value.value_type() {
+        if matches!(value, Value::Vector(_))
+            || attribute_value_type.is_none()
+            || attribute_value_type.as_ref().unwrap() != &value.value_type()
+        {
             return Ok(None);
         }
         let vertex = AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
@@ -741,12 +793,11 @@ impl ThingManager {
         value: Value<'_>,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let value_type = value.value_type();
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_read(
             snapshot,
             self,
             attribute_type,
-            value_type.clone(),
+            value.as_reference(),
         )?;
 
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
@@ -2010,6 +2061,7 @@ impl ThingManager {
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<Bound<Value<'a>>> {
         let start_value_type = match range.start_bound() {
+            Bound::Included(Value::Vector(_)) | Bound::Excluded(Value::Vector(_)) => return None,
             Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
@@ -2033,6 +2085,7 @@ impl ThingManager {
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<Bound<Value<'a>>> {
         let end_value_type = match range.end_bound() {
+            Bound::Included(Value::Vector(_)) | Bound::Excluded(Value::Vector(_)) => return None,
             Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
@@ -2718,7 +2771,6 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type,
-            value.value_type(),
             value.as_reference(),
         )?;
 
@@ -2800,6 +2852,15 @@ impl ThingManager {
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
                 self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
                 struct_attribute
+            }
+            Value::Vector(ref vector) => {
+                let encoded_vector: VectorBytes<'static, BUFFER_KEY_INLINE> = VectorBytes::build(vector);
+                let type_id = attribute_type.vertex().type_id_();
+                self.vertex_generator
+                    .create_attribute_vector(type_id, encoded_vector, snapshot, &|key| {
+                        self.vector_index.get_by_key(type_id, key)
+                    })
+                    .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }
         };
         Ok(Attribute::new(vertex))
@@ -2925,7 +2986,6 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type,
-            value.value_type(),
             value.as_reference(),
         )?;
 
@@ -3525,6 +3585,7 @@ fn register_delete_in_cleanup_intervals(
         | Some(DecodableKey::VertexAttributeType(_))
         | Some(DecodableKey::VertexRoleType(_))
         | Some(DecodableKey::DefinitionStruct(_))
+        | Some(DecodableKey::DefinitionVector(_))
         | Some(DecodableKey::DefinitionFunction(_))
         | Some(DecodableKey::TypeEdgeSub(_))
         | Some(DecodableKey::TypeEdgeSubReverse(_))

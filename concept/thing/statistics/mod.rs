@@ -598,6 +598,7 @@ impl Statistics {
 
                 None
                 | Some(DecodableKey::DefinitionStruct(_))
+                | Some(DecodableKey::DefinitionVector(_))
                 | Some(DecodableKey::DefinitionFunction(_))
                 | Some(DecodableKey::TypeEdgeSub(_))
                 | Some(DecodableKey::TypeEdgeSubReverse(_))

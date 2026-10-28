@@ -16,14 +16,14 @@ use concept::{
     error::ConceptReadError,
     type_::{OwnerAPI, PlayerAPI, TypeAPI, object_type::ObjectType, type_manager::TypeManager},
 };
-use encoding::value::value_type::ValueType;
+use encoding::value::value_type::{ValueType, ValueTypeCategory, VectorTypeParameters};
 use ir::{
     pattern::{
         Pattern, Vertex,
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
-            Relates, RoleName, Sub, SubKind, Value,
+            Relates, RoleName, Sub, SubKind, Value, VectorSearch,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -206,6 +206,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
+                | Constraint::VectorSearch(_)
                 | Constraint::Links(_)
                 | Constraint::Has(_)
                 | Constraint::Owns(_)
@@ -381,6 +382,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<bool, Box<ConceptReadError>> {
         let any_modified = match constraint {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
+            Constraint::VectorSearch(search) => self.try_propagating_vertex_annotation_impl(search, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
             Constraint::Links(links) => {
                 let relation_role = RelationRoleEdge { links };
@@ -518,6 +520,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
+                Constraint::VectorSearch(search) => edges.push(self.seed_edge(constraint, search, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
                 Constraint::Links(links) => {
                     let relation_role = RelationRoleEdge { links };
@@ -749,12 +752,16 @@ impl UnaryConstraint for Value<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        enum PatternValueType {
+            Exact(ValueType),
+            Vector(VectorTypeParameters),
+        }
         let pattern_value_type = match self.value_type() {
-            ir::pattern::ValueType::Builtin(value_type) => Ok(value_type.clone()),
+            ir::pattern::ValueType::Builtin(value_type) => Ok(PatternValueType::Exact(value_type.clone())),
             ir::pattern::ValueType::Struct(struct_name) => {
                 let pattern_key = context.type_manager.get_struct_definition_key(context.snapshot, struct_name);
                 match pattern_key {
-                    Ok(Some(key)) => Ok(ValueType::Struct(key)),
+                    Ok(Some(key)) => Ok(PatternValueType::Exact(ValueType::Struct(key))),
                     Ok(None) => Err(TypeInferenceError::ValueTypeNotFound {
                         name: struct_name.clone().to_owned(),
                         source_span: self.source_span(),
@@ -762,6 +769,7 @@ impl UnaryConstraint for Value<Variable> {
                     Err(source) => Err(TypeInferenceError::ConceptRead { typedb_source: source }),
                 }
             }
+            ir::pattern::ValueType::Vector(parameters) => Ok(PatternValueType::Vector(*parameters)),
         }?;
 
         let mut annotations = BTreeSet::new();
@@ -774,7 +782,18 @@ impl UnaryConstraint for Value<Variable> {
                 .get_value_type_without_source(context.snapshot, context.type_manager)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             if let Some(attribute_value_type) = attribute_value_type_opt {
-                if pattern_value_type == attribute_value_type {
+                let matches = match (&pattern_value_type, &attribute_value_type) {
+                    (PatternValueType::Exact(value_type), attribute_value_type) => value_type == attribute_value_type,
+                    (PatternValueType::Vector(parameters), ValueType::Vector(definition_key)) => {
+                        let definition = context
+                            .type_manager
+                            .get_vector_definition(context.snapshot, definition_key.clone())
+                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                        definition.parameters == *parameters
+                    }
+                    (PatternValueType::Vector(_), _) => false,
+                };
+                if matches {
                     annotations.insert(TypeAnnotation::Attribute(attribute_type));
                 }
             }
@@ -1003,6 +1022,36 @@ impl BinaryConstraint for Owns<Variable> {
             .for_each(|type_| {
                 collector.insert(type_);
             });
+        Ok(())
+    }
+}
+
+impl BinaryConstraint for VectorSearch<Variable> {
+    fn left(&self) -> &Vertex<Variable> {
+        self.attribute()
+    }
+
+    fn right(&self) -> &Vertex<Variable> {
+        self.attribute_type()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        collector.insert(*left_type);
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        collector.insert(*right_type);
         Ok(())
     }
 }

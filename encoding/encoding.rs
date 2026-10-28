@@ -228,6 +228,7 @@ pub enum DecodableKey {
     PropertyFunction(FunctionProperty),
 
     IndexLabelToType(Label),
+    DefinitionVector(DefinitionKey),
     IndexNameToDefinitionStruct(String),
     IndexNameToDefinitionFunction(String),
     IndexValueToStruct(StructIndexEntryKey),
@@ -242,6 +243,7 @@ impl DecodableKey {
             Prefix::VertexRoleType => Some(Self::VertexRoleType(TypeVertex::try_decode(bytes)?)),
             Prefix::DefinitionStruct => Some(Self::DefinitionStruct(DefinitionKey::try_decode(bytes)?)),
             Prefix::DefinitionFunction => Some(Self::DefinitionFunction(DefinitionKey::try_decode(bytes)?)),
+            Prefix::DefinitionVector => Some(Self::DefinitionVector(DefinitionKey::try_decode(bytes)?)),
 
             Prefix::EdgeSub => Some(Self::TypeEdgeSub(TypeEdge::try_decode(bytes)?)),
             Prefix::EdgeSubReverse => Some(Self::TypeEdgeSubReverse(TypeEdge::try_decode(bytes)?)),

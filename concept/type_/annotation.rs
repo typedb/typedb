@@ -55,6 +55,7 @@ pub enum Annotation {
     Values(AnnotationValues),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
+    Index(AnnotationIndex),
     // TODO: Subkey
     // TODO: Replace
 }
@@ -74,6 +75,7 @@ impl fmt::Display for Annotation {
             Annotation::Values(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Doc(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Meta(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Index(annotation) => fmt::Display::fmt(annotation, f),
         }
     }
 }
@@ -291,6 +293,64 @@ impl fmt::Display for AnnotationRegex {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationIndex {
+    specs: Vec<IndexParameters>,
+}
+
+impl AnnotationIndex {
+    pub fn new(specs: Vec<IndexParameters>) -> Self {
+        Self { specs }
+    }
+
+    pub fn specs(&self) -> &[IndexParameters] {
+        &self.specs
+    }
+
+    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
+        matches!(value_type, Some(ValueType::Vector(_)))
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum IndexParameters {
+    Hnsw(HnswMetric),
+}
+
+impl fmt::Display for IndexParameters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IndexParameters::Hnsw(metric) => write!(f, "hnsw:{metric}"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum HnswMetric {
+    Cosine,
+}
+
+impl fmt::Display for HnswMetric {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            HnswMetric::Cosine => write!(f, "{}", typeql::token::HnswMetric::Cosine),
+        }
+    }
+}
+
+impl fmt::Display for AnnotationIndex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "@{}(", typeql::token::Annotation::Index)?;
+        for (i, spec) in self.specs.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{spec}")?;
+        }
+        write!(f, ")")
+    }
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationCascade;
 
@@ -380,7 +440,7 @@ impl AnnotationRange {
                 | ValueType::DateTimeTZ
                 | ValueType::String => true,
 
-                ValueType::Duration | ValueType::Struct(_) => false,
+                ValueType::Duration | ValueType::Struct(_) | ValueType::Vector(_) => false,
             },
             None => false,
         }
@@ -495,7 +555,7 @@ impl AnnotationValues {
                 | ValueType::Duration
                 | ValueType::String => true,
 
-                ValueType::Struct(_) => false,
+                ValueType::Struct(_) | ValueType::Vector(_) => false,
             },
             None => false,
         }
@@ -693,6 +753,7 @@ pub enum AnnotationCategory {
     Values,
     Doc,
     Meta(String),
+    Index,
     // TODO: Subkey
     // TODO: Replace
 }
@@ -711,7 +772,8 @@ impl AnnotationCategory {
             | AnnotationCategory::Range
             | AnnotationCategory::Values
             | AnnotationCategory::Doc
-            | AnnotationCategory::Meta(_) => true,
+            | AnnotationCategory::Meta(_)
+            | AnnotationCategory::Index => true,
         }
     }
 
@@ -729,7 +791,8 @@ impl AnnotationCategory {
             | AnnotationCategory::Range
             | AnnotationCategory::Values
             | AnnotationCategory::Doc
-            | AnnotationCategory::Meta(_) => true,
+            | AnnotationCategory::Meta(_)
+            | AnnotationCategory::Index => true,
         }
     }
 
@@ -747,6 +810,7 @@ impl AnnotationCategory {
             AnnotationCategory::Values => typeql::token::Annotation::Values.as_str(),
             AnnotationCategory::Doc => typeql::token::Annotation::Doc.as_str(),
             AnnotationCategory::Meta(_) => typeql::token::Annotation::Meta.as_str(),
+            AnnotationCategory::Index => typeql::token::Annotation::Index.as_str(),
         }
     }
 }
@@ -890,6 +954,18 @@ impl TypeVertexPropertyEncoding for AnnotationRange {
     }
 }
 
+impl TypeVertexPropertyEncoding for AnnotationIndex {
+    const INFIX: Infix = Infix::PropertyAnnotationIndex;
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
+        bincode::deserialize(value).unwrap()
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
+    }
+}
+
 impl TypeVertexPropertyEncoding for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
     fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
@@ -1002,6 +1078,18 @@ impl TypeEdgePropertyEncoding for AnnotationRegex {
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
+    }
+}
+
+impl TypeEdgePropertyEncoding for AnnotationIndex {
+    const INFIX: Infix = Infix::PropertyAnnotationIndex;
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
+        bincode::deserialize(value).unwrap()
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
@@ -1147,6 +1235,7 @@ mod serialize_annotation {
             | ValueTypeCategory::Duration
             | ValueTypeCategory::String => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation serialization"),
+            ValueTypeCategory::Vector => unreachable!("Vectors are not supported in annotation serialization"),
         }
     }
 
@@ -1168,6 +1257,7 @@ mod serialize_annotation {
                 StringBytes::new(Bytes::<AD_HOC_BYTES_INLINE>::copy(bytes)).as_str().to_owned(),
             )),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation deserialization"),
+            ValueTypeCategory::Vector => unreachable!("Vectors are not supported in annotation deserialization"),
         }
     }
 
@@ -1212,6 +1302,7 @@ mod serialize_annotation {
             | ValueTypeCategory::String => Some(serialize_value(value.clone())),
             ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
             ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
+            ValueTypeCategory::Vector => unreachable!("Can't use vector for AnnotationRange"),
         }
     }
 
@@ -1231,6 +1322,7 @@ mod serialize_annotation {
             | ValueTypeCategory::String => Some(deserialize_value(bytes, value_type_category)),
             ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
             ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
+            ValueTypeCategory::Vector => unreachable!("Can't use vector for AnnotationRange"),
         }
     }
 
@@ -1415,6 +1507,7 @@ mod serialize_annotation {
                 | Value::String(_)
                 | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
                 Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
+                Value::Vector(_) => unreachable!("Can't use vector for AnnotationValues"),
             })
             .collect()
     }

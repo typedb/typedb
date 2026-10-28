@@ -169,6 +169,7 @@ fn encode_migration_value(value: Value<'static>) -> MigrationValue {
         Value::Duration(duration) => ValueProto::Duration(encode_duration(duration)),
         Value::String(string) => ValueProto::String(string.to_string()),
         Value::Struct(_struct) => unimplemented_feature!(Structs),
+        Value::Vector(vector) => ValueProto::Vector(typedb_protocol::value::Vector { values: vector.into_owned() }),
     };
     MigrationValue { value: Some(value_message) }
 }
@@ -188,6 +189,7 @@ fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>,
         ValueProto::Duration(duration) => Value::Duration(decode_duration(duration)?),
         ValueProto::String(string) => Value::String(Cow::Owned(string)),
         ValueProto::Struct(_struct) => unimplemented_feature!(Structs),
+        ValueProto::Vector(vector) => Value::Vector(Cow::Owned(vector.values)),
     };
     Ok(value)
 }

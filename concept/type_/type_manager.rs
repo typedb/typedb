@@ -15,12 +15,16 @@ use encoding::{
     error::EncodingError,
     graph::{
         definition::{
-            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
+            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
+            r#struct::StructDefinition, vector::VectorDefinition,
         },
         type_::{Kind, vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator},
     },
     layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, VectorTypeParameters},
+    },
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
@@ -40,8 +44,8 @@ use crate::{
         Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
-            AnnotationDistinct, AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
+            AnnotationDistinct, AnnotationDoc, AnnotationIndependent, AnnotationIndex, AnnotationKey, AnnotationMeta,
+            AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
@@ -317,6 +321,7 @@ macro_rules! storage_save_annotation {
             Annotation::Values(values) => $save_func($snapshot, $type_, values),
             Annotation::Doc(doc) => $save_func($snapshot, $type_, doc),
             Annotation::Meta(meta) => $save_func($snapshot, $type_, meta),
+            Annotation::Index(index) => $save_func($snapshot, $type_, index),
         }
     };
 }
@@ -346,6 +351,7 @@ macro_rules! storage_delete_annotation {
                 AnnotationCategory::Meta(key) => {
                     TypeWriter::$delete_func::<AnnotationMeta>($snapshot, $type_, key.as_bytes())
                 }
+                AnnotationCategory::Index => TypeWriter::$delete_func::<AnnotationIndex>($snapshot, $type_, &[]),
             }
         }
     };
@@ -438,6 +444,35 @@ impl TypeManager {
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(snapshot, definition_key.clone())?))
         }
+    }
+
+    pub fn get_vector_definition(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        definition_key: DefinitionKey,
+    ) -> Result<MaybeOwns<'_, VectorDefinition>, Box<ConceptReadError>> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_vector_definition(&definition_key)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_vector_definition(snapshot, definition_key)?))
+        }
+    }
+
+    pub fn create_vector_value_type(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        parameters: VectorTypeParameters,
+    ) -> Result<ValueType, Box<ConceptWriteError>> {
+        let definition_key = self
+            .definition_key_generator
+            .create_vector(snapshot)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_insert_vector_definition(
+            snapshot,
+            definition_key.clone(),
+            VectorDefinition::new(parameters),
+        );
+        Ok(ValueType::Vector(definition_key))
     }
 
     pub fn resolve_struct_field(
@@ -3400,6 +3435,36 @@ impl TypeManager {
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.set_type_annotation(snapshot, attribute_type, annotation)
+    }
+
+    pub(crate) fn set_annotation_index(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        attribute_type: AttributeType,
+        index: AnnotationIndex,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation = Annotation::Index(index);
+
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
+
+        OperationTimeValidation::validate_annotation_index_compatible_value_type(
+            snapshot,
+            self,
+            attribute_type,
+            attribute_type.get_value_type_without_source(snapshot, self)?,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+
+        self.set_type_annotation(snapshot, attribute_type, annotation)
+    }
+
+    pub(crate) fn unset_annotation_index(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: AttributeType,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Index;
+        self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
     pub(crate) fn unset_annotation_values(

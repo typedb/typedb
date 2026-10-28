@@ -1,0 +1,358 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use std::sync::Arc;
+
+use answer::variable_value::VariableValue;
+use concept::{
+    index::vector_index::VectorIndex,
+    thing::{ThingAPI, thing_manager::ThingManager},
+    type_::{TypeAPI, type_manager::TypeManager},
+};
+use encoding::{
+    graph::{Typed, type_::vertex::TypeVertexEncoding},
+    value::{label::Label, value::Value},
+};
+use executor::{ExecutionInterrupt, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
+use function::function_manager::FunctionManager;
+use lending_iterator::LendingIterator;
+use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use resource::profile::{CommitProfile, StorageCounters};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+use test_utils::TempDir;
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
+
+struct Context {
+    storage: Arc<MVCCStorage<WALClient>>,
+    type_manager: Arc<TypeManager>,
+    thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
+    query_manager: QueryManager,
+    _tmp_dir: TempDir,
+}
+
+const SCHEMA: &str = r#"define
+    attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
+    entity item owns embedding @card(0..);
+"#;
+
+fn setup() -> Context {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let function_manager = Arc::new(FunctionManager::new(
+        Arc::new(encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator::new()),
+        None,
+    ));
+    let query_manager = QueryManager::new(None);
+
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let define = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
+    query_manager
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, SCHEMA)
+        .unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+}
+
+fn setup_empty() -> Context {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let function_manager = Arc::new(FunctionManager::new(
+        Arc::new(encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator::new()),
+        None,
+    ));
+    let query_manager = QueryManager::new(None);
+    Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+}
+
+fn try_define(context: &Context, query: &str) -> Result<(), String> {
+    let mut snapshot = context.storage.clone().open_snapshot_schema();
+    let define = typeql::parse_query(query).unwrap().into_structure().into_schema();
+    context
+        .query_manager
+        .execute_schema(
+            &mut snapshot,
+            &context.type_manager,
+            &context.thing_manager,
+            &context.function_manager,
+            &define,
+            query,
+        )
+        .map_err(|err| format!("{err:?}"))?;
+    context.type_manager.validate(&snapshot).map_err(|errs| format!("{errs:?}"))?;
+    snapshot.commit(&mut CommitProfile::disabled()).map_err(|err| format!("{err:?}"))?;
+    Ok(())
+}
+
+fn run_write_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>> {
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_as_pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &query_as_pipeline,
+            None::<GivenRowsSimple>,
+            query,
+        )
+        .unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let rows: Vec<MaybeOwnedRow<'static>> = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .collect::<Result<_, _>>()
+        .unwrap();
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+    rows
+}
+
+fn run_read_query(context: &Context, query: &str) -> Vec<MaybeOwnedRow<'static>> {
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    run_read_query_on(context, snapshot, query)
+}
+
+fn run_read_query_on(
+    context: &Context,
+    snapshot: Arc<storage::snapshot::ReadSnapshot<WALClient>>,
+    query: &str,
+) -> Vec<MaybeOwnedRow<'static>> {
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &match_,
+            None::<GivenRowsSimple>,
+            query,
+        )
+        .unwrap();
+    let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .collect::<Result<_, _>>()
+        .unwrap()
+}
+
+fn vector_index(context: &Context) -> Arc<VectorIndex> {
+    context.thing_manager.vector_index().clone()
+}
+
+fn embedding_type_id(context: &Context) -> encoding::graph::type_::vertex::TypeID {
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let attribute_type =
+        context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
+    attribute_type.vertex().type_id_()
+}
+
+const INSERT: &str = r#"insert
+    $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");
+    $b isa item, has embedding vector([0.9, 0.1, 0.0], "float32");
+    $c isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
+"#;
+
+#[test]
+fn snapshot_opened_before_commit_does_not_see_committed_vectors() {
+    let context = setup();
+    let early_snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    run_write_query(&context, INSERT);
+
+    let search =
+        r#"match let $e, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#;
+    let rows = run_read_query_on(&context, early_snapshot.clone(), search);
+    assert_eq!(rows.len(), 0, "snapshot opened before the commit must not see committed vectors, got: {rows:?}");
+    let rows = run_read_query_on(&context, early_snapshot, "match $e isa embedding;");
+    assert_eq!(rows.len(), 0, "snapshot opened before the commit must not see committed attributes, got: {rows:?}");
+
+    let rows = run_read_query(&context, search);
+    assert_eq!(rows.len(), 3, "a fresh snapshot must see all committed vectors, got: {rows:?}");
+}
+
+#[test]
+fn committed_vectors_live_in_the_store_and_are_searchable() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+
+    let store = vector_index(&context);
+    assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3);
+
+    let rows = run_read_query(
+        &context,
+        r#"match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
+    );
+    assert_eq!(rows.len(), 2, "expected 2 vectors above similarity 0.9, got: {rows:?}");
+
+    let rows = run_read_query(
+        &context,
+        r#"match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#,
+    );
+    assert_eq!(rows.len(), 3, "expected all 3 vectors above similarity -1.0, got: {rows:?}");
+}
+
+#[test]
+fn committed_vector_values_are_read_back_from_the_store() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let attribute_type =
+        context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
+    let mut values: Vec<Vec<f32>> = Vec::new();
+    let mut iterator =
+        context.thing_manager.get_attributes_in(&snapshot, attribute_type, StorageCounters::DISABLED).unwrap();
+    while let Some(attribute) = iterator.next() {
+        let attribute = attribute.unwrap();
+        let value = attribute.get_value(&snapshot, &context.thing_manager, StorageCounters::DISABLED).unwrap();
+        let Value::Vector(vector) = value else { panic!("expected vector value") };
+        values.push(vector.into_owned());
+    }
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    assert_eq!(values, vec![vec![0.0, 1.0, 0.0], vec![0.9, 0.1, 0.0], vec![1.0, 0.0, 0.0]]);
+}
+
+#[test]
+fn uncommitted_vectors_are_found_by_search_in_the_same_transaction() {
+    let context = setup();
+    let rows = run_write_query(
+        &context,
+        r#"insert
+            $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");
+            $b isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
+        match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#,
+    );
+    assert_eq!(rows.len(), 1, "1 insert row x 1 matching buffered vector, got: {rows:?}");
+}
+
+#[test]
+fn duplicate_vector_insert_is_deduplicated() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+    run_write_query(&context, r#"insert $d isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
+    let store = vector_index(&context);
+    assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3, "no new vector expected");
+
+    let rows = run_read_query(&context, r#"match $e isa embedding;"#);
+    assert_eq!(rows.len(), 3);
+    let rows = run_read_query(&context, r#"match $x isa item, has embedding $e;"#);
+    assert_eq!(rows.len(), 4);
+}
+
+#[test]
+fn similarity_scores_are_returned_alongside_elements() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+
+    let rows = run_read_query(
+        &context,
+        r#"match let $emb, $sim in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);
+           sort $sim desc;"#,
+    );
+    let scores: Vec<f64> = rows
+        .iter()
+        .flat_map(|row| {
+            row.iter().filter_map(|entry| match entry {
+                VariableValue::Value(Value::Double(double)) => Some(*double),
+                _ => None,
+            })
+        })
+        .collect();
+    let expected = [1.0, 0.9 / (0.81f64 + 0.01).sqrt()];
+    assert_eq!(scores.len(), expected.len(), "expected one score per row, got: {rows:?}");
+    for (score, expected) in scores.iter().zip(expected) {
+        assert!((score - expected).abs() < 1e-5, "expected {expected}, got {score}");
+    }
+}
+
+#[test]
+fn vector_search_requires_two_assigned_variables() {
+    let context = setup();
+    let query = r#"match let $emb in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.9);"#;
+    let pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let result = context.query_manager.prepare_read_pipeline(
+        snapshot,
+        &context.type_manager,
+        context.thing_manager.clone(),
+        context.function_manager.clone(),
+        &pipeline,
+        None::<GivenRowsSimple>,
+        query,
+    );
+    assert!(result.is_err(), "single-variable assignment should be rejected");
+}
+
+#[test]
+fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
+    let context = setup();
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let attribute_type =
+        context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
+    drop(snapshot);
+
+    let vector: Vec<f32> = vec![f32::NAN, 0.0, -0.0];
+    let mut vertices = Vec::new();
+    for _ in 0..2 {
+        let mut snapshot = context.storage.clone().open_snapshot_write();
+        let attribute = context
+            .thing_manager
+            .create_attribute(&mut snapshot, attribute_type, Value::Vector(std::borrow::Cow::Borrowed(&vector)))
+            .unwrap();
+        vertices.push(attribute.vertex());
+        snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+    }
+    assert_eq!(vertices[0], vertices[1], "an identical NaN vector must resolve to the same attribute ID");
+    assert_eq!(vector_index(&context).indexed_vector_count(embedding_type_id(&context)), 1);
+}
+
+#[test]
+fn vector_attribute_requires_index_annotation() {
+    let context = setup_empty();
+    let result = try_define(&context, r#"define attribute bare-embedding, value vector(3, "float32");"#);
+    assert!(result.is_err(), "vector attribute without @index(hnsw:cosine) should be rejected at commit");
+
+    let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
+    assert!(result.is_err(), "@index on a non-vector value type should be rejected");
+}
+
+#[test]
+fn struct_fields_accept_vector_value_types() {
+    use encoding::value::value_type::{ValueType, VectorPrecision, VectorTypeParameters};
+
+    let context = setup_empty();
+    let define = r#"define struct doc: content value string, embedding value vector(3, "float32");"#;
+    try_define(&context, define).unwrap();
+
+    let embedding_vector_definition = || {
+        let snapshot = context.storage.clone().open_snapshot_read();
+        let struct_key = context.type_manager.get_struct_definition_key(&snapshot, "doc").unwrap().unwrap();
+        let definition = context.type_manager.get_struct_definition(&snapshot, struct_key).unwrap();
+        let ValueType::Vector(vector_key) = definition.get_field("embedding").unwrap().value_type.clone() else {
+            panic!("expected the embedding field to have a vector value type");
+        };
+        let parameters = context.type_manager.get_vector_definition(&snapshot, vector_key.clone()).unwrap().parameters;
+        (vector_key, parameters)
+    };
+
+    let (vector_key, parameters) = embedding_vector_definition();
+    assert_eq!(parameters, VectorTypeParameters::new(3, VectorPrecision::Float32));
+
+    try_define(&context, define).expect("re-defining the same struct must be idempotent");
+    let (vector_key_after_redefine, _) = embedding_vector_definition();
+    assert_eq!(vector_key, vector_key_after_redefine, "unchanged vector field must reuse its definition key");
+}

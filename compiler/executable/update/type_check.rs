@@ -54,6 +54,7 @@ pub fn check_annotations(
             }
             Constraint::DeleteConcepts(_)
             | Constraint::Isa(_)
+            | Constraint::VectorSearch(_)
             | Constraint::Is(_)
             | Constraint::Comparison(_)
             | Constraint::LinksDeduplication(_)

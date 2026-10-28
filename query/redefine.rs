@@ -41,9 +41,10 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        SymbolResolutionError, filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type,
-        resolve_relates, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type, resolve_value_type,
-        type_ref_to_label_and_ordering, type_to_object_type,
+        ResolvedValueType, SymbolResolutionError, filter_variants, get_struct_field_value_type_optionality,
+        resolve_attribute_type, resolve_or_create_vector_value_type, resolve_relates, resolve_role_type,
+        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering,
+        type_to_object_type,
     },
     definable_status::{
         DefinableStatus, DefinableStatusMode, get_capability_annotation_status, get_owns_status, get_plays_status,
@@ -250,8 +251,9 @@ fn redefine_struct_fields(
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
     for field in &struct_definable.fields {
-        let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
-            .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
+        let (value_type, optional) =
+            get_struct_field_value_type_optionality(snapshot, type_manager, struct_key.clone(), field)
+                .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
         let definition_status = get_struct_field_status(
             snapshot,
@@ -488,8 +490,19 @@ fn redefine_value_type(
             return Err(err_unsupported_capability(&label, type_.kind(), capability));
         };
 
-        let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
-            .map_err(|source| RedefineError::ValueTypeSymbolResolution { typedb_source: source })?;
+        let value_type = match resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
+            .map_err(|source| RedefineError::ValueTypeSymbolResolution { typedb_source: source })?
+        {
+            ResolvedValueType::Value(value_type) => value_type,
+            ResolvedValueType::Vector(parameters) => resolve_or_create_vector_value_type(
+                snapshot,
+                type_manager,
+                *attribute_type,
+                parameters,
+                value_type_statement.value_type.span(),
+            )
+            .map_err(|source| RedefineError::ValueTypeSymbolResolution { typedb_source: source })?,
+        };
 
         let definition_status = get_value_type_status(
             snapshot,

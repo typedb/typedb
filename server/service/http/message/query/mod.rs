@@ -15,7 +15,11 @@ use bytes::util::HexBytesFormatter;
 use compiler::annotation::function::FunctionParameterAnnotation;
 use encoding::{
     graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
-    value::{ValueEncodable, value::Value, value_type::ValueType},
+    value::{
+        ValueEncodable,
+        value::Value,
+        value_type::{ValueType, ValueTypeCategory},
+    },
 };
 use ir::translation::{literal::FromTypeQLLiteral, parse_iid};
 use options::QueryOptions;
@@ -234,7 +238,7 @@ impl GivenRows for GivenRowsHttp {
                         _ => None,
                     }
                     .ok_or_else(|| GivenRowDecodeError::ValueTypeMismatch {
-                        expected_type: expected_type.clone(),
+                        expected_type: expected_type.to_string(),
                         actual_type: "json::number".to_owned(),
                         value: value.to_string(),
                     })?;
@@ -247,7 +251,7 @@ impl GivenRows for GivenRowsHttp {
                     match expected_type {
                         ValueType::Boolean => Ok(GivenRowEntry::Value(Value::Boolean(value))),
                         _ => Err(GivenRowDecodeError::ValueTypeMismatch {
-                            expected_type: expected_type.clone(),
+                            expected_type: expected_type.to_string(),
                             actual_type: "boolean".to_owned(),
                             value: value.to_string(),
                         }),
@@ -257,6 +261,11 @@ impl GivenRows for GivenRowsHttp {
                     FunctionParameterAnnotation::AnyConcept => unreachable!("Can't be"),
                     FunctionParameterAnnotation::Concept(expected_type) => decode_string_as_iid(value, expected_type),
                     FunctionParameterAnnotation::Value(expected_type) => decode_string_as_value(value, expected_type),
+                    FunctionParameterAnnotation::Vector(parameters) => Err(GivenRowDecodeError::ValueTypeMismatch {
+                        expected_type: parameters.to_string(),
+                        actual_type: "string".to_owned(),
+                        value,
+                    }),
                 },
                 GivenEntryPayload::Concept(tagged) => match tagged {
                     TaggedEntryPayload::Value(value) => {
@@ -352,12 +361,12 @@ fn decode_string_as_value(value: String, expected_type: &ValueType) -> Result<Gi
     let translated_value = Value::from_typeql_literal(&parsed_value, None).map_err(|typedb_source| {
         GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: value.clone(), typedb_source }
     })?;
-    if &translated_value.value_type() == expected_type {
+    if !matches!(translated_value, Value::Vector(_)) && &translated_value.value_type() == expected_type {
         Ok(GivenRowEntry::Value(translated_value))
     } else {
         Err(GivenRowDecodeError::ValueTypeMismatch {
-            expected_type: expected_type.clone(),
-            actual_type: translated_value.value_type().to_string(),
+            expected_type: expected_type.to_string(),
+            actual_type: translated_value.value_type_category().name().to_owned(),
             value: value.to_string(),
         })
     }
@@ -372,6 +381,11 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
             GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
         })
     }
+    const DECIMAL: &str = typeql::token::ValueType::Decimal.as_str();
+    const DATE: &str = typeql::token::ValueType::Date.as_str();
+    const DATETIME: &str = typeql::token::ValueType::DateTime.as_str();
+    const DATETIME_TZ: &str = typeql::token::ValueType::DateTimeTZ.as_str();
+    const DURATION: &str = typeql::token::ValueType::Duration.as_str();
     let as_str = value.value.to_string();
     match value.value_type.as_str() {
         "decimal" => {
@@ -379,6 +393,11 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
             decode(&if literal.ends_with("dec") { literal.to_owned() } else { format!("{literal}dec") })
         }
         "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
+        vector_type if vector_type.starts_with(ValueTypeCategory::Vector.name()) => {
+            let elements: Vec<f32> = serde_json::from_value(value.value)
+                .map_err(|_| GivenRowDecodeError::InvalidVectorForGivenEntry { value: as_str })?;
+            Ok(Value::Vector(std::borrow::Cow::Owned(elements)))
+        }
         _ => decode(&as_str),
     }
 }

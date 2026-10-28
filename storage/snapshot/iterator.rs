@@ -237,6 +237,7 @@ enum ReadyItemSource {
 #[derive(Debug)]
 pub enum SnapshotIteratorError {
     MVCCRead { source: MVCCReadError },
+    SecondaryStoreValueMissing { description: String },
 }
 
 impl fmt::Display for SnapshotIteratorError {
@@ -249,6 +250,7 @@ impl Error for SnapshotIteratorError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::MVCCRead { source, .. } => Some(source),
+            Self::SecondaryStoreValueMissing { .. } => None,
         }
     }
 }

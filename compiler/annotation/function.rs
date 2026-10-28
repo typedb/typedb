@@ -15,7 +15,10 @@ use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::definition::definition_key::DefinitionKey,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, VectorTypeParameters},
+    },
 };
 use error::needs_update_when_feature_is_implemented;
 use ir::{
@@ -25,7 +28,7 @@ use ir::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionID,
     },
-    translation::tokens::translate_value_type,
+    translation::tokens::{resolve_vector_value_type, translate_value_type},
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
@@ -51,6 +54,7 @@ pub enum FunctionParameterAnnotation {
     AnyConcept,
     Concept(BTreeSet<Type>),
     Value(ValueType),
+    Vector(VectorTypeParameters),
 }
 
 #[derive(Debug, Clone)]
@@ -549,6 +553,15 @@ pub(super) fn get_annotations_from_labels(
             // TODO: This may be list
             let value = translate_value_type(&value_type.token);
             Ok(FunctionParameterAnnotation::Value(value))
+        }
+        NamedType::Vector(vector_type) => {
+            let parameters =
+                resolve_vector_value_type(vector_type).map_err(|err| TypeInferenceError::VectorLengthInvalid {
+                    length: err.length,
+                    max: err.max,
+                    source_span: vector_type.span(),
+                })?;
+            Ok(FunctionParameterAnnotation::Vector(parameters))
         }
     }
 }

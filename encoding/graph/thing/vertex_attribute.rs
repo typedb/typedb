@@ -39,6 +39,7 @@ use crate::{
         struct_bytes::StructBytes,
         value::Value,
         value_type::{ValueType, ValueTypeBytes, ValueTypeCategory},
+        vector_bytes::VectorBytes,
     },
 };
 
@@ -121,7 +122,7 @@ impl AttributeVertex {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
-        let keyspace = Self::keyspace_for_category(value.value_type().category());
+        let keyspace = Self::keyspace_for_category(value.value_type_category());
         // An exact value needs no ordering, so it can use the hashed (or complete) ID; comparisons need the sortable prefix
         let (id_length, is_complete) = AttributeID::write_deterministic_value_or_prefix(
             &mut bytes[Self::RANGE_TYPE_ID.end..],
@@ -150,6 +151,14 @@ impl AttributeVertex {
 
     fn is_attribute_bytes(bytes: &[u8]) -> bool {
         !bytes.is_empty() && bytes[Self::INDEX_PREFIX] == Prefix::VertexAttribute.prefix_id().byte
+    }
+
+    pub fn is_vector_attribute_vertex(keyspace_id: KeyspaceId, bytes: &[u8]) -> bool {
+        Self::keyspace_for_category(ValueTypeCategory::Vector).id() == keyspace_id
+            && bytes.len() == THING_VERTEX_LENGTH_PREFIX_TYPE + VectorAttributeID::LENGTH
+            && bytes[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte
+            && bytes[Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ValueTypeBytes::CATEGORY_LENGTH]
+                == ValueTypeCategory::Vector.to_bytes()
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {
@@ -303,6 +312,7 @@ pub enum AttributeID {
     Duration(DurationAttributeID),
     String(StringAttributeID),
     Struct(StructAttributeID),
+    Vector(VectorAttributeID),
 }
 
 impl AttributeID {
@@ -321,22 +331,26 @@ impl AttributeID {
             ValueTypeCategory::Duration => Self::Duration(DurationAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Struct => Self::Struct(StructAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::Vector => Self::Vector(VectorAttributeID::new(bytes.try_into().unwrap())),
         }
     }
 
     pub fn build_inline(value: Value<'_>) -> Self {
         debug_assert!(Self::is_inlineable(value.as_reference()));
-        match value.value_type() {
-            ValueType::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
-            ValueType::Integer => Self::Integer(IntegerAttributeID::build(value.encode_integer())),
-            ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
-            ValueType::Decimal => Self::Decimal(DecimalAttributeID::build(value.encode_decimal())),
-            ValueType::Date => Self::Date(DateAttributeID::build(value.encode_date())),
-            ValueType::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
-            ValueType::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz())),
-            ValueType::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
-            ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
-            ValueType::Struct(_) => unimplemented_feature!(Structs),
+        match value.value_type_category() {
+            ValueTypeCategory::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
+            ValueTypeCategory::Integer => Self::Integer(IntegerAttributeID::build(value.encode_integer())),
+            ValueTypeCategory::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
+            ValueTypeCategory::Decimal => Self::Decimal(DecimalAttributeID::build(value.encode_decimal())),
+            ValueTypeCategory::Date => Self::Date(DateAttributeID::build(value.encode_date())),
+            ValueTypeCategory::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
+            ValueTypeCategory::DateTimeTZ => {
+                Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz()))
+            }
+            ValueTypeCategory::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
+            ValueTypeCategory::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
+            ValueTypeCategory::Struct => unimplemented_feature!(Structs),
+            ValueTypeCategory::Vector => unreachable!("vector attributes are never inlineable"),
         }
     }
 
@@ -347,7 +361,7 @@ impl AttributeID {
         for_comparison: bool,
     ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
-        match value.value_type().category() {
+        match value.value_type_category() {
             ValueTypeCategory::Boolean => (BooleanAttributeID::write(value.encode_boolean(), bytes), true),
             ValueTypeCategory::Integer => (IntegerAttributeID::write(value.encode_integer(), bytes), true),
             ValueTypeCategory::Double => (DoubleAttributeID::write(value.encode_double(), bytes), true),
@@ -374,6 +388,14 @@ impl AttributeID {
                 ),
                 false,
             ),
+            ValueTypeCategory::Vector => (
+                VectorAttributeID::write_hashed_id_deterministic_prefix(
+                    value.encode_vector::<64>(),
+                    large_value_hasher,
+                    bytes,
+                ),
+                false,
+            ),
         }
     }
 
@@ -382,17 +404,18 @@ impl AttributeID {
     /// Return false if the values are hashed or incomplete and may require a secondary lookup
     ///
     pub fn is_inlineable(value: impl ValueEncodable) -> bool {
-        match value.value_type() {
-            ValueType::Boolean => BooleanAttributeID::is_inlineable(),
-            ValueType::Integer => IntegerAttributeID::is_inlineable(),
-            ValueType::Double => DoubleAttributeID::is_inlineable(),
-            ValueType::Decimal => DecimalAttributeID::is_inlineable(),
-            ValueType::Date => DateAttributeID::is_inlineable(),
-            ValueType::DateTime => DateTimeAttributeID::is_inlineable(),
-            ValueType::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
-            ValueType::Duration => DurationAttributeID::is_inlineable(),
-            ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
-            ValueType::Struct(_) => StructAttributeID::is_inlineable(),
+        match value.value_type_category() {
+            ValueTypeCategory::Boolean => BooleanAttributeID::is_inlineable(),
+            ValueTypeCategory::Integer => IntegerAttributeID::is_inlineable(),
+            ValueTypeCategory::Double => DoubleAttributeID::is_inlineable(),
+            ValueTypeCategory::Decimal => DecimalAttributeID::is_inlineable(),
+            ValueTypeCategory::Date => DateAttributeID::is_inlineable(),
+            ValueTypeCategory::DateTime => DateTimeAttributeID::is_inlineable(),
+            ValueTypeCategory::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
+            ValueTypeCategory::Duration => DurationAttributeID::is_inlineable(),
+            ValueTypeCategory::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
+            ValueTypeCategory::Struct => StructAttributeID::is_inlineable(),
+            ValueTypeCategory::Vector => VectorAttributeID::is_inlineable(),
         }
     }
 
@@ -410,6 +433,7 @@ impl AttributeID {
             | AttributeID::Duration(_) => true,
             AttributeID::String(string_id) => string_id.is_inline(),
             AttributeID::Struct(_) => false,
+            AttributeID::Vector(_) => false,
         }
     }
 
@@ -425,6 +449,7 @@ impl AttributeID {
             AttributeID::Duration(duration_id) => duration_id.bytes_ref(),
             AttributeID::String(string_id) => string_id.bytes_ref(),
             AttributeID::Struct(struct_id) => struct_id.bytes_ref(),
+            AttributeID::Vector(vector_id) => vector_id.bytes_ref(),
         }
     }
 
@@ -464,6 +489,7 @@ impl AttributeID {
             }
             AttributeID::String(string_id) => string_id.deterministic_bytes_ref(),
             AttributeID::Struct(struct_id) => struct_id.deterministic_bytes_ref(),
+            AttributeID::Vector(vector_id) => vector_id.deterministic_bytes_ref(),
         }
     }
 
@@ -479,6 +505,7 @@ impl AttributeID {
             ValueTypeCategory::Duration => DurationAttributeID::LENGTH,
             ValueTypeCategory::String => StringAttributeID::LENGTH,
             ValueTypeCategory::Struct => StructAttributeID::LENGTH,
+            ValueTypeCategory::Vector => VectorAttributeID::LENGTH,
         }
     }
 
@@ -498,6 +525,7 @@ impl AttributeID {
             ValueTypeCategory::Duration => DurationAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::String => StringAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Struct => StructAttributeID::VALUE_LENGTH_ID,
+            ValueTypeCategory::Vector => VectorAttributeID::VALUE_LENGTH_ID,
         }
     }
 
@@ -575,6 +603,13 @@ impl AttributeID {
         }
     }
 
+    pub fn unwrap_vector(self) -> VectorAttributeID {
+        match self {
+            AttributeID::Vector(vector_id) => vector_id,
+            _ => panic!("Cannot unwrap Vector ID from non-vector attribute ID."),
+        }
+    }
+
     pub fn value_type_category(self) -> ValueTypeCategory {
         match self {
             AttributeID::Boolean(_) => ValueTypeCategory::Boolean,
@@ -587,6 +622,7 @@ impl AttributeID {
             AttributeID::Duration(_) => ValueTypeCategory::Duration,
             AttributeID::String(_) => ValueTypeCategory::String,
             AttributeID::Struct(_) => ValueTypeCategory::Struct,
+            AttributeID::Vector(_) => ValueTypeCategory::Vector,
         }
     }
 }
@@ -1012,5 +1048,173 @@ impl StructAttributeID {
 }
 
 impl HashedID<{ StructAttributeID::HASH_LENGTH + 1 }> for StructAttributeID {
+    const FIXED_WIDTH_KEYS: bool = true;
+}
+
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VectorAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl VectorAttributeID {
+    const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
+    pub(crate) const LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH + Self::VALUE_LENGTH_ID.length();
+    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
+    const TAIL_INDEX: usize = Self::LENGTH - 1;
+
+    pub(crate) const fn is_inlineable() -> bool {
+        false
+    }
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+    ) -> Result<Self, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let existing_or_new = Self::find_existing_or_next_disambiguated_hash_vector(
+            snapshot,
+            hasher,
+            &Self::key_prefix(type_id),
+            vector_bytes.bytes(),
+            committed_vector,
+        )?;
+
+        let (ExistingOrNew::Existing(disambiguated_hash) | ExistingOrNew::New(disambiguated_hash)) = existing_or_new;
+        Ok(Self::from_disambiguated_hash(disambiguated_hash))
+    }
+
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+    ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let existing_or_new = Self::find_existing_or_next_disambiguated_hash_vector(
+            snapshot,
+            hasher,
+            &Self::key_prefix(type_id),
+            vector_bytes.bytes(),
+            committed_vector,
+        )?;
+
+        match existing_or_new {
+            ExistingOrNew::Existing(disambiguated_hash) => {
+                debug_assert!(
+                    disambiguated_hash[Self::HASH_DISAMBIGUATOR_BYTE_INDEX]
+                        & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+                        != 0
+                );
+                Ok(Some(Self::from_disambiguated_hash(disambiguated_hash)))
+            }
+            ExistingOrNew::New(_) => Ok(None),
+        }
+    }
+
+    fn find_existing_or_next_disambiguated_hash_vector<Snapshot>(
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        key_without_hash: &[u8],
+        value_bytes: &[u8],
+        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+    ) -> Result<ExistingOrNew<[u8; Self::HASH_LENGTH + 1]>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
+        let vector_matches = |storage_key: &[u8], storage_value: &[u8]| {
+            if storage_value.is_empty() {
+                let vertex = AttributeVertex::decode(storage_key);
+                let index_key = vertex.attribute_id().unwrap_vector().as_type_vector_index_key();
+                let vector = committed_vector(index_key).ok_or_else(|| {
+                    Arc::new(SnapshotIteratorError::SecondaryStoreValueMissing {
+                        description: format!(
+                            "vector attribute {vertex:?} exists in storage but its value is missing from the vector store"
+                        ),
+                    })
+                })?;
+                Ok(VectorBytes::<1>::build(&vector).bytes() == value_bytes)
+            } else {
+                Ok(storage_value == value_bytes)
+            }
+        };
+        Self::find_existing_or_next_disambiguated_hash_matching(
+            snapshot,
+            hasher,
+            AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector),
+            key_without_hash,
+            value_bytes,
+            &vector_matches,
+        )
+    }
+
+    pub fn key_prefix(
+        type_id: TypeID,
+    ) -> ByteArray<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }> {
+        let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
+        let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);
+        ByteArray::copy_concat([attribute_prefix.bytes(), &ValueTypeCategory::Vector.to_bytes()])
+    }
+
+    fn from_disambiguated_hash(disambiguated_hash: [u8; Self::HASH_LENGTH + 1]) -> Self {
+        let mut bytes = [0; Self::LENGTH];
+        bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Vector.to_bytes());
+        bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
+        Self { bytes }
+    }
+
+    pub(crate) fn write_hashed_id_deterministic_prefix<const INLINE_LENGTH: usize>(
+        vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
+        hasher: &impl Fn(&[u8]) -> u64,
+        bytes: &mut [u8],
+    ) -> usize {
+        bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Vector.to_bytes());
+        ValueTypeBytes::CATEGORY_LENGTH
+            + Self::write_hash(&mut bytes[ValueTypeBytes::CATEGORY_LENGTH..], hasher, vector_bytes.bytes())
+    }
+
+    pub fn get_hash_hash(&self) -> [u8; Self::HASH_LENGTH] {
+        self.bytes[ValueTypeBytes::CATEGORY_LENGTH..ValueTypeBytes::CATEGORY_LENGTH + Self::HASH_LENGTH]
+            .try_into()
+            .unwrap()
+    }
+
+    pub fn get_hash_disambiguator(&self) -> u8 {
+        self.bytes[Self::TAIL_INDEX] & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn deterministic_bytes_ref(&self) -> &[u8] {
+        &self.bytes[0..Self::TAIL_INDEX]
+    }
+
+    pub fn as_type_vector_index_key(&self) -> u64 {
+        u64::from_be_bytes(self.bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].try_into().unwrap())
+    }
+
+    pub fn from_type_vector_index_key(key: u64) -> Self {
+        Self::from_disambiguated_hash(key.to_be_bytes())
+    }
+}
+
+impl HashedID<{ VectorAttributeID::HASH_LENGTH + 1 }> for VectorAttributeID {
     const FIXED_WIDTH_KEYS: bool = true;
 }
