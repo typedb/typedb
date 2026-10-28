@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use concept::thing::thing_manager::ConceptPersistenceOracle;
+use concept::thing::thing_manager::ConceptPersistenceGuarantees;
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::{
     Database,
@@ -59,9 +59,9 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
 
     fn open_write(
         &self,
-        concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+        concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
     ) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database, concept_persistence_oracle)
+        open_import_write_transaction(&self.staged_database, concept_persistence_guarantees)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
@@ -123,8 +123,7 @@ fn importer_with_spawner(
     let scratch_directory = database_manager.import_directory().to_owned();
     DatabaseImporter::start(
         importing_database(database_manager, name),
-        ImporterConfiguration::default().with_buffer_size(BUFFER_SIZE),
-        scratch_directory,
+        ImporterConfiguration::new(scratch_directory).with_buffer_size(BUFFER_SIZE),
         task_spawner,
     )
 }
@@ -435,7 +434,7 @@ async fn an_out_of_order_stream_is_rejected() {
 #[tokio::test]
 async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     init_logging();
-    let data_dir = create_tmp_dir("migration_pending_players");
+    let data_dir = create_tmp_dir("migration_deferred_players");
     let database_manager = manager(&data_dir);
     let person = |id: String| {
         MigrationItem::Entity(EntityItem {
@@ -463,20 +462,16 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
         role_count: 1,
         ..Counts::default()
     })));
-    let configuration = ImporterConfiguration::default()
+    let configuration = ImporterConfiguration::new(database_manager.import_directory().to_owned())
         .with_buffer_size(BUFFER_SIZE)
         .with_max_writes_per_commit(max_writes_per_commit);
-    let mut importer = DatabaseImporter::start(
-        importing_database(&database_manager, "pending"),
-        configuration,
-        database_manager.import_directory().to_owned(),
-        &task_spawner(),
-    );
+    let mut importer =
+        DatabaseImporter::start(importing_database(&database_manager, "deferred"), configuration, &task_spawner());
     importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
     import_all(importer, items).await;
 
-    let transaction = read_transaction(&database_manager, "pending");
-    let relations: Vec<MigrationItem> = export(&transaction, "pending")
+    let transaction = read_transaction(&database_manager, "deferred");
+    let relations: Vec<MigrationItem> = export(&transaction, "deferred")
         .1
         .into_iter()
         .filter(|item| matches!(item, MigrationItem::Relation(_)))

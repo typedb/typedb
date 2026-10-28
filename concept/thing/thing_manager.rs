@@ -137,10 +137,10 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
-    concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+    concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
 }
 
-pub trait ConceptPersistenceOracle: fmt::Debug + Send + Sync {
+pub trait ConceptPersistenceGuarantees: fmt::Debug + Send + Sync {
     fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist;
 
     fn attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist;
@@ -156,16 +156,16 @@ impl ThingManager {
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
     ) -> Self {
-        Self::new_with_concept_persistence_oracle(vertex_generator, type_manager, statistics, None)
+        Self::new_with_concept_persistence_guarantees(vertex_generator, type_manager, statistics, None)
     }
 
-    pub fn new_with_concept_persistence_oracle(
+    pub fn new_with_concept_persistence_guarantees(
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
-        concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+        concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics, concept_persistence_oracle }
+        ThingManager { vertex_generator, type_manager, statistics, concept_persistence_guarantees }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -1488,7 +1488,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, relation, &player).edges_lookup_mode();
         LinksIterator::new(snapshot.iterate_range_in_lookup_mode(
             &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
             snapshot_lookup_mode,
@@ -1567,7 +1567,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, relation, &player).edges_lookup_mode();
         let links_exists = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -1827,17 +1827,17 @@ impl ThingManager {
         vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        if let Some(concept_persistence_oracle) = &self.concept_persistence_oracle {
+        if let Some(concept_persistence_guarantees) = &self.concept_persistence_guarantees {
             // TODO: ugly hack to get around generic trait method: re-decode
             let prefix = vertex.prefix();
             let type_id = vertex.type_id_();
             let known_to_exist = match prefix {
-                Prefix::VertexEntity => concept_persistence_oracle
+                Prefix::VertexEntity => concept_persistence_guarantees
                     .object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id))),
-                Prefix::VertexRelation => concept_persistence_oracle
+                Prefix::VertexRelation => concept_persistence_guarantees
                     .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
                 Prefix::VertexAttribute => {
-                    concept_persistence_oracle.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
+                    concept_persistence_guarantees.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
                 }
                 _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
             };
@@ -2706,7 +2706,7 @@ impl ThingManager {
     ///
     /// WARNING: using this will forever bump the internal ID generator to higher than this number.
     /// Do not over-allocate!
-    pub fn create_entity_with_id(
+    pub fn unsafe_create_entity_with_id(
         &self,
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType,
@@ -2717,7 +2717,7 @@ impl ThingManager {
 
         let vertex = self
             .vertex_generator
-            .create_entity_with_id(entity_type.vertex().type_id_(), object_id, snapshot)
+            .unsafe_create_entity_with_id(entity_type.vertex().type_id_(), object_id, snapshot)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
         Ok(Entity::new(vertex))
     }
@@ -2737,7 +2737,7 @@ impl ThingManager {
     ///
     /// WARNING: using this will forever bump the internal ID generator to higher than this number.
     /// Do not over-allocate!
-    pub fn create_relation_with_id(
+    pub fn unsafe_create_relation_with_id(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
@@ -2748,7 +2748,7 @@ impl ThingManager {
 
         let vertex = self
             .vertex_generator
-            .create_relation_with_id(relation_type.vertex().type_id_(), object_id, snapshot)
+            .unsafe_create_relation_with_id(relation_type.vertex().type_id_(), object_id, snapshot)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
         Ok(Relation::new(vertex))
     }
@@ -2804,9 +2804,9 @@ impl ThingManager {
         )?;
 
         let known_to_exist = self
-            .concept_persistence_oracle
+            .concept_persistence_guarantees
             .as_ref()
-            .map(|oracle| oracle.new_attribute_known_to_exist(attribute_type))
+            .map(|guarantees| guarantees.new_attribute_known_to_exist(attribute_type))
             .unwrap_or(KnownToExist::Unknown);
 
         let vertex = match value
@@ -3010,6 +3010,23 @@ impl ThingManager {
         Ok(())
     }
 
+    fn new_edge_known_to_exist(&self, origin: ObjectOrigin) -> KnownToExist {
+        match origin {
+            ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
+            ObjectOrigin::UnknownTransaction => {
+                match self
+                    .concept_persistence_guarantees
+                    .as_ref()
+                    .map(|guarantees| guarantees.new_edge_known_to_exist())
+                {
+                    Some(KnownToExist::NonExistent) => KnownToExist::NonExistent,
+                    // a put never assumes the edge is present
+                    Some(KnownToExist::Unknown) | Some(KnownToExist::Exists) | None => KnownToExist::Unknown,
+                }
+            }
+        }
+    }
+
     pub(crate) fn set_has_unordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -3162,7 +3179,7 @@ impl ThingManager {
         player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
-        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, &relation, &player));
+        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, relation, &player));
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         snapshot.put_val_with_known_to_exist(
             links.into_storage_key().into_owned_array(),
@@ -3225,8 +3242,7 @@ impl ThingManager {
         if count == 0 {
             self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
-            let edge_known_to_exist =
-                self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, &relation, &player));
+            let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, relation, &player));
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
@@ -3298,7 +3314,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, relation, &player).edges_lookup_mode();
         let count = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -3337,7 +3353,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
-        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, &relation, &player).edges_lookup_mode();
+        let snapshot_lookup_mode = ObjectOrigin::of_links(snapshot, relation, &player).edges_lookup_mode();
         let count = snapshot
             .get_mapped_in_lookup_mode(
                 links.into_storage_key().as_reference(),
@@ -3389,7 +3405,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
-        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, &relation, &player));
+        let edge_known_to_exist = self.new_edge_known_to_exist(ObjectOrigin::of_links(snapshot, relation, &player));
         let players = relation
             .get_players(snapshot, self, storage_counters)
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
@@ -3659,40 +3675,18 @@ impl ObjectOrigin {
         matches!(self, Self::UnknownTransaction)
     }
 
-    /// The origin of a links edge: this transaction's whenever either endpoint is, since neither can have a persisted edge
-    pub(crate) fn of_links(
-        snapshot: &impl ReadableSnapshot,
-        relation: &impl ObjectAPI,
-        player: &impl ObjectAPI,
-    ) -> Self {
-        if Self::of(snapshot, relation).is_this_transaction() || Self::of(snapshot, player).is_this_transaction() {
+    pub(crate) fn of_links(snapshot: &impl ReadableSnapshot, relation: Relation, player: &impl ObjectAPI) -> Self {
+        if Self::of(snapshot, &relation).is_this_transaction() || Self::of(snapshot, player).is_this_transaction() {
             Self::ThisTransaction
         } else {
             Self::UnknownTransaction
         }
     }
 
-    /// Where to read the edges of an object: only this transaction's buffer when the object is its own
     pub(crate) fn edges_lookup_mode(&self) -> SnapshotLookupMode {
         match self {
             Self::ThisTransaction => SnapshotLookupMode::BufferOnly,
             Self::UnknownTransaction => SnapshotLookupMode::BufferAndStorage,
-        }
-    }
-}
-
-impl ThingManager {
-    /// Whether an edge about to be put from an object of the given origin can already be persisted
-    fn new_edge_known_to_exist(&self, origin: ObjectOrigin) -> KnownToExist {
-        match origin {
-            ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
-            ObjectOrigin::UnknownTransaction => {
-                match self.concept_persistence_oracle.as_ref().map(|oracle| oracle.new_edge_known_to_exist()) {
-                    Some(KnownToExist::NonExistent) => KnownToExist::NonExistent,
-                    // a put never assumes the edge is present
-                    Some(KnownToExist::Unknown) | Some(KnownToExist::Exists) | None => KnownToExist::Unknown,
-                }
-            }
         }
     }
 }

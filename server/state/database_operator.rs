@@ -7,7 +7,7 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
-use concept::thing::thing_manager::ConceptPersistenceOracle;
+use concept::thing::thing_manager::ConceptPersistenceGuarantees;
 use concurrency::TokioTaskSpawner;
 use database::{
     Database, DatabaseDeleteError, DatabaseOpenError,
@@ -127,9 +127,9 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
 
     fn open_write(
         &self,
-        concept_persistence_oracle: Option<Box<dyn ConceptPersistenceOracle>>,
+        concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
     ) -> Result<TransactionWrite<WALClient>, TransactionError> {
-        open_import_write_transaction(&self.staged_database, concept_persistence_oracle)
+        open_import_write_transaction(&self.staged_database, concept_persistence_guarantees)
     }
 
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
@@ -207,8 +207,8 @@ impl LocalDatabaseOperator {
 
     pub fn start_importer(&self, importing_database: Arc<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
         let scratch_directory = self.database_manager.import_directory().to_owned();
-        let configuration = ImporterConfiguration::default().with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
-        DatabaseImporter::start(importing_database, configuration, scratch_directory, &self.background_task_spawner)
+        let configuration = ImporterConfiguration::new(scratch_directory).with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
+        DatabaseImporter::start(importing_database, configuration, &self.background_task_spawner)
     }
 
     pub fn prepare_imported_database(&self, name: String) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
