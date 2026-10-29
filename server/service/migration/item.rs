@@ -26,12 +26,12 @@ use crate::service::grpc::concept::{
     encode_date, encode_datetime, encode_datetime_tz, encode_decimal, encode_duration,
 };
 
-pub(crate) enum EncodedItem {
+pub enum EncodedItem {
     Schema(String),
     Item(Item),
 }
 
-pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
+pub fn encode_item(item: ExportMessage) -> EncodedItem {
     let encoded = match item {
         ExportMessage::Schema(schema) => return EncodedItem::Schema(schema),
         ExportMessage::Item(item) => match item {
@@ -83,7 +83,7 @@ pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
     EncodedItem::Item(Item { item: Some(encoded) })
 }
 
-pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
+pub fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
     let Item { item } = item_proto;
     let item = item.ok_or(ItemDecodeError::EmptyItem {})?;
     let decoded = match item {

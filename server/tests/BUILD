@@ -20,10 +20,32 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_migration",
+    srcs = ["migration.rs"],
+    data = glob(["fixtures/*"]),
+    deps = [
+        "//common/concurrency",
+        "//common/options",
+        "//concept",
+        "//database",
+        "//diagnostics",
+        "//resource",
+        "//server",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@crates//:prost",
+        "@crates//:tokio",
+        "@typedb_protocol//grpc/rust:typedb_protocol",
+    ],
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_encryption",
+        ":test_migration",
     ],
     size = "small",
 )
