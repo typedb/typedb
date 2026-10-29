@@ -145,9 +145,9 @@ pub trait ConceptPersistenceGuarantees: fmt::Debug + Send + Sync {
 
     fn attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist;
 
-    fn new_attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist;
+    fn new_attribute_may_exist(&self, type_: AttributeType) -> bool;
 
-    fn new_edge_known_to_exist(&self) -> KnownToExist;
+    fn new_edge_may_exist(&self) -> bool;
 }
 
 impl ThingManager {
@@ -2803,11 +2803,10 @@ impl ThingManager {
             || Ok(value.as_reference()),
         )?;
 
-        let known_to_exist = self
-            .concept_persistence_guarantees
-            .as_ref()
-            .map(|guarantees| guarantees.new_attribute_known_to_exist(attribute_type))
-            .unwrap_or(KnownToExist::Unknown);
+        let known_to_exist = match self.concept_persistence_guarantees.as_ref() {
+            Some(guarantees) if !guarantees.new_attribute_may_exist(attribute_type) => KnownToExist::NonExistent,
+            _ => KnownToExist::Unknown,
+        };
 
         let vertex = match value
             .cast(attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap().category())
@@ -3538,17 +3537,11 @@ impl ThingManager {
     fn new_edge_known_to_exist(&self, origin: ObjectOrigin) -> KnownToExist {
         match origin {
             ObjectOrigin::ThisTransaction => KnownToExist::NonExistent,
-            ObjectOrigin::UnknownTransaction => {
-                match self
-                    .concept_persistence_guarantees
-                    .as_ref()
-                    .map(|guarantees| guarantees.new_edge_known_to_exist())
-                {
-                    Some(KnownToExist::NonExistent) => KnownToExist::NonExistent,
-                    // a put never assumes the edge is present
-                    Some(KnownToExist::Unknown) | Some(KnownToExist::Exists) | None => KnownToExist::Unknown,
-                }
-            }
+            ObjectOrigin::UnknownTransaction => match self.concept_persistence_guarantees.as_ref() {
+                Some(guarantees) if !guarantees.new_edge_may_exist() => KnownToExist::NonExistent,
+                // a put never assumes the edge is present
+                _ => KnownToExist::Unknown,
+            },
         }
     }
 }
