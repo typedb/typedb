@@ -11,7 +11,7 @@ use std::{
         ControlFlow,
         ControlFlow::{Break, Continue},
     },
-    sync::Arc,
+    sync::{Arc, Weak},
 };
 
 use compiler::query_structure::PipelineStructure;
@@ -159,7 +159,7 @@ pub(crate) struct TransactionService {
     timeout_at: Instant,
 
     transaction: Option<Transaction>,
-    query_manager: Option<QueryManager>,
+    query_manager: Weak<QueryManager>,
     query_queue: VecDeque<(TransactionResponder, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsHttp>, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
     running_read_queries: JoinSet<ControlFlow<(), ()>>,
@@ -256,7 +256,7 @@ impl TransactionService {
             timeout_at: init_transaction_timeout(None),
 
             transaction: None,
-            query_manager: None,
+            query_manager: Weak::new(),
             query_queue: VecDeque::with_capacity(20),
             running_write_query: None,
             running_read_queries: JoinSet::new(),
@@ -292,7 +292,7 @@ impl TransactionService {
             transaction.load_kind(),
             ClientEndpoint::Http,
         ));
-        self.query_manager = Some(with_readable_transaction!(&transaction, |txn| { (*txn.query_manager).clone() }));
+        self.query_manager = with_readable_transaction!(&transaction, |txn| { Arc::downgrade(&txn.query_manager) });
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
 
@@ -660,7 +660,7 @@ impl TransactionService {
         }
 
         // Step 1 (parse) needs no transaction, so this is safe even while a write holds it.
-        let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
+        let pipeline = match self.query_manager.upgrade().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(schema_query)) => {
                 // schema queries are handled immediately so there is a query response or a fatal error
@@ -1215,7 +1215,7 @@ impl TransactionService {
 
     async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
         // Step 1 (parse) needs no transaction, so this is safe even while a write holds it.
-        let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
+        let pipeline = match self.query_manager.upgrade().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(_)) => {
                 respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});
