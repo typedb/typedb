@@ -2054,7 +2054,7 @@ impl ThingManager {
             Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
-        if !start_value_type.is_approximately_castable_to(expected_value_type_category) {
+        if !start_value_type.category().is_approximately_castable_to(expected_value_type_category) {
             return None;
         }
         Some(range.start_bound().map(|value| {
@@ -2077,7 +2077,7 @@ impl ThingManager {
             Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
-        if !end_value_type.is_approximately_castable_to(expected_value_type_category) {
+        if !end_value_type.category().is_approximately_castable_to(expected_value_type_category) {
             return None;
         }
         Some(range.end_bound().map(|value| {
@@ -2799,7 +2799,7 @@ impl ThingManager {
             snapshot,
             self,
             attribute_type,
-            value.value_type(),
+            value.value_type().category(),
             || Ok(value.as_reference()),
         )?;
 
@@ -3029,13 +3029,13 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let attribute_type = attribute.type_();
-        let value_type = attribute_type.get_value_type_without_source(snapshot, &self.type_manager)?.unwrap();
+        let value_type_category = attribute.vertex().value_type_category();
         let get_value = || attribute.get_value(snapshot, self, storage_counters.clone());
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
             self,
             attribute_type,
-            value_type,
+            value_type_category,
             get_value,
         )?;
 
@@ -3722,7 +3722,7 @@ impl<'v, 'a> AttributeValueLookup<'v, 'a> {
         let value_type = value.value_type();
         value_type_categories.contains(&value_type.category())
             && value_type_categories.iter().all(|category| {
-                *category == value_type.category() || !value_type.is_approximately_castable_to(*category)
+                *category == value_type.category() || !value_type.category().is_approximately_castable_to(*category)
             })
     }
 }

@@ -504,6 +504,45 @@ async fn an_out_of_order_stream_is_rejected() {
 }
 
 #[tokio::test]
+async fn an_inline_attribute_referenced_by_id_under_the_by_value_guarantee_is_rejected() {
+    init_logging();
+    let data_dir = create_tmp_dir("migration_owned_attribute_by_id");
+    let database_manager = manager(&data_dir);
+    let mut importer = importer_with_schema(&database_manager, "target", SCHEMA).await;
+    let items = vec![
+        MigrationItem::Header {
+            typedb_version: "3.0.0-test".to_owned(),
+            original_database: "source".to_owned(),
+            guarantees: Guarantees {
+                ordering: ItemOrder::AttributeEntityRelation,
+                attributes_unique: true,
+                players_by_label_scoped_ids: false,
+                owned_attributes_by_value: true,
+            },
+        },
+        MigrationItem::Attribute(AttributeItem {
+            id: "bob".to_owned(),
+            label: Label::build("name", None),
+            value: Value::String("Bob".into()),
+        }),
+        MigrationItem::Entity(EntityItem {
+            id: "p1".to_owned(),
+            label: Label::build("person", None),
+            label_scoped_id: None,
+            owned_attributes: vec![OwnedAttribute::by_id("bob".to_owned())],
+        }),
+        empty_checksums(),
+    ];
+    for item in items {
+        if importer.send(item).await.is_err() {
+            break;
+        }
+    }
+    let result = importer.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::UnknownOwnedAttribute { ref id }) if id == "bob"), "{result:?}");
+}
+
+#[tokio::test]
 async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     init_logging();
     let data_dir = create_tmp_dir("migration_deferred_players");

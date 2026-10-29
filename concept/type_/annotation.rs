@@ -333,7 +333,8 @@ impl AnnotationRange {
             match expected {
                 None => true, // used for unbound start or end value
                 Some(expected) => {
-                    annotation_type == expected || annotation_type.is_trivially_castable_to(expected.category())
+                    annotation_type == expected
+                        || annotation_type.category().is_trivially_castable_to(expected.category())
                 }
             }
         }
@@ -355,7 +356,11 @@ impl AnnotationRange {
                     if !is_compatible(&start_inclusive.value_type(), &value_type) {
                         return false;
                     }
-                    if !end_inclusive.value_type().is_trivially_castable_to(start_inclusive.value_type().category()) {
+                    if !end_inclusive
+                        .value_type()
+                        .category()
+                        .is_trivially_castable_to(start_inclusive.value_type().category())
+                    {
                         return false;
                     }
                     start_inclusive.partial_cmp(end_inclusive) == Some(Ordering::Less)
@@ -459,7 +464,8 @@ impl AnnotationValues {
         if let Some(ref expected) = expected_value_type {
             let annotation_value_type = unique_value_types.iter().next().unwrap();
             // Check if the annotation's value type matches or is trivially castable to the expected type
-            if annotation_value_type != expected && !annotation_value_type.is_trivially_castable_to(expected.category())
+            if annotation_value_type != expected
+                && !annotation_value_type.category().is_trivially_castable_to(expected.category())
             {
                 return false;
             }

@@ -234,7 +234,7 @@ impl<'a> Value<'a> {
     pub fn cast(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
         if self.value_type().category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if !self.value_type().category().is_trivially_castable_to(value_type_category) {
             return None;
         }
 
@@ -262,9 +262,9 @@ impl<'a> Value<'a> {
     pub fn approximate_cast_lower_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
         if self.value_type().category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
+        } else if !self.value_type().category().is_approximately_castable_to(value_type_category) {
             return None;
-        } else if self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if self.value_type().category().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
         }
 
@@ -305,9 +305,9 @@ impl<'a> Value<'a> {
     pub fn approximate_cast_upper_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
         if self.value_type().category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
+        } else if !self.value_type().category().is_approximately_castable_to(value_type_category) {
             return None;
-        } else if self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if self.value_type().category().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
         }
 
@@ -525,7 +525,8 @@ impl<'a> ValueRestriction<'a> {
     fn wider_value<'v>(first: &'v Value<'a>, second: &'v Value<'a>) -> &'v Value<'a> {
         let first_category = first.value_type().category();
         let second_category = second.value_type().category();
-        if first_category != second_category && first.value_type().is_trivially_castable_to(second_category) {
+        if first_category != second_category && first.value_type().category().is_trivially_castable_to(second_category)
+        {
             second
         } else {
             first
@@ -604,15 +605,15 @@ impl<'a> BitAnd for ValueRestriction<'a> {
                 Some(Ordering::Equal) => ValueRestriction::Equality(Self::wider_value(&lhs, &rhs).clone()),
                 Some(Ordering::Less | Ordering::Greater) => ValueRestriction::Unsatisfiable,
                 // values of value types the checks never compare (e.g. string and integer) can't both be matched
-                None if !lhs.value_type().is_trivially_castable_to(rhs.value_type().category())
-                    && !rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) =>
+                None if !lhs.value_type().category().is_trivially_castable_to(rhs.value_type().category())
+                    && !rhs.value_type().category().is_trivially_castable_to(lhs.value_type().category()) =>
                 {
                     ValueRestriction::Unsatisfiable
                 }
                 // the checks compare these by casting one to the other (e.g. date to datetime): the intersection is a
                 // subset of either operand, so keep the one that casts, which can be looked up in attributes of either
                 // value type, and leave the other to the checks
-                None if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) => {
+                None if rhs.value_type().category().is_trivially_castable_to(lhs.value_type().category()) => {
                     ValueRestriction::Equality(rhs)
                 }
                 None => ValueRestriction::Equality(lhs),

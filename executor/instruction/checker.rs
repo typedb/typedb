@@ -492,9 +492,9 @@ fn filter_comparison<Source, Var: ExtractFrom<Source>>(
         VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
         VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
     };
-    if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) {
+    if rhs.value_type().category().is_trivially_castable_to(lhs.value_type().category()) {
         Ok(cmp_values(&comparator)(&lhs, &rhs.cast(lhs.value_type().category()).unwrap()))
-    } else if lhs.value_type().is_trivially_castable_to(rhs.value_type().category()) {
+    } else if lhs.value_type().category().is_trivially_castable_to(rhs.value_type().category()) {
         Ok(cmp_values(&comparator)(&lhs.cast(rhs.value_type().category()).unwrap(), &rhs))
     } else {
         Ok(false)

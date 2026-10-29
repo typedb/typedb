@@ -346,6 +346,7 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::UnknownPlayerType { .. }
         | DatabaseImportError::PlayerLabelScopedIdMissing { .. }
         | DatabaseImportError::LabelScopedIdMissing { .. }
+        | DatabaseImportError::UnknownOwnedAttribute { .. }
         | DatabaseImportError::MissingValueType { .. }
         | DatabaseImportError::ValueTypeMismatch { .. }
         | DatabaseImportError::NoClientChecksumsOnDone { .. }

@@ -1712,6 +1712,9 @@ impl ImportWorker {
                             attribute
                         }
                         None => {
+                            if self.configuration.skip_recording_of_inline_attributes() {
+                                return Err(DatabaseImportError::UnknownOwnedAttribute { id });
+                            }
                             self.transaction_data_info.deferred_ownerships.push(DeferredOwnership {
                                 attribute_original_id: id,
                                 owner_iid: object.iid().into_array(),
@@ -2021,12 +2024,11 @@ typedb_error! {
         UnknownEntityType(15, "Cannot process an entity: entity type '{label}' does not exist in the schema.", label: Label),
         UnknownRelationType(16, "Cannot process a relation: relation type '{label}' does not exist in the schema.", label: Label),
         UnknownRoleType(17, "Cannot process a role player: role type '{label}' does not exist in the schema.", label: Label),
-        UnknownPlayerType(18, "Cannot process a relation player: the type '{label}' does not exist in the schema.", label: Label),
-        NoClientChecksumsOnDone(19, "Cannot verify the imported database as there are no checksums received from the client. It is a sign of a corrupted file or a client bug."),
-        InvalidChecksumsOnDone(20, "Invalid imported database with a checksums mismatch: {details}.", details: String),
-        IncompleteOwnershipsOnDone(21, "Invalid imported database with {count} unknown owned attributes. It is a sign of a corrupted file or a client bug.", count: usize),
-        IncompleteRolesOnDone(22, "Invalid imported database with {count} unknown role players. It is a sign of a corrupted file or a client bug.", count: usize),
-        DoubleFinalisation(23, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
+        NoClientChecksumsOnDone(18, "Cannot verify the imported database as there are no checksums received from the client. It is a sign of a corrupted file or a client bug."),
+        InvalidChecksumsOnDone(19, "Invalid imported database with a checksums mismatch: {details}.", details: String),
+        IncompleteOwnershipsOnDone(20, "Invalid imported database with {count} unknown owned attributes. It is a sign of a corrupted file or a client bug.", count: usize),
+        IncompleteRolesOnDone(21, "Invalid imported database with {count} unknown role players. It is a sign of a corrupted file or a client bug.", count: usize),
+        DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
         CacheError(25, "Error writing import data.", source: CacheError),
         FinalisationFailed(26, "Import finalisation failed.", typedb_source: MigrationOperationError),
@@ -2043,9 +2045,11 @@ typedb_error! {
         ItemOrderViolation(37, "Expected order {order}, but got an item from {current_phase} followed by one from {next_phase}.", order: ItemOrder, current_phase: ImportPhase, next_phase: ImportPhase),
         PlayerLabelScopedIdMissing(38, "A relation player without a label-scoped id was received, but the import guarantees players are referenced by label-scoped ids. It is a sign of a corrupted file or a client bug."),
         UnexpectedPhase(39, "Internal error - mismatched item order {order} with phase {phase}.", order: ItemOrder, phase: ImportPhase),
+        UnknownPlayerType(40, "Cannot process a relation player: the type '{label}' does not exist in the schema.", label: Label),
         LabelScopedIdMissing(41, "Expected entity/relation import message to contain a label-scoped ID, but was missing. Unscoped id: '{id}'", id: String),
         MissingValueType(42, "Cannot process attribute: attribute '{label}' does not have a value type.", label: Label),
-        HeaderAfterItems(44, "A header was received after instance items. It is a sign of a corrupted file or a client bug."),
         ValueTypeMismatch(43, "Type {label} requires a value type of {expected_value_type} but got value {actual_value} of value type {actual_value_type}.", label: Label, expected_value_type: ValueType, actual_value: Value<'static>, actual_value_type: ValueType),
+        HeaderAfterItems(44, "A header was received after instance items. It is a sign of a corrupted file or a client bug."),
+        UnknownOwnedAttribute(45, "Cannot process an ownership of unknown attribute '{id}': the import guarantees that attributes precede their owners and that inline attributes are referenced by value. It is a sign of a corrupted file or a client bug.", id: String),
     }
 }

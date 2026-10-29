@@ -86,33 +86,6 @@ impl ValueType {
             }
         }
     }
-
-    pub fn is_trivially_castable_to(&self, other: ValueTypeCategory) -> bool {
-        if self.category() == other {
-            return true;
-        }
-        match self {
-            ValueType::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
-            ValueType::Decimal => other == ValueTypeCategory::Double,
-            ValueType::Date => other == ValueTypeCategory::DateTime,
-            _ => false,
-        }
-    }
-
-    // we can approximately cast any numerical type to any other numerical type
-    pub fn is_approximately_castable_to(&self, other: ValueTypeCategory) -> bool {
-        if self.category() == other {
-            return true;
-        }
-        match self {
-            ValueType::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
-            ValueType::Decimal => other == ValueTypeCategory::Double || other == ValueTypeCategory::Integer,
-            ValueType::Double => other == ValueTypeCategory::Decimal || other == ValueTypeCategory::Integer,
-            // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
-            ValueType::Date => other == ValueTypeCategory::DateTime,
-            _ => false,
-        }
-    }
 }
 
 impl StructuralEquality for ValueType {
@@ -181,6 +154,33 @@ pub enum ValueTypeCategory {
 }
 
 impl ValueTypeCategory {
+    pub fn is_trivially_castable_to(self, other: ValueTypeCategory) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            Self::Integer => other == Self::Double || other == Self::Decimal,
+            Self::Decimal => other == Self::Double,
+            Self::Date => other == Self::DateTime,
+            _ => false,
+        }
+    }
+
+    // we can approximately cast any numerical type to any other numerical type
+    pub fn is_approximately_castable_to(self, other: ValueTypeCategory) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            Self::Integer => other == Self::Double || other == Self::Decimal,
+            Self::Decimal => other == Self::Double || other == Self::Integer,
+            Self::Double => other == Self::Decimal || other == Self::Integer,
+            // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
+            Self::Date => other == Self::DateTime,
+            _ => false,
+        }
+    }
+
     pub const fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         // WARNING: Order here must align with AttributeID enum ordering!!
         match self {
