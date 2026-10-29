@@ -12,6 +12,11 @@ config:
 
 build:
   correctness:
+    tmp:
+      image: typedb-ubuntu-22.04
+      command: |
+        sleep 10800
+
     build:
       image: typedb-ubuntu-22.04
       command: |
