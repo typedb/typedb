@@ -7,7 +7,11 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
-use encoding::value::{value::Value, value_type::ValueType};
+use encoding::value::{
+    ValueEncodable,
+    value::Value,
+    value_type::{ValueType, ValueTypeCategory},
+};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -459,12 +463,12 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
-        value_type: ValueType,
+        value_type_category: ValueTypeCategory,
         get_value: impl Fn() -> Result<Value<'a>, Box<ConceptReadError>>,
     ) -> Result<(), Box<ConceptWriteError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
+            Some(type_value_type) if value_type_category.is_trivially_castable_to(type_value_type.category()) => Ok(()),
             Some(type_value_type) => {
                 let value =
                     get_value().map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?.into_owned();
@@ -472,7 +476,7 @@ impl OperationTimeValidation {
                     typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
                         attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
                         expected_value_type: type_value_type,
-                        provided_value_type: value_type,
+                        provided_value_type: value.value_type(),
                         provided_value: value,
                     }),
                 }))
@@ -483,7 +487,7 @@ impl OperationTimeValidation {
                 Err(Box::new(ConceptWriteError::DataValidation {
                     typedb_source: Box::new(DataValidationError::AttributeTypeHasNoValueType {
                         attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
-                        provided_value_type: value_type,
+                        provided_value_type: value.value_type(),
                         provided_value: value,
                     }),
                 }))
@@ -499,7 +503,9 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<ConceptReadError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
+            Some(type_value_type) if value_type.category().is_trivially_castable_to(type_value_type.category()) => {
+                Ok(())
+            }
             _ => Err(Box::new(ConceptReadError::ValueTypeMismatchWithAttributeType {
                 attribute_type,
                 expected: type_value_type,
