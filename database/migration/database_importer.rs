@@ -124,9 +124,7 @@ macro_rules! for_item_in_write_transaction {
         );
 
         $self.data_transaction = Some(transaction);
-        result?;
-        $self.transaction_data_info.item_count += 1;
-        $self.commit_if_full()
+        result
     }};
 }
 
@@ -327,7 +325,6 @@ struct DeferredOwnership {
     owner_iid: IID,
 }
 
-/// All links of one relation, deferred together so that they are written in one transaction
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct DeferredLinks {
     relation_iid: IID,
@@ -1239,15 +1236,6 @@ impl DatabaseImporter {
     }
 }
 
-fn is_isolation_conflict(error: &DatabaseImportError) -> bool {
-    match error {
-        DatabaseImportError::DataCommitFailed { typedb_source } => {
-            StorageCommitError::is_isolation_conflict(typedb_source.as_ref())
-        }
-        _ => false,
-    }
-}
-
 fn decode_object_vertex(iid: &[u8]) -> Result<ObjectVertex, DatabaseImportError> {
     ObjectVertex::try_decode(iid).ok_or_else(|| DatabaseImportError::ConceptRead {
         typedb_source: Box::new(ConceptReadError::IidRepresentsWrongInstanceKind {}),
@@ -1466,7 +1454,6 @@ struct ImportWorker {
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_items: Vec<ImportConcept>,
     transaction_data_info: TransactionDataInfo,
-    replaying: bool,
     total_item_count: Arc<AtomicU64>,
 }
 
@@ -1491,7 +1478,6 @@ impl ImportWorker {
             data_transaction: None,
             transaction_items: Vec::new(),
             transaction_data_info: TransactionDataInfo::default(),
-            replaying: false,
             total_item_count: importer.total_item_count.clone(),
         };
 
@@ -1534,9 +1520,13 @@ impl ImportWorker {
     }
 
     fn apply(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        if !self.replaying {
-            self.transaction_items.push(concept.clone());
-        }
+        self.transaction_items.push(concept.clone());
+        self.write_item(concept)?;
+        if self.transaction_is_full() { self.commit_transaction() } else { Ok(()) }
+    }
+
+    fn write_item(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
+        self.transaction_data_info.item_count += 1;
         match concept {
             ImportConcept::Entity(EntityItem { id, label, label_scoped_id, owned_attributes }) => {
                 self.import_entity(id, label, label_scoped_id, owned_attributes)
@@ -1885,43 +1875,37 @@ impl ImportWorker {
         }
     }
 
-    fn commit_if_full(&mut self) -> Result<(), DatabaseImportError> {
-        if self.replaying {
-            return Ok(());
-        }
+    fn transaction_is_full(&self) -> bool {
         let pending_writes =
             self.data_transaction.as_ref().map_or(0, |transaction| transaction.snapshot.operations().len());
-        if pending_writes >= self.configuration.max_writes_per_commit { self.commit_transaction() } else { Ok(()) }
+        pending_writes >= self.configuration.max_writes_per_commit
     }
 
     fn commit_transaction(&mut self) -> Result<(), DatabaseImportError> {
         let Some(mut transaction) = self.data_transaction.take() else { return Ok(()) };
-        let mut retries = 0;
-        loop {
+        for attempt in 1.. {
             match self.commit_write_transaction(transaction) {
                 Ok(()) => return self.merge_transaction_data_info(),
-                Err(error) if retries < Self::MAX_COMMIT_RETRIES && is_isolation_conflict(&error) => {
-                    retries += 1;
+                Err(error) if attempt <= Self::MAX_COMMIT_RETRIES && is_isolation_conflict(&error) => {
                     event!(
                         Level::DEBUG,
-                        "Import commit was rejected by an isolation conflict, retrying ({retries}/{}).",
+                        "Import commit was rejected by an isolation conflict, retrying ({attempt}/{}).",
                         Self::MAX_COMMIT_RETRIES
                     );
-                    transaction = self.replay_transaction()?;
+                    transaction = self.reapply_transaction()?;
                 }
                 Err(error) => return Err(error),
             }
         }
+        unreachable!("the commit either succeeds or returns its error within the retry limit")
     }
 
-    fn replay_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
+    fn reapply_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
         self.transaction_data_info = TransactionDataInfo::default();
         let items = std::mem::take(&mut self.transaction_items);
-        self.replaying = true;
-        let replayed = items.iter().try_for_each(|item| self.apply(item.clone()));
-        self.replaying = false;
+        let written = items.iter().cloned().try_for_each(|item| self.write_item(item));
         self.transaction_items = items;
-        replayed?;
+        written?;
         self.get_data_transaction()
     }
 
@@ -1949,6 +1933,15 @@ impl ImportWorker {
             Some(attribute) => Ok(Some(attribute.clone())),
             None => self.data_info.get_attribute_by_original_id(snapshot, thing_manager, id),
         }
+    }
+}
+
+fn is_isolation_conflict(error: &DatabaseImportError) -> bool {
+    match error {
+        DatabaseImportError::DataCommitFailed { typedb_source } => {
+            StorageCommitError::is_isolation_conflict(typedb_source.as_ref())
+        }
+        _ => false,
     }
 }
 
