@@ -1510,19 +1510,19 @@ impl ImportWorker {
                 if error_state.is_errored() {
                     return Ok(());
                 }
-                self.apply(concept)?;
+                self.write_and_may_commit(concept)?;
             }
         }
         if error_state.is_errored() {
             return Ok(());
         }
-        self.commit_transaction()
+        self.commit_with_retry()
     }
 
-    fn apply(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
+    fn write_and_may_commit(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.transaction_items.push(concept.clone());
         self.write_item(concept)?;
-        if self.transaction_is_full() { self.commit_transaction() } else { Ok(()) }
+        if self.reached_max_writes_per_commit() { self.commit_with_retry() } else { Ok(()) }
     }
 
     fn write_item(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
@@ -1875,13 +1875,13 @@ impl ImportWorker {
         }
     }
 
-    fn transaction_is_full(&self) -> bool {
+    fn reached_max_writes_per_commit(&self) -> bool {
         let pending_writes =
             self.data_transaction.as_ref().map_or(0, |transaction| transaction.snapshot.operations().len());
         pending_writes >= self.configuration.max_writes_per_commit
     }
 
-    fn commit_transaction(&mut self) -> Result<(), DatabaseImportError> {
+    fn commit_with_retry(&mut self) -> Result<(), DatabaseImportError> {
         let Some(mut transaction) = self.data_transaction.take() else { return Ok(()) };
         for attempt in 1.. {
             match self.commit_write_transaction(transaction) {
