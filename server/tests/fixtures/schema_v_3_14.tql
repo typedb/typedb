@@ -1,0 +1,92 @@
+define
+
+attribute id @abstract,
+ value string;
+attribute passport-id,
+  sub id;
+attribute email,
+ value string @regex("^[a-z.]+@[a-z]+\.[a-z]+$");
+attribute uid,
+ value integer;
+attribute name,
+ value string;
+attribute bio,
+ value string;
+attribute age,
+ value integer @range(0..150);
+attribute score,
+ value double;
+attribute balance,
+ value decimal;
+attribute birth-date,
+ value date;
+attribute created,
+ value datetime;
+attribute last-login,
+ value datetime-tz;
+attribute tenure,
+ value duration;
+attribute active,
+ value boolean;
+attribute tag,
+ value string @values("alpha", "beta", "gamma");
+attribute note @independent,
+ value string;
+attribute summary,
+ value string;
+entity person,
+  owns active,
+  owns age,
+  owns balance,
+  owns bio @card(0..1),
+  owns birth-date,
+  owns created,
+  owns email @key,
+  owns last-login,
+  owns name @card(1..3),
+  owns passport-id,
+  owns score,
+  owns tag @card(0..),
+  owns tenure,
+  owns uid @unique @card(1..1),
+  plays endorsement:endorser,
+  plays friendship:friend @card(1..),
+  plays membership:member @card(0..2),
+  plays membership:sponsor @card(0..1),
+  plays review:reviewer @card(0..5);
+entity organisation @abstract,
+  owns name @card(1..1),
+  owns uid @key,
+  plays membership:group @card(0..);
+entity company,
+  sub organisation,
+  owns created;
+entity club,
+  sub organisation,
+  owns tag @card(2..2);
+relation interaction @abstract,
+  relates participant @card(1..);
+relation friendship,
+  sub interaction,
+  relates friend as participant @card(2..2),
+  owns created @card(1..1),
+  plays endorsement:endorsed;
+relation membership,
+  relates group @card(1..1),
+  relates member @card(1..),
+  relates sponsor @card(0..1),
+  owns active,
+  owns summary;
+relation endorsement,
+  relates endorsed @card(1..1),
+  relates endorser @card(1..1),
+  plays review:subject @card(0..1);
+relation review,
+  relates reviewer @card(1..1),
+  relates subject @card(1..1),
+  owns score @card(1..1),
+  owns summary @card(0..1);
+fun member_count($group: organisation) -> integer:
+    match
+      $membership isa membership, links (group: $group, member: $member);
+    return count($member);
