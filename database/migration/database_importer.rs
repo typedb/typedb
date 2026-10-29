@@ -1987,22 +1987,16 @@ impl ConceptPersistenceGuarantees for AttributeEntityRelationConceptPersistenceG
         }
     }
 
-    fn new_attribute_known_to_exist(&self, _type: AttributeType) -> KnownToExist {
-        if self.phase == ImportPhase::Attributes && self.attributes_unique {
-            // unique attribute values make every put in the attributes phase a fresh insert
-            KnownToExist::NonExistent
-        } else {
-            KnownToExist::Unknown
-        }
+    fn new_attribute_may_exist(&self, _type: AttributeType) -> bool {
+        // unique attribute values make every put in the attributes phase a fresh insert
+        !(self.phase == ImportPhase::Attributes && self.attributes_unique)
     }
 
-    fn new_edge_known_to_exist(&self) -> KnownToExist {
+    fn new_edge_may_exist(&self) -> bool {
         match self.phase {
             // an Import guarantees that edges are only ever added once
-            ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred => {
-                KnownToExist::NonExistent
-            }
-            ImportPhase::Default => KnownToExist::Unknown,
+            ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred => false,
+            ImportPhase::Default => true,
         }
     }
 }

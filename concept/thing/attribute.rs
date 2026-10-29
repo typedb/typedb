@@ -91,14 +91,19 @@ impl Attribute {
                 actual: value.value_type().category(),
             });
         }
-        debug_assert_eq!(
-            thing_manager
+        if cfg!(debug_assertions) {
+            let stored_value = thing_manager
                 .get_attribute_value(snapshot, self, storage_counters)
-                .expect("the value of an attribute must be readable to cache it"),
-            *value,
-            "the cached value must be the attribute's stored value"
-        );
-        let _ = self.value.set(value);
+                .expect("the value of an attribute must be readable to cache it");
+            assert_eq!(stored_value, *value, "the cached value must be the attribute's stored value");
+        }
+        if let Err(value) = self.value.set(value) {
+            debug_assert_eq!(
+                **self.value.get().unwrap(),
+                *value,
+                "an attribute's cached value must not be replaced by a different one"
+            );
+        }
         Ok(())
     }
 
