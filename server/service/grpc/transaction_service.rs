@@ -11,7 +11,7 @@ use std::{
         ControlFlow,
         ControlFlow::{Break, Continue},
     },
-    sync::Arc,
+    sync::{Arc, Weak},
     time::Duration,
 };
 
@@ -147,7 +147,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    query_manager: Option<Arc<QueryManager>>,
+    query_manager: Weak<QueryManager>,
     query_queue: VecDeque<(Uuid, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsGrpc>, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
@@ -183,7 +183,7 @@ impl TransactionService {
 
             is_open: false,
             transaction: None,
-            query_manager: None,
+            query_manager: Weak::new(),
             query_queue: VecDeque::with_capacity(20),
             query_responders: HashMap::new(),
             running_write_query: None,
@@ -484,7 +484,7 @@ impl TransactionService {
             transaction.load_kind(),
             ClientEndpoint::Grpc,
         ));
-        self.query_manager = Some(transaction.query_manager());
+        self.query_manager = Arc::downgrade(&transaction.query_manager());
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
@@ -769,7 +769,7 @@ impl TransactionService {
         analyse_req: typedb_protocol::analyze::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         let query = analyse_req.query;
-        let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
+        let pipeline = match self.query_manager.upgrade().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(_)) => {
                 let response =
@@ -813,7 +813,7 @@ impl TransactionService {
 
         let query = query_req.query;
         let given_rows = query_req.given.map(GivenRowsGrpc);
-        let pipeline = match self.query_manager.as_ref().expect("transaction is open").parse(&query) {
+        let pipeline = match self.query_manager.upgrade().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(schema_query)) => {
                 // schema queries are handled immediately so there is a query response or a fatal Status
