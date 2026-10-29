@@ -126,3 +126,7 @@
 [[test]]
 	name = "test_unimplemented"
 	path = "tests/unimplemented.rs"
+
+[[test]]
+	name = "test_vector_search"
+	path = "tests/vector_search.rs"

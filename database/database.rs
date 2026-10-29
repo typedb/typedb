@@ -17,6 +17,7 @@ use std::{
 };
 
 use concept::{
+    index::vector_index::VectorIndex,
     thing::{
         cleanup::{CleanupIntervals, CleanupRecord},
         statistics::{Statistics, StatisticsError, deltas::CommitDeltas},
@@ -164,6 +165,7 @@ pub struct Database<D> {
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
+    pub(super) vector_index: Arc<VectorIndex>,
 
     pub(super) schema: Arc<RwLock<Schema>>,
     pub(super) query_cache: Arc<QueryCache>,
@@ -188,6 +190,7 @@ impl<D> fmt::Debug for Database<D> {
 
 impl<D> Database<D> {
     const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
+    const VECTOR_INDEX_DIR_NAME: &'static str = "vector-index";
 
     pub fn name(&self) -> &str {
         &self.name
@@ -195,6 +198,10 @@ impl<D> Database<D> {
 
     pub fn name_arc(&self) -> Arc<str> {
         self.name.clone()
+    }
+
+    pub fn vector_index(&self) -> &Arc<VectorIndex> {
+        &self.vector_index
     }
 
     // Must be called before serving write transactions in case the storage was modified with
@@ -346,9 +353,17 @@ impl Database<WALClient> {
         wal_client.register_record_type::<CleanupRecord>();
         wal_client.register_record_type::<CommitDeltas>();
 
+        let vector_index = Arc::new(VectorIndex::new());
+        vector_index.set_live_directory(path.join(Self::VECTOR_INDEX_DIR_NAME));
         let storage = Arc::new(
-            MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
-                .map_err(|error| StorageOpen { typedb_source: error })?,
+            MVCCStorage::create::<EncodingKeyspace>(
+                name,
+                path,
+                wal_client,
+                rocks_resources,
+                Some(vector_index.clone()),
+            )
+            .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
@@ -384,7 +399,13 @@ impl Database<WALClient> {
             commit_deltas_queue.clone(),
         );
 
-        let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(
+            name.to_owned(),
+            path.to_owned(),
+            SequenceNumber::MIN,
+            storage.clone(),
+            vector_index.clone(),
+        );
 
         let cleanup_queue = Arc::<RwLock<BTreeMap<SequenceNumber, CleanupIntervals>>>::default();
         let cleanup_fn =
@@ -397,6 +418,7 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
+            vector_index,
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
@@ -449,10 +471,31 @@ impl Database<WALClient> {
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
+        let (vector_index, vector_index_extension_missing) = match &checkpoint {
+            Some(reader) => match reader.get_additional_data::<VectorIndex>() {
+                Ok(store) => (Arc::new(store), false),
+                Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => (Arc::new(VectorIndex::new()), true),
+                Err(err) => return Err(Box::new(CheckpointLoad { name: name.to_string(), typedb_source: err })),
+            },
+            None => (Arc::new(VectorIndex::new()), false),
+        };
+        vector_index.set_live_directory(path.join(Self::VECTOR_INDEX_DIR_NAME));
         let storage = Arc::new(
-            MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint, rocks_resources)
-                .map_err(|error| StorageOpen { typedb_source: error })?,
+            MVCCStorage::load::<EncodingKeyspace>(
+                &name,
+                path,
+                wal_client,
+                &checkpoint,
+                rocks_resources,
+                Some(vector_index.clone()),
+            )
+            .map_err(|error| StorageOpen { typedb_source: error })?,
         );
+        if vector_index_extension_missing {
+            validate_vector_index_backs_all_committed_vectors(&storage, &vector_index).map_err(|description| {
+                DatabaseOpenError::VectorIndexMissingData { name: name.to_string(), description }
+            })?;
+        }
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
@@ -513,8 +556,13 @@ impl Database<WALClient> {
             query_cache.clone(),
             commit_deltas_queue.clone(),
         );
-        let checkpoint_fn =
-            make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(
+            name.to_owned(),
+            path.to_owned(),
+            checkpoint_sequence_number,
+            storage.clone(),
+            vector_index.clone(),
+        );
 
         let earliest_uncleaned = storage.earliest_uncleaned();
         let cleanup_queue = if let MvccCleanupStrategy::Disabled = cleanup_strategy {
@@ -540,6 +588,7 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
+            vector_index,
             schema,
             query_cache,
             _cleanup_queue: cleanup_queue,
@@ -566,13 +615,13 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        checkpoint_storage(&self.name, &self.path, &self.storage)
+        checkpoint_storage(&self.name, &self.path, &self.storage, &self.vector_index)
     }
 
     pub(crate) fn checkpoint_and_close(self) -> Result<(), DatabaseCloseError> {
         use DatabaseCloseError::{CheckpointCreate, StatisticsPersist};
 
-        let Self { name, path, storage, schema, background_workers, .. } = self;
+        let Self { name, path, storage, schema, background_workers, vector_index, .. } = self;
         drop(background_workers);
 
         let mut statistics = (*schema.read().unwrap().thing_statistics).clone();
@@ -580,7 +629,8 @@ impl Database<WALClient> {
             .synchronise_from_wal_and_persist(&storage)
             .map_err(|typedb_source| StatisticsPersist { name: name.to_string(), typedb_source })?;
 
-        checkpoint_storage(&name, &path, &storage).map_err(|source| CheckpointCreate { name: name.to_string(), source })
+        checkpoint_storage(&name, &path, &storage, &vector_index)
+            .map_err(|source| CheckpointCreate { name: name.to_string(), source })
     }
 
     #[allow(clippy::drop_non_drop)]
@@ -641,6 +691,7 @@ impl Database<WALClient> {
             None => return Err(Box::new(CorruptionPartialResetThingVertexGeneratorInUse {})),
             Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
+        self.vector_index.clear();
 
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.snapshot_watermark());
@@ -667,16 +718,57 @@ impl Database<WALClient> {
     }
 }
 
+fn validate_vector_index_backs_all_committed_vectors(
+    storage: &Arc<MVCCStorage<WALClient>>,
+    vector_index: &Arc<VectorIndex>,
+) -> Result<(), String> {
+    use encoding::graph::thing::vertex_attribute::AttributeVertex;
+    use resource::profile::StorageCounters;
+    use storage::{key_range::KeyRange, key_value::StorageKey, snapshot::ReadableSnapshot};
+
+    let keyspace = AttributeVertex::keyspace_for_category(encoding::value::value_type::ValueTypeCategory::Vector);
+    let prefix = encoding::layout::prefix::Prefix::VertexAttribute.prefix_id().to_bytes();
+    let snapshot = storage.clone().open_snapshot_read();
+    let vector_index = vector_index.clone();
+    let missing = snapshot
+        .iterate_range(
+            &KeyRange::new_within(StorageKey::<1>::new_ref(keyspace, &prefix), false),
+            StorageCounters::DISABLED,
+        )
+        .collect_cloned_vec(move |key, _value| {
+            if AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes()) {
+                let vertex = AttributeVertex::decode(key.bytes());
+                vector_index
+                    .get_vector(vertex)
+                    .is_none()
+                    .then(|| vertex.attribute_id().unwrap_vector().as_type_vector_index_key())
+            } else {
+                None
+            }
+        })
+        .map_err(|err| format!("storage read failed during vector index check: {err}"))?
+        .into_iter()
+        .flatten()
+        .next();
+    match missing {
+        Some(index_key) => {
+            Err(format!("committed vector attribute (key: {index_key:#018x}) has no value in the vector index"))
+        }
+        None => Ok(()),
+    }
+}
+
 fn make_checkpoint_fn(
     database_name: String,
     path: PathBuf,
     mut prev_checkpoint: SequenceNumber,
     storage: Arc<MVCCStorage<WALClient>>,
+    vector_index: Arc<VectorIndex>,
 ) -> impl FnMut() {
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
-            checkpoint_storage(&database_name, &path, &storage).unwrap();
+            checkpoint_storage(&database_name, &path, &storage, &vector_index).unwrap();
             prev_checkpoint = watermark;
         }
     }
@@ -686,10 +778,12 @@ fn checkpoint_storage(
     database_name: &str,
     path: &Path,
     storage: &MVCCStorage<WALClient>,
+    vector_index: &VectorIndex,
 ) -> Result<(), CheckpointCreateError> {
     debug!("Starting checkpoint for database {database_name}");
     let checkpoint = CheckpointWriter::new(path)?;
     storage.checkpoint(&checkpoint)?;
+    checkpoint.add_extension(vector_index)?;
     fail_point!(UNFINISHED_CHECKPOINT);
     checkpoint.finish()?;
     debug!("Finished checkpoint for database {database_name}");
@@ -842,6 +936,7 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        VectorIndexMissingData(18, "Database '{name}' has committed vector values that are not in the vector index: {description}. The checkpoint was likely written by a server version without vector support - restore a matching checkpoint or roll back the server version.", name: String, description: String),
     }
 }
 

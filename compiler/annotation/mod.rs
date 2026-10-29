@@ -254,6 +254,13 @@ typedb_error!(
             constraint_type: String,
             source_span: Option<Span>,
         ),
+        VectorLengthInvalid(
+            12,
+            "The vector length '{length}' is invalid: it must be a positive integer no greater than {max}.",
+            length: String,
+            max: u16,
+            source_span: Option<Span>,
+        ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),
     }
@@ -401,6 +408,7 @@ pub mod tests {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -417,6 +425,7 @@ pub mod tests {
             thing_vertex_generator.clone(),
             type_manager.clone(),
             Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+            Arc::new(concept::index::vector_index::VectorIndex::new()),
         );
 
         (type_manager, thing_manager)

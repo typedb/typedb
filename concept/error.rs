@@ -9,7 +9,10 @@ use std::{fmt, sync::Arc};
 use bytes::util::HexBytesFormatter;
 use encoding::{
     error::EncodingError,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, ValueTypeCategory},
+    },
 };
 use error::typedb_error;
 use storage::snapshot::{SnapshotError, SnapshotGetError, iterator::SnapshotIteratorError};
@@ -38,6 +41,7 @@ typedb_error!(
         UnsetHasOrderedOwnsUnordered(10, "Concept write failed, cannot unset an ordered owns when the ownership is unordered."),
         UnsetHasUnorderedOwnsOrdered(11, "Concept write failed, cannot unset an unordered owns when the ownership is ordered"),
         SetPlayersOrderedRoleUnordered(12, "Concept write failed, cannot set relation's ordered role players as unordered."),
+        UnimplementedFunctionality(13, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
     }
 );
 
@@ -80,7 +84,7 @@ typedb_error! {
             "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.",
             attribute_type: AttributeType,
             expected: Option<ValueType>,
-            provided: ValueType,
+            provided: ValueTypeCategory,
         ),
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
@@ -89,6 +93,18 @@ typedb_error! {
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
         FunctionNotFound(28, "Function named '{function_name}' not found.", function_name: String),
         LoadSchemaSnapshot(29, "Failed to load schema keyspace into cached read snapshot.", typedb_source: SnapshotError),
+        VectorSearchQueryDimensionMismatch(
+            30,
+            "Vector search query vector has dimension {provided}, but attribute type '{attribute_type}' expects dimension {expected}.",
+            attribute_type: AttributeType,
+            expected: u16,
+            provided: usize,
+        ),
+        VectorSearchQueryNotAVector(
+            31,
+            "Vector search query variable is bound to a non-vector value of type '{actual_type}'.",
+            actual_type: String,
+        ),
     }
 }
 

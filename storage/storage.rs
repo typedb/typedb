@@ -13,7 +13,7 @@ use std::{
     collections::BTreeMap,
     convert::identity,
     error::Error,
-    fs, io,
+    fmt, fs, io,
     path::{Path, PathBuf},
     sync::{
         Arc,
@@ -51,7 +51,7 @@ use crate::{
     isolation_manager::{IsolationManager, ValidatedCommit},
     iterator::MVCCRangeIterator,
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
@@ -64,6 +64,7 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{
         CommittableSnapshot, DurablyPersistedCommit, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
+        buffer::OperationsBuffer,
         snapshot_id::SnapshotId,
         write::{KnownToExist, PutAction, Write},
     },
@@ -82,6 +83,18 @@ pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
 
+pub trait SecondaryStore: Send + Sync + fmt::Debug {
+    fn stores_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
+
+    fn validate_commit(&self, operations: &OperationsBuffer) -> Result<(), Box<dyn Error + Send + Sync>>;
+
+    fn apply_commit(
+        &self,
+        sequence_number: SequenceNumber,
+        operations: &OperationsBuffer,
+    ) -> Result<(), Box<dyn Error + Send + Sync>>;
+}
+
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
     name: Arc<str>,
@@ -91,6 +104,7 @@ pub struct MVCCStorage<Durability> {
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
     earliest_uncleaned: AtomicU64,
+    secondary_store: Option<Arc<dyn SecondaryStore>>,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -101,6 +115,7 @@ impl<Durability> MVCCStorage<Durability> {
         path: &Path,
         mut durability_client: Durability,
         rocks_resources: &RocksResources,
+        secondary_store: Option<Arc<dyn SecondaryStore>>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -128,6 +143,7 @@ impl<Durability> MVCCStorage<Durability> {
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
             earliest_uncleaned: AtomicU64::new(0),
+            secondary_store,
         })
     }
 
@@ -147,6 +163,7 @@ impl<Durability> MVCCStorage<Durability> {
         mut durability_client: Durability,
         checkpoint: &Option<CheckpointReader>,
         rocks_resources: &RocksResources,
+        secondary_store: Option<Arc<dyn SecondaryStore>>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -159,7 +176,13 @@ impl<Durability> MVCCStorage<Durability> {
         Self::register_durability_record_types(&mut durability_client);
         let (keyspaces, next_sequence_number, earliest_uncleaned) = if let Some(checkpoint) = checkpoint {
             checkpoint
-                .recover_storage::<KS, _>(name, &storage_dir, &durability_client, rocks_resources)
+                .recover_storage::<KS, _>(
+                    name,
+                    &storage_dir,
+                    &durability_client,
+                    rocks_resources,
+                    secondary_store.as_deref(),
+                )
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
             if let Err(err) = fs::remove_dir_all(&storage_dir)
@@ -176,7 +199,7 @@ impl<Durability> MVCCStorage<Durability> {
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-            apply_recovered(name, commits, &durability_client, &keyspaces)
+            apply_recovered(name, commits, &durability_client, &keyspaces, secondary_store.as_deref())
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
             (keyspaces, next_sequence_number, SequenceNumber::MIN)
@@ -191,7 +214,13 @@ impl<Durability> MVCCStorage<Durability> {
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
             earliest_uncleaned: AtomicU64::new(earliest_uncleaned.number()),
+            secondary_store,
         })
+    }
+
+    // for tests only
+    pub fn set_secondary_store(&mut self, secondary_store: Arc<dyn SecondaryStore>) {
+        self.secondary_store = Some(secondary_store);
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
@@ -282,7 +311,12 @@ impl<Durability> MVCCStorage<Durability> {
         fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
 
         let sync_notifier = self.durability_client.request_sync();
-        let validate_result = self.isolation_manager.validate_commit(sequence_number, record, &self.durability_client);
+        let validate_result = self.isolation_manager.validate_commit(
+            sequence_number,
+            record,
+            &self.durability_client,
+            self.secondary_store.as_deref(),
+        );
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
@@ -296,6 +330,12 @@ impl<Durability> MVCCStorage<Durability> {
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
+
+                if let Some(secondary_store) = self.secondary_store.as_ref() {
+                    secondary_store.apply_commit(sequence_number, commit_record.operations()).map_err(|error| {
+                        StorageCommitError::SecondaryStore { name: self.name.clone(), source: Arc::from(error) }
+                    })?;
+                }
 
                 fail_point!(COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS);
 
@@ -349,6 +389,12 @@ impl<Durability> MVCCStorage<Durability> {
         let (reader_guard, record) = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
         commit_profile.commit_size(record.operations().len());
+
+        if let Some(secondary_store) = self.secondary_store.as_ref() {
+            secondary_store.validate_commit(record.operations()).map_err(|error| {
+                StorageCommitError::SecondaryStore { name: self.name.clone(), source: Arc::from(error) }
+            })?;
+        }
 
         let sequence_number = self
             .durability_client
@@ -724,6 +770,7 @@ typedb_error! {
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
         Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
+        SecondaryStore(7, "Commit in database '{name}' was rejected by a secondary store.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
     }
 }
 
@@ -948,7 +995,7 @@ mod tests {
                 ))
                 .unwrap();
 
-            let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
+            let partial_commit = WriteBatches::from_operations(seq, &partial_operations, None);
             let resources = create_rocks_resources();
             let keyspaces = Keyspaces::open::<TestKeyspaceSet>(
                 storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME),
@@ -973,6 +1020,7 @@ mod tests {
             durability_client,
             &None,
             &resources,
+            None,
         )
         .unwrap();
         assert_eq!(
@@ -1003,6 +1051,7 @@ mod tests {
                 &storage_path,
                 durability_client,
                 &resources,
+                None,
             )
             .unwrap(),
         );

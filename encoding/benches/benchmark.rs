@@ -45,8 +45,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
     let resources = create_rocks_resources();
     let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &resources)
-            .unwrap(),
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
+            "storage",
+            &storage_path,
+            WALClient::new(wal),
+            &resources,
+            None,
+        )
+        .unwrap(),
     );
 
     let type_id = TypeID::new(0);

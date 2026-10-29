@@ -41,6 +41,27 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     where
         Snapshot: ReadableSnapshot,
     {
+        Self::find_existing_or_next_disambiguated_hash_matching(
+            snapshot,
+            hasher,
+            keyspace,
+            key_without_hash,
+            value_bytes,
+            &|_key, stored_value| Ok(stored_value == value_bytes),
+        )
+    }
+
+    fn find_existing_or_next_disambiguated_hash_matching<Snapshot>(
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        keyspace: EncodingKeyspace,
+        key_without_hash: &[u8],
+        value_bytes: &[u8],
+        value_matches: &impl Fn(&[u8], &[u8]) -> Result<bool, Arc<SnapshotIteratorError>>,
+    ) -> Result<ExistingOrNew<[u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
         let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
             ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
         key_without_tail_byte[0..key_without_hash.len()].copy_from_slice(key_without_hash);
@@ -50,7 +71,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             value_bytes,
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
-        Ok(Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_bytes)?
+        Ok(Self::disambiguate(snapshot, keyspace, &key_without_tail_byte, value_matches)?
             .map(|tail| Self::concat_hash_and_tail(hash_bytes, tail)))
     }
 
@@ -65,7 +86,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         snapshot: &Snapshot,
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],
-        value_bytes: &[u8],
+        value_matches: &impl Fn(&[u8], &[u8]) -> Result<bool, Arc<SnapshotIteratorError>>,
     ) -> Result<ExistingOrNew<u8>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
@@ -86,7 +107,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
                 // an inlined ID that happens to share the hashed prefix bytes: not part of this bucket - at most one
                 continue;
             }
-            if &*value == value_bytes {
+            if value_matches(key.bytes(), &value)? {
                 // found existing matching value
                 return Ok(ExistingOrNew::Existing(key_tail));
             }

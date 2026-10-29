@@ -202,6 +202,7 @@ fn add_connection_deletes(
             Constraint::DeleteConcepts(_) => (),                               // Is a ConceptInstruction
             Constraint::Iid(_)
             | Constraint::Isa(_)
+            | Constraint::VectorSearch(_)
             | Constraint::Kind(_)
             | Constraint::Label(_)
             | Constraint::Owns(_)

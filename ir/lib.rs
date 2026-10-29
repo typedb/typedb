@@ -353,6 +353,13 @@ typedb_error! {
             "Expressions are currently not supported in write stages. Please move it to a preceding match stage.",
             source_span: Option<Span>,
         ),
+        VectorLengthInvalid(
+            56,
+            "The vector length '{length}' is invalid: it must be a positive integer no greater than {max}.",
+            length: String,
+            max: u16,
+            source_span: Option<Span>,
+        ),
         UnimplementedLanguageFeature(
             254,
             "The language feature is not yet implemented: {feature}.",
@@ -363,6 +370,12 @@ typedb_error! {
             "List types are not yet implemented.",
             source_span: Option<Span>,
             feature: error::UnimplementedFeature
+        ),
+        InvalidVectorSearchCall(
+            257,
+            "Invalid cosine_similarity_search usage ({reason}). Expected: let $attribute, $similarity in cosine_similarity_search(<attribute type>, <vector literal>, <threshold>).",
+            reason: String,
+            source_span: Option<Span>,
         ),
     }
 }

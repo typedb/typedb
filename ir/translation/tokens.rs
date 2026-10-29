@@ -6,14 +6,18 @@
 
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
-    AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex,
-    AnnotationUnique, AnnotationValues,
+    AnnotationDoc, AnnotationIndependent, AnnotationIndex, AnnotationKey, AnnotationMeta, AnnotationRange,
+    AnnotationRegex, AnnotationUnique, AnnotationValues, HnswMetric, IndexParameters,
 };
-use encoding::{graph::type_::Kind, value::value_type::ValueType};
+use encoding::{
+    graph::type_::Kind,
+    value::value_type::{ValueType, VectorPrecision, VectorTypeParameters},
+};
 use typeql::{
     annotation::CardinalityRange,
     common::{Spanned, error::TypeQLError},
     token,
+    type_::VectorType,
 };
 
 use crate::{
@@ -63,7 +67,16 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             String::from_typeql_literal(&meta.key, meta.span())?,
             String::from_typeql_literal(&meta.value, meta.span())?,
         )),
+        typeql::Annotation::Index(index) => {
+            Annotation::Index(AnnotationIndex::new(index.specs.iter().map(translate_index_spec).collect()))
+        }
     })
+}
+
+fn translate_index_spec(spec: &typeql::annotation::IndexSpec) -> IndexParameters {
+    match spec {
+        typeql::annotation::IndexSpec::Hnsw(token::HnswMetric::Cosine) => IndexParameters::Hnsw(HnswMetric::Cosine),
+    }
 }
 
 pub fn translate_annotation_category(
@@ -87,6 +100,7 @@ pub fn translate_annotation_category(
         typeql::schema::undefinable::AnnotationCategory::Meta(meta, span) => {
             Ok(AnnotationCategory::Meta(String::from_typeql_literal(meta, *span)?))
         }
+        typeql::schema::undefinable::AnnotationCategory::Index => Ok(AnnotationCategory::Index),
     }
 }
 
@@ -111,6 +125,29 @@ pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
         token::ValueType::Integer => ValueType::Integer,
         token::ValueType::String => ValueType::String,
     }
+}
+
+pub fn translate_vector_precision(typeql_precision: token::VectorPrecision) -> VectorPrecision {
+    match typeql_precision {
+        token::VectorPrecision::Float32 => VectorPrecision::Float32,
+    }
+}
+
+pub fn resolve_vector_value_type(vector_type: &VectorType) -> Result<VectorTypeParameters, VectorLengthError> {
+    let raw_length = vector_type.length.value.as_str();
+    let length = raw_length
+        .parse::<u16>()
+        .ok()
+        .filter(|length| *length > 0)
+        .ok_or_else(|| VectorLengthError { length: raw_length.to_owned(), max: VectorTypeParameters::MAX_LENGTH })?;
+    let precision = translate_vector_precision(vector_type.precision);
+    Ok(VectorTypeParameters::new(length, precision))
+}
+
+#[derive(Debug, Clone)]
+pub struct VectorLengthError {
+    pub length: String,
+    pub max: u16,
 }
 
 pub(crate) fn checked_identifier(ident: &typeql::Identifier) -> Result<&str, Box<RepresentationError>> {

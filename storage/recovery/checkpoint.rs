@@ -27,6 +27,7 @@ use same_file::is_same_file;
 use tracing::{debug, trace};
 
 use crate::{
+    SecondaryStore,
     durability_client::DurabilityClient,
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces, rocks_resources::RocksResources},
     recovery::commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
@@ -142,20 +143,14 @@ impl CheckpointReader {
     }
 
     pub fn get_additional_data<T: CheckpointAdditionalData>(&self) -> Result<T, CheckpointLoadError> {
-        use CheckpointLoadError::{AdditionalDataDeserialise, AdditionalDataIO, AdditionalDataNotFound};
+        use CheckpointLoadError::{AdditionalDataDeserialise, AdditionalDataNotFound};
 
-        let file_name = T::NAME;
-        let path = self.directory.join(file_name);
+        let path = self.directory.join(T::NAME);
         if !path.exists() {
             return Err(AdditionalDataNotFound { name: T::NAME.to_string() });
         }
-
-        let mut file =
-            File::open(path).map_err(|err| AdditionalDataIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
-        let deserialised = T::deserialise_from(&mut file)
-            .map_err(|err| AdditionalDataDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
-        Ok(deserialised)
+        T::load_from_path(&path)
+            .map_err(|err| AdditionalDataDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })
     }
 
     pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityClient>(
@@ -164,6 +159,7 @@ impl CheckpointReader {
         keyspaces_dir: &Path,
         durability_client: &Durability,
         rocks_resources: &RocksResources,
+        secondary_store: Option<&dyn SecondaryStore>,
     ) -> Result<(Keyspaces, SequenceNumber, SequenceNumber), CheckpointLoadError> {
         use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
 
@@ -192,7 +188,7 @@ impl CheckpointReader {
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         trace!("Applying missing commits");
-        apply_recovered(database_name, recovered_commits, durability_client, &keyspaces)
+        apply_recovered(database_name, recovered_commits, durability_client, &keyspaces, secondary_store)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         Ok((keyspaces, next_sequence_number, metadata.cleanup_sequence_number.unwrap_or(SequenceNumber::MIN)))
     }
@@ -340,22 +336,17 @@ impl CheckpointWriter {
     }
 
     pub fn add_extension<T: CheckpointAdditionalData>(&self, data: &T) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO, ExtensionSerialise};
-        let file_name = T::NAME;
-        let path = self.temporary_directory.join(file_name);
+        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO};
+        let io_err = |err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) };
+
+        let path = self.temporary_directory.join(T::NAME);
         if path.exists() {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
-
-        let tmp = path.with_extension(TEMP_FILE_EXTENSION);
-        {
-            let mut file =
-                File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-            data.serialise_into(&mut file)
-                .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
-        }
-        fs::rename(&tmp, &path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
+        let staging_path = path.with_extension(TEMP_FILE_EXTENSION);
+        data.save_to_path(&staging_path).map_err(io_err)?;
+        fs::rename(&staging_path, &path).map_err(io_err)?;
+        File::open(&self.temporary_directory).and_then(|dir| dir.sync_all()).map_err(io_err)?;
         Ok(())
     }
 
@@ -413,8 +404,8 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
 
 pub trait CheckpointAdditionalData: Sized {
     const NAME: &'static str;
-    fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
-    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
+    fn save_to_path(&self, path: &Path) -> io::Result<()>;
+    fn load_from_path(path: &Path) -> io::Result<Self>;
 }
 
 #[derive(Debug, Clone)]
@@ -431,7 +422,6 @@ pub enum CheckpointCreateError {
 
     ExtensionDuplicate { name: String },
     ExtensionIO { name: String, source: Arc<io::Error> },
-    ExtensionSerialise { name: String, source: Arc<bincode::Error> },
 
     OldCheckpointRemove { dir: PathBuf, source: Arc<io::Error> },
 }
@@ -453,7 +443,6 @@ impl Error for CheckpointCreateError {
             Self::MetadataWrite { source, .. } => Some(source),
             Self::ExtensionDuplicate { .. } => None,
             Self::ExtensionIO { source, .. } => Some(source),
-            Self::ExtensionSerialise { source, .. } => Some(source),
             Self::OldCheckpointRemove { source, .. } => Some(source),
         }
     }
@@ -470,6 +459,6 @@ typedb_error! {
 
         AdditionalDataNotFound(8, "Checkpoint additional data with identifier '{name}' not found.", name: String),
         AdditionalDataIO(9, "Error accessing checkpoint additional data with identifier '{name}'.", name: String, source: Arc<io::Error>),
-        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, source: Arc<bincode::Error>),
+        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, source: Arc<io::Error>),
     }
 }

@@ -301,6 +301,7 @@ pub enum OwnsAnnotation {
 impl PartialEq<Annotation> for OwnsAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
+            Annotation::Index(_) => false,
             Annotation::Distinct(_) => matches!(self, Self::Distinct(_)),
             Annotation::Unique(_) => matches!(self, Self::Unique(_)),
             Annotation::Key(_) => matches!(self, Self::Key(_)),

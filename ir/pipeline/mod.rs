@@ -11,7 +11,11 @@ use bytes::byte_array::ByteArray;
 use concept::type_::annotation::{Annotation, AnnotationCategory};
 use encoding::{
     graph::thing::THING_VERTEX_MAX_LENGTH,
-    value::{ValueEncodable, value::Value},
+    value::{
+        ValueEncodable,
+        value::Value,
+        value_type::{VectorPrecision, VectorTypeParameters},
+    },
 };
 use error::typedb_error;
 use itertools::Itertools;
@@ -421,7 +425,13 @@ impl ParameterRegistry {
     }
 
     pub fn register_value(&mut self, value: Value<'static>, source_span: Span) -> ParameterID {
-        let id = ParameterID::Value(self.value_registry.len(), ValueType::Builtin(value.value_type()), source_span);
+        let value_type = match &value {
+            Value::Vector(vector) => {
+                ValueType::Vector(VectorTypeParameters::new(vector.len() as u16, VectorPrecision::Float32))
+            }
+            _ => ValueType::Builtin(value.value_type()),
+        };
+        let id = ParameterID::Value(self.value_registry.len(), value_type, source_span);
         let _prev = self.value_registry.insert(id.clone(), value);
         debug_assert_eq!(_prev, None);
         id

@@ -14,7 +14,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use encoding::value::label::Label;
+use encoding::value::{label::Label, value_type::VectorTypeParameters};
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
@@ -312,6 +312,7 @@ impl fmt::Display for ParameterID {
 pub enum ValueType {
     Builtin(encoding::value::value_type::ValueType),
     Struct(String),
+    Vector(VectorTypeParameters),
 }
 
 impl ValueType {
@@ -348,11 +349,18 @@ impl PartialOrd for ValueType {
 
 impl Ord for ValueType {
     fn cmp(&self, other: &Self) -> Ordering {
+        fn rank(value_type: &ValueType) -> u8 {
+            match value_type {
+                ValueType::Builtin(_) => 0,
+                ValueType::Struct(_) => 1,
+                ValueType::Vector(_) => 2,
+            }
+        }
         match (self, other) {
-            (ValueType::Builtin(_), ValueType::Struct(_)) => Ordering::Less,
             (ValueType::Builtin(lhs), ValueType::Builtin(rhs)) => lhs.cmp(rhs),
-            (ValueType::Struct(_), ValueType::Builtin(_)) => Ordering::Greater,
             (ValueType::Struct(lhs), ValueType::Struct(rhs)) => lhs.cmp(rhs),
+            (ValueType::Vector(lhs), ValueType::Vector(rhs)) => lhs.cmp(rhs),
+            (lhs, rhs) => rank(lhs).cmp(&rank(rhs)),
         }
     }
 }
@@ -362,6 +370,9 @@ impl StructuralEquality for ValueType {
         StructuralEquality::hash(&mem::discriminant(self)).bitxor(match self {
             ValueType::Builtin(value_type) => StructuralEquality::hash(value_type),
             ValueType::Struct(name) => StructuralEquality::hash(name.as_str()),
+            ValueType::Vector(parameters) => {
+                StructuralEquality::hash(&(parameters.length as u64)).bitxor(parameters.precision as u64)
+            }
         })
     }
 
@@ -369,8 +380,9 @@ impl StructuralEquality for ValueType {
         match (self, other) {
             (Self::Builtin(inner), Self::Builtin(other_inner)) => inner.equals(other_inner),
             (Self::Struct(inner), Self::Struct(other_inner)) => inner.as_str().equals(other_inner.as_str()),
+            (Self::Vector(inner), Self::Vector(other_inner)) => inner == other_inner,
             // note: this style forces updating the match when the variants change
-            (Self::Builtin { .. }, _) | (Self::Struct { .. }, _) => false,
+            (Self::Builtin { .. }, _) | (Self::Struct { .. }, _) | (Self::Vector { .. }, _) => false,
         }
     }
 }
@@ -380,6 +392,7 @@ impl fmt::Display for ValueType {
         match self {
             Self::Builtin(var) => fmt::Display::fmt(var, f),
             Self::Struct(name) => fmt::Display::fmt(name, f),
+            Self::Vector(parameters) => fmt::Display::fmt(parameters, f),
         }
     }
 }

@@ -126,3 +126,7 @@
 [[test]]
 	name = "test_transaction_isolation"
 	path = "tests/test_transaction_isolation.rs"
+
+[[test]]
+	name = "test_vector_durability"
+	path = "tests/vector_durability.rs"

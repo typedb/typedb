@@ -225,6 +225,7 @@ impl CommitDeltas {
                 | Some(DecodableKey::IndexNameToDefinitionFunction(_))
                 | Some(DecodableKey::IndexValueToStruct(_))
                 | Some(DecodableKey::DefinitionStruct(_))
+                | Some(DecodableKey::DefinitionVector(_))
                 | Some(DecodableKey::DefinitionFunction(_))
                 | Some(DecodableKey::TypeEdgeSub(_))
                 | Some(DecodableKey::TypeEdgeSubReverse(_))

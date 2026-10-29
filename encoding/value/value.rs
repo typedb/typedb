@@ -31,7 +31,8 @@ use crate::value::{
     struct_bytes::StructBytes,
     timezone::TimeZone,
     value_struct::StructValue,
-    value_type::{ValueType, ValueTypeCategory},
+    value_type::{ValueType, ValueTypeCategory, VectorPrecision, VectorTypeParameters},
+    vector_bytes::VectorBytes,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,6 +47,7 @@ pub enum Value<'a> {
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
+    Vector(Cow<'a, [f32]>),
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
@@ -119,6 +121,11 @@ impl Hash for Value<'_> {
             Value::Duration(value) => Hash::hash(value, state),
             Value::String(value) => Hash::hash(value, state),
             Value::Struct(value) => Hash::hash(value, state),
+            Value::Vector(value) => {
+                for element in value.iter() {
+                    Hash::hash(&element.to_bits(), state);
+                }
+            }
         }
     }
 }
@@ -136,6 +143,7 @@ impl<'a> Value<'a> {
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
+            Value::Vector(ref vector) => Value::Vector(Cow::Borrowed(vector.as_ref())),
         }
     }
 
@@ -216,6 +224,13 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn unwrap_vector(self) -> Cow<'a, [f32]> {
+        match self {
+            Self::Vector(vector) => vector,
+            _ => panic!("Cannot unwrap Vector if not a vector value."),
+        }
+    }
+
     pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),
@@ -228,13 +243,14 @@ impl<'a> Value<'a> {
             Self::Duration(duration) => Value::Duration(duration),
             Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
             Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
+            Self::Vector(vector) => Value::Vector(Cow::Owned(vector.into_owned())),
         }
     }
 
     pub fn cast(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        if self.value_type().category() == value_type_category {
+        if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if matches!(self, Value::Vector(_)) || !self.value_type().is_trivially_castable_to(value_type_category) {
             return None;
         }
 
@@ -260,9 +276,11 @@ impl<'a> Value<'a> {
     }
 
     pub fn approximate_cast_lower_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        if self.value_type().category() == value_type_category {
+        if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
+        } else if matches!(self, Value::Vector(_))
+            || !self.value_type().is_approximately_castable_to(value_type_category)
+        {
             return None;
         } else if self.value_type().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
@@ -303,9 +321,11 @@ impl<'a> Value<'a> {
     }
 
     pub fn approximate_cast_upper_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        if self.value_type().category() == value_type_category {
+        if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
+        } else if matches!(self, Value::Vector(_))
+            || !self.value_type().is_approximately_castable_to(value_type_category)
+        {
             return None;
         } else if self.value_type().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
@@ -372,6 +392,28 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
+            Value::Vector(_) => {
+                unreachable!(
+                    "vector value types are schema definitions: use value_type_category() or resolve the \
+                     attribute type's vector definition"
+                )
+            }
+        }
+    }
+
+    fn value_type_category(&self) -> ValueTypeCategory {
+        match self {
+            Value::Boolean(_) => ValueTypeCategory::Boolean,
+            Value::Integer(_) => ValueTypeCategory::Integer,
+            Value::Double(_) => ValueTypeCategory::Double,
+            Value::Decimal(_) => ValueTypeCategory::Decimal,
+            Value::Date(_) => ValueTypeCategory::Date,
+            Value::DateTime(_) => ValueTypeCategory::DateTime,
+            Value::DateTimeTZ(_) => ValueTypeCategory::DateTimeTZ,
+            Value::Duration(_) => ValueTypeCategory::Duration,
+            Value::String(_) => ValueTypeCategory::String,
+            Value::Struct(_) => ValueTypeCategory::Struct,
+            Value::Vector(_) => ValueTypeCategory::Vector,
         }
     }
 
@@ -445,6 +487,13 @@ impl ValueEncodable for Value<'_> {
         }
     }
 
+    fn encode_vector<const INLINE_LENGTH: usize>(&self) -> VectorBytes<'_, INLINE_LENGTH> {
+        match self {
+            Value::Vector(vector) => VectorBytes::build(vector),
+            _ => panic!("Cannot encode non-Vector as VectorBytes"),
+        }
+    }
+
     fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH> {
         match self {
             Value::Boolean(_) => ByteArray::copy(&self.encode_boolean().bytes()),
@@ -457,6 +506,7 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
             Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes()),
             Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes()),
+            Value::Vector(_) => ByteArray::copy(self.encode_vector::<INLINE_LENGTH>().bytes()),
         }
     }
 }
@@ -487,6 +537,16 @@ impl fmt::Display for Value<'_> {
             }
             // TODO: this string will not have field names, only field IDs!
             Value::Struct(struct_) => write!(f, "{struct_}"),
+            Value::Vector(vector) => {
+                write!(f, "vector([")?;
+                for (i, element) in vector.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{element}")?;
+                }
+                write!(f, "], \"{}\")", VectorPrecision::Float32.name())
+            }
         }
     }
 }

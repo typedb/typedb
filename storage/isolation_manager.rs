@@ -23,6 +23,7 @@ use primitive::{atomic_arc_option::AtomicArcOption, maybe_owns::MaybeOwns};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
+    SecondaryStore,
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
     sequence_number::SequenceNumber,
@@ -99,6 +100,7 @@ impl IsolationManager {
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
         durability_client: &impl DurabilityClient,
+        secondary_store: Option<&dyn SecondaryStore>,
     ) -> Result<ValidatedCommit, DurabilityClientError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
@@ -120,7 +122,7 @@ impl IsolationManager {
                 };
                 let commit_record = commit_record.get();
                 Ok(ValidatedCommit::Write(
-                    WriteBatches::from_operations(sequence_number, commit_record.operations()),
+                    WriteBatches::from_operations(sequence_number, commit_record.operations(), secondary_store),
                     commit_record,
                 ))
             }

@@ -17,7 +17,7 @@ use compiler::{
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use encoding::value::{label::Label, value::Value};
+use encoding::value::{label::Label, value::Value, value_type::VectorTypeParameters};
 use ir::pattern::{
     ParameterID, Vertex,
     constraint::{Comparator, Constraint, IsaKind, SubKind},
@@ -504,6 +504,19 @@ fn query_structure_constraint(
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Optimisations don't represent the structure
+        Constraint::VectorSearch(search) => constraints.push(conjunction_proto::Constraint {
+            span,
+            constraint: Some(structure_constraint::Constraint::VectorSearch(structure_constraint::VectorSearch {
+                attribute: Some(encode_structure_vertex_variable(search.attribute())?),
+                attribute_type: Some(encode_structure_vertex_label_or_variable(context, search.attribute_type())?),
+                query: Some(encode_structure_vertex_value_or_variable(context, search.query())?),
+                threshold: Some(encode_structure_vertex_value_or_variable(
+                    context,
+                    &Vertex::Parameter(search.threshold()),
+                )?),
+                similarity: Some(encode_structure_vertex_variable(search.similarity())?),
+            })),
+        }),
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
     Ok(())
@@ -620,6 +633,16 @@ fn encode_ir_value_type(
                 name,
             })),
         }),
+        ValueType::Vector(parameters) => Ok(encode_vector_value_type(&parameters)),
+    }
+}
+
+fn encode_vector_value_type(parameters: &VectorTypeParameters) -> typedb_protocol::ValueType {
+    typedb_protocol::ValueType {
+        value_type: Some(typedb_protocol::value_type::ValueType::Vector(typedb_protocol::value_type::Vector {
+            length: parameters.length as u32,
+            precision: typedb_protocol::value_type::vector::Precision::Float32 as i32,
+        })),
     }
 }
 
@@ -660,6 +683,11 @@ fn encode_conjunction_annotations(
                         snapshot,
                         type_manager,
                     )?)
+                }
+                PipelineVariableAnnotation::Vector(parameters) => {
+                    conjunction_proto::variable_annotations::Annotations::ValueAnnotations(encode_vector_value_type(
+                        parameters,
+                    ))
                 }
             };
             let is_optional = annotation.is_optional;
@@ -731,6 +759,9 @@ fn encode_function_parameter_annotations(
                 snapshot,
                 type_manager,
             )?)
+        }
+        FunctionParameterAnnotation::Vector(parameters) => {
+            conjunction_proto::variable_annotations::Annotations::ValueAnnotations(encode_vector_value_type(parameters))
         }
     };
     // TODO: If we ever have optional parameters

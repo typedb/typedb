@@ -75,16 +75,29 @@ impl GivenRowEntry {
         value: Value<'static>,
         expected_type: &FunctionParameterAnnotation,
     ) -> Result<Self, GivenRowDecodeError> {
-        let FunctionParameterAnnotation::Value(expected_type) = expected_type else {
-            return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {});
+        let expected_type = match expected_type {
+            FunctionParameterAnnotation::Value(expected_type) => expected_type,
+            FunctionParameterAnnotation::Vector(parameters) => {
+                return match &value {
+                    Value::Vector(vector) if vector.len() == parameters.length as usize => {
+                        Ok(GivenRowEntry::Value(value))
+                    }
+                    _ => Err(GivenRowDecodeError::ValueTypeMismatch {
+                        expected_type: parameters.to_string(),
+                        actual_type: value.value_type_category().name().to_owned(),
+                        value: value.to_string(),
+                    }),
+                };
+            }
+            _ => return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {}),
         };
         let make_err = {
-            let actual_type = value.value_type().to_string();
-            let expected_type = expected_type.clone();
+            let actual_type = value.value_type_category().name().to_owned();
+            let expected_type = expected_type.to_string();
             |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
         };
 
-        if value.value_type().is_trivially_castable_to(expected_type.category()) {
+        if !matches!(value, Value::Vector(_)) && value.value_type().is_trivially_castable_to(expected_type.category()) {
             let cast_result = value.cast(expected_type.category());
             debug_assert!(cast_result.is_some());
             let cast_value = cast_result.ok_or_else(|| make_err("<unreachable>".to_owned()))?;
@@ -103,7 +116,8 @@ typedb_error! {
         TranslatingValueFailedForGivenEntry(4, "An error occurred while translating the provided value '{value}'.", value: String, typedb_source: LiteralParseError),
         GivenRowsVariableWasNotDeclared(5, "The variable '{variable}' was not declared in the query.", variable: String),
         ExpectedInstanceReceivedValue(6, "A value was provided where a concept instance was expected."),
-        ValueTypeMismatch(7, "The provided value '{value}' has type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
+        ValueTypeMismatch(7, "The provided value '{value}' has type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: String, actual_type: String, value: String),
+        InvalidVectorForGivenEntry(8, "The provided value '{value}' could not be decoded as a vector: expected an array of numbers.", value: String),
     }
 }
 

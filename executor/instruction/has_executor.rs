@@ -374,7 +374,9 @@ fn attribute_seek_floor(
     let (Bound::Included(lower_bound) | Bound::Excluded(lower_bound)) = lower_bound else {
         return None;
     };
-    if !lower_bound.value_type().is_approximately_castable_to(value_type_category) {
+    if matches!(lower_bound, Value::Vector(_))
+        || !lower_bound.value_type().is_approximately_castable_to(value_type_category)
+    {
         return None;
     }
     let lower_bound = lower_bound.as_reference().approximate_cast_lower_bound(value_type_category)?;
