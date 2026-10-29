@@ -20,7 +20,7 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         Typed,
-        common::{ExistingOrNew, value_hasher::HashedID},
+        common::{FoundOrAbsent, value_hasher::HashedID},
         thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
         type_::vertex::TypeID,
     },
@@ -772,8 +772,8 @@ impl StringAttributeID {
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         match Self::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
-            ExistingOrNew::Existing(hashed_id) => Ok(Some(hashed_id)),
-            ExistingOrNew::New(_) => Ok(None),
+            FoundOrAbsent::Found { item: hashed_id, .. } => Ok(Some(hashed_id)),
+            FoundOrAbsent::Absent { .. } => Ok(None),
         }
     }
 
@@ -782,7 +782,7 @@ impl StringAttributeID {
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<ExistingOrNew<Self>, Arc<SnapshotIteratorError>>
+    ) -> Result<FoundOrAbsent<Self>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
@@ -936,8 +936,8 @@ impl StructAttributeID {
         Snapshot: ReadableSnapshot,
     {
         match Self::build_or_find_hashed_id(type_id, struct_bytes, snapshot, hasher)? {
-            ExistingOrNew::Existing(hashed_id) => Ok(Some(hashed_id)),
-            ExistingOrNew::New(_) => Ok(None),
+            FoundOrAbsent::Found { item: hashed_id, .. } => Ok(Some(hashed_id)),
+            FoundOrAbsent::Absent { .. } => Ok(None),
         }
     }
 
@@ -946,7 +946,7 @@ impl StructAttributeID {
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<ExistingOrNew<Self>, Arc<SnapshotIteratorError>>
+    ) -> Result<FoundOrAbsent<Self>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {

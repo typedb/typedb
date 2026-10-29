@@ -66,6 +66,15 @@ impl Checksums {
         }
     }
 
+    pub fn add(&self, counts: Counts) {
+        let Counts { entity_count, attribute_count, relation_count, role_count, ownership_count } = counts;
+        self.entity_count.fetch_add(entity_count, Ordering::Relaxed);
+        self.attribute_count.fetch_add(attribute_count, Ordering::Relaxed);
+        self.relation_count.fetch_add(relation_count, Ordering::Relaxed);
+        self.role_count.fetch_add(role_count, Ordering::Relaxed);
+        self.ownership_count.fetch_add(ownership_count, Ordering::Relaxed);
+    }
+
     pub fn increment_entity_count(&self) {
         self.entity_count.fetch_add(1, Ordering::Relaxed);
     }

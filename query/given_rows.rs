@@ -84,7 +84,7 @@ impl GivenRowEntry {
             |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
         };
 
-        if value.value_type().is_trivially_castable_to(expected_type.category()) {
+        if value.value_type().category().is_trivially_castable_to(expected_type.category()) {
             let cast_result = value.cast(expected_type.category());
             debug_assert!(cast_result.is_some());
             let cast_value = cast_result.ok_or_else(|| make_err("<unreachable>".to_owned()))?;

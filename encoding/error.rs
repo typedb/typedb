@@ -28,6 +28,7 @@ pub enum EncodingError {
     StructFieldValueTooLarge(usize),
     UnexpectedEndOfEncodedStruct,
     StructAlreadyHasMaximumNumberOfFields { struct_name: String },
+    ObjectIDExhausted { id: u64 },
 }
 
 impl fmt::Display for EncodingError {
@@ -55,6 +56,7 @@ impl Error for EncodingError {
             Self::StructFieldValueTooLarge(_) => None,
             Self::UnexpectedEndOfEncodedStruct => None,
             Self::StructPathIncomplete { .. } => None,
+            Self::ObjectIDExhausted { .. } => None,
         }
     }
 }

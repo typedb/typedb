@@ -28,7 +28,7 @@ use storage::{
     MVCCStorage, StorageCommitError,
     durability_client::WALClient,
     isolation_manager::IsolationConflict,
-    snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot},
+    snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, write::KnownToExist},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
@@ -48,7 +48,7 @@ fn generate_string_attribute_vertex() {
         let short_string = "Hello";
         let short_string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
         let vertex = thing_vertex_generator
-            .create_attribute_string(type_id, short_string_bytes.as_reference(), &mut snapshot)
+            .create_attribute_string(type_id, short_string_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
             .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(vertex_id.is_inline());
@@ -61,7 +61,7 @@ fn generate_string_attribute_vertex() {
         let string = "Hello world, this is a long attribute string to be encoded.";
         let string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator
-            .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
+            .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
             .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
@@ -81,7 +81,7 @@ fn generate_string_attribute_vertex() {
         let string = "Hello world, this is a long attribute string to be encoded with a constant hash.";
         let string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator
-            .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
+            .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
             .unwrap();
 
         let vertex_id = vertex.attribute_id().unwrap_string();
@@ -93,7 +93,12 @@ fn generate_string_attribute_vertex() {
             let string_collide = "Hello world, this is using the same prefix and will collide.";
             let string_collide_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
             let collide_vertex = thing_vertex_generator
-                .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
+                .create_attribute_string(
+                    type_id,
+                    string_collide_bytes.as_reference(),
+                    &mut snapshot,
+                    KnownToExist::Unknown,
+                )
                 .unwrap();
 
             let collide_id = collide_vertex.attribute_id().unwrap_string();
@@ -112,7 +117,12 @@ fn generate_string_attribute_vertex() {
             let string_collide = "Hello world, this is using the same prefix and will collide AGAIN!.";
             let string_collide_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
             let collide_vertex = thing_vertex_generator
-                .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
+                .create_attribute_string(
+                    type_id,
+                    string_collide_bytes.as_reference(),
+                    &mut snapshot,
+                    KnownToExist::Unknown,
+                )
                 .unwrap();
 
             let collide_id = collide_vertex.attribute_id().unwrap_string();
@@ -234,7 +244,7 @@ fn attribute_id_deterministic_bytes() {
         let long = "Hello world, this is a long attribute string to be encoded.";
         let long_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(long);
         let vertex = ThingVertexGenerator::new()
-            .create_attribute_string(type_id, long_bytes.as_reference(), &mut snapshot)
+            .create_attribute_string(type_id, long_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
             .unwrap();
         let id = vertex.attribute_id().unwrap_string();
         assert!(!id.is_inline());
@@ -261,12 +271,12 @@ fn attribute_id_deterministic_bytes() {
         );
 
         let id_a = generator
-            .create_attribute_string(type_id, s_a_bytes.as_reference(), &mut snapshot)
+            .create_attribute_string(type_id, s_a_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
         let id_b = generator
-            .create_attribute_string(type_id, s_b_bytes.as_reference(), &mut snapshot)
+            .create_attribute_string(type_id, s_b_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
@@ -330,12 +340,12 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         let s = "hi";
         let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
         let id_a = generator
-            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a)
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
         let id_b = generator
-            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b)
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
@@ -351,12 +361,12 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         let s = "Hello world, this is a long attribute string to be encoded.";
         let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
         let id_a = generator
-            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a)
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
         let id_b = generator
-            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b)
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
@@ -391,12 +401,12 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         let s_a_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s_a);
         let s_b_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s_b);
         let id_a = generator
-            .create_attribute_string(type_id, s_a_bytes.as_reference(), &mut snapshot_a)
+            .create_attribute_string(type_id, s_a_bytes.as_reference(), &mut snapshot_a, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
         let id_b = generator
-            .create_attribute_string(type_id, s_b_bytes.as_reference(), &mut snapshot_b)
+            .create_attribute_string(type_id, s_b_bytes.as_reference(), &mut snapshot_b, KnownToExist::Unknown)
             .unwrap()
             .attribute_id()
             .unwrap_string();
@@ -440,7 +450,9 @@ fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
 
     let existing_vertex = {
         let mut snapshot = storage.clone().open_snapshot_write();
-        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
+        let vertex = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
+            .unwrap();
         snapshot.commit(&mut CommitProfile::disabled()).expect("Initial creation should succeed");
         vertex
     };
@@ -448,8 +460,12 @@ fn existing_hashed_string_in_two_concurrent_snapshots_both_commit() {
 
     let mut snapshot_a = storage.clone().open_snapshot_write();
     let mut snapshot_b = storage.clone().open_snapshot_write();
-    let vertex_a = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a).unwrap();
-    let vertex_b = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b).unwrap();
+    let vertex_a = generator
+        .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a, KnownToExist::Unknown)
+        .unwrap();
+    let vertex_b = generator
+        .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b, KnownToExist::Unknown)
+        .unwrap();
     assert_eq!(vertex_a, existing_vertex);
     assert_eq!(vertex_b, existing_vertex);
 
@@ -467,7 +483,9 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
 
     let existing_vertex = {
         let mut snapshot = storage.clone().open_snapshot_write();
-        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot).unwrap();
+        let vertex = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot, KnownToExist::Unknown)
+            .unwrap();
         snapshot.commit(&mut CommitProfile::disabled()).expect("Initial creation should succeed");
         vertex
     };
@@ -477,7 +495,9 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
     {
         let mut snapshot_put = storage.clone().open_snapshot_write();
         let mut snapshot_delete = storage.clone().open_snapshot_write();
-        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put).unwrap();
+        let vertex = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put, KnownToExist::Unknown)
+            .unwrap();
         assert_eq!(vertex, existing_vertex);
         snapshot_delete.delete(vertex_key.clone());
 
@@ -490,7 +510,9 @@ fn existing_hashed_string_conflicts_with_concurrent_delete() {
     {
         let mut snapshot_put = storage.clone().open_snapshot_write();
         let mut snapshot_delete = storage.clone().open_snapshot_write();
-        let vertex = generator.create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put).unwrap();
+        let vertex = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_put, KnownToExist::Unknown)
+            .unwrap();
         assert_eq!(vertex, existing_vertex);
         snapshot_delete.delete(vertex_key.clone());
 
@@ -517,7 +539,11 @@ fn hash_bucket_holes_are_reused_across_transactions() {
     let mut snapshot = storage.clone().open_snapshot_write();
     let vertices: Vec<_> = strings[..3]
         .iter()
-        .map(|s| generator.create_attribute_string(type_id, bytes(s).as_reference(), &mut snapshot).unwrap())
+        .map(|s| {
+            generator
+                .create_attribute_string(type_id, bytes(s).as_reference(), &mut snapshot, KnownToExist::Unknown)
+                .unwrap()
+        })
         .collect();
     let tails: Vec<u8> = vertices.iter().map(|v| v.attribute_id().unwrap_string().get_hash_disambiguator()).collect();
     assert_eq!(tails, vec![0, 1, 2]);
@@ -528,9 +554,13 @@ fn hash_bucket_holes_are_reused_across_transactions() {
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write();
-    let delta = generator.create_attribute_string(type_id, bytes(strings[3]).as_reference(), &mut snapshot).unwrap();
+    let delta = generator
+        .create_attribute_string(type_id, bytes(strings[3]).as_reference(), &mut snapshot, KnownToExist::Unknown)
+        .unwrap();
     assert_eq!(delta.attribute_id().unwrap_string().get_hash_disambiguator(), 0, "freed tail should be reused");
-    let bravo = generator.create_attribute_string(type_id, bytes(strings[1]).as_reference(), &mut snapshot).unwrap();
+    let bravo = generator
+        .create_attribute_string(type_id, bytes(strings[1]).as_reference(), &mut snapshot, KnownToExist::Unknown)
+        .unwrap();
     assert_eq!(bravo, vertices[1], "existing values keep their tails");
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
@@ -551,7 +581,9 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
 
     let alpha_vertex = {
         let mut snapshot = storage.clone().open_snapshot_write();
-        let vertex = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot).unwrap();
+        let vertex = generator
+            .create_attribute_string(type_id, alpha.as_reference(), &mut snapshot, KnownToExist::Unknown)
+            .unwrap();
         snapshot.commit(&mut CommitProfile::disabled()).unwrap();
         vertex
     };
@@ -560,11 +592,13 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
 
     let delete_then_allocate = |snapshot: &mut storage::snapshot::WriteSnapshot<WALClient>| {
         snapshot.delete(alpha_key.clone());
-        let bravo_vertex = generator.create_attribute_string(type_id, bravo.as_reference(), snapshot).unwrap();
+        let bravo_vertex =
+            generator.create_attribute_string(type_id, bravo.as_reference(), snapshot, KnownToExist::Unknown).unwrap();
         assert_ne!(bravo_vertex, alpha_vertex);
         assert_eq!(bravo_vertex.attribute_id().unwrap_string().get_hash_disambiguator(), 1);
         // even the same value gets a fresh tail once its vertex was deleted in this transaction
-        let alpha_again = generator.create_attribute_string(type_id, alpha.as_reference(), snapshot).unwrap();
+        let alpha_again =
+            generator.create_attribute_string(type_id, alpha.as_reference(), snapshot, KnownToExist::Unknown).unwrap();
         assert_ne!(alpha_again, alpha_vertex);
         assert_eq!(alpha_again.attribute_id().unwrap_string().get_hash_disambiguator(), 2);
     };
@@ -574,7 +608,9 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
         let mut snapshot_delete = storage.clone().open_snapshot_write();
         let mut snapshot_reput = storage.clone().open_snapshot_write();
         delete_then_allocate(&mut snapshot_delete);
-        let reput = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput).unwrap();
+        let reput = generator
+            .create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput, KnownToExist::Unknown)
+            .unwrap();
         assert_eq!(reput, alpha_vertex);
 
         snapshot_reput.commit(&mut CommitProfile::disabled()).expect("Re-put of existing value should commit");
@@ -587,7 +623,9 @@ fn hash_bucket_tail_deleted_in_transaction_is_not_reused_by_it() {
         let mut snapshot_delete = storage.clone().open_snapshot_write();
         let mut snapshot_reput = storage.clone().open_snapshot_write();
         delete_then_allocate(&mut snapshot_delete);
-        let reput = generator.create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput).unwrap();
+        let reput = generator
+            .create_attribute_string(type_id, alpha.as_reference(), &mut snapshot_reput, KnownToExist::Unknown)
+            .unwrap();
         assert_eq!(reput, alpha_vertex);
 
         snapshot_delete.commit(&mut CommitProfile::disabled()).expect("Delete and allocate should commit");

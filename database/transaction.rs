@@ -17,7 +17,7 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         statistics::{StatisticsError, deltas::CommitDeltas},
-        thing_manager::ThingManager,
+        thing_manager::{ConceptPersistenceGuarantees, ThingManager},
     },
     type_::type_manager::{
         TypeManager,
@@ -143,6 +143,14 @@ pub struct TransactionWrite<D> {
 
 impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+        Self::open_with_concept_persistence_guarantees(database, transaction_options, None)
+    }
+
+    pub fn open_with_concept_persistence_guarantees(
+        database: Arc<Database<D>>,
+        transaction_options: TransactionOptions,
+        concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
+    ) -> Result<Self, TransactionError> {
         database
             .reserve_write_transaction(Duration::from_millis(transaction_options.schema_lock_acquire_timeout_millis))?;
 
@@ -153,10 +161,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.type_vertex_generator.clone(),
             Some(schema.type_cache.clone()),
         ));
-        let thing_manager = Arc::new(ThingManager::new(
+        let thing_manager = Arc::new(ThingManager::new_with_concept_persistence_guarantees(
             database.thing_vertex_generator.clone(),
             type_manager.clone(),
             schema.thing_statistics.clone(),
+            concept_persistence_guarantees,
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),

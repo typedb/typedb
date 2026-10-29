@@ -5,6 +5,7 @@
  */
 
 use std::{
+    num::NonZeroUsize,
     path::PathBuf,
     sync::{
         Mutex,
@@ -13,9 +14,7 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
-use sysinfo::{
-    CpuRefreshKind, Disks, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System,
-};
+use sysinfo::{Disks, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 
 #[derive(Debug)]
 pub struct SystemInfo {
@@ -52,13 +51,12 @@ impl SystemInfo {
         let system = System::new_with_specifics(
             RefreshKind::nothing()
                 .with_memory(MemoryRefreshKind::everything())
-                .with_processes(ProcessRefreshKind::everything())
-                .with_cpu(CpuRefreshKind::nothing()),
+                .with_processes(ProcessRefreshKind::everything()),
         );
         let disks = Disks::new_with_refreshed_list();
 
         let sampler = Self {
-            cpu_count: system.cpus().len(),
+            cpu_count: Self::get_cpu_count(),
             process_cpu_microseconds: AtomicU64::new(0),
             process_rss_bytes: AtomicU64::new(0),
             process_vsize_bytes: AtomicU64::new(0),
@@ -115,6 +113,10 @@ impl SystemInfo {
             self.disk_total_bytes.store(disk.total_space(), Ordering::Relaxed);
             self.disk_available_bytes.store(disk.available_space(), Ordering::Relaxed);
         }
+    }
+
+    pub fn get_cpu_count() -> usize {
+        std::thread::available_parallelism().map(NonZeroUsize::get).unwrap_or(1)
     }
 
     pub fn cpu_count(&self) -> usize {

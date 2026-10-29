@@ -25,7 +25,7 @@ use crate::{
     ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         object::{Object, ObjectAPI},
         thing_manager::{ObjectOrigin, ThingManager},
     },
@@ -93,7 +93,7 @@ impl ThingAPI for Entity {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<crate::error::ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(
@@ -127,6 +127,10 @@ impl ThingAPI for Entity {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexEntity
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Entity
     }
 }
 
