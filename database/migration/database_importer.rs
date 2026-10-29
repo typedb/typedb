@@ -973,9 +973,24 @@ impl DatabaseImporter {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<(), DatabaseImportError> {
-        let relation_types = type_manager
+        let all_relation_types = type_manager
             .get_relation_types(snapshot)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+        let relation_types = if self.configuration.item_order == ItemOrder::AttributesEntitiesRelations {
+            // AER order: we only need to make relations that have any relation players independent
+            let mut relation_types = Vec::new();
+            for relation_type in all_relation_types {
+                if Self::relation_has_relation_players(relation_type, snapshot, type_manager)? {
+                    relation_types.push(relation_type);
+                }
+            }
+            relation_types
+        } else {
+            // Unordered: must make all relations independent, as in the worst case all the links are missing when the relation is imported
+            // so we must handle all relations as a Deferred relation - by which time we expect all object instances to exist
+            all_relation_types
+        };
+
         for relation_type in relation_types {
             type_manager
                 .set_relation_type_independent(snapshot, relation_type)
@@ -985,156 +1000,209 @@ impl DatabaseImporter {
         Ok(())
     }
 
+    fn relation_has_relation_players(
+        relation_type: RelationType,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, DatabaseImportError> {
+        let all_relates = relation_type
+            .get_relates(snapshot, type_manager)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+        for relates in all_relates.iter() {
+            let player_types = relates
+                .role()
+                .get_player_types(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+            if player_types.keys().any(|player_type| matches!(player_type, ObjectType::Relation(_))) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     fn relax_capabilities_and_cardinalities(
         &mut self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), DatabaseImportError> {
-        let schema_info = &mut self.schema_info;
         let object_types = type_manager
             .get_object_types(snapshot)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
         for object_type in object_types {
-            let all_owns = object_type
-                .get_owns_declared(snapshot, type_manager)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-            for owns in all_owns.iter() {
-                if Self::is_specializing_owns(snapshot, type_manager, *owns)? {
-                    let ordering = owns
-                        .get_ordering(snapshot, type_manager)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                    let annotations = owns
-                        .get_annotations_declared(snapshot, type_manager)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                    owns.owner()
-                        .unset_owns(snapshot, type_manager, thing_manager, owns.attribute())
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    schema_info.temporarily_removed_specializing_owns.insert(*owns, (annotations.clone(), ordering));
-                    continue;
-                }
-
-                let original_cardinality = owns
-                    .get_cardinality(snapshot, type_manager)
-                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                if original_cardinality.start() == 0 {
-                    continue;
-                }
-                match owns
-                    .get_annotations_declared(snapshot, type_manager)
-                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                    .iter()
-                    .find(|annotation| {
-                        matches!(annotation, OwnsAnnotation::Cardinality(_))
-                            || matches!(annotation, OwnsAnnotation::Key(_))
-                    }) {
-                    Some(OwnsAnnotation::Cardinality(cardinality)) => {
-                        schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
-                    }
-                    Some(OwnsAnnotation::Key(_)) => {
-                        owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
-                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                        schema_info.original_keys.insert(*owns);
-                        continue;
-                    }
-                    Some(_) => unreachable!("Expected a key or a cardinality annotation"),
-                    None => {
-                        schema_info.original_cardinalities_owns.insert(*owns, None);
-                    }
-                }
-                owns.set_annotation(
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    OwnsAnnotation::Cardinality(Self::relaxed(original_cardinality)),
-                )
-                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-            }
-
-            let all_plays = object_type
-                .get_plays_declared(snapshot, type_manager)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-            for plays in all_plays.iter() {
-                if Self::is_specializing_plays(snapshot, type_manager, *plays)? {
-                    let annotations = plays
-                        .get_annotations_declared(snapshot, type_manager)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                    plays
-                        .player()
-                        .unset_plays(snapshot, type_manager, thing_manager, plays.role())
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    schema_info.temporarily_removed_specializing_plays.insert(*plays, annotations.clone());
-                    continue;
-                }
-
-                let original_cardinality = plays
-                    .get_cardinality(snapshot, type_manager)
-                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                if original_cardinality.start() == 0 {
-                    continue;
-                }
-                match plays
-                    .get_annotations_declared(snapshot, type_manager)
-                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                    .iter()
-                    .find(|annotation| matches!(annotation, PlaysAnnotation::Cardinality(_)))
-                {
-                    Some(PlaysAnnotation::Cardinality(cardinality)) => {
-                        schema_info.original_cardinalities_plays.insert(*plays, Some(*cardinality));
-                    }
-                    Some(_) => unreachable!("Expected a cardinality annotation"),
-                    None => {
-                        schema_info.original_cardinalities_plays.insert(*plays, None);
-                    }
-                }
-                plays
-                    .set_annotation(
-                        snapshot,
-                        type_manager,
-                        thing_manager,
-                        PlaysAnnotation::Cardinality(Self::relaxed(original_cardinality)),
-                    )
-                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-            }
-
+            self.relax_owns(snapshot, type_manager, thing_manager, object_type)?;
+            self.relax_plays(snapshot, type_manager, thing_manager, object_type)?;
             match object_type {
                 ObjectType::Entity(_) => {}
                 ObjectType::Relation(relation_type) => {
-                    let all_relates = relation_type
-                        .get_relates_explicit_declared(snapshot, type_manager)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                    for relates in all_relates.iter() {
-                        let original_cardinality = relates
-                            .get_cardinality(snapshot, type_manager)
-                            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-                        if original_cardinality.start() == 0 {
-                            continue;
-                        }
-                        match relates
-                            .get_annotations_declared(snapshot, type_manager)
-                            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                            .iter()
-                            .find(|annotation| matches!(annotation, RelatesAnnotation::Cardinality(_)))
-                        {
-                            Some(RelatesAnnotation::Cardinality(cardinality)) => {
-                                schema_info.original_cardinalities_relates.insert(*relates, Some(*cardinality));
-                            }
-                            Some(_) => unreachable!("Expected a cardinality annotation"),
-                            None => {
-                                schema_info.original_cardinalities_relates.insert(*relates, None);
-                            }
-                        }
-                        relates
-                            .set_annotation(
-                                snapshot,
-                                type_manager,
-                                thing_manager,
-                                RelatesAnnotation::Cardinality(Self::relaxed(original_cardinality)),
-                            )
-                            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    }
+                    self.relax_relates(snapshot, type_manager, thing_manager, relation_type)?;
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn relax_owns(
+        &mut self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        object_type: ObjectType,
+    ) -> Result<(), DatabaseImportError> {
+        let schema_info = &mut self.schema_info;
+        let all_owns = object_type
+            .get_owns_declared(snapshot, type_manager)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+        for owns in all_owns.iter() {
+            if Self::is_specializing_owns(snapshot, type_manager, *owns)? {
+                let ordering = owns
+                    .get_ordering(snapshot, type_manager)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+                let annotations = owns
+                    .get_annotations_declared(snapshot, type_manager)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+                // TODO: we fully remove specializations... do we need to?
+                owns.owner()
+                    .unset_owns(snapshot, type_manager, thing_manager, owns.attribute())
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                schema_info.temporarily_removed_specializing_owns.insert(*owns, (annotations.clone(), ordering));
+                continue;
+            }
+
+            let original_cardinality = owns
+                .get_cardinality(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+            if original_cardinality.start() == 0 {
+                continue;
+            }
+            match owns
+                .get_annotations_declared(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .iter()
+                .find(|annotation| {
+                    matches!(annotation, OwnsAnnotation::Cardinality(_)) || matches!(annotation, OwnsAnnotation::Key(_))
+                }) {
+                Some(OwnsAnnotation::Cardinality(cardinality)) => {
+                    schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
+                }
+                Some(OwnsAnnotation::Key(_)) => {
+                    owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
+                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                    schema_info.original_keys.insert(*owns);
+                    continue;
+                }
+                Some(_) => unreachable!("Expected a key or a cardinality annotation"),
+                None => {
+                    schema_info.original_cardinalities_owns.insert(*owns, None);
+                }
+            }
+            owns.set_annotation(
+                snapshot,
+                type_manager,
+                thing_manager,
+                OwnsAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+            )
+            .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+        }
+        Ok(())
+    }
+
+    fn relax_plays(
+        &mut self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        object_type: ObjectType,
+    ) -> Result<(), DatabaseImportError> {
+        let schema_info = &mut self.schema_info;
+        let all_plays = object_type
+            .get_plays_declared(snapshot, type_manager)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+        for plays in all_plays.iter() {
+            if Self::is_specializing_plays(snapshot, type_manager, *plays)? {
+                let annotations = plays
+                    .get_annotations_declared(snapshot, type_manager)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+                plays
+                    .player()
+                    .unset_plays(snapshot, type_manager, thing_manager, plays.role())
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                schema_info.temporarily_removed_specializing_plays.insert(*plays, annotations.clone());
+                continue;
+            }
+
+            let original_cardinality = plays
+                .get_cardinality(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+            if original_cardinality.start() == 0 {
+                continue;
+            }
+            match plays
+                .get_annotations_declared(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .iter()
+                .find(|annotation| matches!(annotation, PlaysAnnotation::Cardinality(_)))
+            {
+                Some(PlaysAnnotation::Cardinality(cardinality)) => {
+                    schema_info.original_cardinalities_plays.insert(*plays, Some(*cardinality));
+                }
+                Some(_) => unreachable!("Expected a cardinality annotation"),
+                None => {
+                    schema_info.original_cardinalities_plays.insert(*plays, None);
+                }
+            }
+            plays
+                .set_annotation(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    PlaysAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+                )
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+        }
+        Ok(())
+    }
+
+    fn relax_relates(
+        &mut self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        relation_type: RelationType,
+    ) -> Result<(), DatabaseImportError> {
+        let schema_info = &mut self.schema_info;
+        let all_relates = relation_type
+            .get_relates_explicit_declared(snapshot, type_manager)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+        for relates in all_relates.iter() {
+            let original_cardinality = relates
+                .get_cardinality(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+            if original_cardinality.start() == 0 {
+                continue;
+            }
+            match relates
+                .get_annotations_declared(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                .iter()
+                .find(|annotation| matches!(annotation, RelatesAnnotation::Cardinality(_)))
+            {
+                Some(RelatesAnnotation::Cardinality(cardinality)) => {
+                    schema_info.original_cardinalities_relates.insert(*relates, Some(*cardinality));
+                }
+                Some(_) => unreachable!("Expected a cardinality annotation"),
+                None => {
+                    schema_info.original_cardinalities_relates.insert(*relates, None);
+                }
+            }
+            relates
+                .set_annotation(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    RelatesAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+                )
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
         Ok(())
     }
@@ -1676,8 +1744,6 @@ impl ImportWorker {
                 .get_relation_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
                 .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
-
-            debug_assert!(type_manager.get_is_relation_type_independent(&snapshot, relation_type).unwrap());
 
             let relation = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id
