@@ -181,7 +181,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeHas {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHas {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHas {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeHas {
     fn keyspace(&self) -> EncodingKeyspace {
@@ -459,7 +464,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
     fn keyspace(&self) -> EncodingKeyspace {
@@ -742,7 +752,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeLinks {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeLinks {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeLinks {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        if self.is_reverse { Self::PREFIX_REVERSE } else { Self::PREFIX }
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeLinks {
     fn keyspace(&self) -> EncodingKeyspace {
@@ -1045,7 +1060,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {
     fn keyspace(&self) -> EncodingKeyspace {
