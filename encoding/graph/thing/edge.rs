@@ -59,6 +59,7 @@ impl ThingEdgeHas {
         Self { owner: from, attribute: to }
     }
 
+    #[inline]
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let owner = ObjectVertex::decode(&bytes[Self::range_from()]);
@@ -238,6 +239,7 @@ impl ThingEdgeHasReverse {
         Self { attribute: from, owner: to }
     }
 
+    #[inline]
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let attribute_len = AttributeVertex::RANGE_TYPE_ID.end

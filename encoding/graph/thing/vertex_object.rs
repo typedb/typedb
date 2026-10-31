@@ -106,7 +106,12 @@ impl Keyable<BUFFER_KEY_INLINE> for ObjectVertex {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertex {}
+impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertex {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        self.prefix
+    }
+}
 
 impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {
     fn type_id_(&self) -> TypeID {
@@ -117,6 +122,7 @@ impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {
 impl ThingVertex for ObjectVertex {
     const FIXED_WIDTH_ENCODING: bool = true;
 
+    #[inline]
     fn decode(bytes: &[u8]) -> ObjectVertex {
         debug_assert_eq!(bytes.len(), Self::LENGTH);
         let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] }).expect("Unrecognized prefix byte");
