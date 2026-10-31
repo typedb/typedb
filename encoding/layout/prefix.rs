@@ -38,6 +38,12 @@ macro_rules! make_prefix_enum {
         impl Prefix {
             pub const ALL: &'static [Prefix] = &[$(Self::$name,)*];
 
+            const BY_PREFIX_ID: [Option<Prefix>; 1 << u8::BITS] = {
+                let mut by_prefix_id = [None; 1 << u8::BITS];
+                $(by_prefix_id[$byte] = Some(Self::$name);)*
+                by_prefix_id
+            };
+
             pub const fn prefix_id(&self) -> PrefixID {
                 match self {
                     $(Self::$name => PrefixID::new($byte),)*
@@ -50,11 +56,9 @@ macro_rules! make_prefix_enum {
                 }
             }
 
+            #[inline]
             pub fn from_prefix_id(prefix: PrefixID) -> Option<Self> {
-                match prefix.byte {
-                    $($byte => Some(Self::$name),)*
-                    _ => None
-                }
+                Self::BY_PREFIX_ID[prefix.byte as usize]
             }
 
             ///

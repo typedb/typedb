@@ -79,7 +79,12 @@ impl<T: Indexable> Keyable<BUFFER_KEY_INLINE> for IdentifierIndex<T> {
     }
 }
 
-impl<T: Indexable> Prefixed<BUFFER_KEY_INLINE> for IdentifierIndex<T> {}
+impl<T: Indexable> Prefixed<BUFFER_KEY_INLINE> for IdentifierIndex<T> {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Prefix::from_prefix_id(PrefixID::new(self.bytes[Self::INDEX_PREFIX])).expect("Unrecognized prefix byte")
+    }
+}
 
 // Specialisations
 pub type LabelToTypeVertexIndex = IdentifierIndex<TypeVertex>;

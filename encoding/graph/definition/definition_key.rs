@@ -88,7 +88,12 @@ impl Keyable<BUFFER_KEY_INLINE> for DefinitionKey {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for DefinitionKey {}
+impl Prefixed<BUFFER_KEY_INLINE> for DefinitionKey {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        self.prefix
+    }
+}
 
 impl fmt::Display for DefinitionKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

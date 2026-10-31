@@ -280,6 +280,91 @@ fn snapshot_delete_reinserted() {
     );
 }
 
+#[test]
+fn snapshot_iterate_versions_deletes_buffered_and_seek() {
+    init_logging();
+    let storage_path = create_tmp_storage_dir();
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
+    let key = |i: u8| StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x5, 0x0, i]));
+    let value = |i: u8, version: u8| ByteArray::<BUFFER_VALUE_INLINE>::copy(&[i, version]);
+    let prefix = || KeyRange::new_within(StorageKey::Array(StorageKeyArray::from((Keyspace, [0x5]))), true);
+    let collect = |snapshot: &dyn Fn() -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>| {
+        snapshot().into_iter().map(|(key, value)| (key.bytes()[2], value.to_vec())).collect::<Vec<_>>()
+    };
+    let expected = |entries: &[(u8, u8)]| entries.iter().map(|&(i, version)| (i, vec![i, version])).collect::<Vec<_>>();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    (0..10).for_each(|i| snapshot.put_val(key(i), value(i, 0)));
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+    let old = storage.clone().open_snapshot_read();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    snapshot.put_val(key(1), value(1, 1));
+    snapshot.delete(key(2));
+    snapshot.delete(key(5));
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+    let middle = storage.clone().open_snapshot_read();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    snapshot.put_val(key(5), value(5, 2));
+    snapshot.put_val(key(10), value(10, 2));
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+    let new = storage.clone().open_snapshot_read();
+
+    // every snapshot only sees its own versions: newer versions are skipped, as are older versions and deleted keys
+    let all_old: Vec<_> = (0..10).map(|i| (i, 0)).collect();
+    assert_eq!(collect(&|| collect_range(&old, &prefix())), expected(&all_old));
+    assert_eq!(
+        collect(&|| collect_range(&middle, &prefix())),
+        expected(&[(0, 0), (1, 1), (3, 0), (4, 0), (6, 0), (7, 0), (8, 0), (9, 0)])
+    );
+    let all_new = [(0, 0), (1, 1), (3, 0), (4, 0), (5, 2), (6, 0), (7, 0), (8, 0), (9, 0), (10, 2)];
+    assert_eq!(collect(&|| collect_range(&new, &prefix())), expected(&all_new));
+    for i in 0..=10 {
+        let get = new.get::<BUFFER_VALUE_INLINE>(StorageKey::Array(key(i)).as_reference(), StorageCounters::DISABLED);
+        let expected = all_new.iter().find(|(j, _)| *j == i).map(|&(i, version)| vec![i, version]);
+        assert_eq!(get.unwrap().map(|value| value.to_vec()), expected, "get {i}");
+    }
+
+    // seeks only move forward: to an absent key, to the current key, and backwards (a no-op)
+    let mut iterator = new.iterate_range(&prefix(), StorageCounters::DISABLED);
+    let next_index = |iterator: &mut storage::snapshot::iterator::SnapshotRangeIterator| {
+        iterator.next().map(|item| item.unwrap().0.bytes()[2])
+    };
+    assert_eq!(iterator.peek().unwrap().unwrap().0.bytes()[2], 0);
+    iterator.seek(StorageKey::Array(key(2)).as_reference());
+    assert_eq!(next_index(&mut iterator), Some(3));
+    iterator.seek(StorageKey::Array(key(4)).as_reference());
+    assert_eq!(iterator.peek().unwrap().unwrap().0.bytes()[2], 4);
+    iterator.seek(StorageKey::Array(key(4)).as_reference());
+    assert_eq!(next_index(&mut iterator), Some(4));
+    iterator.seek(StorageKey::Array(key(1)).as_reference());
+    assert_eq!(next_index(&mut iterator), Some(5));
+    iterator.seek(StorageKey::Array(key(9)).as_reference());
+    assert_eq!(next_index(&mut iterator), Some(9));
+    assert_eq!(next_index(&mut iterator), Some(10));
+    assert_eq!(next_index(&mut iterator), None);
+    assert!(iterator.peek().is_none());
+
+    // buffered writes merge with storage: a re-insert of a deleted key, a delete, an overwrite, and a new key
+    let mut write = storage.clone().open_snapshot_write();
+    write.put_val(key(2), value(2, 3));
+    write.delete(key(3));
+    write.put_val(key(4), value(4, 3));
+    write.put_val(key(11), value(11, 3));
+    assert_eq!(
+        collect(&|| collect_range(&write, &prefix())),
+        expected(&[(0, 0), (1, 1), (2, 3), (4, 3), (5, 2), (6, 0), (7, 0), (8, 0), (9, 0), (10, 2), (11, 3)])
+    );
+    let mut iterator = write.iterate_range(&prefix(), StorageCounters::DISABLED);
+    iterator.seek(StorageKey::Array(key(3)).as_reference());
+    assert_eq!(next_index(&mut iterator), Some(4));
+    iterator.seek(StorageKey::Array(key(10)).as_reference());
+    assert_eq!(next_index(&mut iterator), Some(10));
+    assert_eq!(next_index(&mut iterator), Some(11));
+    assert_eq!(next_index(&mut iterator), None);
+}
+
 // ---------------------------------------------------------------------------
 // PreloadedRangesSnapshot
 // ---------------------------------------------------------------------------

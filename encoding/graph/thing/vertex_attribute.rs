@@ -234,7 +234,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for AttributeVertex {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for AttributeVertex {}
+impl Prefixed<BUFFER_KEY_INLINE> for AttributeVertex {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Typed<BUFFER_KEY_INLINE> for AttributeVertex {
     fn type_id_(&self) -> TypeID {
