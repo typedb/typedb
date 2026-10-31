@@ -110,7 +110,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for TypeEdge {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for TypeEdge {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeEdge {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        self.prefix
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for TypeEdge {
     fn keyspace(&self) -> EncodingKeyspace {

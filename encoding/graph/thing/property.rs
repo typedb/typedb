@@ -135,4 +135,9 @@ impl Keyable<BUFFER_KEY_INLINE> for ObjectVertexProperty {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertexProperty {}
+impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertexProperty {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
