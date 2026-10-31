@@ -308,6 +308,10 @@ impl BufferRangeIterator {
         self.inner.peek()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.inner.len() == 0
+    }
+
     // TODO: This is a 'dumb' seek, in that it simply consumes values until the criteria is no longer matched
     //       When buffers are not too large, this is likely to be fast.
     //       This can be improved by opening a new range over the buffer directly.
