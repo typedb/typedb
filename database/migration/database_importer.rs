@@ -75,7 +75,7 @@ use storage::{
 use tokio::{sync::mpsc, task::JoinHandle};
 use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
-
+use concept::type_::annotation::AnnotationUnique;
 use crate::{
     migration::{
         Checksums, Counts, MigrationOperationError,
@@ -1054,6 +1054,7 @@ impl DatabaseImporter {
             .get_owns_declared(snapshot, type_manager)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
         for owns in all_owns.iter() {
+            // remove all specializing owns in any configuration
             if Self::is_specializing_owns(snapshot, type_manager, *owns)? {
                 let ordering = owns
                     .get_ordering(snapshot, type_manager)
@@ -1069,33 +1070,41 @@ impl DatabaseImporter {
                 continue;
             }
 
+            let declared_annotations = owns
+                .get_annotations_declared(snapshot, type_manager)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+
+            // replace key with only cardinality
+            if declared_annotations.iter().any(|annotation| matches!(annotation, OwnsAnnotation::Key(_))) {
+                // a key excludes a declared cardinality, so its own cardinality can take its place
+                owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                let cardinality = match self.configuration.item_order {
+                    ItemOrder::AttributesEntitiesRelations => AnnotationKey::CARDINALITY,
+                    ItemOrder::Unspecified => Self::relaxed(AnnotationKey::CARDINALITY),
+                };
+                owns.set_annotation(snapshot, type_manager, thing_manager, OwnsAnnotation::Cardinality(cardinality))
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                schema_info.original_keys.insert(*owns);
+                continue;
+            }
+
+            // handle cardinality
+            if self.configuration.item_order == ItemOrder::AttributesEntitiesRelations {
+                // attributes precede their owners, so every ownership is written together with its owner
+                continue;
+            }
             let original_cardinality = owns
                 .get_cardinality(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
             if original_cardinality.start() == 0 {
                 continue;
             }
-            match owns
-                .get_annotations_declared(snapshot, type_manager)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .iter()
-                .find(|annotation| {
-                    matches!(annotation, OwnsAnnotation::Cardinality(_)) || matches!(annotation, OwnsAnnotation::Key(_))
-                }) {
-                Some(OwnsAnnotation::Cardinality(cardinality)) => {
-                    schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
-                }
-                Some(OwnsAnnotation::Key(_)) => {
-                    owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
-                        .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                    schema_info.original_keys.insert(*owns);
-                    continue;
-                }
-                Some(_) => unreachable!("Expected a key or a cardinality annotation"),
-                None => {
-                    schema_info.original_cardinalities_owns.insert(*owns, None);
-                }
-            }
+            let declared_cardinality = declared_annotations.iter().find_map(|annotation| match annotation {
+                OwnsAnnotation::Cardinality(cardinality) => Some(*cardinality),
+                _ => None,
+            });
+            schema_info.original_cardinalities_owns.insert(*owns, declared_cardinality);
             owns.set_annotation(
                 snapshot,
                 type_manager,

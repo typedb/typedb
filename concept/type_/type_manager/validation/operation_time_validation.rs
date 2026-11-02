@@ -3119,6 +3119,21 @@ impl OperationTimeValidation {
         Ok(false)
     }
 
+    fn validate_forward_has(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        object_type: ObjectType,
+        // pass in each set of annotations to validate
+    ) -> Result<(), Box<DataValidationError>> {
+        // 1. Build map of Attribute Type to Value Annotations to check - per attribute type value constraints
+        // 2. Turn the Owns into a map of
+
+        // ??? need some help here
+
+        todo!()
+    }
+
     fn validate_owns_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -3207,6 +3222,7 @@ impl OperationTimeValidation {
                 .chain(object_types.iter().copied())
                 .collect();
         }
+        // TODO: validate unique in a separate method using ReverseHas, then continue to the remaining ones
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
