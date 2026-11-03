@@ -385,7 +385,7 @@ typedb_error! {
             offset: String,
             source_span: Option<Span>,
         ),
-        Tmp__OptionalVariableUsedOutsideTry(
+        DeprecatedOptionalVariableUsedOutsideTry(
             252,
             "A write stage uses the optional variable '{variable}' outside a 'try' block.",
             variable: String,

@@ -271,10 +271,10 @@ fn validate_all_optional_dereferences_are_safe(
     conjunction: &mut Conjunction,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
-    if let Err(err) = original__validate_all_optional_dereferences_are_safe(conjunction, context) {
-        tmp__recheck_root_optional_dereference_if_write_stage(conjunction, context)?;
+    if let Err(err) = future__validate_all_optional_dereferences_are_safe(conjunction, context) {
+        transition__recheck_root_optional_dereference_if_write_stage(conjunction, context)?;
         optional_usage_error!(err);
-        tmp__fix_all_optional_dereferences_are_safe(conjunction, context);
+        transition__fix_all_optional_dereferences_are_safe(conjunction, context);
     }
     Ok(())
 }
@@ -291,7 +291,7 @@ fn find_unsafe_dereference_in_constraints(
     })
 }
 
-fn original__validate_all_optional_dereferences_are_safe(
+fn future__validate_all_optional_dereferences_are_safe(
     conjunction: &Conjunction,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
@@ -307,25 +307,31 @@ fn original__validate_all_optional_dereferences_are_safe(
 
     conjunction
         .nested_patterns_flattened()
-        .try_for_each(|nested| original__validate_all_optional_dereferences_are_safe(nested, context))?;
+        .try_for_each(|nested| future__validate_all_optional_dereferences_are_safe(nested, context))?;
     Ok(())
 }
 
-fn tmp__recheck_root_optional_dereference_if_write_stage(
+fn transition__recheck_root_optional_dereference_if_write_stage(
     conjunction: &mut Conjunction,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
-    if context.tmp__is_write_stage {
+    if context.transition__is_write_stage {
         if let Some((id, constraint)) = find_unsafe_dereference_in_constraints(conjunction).next() {
             let variable = context.get_variable_name_or_unnamed(id).to_owned();
             let source_span = constraint.source_span();
-            return Err(Box::new(RepresentationError::Tmp__OptionalVariableUsedOutsideTry { variable, source_span }));
+            return Err(Box::new(RepresentationError::DeprecatedOptionalVariableUsedOutsideTry {
+                variable,
+                source_span,
+            }));
         }
     }
     Ok(())
 }
 
-fn tmp__fix_all_optional_dereferences_are_safe(conjunction: &mut Conjunction, context: &BlockBuilderContext<'_>) {
+fn transition__fix_all_optional_dereferences_are_safe(
+    conjunction: &mut Conjunction,
+    context: &BlockBuilderContext<'_>,
+) {
     // Will inject a fixing `isset` in ALL patterns which unsafely unwrap a variable.
     let vars_to_unwrap =
         find_unsafe_dereference_in_constraints(conjunction).map(|(id, _)| id).dedup().collect::<Vec<_>>();
@@ -337,12 +343,12 @@ fn tmp__fix_all_optional_dereferences_are_safe(conjunction: &mut Conjunction, co
         NestedPattern::Disjunction(disjunction) => disjunction
             .conjunctions_mut()
             .iter_mut()
-            .for_each(|branch| tmp__fix_all_optional_dereferences_are_safe(branch, context)),
+            .for_each(|branch| transition__fix_all_optional_dereferences_are_safe(branch, context)),
         NestedPattern::Negation(negation) => {
-            tmp__fix_all_optional_dereferences_are_safe(negation.conjunction_mut(), context)
+            transition__fix_all_optional_dereferences_are_safe(negation.conjunction_mut(), context)
         }
         NestedPattern::Optional(optional) => {
-            tmp__fix_all_optional_dereferences_are_safe(optional.conjunction_mut(), context)
+            transition__fix_all_optional_dereferences_are_safe(optional.conjunction_mut(), context)
         }
     });
 }
@@ -567,7 +573,7 @@ pub struct BlockBuilderContext<'a> {
     block_context: BlockContext,
     scope_id_allocator: u16,
 
-    pub(crate) tmp__is_write_stage: bool,
+    pub(crate) transition__is_write_stage: bool,
 }
 
 impl<'a> BlockBuilderContext<'a> {
@@ -580,7 +586,7 @@ impl<'a> BlockBuilderContext<'a> {
         debug_assert!(available_input_names.values().all(|v| variable_optionalities.contains_key(v)));
         let mut block_context = BlockContext::new(variable_optionalities.clone());
         error::needs_update_when_feature_is_implemented!(
-            // the tmp__is_write_stage has to go.
+            // the transition__is_write_stage has to go.
             error::UnimplementedFeature::ErrorsOnImplicitUnwrap
         );
         Self {
@@ -590,7 +596,7 @@ impl<'a> BlockBuilderContext<'a> {
             parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             block_context,
-            tmp__is_write_stage: false,
+            transition__is_write_stage: false,
         }
     }
 
