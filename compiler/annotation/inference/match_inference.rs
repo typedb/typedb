@@ -252,12 +252,12 @@ fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceEr
 }
 
 #[derive(Debug)]
-pub(super) struct TypeInferenceGraph<'this> {
-    pub(super) conjunction: &'this Conjunction,
-    pub(super) vertices: VertexAnnotations,
-    pub(super) edges: Vec<TypeInferenceEdge<'this>>,
-    pub(super) expressions: Vec<TypeInferenceExpression<'this>>,
-    pub(super) nested_disjunctions: Vec<NestedTypeInferenceGraphDisjunction<'this>>,
+pub(crate) struct TypeInferenceGraph<'this> {
+    pub(crate) conjunction: &'this Conjunction,
+    pub(crate) vertices: VertexAnnotations,
+    pub(crate) edges: Vec<TypeInferenceEdge<'this>>,
+    pub(crate) expressions: Vec<TypeInferenceExpression<'this>>,
+    pub(crate) nested_disjunctions: Vec<NestedTypeInferenceGraphDisjunction<'this>>,
 }
 
 impl<'this> TypeInferenceGraph<'this> {
@@ -290,18 +290,18 @@ impl<'this> TypeInferenceGraph<'this> {
 }
 
 #[derive(Debug)]
-pub(super) struct TypeInferenceEdge<'this> {
-    pub(super) constraint: &'this Constraint<Variable>,
-    pub(super) left: Vertex<Variable>,
-    pub(super) right: Vertex<Variable>,
-    pub(super) left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-    pub(super) right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
+pub(crate) struct TypeInferenceEdge<'this> {
+    pub(crate) constraint: &'this Constraint<Variable>,
+    pub(crate) left: Vertex<Variable>,
+    pub(crate) right: Vertex<Variable>,
+    pub(crate) left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
+    pub(crate) right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
 }
 
 impl<'this> TypeInferenceEdge<'this> {
     // Construction
 
-    pub(super) fn build(
+    pub(crate) fn build(
         constraint: &'this Constraint<Variable>,
         left: Vertex<Variable>,
         right: Vertex<Variable>,
@@ -380,9 +380,9 @@ impl<'this> TypeInferenceEdge<'this> {
 }
 
 #[derive(Debug)]
-pub(super) struct NestedTypeInferenceGraphDisjunction<'this> {
-    pub(super) disjunction_pattern: &'this Disjunction,
-    pub(super) disjunction: Vec<TypeInferenceGraph<'this>>,
+pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
+    pub(crate) disjunction_pattern: &'this Disjunction,
+    pub(crate) disjunction: Vec<TypeInferenceGraph<'this>>,
 }
 
 impl NestedTypeInferenceGraphDisjunction<'_> {
@@ -446,12 +446,12 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
 }
 
 #[derive(Debug)]
-pub(super) struct TypeInferenceExpression<'this> {
-    pub(super) expression: &'this ExpressionBinding<Variable>,
-    pub(super) assigned: Vertex<Variable>,
-    pub(super) args: Vec<Vertex<Variable>>,
-    pub(super) compiled_expression: Option<ExecutableExpression<Variable>>,
-    pub(super) value_types_of_attributes: BTreeMap<AttributeType, ValueType>,
+pub(crate) struct TypeInferenceExpression<'this> {
+    pub(crate) expression: &'this ExpressionBinding<Variable>,
+    pub(crate) assigned: Vertex<Variable>,
+    pub(crate) args: Vec<Vertex<Variable>>,
+    pub(crate) compiled_expression: Option<ExecutableExpression<Variable>>,
+    pub(crate) value_types_of_attributes: BTreeMap<AttributeType, ValueType>,
 }
 
 impl<'this> TypeInferenceExpression<'this> {
