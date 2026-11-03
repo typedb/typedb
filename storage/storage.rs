@@ -799,8 +799,9 @@ impl<'bytes> MVCCKey<'bytes> {
 
     /// Splits raw MVCC key bytes into their [KEY], [SEQ], and [OP] parts, borrowing the key from the bytes.
     /// This is the only place that parses the layout: the accessors below delegate to it.
-    fn split(bytes: &[u8]) -> (&[u8], SequenceNumber, StorageOperation) {
-        let (key, suffix) = bytes.split_at(bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
+    #[inline]
+    fn split(&self) -> (&[u8], SequenceNumber, StorageOperation) {
+        let (key, suffix) = self.bytes.split_at(self.bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
         let (inverse_sequence_number_bytes, operation_bytes) = suffix.split_at(SequenceNumber::serialised_len());
         let sequence_number = SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert();
         (key, sequence_number, StorageOperation::from(operation_bytes))
@@ -814,16 +815,18 @@ impl<'bytes> MVCCKey<'bytes> {
         &self.bytes
     }
 
+    // TODO: the only reason this is `pub` is the leak in ThingVertexGenerator::sync_from_storage.
+    // It seems to be the only reason MVCCKey is `pub` at all.
     pub fn key(&self) -> &[u8] {
-        Self::split(self.bytes()).0
+        self.split().0
     }
 
     fn sequence_number(&self) -> SequenceNumber {
-        Self::split(self.bytes()).1
+        self.split().1
     }
 
     fn operation(&self) -> StorageOperation {
-        Self::split(self.bytes()).2
+        self.split().2
     }
 }
 

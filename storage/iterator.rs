@@ -80,7 +80,8 @@ impl MVCCRangeIterator {
             return;
         }
         while let Some(Ok((key, value))) = self.iterator.next() {
-            let (key, sequence_number, operation) = MVCCKey::split(key);
+            let key = MVCCKey::wrap_slice(key);
+            let (key, sequence_number, operation) = key.split();
             if sequence_number > self.open_sequence_number || self.last_visible_key.as_deref() == Some(key) {
                 self.storage_counters.increment_advance_mvcc_invisible();
                 continue;
