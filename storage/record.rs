@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     durability_client::{DurabilityRecord, SequencedDurabilityRecord, UnsequencedDurabilityRecord},
-    isolation_manager::{CommitDependency, DependentPut, IsolationConflict},
+    isolation_manager::{CommitDependency, DependentDelete, DependentPut, IsolationConflict},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, lock::LockType, snapshot_id::SnapshotId, write::Write},
 };
@@ -139,6 +139,7 @@ impl CommitRecord {
         // structures first, since we assume few clashes this should mostly succeed
 
         let mut puts_to_update = Vec::new();
+        let mut deletes_to_update = Vec::new();
 
         let locks = self.operations().locks();
         let predecessor_locks = predecessor.operations().locks();
@@ -159,6 +160,9 @@ impl CommitRecord {
                     }
                     (Write::Delete { .. }, Write::Put { action, .. }) => {
                         puts_to_update.push(DependentPut::Deleted { action: action.clone() });
+                    }
+                    (Write::Delete { .. }, Write::Delete { action, .. }) => {
+                        deletes_to_update.push(DependentDelete::Deleted { action: action.clone() });
                     }
                     _ => (),
                 }
@@ -184,10 +188,10 @@ impl CommitRecord {
             }
         }
 
-        if puts_to_update.is_empty() {
+        if puts_to_update.is_empty() && deletes_to_update.is_empty() {
             CommitDependency::Independent
         } else {
-            CommitDependency::DependentPuts { puts: puts_to_update }
+            CommitDependency::DependentWrites { puts: puts_to_update, deletes: deletes_to_update }
         }
     }
 }

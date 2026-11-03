@@ -26,7 +26,7 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
     sequence_number::SequenceNumber,
-    snapshot::write::{AtomicPutAction, PutAction},
+    snapshot::write::{AtomicDeleteAction, AtomicPutAction, DeleteAction, PutAction},
     write_batches::WriteBatches,
 };
 
@@ -301,7 +301,10 @@ fn resolve_concurrent(
 fn handle_dependency(commit_dependency: CommitDependency) -> Option<IsolationConflict> {
     match commit_dependency {
         CommitDependency::Independent => (),
-        CommitDependency::DependentPuts { puts } => puts.into_iter().for_each(DependentPut::apply),
+        CommitDependency::DependentWrites { puts, deletes } => {
+            puts.into_iter().for_each(DependentPut::apply);
+            deletes.into_iter().for_each(DependentDelete::apply);
+        }
         CommitDependency::Conflict(conflict) => return Some(conflict),
     }
     None
@@ -324,10 +327,23 @@ impl DependentPut {
     }
 }
 
+#[derive(Debug, Clone)]
+pub(crate) enum DependentDelete {
+    Deleted { action: Arc<AtomicDeleteAction> },
+}
+
+impl DependentDelete {
+    fn apply(self) {
+        match self {
+            DependentDelete::Deleted { action } => action.store(DeleteAction::Nop, Ordering::Release),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum CommitDependency {
     Independent,
-    DependentPuts { puts: Vec<DependentPut> },
+    DependentWrites { puts: Vec<DependentPut>, deletes: Vec<DependentDelete> },
     Conflict(IsolationConflict),
 }
 
