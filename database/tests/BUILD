@@ -83,9 +83,9 @@ rust_test(
 )
 
 rust_test(
-    name = "test_statistics_synchronization",
+    name = "test_statistics_backwards_compatibility",
     srcs = glob([
-        "statistics_synchronization.rs",
+        "statistics_backwards_compatibility.rs",
     ]),
     deps = [
         "//common/options",
@@ -93,6 +93,24 @@ rust_test(
         "//database",
         "//diagnostics",
         "//durability",
+        "//executor",
+        "//query",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
+rust_test(
+    name = "test_statistics_synchronization",
+    srcs = glob([
+        "statistics_synchronization.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//database",
+        "//diagnostics",
         "//executor",
         "//query",
         "//storage",
