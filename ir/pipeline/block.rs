@@ -667,6 +667,7 @@ impl<'a> BlockBuilderContext<'a> {
         self.parameters
     }
 }
+
 fn validate_optional_expression_dereferences_safe_(
     context: &BlockBuilderContext<'_>,
     conjunction: &Conjunction,

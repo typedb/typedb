@@ -39,8 +39,8 @@ use crate::annotation::{
     TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     inference::{
-        ConceptVertexTypes, ExtendMappedOperations, FromIteratorMappedOperations, TypeAnnotationSetTrait,
-        ValueVertexTypes, VertexAnnotations, VertexTypeAnnotations,
+        ConceptVertexTypes, ExtendMappedOperations, FromIteratorMappedOperations, ValueVertexTypes, VertexAnnotations,
+        VertexTypeAnnotations, VertexTypeAnnotationsTrait,
         match_inference::{
             NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceExpression, TypeInferenceGraph,
         },
@@ -48,7 +48,7 @@ use crate::annotation::{
     type_inference::{TypeInferenceMode, get_type_annotation_from_label},
 };
 
-pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
+pub(super) struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
     function_annotations: &'this dyn AnnotatedFunctionSignatures,
@@ -77,7 +77,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
-    pub(crate) fn new(
+    pub(super) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
         function_annotations: &'this dyn AnnotatedFunctionSignatures,
@@ -87,7 +87,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, stage_type }
     }
 
-    pub(crate) fn create_graph<'graph>(
+    pub(super) fn create_graph<'graph>(
         &self,
         upstream_annotations: &VertexAnnotations,
         conjunction: &'graph Conjunction,
@@ -115,7 +115,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         Ok(graph)
     }
 
-    pub(crate) fn seed_types(
+    fn seed_types(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
         parent_vertices: &VertexAnnotations,

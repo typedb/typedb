@@ -37,8 +37,9 @@ use crate::{
             expression_compiler::ExpressionCompilationContext,
         },
         inference::{
-            ConceptVertexTypes, TypeAnnotationSetEntry, TypeAnnotationSetTrait, VertexAnnotations,
-            VertexTypeAnnotations, type_seeder::TypeGraphSeedingContext, validation::validate_inferred_types_are_valid,
+            ConceptVertexTypes, VertexAnnotations, VertexTypeAnnotations, VertexTypeAnnotationsEntry,
+            VertexTypeAnnotationsTrait, type_seeder::TypeGraphSeedingContext,
+            validation::validate_inferred_types_are_valid,
         },
         pipeline::RunningVariableAnnotations,
         type_annotations::{
@@ -168,7 +169,7 @@ fn all_vertex_annotations_available(
         }))
 }
 
-pub(crate) fn compute_type_inference_graph<'graph>(
+fn compute_type_inference_graph<'graph>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &'graph Conjunction,
     input_annotations: &VertexAnnotations,
@@ -201,12 +202,12 @@ fn construct_error_message_for_unsatisfiable_edge(
         Vertex::Label(label) => label.scoped_name().as_str().to_string(),
         Vertex::Parameter(_) => unreachable!("Parameters can't be involved in TypeInferenceEdges"),
     };
-    let resolve_type_label = |type_: TypeAnnotationSetEntry| match type_ {
-        TypeAnnotationSetEntry::Concept(type_) => type_
+    let resolve_type_label = |type_: VertexTypeAnnotationsEntry| match type_ {
+        VertexTypeAnnotationsEntry::Concept(type_) => type_
             .get_label(ctx.snapshot, ctx.type_manager)
             .map(|label| label.scoped_name().to_string())
             .unwrap_or_else(|_| "(Error while resolving label)".to_owned()),
-        TypeAnnotationSetEntry::Value(type_) => type_.category().name().to_owned(),
+        VertexTypeAnnotationsEntry::Value(type_) => type_.category().name().to_owned(),
     };
     let left_variable = resolve_vertex(&edge.left);
     let right_variable = resolve_vertex(&edge.right);
@@ -242,7 +243,7 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
     Ok(())
 }
 
-pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
     graph.prune_constraints_from_vertices()?; // We need this for expressions
     while graph.prune_vertices_from_constraints() {
         graph.prune_constraints_from_vertices()?;
@@ -251,12 +252,12 @@ pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) -> Result<(), Type
 }
 
 #[derive(Debug)]
-pub(crate) struct TypeInferenceGraph<'this> {
-    pub(crate) conjunction: &'this Conjunction,
-    pub(crate) vertices: VertexAnnotations,
-    pub(crate) edges: Vec<TypeInferenceEdge<'this>>,
-    pub(crate) expressions: Vec<TypeInferenceExpression<'this>>,
-    pub(crate) nested_disjunctions: Vec<NestedTypeInferenceGraphDisjunction<'this>>,
+pub(super) struct TypeInferenceGraph<'this> {
+    pub(super) conjunction: &'this Conjunction,
+    pub(super) vertices: VertexAnnotations,
+    pub(super) edges: Vec<TypeInferenceEdge<'this>>,
+    pub(super) expressions: Vec<TypeInferenceExpression<'this>>,
+    pub(super) nested_disjunctions: Vec<NestedTypeInferenceGraphDisjunction<'this>>,
 }
 
 impl<'this> TypeInferenceGraph<'this> {
@@ -289,18 +290,18 @@ impl<'this> TypeInferenceGraph<'this> {
 }
 
 #[derive(Debug)]
-pub struct TypeInferenceEdge<'this> {
-    pub(crate) constraint: &'this Constraint<Variable>,
-    pub(crate) left: Vertex<Variable>,
-    pub(crate) right: Vertex<Variable>,
-    pub(crate) left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-    pub(crate) right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
+pub(super) struct TypeInferenceEdge<'this> {
+    pub(super) constraint: &'this Constraint<Variable>,
+    pub(super) left: Vertex<Variable>,
+    pub(super) right: Vertex<Variable>,
+    pub(super) left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
+    pub(super) right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
 }
 
 impl<'this> TypeInferenceEdge<'this> {
     // Construction
 
-    pub(crate) fn build(
+    pub(super) fn build(
         constraint: &'this Constraint<Variable>,
         left: Vertex<Variable>,
         right: Vertex<Variable>,
@@ -379,9 +380,9 @@ impl<'this> TypeInferenceEdge<'this> {
 }
 
 #[derive(Debug)]
-pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
-    pub(crate) disjunction_pattern: &'this Disjunction,
-    pub(crate) disjunction: Vec<TypeInferenceGraph<'this>>,
+pub(super) struct NestedTypeInferenceGraphDisjunction<'this> {
+    pub(super) disjunction_pattern: &'this Disjunction,
+    pub(super) disjunction: Vec<TypeInferenceGraph<'this>>,
 }
 
 impl NestedTypeInferenceGraphDisjunction<'_> {
@@ -427,12 +428,12 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
         is_modified
     }
 
-    pub(crate) fn variables_affecting_parent(disjunction: &Disjunction) -> impl Iterator<Item = Vertex<Variable>> {
+    pub(super) fn variables_affecting_parent(disjunction: &Disjunction) -> impl Iterator<Item = Vertex<Variable>> {
         // Are those in every branch. But simpler:
         disjunction.bound_outside_try().map(Vertex::Variable)
     }
 
-    pub(crate) fn branch_variables_affected_by_parent(
+    pub(super) fn branch_variables_affected_by_parent(
         disjunction: &Disjunction,
         branch: &Conjunction,
     ) -> impl Iterator<Item = Vertex<Variable>> {
@@ -445,12 +446,12 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
 }
 
 #[derive(Debug)]
-pub(crate) struct TypeInferenceExpression<'this> {
-    pub(crate) expression: &'this ExpressionBinding<Variable>,
-    pub(crate) assigned: Vertex<Variable>,
-    pub(crate) args: Vec<Vertex<Variable>>,
-    pub(crate) compiled_expression: Option<ExecutableExpression<Variable>>,
-    pub(crate) value_types_of_attributes: BTreeMap<AttributeType, ValueType>,
+pub(super) struct TypeInferenceExpression<'this> {
+    pub(super) expression: &'this ExpressionBinding<Variable>,
+    pub(super) assigned: Vertex<Variable>,
+    pub(super) args: Vec<Vertex<Variable>>,
+    pub(super) compiled_expression: Option<ExecutableExpression<Variable>>,
+    pub(super) value_types_of_attributes: BTreeMap<AttributeType, ValueType>,
 }
 
 impl<'this> TypeInferenceExpression<'this> {
