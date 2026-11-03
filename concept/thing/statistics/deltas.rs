@@ -158,22 +158,22 @@ impl CommitDeltas {
 
             match DecodableKey::try_decode(key.bytes()) {
                 Some(DecodableKey::VertexEntityType(entity_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_entities.insert(EntityType::new(entity_type));
                     }
                 }
                 Some(DecodableKey::VertexRelationType(relation_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_relations.insert(RelationType::new(relation_type));
                     }
                 }
                 Some(DecodableKey::VertexAttributeType(attribute_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_attributes.insert(AttributeType::new(attribute_type));
                     }
                 }
                 Some(DecodableKey::VertexRoleType(role_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_roles.insert(RoleType::new(role_type));
                     }
                 }
