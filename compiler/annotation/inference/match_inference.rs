@@ -89,11 +89,11 @@ fn infer_types_impl<'conj>(
     type_inference_mode: TypeInferenceMode,
 ) -> Result<FullTypeInferenceGraph<'conj>, TypeInferenceError> {
     let graph = compute_type_inference_graph(ctx, conjunction, input_annotations, type_inference_mode)?;
-    let full_graph = infer_types_in_negations_and_optionals_and_complete(ctx, graph, type_inference_mode)?;
+    let full_graph = infer_and_add_types_in_negations_and_optionals(ctx, graph, type_inference_mode)?;
     Ok(full_graph)
 }
 
-fn infer_types_in_negations_and_optionals_and_complete<'conj>(
+fn infer_and_add_types_in_negations_and_optionals<'conj>(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     graph: TypeInferenceGraph<'conj>,
     type_inference_mode: TypeInferenceMode,
@@ -127,7 +127,7 @@ fn infer_types_in_negations_and_optionals_and_complete<'conj>(
         let branches = nested_disjunction
             .disjunction
             .into_iter()
-            .map(|d| infer_types_in_negations_and_optionals_and_complete(ctx, d, type_inference_mode))
+            .map(|d| infer_and_add_types_in_negations_and_optionals(ctx, d, type_inference_mode))
             .collect::<Result<Vec<_>, _>>()?;
         for optional_var in nested_disjunction.disjunction_pattern.bound_by_try() {
             let optional_vertex = Vertex::Variable(optional_var);
