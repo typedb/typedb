@@ -1846,7 +1846,7 @@ impl ThingManager {
             |snapshot, key, _| {
                 let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
                 let owner = Object::new(edge.from());
-                if !group.as_ref().is_some_and(|modified| modified.owner == owner) {
+                if group.as_ref().is_none_or(|modified| modified.owner != owner) {
                     flush(snapshot, group.take())?;
                     group = Some(ModifiedOwnerHas { owner, modified_attribute_types: HashSet::new() });
                 }
@@ -1872,7 +1872,7 @@ impl ThingManager {
             |snapshot, key, write| {
                 let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
                 let relation = Relation::new(edge.relation());
-                if !group.as_ref().is_some_and(|modified| modified.relation == relation) {
+                if group.as_ref().is_none_or(|modified| modified.relation != relation) {
                     flush(snapshot, group.take())?;
                     group = Some(ModifiedRelationLinks {
                         relation,
@@ -1908,7 +1908,7 @@ impl ThingManager {
             |snapshot, key, _| {
                 let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
                 let player = Object::new(edge.player());
-                if !group.as_ref().is_some_and(|modified| modified.player == player) {
+                if group.as_ref().is_none_or(|modified| modified.player != player) {
                     flush(snapshot, group.take())?;
                     group = Some(ModifiedPlayerLinks { player, modified_role_types: HashSet::new() });
                 }
