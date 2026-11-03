@@ -82,7 +82,7 @@ impl SnapshotRangeIterator {
             let storage_peek = self.storage_iterator.as_mut().and_then(|iter| iter.peek());
             let Some(Ok((storage_key, _storage_value))) = storage_peek else {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
-                    while let Some((_, Write::Delete)) = buffered_iterator.peek() {
+                    while let Some((_, Write::Delete { .. })) = buffered_iterator.peek() {
                         buffered_iterator.next();
                     }
                     if buffered_iterator.peek().is_some() {

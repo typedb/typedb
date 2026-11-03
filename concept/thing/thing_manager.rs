@@ -1798,7 +1798,7 @@ impl ThingManager {
         snapshot.get_write(key).map(|write| match write {
             Write::Insert { .. } => ConceptStatus::Inserted,
             Write::Put { .. } => ConceptStatus::Put,
-            Write::Delete => ConceptStatus::Deleted,
+            Write::Delete { .. } => ConceptStatus::Deleted,
         })
     }
 
@@ -1826,7 +1826,7 @@ impl ThingManager {
         );
         snapshot.visit_writes_in_range(&objects, |snapshot, key, write| match write {
             Write::Insert { .. } => visit(snapshot, Object::new(ObjectVertex::decode(key.bytes()))),
-            Write::Delete => Ok(()),
+            Write::Delete { .. } => Ok(()),
             Write::Put { .. } => unreachable!("Encountered a Put for an object"),
         })
     }
@@ -1884,7 +1884,7 @@ impl ThingManager {
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 let modified = group.as_mut().unwrap();
                 modified.modified_role_types.insert(role_type);
-                if matches!(write, Write::Delete) {
+                if write.is_delete() {
                     modified.removed_role_players.insert((player, role_type));
                 }
                 Ok(())
@@ -2133,7 +2133,7 @@ impl ThingManager {
     fn collect_cleanup_intervals(snapshot: &impl ReadableSnapshot) -> CleanupIntervals {
         let mut cleanup_intervals = CleanupIntervals::new();
         for (key, write) in snapshot.iterate_writes() {
-            if matches!(write, Write::Delete) {
+            if write.is_delete() {
                 register_delete_in_cleanup_intervals(&mut cleanup_intervals, StorageKeyArray::from(key));
             }
         }
@@ -2400,8 +2400,8 @@ impl ThingManager {
                 TypeVertexProperty::build_prefix(),
                 TypeVertexProperty::FIXED_WIDTH_ENCODING,
             ))
-            .filter_map(|(key, write)| match write {
-                Write::Delete => {
+            .filter_map(|(key, write)| {
+                if write.is_delete() {
                     let bytes = Bytes::reference(key.bytes());
                     if <AnnotationIndependent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
                         let decoded = TypeVertexProperty::decode(bytes);
@@ -2409,8 +2409,9 @@ impl ThingManager {
                     } else {
                         None
                     }
+                } else {
+                    None
                 }
-                _ => None,
             })
         {
             if !self.type_exists(snapshot, attribute_type, storage_counters.clone())? {
@@ -3441,7 +3442,7 @@ impl ThingManager {
     ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
         match snapshot.get_write(key).cloned()? {
             Write::Put { value, .. } => Some(value),
-            Write::Delete => None,
+            Write::Delete { .. } => None,
             Write::Insert { .. } => {
                 unreachable!("Encountered an `insert` while a `put` was expected in the snapshot.")
             }
@@ -3559,7 +3560,7 @@ impl ObjectOrigin {
         snapshot.get_write(key.as_reference()).map_or(Self::UnknownTransaction, |write| match write {
             Write::Insert { .. } => Self::ThisTransaction,
             Write::Put { .. } => unreachable!("Encountered a Put for an Object"),
-            Write::Delete => Self::UnknownTransaction,
+            Write::Delete { .. } => Self::UnknownTransaction,
         })
     }
 

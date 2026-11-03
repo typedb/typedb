@@ -97,7 +97,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         // within the same transaction: a concurrent transaction may hold the deleted vertex as unmodifiable,
         // and re-putting its key here would replace our buffered delete and hide the conflict.
         for (key, write) in snapshot.iterate_writes_range(&range) {
-            if matches!(write, Write::Delete) {
+            if write.is_delete() {
                 let key_tail = key.bytes()[tail_byte_index];
                 if key_tail & Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0 {
                     occupied_tails[(key_tail & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG) as usize] = true;

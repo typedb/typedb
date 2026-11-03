@@ -157,7 +157,7 @@ impl CommitRecord {
                             puts_to_update.push(DependentPut::DifferentValue { action: action.clone() });
                         }
                     }
-                    (Write::Delete, Write::Put { action, .. }) => {
+                    (Write::Delete { .. }, Write::Put { action, .. }) => {
                         puts_to_update.push(DependentPut::Deleted { action: action.clone() });
                     }
                     _ => (),

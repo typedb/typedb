@@ -250,7 +250,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         let writes = self.operations().writes_in(keyspace_id);
         match writes.writes_get(key.bytes()) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(ByteArray::copy(value)),
-            Some(Write::Delete) => {
+            Some(Write::Delete { .. }) => {
                 Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
             }
             None => {
@@ -517,7 +517,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) => Ok(None),
+            Some(Write::Delete { .. }) => Ok(None),
             None => match lookup_mode {
                 SnapshotLookupMode::BufferOnly => Ok(None),
                 SnapshotLookupMode::BufferAndStorage => self
@@ -536,7 +536,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) | None => self
+            Some(Write::Delete { .. }) | None => self
                 .storage
                 .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
@@ -737,7 +737,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) => Ok(None),
+            Some(Write::Delete { .. }) => Ok(None),
             None => match lookup_mode {
                 SnapshotLookupMode::BufferOnly => Ok(None),
                 SnapshotLookupMode::BufferAndStorage => self
@@ -755,7 +755,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
-            Some(Write::Delete) | None => self
+            Some(Write::Delete { .. }) | None => self
                 .storage
                 .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),

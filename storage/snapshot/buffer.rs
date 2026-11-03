@@ -27,7 +27,7 @@ use crate::{
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{
         lock::LockType,
-        write::{AtomicPutAction, KnownToExist, PutAction, Write},
+        write::{AtomicDeleteAction, AtomicPutAction, DeleteAction, KnownToExist, PutAction, Write},
     },
 };
 
@@ -191,7 +191,7 @@ impl WriteBuffer {
         // note: If this snapshot has Inserted the key, we don't know if it's a preexisting key
         // with a different value for overwrite or a brand new key so we always have to write a
         // delete marker instead of removing an element from the map in some cases
-        self.writes.insert(key, Write::Delete);
+        self.writes.insert(key, Write::Delete { action: Arc::new(AtomicDeleteAction::new(DeleteAction::Delete)) });
     }
 
     pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {

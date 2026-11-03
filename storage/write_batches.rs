@@ -18,7 +18,7 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::OperationsBuffer,
-        write::{PutAction, Write},
+        write::{DeleteAction, PutAction, Write},
     },
 };
 
@@ -44,8 +44,10 @@ impl WriteBatches {
                                 write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }
-                        Write::Delete => {
-                            write_batch.put(MVCCKey::build(key, seq, StorageOperation::Delete).bytes(), [])
+                        Write::Delete { action } => {
+                            if action.load(Ordering::SeqCst) != DeleteAction::Nop {
+                                write_batch.put(MVCCKey::build(key, seq, StorageOperation::Delete).bytes(), [])
+                            }
                         }
                     }
                 }
