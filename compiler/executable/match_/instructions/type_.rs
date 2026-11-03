@@ -78,7 +78,7 @@ pub struct SubInstruction<ID> {
 
 impl SubInstruction<Variable> {
     pub fn new(sub: Sub<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let supertypes = type_annotations.vertex_annotations_of(sub.supertype()).unwrap().clone();
+        let supertypes = type_annotations.concept_annotations_of(sub.supertype()).unwrap().clone();
         let edge_annotations = type_annotations.constraint_annotations_of(sub.clone().into()).unwrap().as_left_right();
         let sub_to_supertypes = edge_annotations.left_to_right();
         Self { sub, inputs, sub_to_supertypes, supertypes, checks: Vec::new() }
@@ -129,7 +129,7 @@ pub struct SubReverseInstruction<ID> {
 
 impl SubReverseInstruction<Variable> {
     pub fn new(sub: Sub<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let subtypes = type_annotations.vertex_annotations_of(sub.subtype()).unwrap().clone();
+        let subtypes = type_annotations.concept_annotations_of(sub.subtype()).unwrap().clone();
         let edge_annotations = type_annotations.constraint_annotations_of(sub.clone().into()).unwrap().as_left_right();
         let super_to_subtypes = edge_annotations.right_to_left();
         Self { sub, inputs, super_to_subtypes, subtypes, checks: Vec::new() }
@@ -180,7 +180,7 @@ pub struct OwnsInstruction<ID> {
 
 impl OwnsInstruction<Variable> {
     pub fn new(owns: Owns<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let attribute_types = type_annotations.vertex_annotations_of(owns.attribute()).unwrap().clone();
+        let attribute_types = type_annotations.concept_annotations_of(owns.attribute()).unwrap().clone();
         let edge_annotations = type_annotations.constraint_annotations_of(owns.clone().into()).unwrap().as_left_right();
         let owner_attribute_types = edge_annotations.left_to_right();
         Self { owns, inputs, owner_attribute_types, attribute_types, checks: Vec::new() }
@@ -231,7 +231,7 @@ pub struct OwnsReverseInstruction<ID> {
 
 impl OwnsReverseInstruction<Variable> {
     pub fn new(owns: Owns<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let owner_types = type_annotations.vertex_annotations_of(owns.owner()).unwrap().clone();
+        let owner_types = type_annotations.concept_annotations_of(owns.owner()).unwrap().clone();
         let edge_annotations = type_annotations.constraint_annotations_of(owns.clone().into()).unwrap().as_left_right();
         let attribute_owner_types = edge_annotations.right_to_left();
         Self { owns, inputs, attribute_owner_types, owner_types, checks: Vec::new() }
@@ -282,7 +282,7 @@ pub struct RelatesInstruction<ID> {
 
 impl RelatesInstruction<Variable> {
     pub fn new(relates: Relates<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let role_types = type_annotations.vertex_annotations_of(relates.role_type()).unwrap().clone();
+        let role_types = type_annotations.concept_annotations_of(relates.role_type()).unwrap().clone();
         let edge_annotations =
             type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
         let relation_role_types = edge_annotations.left_to_right();
@@ -334,7 +334,7 @@ pub struct RelatesReverseInstruction<ID> {
 
 impl RelatesReverseInstruction<Variable> {
     pub fn new(relates: Relates<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let relation_types = type_annotations.vertex_annotations_of(relates.relation()).unwrap().clone();
+        let relation_types = type_annotations.concept_annotations_of(relates.relation()).unwrap().clone();
         let edge_annotations =
             type_annotations.constraint_annotations_of(relates.clone().into()).unwrap().as_left_right();
         let role_type_relation_types = edge_annotations.right_to_left();
@@ -386,7 +386,7 @@ pub struct PlaysInstruction<ID> {
 
 impl PlaysInstruction<Variable> {
     pub fn new(plays: Plays<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let role_types = type_annotations.vertex_annotations_of(plays.role_type()).unwrap().clone();
+        let role_types = type_annotations.concept_annotations_of(plays.role_type()).unwrap().clone();
         let edge_annotations =
             type_annotations.constraint_annotations_of(plays.clone().into()).unwrap().as_left_right();
         let player_role_types = edge_annotations.left_to_right();
@@ -438,7 +438,7 @@ pub struct PlaysReverseInstruction<ID> {
 
 impl PlaysReverseInstruction<Variable> {
     pub fn new(plays: Plays<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let player_types = type_annotations.vertex_annotations_of(plays.player()).unwrap().clone();
+        let player_types = type_annotations.concept_annotations_of(plays.player()).unwrap().clone();
         let edge_annotations =
             type_annotations.constraint_annotations_of(plays.clone().into()).unwrap().as_left_right();
         let role_type_player_types = edge_annotations.right_to_left();

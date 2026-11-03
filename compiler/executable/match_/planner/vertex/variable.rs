@@ -171,7 +171,7 @@ impl fmt::Debug for TypePlanner {
 
 impl TypePlanner {
     pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
-        let num_types = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).unwrap().len();
+        let num_types = type_annotations.concept_annotations_of(&Vertex::Variable(variable)).unwrap().len();
         Self {
             variable,
             binding: None,
@@ -237,7 +237,7 @@ impl ThingPlanner {
         let mut unrestricted_expected_size: f64 = 0.0;
         let mut unrestricted_expected_attribute_types: usize = 0;
         for type_ in type_annotations
-            .vertex_annotations_of(&Vertex::Variable(variable))
+            .concept_annotations_of(&Vertex::Variable(variable))
             .expect("expected thing variable to have been annotated with types")
             .iter()
         {

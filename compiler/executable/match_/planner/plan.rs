@@ -1436,7 +1436,7 @@ impl ConjunctionPlan<'_> {
                     let step_builder = disjunction
                         .plan(conjunction_builder.produced_so_far.iter().filter(|&&v| v != variable).copied())?
                         .lower(
-                            self.local_annotations.vertex_annotations(),
+                            self.local_annotations.concept_annotations(),
                             conjunction_builder.row_variables().iter().copied(),
                             conjunction_builder.current_outputs.clone(),
                             conjunction_builder.position_mapping(),
@@ -1450,7 +1450,7 @@ impl ConjunctionPlan<'_> {
                 PlannerVertex::Optional(optional) => {
                     // TODO: optionals should just be added after everything else is planned?
                     let optional_executable_builder = OptionalBuilder::new(optional.plan.plan().lower(
-                        self.local_annotations.vertex_annotations(),
+                        self.local_annotations.concept_annotations(),
                         conjunction_builder.row_variables().iter().copied(),
                         conjunction_builder.current_outputs.clone(),
                         conjunction_builder.position_mapping(),
@@ -1523,7 +1523,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
-                    self.local_annotations.vertex_annotations(),
+                    self.local_annotations.concept_annotations(),
                     conjunction_builder.row_variables().iter().copied(),
                     conjunction_builder.selected_variables.clone(),
                     conjunction_builder.position_mapping(),
@@ -1600,7 +1600,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Disjunction(disjunction) => {
                 let step_builder = disjunction.plan(conjunction_builder.position_mapping().keys().copied())?.lower(
-                    self.local_annotations.vertex_annotations(),
+                    self.local_annotations.concept_annotations(),
                     conjunction_builder.row_variables().iter().copied(),
                     conjunction_builder.current_outputs.clone(),
                     conjunction_builder.position_mapping(),
@@ -1612,7 +1612,7 @@ impl ConjunctionPlan<'_> {
             }
             PlannerVertex::Optional(optional) => {
                 let optional = optional.plan().plan.lower(
-                    self.local_annotations.vertex_annotations(),
+                    self.local_annotations.concept_annotations(),
                     conjunction_builder.row_variables().iter().copied(),
                     conjunction_builder.selected_variables.clone(),
                     conjunction_builder.position_mapping(),
@@ -1966,7 +1966,7 @@ impl ConjunctionPlan<'_> {
             .into_iter()
             .filter_map(|variable| {
                 let vertex = variable.into();
-                let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
+                let local_annotations = self.local_annotations.concept_annotations_of(&vertex)?;
                 input_variable_annotations
                     .get(&vertex)? // Functions don't have any
                     .iter()

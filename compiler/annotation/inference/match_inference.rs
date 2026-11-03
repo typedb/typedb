@@ -154,7 +154,7 @@ fn all_vertex_annotations_available(
             let category = variable_registry.get_variable_category(*var).unwrap();
             category.is_category_type() || category.is_category_thing()
         })
-        .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some()))
+        .all(|v| conjunction_annotations.concept_annotations_of(&Vertex::Variable(v)).is_some()))
         && (conjunction.nested_patterns().iter().all(|nested| match nested {
             NestedPattern::Disjunction(disj) => disj
                 .conjunctions()
@@ -753,7 +753,7 @@ pub mod tests {
             .unwrap()
             .1;
             assert_eq!(
-                *annotations_without_schema_cache.vertex_annotations(),
+                *annotations_without_schema_cache.concept_annotations(),
                 BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(all_concrete_instance_types)))])
             );
         }
@@ -774,7 +774,7 @@ pub mod tests {
                 unreachable!()
             };
             assert_eq!(
-                block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations(),
+                block_annotations.type_annotations_of(block.conjunction()).unwrap().concept_annotations(),
                 &BTreeMap::from([
                     (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat]))),
                     (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat]))),
@@ -806,7 +806,7 @@ pub mod tests {
             )
             .unwrap();
             assert_eq!(
-                entry_annotations.type_annotations_of(entry.conjunction()).unwrap().vertex_annotations(),
+                entry_annotations.type_annotations_of(entry.conjunction()).unwrap().concept_annotations(),
                 &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat])))]),
             );
         }

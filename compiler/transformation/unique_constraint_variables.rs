@@ -35,8 +35,8 @@ pub fn make_constraint_variables_unique(
                     debug_assert!(variable_mapping.contains_key(&cmp.rhs().as_variable().unwrap()));
                     (cmp.rhs(), cmp.lhs())
                 };
-                let vertex_annotations = annotations.value_type_annotations_of(old_vertex).unwrap().clone();
-                annotations.value_type_annotations_mut().insert(new_vertex.clone(), vertex_annotations);
+                let vertex_annotations = annotations.value_annotations_of(old_vertex).unwrap().clone();
+                annotations.value_annotations_mut().insert(new_vertex.clone(), vertex_annotations);
             }
             Constraint::Is(is) => {
                 let (new_vertex, old_vertex) = if variable_mapping.contains_key(&is.lhs().as_variable().unwrap()) {
@@ -45,12 +45,12 @@ pub fn make_constraint_variables_unique(
                     debug_assert!(variable_mapping.contains_key(&is.rhs().as_variable().unwrap()));
                     (is.rhs(), is.lhs())
                 };
-                let vertex_annotations = annotations.vertex_annotations_of(old_vertex).unwrap().clone();
+                let vertex_annotations = annotations.concept_annotations_of(old_vertex).unwrap().clone();
                 let lr_annotations: BTreeMap<_, _> = vertex_annotations.iter().map(|t| (*t, vec![*t])).collect();
                 let rl_annotations = lr_annotations.clone();
                 let new_is_annotations =
                     ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations::new(lr_annotations, rl_annotations));
-                annotations.vertex_annotations_mut().insert(new_vertex.clone(), vertex_annotations);
+                annotations.concept_annotations_mut().insert(new_vertex.clone(), vertex_annotations);
                 annotations.constraint_annotations_mut().insert(Constraint::Is(is), new_is_annotations);
             }
             _ => {

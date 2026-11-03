@@ -343,11 +343,12 @@ impl VertexTypeAnnotationsTrait for VertexTypeAnnotations {
         }
     }
 
-    fn iter_types(&self) -> Box<dyn Iterator<Item = VertexTypeAnnotationsEntry> + '_> {
-        match self {
+    fn iter_types(&self) -> impl Iterator<Item = VertexTypeAnnotationsEntry> {
+        let box_dyn_iter: Box<dyn Iterator<Item = VertexTypeAnnotationsEntry>> = match self {
             VertexTypeAnnotations::Concept(type_set) => Box::new(type_set.iter_types()),
             VertexTypeAnnotations::Value(type_set) => Box::new(type_set.iter_types()),
-        }
+        };
+        box_dyn_iter
     }
 
     fn retain_intersection<OTHER: VertexTypeAnnotationsTrait>(&mut self, other: &OTHER) -> bool {

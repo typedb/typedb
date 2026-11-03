@@ -282,7 +282,7 @@ pub(crate) fn compile_pipeline_stages(
             };
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             last_match_annotations =
-                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
+                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().concept_annotations())
         }
         type_populations.update(&referenced_types, statistics);
         executable_stages.push(executable_stage);

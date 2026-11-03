@@ -45,50 +45,55 @@ impl BlockAnnotations {
     }
 
     pub(crate) fn referenced_types(&self) -> BTreeSet<Type> {
-        self.scope_annotations.values().flat_map(|ta| ta.vertex.values().map(|v| &**v)).flatten().copied().collect()
+        self.scope_annotations
+            .values()
+            .flat_map(|ta| ta.concept_vertices.values().map(|v| &**v))
+            .flatten()
+            .copied()
+            .collect()
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct TypeAnnotations {
-    vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
+    concept_vertices: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
+    value_vertices: BTreeMap<Vertex<Variable>, ExpressionValueType>,
     compiled_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
 }
 
 impl TypeAnnotations {
     pub fn new(
-        vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
-        value_type_annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
+        concept_vertices: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
+        value_vertices: BTreeMap<Vertex<Variable>, ExpressionValueType>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
         compiled_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     ) -> Self {
-        TypeAnnotations { vertex, constraints, value_type_annotations, compiled_expressions }
+        TypeAnnotations { concept_vertices, constraints, value_vertices, compiled_expressions }
     }
 
-    pub fn vertex_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
-        &self.vertex
+    pub fn concept_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+        &self.concept_vertices
     }
 
-    pub fn vertex_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&Arc<BTreeSet<Type>>> {
-        self.vertex.get(vertex)
+    pub fn concept_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&Arc<BTreeSet<Type>>> {
+        self.concept_vertices.get(vertex)
     }
 
-    pub(crate) fn vertex_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
-        &mut self.vertex
+    pub(crate) fn concept_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+        &mut self.concept_vertices
     }
 
     pub fn value_annotations(&self) -> &BTreeMap<Vertex<Variable>, ExpressionValueType> {
-        &self.value_type_annotations
+        &self.value_vertices
     }
 
-    pub(crate) fn value_type_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, ExpressionValueType> {
-        &mut self.value_type_annotations
+    pub(crate) fn value_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, ExpressionValueType> {
+        &mut self.value_vertices
     }
 
-    pub fn value_type_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&ExpressionValueType> {
-        self.value_type_annotations.get(vertex)
+    pub fn value_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&ExpressionValueType> {
+        self.value_vertices.get(vertex)
     }
 
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {

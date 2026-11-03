@@ -118,9 +118,9 @@ fn add_concept_deletes(
                     source_span: constraint.source_span(),
                 }));
             };
-            assert!(conjunction_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some());
+            assert!(conjunction_annotations.concept_annotations_of(&Vertex::Variable(variable)).is_some());
             if conjunction_annotations
-                .vertex_annotations_of(&Vertex::Variable(variable))
+                .concept_annotations_of(&Vertex::Variable(variable))
                 .is_some_and(|anno| anno.iter().any(|type_| type_.kind() == Kind::Role))
             {
                 return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {

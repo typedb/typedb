@@ -1505,7 +1505,7 @@ impl BinaryConstraint for Relates<Variable> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeSet;
 
     use answer::Type as TypeAnnotation;
     use concept::type_::{Ordering, OwnerAPI};

@@ -533,7 +533,7 @@ fn value_int_equality_isa_reads() {
             vec![ConstraintInstruction::TypeList(
                 TypeListInstruction::new(
                     var_id_type,
-                    type_annotations.vertex_annotations().get(&Vertex::Variable(var_id_type)).unwrap().clone(),
+                    type_annotations.concept_annotations().get(&Vertex::Variable(var_id_type)).unwrap().clone(),
                 )
                 .map(&mapping),
             )],
