@@ -70,6 +70,19 @@ rust_test(
     tags = ["manual_build", "exclusive"],
 )
 
+rust_test(
+    name = "test_http_driver_deprecated_optionals",
+    srcs = ["deprecated_optionals.rs"],
+    deps = [
+        "//tests/behaviour/service/http/http_steps:http_steps",
+
+        "@crates//:tokio",
+    ],
+    data = ["@typedb_behaviour//driver:deprecated_optionals.feature"],
+    crate_features = ["bazel"],
+    tags = ["manual_build", "exclusive"],
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [

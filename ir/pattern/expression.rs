@@ -177,7 +177,7 @@ pub enum Expression<ID> {
 impl Expression<Variable> {
     pub(crate) fn actual_result_optionality(&self, conjunction: &Conjunction) -> VariableOptionality {
         fn of_var(conjunction: &Conjunction, variable: &ExpressionVariable<Variable>) -> VariableOptionality {
-            // A '?' checked variable is always bound.
+            // The result of checking a variable with '?' variable is always `Required`.
             match (variable.checked_isset, conjunction.optionality(&variable.variable)) {
                 (true, _) | (_, VariableOptionality::Required) => VariableOptionality::Required,
                 (false, VariableOptionality::Optional) => VariableOptionality::Optional,
