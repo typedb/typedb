@@ -85,19 +85,18 @@ impl Write {
         matches!(self, Write::Delete { .. })
     }
 
-    pub fn intends_insert(&self) -> bool {
+    pub fn intent(&self) -> WriteIntent {
         match self {
-            Write::Insert { .. } => true,
-            Write::Put { action, .. } => action.load(Ordering::Relaxed) == PutAction::Insert,
-            Write::Delete { .. } => false,
-        }
-    }
-
-    pub fn is_overwrite(&self) -> bool {
-        match self {
-            Write::Put { action, .. } => action.load(Ordering::Relaxed) == PutAction::Overwrite,
-            Write::Insert { .. } => false,
-            Write::Delete { .. } => false,
+            Write::Insert { .. } => WriteIntent::NewKey,
+            Write::Put { action, .. } => match action.load(Ordering::Relaxed) {
+                PutAction::Nop => WriteIntent::Nop,
+                PutAction::Insert => WriteIntent::NewKey,
+                PutAction::Overwrite => WriteIntent::Overwrite,
+            },
+            Write::Delete { action } => match action.load(Ordering::Relaxed) {
+                DeleteAction::Nop => WriteIntent::Nop,
+                DeleteAction::Delete => WriteIntent::Tombstone,
+            },
         }
     }
 
@@ -114,21 +113,14 @@ impl Write {
             Write::Delete { .. } => panic!("Buffered delete does not have a value."),
         }
     }
-
-    pub fn category(&self) -> WriteCategory {
-        match self {
-            Write::Insert { .. } => WriteCategory::Insert,
-            Write::Put { .. } => WriteCategory::Put,
-            Write::Delete { .. } => WriteCategory::Delete,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WriteCategory {
-    Insert,
-    Put,
-    Delete,
+pub enum WriteIntent {
+    NewKey,
+    Overwrite,
+    Tombstone,
+    Nop,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
