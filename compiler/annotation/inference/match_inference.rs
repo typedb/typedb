@@ -511,6 +511,7 @@ impl<'this> TypeInferenceExpression<'this> {
     }
 }
 
+// TypeInferenceGraph with optionals and negations
 #[derive(Debug)]
 pub(super) struct FullTypeInferenceGraph<'this> {
     pub(super) conjunction: &'this Conjunction,
