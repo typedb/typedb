@@ -5,32 +5,32 @@
  */
 
 pub mod benchmark;
+pub mod id_maker;
 mod pipelines;
 pub mod runner;
 mod transaction;
 pub mod typedb_workload;
 pub mod utils;
-pub mod id_maker;
 
 use std::{collections::HashMap, sync::Arc};
 
 use answer::Type;
 use concept::type_::TypeAPI;
 use database::{
+    Database,
     database::DatabaseCreateError,
     database_manager::{DatabaseManager, ImportOwnership},
     query::execute_schema_query,
     transaction::{CommitIntent, TransactionRead, TransactionSchema},
-    Database,
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
-use options::{byte_size::ByteSize, MvccCleanupStrategy, TransactionOptions};
+use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use query::{error::QueryError, given_rows::GivenRowsSimple};
 use resource::profile::{QueryProfile, TransactionProfile};
 use storage::durability_client::WALClient;
-use test_utils::{create_tmp_storage_dir, TempDir};
+use test_utils::{TempDir, create_tmp_storage_dir};
 
 use crate::{
     transaction::{CommitError, UnifiedTransactionView, WriteTransactionView},

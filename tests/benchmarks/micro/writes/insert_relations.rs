@@ -5,15 +5,15 @@
  */
 use encoding::graph::type_::vertex::TypeID;
 use lib_benchmark::{
+    id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
-        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance}, datagen::RandomDataGen,
-        QueryDescriptor,
-        RunDescriptor,
+        QueryDescriptor, RunDescriptor,
+        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
+        datagen::RandomDataGen,
     },
 };
-use lib_benchmark::id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker};
 use query::given_rows::GivenRowEntry;
 
 use crate::SELECTED_RUN_DESCRIPTORS;

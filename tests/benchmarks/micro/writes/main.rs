@@ -6,20 +6,17 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use clap::Parser;
-use database::{transaction::TransactionWrite, Database};
+use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
-    commit, execute_write_query_in, runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+    QueryAnswer, commit, execute_write_query_in,
+    runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
     typedb_workload::{
-        benchmark::{sanity_check, PreloadDataFn, TypeDBMicroBenchmark}, reports::TxQueryProfileReport,
-        run_configs::{
-            CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE
-            , SERIAL_MANY_SMALL,
-        },
-        RunDescriptor,
-        TxQueryProfile,
+        RunDescriptor, TxQueryProfile,
+        benchmark::{PreloadDataFn, TypeDBMicroBenchmark, sanity_check},
+        reports::TxQueryProfileReport,
+        run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
     },
-    utils::{unpack_result, CountResults},
-    QueryAnswer,
+    utils::{CountResults, unpack_result},
 };
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;

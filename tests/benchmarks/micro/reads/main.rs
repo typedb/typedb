@@ -4,28 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, sync::Arc};
-
 use clap::Parser;
-use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
-    QueryAnswer, commit, execute_write_query_in,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
     typedb_workload::{
-        RunDescriptor, TxQueryProfile,
-        benchmark::{PreloadDataFn, TypeDBMicroBenchmark, sanity_check},
-        reports::TxQueryProfileReport,
-        run_configs::{
-            CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE,
-            SERIAL_MANY_MEDIUM, SERIAL_MANY_SMALL,
-        },
+        RunDescriptor,
+        benchmark::PreloadDataFn,
+        run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
     },
-    utils::{CountResults, unpack_result},
 };
-use options::TransactionOptions;
-use query::given_rows::GivenRowsSimple;
-use storage::durability_client::WALClient;
-
 mod constraints;
 mod functions;
 mod subpatterns;
