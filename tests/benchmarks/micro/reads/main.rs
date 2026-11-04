@@ -36,6 +36,7 @@ const CI_RUNS: [RunDescriptor; 1] = [CI_MINIMAL];
 const STANDARD_RUNS: [RunDescriptor; 4] =
     [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
 const SELECTED_RUN_DESCRIPTORS: &'static [RunDescriptor] = &STANDARD_RUNS;
+const PRELOAD_SCALING_FACTOR: usize = 5;
 
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     constraints::run_all(&mut runner);

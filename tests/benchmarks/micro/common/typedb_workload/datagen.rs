@@ -65,12 +65,20 @@ impl RandomDataGen {
 
     pub fn entry_entity_raw_in(&mut self, type_id: TypeID, min: u64, max: u64) -> GivenRowEntry {
         let instance_id = self.rng.gen_range(min..=max);
+        self.entry_entity_raw_with_id(type_id, instance_id)
+    }
+
+    pub fn entry_entity_raw_with_id(&self, type_id: TypeID, instance_id: u64) -> GivenRowEntry {
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(instance_id));
         GivenRowEntry::Thing(Thing::Entity(Entity::new(vertex)))
     }
 
     pub fn entry_relation_raw_in(&mut self, type_id: TypeID, min: u64, max: u64) -> GivenRowEntry {
         let instance_id = self.rng.gen_range(min..=max);
+        self.entry_relation_raw_with_id(type_id, instance_id)
+    }
+
+    pub fn entry_relation_raw_with_id(&mut self, type_id: TypeID, instance_id: u64) -> GivenRowEntry {
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(instance_id));
         GivenRowEntry::Thing(Thing::Relation(Relation::new(vertex)))
     }

@@ -7,12 +7,11 @@
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
-    typedb_workload::{QueryDescriptor, RunDescriptor, benchmark::TypeDBQueryWorkloadBenchmark},
+    typedb_workload::{benchmark::TypeDBQueryWorkloadBenchmark, QueryDescriptor, RunDescriptor},
 };
-
+use lib_benchmark::id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker};
 use crate::{
     NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS,
-    id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
 };
 
 const MAX_ID_INTEGER: usize = 100_000_000;

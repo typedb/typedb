@@ -8,17 +8,15 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
-        QueryDescriptor, RunDescriptor,
-        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
-        datagen::RandomDataGen,
+        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance}, datagen::RandomDataGen,
+        QueryDescriptor,
+        RunDescriptor,
     },
 };
+use lib_benchmark::id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker};
 use query::given_rows::GivenRowEntry;
 
-use crate::{
-    SELECTED_RUN_DESCRIPTORS,
-    id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
-};
+use crate::SELECTED_RUN_DESCRIPTORS;
 
 const N_ENTITIES: usize = 100_000;
 

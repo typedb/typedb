@@ -6,26 +6,25 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use clap::Parser;
-use database::{Database, transaction::TransactionWrite};
+use database::{transaction::TransactionWrite, Database};
 use lib_benchmark::{
-    QueryAnswer, commit, execute_write_query_in,
-    runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+    commit, execute_write_query_in, runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
     typedb_workload::{
-        RunDescriptor, TxQueryProfile,
-        benchmark::{PreloadDataFn, TypeDBMicroBenchmark, sanity_check},
-        reports::TxQueryProfileReport,
+        benchmark::{sanity_check, PreloadDataFn, TypeDBMicroBenchmark}, reports::TxQueryProfileReport,
         run_configs::{
-            CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_MEDIUM, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE,
-            SERIAL_MANY_MEDIUM, SERIAL_MANY_SMALL,
+            CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE
+            , SERIAL_MANY_SMALL,
         },
+        RunDescriptor,
+        TxQueryProfile,
     },
-    utils::{CountResults, unpack_result},
+    utils::{unpack_result, CountResults},
+    QueryAnswer,
 };
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 
-mod id_maker;
 mod insert_entities;
 mod insert_ownerships;
 mod insert_relations;
