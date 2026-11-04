@@ -92,6 +92,9 @@
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.test_utils_database]
+		workspace = true
+
 	[dev-dependencies.test_utils_storage]
 		workspace = true
 
@@ -114,6 +117,10 @@
 [[test]]
 	name = "test_migration"
 	path = "tests/migration.rs"
+
+[[test]]
+	name = "test_statistics_backwards_compatibility"
+	path = "tests/statistics_backwards_compatibility.rs"
 
 [[test]]
 	name = "test_statistics_synchronization"
