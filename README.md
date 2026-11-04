@@ -24,7 +24,7 @@
 * TypeDB was crafted to natively express and combine diverse data features, allowing users to build advanced data models from a set of simple and intuitive building blocks.
 * TypeDB's type system provides safety and flexibility at the same time, which makes both prototyping and building performant, production-ready data applications fast, elegant, and _enjoyable_.
 * With TypeDB, and its query language TypeQL, we envision databases catching up with modern typed programming languages, allowing users to write clear, intuitive, and easy to maintain code.
-* TypeDB comes with a mature ecosystem including language drivers and a graphical user interface: **[TypeDB Studio!](studio.typedb.com)**
+* TypeDB comes with a mature ecosystem including [language drivers](https://typedb.com/docs/core-concepts/drivers/overview/), a graphical user interface (**[TypeDB Studio](studio.typedb.com)**), and high availability options with automatically managed [TypeDB Cloud](https://typedb.com/docs/home/install/cloud/) or self-hosted [TypeDB Enterprise](https://typedb.com/docs/home/install/enterprise/).
 
 ## Database Fundamentals
 
@@ -90,11 +90,11 @@ Functions, a new concept in TypeDB 3.0 and a cornerstone of TypeQL's query model
 
 TypeDB breaks down the patchwork of existing database paradigms into three fundamental ingredients: [types](https://typedb.com/features#strong-type-system), [inheritance](https://typedb.com/features#conceptual-modeling), and [interfaces](https://typedb.com/features#polymorphic-queries). This provides a unified way of working with data across all database applications, that directly impacts development:
 
-- Make use of full [object model parity](https://typedb.com/#solve-object-relational-mismatch-entirely-within-the-database) when working with OOP
-- Ensure [continuous extensibility](https://typedb.com/features#conceptual-modeling) of your data model
-- Work with high-level [logical abstractions](https://typedb.com/features#conceptual-modeling) eliminating the need for physical data modeling
-- Write high-clarity code with TypeQL's [near-natural](https://typedb.com/features#modern-language) queries even for the most complex databases
-- Unleash the power of [fully declarative and composable](https://typedb.com/features#modern-language) patterns onto your data
+- Make use of full [object model parity](https://typedb.com/#solve-object-relational-mismatch-entirely-within-the-database) when working with OOP
+- Ensure [continuous extensibility](https://typedb.com/features#conceptual-modeling) of your data model
+- Work with high-level [logical abstractions](https://typedb.com/features#conceptual-modeling) eliminating the need for physical data modeling
+- Write high-clarity code with TypeQL's [near-natural](https://typedb.com/features#modern-language) queries even for the most complex databases
+- Unleash the power of [fully declarative and composable](https://typedb.com/features#modern-language) patterns onto your data
 
 ## Installation and editions
 
@@ -187,8 +187,7 @@ Today TypeDB and TypeQL use
 [Rust](https://www.rust-lang.org/),
 [pest](https://pest.rs/),
 [Bazel](https://bazel.build),
-[gRPC](https://grpc.io),
-and [ZeroMQ](https://zeromq.org).
+[gRPC](https://grpc.io),.
 
 Thank you!
 
@@ -201,7 +200,8 @@ In the past, TypeDB was enabled by various open-source products and communities 
 [Apache TinkerPop](http://tinkerpop.apache.org),
 [Caffeine](https://github.com/ben-manes/caffeine),
 [JanusGraph](http://janusgraph.org),
-and [SCIP](https://www.scipopt.org).
+[SCIP](https://www.scipopt.org),
+and [ZeroMQ](https://zeromq.org).
 
 ### Package hosting
 Package repository hosting is graciously provided by [Cloudsmith](https://cloudsmith.com).
