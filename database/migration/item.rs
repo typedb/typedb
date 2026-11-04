@@ -40,7 +40,7 @@ pub enum MigrationItem {
 
 #[derive(Debug, Clone)]
 pub struct EntityItem {
-    pub id: String,
+    pub globally_unique_id: String,
     pub label: Label,
     pub label_scoped_id: Option<u64>,
     pub attributes: Vec<OwnedAttribute>,
@@ -48,7 +48,7 @@ pub struct EntityItem {
 
 #[derive(Debug, Clone)]
 pub struct RelationItem {
-    pub id: String,
+    pub globally_unique_id: String,
     pub label: Label,
     pub label_scoped_id: Option<u64>,
     pub attributes: Vec<OwnedAttribute>,
@@ -57,7 +57,7 @@ pub struct RelationItem {
 
 #[derive(Debug, Clone)]
 pub struct AttributeItem {
-    pub id: String,
+    pub globally_unique_id: String,
     pub label: Label,
     pub value: Value<'static>,
 }
@@ -79,24 +79,24 @@ impl Display for ItemOrder {
 pub struct Guarantees {
     pub item_order: ItemOrder,
     pub attributes_unique: bool,
-    pub players_by_label_scoped_ids: bool,
-    pub owned_attributes_by_value: bool,
+    pub label_scoped_ids_present: bool,
+    pub owned_inlined_attributes_referenced_by_value: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct OwnedAttribute {
-    pub id: String,
-    pub attribute_by_value: Option<AttributeByValue>,
+    pub globally_unique_id: String,
+    pub attribute_by_value: Option<AttributeReferencedByValue>,
 }
 
 impl OwnedAttribute {
-    pub fn by_id(id: String) -> Self {
-        Self { id, attribute_by_value: None }
+    pub fn by_id(globally_unique_id: String) -> Self {
+        Self { globally_unique_id, attribute_by_value: None }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct AttributeByValue {
+pub struct AttributeReferencedByValue {
     pub label: Label,
     pub value: Value<'static>,
 }
@@ -109,18 +109,18 @@ pub struct Role {
 
 #[derive(Debug, Clone)]
 pub struct Player {
-    pub id: String,
-    pub player_by_label_scoped_id: Option<PlayerByLabelScopedId>,
+    pub globally_unique_id: String,
+    pub label_scoped_id: Option<LabelScopedId>,
 }
 
 impl Player {
-    pub fn by_id(id: String) -> Self {
-        Self { id, player_by_label_scoped_id: None }
+    pub fn by_id(globally_unique_id: String) -> Self {
+        Self { globally_unique_id, label_scoped_id: None }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct PlayerByLabelScopedId {
+pub struct LabelScopedId {
     pub label: Label,
     pub label_scoped_id: u64,
 }
@@ -133,7 +133,7 @@ pub(crate) fn encode_entity(
     entity: Entity,
 ) -> Result<MigrationItem, Box<ConceptReadError>> {
     Ok(MigrationItem::Entity(EntityItem {
-        id: encode_thing_iid(&entity),
+        globally_unique_id: encode_thing_iid(&entity),
         label: encode_type_label(snapshot, type_manager, entity.type_())?,
         label_scoped_id: Some(encode_label_scoped_id(&entity)),
         attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, entity)?,
@@ -148,7 +148,7 @@ pub(crate) fn encode_relation(
     relation: Relation,
 ) -> Result<MigrationItem, Box<ConceptReadError>> {
     Ok(MigrationItem::Relation(RelationItem {
-        id: encode_thing_iid(&relation),
+        globally_unique_id: encode_thing_iid(&relation),
         label: encode_type_label(snapshot, type_manager, relation.type_())?,
         label_scoped_id: Some(encode_label_scoped_id(&relation)),
         attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, relation)?,
@@ -164,7 +164,7 @@ pub(crate) fn encode_attribute(
 ) -> Result<MigrationItem, Box<ConceptReadError>> {
     let value = attribute.get_value(snapshot, thing_manager, StorageCounters::DISABLED)?.into_owned();
     Ok(MigrationItem::Attribute(AttributeItem {
-        id: encode_thing_iid(&attribute),
+        globally_unique_id: encode_thing_iid(&attribute),
         label: encode_type_label(snapshot, type_manager, attribute.type_())?,
         value,
     }))
@@ -212,16 +212,16 @@ fn encode_owned_attribute(
     thing_manager: &ThingManager,
     attribute: Attribute,
 ) -> Result<OwnedAttribute, Box<ConceptReadError>> {
-    let id = encode_thing_iid(&attribute);
+    let globally_unique_id = encode_thing_iid(&attribute);
     let attribute_by_value = if attribute.vertex().attribute_id().is_inline() {
-        Some(AttributeByValue {
+        Some(AttributeReferencedByValue {
             label: encode_type_label(snapshot, type_manager, attribute.type_())?,
             value: attribute.get_value(snapshot, thing_manager, StorageCounters::DISABLED)?.into_owned(),
         })
     } else {
         None
     };
-    Ok(OwnedAttribute { id, attribute_by_value })
+    Ok(OwnedAttribute { globally_unique_id, attribute_by_value })
 }
 
 fn encode_relation_roles(
@@ -259,8 +259,8 @@ fn encode_player(
     player: Object,
 ) -> Result<Player, Box<ConceptReadError>> {
     Ok(Player {
-        id: encode_thing_iid(&player),
-        player_by_label_scoped_id: Some(PlayerByLabelScopedId {
+        globally_unique_id: encode_thing_iid(&player),
+        label_scoped_id: Some(LabelScopedId {
             label: encode_type_label(snapshot, type_manager, player.type_())?,
             label_scoped_id: encode_label_scoped_id(&player),
         }),

@@ -22,8 +22,8 @@ use database::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
         item::{
-            AttributeByValue, AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player,
-            PlayerByLabelScopedId, RelationItem, Role,
+            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
+            OwnedAttribute, Player, RelationItem, Role,
         },
     },
     transaction::{
@@ -229,29 +229,29 @@ fn source_items() -> Vec<MigrationItem> {
     let bob = "bob".to_owned();
     vec![
         MigrationItem::Attribute(AttributeItem {
-            id: alice.clone(),
+            globally_unique_id: alice.clone(),
             label: Label::build("name", None),
             value: Value::String("Alice".into()),
         }),
         MigrationItem::Attribute(AttributeItem {
-            id: bob.clone(),
+            globally_unique_id: bob.clone(),
             label: Label::build("name", None),
             value: Value::String("Bob".into()),
         }),
         MigrationItem::Entity(EntityItem {
-            id: "p1".to_owned(),
+            globally_unique_id: "p1".to_owned(),
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id(alice)],
         }),
         MigrationItem::Entity(EntityItem {
-            id: "p2".to_owned(),
+            globally_unique_id: "p2".to_owned(),
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id(bob)],
         }),
         MigrationItem::Relation(RelationItem {
-            id: "f1".to_owned(),
+            globally_unique_id: "f1".to_owned(),
             label: Label::build("friendship", None),
             label_scoped_id: None,
             attributes: vec![],
@@ -316,8 +316,8 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
                 Guarantees {
                     item_order: ItemOrder::AttributesEntitiesRelations,
                     attributes_unique: true,
-                    players_by_label_scoped_ids: true,
-                    owned_attributes_by_value: true,
+                    label_scoped_ids_present: true,
+                    owned_inlined_attributes_referenced_by_value: true,
                 }
             );
         }
@@ -328,7 +328,7 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
             MigrationItem::Entity(EntityItem { label_scoped_id, attributes, .. }) => {
                 assert!(label_scoped_id.is_some(), "entities carry their label-scoped id: {item:?}");
                 for OwnedAttribute { attribute_by_value, .. } in attributes {
-                    let Some(AttributeByValue { label, value }) = attribute_by_value else {
+                    let Some(AttributeReferencedByValue { label, value }) = attribute_by_value else {
                         panic!("inline attributes are owned by value: {item:?}")
                     };
                     assert_eq!(*label, Label::build("name", None));
@@ -338,7 +338,7 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
             MigrationItem::Relation(RelationItem { label_scoped_id, roles, .. }) => {
                 assert!(label_scoped_id.is_some(), "relations carry their label-scoped id: {item:?}");
                 for player in roles.iter().flat_map(|role| &role.players) {
-                    let Some(PlayerByLabelScopedId { label, .. }) = &player.player_by_label_scoped_id else {
+                    let Some(LabelScopedId { label, .. }) = &player.label_scoped_id else {
                         panic!("players are referenced by label-scoped id: {item:?}")
                     };
                     assert_eq!(*label, Label::build("person", None));
@@ -391,23 +391,23 @@ async fn an_ownership_of_a_hashed_attribute_is_exported_by_id() {
     let counts = Counts { entity_count: 2, attribute_count: 2, relation_count: 0, role_count: 0, ownership_count: 2 };
     let items = vec![
         MigrationItem::Attribute(AttributeItem {
-            id: "long".to_owned(),
+            globally_unique_id: "long".to_owned(),
             label: Label::build("name", None),
             value: Value::String(long_name.clone().into()),
         }),
         MigrationItem::Attribute(AttributeItem {
-            id: "bob".to_owned(),
+            globally_unique_id: "bob".to_owned(),
             label: Label::build("name", None),
             value: Value::String("Bob".into()),
         }),
         MigrationItem::Entity(EntityItem {
-            id: "p1".to_owned(),
+            globally_unique_id: "p1".to_owned(),
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id("long".to_owned())],
         }),
         MigrationItem::Entity(EntityItem {
-            id: "p2".to_owned(),
+            globally_unique_id: "p2".to_owned(),
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id("bob".to_owned())],
@@ -472,7 +472,7 @@ async fn an_out_of_order_stream_is_rejected() {
         late.send(item).await.expect("send");
     }
     late.send(MigrationItem::Entity(EntityItem {
-        id: "p3".to_owned(),
+        globally_unique_id: "p3".to_owned(),
         label: Label::build("person", None),
         label_scoped_id: None,
         attributes: vec![],
@@ -503,17 +503,17 @@ async fn an_inline_attribute_referenced_by_id_under_the_by_value_guarantee_is_re
             guarantees: Guarantees {
                 item_order: ItemOrder::AttributesEntitiesRelations,
                 attributes_unique: true,
-                players_by_label_scoped_ids: false,
-                owned_attributes_by_value: true,
+                label_scoped_ids_present: false,
+                owned_inlined_attributes_referenced_by_value: true,
             },
         },
         MigrationItem::Attribute(AttributeItem {
-            id: "bob".to_owned(),
+            globally_unique_id: "bob".to_owned(),
             label: Label::build("name", None),
             value: Value::String("Bob".into()),
         }),
         MigrationItem::Entity(EntityItem {
-            id: "p1".to_owned(),
+            globally_unique_id: "p1".to_owned(),
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id("bob".to_owned())],
@@ -536,7 +536,7 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let database_manager = manager(&data_dir);
     let person = |id: String| {
         MigrationItem::Entity(EntityItem {
-            id,
+            globally_unique_id: id,
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![],
@@ -546,7 +546,7 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let padding = max_writes_per_commit * 2;
 
     let mut items = vec![MigrationItem::Relation(RelationItem {
-        id: "f1".to_owned(),
+        globally_unique_id: "f1".to_owned(),
         label: Label::build("friendship", None),
         label_scoped_id: None,
         attributes: vec![],
@@ -592,7 +592,7 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
     let database_manager = manager(&data_dir);
     let person = |id: &str| {
         MigrationItem::Entity(EntityItem {
-            id: id.to_owned(),
+            globally_unique_id: id.to_owned(),
             label: Label::build("person", None),
             label_scoped_id: None,
             attributes: vec![],
@@ -605,14 +605,14 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
         person("p1"),
         person("p2"),
         MigrationItem::Relation(RelationItem {
-            id: "f1".to_owned(),
+            globally_unique_id: "f1".to_owned(),
             label: Label::build("friendship", None),
             label_scoped_id: None,
             attributes: vec![],
             roles: vec![friends(["p1", "p2"])],
         }),
         MigrationItem::Relation(RelationItem {
-            id: "e1".to_owned(),
+            globally_unique_id: "e1".to_owned(),
             label: Label::build("endorsement", None),
             label_scoped_id: None,
             attributes: vec![],
@@ -699,7 +699,7 @@ async fn a_relation_without_role_players_is_rejected() {
         let mut importer = importer_with_schema(&database_manager, name, SCHEMA).await;
         importer
             .send(MigrationItem::Relation(RelationItem {
-                id: "f1".to_owned(),
+                globally_unique_id: "f1".to_owned(),
                 label: Label::build("friendship", None),
                 label_scoped_id: None,
                 attributes: vec![],

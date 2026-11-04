@@ -38,8 +38,8 @@ impl<'a> DatabaseExporter<'a> {
     const GUARANTEES: Guarantees = Guarantees {
         item_order: ItemOrder::AttributesEntitiesRelations,
         attributes_unique: true,
-        players_by_label_scoped_ids: true,
-        owned_attributes_by_value: true,
+        label_scoped_ids_present: true,
+        owned_inlined_attributes_referenced_by_value: true,
     };
 
     pub fn new(

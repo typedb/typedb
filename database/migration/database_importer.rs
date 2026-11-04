@@ -32,7 +32,7 @@ use concept::{
         thing_manager::{ConceptPersistenceGuarantees, ThingManager},
     },
     type_::{
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
@@ -76,8 +76,8 @@ use crate::{
         Checksums, Counts, MigrationOperationError,
         importing_database_handle::ImportingDatabaseHandle,
         item::{
-            AttributeByValue, AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player,
-            PlayerByLabelScopedId, RelationItem, Role,
+            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
+            OwnedAttribute, Player, RelationItem, Role,
         },
     },
     query::execute_schema_query,
@@ -179,6 +179,7 @@ struct DataInfo {
     expected_checksums: OnceLock<Checksums>,
     unresolved_ownerships: AtomicUsize,
     unresolved_role_players: AtomicUsize,
+    total_item_count: AtomicU64,
 }
 
 impl DataInfo {
@@ -190,19 +191,20 @@ impl DataInfo {
             expected_checksums: OnceLock::new(),
             unresolved_ownerships: AtomicUsize::new(0),
             unresolved_role_players: AtomicUsize::new(0),
+            total_item_count: AtomicU64::new(0),
         }
     }
 
     fn merge(&self, transaction_data_info: TransactionDataInfo) -> Result<(), DatabaseImportError> {
         let TransactionDataInfo {
             counts,
-            unresolved_ownerships,
-            unresolved_role_players,
-            item_count: _,
+            item_count,
             objects,
             attributes,
             deferred_ownerships,
             deferred_links,
+            unresolved_ownerships,
+            unresolved_role_players,
         } = transaction_data_info;
         self.checksums.add(counts);
         {
@@ -225,6 +227,7 @@ impl DataInfo {
         }
         self.unresolved_ownerships.fetch_add(unresolved_ownerships, core::sync::atomic::Ordering::Relaxed);
         self.unresolved_role_players.fetch_add(unresolved_role_players, core::sync::atomic::Ordering::Relaxed);
+        self.total_item_count.fetch_add(item_count, core::sync::atomic::Ordering::Relaxed);
         Ok(())
     }
 
@@ -339,8 +342,8 @@ struct DeferredLink {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 enum DeferredPlayer {
-    ByOriginalId(String),
-    ByIid(IID),
+    ByOriginalObjectId(String),
+    ByImportedObjectIid(IID),
 }
 
 enum ResolvedPlayer {
@@ -536,7 +539,6 @@ pub struct DatabaseImporter {
     configuration: ImporterConfiguration,
     schema_info: SchemaInfo,
     data_info: Arc<DataInfo>,
-    total_item_count: Arc<AtomicU64>,
     error_state: ErrorState,
 
     schema_imported: bool,
@@ -557,8 +559,8 @@ pub struct ImporterConfiguration {
     worker_count: usize,
     item_order: ItemOrder,
     attributes_unique: bool,
-    players_by_label_scoped_ids: bool,
-    owned_attributes_by_value: bool,
+    label_scoped_ids_present: bool,
+    owned_inlined_attributes_referenced_by_value: bool,
 }
 
 impl ImporterConfiguration {
@@ -572,8 +574,8 @@ impl ImporterConfiguration {
             worker_count: 1,
             item_order: ItemOrder::Unspecified,
             attributes_unique: false,
-            players_by_label_scoped_ids: false,
-            owned_attributes_by_value: false,
+            label_scoped_ids_present: false,
+            owned_inlined_attributes_referenced_by_value: false,
         }
     }
 
@@ -586,8 +588,12 @@ impl ImporterConfiguration {
     }
 
     pub fn with_guarantees(self, guarantees: Guarantees) -> Self {
-        let Guarantees { item_order, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value } =
-            guarantees;
+        let Guarantees {
+            item_order,
+            attributes_unique,
+            label_scoped_ids_present,
+            owned_inlined_attributes_referenced_by_value,
+        } = guarantees;
         let worker_count = match item_order {
             ItemOrder::Unspecified => 1,
             ItemOrder::AttributesEntitiesRelations => SystemInfo::get_cpu_count().saturating_sub(1).max(1),
@@ -596,8 +602,8 @@ impl ImporterConfiguration {
             worker_count,
             item_order,
             attributes_unique,
-            players_by_label_scoped_ids,
-            owned_attributes_by_value,
+            label_scoped_ids_present,
+            owned_inlined_attributes_referenced_by_value,
             ..self
         }
     }
@@ -606,8 +612,8 @@ impl ImporterConfiguration {
         Guarantees {
             item_order: self.item_order,
             attributes_unique: self.attributes_unique,
-            players_by_label_scoped_ids: self.players_by_label_scoped_ids,
-            owned_attributes_by_value: self.owned_attributes_by_value,
+            label_scoped_ids_present: self.label_scoped_ids_present,
+            owned_inlined_attributes_referenced_by_value: self.owned_inlined_attributes_referenced_by_value,
         }
     }
 
@@ -618,13 +624,14 @@ impl ImporterConfiguration {
     fn use_external_label_scoped_ids(&self) -> bool {
         // object ids are only needed to resolve players by id: with label-scoped ids and the ordering guarantee
         // that players exist, they are never consulted
-        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations) && self.players_by_label_scoped_ids
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations) && self.label_scoped_ids_present
     }
 
     fn skip_recording_of_inline_attributes(&self) -> bool {
         // inline attribute ids are only needed to resolve ownerships by id: when ownerships carry the value
         // and the ordering guarantees the attribute exists, they are never consulted
-        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations) && self.owned_attributes_by_value
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
+            && self.owned_inlined_attributes_referenced_by_value
     }
 
     fn skip_predecessor_phase_existence_checks(&self) -> bool {
@@ -650,7 +657,6 @@ impl DatabaseImporter {
             configuration: importer_configuration,
             schema_info: SchemaInfo::new(),
             data_info,
-            total_item_count: Arc::new(AtomicU64::new(0)),
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
@@ -819,7 +825,7 @@ impl DatabaseImporter {
     }
 
     fn total_item_count(&self) -> u64 {
-        self.total_item_count.load(core::sync::atomic::Ordering::Relaxed)
+        self.data_info.total_item_count.load(core::sync::atomic::Ordering::Relaxed)
     }
 
     fn submit_original_schema(&self, schema: String) -> Result<(), DatabaseImportError> {
@@ -1244,7 +1250,7 @@ fn decode_object_vertex(iid: &[u8]) -> Result<ObjectVertex, DatabaseImportError>
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum ImportPhase {
-    Default,
+    AllUnordered,
     Attributes,
     Entities,
     Relations,
@@ -1269,7 +1275,7 @@ impl ImportPhase {
 
     fn phase_for(thing_kind: ThingKind, item_order: ItemOrder) -> Self {
         match item_order {
-            ItemOrder::Unspecified => Self::Default,
+            ItemOrder::Unspecified => Self::AllUnordered,
             ItemOrder::AttributesEntitiesRelations => match thing_kind {
                 ThingKind::Entity => Self::Entities,
                 ThingKind::Relation => Self::Relations,
@@ -1281,7 +1287,7 @@ impl ImportPhase {
     fn validate_transition(&self, next_phase: Self, item_order: ItemOrder) -> Result<(), DatabaseImportError> {
         match item_order {
             ItemOrder::Unspecified => match (self, next_phase) {
-                (Self::Default, Self::Default | Self::Deferred) => Ok(()),
+                (Self::AllUnordered, Self::AllUnordered | Self::Deferred) => Ok(()),
                 (_, _) => Err(DatabaseImportError::UnexpectedPhase { order: item_order, phase: next_phase }),
             },
             ItemOrder::AttributesEntitiesRelations => match (self, next_phase) {
@@ -1305,14 +1311,14 @@ impl ImportPhase {
                     Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
                 }
 
-                (Self::Default, _) => {
+                (Self::AllUnordered, _) => {
                     Err(DatabaseImportError::UnexpectedPhase { order: item_order, phase: next_phase })
                 }
             },
         }
     }
 
-    fn is_from_previous_phase(&self, thing_kind: ThingKind, item_order: ItemOrder) -> bool {
+    fn is_ahead_of_phase_for(&self, thing_kind: ThingKind, item_order: ItemOrder) -> bool {
         let thing_phase = Self::phase_for(thing_kind, item_order);
         match item_order {
             ItemOrder::Unspecified => false,
@@ -1328,7 +1334,7 @@ impl ImportPhase {
                 (Self::Deferred, Self::Entities | Self::Attributes | Self::Relations) => true,
                 (Self::Deferred, _) => false,
 
-                (Self::Default, _) => false,
+                (Self::AllUnordered, _) => false,
             },
         }
     }
@@ -1456,11 +1462,10 @@ struct ImportWorker {
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_items: Vec<ImportConcept>,
     transaction_data_info: TransactionDataInfo,
-    total_item_count: Arc<AtomicU64>,
 }
 
 impl ImportWorker {
-    const MAX_COMMIT_RETRIES: usize = 3;
+    const MAX_COMMIT_ISOLATION_FAILURE_RETRIES: usize = 3;
 
     fn start(
         importer: &DatabaseImporter,
@@ -1480,7 +1485,6 @@ impl ImportWorker {
             data_transaction: None,
             transaction_items: Vec::new(),
             transaction_data_info: TransactionDataInfo::default(),
-            total_item_count: importer.total_item_count.clone(),
         };
 
         let spawned = thread::Builder::new().name(name).spawn(move || worker.run(receiver, error_state));
@@ -1530,19 +1534,26 @@ impl ImportWorker {
     fn write_item(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.transaction_data_info.item_count += 1;
         match concept {
-            ImportConcept::Entity(EntityItem { id, label, label_scoped_id, attributes }) => {
-                self.import_entity(id, label, label_scoped_id, attributes)
+            ImportConcept::Entity(EntityItem { globally_unique_id, label, label_scoped_id, attributes }) => {
+                self.import_entity(globally_unique_id, label, label_scoped_id, attributes)
             }
-            ImportConcept::Relation(RelationItem { id, label, label_scoped_id, attributes, roles }) => {
-                self.import_relation(id, label, label_scoped_id, attributes, roles)
+            ImportConcept::Relation(RelationItem { globally_unique_id, label, label_scoped_id, attributes, roles }) => {
+                self.import_relation(globally_unique_id, label, label_scoped_id, attributes, roles)
             }
-            ImportConcept::Attribute(AttributeItem { id, label, value }) => self.import_attribute(id, label, value),
+            ImportConcept::Attribute(AttributeItem { globally_unique_id, label, value }) => {
+                self.import_attribute(globally_unique_id, label, value)
+            }
             ImportConcept::DeferredOwnership(deferred) => self.import_deferred_ownership(deferred),
             ImportConcept::DeferredLinks(deferred) => self.import_deferred_links(deferred),
         }
     }
 
-    fn import_attribute(&mut self, id: String, label: Label, value: Value<'static>) -> Result<(), DatabaseImportError> {
+    fn import_attribute(
+        &mut self,
+        globally_unique_id: String,
+        label: Label,
+        value: Value<'static>,
+    ) -> Result<(), DatabaseImportError> {
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let attribute_type = type_manager
                 .get_attribute_type(&snapshot, &label)
@@ -1558,7 +1569,7 @@ impl ImportWorker {
             if !(self.configuration.skip_recording_of_inline_attributes()
                 && attribute.vertex().attribute_id().is_inline())
             {
-                self.transaction_data_info.attributes.insert(id, attribute);
+                self.transaction_data_info.attributes.insert(globally_unique_id, attribute);
             }
 
             Ok(())
@@ -1567,7 +1578,7 @@ impl ImportWorker {
 
     fn import_entity(
         &mut self,
-        id: String,
+        globally_unique_id: String,
         label: Label,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
@@ -1579,7 +1590,8 @@ impl ImportWorker {
                 .ok_or_else(|| DatabaseImportError::UnknownEntityType { label })?;
 
             let entity = if self.configuration.use_external_label_scoped_ids() {
-                let scoped_id = label_scoped_id.ok_or_else(|| DatabaseImportError::LabelScopedIdMissing { id })?;
+                let scoped_id = label_scoped_id
+                    .ok_or_else(|| DatabaseImportError::LabelScopedIdMissing { id: globally_unique_id })?;
                 thing_manager
                     .unsafe_create_entity_with_id(&mut snapshot, entity_type, ObjectID::new(scoped_id))
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?
@@ -1587,7 +1599,7 @@ impl ImportWorker {
                 let entity = thing_manager
                     .create_entity(&mut snapshot, entity_type)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.transaction_data_info.objects.insert(id, entity.into_object());
+                self.transaction_data_info.objects.insert(globally_unique_id, entity.into_object());
                 entity
             };
             self.transaction_data_info.counts.entity_count += 1;
@@ -1599,14 +1611,14 @@ impl ImportWorker {
 
     fn import_relation(
         &mut self,
-        id: String,
+        globally_unique_id: String,
         label: Label,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
         roles: Vec<Role>,
     ) -> Result<(), DatabaseImportError> {
         if roles.iter().all(|role| role.players.is_empty()) {
-            return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
+            return Err(DatabaseImportError::RelationWithoutRolePlayers { id: globally_unique_id });
         }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let relation_type = type_manager
@@ -1617,7 +1629,8 @@ impl ImportWorker {
             debug_assert!(type_manager.get_is_relation_type_independent(&snapshot, relation_type).unwrap());
 
             let relation = if self.configuration.use_external_label_scoped_ids() {
-                let scoped_id = label_scoped_id.ok_or_else(|| DatabaseImportError::LabelScopedIdMissing { id })?;
+                let scoped_id = label_scoped_id
+                    .ok_or_else(|| DatabaseImportError::LabelScopedIdMissing { id: globally_unique_id })?;
                 thing_manager
                     .unsafe_create_relation_with_id(&mut snapshot, relation_type, ObjectID::new(scoped_id))
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?
@@ -1625,7 +1638,7 @@ impl ImportWorker {
                 let relation = thing_manager
                     .create_relation(&mut snapshot, relation_type)
                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
-                self.transaction_data_info.objects.insert(id, relation.into_object());
+                self.transaction_data_info.objects.insert(globally_unique_id, relation.into_object());
                 relation
             };
             self.transaction_data_info.counts.relation_count += 1;
@@ -1642,9 +1655,9 @@ impl ImportWorker {
         object: Object,
         owned_attributes: Vec<OwnedAttribute>,
     ) -> Result<(), DatabaseImportError> {
-        for OwnedAttribute { id, attribute_by_value } in owned_attributes {
+        for OwnedAttribute { globally_unique_id, attribute_by_value } in owned_attributes {
             // lookup-free path: the attribute's inline id is derived from its value, and the ordering guarantees it exists
-            let (value, attribute) = if let Some(AttributeByValue { label, value }) = attribute_by_value {
+            let (value, attribute) = if let Some(AttributeReferencedByValue { label, value }) = attribute_by_value {
                 if AttributeID::is_inlineable(value.as_reference())
                     && self.configuration.skip_predecessor_phase_existence_checks()
                 {
@@ -1689,7 +1702,7 @@ impl ImportWorker {
             let attribute = match attribute {
                 None => {
                     // unoptimized path: map attribute
-                    match self.lookup_attribute(snapshot, thing_manager, &id)? {
+                    match self.lookup_attribute(snapshot, thing_manager, &globally_unique_id)? {
                         Some(attribute) => {
                             // if we have it, pre-cache the value so validations in set_owns can access it without going to disk
                             if let Some(value) = value {
@@ -1701,10 +1714,10 @@ impl ImportWorker {
                         }
                         None => {
                             if self.configuration.skip_recording_of_inline_attributes() {
-                                return Err(DatabaseImportError::UnknownOwnedAttribute { id });
+                                return Err(DatabaseImportError::UnknownOwnedAttribute { id: globally_unique_id });
                             }
                             self.transaction_data_info.deferred_ownerships.push(DeferredOwnership {
-                                attribute_original_id: id,
+                                attribute_original_id: globally_unique_id,
                                 owner_iid: object.iid().into_array(),
                             });
                             continue;
@@ -1753,8 +1766,10 @@ impl ImportWorker {
                 .map(|(role_type, resolved)| DeferredLink {
                     role_type_id: role_type.vertex().type_id_().as_u16(),
                     player: match resolved {
-                        ResolvedPlayer::Player(object) => DeferredPlayer::ByIid(object.iid().into_array()),
-                        ResolvedPlayer::Missing(id) => DeferredPlayer::ByOriginalId(id),
+                        ResolvedPlayer::Player(object) => {
+                            DeferredPlayer::ByImportedObjectIid(object.iid().into_array())
+                        }
+                        ResolvedPlayer::Missing(id) => DeferredPlayer::ByOriginalObjectId(id),
                     },
                 })
                 .collect();
@@ -1778,10 +1793,10 @@ impl ImportWorker {
     }
 
     fn resolve_player_by_original_id(&self, player: Player) -> Result<ResolvedPlayer, DatabaseImportError> {
-        let Player { id, player_by_label_scoped_id: _ } = player;
-        Ok(match self.lookup_object(&id)? {
+        let Player { globally_unique_id, label_scoped_id: _ } = player;
+        Ok(match self.lookup_object(&globally_unique_id)? {
             Some(object) => ResolvedPlayer::Player(object),
-            None => ResolvedPlayer::Missing(id),
+            None => ResolvedPlayer::Missing(globally_unique_id),
         })
     }
 
@@ -1790,9 +1805,9 @@ impl ImportWorker {
         type_manager: &TypeManager,
         player: Player,
     ) -> Result<ResolvedPlayer, DatabaseImportError> {
-        let Player { id: _, player_by_label_scoped_id } = player;
-        let PlayerByLabelScopedId { label, label_scoped_id } =
-            player_by_label_scoped_id.ok_or(DatabaseImportError::PlayerLabelScopedIdMissing {})?;
+        let Player { globally_unique_id: _, label_scoped_id } = player;
+        let LabelScopedId { label, label_scoped_id } =
+            label_scoped_id.ok_or(DatabaseImportError::PlayerLabelScopedIdMissing {})?;
         let player_type = type_manager
             .get_object_type(snapshot, &label)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
@@ -1837,14 +1852,14 @@ impl ImportWorker {
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             for DeferredLink { role_type_id, player } in links {
                 let player = match player {
-                    DeferredPlayer::ByOriginalId(id) => match self.lookup_object(&id)? {
+                    DeferredPlayer::ByOriginalObjectId(id) => match self.lookup_object(&id)? {
                         Some(player) => player,
                         None => {
                             self.transaction_data_info.unresolved_role_players += 1;
                             continue;
                         }
                     },
-                    DeferredPlayer::ByIid(iid) => Object::new(decode_object_vertex(&iid)?),
+                    DeferredPlayer::ByImportedObjectIid(iid) => Object::new(decode_object_vertex(&iid)?),
                 };
                 let role_type = RoleType::build_from_type_id(TypeID::new(role_type_id));
                 relation
@@ -1884,11 +1899,13 @@ impl ImportWorker {
         for attempt in 1.. {
             match self.commit_write_transaction(transaction) {
                 Ok(()) => return self.merge_transaction_data_info(),
-                Err(error) if attempt <= Self::MAX_COMMIT_RETRIES && is_isolation_conflict(&error) => {
+                Err(error)
+                    if attempt <= Self::MAX_COMMIT_ISOLATION_FAILURE_RETRIES && is_isolation_conflict(&error) =>
+                {
                     event!(
                         Level::DEBUG,
                         "Import commit was rejected by an isolation conflict, retrying ({attempt}/{}).",
-                        Self::MAX_COMMIT_RETRIES
+                        Self::MAX_COMMIT_ISOLATION_FAILURE_RETRIES
                     );
                     transaction = self.reapply_transaction()?;
                 }
@@ -1910,7 +1927,6 @@ impl ImportWorker {
     fn merge_transaction_data_info(&mut self) -> Result<(), DatabaseImportError> {
         self.transaction_items.clear();
         let transaction_data_info = std::mem::take(&mut self.transaction_data_info);
-        self.total_item_count.fetch_add(transaction_data_info.item_count, core::sync::atomic::Ordering::Relaxed);
         self.data_info.merge(transaction_data_info)
     }
 
@@ -1934,6 +1950,7 @@ impl ImportWorker {
     }
 }
 
+// TODO: clean this up, very awkward
 fn is_isolation_conflict(error: &DatabaseImportError) -> bool {
     match error {
         DatabaseImportError::DataCommitFailed { typedb_source } => {
@@ -1959,19 +1976,15 @@ struct AttributesEntitiesRelationsConceptPersistenceGuarantees {
 
 impl ConceptPersistenceGuarantees for AttributesEntitiesRelationsConceptPersistenceGuarantees {
     fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist {
-        let thing_kind = match type_ {
-            ObjectType::Entity(_) => ThingKind::Entity,
-            ObjectType::Relation(_) => ThingKind::Relation,
-        };
-        if self.phase.is_from_previous_phase(thing_kind, ItemOrder::AttributesEntitiesRelations) {
+        if self.phase.is_ahead_of_phase_for(type_.instances_thing_kind(), ItemOrder::AttributesEntitiesRelations) {
             KnownToExist::Exists
         } else {
             KnownToExist::Unknown
         }
     }
 
-    fn attribute_known_to_exist(&self, _type: AttributeType) -> KnownToExist {
-        if self.phase.is_from_previous_phase(ThingKind::Attribute, ItemOrder::AttributesEntitiesRelations) {
+    fn attribute_known_to_exist(&self, type_: AttributeType) -> KnownToExist {
+        if self.phase.is_ahead_of_phase_for(type_.instances_thing_kind(), ItemOrder::AttributesEntitiesRelations) {
             KnownToExist::Exists
         } else {
             KnownToExist::Unknown
@@ -1987,7 +2000,7 @@ impl ConceptPersistenceGuarantees for AttributesEntitiesRelationsConceptPersiste
         match self.phase {
             // an Import guarantees that edges are only ever added once
             ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred => false,
-            ImportPhase::Default => true,
+            ImportPhase::AllUnordered => true,
         }
     }
 }

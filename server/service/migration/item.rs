@@ -10,8 +10,8 @@ use database::migration::{
     Checksums, Counts,
     database_exporter::ExportMessage,
     item::{
-        AttributeByValue, AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player,
-        PlayerByLabelScopedId, RelationItem, Role,
+        AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
+        OwnedAttribute, Player, RelationItem, Role,
     },
 };
 use encoding::value::{label::Label, value::Value};
@@ -42,29 +42,31 @@ pub(crate) fn encode_item(item: ExportMessage) -> EncodedItem {
                     guarantees: Some(encode_guarantees(guarantees)),
                 })
             }
-            MigrationItem::Entity(EntityItem { id, label, label_scoped_id, attributes }) => {
+            MigrationItem::Entity(EntityItem { globally_unique_id, label, label_scoped_id, attributes }) => {
                 item::Item::Entity(item::Entity {
-                    id,
+                    globally_unique_id,
                     label: label.to_string(),
                     label_scoped_id,
                     attributes: encode_owned_attributes(attributes),
                 })
             }
-            MigrationItem::Relation(RelationItem { id, label, label_scoped_id, attributes, roles }) => {
+            MigrationItem::Relation(RelationItem { globally_unique_id, label, label_scoped_id, attributes, roles }) => {
                 item::Item::Relation(item::Relation {
-                    id,
+                    globally_unique_id,
                     label: label.to_string(),
                     label_scoped_id,
                     attributes: encode_owned_attributes(attributes),
                     roles: encode_relation_roles(roles),
                 })
             }
-            MigrationItem::Attribute(AttributeItem { id, label, value }) => item::Item::Attribute(item::Attribute {
-                id,
-                label: label.to_string(),
-                attributes: vec![], // attributes used to own attributes in 2.x, not anymore
-                value: Some(encode_migration_value(value)),
-            }),
+            MigrationItem::Attribute(AttributeItem { globally_unique_id, label, value }) => {
+                item::Item::Attribute(item::Attribute {
+                    globally_unique_id,
+                    label: label.to_string(),
+                    attributes: vec![], // attributes used to own attributes in 2.x, not anymore
+                    value: Some(encode_migration_value(value)),
+                })
+            }
             MigrationItem::Checksums(checksums) => {
                 let Counts { entity_count, attribute_count, relation_count, role_count, ownership_count } =
                     checksums.counts();
@@ -90,30 +92,34 @@ pub(crate) fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeE
             original_database,
             guarantees: guarantees.map(decode_guarantees).transpose()?.unwrap_or_default(),
         },
-        item::Item::Entity(item::Entity { id, label, label_scoped_id, attributes }) => {
+        item::Item::Entity(item::Entity { globally_unique_id, label, label_scoped_id, attributes }) => {
             MigrationItem::Entity(EntityItem {
-                id,
+                globally_unique_id,
                 label: Label::parse_from(&label, None),
                 label_scoped_id,
                 attributes: decode_owned_attributes(attributes)?,
             })
         }
-        item::Item::Relation(item::Relation { id, label, label_scoped_id, attributes, roles }) => {
+        item::Item::Relation(item::Relation { globally_unique_id, label, label_scoped_id, attributes, roles }) => {
             MigrationItem::Relation(RelationItem {
-                id,
+                globally_unique_id,
                 label: Label::parse_from(&label, None),
                 label_scoped_id,
                 attributes: decode_owned_attributes(attributes)?,
                 roles: decode_relation_roles(roles),
             })
         }
-        item::Item::Attribute(item::Attribute { id, label, attributes, value }) => {
+        item::Item::Attribute(item::Attribute { globally_unique_id, label, attributes, value }) => {
             if !attributes.is_empty() {
                 return Err(ItemDecodeError::AttributesOwningAttributes {});
             }
             let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentAttributeValue {})?)
                 .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
-            MigrationItem::Attribute(AttributeItem { id, label: Label::parse_from(&label, None), value })
+            MigrationItem::Attribute(AttributeItem {
+                globally_unique_id,
+                label: Label::parse_from(&label, None),
+                value,
+            })
         }
         item::Item::Checksums(item::Checksums {
             entity_count,
@@ -139,47 +145,58 @@ typedb_error! {
         AttributesOwningAttributes(3, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
         ConceptDecode(4, "Error decoding an item's concept.", typedb_source: Box<ConceptDecodeError>),
         AbsentOwnedAttributeValue(5, "An owned attribute referenced by value, but without a value, was received."),
-        UnknownOrdering(6, "A header with an unknown item ordering '{ordering}' was received. Ensure using compatible client protocol.", ordering: i32),
+        UnknownItemOrder(6, "A header with an unknown item order '{item_order}' was received. Ensure using compatible client protocol.", item_order: i32),
     }
 }
 
 fn encode_guarantees(guarantees: Guarantees) -> item::header::Guarantees {
-    let Guarantees { item_order, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value } =
-        guarantees;
-    let ordering = match item_order {
-        ItemOrder::Unspecified => item::header::guarantees::Ordering::Unspecified,
-        ItemOrder::AttributesEntitiesRelations => item::header::guarantees::Ordering::AttributesEntitiesRelations,
+    let Guarantees {
+        item_order,
+        attributes_unique,
+        label_scoped_ids_present,
+        owned_inlined_attributes_referenced_by_value,
+    } = guarantees;
+    let item_order = match item_order {
+        ItemOrder::Unspecified => item::header::guarantees::ItemOrder::OrderUnspecified,
+        ItemOrder::AttributesEntitiesRelations => item::header::guarantees::ItemOrder::OrderAttributesEntitiesRelations,
     };
     item::header::Guarantees {
-        ordering: ordering as i32,
+        item_order: item_order as i32,
         attributes_unique,
-        players_by_label_scoped_ids,
-        owned_attributes_by_value,
+        label_scoped_ids_present,
+        owned_inlined_attributes_referenced_by_value,
     }
 }
 
 fn decode_guarantees(guarantees: item::header::Guarantees) -> Result<Guarantees, ItemDecodeError> {
     let item::header::Guarantees {
-        ordering,
+        item_order,
         attributes_unique,
-        players_by_label_scoped_ids,
-        owned_attributes_by_value,
+        label_scoped_ids_present,
+        owned_inlined_attributes_referenced_by_value,
     } = guarantees;
-    let item_order = match item::header::guarantees::Ordering::try_from(ordering) {
-        Ok(item::header::guarantees::Ordering::Unspecified) => ItemOrder::Unspecified,
-        Ok(item::header::guarantees::Ordering::AttributesEntitiesRelations) => ItemOrder::AttributesEntitiesRelations,
-        Err(_) => return Err(ItemDecodeError::UnknownOrdering { ordering }),
+    let item_order = match item::header::guarantees::ItemOrder::try_from(item_order) {
+        Ok(item::header::guarantees::ItemOrder::OrderUnspecified) => ItemOrder::Unspecified,
+        Ok(item::header::guarantees::ItemOrder::OrderAttributesEntitiesRelations) => {
+            ItemOrder::AttributesEntitiesRelations
+        }
+        Err(_) => return Err(ItemDecodeError::UnknownItemOrder { item_order }),
     };
-    Ok(Guarantees { item_order, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value })
+    Ok(Guarantees {
+        item_order,
+        attributes_unique,
+        label_scoped_ids_present,
+        owned_inlined_attributes_referenced_by_value,
+    })
 }
 
 fn encode_owned_attributes(owned_attributes: Vec<OwnedAttribute>) -> Vec<item::OwnedAttribute> {
     owned_attributes
         .into_iter()
-        .map(|OwnedAttribute { id, attribute_by_value }| item::OwnedAttribute {
-            id,
-            attribute_by_value: attribute_by_value.map(|AttributeByValue { label, value }| {
-                item::owned_attribute::AttributeByValue {
+        .map(|OwnedAttribute { globally_unique_id, attribute_by_value }| item::OwnedAttribute {
+            globally_unique_id,
+            attribute_by_value: attribute_by_value.map(|AttributeReferencedByValue { label, value }| {
+                item::owned_attribute::AttributeReferencedByValue {
                     label: label.to_string(),
                     value: Some(encode_migration_value(value)),
                 }
@@ -191,15 +208,15 @@ fn encode_owned_attributes(owned_attributes: Vec<OwnedAttribute>) -> Vec<item::O
 fn decode_owned_attributes(attributes: Vec<item::OwnedAttribute>) -> Result<Vec<OwnedAttribute>, ItemDecodeError> {
     attributes
         .into_iter()
-        .map(|item::OwnedAttribute { id, attribute_by_value }| {
+        .map(|item::OwnedAttribute { globally_unique_id, attribute_by_value }| {
             let attribute_by_value = attribute_by_value
-                .map(|item::owned_attribute::AttributeByValue { label, value }| {
+                .map(|item::owned_attribute::AttributeReferencedByValue { label, value }| {
                     let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentOwnedAttributeValue {})?)
                         .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
-                    Ok(AttributeByValue { label: Label::parse_from(&label, None), value })
+                    Ok(AttributeReferencedByValue { label: Label::parse_from(&label, None), value })
                 })
                 .transpose()?;
-            Ok(OwnedAttribute { id, attribute_by_value })
+            Ok(OwnedAttribute { globally_unique_id, attribute_by_value })
         })
         .collect()
 }
@@ -211,16 +228,11 @@ fn encode_relation_roles(roles: Vec<Role>) -> Vec<item::relation::Role> {
             label: label.to_string(),
             players: players
                 .into_iter()
-                .map(|Player { id, player_by_label_scoped_id }| item::relation::role::Player {
-                    id,
-                    player_by_label_scoped_id: player_by_label_scoped_id.map(
-                        |PlayerByLabelScopedId { label, label_scoped_id }| {
-                            item::relation::role::player::PlayerByLabelScopedId {
-                                label: label.to_string(),
-                                label_scoped_id,
-                            }
-                        },
-                    ),
+                .map(|Player { globally_unique_id, label_scoped_id }| item::relation::role::Player {
+                    globally_unique_id,
+                    label_scoped_id: label_scoped_id.map(|LabelScopedId { label, label_scoped_id }| {
+                        item::relation::role::player::LabelScopedId { label: label.to_string(), label_scoped_id }
+                    }),
                 })
                 .collect(),
         })
@@ -234,11 +246,12 @@ fn decode_relation_roles(roles: Vec<item::relation::Role>) -> Vec<Role> {
             label: Label::parse_from(&label, None),
             players: players
                 .into_iter()
-                .map(|item::relation::role::Player { id, player_by_label_scoped_id }| Player {
-                    id,
-                    player_by_label_scoped_id: player_by_label_scoped_id.map(
-                        |item::relation::role::player::PlayerByLabelScopedId { label, label_scoped_id }| {
-                            PlayerByLabelScopedId { label: Label::parse_from(&label, None), label_scoped_id }
+                .map(|item::relation::role::Player { globally_unique_id, label_scoped_id }| Player {
+                    globally_unique_id,
+                    label_scoped_id: label_scoped_id.map(
+                        |item::relation::role::player::LabelScopedId { label, label_scoped_id }| LabelScopedId {
+                            label: Label::parse_from(&label, None),
+                            label_scoped_id,
                         },
                     ),
                 })
@@ -323,13 +336,13 @@ mod tests {
     }
 
     #[test]
-    fn an_unknown_ordering_is_rejected() {
+    fn an_unknown_item_order_is_rejected() {
         let header = wire(item::Item::Header(item::Header {
             typedb_version: "3.12.3".to_owned(),
             original_database: "source".to_owned(),
-            guarantees: Some(item::header::Guarantees { ordering: 99, ..Default::default() }),
+            guarantees: Some(item::header::Guarantees { item_order: 99, ..Default::default() }),
         }));
-        assert!(matches!(decode_item(header), Err(ItemDecodeError::UnknownOrdering { ordering: 99 })));
+        assert!(matches!(decode_item(header), Err(ItemDecodeError::UnknownItemOrder { item_order: 99 })));
     }
 
     #[test]
@@ -349,18 +362,18 @@ mod tests {
                     guarantees: Guarantees {
                         item_order: ItemOrder::AttributesEntitiesRelations,
                         attributes_unique: true,
-                        players_by_label_scoped_ids: true,
-                        owned_attributes_by_value: false,
+                        label_scoped_ids_present: true,
+                        owned_inlined_attributes_referenced_by_value: false,
                     },
                 },
                 wire(item::Item::Header(item::Header {
                     typedb_version: "3.12.3".to_owned(),
                     original_database: "source".to_owned(),
                     guarantees: Some(item::header::Guarantees {
-                        ordering: item::header::guarantees::Ordering::AttributesEntitiesRelations as i32,
+                        item_order: item::header::guarantees::ItemOrder::OrderAttributesEntitiesRelations as i32,
                         attributes_unique: true,
-                        players_by_label_scoped_ids: true,
-                        owned_attributes_by_value: false,
+                        label_scoped_ids_present: true,
+                        owned_inlined_attributes_referenced_by_value: false,
                     }),
                 })),
             ),
@@ -378,14 +391,14 @@ mod tests {
             ),
             (
                 MigrationItem::Entity(EntityItem {
-                    id: "e1".to_owned(),
+                    globally_unique_id: "e1".to_owned(),
                     label: Label::build("person", None),
                     label_scoped_id: Some(3),
                     attributes: vec![
                         OwnedAttribute::by_id("a1".to_owned()),
                         OwnedAttribute {
-                            id: "a2".to_owned(),
-                            attribute_by_value: Some(AttributeByValue {
+                            globally_unique_id: "a2".to_owned(),
+                            attribute_by_value: Some(AttributeReferencedByValue {
                                 label: Label::build("age", None),
                                 value: Value::Integer(42),
                             }),
@@ -393,14 +406,14 @@ mod tests {
                     ],
                 }),
                 wire(item::Item::Entity(item::Entity {
-                    id: "e1".to_owned(),
+                    globally_unique_id: "e1".to_owned(),
                     label: "person".to_owned(),
                     label_scoped_id: Some(3),
                     attributes: vec![
-                        item::OwnedAttribute { id: "a1".to_owned(), attribute_by_value: None },
+                        item::OwnedAttribute { globally_unique_id: "a1".to_owned(), attribute_by_value: None },
                         item::OwnedAttribute {
-                            id: "a2".to_owned(),
-                            attribute_by_value: Some(item::owned_attribute::AttributeByValue {
+                            globally_unique_id: "a2".to_owned(),
+                            attribute_by_value: Some(item::owned_attribute::AttributeReferencedByValue {
                                 label: "age".to_owned(),
                                 value: Some(MigrationValue {
                                     value: Some(migration::migration_value::Value::Integer(42)),
@@ -412,7 +425,7 @@ mod tests {
             ),
             (
                 MigrationItem::Relation(RelationItem {
-                    id: "r1".to_owned(),
+                    globally_unique_id: "r1".to_owned(),
                     label: Label::build("friendship", None),
                     label_scoped_id: None,
                     attributes: vec![OwnedAttribute::by_id("a1".to_owned())],
@@ -421,8 +434,8 @@ mod tests {
                         players: vec![
                             Player::by_id("e1".to_owned()),
                             Player {
-                                id: "e2".to_owned(),
-                                player_by_label_scoped_id: Some(PlayerByLabelScopedId {
+                                globally_unique_id: "e2".to_owned(),
+                                label_scoped_id: Some(LabelScopedId {
                                     label: Label::build("person", None),
                                     label_scoped_id: 7,
                                 }),
@@ -431,17 +444,20 @@ mod tests {
                     }],
                 }),
                 wire(item::Item::Relation(item::Relation {
-                    id: "r1".to_owned(),
+                    globally_unique_id: "r1".to_owned(),
                     label: "friendship".to_owned(),
                     label_scoped_id: None,
-                    attributes: vec![item::OwnedAttribute { id: "a1".to_owned(), attribute_by_value: None }],
+                    attributes: vec![item::OwnedAttribute {
+                        globally_unique_id: "a1".to_owned(),
+                        attribute_by_value: None,
+                    }],
                     roles: vec![item::relation::Role {
                         label: "friendship:friend".to_owned(),
                         players: vec![
-                            item::relation::role::Player { id: "e1".to_owned(), player_by_label_scoped_id: None },
+                            item::relation::role::Player { globally_unique_id: "e1".to_owned(), label_scoped_id: None },
                             item::relation::role::Player {
-                                id: "e2".to_owned(),
-                                player_by_label_scoped_id: Some(item::relation::role::player::PlayerByLabelScopedId {
+                                globally_unique_id: "e2".to_owned(),
+                                label_scoped_id: Some(item::relation::role::player::LabelScopedId {
                                     label: "person".to_owned(),
                                     label_scoped_id: 7,
                                 }),
@@ -452,12 +468,12 @@ mod tests {
             ),
             (
                 MigrationItem::Attribute(AttributeItem {
-                    id: "a1".to_owned(),
+                    globally_unique_id: "a1".to_owned(),
                     label: Label::build("name", None),
                     value: Value::String(Cow::Borrowed("Alice")),
                 }),
                 wire(item::Item::Attribute(item::Attribute {
-                    id: "a1".to_owned(),
+                    globally_unique_id: "a1".to_owned(),
                     label: "name".to_owned(),
                     attributes: vec![],
                     value: Some(MigrationValue {

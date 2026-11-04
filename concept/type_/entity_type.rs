@@ -32,7 +32,7 @@ use storage::{
 use crate::{
     ConceptAPI, concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{entity::Entity, thing_manager::ThingManager},
+    thing::{ThingKind, entity::Entity, thing_manager::ThingManager},
     type_::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
@@ -239,6 +239,10 @@ impl KindAPI for EntityType {
 
 impl ThingTypeAPI for EntityType {
     type InstanceType = Entity;
+
+    fn instances_thing_kind(&self) -> ThingKind {
+        ThingKind::Entity
+    }
 }
 
 impl EntityType {

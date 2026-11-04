@@ -22,7 +22,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager},
+    thing::{ThingKind, object::Object, thing_manager::ThingManager},
     type_::{
         ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI, attribute_type::AttributeType,
         constraint::CapabilityConstraint, entity_type::EntityType, owns::Owns, plays::Plays,
@@ -342,6 +342,10 @@ impl TypeAPI for ObjectType {
 
 impl ThingTypeAPI for ObjectType {
     type InstanceType = Object;
+
+    fn instances_thing_kind(&self) -> ThingKind {
+        with_object_type!(self, |object| object.instances_thing_kind())
+    }
 }
 
 impl ObjectTypeAPI for ObjectType {
