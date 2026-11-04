@@ -60,6 +60,6 @@ pub fn initialise_logging_global(logdir: &PathBuf) {
 }
 
 pub fn initialise_logging() -> DefaultGuard {
-    let subscriber = SubscriberBuilder::default().with_max_level(Level::TRACE).finish();
+    let subscriber = SubscriberBuilder::default().with_max_level(Level::INFO).finish();
     tracing::subscriber::set_default(subscriber)
 }
