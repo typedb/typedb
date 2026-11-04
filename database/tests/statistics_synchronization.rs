@@ -23,12 +23,13 @@ const DB_NAME: &str = "stats-recovery";
 const SCHEMA: &str = r#"define
     attribute name value string;
     attribute age value integer;
-    entity person owns name @key, owns age;
+    entity person owns name @key, owns age @card(0..);
 "#;
 
 const NUM_THREADS: usize = 20;
 const BATCHES_PER_THREAD: usize = 20;
 const OPS_PER_BATCH: usize = 10;
+const OPS_PER_THREAD: usize = OPS_PER_BATCH * BATCHES_PER_THREAD;
 
 #[test]
 fn statistics_synchronization_under_concurrent_load() {
@@ -38,8 +39,8 @@ fn statistics_synchronization_under_concurrent_load() {
     let total_persons = total_batches * OPS_PER_BATCH;
     // Each person is given a unique name and a unique age, so attributes never
     // dedupe across writers and ground-truth counts come straight from the configs.
-    let total_attributes = 2 * total_persons;
-    let total_has = 2 * total_persons;
+    let total_attributes = 2 * total_persons - OPS_PER_THREAD; // we delete the same OPS ages in each thread
+    let total_has = total_attributes;
 
     {
         let (_dbm, database) = create_db(&tmp_dir);
@@ -58,6 +59,21 @@ fn statistics_synchronization_under_concurrent_load() {
                 for local_batch_id in 0..BATCHES_PER_THREAD {
                     let batch_id = thread_id * BATCHES_PER_THREAD + local_batch_id;
                     run_insert_batch(&database, batch_id);
+                }
+            });
+            handles.push(handle);
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+
+        let mut handles = Vec::with_capacity(NUM_THREADS);
+        for _ in 0..NUM_THREADS {
+            let database = database.clone();
+            let handle = thread::spawn(move || {
+                for local_batch_id in 0..BATCHES_PER_THREAD {
+                    let batch_id = local_batch_id; // all threads are deleting the same concepts
+                    run_delete_batch(&database, batch_id);
                 }
             });
             handles.push(handle);
@@ -141,6 +157,27 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
     for i in 0..OPS_PER_BATCH {
         let id = batch_id * OPS_PER_BATCH + i;
         let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {id};"#);
+        let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
+        let (returned_tx, result) = execute_write_query_in_write(
+            tx,
+            QueryOptions::default_grpc(),
+            Arc::new(pipeline),
+            None::<GivenRowsSimple>,
+            query_str,
+            ExecutionInterrupt::new_uninterruptible(),
+        );
+        result.unwrap();
+        tx = returned_tx;
+    }
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
+}
+
+fn run_delete_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
+    let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+    for i in 0..OPS_PER_BATCH {
+        let id = batch_id * OPS_PER_BATCH + i;
+        let query_str = format!(r#"match $p isa age {id}; delete $p;"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
