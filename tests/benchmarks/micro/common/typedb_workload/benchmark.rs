@@ -32,6 +32,7 @@ pub type PreloadDataFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
 pub type WarmupFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
 pub type PrepareRunFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
+pub type DbgAssertFn = Arc<dyn Fn(usize) + Send + Sync>;
 
 pub struct TypeDBMicroBenchmark<IN, OUT, REPORT: SimpleReport<OUT>> {
     pub name: String,
@@ -100,13 +101,14 @@ impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Rep
         preload_data_fn: Option<PreloadDataFn>,
         query_descriptor: QueryDescriptor,
         run_descriptor: RunDescriptor,
+        dbg_assert: Option<DbgAssertFn>,
     ) -> Self {
         let tx_type = query_descriptor.tx_type;
 
         let name: String = name.into();
         let schema: String = schema.into();
         let warmup_fn = query_descriptor.for_warmup();
-        let workload = WorkLoad { query_descriptor, run_descriptor };
+        let workload = WorkLoad { query_descriptor, run_descriptor, dbg_assert };
         let prepare_run_fn = workload.prepare_fn();
         let benchmark_fn = match tx_type {
             TxType::Read => workload.runner::<TransactionRead<WALClient>>(name.clone()),
@@ -124,6 +126,7 @@ pub type TypeDBQueryWorkloadBenchmark = TypeDBWorkloadBenchmark<QueryFocusedRepo
 pub struct WorkLoad {
     pub query_descriptor: QueryDescriptor,
     pub run_descriptor: RunDescriptor,
+    pub dbg_assert: Option<DbgAssertFn>,
 }
 
 impl WorkLoad {
@@ -140,6 +143,8 @@ impl WorkLoad {
         let name: String = name.into();
         let query: Arc<String> = Arc::new(self.query_descriptor.query.clone());
         let run_descriptor = self.run_descriptor.clone();
+        let tx_type = self.query_descriptor.tx_type;
+        let dbg_assert_to_clone = self.dbg_assert.clone();
         Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>| {
             let very_beginning = Instant::now();
             let handles: Vec<_> = (0..run_descriptor.parallelism)
@@ -147,11 +152,13 @@ impl WorkLoad {
                     let database = database.clone();
                     let producer = producer.clone();
                     let run_descriptor = run_descriptor.clone();
+                    let dbg_assert = dbg_assert_to_clone.clone();
                     std::thread::spawn(Self::new_runner_thread::<TxnType>(
                         database,
                         producer,
                         query.clone(),
                         run_descriptor,
+                        dbg_assert,
                     ))
                 })
                 .collect();
@@ -162,6 +169,7 @@ impl WorkLoad {
                 profiles,
                 run_descriptor: run_descriptor.clone(),
                 total_wall_time: very_beginning.elapsed(),
+                tx_type,
             }
         })
     }
@@ -171,6 +179,7 @@ impl WorkLoad {
         producer: Arc<WorkloadInstance>,
         query: Arc<String>,
         run_descriptor: RunDescriptor,
+        dbg_assert: Option<DbgAssertFn>,
     ) -> impl FnOnce() -> Vec<MultiQueryTxProfile> {
         let overestimate_txns_per_thread: usize =
             ((1.5 * run_descriptor.total_txns as f64 / run_descriptor.parallelism as f64).ceil() as usize).max(2);
@@ -190,7 +199,9 @@ impl WorkLoad {
                         unpack_result(TxnType::query::<CountResults>(tx, query.as_str(), Some(given_rows), true));
                     tx = tx_returned;
                     let QueryAnswer { profile: query_profile, answer: rows } = query_result.unwrap();
-                    assert_eq!(rows, run_descriptor.n_rows_per_query);
+                    if let Some(dbg_assert) = &dbg_assert {
+                        dbg_assert(rows);
+                    };
                     query_profiles.push(query_profile);
                 }
                 if !query_profiles.is_empty() {

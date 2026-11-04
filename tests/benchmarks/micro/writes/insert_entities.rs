@@ -7,14 +7,10 @@
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
-    typedb_workload::{
-        QueryDescriptor, RunDescriptor, TxType,
-        benchmark::TypeDBQueryWorkloadBenchmark,
-        run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
-    },
+    typedb_workload::{QueryDescriptor, RunDescriptor, TxType, benchmark::TypeDBQueryWorkloadBenchmark},
 };
 
-use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS};
+use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
     let mut group = runner.new_group("insert_entities");
@@ -27,10 +23,11 @@ fn parametrised_workload(
     query_descriptor: QueryDescriptor,
     run_descriptor: RunDescriptor,
 ) -> TypeDBQueryWorkloadBenchmark {
-    pub(crate) const SCHEMA: &'static str = "define entity person";
+    pub(crate) const SCHEMA: &'static str = "define entity person;";
 
     let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
-    TypeDBQueryWorkloadBenchmark::new(name, SCHEMA, NO_INITIAL_DATA, query_descriptor, run_descriptor)
+    let dbg_assert = Some(assert_query_row_count_is(&run_descriptor));
+    TypeDBQueryWorkloadBenchmark::new(name, SCHEMA, NO_INITIAL_DATA, query_descriptor, run_descriptor, dbg_assert)
 }
 
 fn entity_insert() -> QueryDescriptor {

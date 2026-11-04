@@ -11,7 +11,7 @@ use lib_benchmark::{
     typedb_workload::{QueryDescriptor, RunDescriptor, TxType, benchmark::TypeDBQueryWorkloadBenchmark},
 };
 
-use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS};
+use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};
 
 const MAX_ID_INTEGER: usize = 100_000_000;
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
@@ -44,9 +44,9 @@ fn parametrised_workload<MakeID: IDMaker>(
         entity person, owns id;
     "#
     );
-
+    let dbg_assert = Some(assert_query_row_count_is(&run_descriptor));
     let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
-    TypeDBQueryWorkloadBenchmark::new(name, schema, NO_INITIAL_DATA, query_descriptor, run_descriptor)
+    TypeDBQueryWorkloadBenchmark::new(name, schema, NO_INITIAL_DATA, query_descriptor, run_descriptor, dbg_assert)
 }
 
 fn insert_ownership<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {

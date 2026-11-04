@@ -12,7 +12,7 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
     typedb_workload::{
         RunDescriptor, TxQueryProfile,
-        benchmark::{PreloadDataFn, TypeDBMicroBenchmark, sanity_check},
+        benchmark::{DbgAssertFn, PreloadDataFn, TypeDBMicroBenchmark, sanity_check},
         reports::TxQueryProfileReport,
         run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
     },
@@ -32,6 +32,11 @@ const CI_RUNS: [RunDescriptor; 1] = [CI_MINIMAL];
 const STANDARD_RUNS: [RunDescriptor; 4] =
     [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
 const SELECTED_RUN_DESCRIPTORS: &'static [RunDescriptor] = &STANDARD_RUNS;
+
+pub(crate) fn assert_query_row_count_is(run_descriptor: &RunDescriptor) -> DbgAssertFn {
+    let n_rows_per_query = run_descriptor.n_rows_per_query;
+    Arc::new(move |actual_row_count: usize| assert_eq!(n_rows_per_query, actual_row_count))
+}
 
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     run_sample_benchmarks(&mut runner);
@@ -64,7 +69,7 @@ fn insert_million_entities() -> TypeDBMicroBenchmark<Option<GivenRowsSimple>, Tx
     });
     TypeDBMicroBenchmark {
         name: "sanity_check_insert_million_entities".to_owned(),
-        schema: "define entity person".to_owned(),
+        schema: "define entity person;".to_owned(),
         preload_data_fn: None,
         warmup_fn: None,
         prepare_run_fn: prepare_inputs_fn,

@@ -16,7 +16,7 @@ use lib_benchmark::{
 };
 use query::given_rows::GivenRowEntry;
 
-use crate::SELECTED_RUN_DESCRIPTORS;
+use crate::{SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};
 
 const N_ENTITIES: usize = 100_000;
 
@@ -103,7 +103,8 @@ fn parametrised_workload<MakeID: IDMaker>(
     let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
     let schema = MakeID::schema();
     let preload_data_fn = Some(preload_entities_with_id::<MakeID>());
-    TypeDBQueryWorkloadBenchmark::new(name, schema, preload_data_fn, query_descriptor, run_descriptor)
+    let dbg_assert = Some(assert_query_row_count_is(&run_descriptor));
+    TypeDBQueryWorkloadBenchmark::new(name, schema, preload_data_fn, query_descriptor, run_descriptor, dbg_assert)
 }
 
 fn relation_by_concept() -> QueryDescriptor {

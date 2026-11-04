@@ -12,7 +12,7 @@ use tabled::Tabled;
 
 use crate::{
     benchmark::SimpleReport,
-    typedb_workload::{MultiTxMultiQueryProfile, RunDescriptor, TxQueryProfile},
+    typedb_workload::{MultiTxMultiQueryProfile, RunDescriptor, TxQueryProfile, TxType},
 };
 
 /// Wraps a Duration: displays as ms with 3dp, serializes as f64 ms for CSV.
@@ -271,6 +271,10 @@ impl CommitFocusedReport {
     pub fn print_summary_table(&self) {
         println!("{}", tabled::Table::new(&self.summary));
     }
+
+    pub fn print_timing_summary_table(&self) {
+        println!("{}", tabled::Table::new(&self.summary[..3.min(self.summary.len())]));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -421,6 +425,7 @@ pub struct StageFocusedReport {
 pub struct QueryFocusedReport {
     pub stages: Vec<StageFocusedReport>,
     pub commit: CommitFocusedReport,
+    pub is_read_tx: bool,
 }
 
 impl QueryFocusedReport {
@@ -485,7 +490,8 @@ impl QueryFocusedReport {
             })
             .collect();
 
-        Self { stages, commit: CommitFocusedReport::from_ref(profile) }
+        let is_read_tx = matches!(profile.tx_type, TxType::Read);
+        Self { stages, commit: CommitFocusedReport::from_ref(profile), is_read_tx }
     }
 
     pub fn write_and_print(&self, name: &str) {
@@ -497,7 +503,11 @@ impl QueryFocusedReport {
         self.print_tables();
         let total_commit_ms = DurationMs(self.commit.per_txn.iter().map(|r| r.commit_ms.0).sum());
         println!("Commit — total: {} ms", total_commit_ms);
-        self.commit.print_summary_table();
+        if self.is_read_tx {
+            self.commit.print_timing_summary_table();
+        } else {
+            self.commit.print_summary_table();
+        }
         let total_rows = self.commit.run_descriptor.total_rows();
         let rows_per_sec = total_rows as f64 / self.commit.total_wall_time.0.as_secs_f64();
         println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.commit.total_wall_time, total_rows, rows_per_sec);

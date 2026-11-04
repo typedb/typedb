@@ -13,6 +13,8 @@ use query::given_rows::GivenRowEntry;
 use resource::profile::{QueryProfile, TransactionProfile};
 use storage::durability_client::WALClient;
 
+use crate::typedb_workload::benchmark::DbgAssertFn;
+
 pub mod benchmark;
 pub mod datagen;
 pub mod reports;
@@ -35,17 +37,17 @@ pub struct QueryDescriptor {
 
 impl QueryDescriptor {
     pub fn for_warmup(&self) -> Option<WarmupFn> {
-        let warmup_workload = self.create_workload(RunDescriptor::WARMUP.clone());
+        let warmup_workload = WorkLoad {
+            query_descriptor: self.clone(),
+            run_descriptor: RunDescriptor::WARMUP.clone(),
+            dbg_assert: None,
+        };
         let runner = warmup_workload.runner::<TransactionWrite<WALClient>>("_warmup");
         let prepare_fn = warmup_workload.prepare_fn();
         Some(Box::new(move |db| {
             let db_clone = db.clone();
             runner(db, prepare_fn(db_clone));
         }))
-    }
-
-    pub fn create_workload(&self, run_descriptor: RunDescriptor) -> WorkLoad {
-        WorkLoad { query_descriptor: self.clone(), run_descriptor }
     }
 }
 
@@ -88,4 +90,5 @@ pub struct MultiTxMultiQueryProfile {
     pub profiles: Vec<MultiQueryTxProfile>,
     pub run_descriptor: RunDescriptor,
     pub total_wall_time: Duration,
+    pub tx_type: TxType,
 }
