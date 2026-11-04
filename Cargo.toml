@@ -562,13 +562,13 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			rev = "856a6598867aeb24f0b2e538b8f2634d4b7391d0"
+			rev = "a247524c3a83524bf0a41a8c69739adfb812fad6"
 
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			rev = "a8e80096782a440b500aa408a0ac2ecb7f43804c"
+			rev = "d07e949229b2551d59127d3bc3300cd38bdf33ff"
 
 		[workspace.dependencies.unicase]
 			default-features = false
