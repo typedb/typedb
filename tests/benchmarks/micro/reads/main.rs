@@ -10,8 +10,8 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
     typedb_workload::{
         RunDescriptor,
-        benchmark::{DbgAssertFn, PreloadDataFn},
-        run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
+        benchmark::DbgAssertFn,
+        run_configs::{ROWS_LARGE, ROWS_MEDIUM, THREADS_PARALLEL, THREADS_SERIAL, TRANSACTIONS_FEW, TRANSACTIONS_MANY},
     },
 };
 
@@ -19,12 +19,23 @@ mod constraints;
 mod functions;
 mod subpatterns;
 
-const NO_INITIAL_DATA: Option<PreloadDataFn> = None;
+const SERIAL_RUN_LARGE: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_SERIAL,
+    total_txns: TRANSACTIONS_MANY,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_LARGE,
+};
 
-const CI_RUNS: [RunDescriptor; 1] = [CI_MINIMAL];
-const STANDARD_RUNS: [RunDescriptor; 4] =
-    [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
-const SELECTED_RUN_DESCRIPTORS: &'static [RunDescriptor] = &STANDARD_RUNS;
+const PARALLEL_RUN_LARGE: RunDescriptor = RunDescriptor {
+    parallelism: THREADS_PARALLEL,
+    total_txns: TRANSACTIONS_MANY,
+    n_queries_per_tx: 1,
+    n_rows_per_query: ROWS_LARGE,
+};
+
+const SCALE_SMALL: usize = 1_000;
+const SCALE_MEDIUM: usize = 50_000;
+const SCALE_LARGE: usize = 1_000_000;
 
 pub(crate) fn assert_query_row_count_within(expected_rows: f64, allowed_percent_difference: f64) -> DbgAssertFn {
     Arc::new(move |rows: usize| {

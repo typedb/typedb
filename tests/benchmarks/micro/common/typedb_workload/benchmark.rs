@@ -33,6 +33,7 @@ pub type WarmupFn = Box<dyn Fn(Arc<Database<WALClient>>)>;
 pub type PrepareRunFn<IN> = Box<dyn Fn(Arc<Database<WALClient>>) -> IN>;
 pub type BenchmarkedFn<IN, OUT> = Box<dyn Fn(Arc<Database<WALClient>>, IN) -> OUT>;
 pub type DbgAssertFn = Arc<dyn Fn(usize) + Send + Sync>;
+const RUN_DBG_ASSERTIONS: bool = false;
 
 pub struct TypeDBMicroBenchmark<IN, OUT, REPORT: SimpleReport<OUT>> {
     pub name: String,
@@ -108,6 +109,10 @@ impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Rep
         let name: String = name.into();
         let schema: String = schema.into();
         let warmup_fn = query_descriptor.for_warmup();
+        let dbg_assert = match RUN_DBG_ASSERTIONS {
+            true => dbg_assert,
+            false => None,
+        };
         let workload = WorkLoad { query_descriptor, run_descriptor, dbg_assert };
         let prepare_run_fn = workload.prepare_fn();
         let benchmark_fn = match tx_type {
@@ -294,7 +299,7 @@ impl WorkloadInstance {
                     false,
                 ));
                 let QueryAnswer { answer: n_answer_rows, .. } = result.unwrap();
-                assert_eq!(n_answer_rows, n_rows_per_query);
+                assert_eq!(n_answer_rows, this_batch);
                 commit(tx).unwrap();
                 completed += this_batch;
             }
