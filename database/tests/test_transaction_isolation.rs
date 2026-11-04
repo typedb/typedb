@@ -8,36 +8,25 @@ use std::sync::Arc;
 
 use database::{
     Database,
-    database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CommitIntent, DataCommitError, TransactionSchema, TransactionWrite},
 };
-use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::graph::thing::vertex_attribute::StringAttributeID;
 use executor::ExecutionInterrupt;
-use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{QueryOptions, TransactionOptions};
 use query::given_rows::GivenRowsSimple;
 use storage::{
     StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, snapshot::SnapshotError,
 };
 use test_utils::{TempDir, init_logging};
+use test_utils_database::create_db;
 
 const DB_NAME: &str = "isolation-test";
 
 fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
     init_logging();
     let tmp_dir = test_utils::create_tmp_storage_dir();
-    let dbm = DatabaseManager::new(
-        &tmp_dir,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .unwrap();
-    dbm.put_database(DB_NAME).unwrap();
-    let database = dbm.database(DB_NAME).unwrap();
+    let (_, database) = create_db(&tmp_dir, DB_NAME);
     (tmp_dir, database)
 }
 

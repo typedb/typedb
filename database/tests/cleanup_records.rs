@@ -8,14 +8,13 @@ use std::{collections::HashMap, sync::Arc, thread};
 
 use database::{
     Database,
-    database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CleanupRecord, CommitIntent, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::FsyncMetrics};
+use diagnostics::metrics::FsyncMetrics;
 use durability::{DurabilityService, wal::WAL};
 use executor::ExecutionInterrupt;
-use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{QueryOptions, TransactionOptions};
 use query::given_rows::GivenRowsSimple;
 use storage::{
     durability_client::{DurabilityRecord, WALClient},
@@ -23,6 +22,7 @@ use storage::{
     sequence_number::SequenceNumber,
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_database::create_db;
 
 const DB_NAME: &str = "cleanup-records";
 const SCHEMA: &str = r#"define
@@ -39,17 +39,7 @@ fn statistics_synchronization_under_concurrent_load() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
     {
-        let dbm = DatabaseManager::new(
-            &tmp_dir,
-            Arc::new(DiagnosticsManager::new_disabled()),
-            ByteSize::mb(64),
-            ByteSize::mb(64),
-            database::database_manager::ImportOwnership::Exclusive,
-            MvccCleanupStrategy::Disabled,
-        )
-        .unwrap();
-        dbm.put_database(DB_NAME).unwrap();
-        let database = dbm.database(DB_NAME).unwrap();
+        let (_dbm, database) = create_db(&tmp_dir, DB_NAME);
 
         let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();

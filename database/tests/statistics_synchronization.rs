@@ -4,22 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{path::Path, sync::Arc, thread};
+use std::{sync::Arc, thread};
 
 use database::{
     Database,
-    database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CommitIntent, TransactionSchema, TransactionWrite},
 };
-use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
-use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{QueryOptions, TransactionOptions};
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_database::{create_db, manager, open_db};
 
-const DB_NAME: &str = "stats-recovery";
+const DB_NAME: &str = "stats-sync";
 const SCHEMA: &str = r#"define
     attribute name value string;
     attribute age value integer;
@@ -43,7 +42,7 @@ fn statistics_synchronization_under_concurrent_load() {
     let total_has = total_attributes;
 
     {
-        let (_dbm, database) = create_db(&tmp_dir);
+        let (_dbm, database) = create_db(&tmp_dir, DB_NAME);
 
         let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
@@ -84,7 +83,7 @@ fn statistics_synchronization_under_concurrent_load() {
     }
     // dbm and database dropped here; IntervalRunner threads shut down synchronously on drop.
 
-    let (_dbm, database) = open_db(&tmp_dir);
+    let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
 
     assert_eq!(metrics.data.entity_count, total_persons as u64, "entity_count after reboot");
@@ -121,35 +120,10 @@ fn finalised_import_keeps_statistics_after_reopen() {
         assert_eq!(metrics.data.has_count, 2 * total_persons as u64, "has_count after finalise");
     }
 
-    let (_dbm, database) = open_db(&tmp_dir);
+    let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
     assert_eq!(metrics.data.entity_count, total_persons as u64, "entity_count after reboot");
     assert_eq!(metrics.data.has_count, 2 * total_persons as u64, "has_count after reboot");
-}
-
-fn manager(storage_dir: &Path) -> Arc<DatabaseManager> {
-    DatabaseManager::new(
-        storage_dir,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .unwrap()
-}
-
-fn create_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
-    let dbm = manager(storage_dir);
-    dbm.put_database(DB_NAME).unwrap();
-    let database = dbm.database(DB_NAME).unwrap();
-    (dbm, database)
-}
-
-fn open_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
-    let dbm = manager(storage_dir);
-    let database = dbm.database(DB_NAME).unwrap();
-    (dbm, database)
 }
 
 fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {

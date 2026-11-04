@@ -9,7 +9,7 @@ use std::sync::Arc;
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::{
     Database,
-    database_manager::{DatabaseManager, ImportOwnership},
+    database_manager::DatabaseManager,
     migration::{
         Checksums, Counts, MigrationOperationError,
         database_exporter::{DatabaseExporter, ExportMessage},
@@ -24,12 +24,12 @@ use database::{
         TransactionWrite,
     },
 };
-use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::value::{label::Label, value::Value};
-use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
+use options::TransactionOptions;
 use resource::profile::CommitProfile;
 use storage::durability_client::WALClient;
-use test_utils::{TempDir, create_tmp_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
+use test_utils_database::manager;
 use tokio::sync::watch;
 
 const SCHEMA: &str = r#"define
@@ -75,19 +75,6 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
         drop(staged_database);
         database_manager.finalise_imported_database(&name).map_err(|error| Arc::new(error) as _)
     }
-}
-
-fn manager(data_dir: &TempDir) -> Arc<DatabaseManager> {
-    let diagnostics = Arc::new(DiagnosticsManager::new_disabled());
-    DatabaseManager::new(
-        data_dir.as_ref(),
-        diagnostics,
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .expect("DatabaseManager::new")
 }
 
 const BUFFER_SIZE: usize = 10;

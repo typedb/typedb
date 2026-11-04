@@ -9,20 +9,20 @@ use std::{fs, path::Path, sync::Arc};
 use concept::thing::statistics::deltas::CommitDeltas;
 use database::{
     Database,
-    database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CommitIntent, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::FsyncMetrics};
+use diagnostics::metrics::FsyncMetrics;
 use durability::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, wal::WAL};
 use executor::ExecutionInterrupt;
-use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions, byte_size::ByteSize};
+use options::{QueryOptions, TransactionOptions};
 use query::given_rows::GivenRowsSimple;
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
     record::{CommitRecord, StatusRecord},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_database::{create_db, open_db};
 
 const DB_NAME: &str = "stats-recovery";
 const SCHEMA: &str = r#"define
@@ -37,7 +37,7 @@ const OPS_PER_BATCH: usize = 10;
 fn test_wal_contains_only_commit_records() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
-    let (dbm, database) = create_db(&tmp_dir);
+    let (dbm, database) = create_db(&tmp_dir, DB_NAME);
 
     let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
@@ -52,7 +52,7 @@ fn test_wal_contains_only_commit_records() {
 
     replay_wal_with_only(&tmp_dir.join(DB_NAME), &[CommitRecord::RECORD_TYPE], &[StatusRecord::RECORD_TYPE]);
 
-    let (_dbm, database) = open_db(&tmp_dir);
+    let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
     assert_eq!(metrics.data.entity_count, OPS_PER_BATCH as u64, "entity_count after reboot (only commits)");
 }
@@ -61,7 +61,7 @@ fn test_wal_contains_only_commit_records() {
 fn test_wal_commit_and_delta_records() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
-    let (dbm, database) = create_db(&tmp_dir);
+    let (dbm, database) = create_db(&tmp_dir, DB_NAME);
 
     let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
@@ -80,7 +80,7 @@ fn test_wal_commit_and_delta_records() {
         &[StatusRecord::RECORD_TYPE, CommitDeltas::RECORD_TYPE],
     );
 
-    let (_dbm, database) = open_db(&tmp_dir);
+    let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
     assert_eq!(metrics.data.entity_count, OPS_PER_BATCH as u64, "entity_count after reboot (commits + deltas)");
 }
@@ -89,7 +89,7 @@ fn test_wal_commit_and_delta_records() {
 fn test_wal_commits_then_deltas() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
-    let (dbm, database) = create_db(&tmp_dir);
+    let (dbm, database) = create_db(&tmp_dir, DB_NAME);
 
     let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
@@ -104,7 +104,7 @@ fn test_wal_commits_then_deltas() {
 
     replay_wal_with_only(&tmp_dir.join(DB_NAME), &[CommitRecord::RECORD_TYPE], &[StatusRecord::RECORD_TYPE]);
 
-    let (dbm, database) = open_db(&tmp_dir);
+    let (dbm, database) = open_db(&tmp_dir, DB_NAME);
     run_insert_batch(&database, 1);
     drop(database);
     drop(dbm);
@@ -115,7 +115,7 @@ fn test_wal_commits_then_deltas() {
         &[StatusRecord::RECORD_TYPE, CommitDeltas::RECORD_TYPE],
     );
 
-    let (_dbm, database) = open_db(&tmp_dir);
+    let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
     assert_eq!(
         metrics.data.entity_count,
@@ -128,7 +128,7 @@ fn test_wal_commits_then_deltas() {
 fn test_wal_missing_middle_deltas() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
-    let (dbm, database) = create_db(&tmp_dir);
+    let (dbm, database) = create_db(&tmp_dir, DB_NAME);
 
     let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
@@ -150,42 +150,13 @@ fn test_wal_missing_middle_deltas() {
     );
     remove_from_wal(&tmp_dir.join(DB_NAME), DurabilitySequenceNumber::new(3), CommitDeltas::RECORD_TYPE);
 
-    let (_dbm, database) = open_db(&tmp_dir);
+    let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
     assert_eq!(
         metrics.data.entity_count,
         (OPS_PER_BATCH * 3) as u64,
         "entity_count after reboot (missing middle deltas)"
     );
-}
-
-fn create_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
-    let dbm = DatabaseManager::new(
-        storage_dir,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .unwrap();
-    dbm.put_database(DB_NAME).unwrap();
-    let database = dbm.database(DB_NAME).unwrap();
-    (dbm, database)
-}
-
-fn open_db(storage_dir: &Path) -> (Arc<DatabaseManager>, Arc<Database<WALClient>>) {
-    let dbm = DatabaseManager::new(
-        storage_dir,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .unwrap();
-    let database = dbm.database(DB_NAME).unwrap();
-    (dbm, database)
 }
 
 fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
