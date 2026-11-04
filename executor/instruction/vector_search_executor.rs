@@ -188,11 +188,11 @@ impl VectorSearchExecutor {
 
             let mut candidates: BTreeSet<AttributeVertex> = BTreeSet::new();
 
-            let total = vector_index.indexed_vector_count(type_id);
+            let total = vector_index.get_count_for_type(type_id);
             if total > 0 {
                 let mut k = 128.min(total);
                 loop {
-                    let results = vector_index.search(type_id, &query, k);
+                    let results = vector_index.list_instances_by_ann(type_id, &query, k);
                     let last_above_threshold =
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;

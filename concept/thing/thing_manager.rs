@@ -467,7 +467,7 @@ impl ThingManager {
                     Some(Write::Delete) => return Err(Box::new(ConceptReadError::InternalMissingAttributeValue {})),
                     None => self
                         .vector_index
-                        .get_vector(vertex)
+                        .get_value_by_attr_vertex(vertex)
                         .ok_or(ConceptReadError::InternalMissingAttributeValue {})?,
                 };
                 Ok(Value::Vector(Cow::Owned(vector)))
@@ -555,7 +555,7 @@ impl ThingManager {
                     type_id,
                     value.encode_vector::<256>(),
                     snapshot,
-                    &|key| self.vector_index.get_by_key(type_id, key),
+                    &|key| self.vector_index.get_value_by_key(type_id, key),
                 ) {
                     Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
@@ -2858,7 +2858,7 @@ impl ThingManager {
                 let type_id = attribute_type.vertex().type_id_();
                 self.vertex_generator
                     .create_attribute_vector(type_id, encoded_vector, snapshot, &|key| {
-                        self.vector_index.get_by_key(type_id, key)
+                        self.vector_index.get_value_by_key(type_id, key)
                     })
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }

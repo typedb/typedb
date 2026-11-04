@@ -27,6 +27,13 @@ rust_library(
         "@crates//:prost",
         "@crates//:tonic",
     ],
+    # Bazel compiles the proto via rust_tonic_compile above; cargo builds use the checked-in
+    # lib.rs + build.rs (tonic-build) instead. These tags tell the cargo sync tool how to
+    # generate this crate's manifest for the cargo build.
+    tags = [
+        "cargo.entry.point.path=lib.rs",
+        "cargo.build.deps.tonic-build=version=^0.12",
+    ],
     visibility = ["//visibility:public"],
 )
 

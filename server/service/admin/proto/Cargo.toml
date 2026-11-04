@@ -8,7 +8,7 @@
 
 [lib]
 	crate-type = ["lib"]
-	path = "typedb.admin.rs"
+	path = "lib.rs"
 
 [dependencies]
 
@@ -17,3 +17,8 @@
 
 	[dependencies.tonic]
 		workspace = true
+
+[build-dependencies]
+
+	[build-dependencies.tonic-build]
+		version = "^0.12"

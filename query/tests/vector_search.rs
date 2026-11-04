@@ -190,7 +190,7 @@ fn committed_vectors_live_in_the_store_and_are_searchable() {
     run_write_query(&context, INSERT);
 
     let store = vector_index(&context);
-    assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3);
+    assert_eq!(store.get_count_for_type(embedding_type_id(&context)), 3);
 
     let rows = run_read_query(
         &context,
@@ -245,7 +245,7 @@ fn duplicate_vector_insert_is_deduplicated() {
     run_write_query(&context, INSERT);
     run_write_query(&context, r#"insert $d isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
     let store = vector_index(&context);
-    assert_eq!(store.indexed_vector_count(embedding_type_id(&context)), 3, "no new vector expected");
+    assert_eq!(store.get_count_for_type(embedding_type_id(&context)), 3, "no new vector expected");
 
     let rows = run_read_query(&context, r#"match $e isa embedding;"#);
     assert_eq!(rows.len(), 3);
@@ -317,7 +317,7 @@ fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
         snapshot.commit(&mut CommitProfile::disabled()).unwrap();
     }
     assert_eq!(vertices[0], vertices[1], "an identical NaN vector must resolve to the same attribute ID");
-    assert_eq!(vector_index(&context).indexed_vector_count(embedding_type_id(&context)), 1);
+    assert_eq!(vector_index(&context).get_count_for_type(embedding_type_id(&context)), 1);
 }
 
 #[test]

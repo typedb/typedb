@@ -739,7 +739,7 @@ fn validate_vector_index_backs_all_committed_vectors(
             if AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes()) {
                 let vertex = AttributeVertex::decode(key.bytes());
                 vector_index
-                    .get_vector(vertex)
+                    .get_value_by_attr_vertex(vertex)
                     .is_none()
                     .then(|| vertex.attribute_id().unwrap_vector().as_type_vector_index_key())
             } else {

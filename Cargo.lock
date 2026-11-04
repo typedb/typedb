@@ -5020,6 +5020,7 @@ version = "0.0.0"
 dependencies = [
  "prost",
  "tonic",
+ "tonic-build",
 ]
 
 [[package]]
