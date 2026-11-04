@@ -783,7 +783,10 @@ fn traverse_index_bound_role_type_filtered_correctly() {
             vec![
                 ConstraintInstruction::TypeList(TypeListInstruction::new(
                     var_casting_movie_type,
-                    entry_annotations.vertex_annotations_of(&Vertex::Variable(var_casting_movie_type)).unwrap().clone(),
+                    entry_annotations
+                        .concept_annotations_of(&Vertex::Variable(var_casting_movie_type))
+                        .unwrap()
+                        .clone(),
                 ))
                 .map(&mapping),
             ],

@@ -99,7 +99,7 @@ fn index_available(
     relation: &Vertex<Variable>,
     type_annotations: &TypeAnnotations,
 ) -> Result<bool, StaticOptimiserError> {
-    let relation_types = type_annotations.vertex_annotations_of(relation).unwrap();
+    let relation_types = type_annotations.concept_annotations_of(relation).unwrap();
     for type_ in relation_types.iter() {
         let index_available = type_
             .as_relation_type()

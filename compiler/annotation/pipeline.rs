@@ -416,22 +416,22 @@ fn annotate_write_constraint(
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
                 isa.thing().as_variable().unwrap(),
-                annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
+                annotations.concept_annotations_of(isa.thing()).unwrap().clone(),
             );
         }
         Constraint::RoleName(role_name) => {
             running_variable_annotations.insert(
                 role_name.type_().as_variable().unwrap(),
-                annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
+                annotations.concept_annotations_of(role_name.type_()).unwrap().clone(),
             );
         }
         Constraint::Links(links) => {
             if let Some(variable) = links.role_type().as_variable() {
                 if !running_variable_annotations.contains_key(&variable)
-                    && annotations.vertex_annotations_of(links.role_type()).is_some()
+                    && annotations.concept_annotations_of(links.role_type()).is_some()
                 {
                     running_variable_annotations
-                        .insert(variable, annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
+                        .insert(variable, annotations.concept_annotations_of(links.role_type()).unwrap().clone());
                 }
             }
         }
@@ -636,7 +636,7 @@ impl RunningVariableAnnotations {
     }
 
     pub(crate) fn update_with(&mut self, stage_root_annotations: &TypeAnnotations) {
-        stage_root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+        stage_root_annotations.concept_annotations().iter().for_each(|(vertex, types)| {
             if let Some(var) = vertex.as_variable() {
                 self.concepts.insert(var, types.clone());
             }

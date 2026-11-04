@@ -258,7 +258,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations.vertex_annotations_of(label.type_label()).cloned().unwrap_or_default();
+        let types = type_annotations.concept_annotations_of(label.type_label()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::Label(label),
             var: variable_index[&label.type_().as_variable().unwrap()],
@@ -271,7 +271,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations.vertex_annotations_of(role_name.type_()).cloned().unwrap_or_default();
+        let types = type_annotations.concept_annotations_of(role_name.type_()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::RoleName(role_name),
             var: variable_index[&role_name.type_().as_variable().unwrap()],
@@ -284,7 +284,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations.vertex_annotations_of(kind.type_()).cloned().unwrap_or_default();
+        let types = type_annotations.concept_annotations_of(kind.type_()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::Kind(kind),
             var: variable_index[&kind.type_().as_variable().unwrap()],
@@ -297,7 +297,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations.vertex_annotations_of(value.attribute_type()).cloned().unwrap_or_default();
+        let types = type_annotations.concept_annotations_of(value.attribute_type()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::Value(value),
             var: variable_index[&value.attribute_type().as_variable().unwrap()],
@@ -402,7 +402,7 @@ impl<'a> IsaPlanner<'a> {
         let thing = variable_index[&isa.thing().as_variable().unwrap()];
         let type_ = Input::from_vertex(isa.type_(), variable_index);
         let unrestricted_expected_size = type_annotations
-            .vertex_annotations_of(isa.thing())
+            .concept_annotations_of(isa.thing())
             .map(|thing_types| {
                 thing_types.iter().map(|thing_type| instance_count(thing_type, statistics)).sum::<u64>() as f64
             })
@@ -514,8 +514,8 @@ impl<'a> HasPlanner<'a> {
         let owner = has.owner();
         let attribute = has.attribute();
 
-        let owner_types = &**type_annotations.vertex_annotations_of(owner).unwrap();
-        let attribute_types = &**type_annotations.vertex_annotations_of(attribute).unwrap();
+        let owner_types = &**type_annotations.concept_annotations_of(owner).unwrap();
+        let attribute_types = &**type_annotations.concept_annotations_of(attribute).unwrap();
 
         let unbound_typed_expected_size = itertools::iproduct!(owner_types, attribute_types)
             .filter_map(|(owner, attribute)| {
@@ -729,8 +729,8 @@ impl<'a> LinksPlanner<'a> {
         let player = links.player();
         let role = links.role_type();
 
-        let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
-        let player_types = &**type_annotations.vertex_annotations_of(player).unwrap();
+        let relation_types = &**type_annotations.concept_annotations_of(relation).unwrap();
+        let player_types = &**type_annotations.concept_annotations_of(player).unwrap();
 
         let constraint_types = type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
 
@@ -973,9 +973,9 @@ impl<'a> IndexedRelationPlanner<'a> {
         let role_1 = indexed_relation.role_type_1();
         let role_2 = indexed_relation.role_type_2();
 
-        let player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
-        let player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
-        let _relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+        let player_1_types = &**type_annotations.concept_annotations_of(player_1).unwrap();
+        let player_2_types = &**type_annotations.concept_annotations_of(player_2).unwrap();
+        let _relation_types = &**type_annotations.concept_annotations_of(relation).unwrap();
 
         // let constraint_types =
         //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();

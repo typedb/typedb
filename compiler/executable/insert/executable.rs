@@ -188,7 +188,7 @@ pub(crate) fn add_inserted_concepts(
         };
 
         // Requires variable annotations for this stage to be available.
-        let types = type_annotations.vertex_annotations_of(isa.type_()).unwrap();
+        let types = type_annotations.concept_annotations_of(isa.type_()).unwrap();
         debug_assert!(!types.is_empty());
         let kinds = get_kinds_from_types(types);
 
@@ -448,7 +448,7 @@ fn collect_type_bindings(
 
     filter_variants!(Constraint::Label : constraints)
         .map(|label| {
-            let annotations = type_annotations.vertex_annotations_of(label.type_()).unwrap();
+            let annotations = type_annotations.concept_annotations_of(label.type_()).unwrap();
             #[cfg(debug_assertions)]
             debug_assert!(annotations.len() == 1);
             let type_ = annotations.first().unwrap();
@@ -462,7 +462,7 @@ fn collect_type_bindings(
             Ok((label.type_().clone(), *type_))
         })
         .chain(constraints.iter().flat_map(|con| con.vertices().filter(|v| v.is_label())).map(|label| {
-            let type_ = type_annotations.vertex_annotations_of(label).unwrap().iter().exactly_one().unwrap();
+            let type_ = type_annotations.concept_annotations_of(label).unwrap().iter().exactly_one().unwrap();
             Ok((label.clone(), *type_))
         }))
         .collect()
@@ -482,7 +482,7 @@ pub(crate) fn resolve_links_roles(
                 let input_position = variable_positions.get(&role_type).expect("inputs have positions");
                 Ok((role_type, TypeSource::Variable(*input_position)))
             } else {
-                let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
+                let annotations = type_annotations.concept_annotations_of(role_type_vertex).unwrap();
                 if let Ok(type_) = annotations.iter().exactly_one() {
                     Ok((role_type, TypeSource::Constant(*type_)))
                 } else {

@@ -165,14 +165,7 @@ impl Checker<()> {
         parameters: &ParameterRegistry,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        all_checks_pass(
-            checks,
-            snapshot,
-            thing_manager,
-            parameters,
-            row,
-            storage_counters,
-        )
+        all_checks_pass(checks, snapshot, thing_manager, parameters, row, storage_counters)
     }
 }
 
@@ -750,9 +743,7 @@ impl<'a, T> CheckMapper<'a, T> {
                     player2: self.map_var(player2),
                 }
             }
-            CheckInstruction::IsSet { variable } => {
-                CheckInstruction::IsSet { variable: self.map_var(variable) }
-            }
+            CheckInstruction::IsSet { variable } => CheckInstruction::IsSet { variable: self.map_var(variable) },
             CheckInstruction::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: self.map(lhs), rhs: self.map(rhs), comparator }
             }

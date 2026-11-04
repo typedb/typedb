@@ -568,7 +568,7 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			rev = "79b92bd7f775c3cd385535971883c48e6d44f32e"
+			rev = "a8e80096782a440b500aa408a0ac2ecb7f43804c"
 
 		[workspace.dependencies.unicase]
 			default-features = false
@@ -652,6 +652,10 @@
 [[test]]
 	name = "test_http_driver_connection"
 	path = "tests/behaviour/service/http/driver/connection.rs"
+
+[[test]]
+	name = "test_http_driver_deprecated_optionals"
+	path = "tests/behaviour/service/http/driver/deprecated_optionals.rs"
 
 [[test]]
 	name = "test_http_driver_http"
