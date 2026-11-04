@@ -7,17 +7,23 @@
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use database::transaction::{
-    CommitIntent, DataCommitError, DatabaseDropGuard, SchemaCommitError, TransactionRead, TransactionWrite,
+use database::{
+    Database,
+    transaction::{
+        CommitIntent, DataCommitError, DatabaseDropGuard, SchemaCommitError, TransactionError, TransactionRead,
+        TransactionWrite,
+    },
 };
 use function::function_manager::FunctionManager;
 use options::TransactionOptions;
-use query::query_manager::QueryManager;
+use query::{error::QueryError, given_rows::GivenRowsSimple, query_manager::QueryManager};
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
 };
+
+use crate::{AnswerConsumer, QueryAnswer, execute_read_query_in, execute_write_query_in, utils::PackedResult};
 
 #[derive(Debug)]
 pub enum CommitError {
@@ -35,8 +41,15 @@ pub(crate) struct PartialTx {
     pub(crate) profile: TransactionProfile,
 }
 
-pub(crate) trait UnifiedTransactionView {
+pub(crate) trait UnifiedTransactionView: Sized + 'static {
     type Snapshot: ReadableSnapshot + 'static;
+    fn open(database: Arc<Database<WALClient>>, options: TransactionOptions) -> Result<Self, TransactionError>;
+    fn query<AC: AnswerConsumer>(
+        self,
+        query: &str,
+        given_rows: Option<GivenRowsSimple>,
+        enable_profiling: bool,
+    ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, Self>;
     fn into_parts(self) -> (Arc<Self::Snapshot>, PartialTx);
     fn reconstruct(snapshot: Arc<Self::Snapshot>, partial_tx: PartialTx) -> Self;
     fn commit(self) -> Result<TransactionProfile, CommitError>;
@@ -46,6 +59,20 @@ pub(crate) trait WriteTransactionView: UnifiedTransactionView<Snapshot: Writable
 
 impl UnifiedTransactionView for TransactionWrite<WALClient> {
     type Snapshot = WriteSnapshot<WALClient>;
+
+    fn open(database: Arc<Database<WALClient>>, options: TransactionOptions) -> Result<Self, TransactionError> {
+        Self::open(database, options)
+    }
+
+    fn query<AC: AnswerConsumer>(
+        self,
+        query: &str,
+        given_rows: Option<GivenRowsSimple>,
+        enable_profiling: bool,
+    ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, Self> {
+        execute_write_query_in::<Self, AC>(self, query, given_rows, enable_profiling)
+    }
+
     fn into_parts(self) -> (Arc<WriteSnapshot<WALClient>>, PartialTx) {
         let TransactionWrite {
             snapshot,
@@ -106,6 +133,20 @@ impl WriteTransactionView for TransactionWrite<WALClient> {}
 
 impl UnifiedTransactionView for TransactionRead<WALClient> {
     type Snapshot = ReadSnapshot<WALClient>;
+
+    fn open(database: Arc<Database<WALClient>>, options: TransactionOptions) -> Result<Self, TransactionError> {
+        Self::open(database, options)
+    }
+
+    fn query<AC: AnswerConsumer>(
+        self,
+        query: &str,
+        given_rows: Option<GivenRowsSimple>,
+        enable_profiling: bool,
+    ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, Self> {
+        execute_read_query_in::<Self, AC>(self, query, given_rows, enable_profiling)
+    }
+
     fn into_parts(self) -> (Arc<Self::Snapshot>, PartialTx) {
         let TransactionRead {
             snapshot,

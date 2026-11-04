@@ -8,7 +8,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use database::{Database, transaction::TransactionWrite};
+use database::{
+    Database,
+    transaction::{TransactionRead, TransactionWrite},
+};
 use options::TransactionOptions;
 use query::given_rows::{GivenRowEntry, GivenRowsSimple};
 use storage::durability_client::WALClient;
@@ -17,8 +20,9 @@ use crate::{
     Context, QueryAnswer,
     benchmark::{SimpleBenchmark, SimpleReport},
     commit, execute_write_query_in,
+    transaction::UnifiedTransactionView,
     typedb_workload::{
-        MultiQueryTxProfile, MultiTxMultiQueryProfile, QueryDescriptor, RunDescriptor, datagen::RandomDataGen,
+        MultiQueryTxProfile, MultiTxMultiQueryProfile, QueryDescriptor, RunDescriptor, TxType, datagen::RandomDataGen,
         reports::QueryFocusedReport, transaction_options_with_profiling,
     },
     utils::{CountResults, unpack_result},
@@ -97,12 +101,17 @@ impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Rep
         query_descriptor: QueryDescriptor,
         run_descriptor: RunDescriptor,
     ) -> Self {
+        let tx_type = query_descriptor.tx_type;
+
         let name: String = name.into();
         let schema: String = schema.into();
         let warmup_fn = query_descriptor.for_warmup();
         let workload = WorkLoad { query_descriptor, run_descriptor };
         let prepare_run_fn = workload.prepare_fn();
-        let benchmark_fn = workload.runner(name.clone());
+        let benchmark_fn = match tx_type {
+            TxType::Read => workload.runner::<TransactionRead<WALClient>>(name.clone()),
+            TxType::Write => workload.runner::<TransactionWrite<WALClient>>(name.clone()),
+        };
         Self { name, schema, preload_data_fn, warmup_fn, prepare_run_fn, benchmark_fn, _report: PhantomData }
     }
 }
@@ -124,7 +133,10 @@ impl WorkLoad {
         Box::new(move |_| WorkloadInstance::build(&query_descriptor, &run_descriptor))
     }
 
-    pub fn runner(&self, name: impl Into<String>) -> BenchmarkedFn<Arc<WorkloadInstance>, MultiTxMultiQueryProfile> {
+    pub fn runner<TxnType: UnifiedTransactionView>(
+        &self,
+        name: impl Into<String>,
+    ) -> BenchmarkedFn<Arc<WorkloadInstance>, MultiTxMultiQueryProfile> {
         let name: String = name.into();
         let query: Arc<String> = Arc::new(self.query_descriptor.query.clone());
         let run_descriptor = self.run_descriptor.clone();
@@ -135,7 +147,12 @@ impl WorkLoad {
                     let database = database.clone();
                     let producer = producer.clone();
                     let run_descriptor = run_descriptor.clone();
-                    std::thread::spawn(Self::new_runner_thread(database, producer, query.clone(), run_descriptor))
+                    std::thread::spawn(Self::new_runner_thread::<TxnType>(
+                        database,
+                        producer,
+                        query.clone(),
+                        run_descriptor,
+                    ))
                 })
                 .collect();
 
@@ -149,7 +166,7 @@ impl WorkLoad {
         })
     }
 
-    fn new_runner_thread(
+    fn new_runner_thread<TxnType: UnifiedTransactionView>(
         database: Arc<Database<WALClient>>,
         producer: Arc<WorkloadInstance>,
         query: Arc<String>,
@@ -163,18 +180,14 @@ impl WorkLoad {
             let mut local_profiles = local_profiles;
             while producer.has_remaining() {
                 let mut query_profiles = Vec::with_capacity(run_descriptor.n_queries_per_tx);
-                let mut tx = TransactionWrite::open(database.clone(), transaction_options_with_profiling()).unwrap();
+                let mut tx = TxnType::open(database.clone(), transaction_options_with_profiling()).unwrap();
                 let start = Instant::now();
                 for _ in 0..run_descriptor.n_queries_per_tx {
                     let Some(given_rows) = producer.take_next_batch() else {
                         break;
                     };
-                    let (query_result, tx_returned) = unpack_result(execute_write_query_in::<_, CountResults>(
-                        tx,
-                        query.as_str(),
-                        Some(given_rows),
-                        true,
-                    ));
+                    let (query_result, tx_returned) =
+                        unpack_result(TxnType::query::<CountResults>(tx, query.as_str(), Some(given_rows), true));
                     tx = tx_returned;
                     let QueryAnswer { profile: query_profile, answer: rows } = query_result.unwrap();
                     assert_eq!(rows, run_descriptor.n_rows_per_query);

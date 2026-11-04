@@ -11,7 +11,7 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
-        QueryDescriptor, RunDescriptor,
+        QueryDescriptor, RunDescriptor, TxType,
         benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
         datagen::RandomDataGen,
     },
@@ -92,6 +92,7 @@ impl<const N_ENTITIES: usize, MakeID: IDMaker> ScaleHelper<N_ENTITIES, MakeID> {
             query: format!("given $id_val: {id_type}; match $x isa e1, has id == $id_val;"),
             variables: vec!["id_val".to_owned()],
             produce_row: Some(|rng| vec![MakeID::make_id(rng.integer_in(0, (N_ENTITIES - 1) as i64))]),
+            tx_type: TxType::Read,
         }
     }
 
@@ -155,6 +156,7 @@ impl<const N_ENTITIES: usize, MakeID: IDMaker> ScaleHelper<N_ENTITIES, MakeID> {
             query: "given $e1: e1; match $_ isa rel, links (role1: $e1, role2: $e2);".to_owned(),
             variables: vec!["e1".to_owned()],
             produce_row: Some(|rng| vec![rng.entry_entity_raw_in(TypeID::new(0), 0, N_ENTITIES as u64)]),
+            tx_type: TxType::Read,
         }
     }
 }

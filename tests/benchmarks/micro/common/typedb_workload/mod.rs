@@ -7,14 +7,22 @@
 use std::{sync::Arc, time::Duration};
 
 use benchmark::{WarmupFn, WorkLoad};
+use database::transaction::TransactionWrite;
 use datagen::RandomDataGen;
 use query::given_rows::GivenRowEntry;
 use resource::profile::{QueryProfile, TransactionProfile};
+use storage::durability_client::WALClient;
 
 pub mod benchmark;
 pub mod datagen;
 pub mod reports;
 pub mod run_configs;
+
+#[derive(Clone, Copy)]
+pub enum TxType {
+    Read,
+    Write,
+}
 
 #[derive(Clone)]
 pub struct QueryDescriptor {
@@ -22,12 +30,13 @@ pub struct QueryDescriptor {
     pub query: String,
     pub variables: Vec<String>,
     pub produce_row: Option<fn(&mut RandomDataGen) -> Vec<GivenRowEntry>>,
+    pub tx_type: TxType,
 }
 
 impl QueryDescriptor {
     pub fn for_warmup(&self) -> Option<WarmupFn> {
         let warmup_workload = self.create_workload(RunDescriptor::WARMUP.clone());
-        let runner = warmup_workload.runner("_warmup");
+        let runner = warmup_workload.runner::<TransactionWrite<WALClient>>("_warmup");
         let prepare_fn = warmup_workload.prepare_fn();
         Some(Box::new(move |db| {
             let db_clone = db.clone();

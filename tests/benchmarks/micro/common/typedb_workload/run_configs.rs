@@ -82,17 +82,18 @@ pub const PARALLEL_TONS_LARGE: RunDescriptor = RunDescriptor {
 
 pub fn standardised_name(query_descriptor: &QueryDescriptor, run_descriptor: &RunDescriptor) -> String {
     let desc = &query_descriptor.name;
-    let txn = match run_descriptor.total_txns {
-        TRANSACTIONS_FEW => "few".to_owned(),
-        TRANSACTIONS_MANY => "many".to_owned(),
-        TRANSACTIONS_TONS => "tons".to_owned(),
-        other => format!("txn[{other}]"),
-    };
     let parallelism = match run_descriptor.parallelism {
         THREADS_SERIAL => "serial".to_owned(),
         THREADS_THREADED => "threaded".to_owned(),
         THREADS_PARALLEL => "parallel".to_owned(),
         other => format!("threads[{other}]"),
+    };
+    // then desc
+    let txn = match run_descriptor.total_txns {
+        TRANSACTIONS_FEW => "few".to_owned(),
+        TRANSACTIONS_MANY => "many".to_owned(),
+        TRANSACTIONS_TONS => "tons".to_owned(),
+        other => format!("txn[{other}]"),
     };
     let rows = match run_descriptor.n_rows_per_query {
         ROWS_SMALL => "small".to_owned(),

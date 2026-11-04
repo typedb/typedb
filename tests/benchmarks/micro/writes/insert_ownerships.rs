@@ -8,7 +8,7 @@ use lib_benchmark::{
     id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
-    typedb_workload::{QueryDescriptor, RunDescriptor, benchmark::TypeDBQueryWorkloadBenchmark},
+    typedb_workload::{QueryDescriptor, RunDescriptor, TxType, benchmark::TypeDBQueryWorkloadBenchmark},
 };
 
 use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS};
@@ -56,5 +56,6 @@ fn insert_ownership<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
         query: format!("given $id_val: {id_type}; insert $x isa person, has id == $id_val;"),
         variables: vec!["id_val".to_owned()],
         produce_row: Some(|rng| vec![MakeID::make_id(rng.integer_in(0, (MAX_ID_INTEGER - 1) as i64))]),
+        tx_type: TxType::Write,
     }
 }

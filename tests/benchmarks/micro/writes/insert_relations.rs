@@ -9,7 +9,7 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
-        QueryDescriptor, RunDescriptor,
+        QueryDescriptor, RunDescriptor, TxType,
         benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
         datagen::RandomDataGen,
     },
@@ -114,7 +114,8 @@ fn relation_by_concept() -> QueryDescriptor {
        "#
     .to_owned();
     let variables = vec!["e1".to_owned(), "e2".to_owned()];
-    QueryDescriptor { name, query, variables, produce_row: Some(produce_row_by_concept) }
+    let tx_type = TxType::Write;
+    QueryDescriptor { name, query, variables, produce_row: Some(produce_row_by_concept), tx_type }
 }
 
 fn relation_by_insert() -> QueryDescriptor {
@@ -125,7 +126,8 @@ fn relation_by_insert() -> QueryDescriptor {
         insert $r isa r1, links (e1: $e1, e2: $e2);
        "#
     .to_owned();
-    QueryDescriptor { name, query, variables: vec![], produce_row: Some(produce_empty_row) }
+    let tx_type = TxType::Write;
+    QueryDescriptor { name, query, variables: vec![], produce_row: Some(produce_empty_row), tx_type }
 }
 
 fn relation_by_id<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
@@ -139,5 +141,6 @@ fn relation_by_id<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
        "#
     );
     let variables = vec!["id1".to_owned(), "id2".to_owned()];
-    QueryDescriptor { name, query, variables, produce_row: Some(produce_row_by_id::<MakeID>) }
+    let tx_type = TxType::Write;
+    QueryDescriptor { name, query, variables, produce_row: Some(produce_row_by_id::<MakeID>), tx_type }
 }

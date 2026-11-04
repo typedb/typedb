@@ -8,7 +8,7 @@ use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
-        QueryDescriptor, RunDescriptor,
+        QueryDescriptor, RunDescriptor, TxType,
         benchmark::TypeDBQueryWorkloadBenchmark,
         run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
     },
@@ -39,5 +39,6 @@ fn entity_insert() -> QueryDescriptor {
         query: "given; insert $x isa person;".to_owned(),
         variables: vec![],
         produce_row: Some(|_| vec![]),
+        tx_type: TxType::Write,
     }
 }
