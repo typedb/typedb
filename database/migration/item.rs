@@ -43,7 +43,7 @@ pub struct EntityItem {
     pub id: String,
     pub label: Label,
     pub label_scoped_id: Option<u64>,
-    pub owned_attributes: Vec<OwnedAttribute>,
+    pub attributes: Vec<OwnedAttribute>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,8 +51,8 @@ pub struct RelationItem {
     pub id: String,
     pub label: Label,
     pub label_scoped_id: Option<u64>,
-    pub owned_attributes: Vec<OwnedAttribute>,
-    pub related_role_players: Vec<RolePlayers>,
+    pub attributes: Vec<OwnedAttribute>,
+    pub roles: Vec<Role>,
 }
 
 #[derive(Debug, Clone)]
@@ -66,7 +66,7 @@ pub struct AttributeItem {
 pub enum ItemOrder {
     #[default]
     Unspecified,
-    AttributeEntityRelation,
+    AttributesEntitiesRelations,
 }
 
 impl Display for ItemOrder {
@@ -77,7 +77,7 @@ impl Display for ItemOrder {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub struct Guarantees {
-    pub ordering: ItemOrder,
+    pub item_order: ItemOrder,
     pub attributes_unique: bool,
     pub players_by_label_scoped_ids: bool,
     pub owned_attributes_by_value: bool,
@@ -102,8 +102,8 @@ pub struct AttributeByValue {
 }
 
 #[derive(Debug, Clone)]
-pub struct RolePlayers {
-    pub role: Label,
+pub struct Role {
+    pub label: Label,
     pub players: Vec<Player>,
 }
 
@@ -136,7 +136,7 @@ pub(crate) fn encode_entity(
         id: encode_thing_iid(&entity),
         label: encode_type_label(snapshot, type_manager, entity.type_())?,
         label_scoped_id: Some(encode_label_scoped_id(&entity)),
-        owned_attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, entity)?,
+        attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, entity)?,
     }))
 }
 
@@ -151,8 +151,8 @@ pub(crate) fn encode_relation(
         id: encode_thing_iid(&relation),
         label: encode_type_label(snapshot, type_manager, relation.type_())?,
         label_scoped_id: Some(encode_label_scoped_id(&relation)),
-        owned_attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, relation)?,
-        related_role_players: encode_relation_roles(snapshot, type_manager, thing_manager, checksums, relation)?,
+        attributes: encode_owned_attributes(snapshot, type_manager, thing_manager, checksums, relation)?,
+        roles: encode_relation_roles(snapshot, type_manager, thing_manager, checksums, relation)?,
     }))
 }
 
@@ -230,7 +230,7 @@ fn encode_relation_roles(
     thing_manager: &ThingManager,
     checksums: &mut Checksums,
     relation: Relation,
-) -> Result<Vec<RolePlayers>, Box<ConceptReadError>> {
+) -> Result<Vec<Role>, Box<ConceptReadError>> {
     // TODO: Cover role players ordering
     let mut players_by_role: BTreeMap<RoleType, Vec<Player>> = BTreeMap::new();
     let all_players = relation.get_players(snapshot, thing_manager, StorageCounters::DISABLED);
@@ -248,7 +248,7 @@ fn encode_relation_roles(
 
     let mut roles = Vec::with_capacity(players_by_role.len());
     for (role_type, players) in players_by_role {
-        roles.push(RolePlayers { role: encode_type_label(snapshot, type_manager, role_type)?, players });
+        roles.push(Role { label: encode_type_label(snapshot, type_manager, role_type)?, players });
     }
     Ok(roles)
 }

@@ -77,7 +77,7 @@ use crate::{
         importing_database_handle::ImportingDatabaseHandle,
         item::{
             AttributeByValue, AttributeItem, EntityItem, Guarantees, ItemOrder, MigrationItem, OwnedAttribute, Player,
-            PlayerByLabelScopedId, RelationItem, RolePlayers,
+            PlayerByLabelScopedId, RelationItem, Role,
         },
     },
     query::execute_schema_query,
@@ -586,15 +586,15 @@ impl ImporterConfiguration {
     }
 
     pub fn with_guarantees(self, guarantees: Guarantees) -> Self {
-        let Guarantees { ordering, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value } =
+        let Guarantees { item_order, attributes_unique, players_by_label_scoped_ids, owned_attributes_by_value } =
             guarantees;
-        let worker_count = match ordering {
+        let worker_count = match item_order {
             ItemOrder::Unspecified => 1,
-            ItemOrder::AttributeEntityRelation => SystemInfo::get_cpu_count().saturating_sub(1).max(1),
+            ItemOrder::AttributesEntitiesRelations => SystemInfo::get_cpu_count().saturating_sub(1).max(1),
         };
         Self {
             worker_count,
-            item_order: ordering,
+            item_order,
             attributes_unique,
             players_by_label_scoped_ids,
             owned_attributes_by_value,
@@ -604,7 +604,7 @@ impl ImporterConfiguration {
 
     fn as_guarantees(&self) -> Guarantees {
         Guarantees {
-            ordering: self.item_order,
+            item_order: self.item_order,
             attributes_unique: self.attributes_unique,
             players_by_label_scoped_ids: self.players_by_label_scoped_ids,
             owned_attributes_by_value: self.owned_attributes_by_value,
@@ -618,17 +618,17 @@ impl ImporterConfiguration {
     fn use_external_label_scoped_ids(&self) -> bool {
         // object ids are only needed to resolve players by id: with label-scoped ids and the ordering guarantee
         // that players exist, they are never consulted
-        matches!(self.item_order, ItemOrder::AttributeEntityRelation) && self.players_by_label_scoped_ids
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations) && self.players_by_label_scoped_ids
     }
 
     fn skip_recording_of_inline_attributes(&self) -> bool {
         // inline attribute ids are only needed to resolve ownerships by id: when ownerships carry the value
         // and the ordering guarantees the attribute exists, they are never consulted
-        matches!(self.item_order, ItemOrder::AttributeEntityRelation) && self.owned_attributes_by_value
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations) && self.owned_attributes_by_value
     }
 
     fn skip_predecessor_phase_existence_checks(&self) -> bool {
-        matches!(self.item_order, ItemOrder::AttributeEntityRelation)
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
     }
 }
 
@@ -1258,17 +1258,19 @@ impl ImportPhase {
     ) -> Option<Box<dyn ConceptPersistenceGuarantees>> {
         match configuration.item_order {
             ItemOrder::Unspecified => None,
-            ItemOrder::AttributeEntityRelation => Some(Box::new(AttributeEntityRelationConceptPersistenceGuarantees {
-                phase: *self,
-                attributes_unique: configuration.attributes_unique,
-            })),
+            ItemOrder::AttributesEntitiesRelations => {
+                Some(Box::new(AttributesEntitiesRelationsConceptPersistenceGuarantees {
+                    phase: *self,
+                    attributes_unique: configuration.attributes_unique,
+                }))
+            }
         }
     }
 
     fn phase_for(thing_kind: ThingKind, item_order: ItemOrder) -> Self {
         match item_order {
             ItemOrder::Unspecified => Self::Default,
-            ItemOrder::AttributeEntityRelation => match thing_kind {
+            ItemOrder::AttributesEntitiesRelations => match thing_kind {
                 ThingKind::Entity => Self::Entities,
                 ThingKind::Relation => Self::Relations,
                 ThingKind::Attribute => Self::Attributes,
@@ -1282,7 +1284,7 @@ impl ImportPhase {
                 (Self::Default, Self::Default | Self::Deferred) => Ok(()),
                 (_, _) => Err(DatabaseImportError::UnexpectedPhase { order: item_order, phase: next_phase }),
             },
-            ItemOrder::AttributeEntityRelation => match (self, next_phase) {
+            ItemOrder::AttributesEntitiesRelations => match (self, next_phase) {
                 (Self::Attributes, Self::Attributes | Self::Entities | Self::Relations | Self::Deferred) => Ok(()),
                 (Self::Attributes, _) => {
                     Err(DatabaseImportError::ItemOrderViolation { order: item_order, current_phase: *self, next_phase })
@@ -1314,7 +1316,7 @@ impl ImportPhase {
         let thing_phase = Self::phase_for(thing_kind, item_order);
         match item_order {
             ItemOrder::Unspecified => false,
-            ItemOrder::AttributeEntityRelation => match (self, thing_phase) {
+            ItemOrder::AttributesEntitiesRelations => match (self, thing_phase) {
                 (Self::Attributes, _) => false,
 
                 (Self::Entities, Self::Attributes) => true,
@@ -1528,16 +1530,12 @@ impl ImportWorker {
     fn write_item(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.transaction_data_info.item_count += 1;
         match concept {
-            ImportConcept::Entity(EntityItem { id, label, label_scoped_id, owned_attributes }) => {
-                self.import_entity(id, label, label_scoped_id, owned_attributes)
+            ImportConcept::Entity(EntityItem { id, label, label_scoped_id, attributes }) => {
+                self.import_entity(id, label, label_scoped_id, attributes)
             }
-            ImportConcept::Relation(RelationItem {
-                id,
-                label,
-                label_scoped_id,
-                owned_attributes,
-                related_role_players,
-            }) => self.import_relation(id, label, label_scoped_id, owned_attributes, related_role_players),
+            ImportConcept::Relation(RelationItem { id, label, label_scoped_id, attributes, roles }) => {
+                self.import_relation(id, label, label_scoped_id, attributes, roles)
+            }
             ImportConcept::Attribute(AttributeItem { id, label, value }) => self.import_attribute(id, label, value),
             ImportConcept::DeferredOwnership(deferred) => self.import_deferred_ownership(deferred),
             ImportConcept::DeferredLinks(deferred) => self.import_deferred_links(deferred),
@@ -1605,9 +1603,9 @@ impl ImportWorker {
         label: Label,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
-        role_players: Vec<RolePlayers>,
+        roles: Vec<Role>,
     ) -> Result<(), DatabaseImportError> {
-        if role_players.iter().all(|role_players| role_players.players.is_empty()) {
+        if roles.iter().all(|role| role.players.is_empty()) {
             return Err(DatabaseImportError::RelationWithoutRolePlayers { id });
         }
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
@@ -1632,7 +1630,7 @@ impl ImportWorker {
             };
             self.transaction_data_info.counts.relation_count += 1;
             self.process_owned_attributes(&mut snapshot, &thing_manager, relation.into_object(), owned_attributes)?;
-            self.process_links(&mut snapshot, &type_manager, &thing_manager, relation, role_players)?;
+            self.process_links(&mut snapshot, &type_manager, &thing_manager, relation, roles)?;
             Ok(())
         })
     }
@@ -1729,11 +1727,11 @@ impl ImportWorker {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         relation: Relation,
-        links: Vec<RolePlayers>,
+        links: Vec<Role>,
     ) -> Result<(), DatabaseImportError> {
         let mut resolved_links = Vec::new();
         let mut defer_links = false;
-        for RolePlayers { role: label, players } in links {
+        for Role { label, players } in links {
             let role_type = type_manager
                 .get_role_type(snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
@@ -1954,18 +1952,18 @@ impl Drop for ImportWorker {
 }
 
 #[derive(Debug)]
-struct AttributeEntityRelationConceptPersistenceGuarantees {
+struct AttributesEntitiesRelationsConceptPersistenceGuarantees {
     phase: ImportPhase,
     attributes_unique: bool,
 }
 
-impl ConceptPersistenceGuarantees for AttributeEntityRelationConceptPersistenceGuarantees {
+impl ConceptPersistenceGuarantees for AttributesEntitiesRelationsConceptPersistenceGuarantees {
     fn object_known_to_exist(&self, type_: ObjectType) -> KnownToExist {
         let thing_kind = match type_ {
             ObjectType::Entity(_) => ThingKind::Entity,
             ObjectType::Relation(_) => ThingKind::Relation,
         };
-        if self.phase.is_from_previous_phase(thing_kind, ItemOrder::AttributeEntityRelation) {
+        if self.phase.is_from_previous_phase(thing_kind, ItemOrder::AttributesEntitiesRelations) {
             KnownToExist::Exists
         } else {
             KnownToExist::Unknown
@@ -1973,7 +1971,7 @@ impl ConceptPersistenceGuarantees for AttributeEntityRelationConceptPersistenceG
     }
 
     fn attribute_known_to_exist(&self, _type: AttributeType) -> KnownToExist {
-        if self.phase.is_from_previous_phase(ThingKind::Attribute, ItemOrder::AttributeEntityRelation) {
+        if self.phase.is_from_previous_phase(ThingKind::Attribute, ItemOrder::AttributesEntitiesRelations) {
             KnownToExist::Exists
         } else {
             KnownToExist::Unknown
