@@ -41,6 +41,12 @@ struct Item<'a> {
     value: &'a [u8],
 }
 
+impl<'a> Item<'a> {
+    fn into_key_value(self, keyspace_id: KeyspaceId) -> (StorageKeyReference<'a>, &'a [u8]) {
+        (StorageKeyReference::new_raw(keyspace_id, self.key), self.value)
+    }
+}
+
 impl MVCCRangeIterator {
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
@@ -66,8 +72,7 @@ impl MVCCRangeIterator {
 
     pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
         self.find_next_state();
-        let Item { key, value } = self.next_item?;
-        Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value)))
+        Some(Ok(self.next_item?.into_key_value(self.keyspace_id)))
     }
 
     /// Unless already known, consumes keyspace items up to the next visible inserted version and records it as the next
@@ -107,8 +112,7 @@ impl LendingIterator for MVCCRangeIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.find_next_state();
-        let Item { key, value } = self.next_item.take()?;
-        Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value)))
+        Some(Ok(self.next_item.take()?.into_key_value(self.keyspace_id)))
     }
 }
 
