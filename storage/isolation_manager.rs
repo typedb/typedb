@@ -330,12 +330,14 @@ impl DependentPut {
 #[derive(Debug, Clone)]
 pub(crate) enum DependentDelete {
     Deleted { action: Arc<AtomicDeleteAction> },
+    Inserted { action: Arc<AtomicDeleteAction> },
 }
 
 impl DependentDelete {
     fn apply(self) {
         match self {
             DependentDelete::Deleted { action } => action.store(DeleteAction::Nop, Ordering::Release),
+            DependentDelete::Inserted { action } => action.store(DeleteAction::Delete, Ordering::Release),
         }
     }
 }

@@ -161,6 +161,9 @@ impl CommitRecord {
                     (Write::Delete { .. }, Write::Put { action, .. }) => {
                         puts_to_update.push(DependentPut::Deleted { action: action.clone() });
                     }
+                    (Write::Insert { .. } | Write::Put { .. }, Write::Delete { action, .. }) => {
+                        deletes_to_update.push(DependentDelete::Inserted { action: action.clone() });
+                    }
                     (Write::Delete { .. }, Write::Delete { action, .. }) => {
                         deletes_to_update.push(DependentDelete::Deleted { action: action.clone() });
                     }
