@@ -18,8 +18,6 @@ rust_library(
         "//answer",
         "//common/lending_iterator",
         "//common/options",
-#         "//common/primitive",
-        "//compiler",
         "//concept",
         "//function",
         "//database",
@@ -33,10 +31,8 @@ rust_library(
 
         "@typeql//rust:typeql",
 
-#         "@crates//:itertools",
         "@crates//:pprof",
         "@crates//:rand",
-#         "@crates//:rand_core",
         "@crates//:clap",
         "@crates//:csv",
         "@crates//:serde",

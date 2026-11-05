@@ -34,7 +34,7 @@ pub trait AnswerConsumer {
     where
         for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>;
 
-    fn consume_docs(
+    fn consume_documents(
         iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
     ) -> Result<Self::Output, Box<PipelineExecutionError>>;
 }
@@ -52,7 +52,7 @@ pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsum
     if pipeline.has_fetch() {
         let result = pipeline
             .into_documents_iterator(interrupt)
-            .and_then(|(mut iter, context)| pack_result(AC::consume_docs(&mut iter), context));
+            .and_then(|(mut iter, context)| pack_result(AC::consume_documents(&mut iter), context));
         to_result_with_tx(partial_tx, query, result)
     } else {
         let result = pipeline
@@ -76,7 +76,7 @@ pub(super) fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransacti
     if pipeline.has_fetch() {
         let result = pipeline
             .into_documents_iterator(interrupt)
-            .and_then(|(mut iter, context)| pack_result(AC::consume_docs(&mut iter), context));
+            .and_then(|(mut iter, context)| pack_result(AC::consume_documents(&mut iter), context));
         to_result_with_tx(partial_tx, query, result)
     } else {
         let result = pipeline

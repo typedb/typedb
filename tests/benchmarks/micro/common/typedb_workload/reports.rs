@@ -144,7 +144,7 @@ impl CommitFocusedReport {
 
         for (i, tx) in profile.profiles.iter().enumerate() {
             let commit_total = tx.tx_profile.commit_profile_ref().total();
-            let phases = tx.tx_profile.commit_profile_ref().phases();
+            let commit_profile = tx.tx_profile.commit_profile_ref().take_snapshot();
 
             let mut query_durations: Vec<Duration> =
                 tx.query_profiles.iter().map(|q| Duration::from_nanos(q.total_nanos())).collect();
@@ -159,7 +159,7 @@ impl CommitFocusedReport {
                 })
             };
 
-            let z = phases.as_ref();
+            let z = commit_profile.as_ref();
             let zd = |f: fn(&_) -> Duration| z.map_or(Duration::ZERO, |p| f(p));
             per_txn.push(TxTimingRow {
                 txn_index: i,

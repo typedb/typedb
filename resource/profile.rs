@@ -378,8 +378,8 @@ impl CommitProfile {
         }
     }
 
-    pub fn phases(&self) -> Option<CommitPhases> {
-        self.data.as_ref().map(|d| CommitPhases {
+    pub fn take_snapshot(&self) -> Option<CommitProfileSnapshot> {
+        self.data.as_ref().map(|d| CommitProfileSnapshot {
             types_validation: d.types_validation,
             things_finalise: d.things_finalise,
             functions_finalise: d.functions_finalise,
@@ -398,7 +398,7 @@ impl CommitProfile {
     }
 }
 
-pub struct CommitPhases {
+pub struct CommitProfileSnapshot {
     pub types_validation: Duration,
     pub things_finalise: Duration,
     pub functions_finalise: Duration,

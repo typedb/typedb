@@ -2914,7 +2914,6 @@ version = "0.0.0"
 dependencies = [
  "answer",
  "clap",
- "compiler",
  "concept",
  "csv",
  "database",
@@ -3121,21 +3120,9 @@ name = "microbench_reads"
 version = "0.0.0"
 dependencies = [
  "clap",
- "compiler",
- "database",
- "diagnostics",
  "encoding",
- "executor",
- "itertools 0.14.0",
  "lib_benchmark",
- "microbench_samples",
- "options",
- "primitive",
  "query",
- "rand 0.8.8",
- "storage",
- "test_utils",
- "typeql",
 ]
 
 [[package]]
@@ -3155,21 +3142,9 @@ name = "microbench_writes"
 version = "0.0.0"
 dependencies = [
  "clap",
- "compiler",
- "database",
- "diagnostics",
  "encoding",
- "executor",
- "itertools 0.14.0",
  "lib_benchmark",
- "microbench_samples",
- "options",
- "primitive",
  "query",
- "rand 0.8.8",
- "storage",
- "test_utils",
- "typeql",
 ]
 
 [[package]]

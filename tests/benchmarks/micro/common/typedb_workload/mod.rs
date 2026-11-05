@@ -74,7 +74,7 @@ impl AnswerConsumer for CountResults {
         Ok(count)
     }
 
-    fn consume_docs(
+    fn consume_documents(
         iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
     ) -> Result<Self::Output, Box<PipelineExecutionError>> {
         let mut count: usize = 0;

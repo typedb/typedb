@@ -12,24 +12,11 @@ rust_binary(
     srcs = glob(["*.rs"]),
     deps = [
         "//tests/benchmarks/micro/common:lib_benchmark",
-        "//tests/benchmarks/micro/sample:microbench_samples",
 
-        "//common/options",
-        "//common/primitive",
-        "//compiler",
-        "//database",
-        "//diagnostics",
         "//encoding",
-        "//executor",
         "//query",
-        "//storage",
-        "//util/test:test_utils",
-
-        "@typeql//rust:typeql",
 
         "@crates//:clap",
-        "@crates//:rand",
-        "@crates//:itertools",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
 #     use_libtest_harness = False,

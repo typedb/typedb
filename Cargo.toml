@@ -313,11 +313,6 @@
 			features = ["default"]
 			version = "0.2.3"
 
-		[workspace.dependencies.microbench_samples]
-			default-features = false
-			features = []
-			path = "tests/benchmarks/micro/sample"
-
 		[workspace.dependencies.moka]
 			default-features = false
 			features = ["default", "sync"]

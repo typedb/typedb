@@ -32,6 +32,7 @@ pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
     }
 }
 
+// TxQueryProfileReport is slightly less verbose than QueryFocusedReport
 pub fn insert_million_entities() -> TypeDBMicroBenchmark<Option<GivenRowsSimple>, TxQueryProfile, TxQueryProfileReport>
 {
     let prepare_inputs_fn = Box::new(move |_: Arc<Database<WALClient>>| {

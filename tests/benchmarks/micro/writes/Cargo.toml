@@ -11,49 +11,13 @@
 	[dependencies.clap]
 		workspace = true
 
-	[dependencies.compiler]
-		workspace = true
-
-	[dependencies.database]
-		workspace = true
-
-	[dependencies.diagnostics]
-		workspace = true
-
 	[dependencies.encoding]
-		workspace = true
-
-	[dependencies.executor]
-		workspace = true
-
-	[dependencies.itertools]
 		workspace = true
 
 	[dependencies.lib_benchmark]
 		workspace = true
 
-	[dependencies.microbench_samples]
-		workspace = true
-
-	[dependencies.options]
-		workspace = true
-
-	[dependencies.primitive]
-		workspace = true
-
 	[dependencies.query]
-		workspace = true
-
-	[dependencies.rand]
-		workspace = true
-
-	[dependencies.storage]
-		workspace = true
-
-	[dependencies.test_utils]
-		workspace = true
-
-	[dependencies.typeql]
 		workspace = true
 
 [[bin]]

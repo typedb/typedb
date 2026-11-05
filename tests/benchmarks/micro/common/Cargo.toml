@@ -18,9 +18,6 @@
 	[dependencies.clap]
 		workspace = true
 
-	[dependencies.compiler]
-		workspace = true
-
 	[dependencies.concept]
 		workspace = true
 
