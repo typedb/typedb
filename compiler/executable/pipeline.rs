@@ -282,7 +282,7 @@ pub(crate) fn compile_pipeline_stages(
             };
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             last_match_annotations =
-                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
+                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().concept_annotations())
         }
         type_populations.update(&referenced_types, statistics);
         executable_stages.push(executable_stage);
@@ -300,7 +300,7 @@ fn compile_stage(
     annotated_stage: &AnnotatedStage,
 ) -> Result<(ExecutableStage, BTreeSet<Type>), ExecutableCompilationError> {
     match annotated_stage {
-        AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
+        AnnotatedStage::Match { block, block_annotations, .. } => {
             // TODO: technically, we only need to select variables that are used _later_ in the pipeline, not everything
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(stage_input_positions.keys().copied());
@@ -312,7 +312,6 @@ fn compile_stage(
                 selected_variables,
                 block_annotations,
                 variable_registry,
-                executable_expressions,
                 statistics,
                 call_cost_provider,
             )
@@ -353,7 +352,6 @@ fn compile_stage(
                 selected_variables,
                 match_annotations,
                 variable_registry,
-                &HashMap::new(),
                 statistics,
                 call_cost_provider,
             )
@@ -372,13 +370,12 @@ fn compile_stage(
                 match_annotations.referenced_types(),
             ))
         }
-        AnnotatedStage::Delete { block, annotations, source_span } => {
+        AnnotatedStage::Delete { block, annotations, .. } => {
             let plan = crate::executable::delete::executable::compile(
                 stage_input_positions,
                 annotations,
                 variable_registry,
                 block,
-                *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::DeleteExecutableCompilation { typedb_source })?;
             Ok((ExecutableStage::Delete(Arc::new(plan)), BTreeSet::new()))

@@ -18,7 +18,7 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode, Pattern, PatternVariableModes, Scope, ScopeId,
+        BindingMode, BindingOptionality, Pattern, PatternVariableModes, Scope, ScopeId,
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
         disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
         impl_pattern_from_pattern_variables,
@@ -54,6 +54,14 @@ impl Conjunction {
         &mut self.nested_patterns
     }
 
+    pub fn nested_patterns_flattened(&self) -> impl Iterator<Item = &Conjunction> + '_ {
+        let negations = self.nested_patterns().iter().filter_map(|n| n.as_negation()).map(|n| n.conjunction());
+        let optionals = self.nested_patterns().iter().filter_map(|n| n.as_optional()).map(|n| n.conjunction());
+        let disjunctions =
+            self.nested_patterns().iter().filter_map(|n| n.as_disjunction()).flat_map(|d| d.conjunctions().iter());
+        negations.chain(optionals).chain(disjunctions)
+    }
+
     pub fn set_unsatisfiable(&mut self) {
         let scope_id = self.scope_id;
         let binding_modes = self.pattern_variables.clone();
@@ -82,7 +90,7 @@ impl Conjunction {
         Box<RepresentationError>,
     > {
         let (new_checks, constraint_mapping, variable_mapping) =
-            self.constraints.make_variables_unique(variable_registry)?;
+            self.constraints.make_variables_unique(variable_registry, &mut self.pattern_variables)?;
         for (new_var, old_var) in &variable_mapping {
             if let Some(value) = self.pattern_variables.0.get(old_var).cloned() {
                 self.pattern_variables.0.insert(*new_var, value);
@@ -142,14 +150,33 @@ impl NestedPatternBuilder {
             NestedPatternBuilder::Optional(optional) => optional.finish(parent_modes),
         }
     }
-}
 
-impl NestedPatternBuilder {
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         match self {
             NestedPatternBuilder::Disjunction(inner) => inner.variable_binding_modes(),
             NestedPatternBuilder::Negation(inner) => inner.variable_binding_modes(),
             NestedPatternBuilder::Optional(inner) => inner.variable_binding_modes(),
+        }
+    }
+
+    pub fn as_disjunction(&self) -> Option<&DisjunctionBuilder> {
+        match self {
+            Self::Disjunction(disjunction) => Some(disjunction),
+            _ => None,
+        }
+    }
+
+    pub fn as_negation(&self) -> Option<&NegationBuilder> {
+        match self {
+            Self::Negation(negation) => Some(negation),
+            _ => None,
+        }
+    }
+
+    pub fn as_optional(&self) -> Option<&OptionalBuilder> {
+        match self {
+            Self::Optional(optional) => Some(optional),
+            _ => None,
         }
     }
 }
@@ -167,7 +194,8 @@ impl ConjunctionBuilder {
     }
 
     pub(crate) fn finish(self, parent_modes: &PatternVariableModes) -> Conjunction {
-        let pattern_variables = PatternVariableModes::build(self.variable_binding_modes(), parent_modes);
+        let pattern_variables =
+            PatternVariableModes::build(self.variable_binding_modes(), parent_modes, self.checked_isset_variables());
         let Self { scope_id, constraints, nested_patterns } = self;
         let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&pattern_variables)).collect();
         Conjunction { scope_id, constraints, nested_patterns, pattern_variables }
@@ -186,14 +214,35 @@ impl ConjunctionBuilder {
     }
 
     pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        let mut binding_modes = self.constraints.variable_binding_modes();
+        let mut binding_modes = HashMap::new();
+        self.constraints().iter().flat_map(|constraint| constraint.variable_binding_modes()).for_each(|(id, mode)| {
+            *binding_modes.entry(id).or_default() &= mode;
+        });
         for nested in self.nested_patterns.iter() {
             let nested_pattern_modes = nested.variable_binding_modes();
             for (var, mode) in nested_pattern_modes {
                 *binding_modes.entry(var).or_default() &= mode;
             }
         }
+        self.checked_isset_variables().for_each(|id| {
+            let mode = binding_modes.get_mut(&id).expect("set");
+            if matches!(mode, BindingMode::AlwaysBinding(_)) {
+                *mode = BindingMode::AlwaysBinding(BindingOptionality::NotNone)
+            }
+        });
         binding_modes
+    }
+
+    pub fn checked_isset_variables(&self) -> impl Iterator<Item = Variable> {
+        self.constraints.iter().filter_map(|c| c.as_is_set()).flat_map(|is_set| is_set.ids())
+    }
+
+    pub(crate) fn nested_patterns_flattened(&self) -> impl Iterator<Item = &ConjunctionBuilder> + '_ {
+        let negations = self.nested_patterns().iter().filter_map(|n| n.as_negation()).map(|n| n.conjunction());
+        let optionals = self.nested_patterns().iter().filter_map(|n| n.as_optional()).map(|n| n.conjunction());
+        let disjunctions =
+            self.nested_patterns().iter().filter_map(|n| n.as_disjunction()).flat_map(|d| d.conjunctions());
+        negations.chain(optionals).chain(disjunctions)
     }
 }
 

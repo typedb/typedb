@@ -466,7 +466,7 @@ fn annotate_arguments(
                 .filter_map(|stage| {
                     if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
                         let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
-                        root_annotations.vertex_annotations_of(&Vertex::Variable(var)).cloned()
+                        root_annotations.concept_annotations_of(&Vertex::Variable(var)).cloned()
                     } else {
                         None
                     }

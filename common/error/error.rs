@@ -385,7 +385,8 @@ pub enum UnimplementedFeature {
     BuiltinFunction(String),
     LetInBuiltinCall,
     Subkey,
-    OptionalFunctions,
+    OptionalBuiltinFunctions,
+    OptionalArguments,
 
     UnsortedJoin,
 
@@ -395,6 +396,10 @@ pub enum UnimplementedFeature {
     QueryingAnnotations,
 
     NestedOptionalWrites,
+    ComparisonInIfStatements,
+    IsaInIfStatements,
+
+    ErrorsOnImplicitUnwrap,
 }
 
 impl std::fmt::Display for UnimplementedFeature {
@@ -458,6 +463,16 @@ macro_rules! ensure_unimplemented_unused {
 #[macro_export]
 macro_rules! needs_update_when_feature_is_implemented {
     // Nothing, we just need the compile error when the feature is deleted
-    ($feature:ident) => {};
-    ($feature:ident, $msg:literal) => {};
+    ($feature:path) => {};
+    ($feature:path, $msg:literal) => {};
+}
+
+#[macro_export]
+macro_rules! optional_usage_error {
+    ($err:expr) => {
+        tracing::warn!(
+            "Deprecated usage of optional variable or try blocks. This will fail in the next version:\n{}",
+            <_ as error::TypeDBError>::format_description(&$err)
+        );
+    };
 }

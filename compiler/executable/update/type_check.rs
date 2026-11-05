@@ -53,6 +53,7 @@ pub fn check_annotations(
                 )?;
             }
             Constraint::DeleteConcepts(_)
+            | Constraint::IsSet(_)
             | Constraint::Isa(_)
             | Constraint::Is(_)
             | Constraint::Comparison(_)

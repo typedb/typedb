@@ -233,6 +233,24 @@ typedb_error! {
             "The variable '{variable_name}' cannot be declared as both a 'Value' and as a 'Attribute'. Consider using '==' for a value-only comparison instead.",
             variable_name: String,
         ),
+        UnsafeOptionalDereference(
+            36,
+            "The optional variable '{variable}' was used in a context where optionals are not permitted. Use `isset` in the pattern to match only non-empty values. Expressions can use `?` to propagate the empty value to the result.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        UnsafeOptionalExpressionDereference(
+            37,
+            "The expression '{identifier}' returns an optional value which may be empty. Use '?' to short-circuit and assign an empty result.",
+            identifier: String,
+            source_span: Option<Span>,
+        ),
+        IfConditionVariableUnavailable(
+            38,
+            "The variable '{variable}' referenced in an 'if' condition in a write stage is unavailable. It should be bound in the previous stage.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",
@@ -290,6 +308,13 @@ typedb_error! {
             source_span: Option<Span>,
             existing_span: Option<Span>,
         ),
+        MultipleAssignmentsForVariable(
+            49,
+            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
+            variable: String,
+            source_span: Option<Span>,
+            other_span: Option<Span>,
+        ),
         RegexExpectedStringLiteral(
             50,
             "Expected a string literal as regex.",
@@ -324,6 +349,18 @@ typedb_error! {
             unplannable_constraints: UnplannableConstraints,
             span: Option<Span>,
         ),
+        InlinedFunctionReturnedTuple(
+            56,
+            "The function '{identifier}' returns a tuple of width '{actual_width}'. To be used inline, it must return a scalar.",
+            identifier: String,
+            actual_width: usize,
+            source_span: Option<Span>,
+        ),
+        IllegalTryInWriteStage(
+            57,
+            "Try blocks are no longer supported in write stages. Use `if` statements instead.",
+            source_span: Option<Span>,
+        ),
         InternalNotAValueBuiltin(
             100,
             "Attempted to translate function '{token}' as a builtin value function.",
@@ -346,6 +383,12 @@ typedb_error! {
             201,
             "Invalid timezone offset '{offset}'.",
             offset: String,
+            source_span: Option<Span>,
+        ),
+        DeprecatedOptionalVariableUsedOutsideTry(
+            252,
+            "A write stage uses the optional variable '{variable}' outside a 'try' block.",
+            variable: String,
             source_span: Option<Span>,
         ),
         UnimplementedExpressionsInWrite(

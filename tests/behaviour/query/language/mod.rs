@@ -8,6 +8,7 @@
 
 mod define;
 mod delete;
+mod deprecated_optionals;
 mod disjunction;
 mod expressions;
 mod fetch;

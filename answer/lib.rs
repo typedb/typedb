@@ -88,6 +88,15 @@ impl Type {
         }
     }
 
+    pub fn try_as_object_type(&self) -> Option<ObjectType> {
+        match self {
+            Type::Entity(entity) => Some((*entity).into_object_type()),
+            Type::Relation(relation) => Some((*relation).into_object_type()),
+            Type::Attribute(_) => None,
+            Type::RoleType(_) => None,
+        }
+    }
+
     pub fn as_object_type(&self) -> ObjectType {
         match self {
             Type::Entity(entity) => (*entity).into_object_type(),
@@ -226,22 +235,6 @@ impl Type {
             Type::Attribute(attribute) => attribute.is_abstract(snapshot, type_manager),
             Type::RoleType(role) => role.is_abstract(snapshot, type_manager),
         }
-    }
-
-    pub fn try_retain(
-        annotations: &mut BTreeSet<Self>,
-        predicate: impl Fn(&Self) -> Result<bool, Box<ConceptReadError>>,
-    ) -> Result<(), Box<ConceptReadError>> {
-        let mut to_be_removed = Vec::new();
-        for annotation in annotations.iter() {
-            if !predicate(annotation)? {
-                to_be_removed.push(*annotation);
-            }
-        }
-        for annotation in to_be_removed.iter() {
-            annotations.remove(annotation);
-        }
-        Ok(())
     }
 }
 

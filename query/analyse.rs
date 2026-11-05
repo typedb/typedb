@@ -29,9 +29,10 @@ use concept::{
     type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType, type_manager::TypeManager},
 };
 use encoding::value::value_type::ValueType;
+use error::todo_must_implement;
 use ir::{
     pattern::{
-        ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
+        ParameterID, Pattern, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
         variable_category::VariableOptionality,
     },
     pipeline::{ParameterRegistry, VariableRegistry},
@@ -177,7 +178,7 @@ fn variable_annotations_for_block<'a>(
     variable_registry: &'a VariableRegistry,
     annotations_for_block: &'a TypeAnnotations,
 ) -> impl Iterator<Item = (Variable, PipelineVariableAnnotation)> + 'a {
-    let concept_annotations = annotations_for_block.vertex_annotations().iter().filter_map(|(vertex, annos)| {
+    let concept_annotations = annotations_for_block.concept_annotations().iter().filter_map(|(vertex, annos)| {
         let variable = vertex.as_variable()?;
         let category = variable_registry.get_variable_category(variable).unwrap();
         let annotations = match category.is_category_type() {
@@ -203,7 +204,7 @@ fn insert_pipeline_annotations_recursive(
     let block_id = structure.parametrised_structure.resolve_conjunction_id(stage_index, conjunction.scope_id());
     let variable_annotations =
         variable_annotations_for_block(variable_registry, block_annotations.type_annotations_of(conjunction).unwrap());
-    pipeline_annotations[block_id.0 as usize] = enrich_annotations(variable_registry, variable_annotations);
+    pipeline_annotations[block_id.0 as usize] = enrich_annotations(conjunction, variable_annotations);
 
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(branches) => branches.conjunctions().iter().for_each(|inner| {
@@ -240,12 +241,12 @@ fn insert_pipeline_annotations_recursive(
 }
 
 fn enrich_annotations(
-    variable_registry: &VariableRegistry,
+    conjunction: &Conjunction,
     variable_annotations: impl Iterator<Item = (Variable, PipelineVariableAnnotation)>,
 ) -> ConjunctionAnnotations {
     variable_annotations
         .map(|(variable, annotations)| {
-            let is_optional = variable_registry.is_variable_optional(variable);
+            let is_optional = conjunction.optionality(&variable) == VariableOptionality::Optional;
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })
         .collect()
@@ -434,9 +435,9 @@ impl<'a> LastStageAnnotations<'a> {
             | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
             | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
                 let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
-                if let Some(annotations) = root_annotations.vertex_annotations_of(vertex) {
+                if let Some(annotations) = root_annotations.concept_annotations_of(vertex) {
                     Some(Either::Left(annotations.clone()))
-                } else if let Some(value_type) = root_annotations.value_type_annotations_of(vertex) {
+                } else if let Some(value_type) = root_annotations.value_annotations_of(vertex) {
                     Some(Either::Right(value_type.clone()))
                 } else {
                     None

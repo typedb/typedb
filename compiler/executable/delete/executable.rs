@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
@@ -12,7 +12,6 @@ use ir::{
     pattern::{Vertex, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{VariableRegistry, block::Block},
 };
-use typeql::common::Span;
 
 use crate::{
     VariablePosition,
@@ -21,7 +20,7 @@ use crate::{
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
     executable::{
-        RequiredVariablesForWrite, WriteCompilationError,
+        WriteCompilationError, WritePatternCondition,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             ThingPosition,
@@ -34,7 +33,7 @@ use crate::{
 #[derive(Debug)]
 pub struct DeleteExecutable {
     pub executable_id: u64,
-    pub deletes: Vec<ConditionalDelete>,
+    pub root_delete: ConditionalDelete,
     pub output_row_schema: Vec<Option<Variable>>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
@@ -44,37 +43,9 @@ pub fn compile(
     block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     block: &Block,
-    source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let mut deletes = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
-
     let root_delete =
-        ConditionalDelete::new(block.conjunction(), block_annotations, variable_registry, input_variables)?;
-    deletes.push(root_delete);
-
-    let unsafely_used_optional_variable = block
-        .conjunction()
-        .constraints()
-        .iter()
-        .flat_map(|constraint| constraint.ids())
-        .find(|var| variable_registry.is_variable_optional(*var));
-
-    if let Some(var) = unsafely_used_optional_variable {
-        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-        return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
-    }
-
-    for nested_pattern in block.conjunction().nested_patterns() {
-        let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!("Only optionals are allowed as nested patterns in delete")
-        };
-        deletes.push(ConditionalDelete::new(
-            optional.conjunction(),
-            block_annotations,
-            variable_registry,
-            input_variables,
-        )?);
-    }
+        ConditionalDelete::build_recursive(block.conjunction(), block_annotations, variable_registry, input_variables)?;
 
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let deleted_variables_recursive = collect_deleted_variables(block);
@@ -90,18 +61,19 @@ pub fn compile(
         output_row_schema[pos_as_usize] = Some(variable);
     }
 
-    Ok(DeleteExecutable { executable_id: next_executable_id(), deletes, output_row_schema })
+    Ok(DeleteExecutable { executable_id: next_executable_id(), root_delete, output_row_schema })
 }
 
 #[derive(Debug)]
 pub struct ConditionalDelete {
+    pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: RequiredVariablesForWrite,
+    pub nested_deletes: Vec<ConditionalDelete>,
 }
 
 impl ConditionalDelete {
-    fn new(
+    fn build_recursive(
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_registry: &VariableRegistry,
@@ -115,12 +87,19 @@ impl ConditionalDelete {
 
         let connection_instructions =
             add_connection_deletes(conjunction, conjunction_annotations, input_variables, variable_registry)?;
+        let condition = WritePatternCondition::build(conjunction, input_variables, conjunction_annotations);
 
-        // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables =
-            RequiredVariablesForWrite::build(conjunction, variable_registry, input_variables);
-
-        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
+        let nested_deletes = conjunction
+            .nested_patterns()
+            .iter()
+            .map(|nested| {
+                let NestedPattern::Optional(optional) = nested else {
+                    unreachable!("Only optionals are allowed as nested patterns in deletes")
+                };
+                Self::build_recursive(optional.conjunction(), block_annotations, variable_registry, input_variables)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_deletes })
     }
 }
 
@@ -139,9 +118,9 @@ fn add_concept_deletes(
                     source_span: constraint.source_span(),
                 }));
             };
-            assert!(conjunction_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some());
+            assert!(conjunction_annotations.concept_annotations_of(&Vertex::Variable(variable)).is_some());
             if conjunction_annotations
-                .vertex_annotations_of(&Vertex::Variable(variable))
+                .concept_annotations_of(&Vertex::Variable(variable))
                 .is_some_and(|anno| anno.iter().any(|type_| type_.kind() == Kind::Role))
             {
                 return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
@@ -200,6 +179,7 @@ fn add_connection_deletes(
             }
             Constraint::LinksDeduplication(_) | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
             Constraint::DeleteConcepts(_) => (),                               // Is a ConceptInstruction
+            Constraint::IsSet(_) => (),
             Constraint::Iid(_)
             | Constraint::Isa(_)
             | Constraint::Kind(_)

@@ -82,7 +82,7 @@ impl OptionalBuilder {
 
     pub(crate) fn finish(self, parent_modes: &PatternVariableModes) -> NestedPattern {
         let source_span = self.source_span;
-        let pattern_variables = PatternVariableModes::build(self.variable_binding_modes(), parent_modes);
+        let pattern_variables = PatternVariableModes::build(self.variable_binding_modes(), parent_modes, []);
         let branch_id = self.branch_id;
         let conjunction = self.conjunction.finish(&pattern_variables);
         NestedPattern::Optional(Optional { branch_id, conjunction, pattern_variables, source_span })
@@ -100,7 +100,7 @@ impl OptionalBuilder {
         self.conjunction
             .variable_binding_modes()
             .into_iter()
-            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::OptionallyBinding) } else { (v, mode) })
+            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::BoundInTry) } else { (v, mode) })
             .collect()
     }
 }

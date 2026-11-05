@@ -21,7 +21,8 @@ use typeql::common::Span;
 use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
-        AssignedVariable, BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
+        AssignedVariable, BindingMode, BindingOptionality, IrID, ParameterID, PatternVariableMode,
+        PatternVariableModes, ReferenceOptionality, ScopeId, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
@@ -68,18 +69,10 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
-            constraint.binding_modes().for_each(|(var, mode)| {
-                *acc.entry(var).or_default() &= mode;
-            });
-            acc
-        })
-    }
-
     pub(super) fn make_variables_unique(
         &mut self,
         variable_registry: &mut VariableRegistry,
+        pattern_variables: &mut PatternVariableModes,
     ) -> Result<
         (Vec<Constraint<Variable>>, HashMap<Constraint<Variable>, Constraint<Variable>>, HashMap<Variable, Variable>),
         Box<RepresentationError>,
@@ -100,6 +93,7 @@ impl Constraints {
                     Is::new(old_var, *var, None).into()
                 };
                 variable_mapping.insert(*var, old_var);
+                pattern_variables.0.insert(*var, PatternVariableMode::Binding(VariableOptionality::Required));
                 check_collector.push(check);
             }
             Ok::<(), Box<RepresentationError>>(())
@@ -174,6 +168,7 @@ impl Constraints {
                 | Constraint::Value(_)
                 | Constraint::Comparison(_)
                 | Constraint::DeleteConcepts(_)
+                | Constraint::IsSet(_)
                 | Constraint::LinksDeduplication(_)
                 | Constraint::Unsatisfiable(_) => {}
             }
@@ -299,6 +294,16 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         constraint.as_delete_concepts().unwrap()
     }
 
+    pub fn add_is_set(
+        &mut self,
+        variables: Vec<Variable>,
+        source_span: Option<Span>,
+    ) -> Result<&IsSet<Variable>, Box<RepresentationError>> {
+        let is_set = IsSet::new(variables, source_span);
+        let constraint = self.constraints.add_constraint(is_set);
+        Ok(constraint.as_is_set().unwrap())
+    }
+
     pub fn add_isa(
         &mut self,
         kind: IsaKind,
@@ -414,38 +419,29 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
 
         let callee_signature = builtin_id.signature();
-        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
+        assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
             |(assigned_var, (_, returned_optionality))| {
-                use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
-                match (assigned_var.optionality, returned_optionality) {
-                    (Optional, Optional) | (Required, Required) => Ok(()),
-                    (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                    (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                }
+                assigned_var.validate_assignment_optionality_matches(
+                    || self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
+                    source_span,
+                    *returned_optionality,
+                )
             },
-        );
-        if let Err(err) = mismatched_optionality_in_assignment {
-            // TODO: This has to wait till we finalize the spec
-            // use error::TypeDBError;
-            // tracing::warn!(
-            //     "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
-            //     err.format_description()
-            // );
-        }
+        )?;
 
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
-        let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
+        let assigned_optionalities = callee_signature.returns.iter().map(|(_, optionality)| *optionality).collect();
+        let binding = FunctionCallBinding::new(
+            assigned,
+            assigned_optionalities,
+            function_call,
+            callee_signature.return_is_stream,
+            source_span,
+        );
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
-        binding.optionally_assigned.iter().for_each(|var| self.context.set_variable_optionality(*var, true));
         for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
             self.context.set_variable_category(
                 caller_var,
@@ -459,7 +455,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_function_binding(
         &mut self,
-        assigned: Vec<AssignedVariable>,
+        mut assigned: Vec<AssignedVariable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str,
@@ -471,35 +467,27 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
         let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
             |(assigned_var, (_, returned_optionality))| {
-                use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
-                match (assigned_var.optionality, returned_optionality) {
-                    (Optional, Optional) | (Required, Required) => Ok(()),
-                    (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                    (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
-                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
-                        source_span,
-                    }),
-                }
+                assigned_var.validate_assignment_optionality_matches(
+                    || self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
+                    source_span,
+                    *returned_optionality,
+                )
             },
-        );
-        if let Err(err) = mismatched_optionality_in_assignment {
-            // TODO: This has to wait till we finalize the spec
-            // use error::TypeDBError;
-            // tracing::warn!(
-            //     "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
-            //     err.format_description()
-            // );
-        }
+        )?;
+
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;
-        let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
+        let assigned_optionalities = callee_signature.returns.iter().map(|(_, optionality)| *optionality).collect();
+        let binding = FunctionCallBinding::new(
+            assigned,
+            assigned_optionalities,
+            function_call,
+            callee_signature.return_is_stream,
+            source_span,
+        );
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
-        binding.optionally_assigned.iter().for_each(|var| self.context.set_variable_optionality(*var, true));
         for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
             self.context.set_variable_category(
                 caller_var,
@@ -543,15 +531,22 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_assignment(
         &mut self,
-        variable: Variable,
+        assigned: AssignedVariable,
         expression: ExpressionTree<Variable>,
         source_span: Option<Span>,
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
-        if self.context.is_block_input_variable(variable) {
-            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
+        if self.context.is_block_input_variable(assigned.variable) {
+            let variable = self.context.get_variable_name_or_unnamed(assigned.variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-        let binding = ExpressionBinding::new(variable, expression, source_span);
+        let binding = ExpressionBinding::new(assigned.clone(), expression, source_span);
+
+        assigned.validate_assignment_optionality_matches(
+            || self.context.get_variable_name_or_unnamed(assigned.variable).to_owned(),
+            source_span,
+            binding.expression().return_optionality(),
+        )?;
+
         binding.validate(self.context).map_err(|typedb_source| RepresentationError::ExpressionRepresentationError {
             typedb_source,
             source_span,
@@ -560,7 +555,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let binding = Constraint::from(binding);
         // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
         // assume Value for now
-        self.context.set_variable_category(variable, VariableCategory::Value, binding.clone())?;
+        self.context.set_variable_category(assigned.variable, VariableCategory::Value, binding.clone())?;
 
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
@@ -690,6 +685,7 @@ pub enum Constraint<ID> {
     Value(Value<ID>),
 
     DeleteConcepts(DeleteConcepts<ID>),
+    IsSet(IsSet<ID>),
     LinksDeduplication(LinksDeduplication<ID>),
     Unsatisfiable(Unsatisfiable),
 }
@@ -714,6 +710,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
             Constraint::DeleteConcepts(_) => "delete-concepts",
+            Constraint::IsSet(_) => typeql::token::Keyword::IsSet.as_str(),
 
             Constraint::RoleName(_) => "role-name",
             Constraint::LinksDeduplication(_) => "links-deduplication",
@@ -741,22 +738,24 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
             Constraint::DeleteConcepts(inner) => Box::new(inner.ids()),
+            Constraint::IsSet(is_set) => Box::new(is_set.ids()),
             Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
         }
     }
 
-    pub(crate) fn binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
+    pub(crate) fn variable_binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
         fn _all_binding<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
         ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
-            Box::new(it.map(|id| (id, BindingMode::AlwaysBinding)))
+            Box::new(it.map(move |id| (id, BindingMode::AlwaysBinding(BindingOptionality::NotNone))))
         }
         fn _all_required<'a, ID1>(
             it: impl Iterator<Item = ID1> + 'a,
         ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
-            Box::new(it.map(|id| (id, BindingMode::RequirePrebound)))
+            Box::new(it.map(move |id| (id, BindingMode::RequirePrebound)))
         }
+        let span = self.source_span();
         match self {
             Constraint::Kind(kind) => _all_binding(kind.ids()),
             Constraint::Label(label) => _all_binding(label.ids()),
@@ -774,6 +773,7 @@ impl<ID: IrID> Constraint<ID> {
 
             Constraint::Comparison(comparison) => _all_required(comparison.ids()),
             Constraint::Is(is) => _all_binding(is.ids()),
+            Constraint::IsSet(is_set) => _all_required(is_set.ids()),
 
             Constraint::DeleteConcepts(inner) => _all_required(inner.ids()),
             Constraint::Unsatisfiable(inner) => _all_binding(inner.ids()),
@@ -781,6 +781,41 @@ impl<ID: IrID> Constraint<ID> {
 
             Constraint::ExpressionBinding(binding) => Box::new(binding.binding_modes()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.binding_modes()),
+        }
+    }
+
+    pub fn variable_reference_optionalities(&self) -> Box<dyn Iterator<Item = (ID, ReferenceOptionality)> + '_> {
+        fn _all_required<'a, ID1>(
+            it: impl Iterator<Item = ID1> + 'a,
+        ) -> Box<dyn Iterator<Item = (ID1, ReferenceOptionality)> + 'a> {
+            Box::new(it.map(move |id| (id, ReferenceOptionality::Required)))
+        }
+        let span = self.source_span();
+        match self {
+            Constraint::Kind(kind) => _all_required(kind.ids()),
+            Constraint::Label(label) => _all_required(label.ids()),
+            Constraint::RoleName(role_name) => _all_required(role_name.ids()),
+            Constraint::Sub(sub) => _all_required(sub.ids()),
+            Constraint::Isa(isa) => _all_required(isa.ids()),
+            Constraint::Iid(iid) => _all_required(iid.ids()),
+            Constraint::Links(rp) => _all_required(rp.ids()),
+            Constraint::IndexedRelation(indexed) => _all_required(indexed.ids()),
+            Constraint::Has(has) => _all_required(has.ids()),
+            Constraint::Owns(owns) => _all_required(owns.ids()),
+            Constraint::Relates(relates) => _all_required(relates.ids()),
+            Constraint::Plays(plays) => _all_required(plays.ids()),
+            Constraint::Value(value) => _all_required(value.ids()),
+
+            Constraint::Comparison(comparison) => _all_required(comparison.ids()),
+            Constraint::Is(is) => _all_required(is.ids()),
+            Constraint::IsSet(is_set) => _all_required(is_set.ids()),
+
+            Constraint::DeleteConcepts(inner) => _all_required(inner.ids()),
+            Constraint::Unsatisfiable(inner) => _all_required(inner.ids()),
+            Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
+
+            Constraint::ExpressionBinding(binding) => Box::new(binding.reference_optionalities()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.reference_optionalities()),
         }
     }
 
@@ -804,6 +839,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(plays) => Box::new(plays.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
             Constraint::DeleteConcepts(inner) => Box::new(inner.vertices()),
+            Constraint::IsSet(is_set) => Box::new(is_set.vertices()),
             Constraint::LinksDeduplication(dedup) => Box::new(dedup.vertices()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.vertices()),
         }
@@ -832,6 +868,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Plays(plays) => plays.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
             Self::DeleteConcepts(inner) => inner.ids_foreach(function),
+            Self::IsSet(require) => require.ids_foreach(function),
             Self::LinksDeduplication(dedup) => dedup.ids_foreach(function),
             Self::Unsatisfiable(inner) => inner.ids_foreach(function),
         }
@@ -857,6 +894,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
             Self::DeleteConcepts(inner) => Constraint::DeleteConcepts(inner.map(mapping)),
+            Self::IsSet(inner) => Constraint::IsSet(inner.map(mapping)),
             Self::LinksDeduplication(inner) => Constraint::LinksDeduplication(inner.map(mapping)),
             Self::Unsatisfiable(inner) => Constraint::Unsatisfiable(inner.map(mapping)),
         }
@@ -882,6 +920,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Plays(inner) => inner.source_span(),
             Constraint::Value(inner) => inner.source_span(),
             Constraint::DeleteConcepts(inner) => inner.source_span(),
+            Constraint::IsSet(inner) => inner.source_span(),
             Constraint::LinksDeduplication(inner) => None,
             Constraint::Unsatisfiable(inner) => None,
         }
@@ -925,6 +964,13 @@ impl<ID: IrID> Constraint<ID> {
     pub fn as_delete_concepts(&self) -> Option<&DeleteConcepts<ID>> {
         match self {
             Constraint::DeleteConcepts(inner) => Some(inner),
+            _ => None,
+        }
+    }
+
+    pub fn as_is_set(&self) -> Option<&IsSet<ID>> {
+        match self {
+            Constraint::IsSet(is_set) => Some(is_set),
             _ => None,
         }
     }
@@ -1043,6 +1089,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Plays(inner) => inner.hash(),
                 Self::Value(inner) => inner.hash(),
                 Self::DeleteConcepts(inner) => inner.hash(),
+                Self::IsSet(inner) => inner.hash(),
                 Self::LinksDeduplication(inner) => inner.hash(),
                 Self::Unsatisfiable(inner) => StructuralEquality::hash(&inner),
             }
@@ -1068,6 +1115,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
             (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
             (Self::DeleteConcepts(inner), Self::DeleteConcepts(other_inner)) => inner.equals(other_inner),
+            (Self::IsSet(inner), Self::IsSet(other_inner)) => inner.equals(other_inner),
             (Self::LinksDeduplication(inner), Self::LinksDeduplication(other_inner)) => inner.equals(other_inner),
             (Self::Unsatisfiable(inner), Self::Unsatisfiable(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
@@ -1089,6 +1137,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::Plays { .. }, _)
             | (Self::Value { .. }, _)
             | (Self::DeleteConcepts { .. }, _)
+            | (Self::IsSet { .. }, _)
             | (Self::LinksDeduplication { .. }, _)
             | (Self::Unsatisfiable(_), _) => false,
         }
@@ -1116,6 +1165,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
             Self::Value(constraint) => fmt::Display::fmt(constraint, f),
             Self::DeleteConcepts(constraint) => fmt::Display::fmt(constraint, f),
+            Self::IsSet(constraint) => fmt::Display::fmt(constraint, f),
             Self::LinksDeduplication(constraint) => fmt::Display::fmt(constraint, f),
             Self::Unsatisfiable(constraint) => fmt::Display::fmt(constraint, f),
         }
@@ -2170,23 +2220,30 @@ impl<ID: IrID> fmt::Display for Has<ID> {
 #[derive(Debug, Clone)]
 pub struct ExpressionBinding<ID> {
     left: Vertex<ID>,
+    left_optionality: VariableOptionality,
     expression: ExpressionTree<ID>,
     source_span: Option<Span>,
 }
 
-impl<ID> ExpressionBinding<ID> {
-    fn new(left: ID, expression: ExpressionTree<ID>, source_span: Option<Span>) -> Self {
-        Self { left: Vertex::Variable(left), expression, source_span }
-    }
-
-    pub fn source_span(&self) -> Option<Span> {
-        self.source_span
+impl ExpressionBinding<Variable> {
+    fn new(assigned: AssignedVariable, expression: ExpressionTree<Variable>, source_span: Option<Span>) -> Self {
+        let left = Vertex::Variable(assigned.variable);
+        let left_optionality = expression.return_optionality();
+        Self { left, left_optionality, expression, source_span }
     }
 }
 
 impl<ID: IrID> ExpressionBinding<ID> {
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+
     pub fn left(&self) -> &Vertex<ID> {
         &self.left
+    }
+
+    pub fn left_optionality(&self) -> VariableOptionality {
+        self.left_optionality
     }
 
     pub fn expression(&self) -> &ExpressionTree<ID> {
@@ -2211,8 +2268,13 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
-            .map(|id| (id, BindingMode::AlwaysBinding))
+            .map(|id| (id, BindingMode::AlwaysBinding(self.left_optionality.into())))
             .chain(self.expression_ids().map(|id| (id, BindingMode::RequirePrebound)))
+    }
+
+    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, ReferenceOptionality)> + '_ {
+        let left_optionality = self.left_optionality.into();
+        self.ids_assigned().map(move |id| (id, left_optionality)).chain(self.expression.reference_optionalities())
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -2223,13 +2285,14 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.expression().argument_ids().for_each(function);
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
+    pub(crate) fn validate(&self, context: &BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
         if self.expression().is_empty() { Err(ExpressionRepresentationError::EmptyExpressionTree {}) } else { Ok(()) }
     }
 
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionBinding<T> {
         ExpressionBinding {
             left: self.left.map(mapping),
+            left_optionality: self.left_optionality,
             expression: self.expression.map(mapping),
             source_span: self.source_span,
         }
@@ -2279,7 +2342,7 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID> {
     assigned: Vec<Vertex<ID>>,
-    optionally_assigned: BTreeSet<ID>,
+    assigned_optionalities: Vec<VariableOptionality>,
     function_call: FunctionCall<ID>,
     is_stream: bool,
     source_span: Option<Span>,
@@ -2288,14 +2351,13 @@ pub struct FunctionCallBinding<ID> {
 impl FunctionCallBinding<Variable> {
     fn new(
         left: Vec<AssignedVariable>,
+        assigned_optionalities: Vec<VariableOptionality>,
         function_call: FunctionCall<Variable>,
         is_stream: bool,
         source_span: Option<Span>,
     ) -> Self {
-        let optionally_assigned =
-            left.iter().filter(|v| v.optionality == VariableOptionality::Optional).map(|a| a.variable).collect();
         let assigned = left.into_iter().map(|a| Vertex::Variable(a.variable)).collect();
-        Self { assigned, optionally_assigned, function_call, is_stream, source_span }
+        Self { assigned, assigned_optionalities, function_call, is_stream, source_span }
     }
 }
 
@@ -2330,12 +2392,21 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
-            .filter(|id| !self.function_call.arguments().contains(id))
-            .map(|id| match self.optionally_assigned.contains(&id) {
-                true => (id, BindingMode::OptionallyBinding),
-                false => (id, BindingMode::AlwaysBinding),
-            })
+            .zip(self.assigned_optionalities.iter().copied())
+            .filter(|(id, _)| !self.function_call.arguments().contains(id))
+            .map(|(id, optionality)| (id, BindingMode::AlwaysBinding(optionality.into())))
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
+    }
+
+    pub(crate) fn reference_optionalities(&self) -> impl Iterator<Item = (ID, ReferenceOptionality)> + '_ {
+        error::needs_update_when_feature_is_implemented!(error::UnimplementedFeature::OptionalArguments);
+        let of_assigned = self
+            .ids_assigned()
+            .zip(self.assigned_optionalities.iter().copied())
+            .map(|(id, optionality)| (id, optionality.into()));
+        let of_arguments = self.function_call_arg_ids().map(|id| (id, ReferenceOptionality::Required));
+
+        of_assigned.chain(of_arguments)
     }
 
     pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
@@ -2349,10 +2420,11 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         self.ids_assigned().for_each(|id| function(id));
         self.function_call.argument_ids().for_each(|id| function(id));
     }
+
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
         FunctionCallBinding {
             assigned: self.assigned.into_iter().map(|v| v.map(mapping)).collect(),
-            optionally_assigned: self.optionally_assigned.into_iter().map(|v| v.map(mapping)).collect(),
+            assigned_optionalities: self.assigned_optionalities,
             function_call: self.function_call.map(mapping),
             is_stream: self.is_stream,
             source_span: self.source_span,
@@ -3031,6 +3103,64 @@ impl<ID: IrID> fmt::Display for DeleteConcepts<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let vars = self.variables.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(", ");
         write!(f, "delete {}", vars)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct IsSet<ID> {
+    variables: Vec<Vertex<ID>>,
+    source_span: Option<Span>,
+}
+
+impl<ID: IrID> IsSet<ID> {
+    pub fn new(variables: Vec<ID>, source_span: Option<Span>) -> Self {
+        let variables = variables.into_iter().map(|id| Vertex::Variable(id)).collect();
+        Self { variables, source_span }
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.variables.iter().map(|v| v.as_variable().unwrap())
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        self.variables.iter()
+    }
+
+    pub fn ids_foreach<F: FnMut(ID)>(&self, mut function: F) {
+        self.ids().for_each(|id| function(id))
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> IsSet<T> {
+        let variables = self.variables.iter().map(|v| v.clone().map(mapping)).collect();
+        let source_span = self.source_span;
+        IsSet { variables, source_span }
+    }
+}
+
+impl<ID: IrID> From<IsSet<ID>> for Constraint<ID> {
+    fn from(val: IsSet<ID>) -> Self {
+        Constraint::IsSet(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for IsSet<ID> {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&self.variables)
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variables.equals(&other.variables)
+    }
+}
+
+impl<ID: IrID> fmt::Display for IsSet<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let vars = self.variables.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(", ");
+        write!(f, "{} {}", typeql::token::Keyword::IsSet, vars)
     }
 }
 

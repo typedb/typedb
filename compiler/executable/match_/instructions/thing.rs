@@ -31,7 +31,7 @@ pub struct IidInstruction<ID> {
 
 impl IidInstruction<Variable> {
     pub fn new(iid: Iid<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.vertex_annotations_of(iid.var()).unwrap().clone();
+        let types = type_annotations.concept_annotations_of(iid.var()).unwrap().clone();
         Self { iid, types, checks: Vec::new() }
     }
 }
@@ -153,7 +153,7 @@ impl HasInstruction<Variable> {
         let constraint_annotations =
             type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let owner_to_attribute_types = constraint_annotations.left_to_right();
-        let attribute_types = type_annotations.vertex_annotations_of(has.attribute()).unwrap().clone();
+        let attribute_types = type_annotations.concept_annotations_of(has.attribute()).unwrap().clone();
         Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
     }
 }
@@ -204,7 +204,7 @@ impl HasReverseInstruction<Variable> {
     pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations = &type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let attribute_to_owner_types = edge_annotations.right_to_left().clone();
-        let owner_types = type_annotations.vertex_annotations_of(has.owner()).unwrap().clone();
+        let owner_types = type_annotations.concept_annotations_of(has.owner()).unwrap().clone();
         Self { has, inputs, attribute_to_owner_types, owner_types, checks: Vec::new() }
     }
 }
@@ -257,7 +257,7 @@ impl LinksInstruction<Variable> {
         let edge_annotations = type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
         let player_to_role_types = edge_annotations.player_to_role();
         let relation_to_player_types = edge_annotations.relation_to_player();
-        let player_types = type_annotations.vertex_annotations_of(links.player()).unwrap().clone();
+        let player_types = type_annotations.concept_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
     }
 }
@@ -316,7 +316,7 @@ impl LinksReverseInstruction<Variable> {
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links().clone();
         let relation_to_role_types = edge_annotations.relation_to_role();
         let player_to_relation_types = edge_annotations.player_to_relation();
-        let relation_types = type_annotations.vertex_annotations_of(links.relation()).unwrap().clone();
+        let relation_types = type_annotations.concept_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
     }
 }

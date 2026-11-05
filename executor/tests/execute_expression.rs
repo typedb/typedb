@@ -83,11 +83,7 @@ fn compile_expression_via_match(
             Constraint::ExpressionBinding(binding) => binding,
             _ => unreachable!(),
         };
-        let compiled = ExpressionCompilationContext::compile(
-            expression_binding.expression(),
-            &variable_types_mapped,
-            &value_parameters,
-        )?;
+        let compiled = ExpressionCompilationContext::compile(expression_binding.expression(), &variable_types_mapped)?;
         Ok((variable_mapping, compiled, value_parameters))
     } else {
         unreachable!();

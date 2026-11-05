@@ -466,7 +466,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     }
 
     fn extend_labels_from(&mut self, type_annotations: &TypeAnnotations) {
-        self.pipeline_structure.resolved_labels.extend(type_annotations.vertex_annotations().iter().filter_map(
+        self.pipeline_structure.resolved_labels.extend(type_annotations.concept_annotations().iter().filter_map(
             |(vertex, type_)| match (vertex.as_label(), type_.iter().exactly_one()) {
                 (Some(label), Ok(&type_)) => Some((label.clone(), type_)),
                 _ => None,

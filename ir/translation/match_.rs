@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use typeql::common::Span;
 
 use crate::{
     RepresentationError,
@@ -65,7 +64,7 @@ fn add_negation(
     add_patterns(function_index, &mut negation_builder, &negation.patterns)
 }
 
-fn add_optional(
+pub(crate) fn add_optional(
     function_index: &impl FunctionSignatureIndex,
     parent_conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     optional: &typeql::pattern::Optional,

@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use ir::{
-    pattern::{Pattern, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
+    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
@@ -17,7 +17,7 @@ use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
-        RequiredVariablesForWrite, WriteCompilationError,
+        WriteCompilationError, WritePatternCondition,
         insert::{
             VariableSource,
             executable::{
@@ -36,7 +36,7 @@ use crate::{
 pub struct UpdateExecutable {
     pub executable_id: u64,
     // Reuse the insert's concept instruction for attributes. Other isas should be validated earlier
-    pub updates: Vec<ConditionalUpdate>,
+    pub root_update: ConditionalUpdate,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
 
@@ -53,65 +53,40 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
-    let unsafely_used_optional_variable = block
-        .conjunction()
-        .constraints()
-        .iter()
-        .flat_map(|constraint| constraint.ids())
-        .find(|var| variable_registry.is_variable_optional(*var));
-
-    if let Some(var) = unsafely_used_optional_variable {
-        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-        return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
-    }
-
     let mut variable_positions = input_variable_positions.clone();
-    let root_update = ConditionalUpdate::new(
+    let root_update = ConditionalUpdate::build_recursive(
         block.conjunction(),
         block_annotations,
         &mut variable_positions,
         variable_registry,
         source_span,
     )?;
-    let mut updates = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
-    updates.push(root_update);
-    for nested_pattern in block.conjunction().nested_patterns() {
-        let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!(
-                "Non-optional nested patterns in update are illegal and should have been rejected during translation"
-            )
-        };
-        updates.push(ConditionalUpdate::new(
-            optional.conjunction(),
-            block_annotations,
-            &mut variable_positions,
-            variable_registry,
-            source_span,
-        )?);
-    }
 
     Ok(UpdateExecutable {
         executable_id: next_executable_id(),
-        updates,
+        root_update,
         output_row_schema: prepare_output_row_schema(input_variable_positions, &variable_positions),
     })
 }
 
 #[derive(Debug)]
 pub struct ConditionalUpdate {
+    pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: RequiredVariablesForWrite,
+    pub nested_updates: Vec<ConditionalUpdate>,
 }
 
 impl ConditionalUpdate {
-    fn new(
+    fn build_recursive(
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_positions: &mut HashMap<Variable, VariablePosition>,
         variable_registry: &VariableRegistry,
         stage_source_span: Option<Span>,
     ) -> Result<Self, Box<WriteCompilationError>> {
+        let conjunction_annotations =
+            block_annotations.type_annotations_of(conjunction).expect("update must have type annotations");
         let concept_instruction_map = add_inserted_concepts(
             conjunction,
             block_annotations,
@@ -123,12 +98,27 @@ impl ConditionalUpdate {
         let connection_instructions =
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
 
-        let required_input_variables =
-            RequiredVariablesForWrite::build(conjunction, variable_registry, variable_positions);
+        let condition = WritePatternCondition::build(conjunction, variable_positions, conjunction_annotations);
 
         let concept_instructions = concept_instructions_map_to_vec(concept_instruction_map);
 
-        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
+        let nested_updates = conjunction
+            .nested_patterns()
+            .iter()
+            .map(|nested| {
+                let NestedPattern::Optional(optional) = nested else {
+                    unreachable!("Only optionals are allowed as nested patterns in updates")
+                };
+                Self::build_recursive(
+                    optional.conjunction(),
+                    block_annotations,
+                    variable_positions,
+                    variable_registry,
+                    stage_source_span,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_updates })
     }
 }
 

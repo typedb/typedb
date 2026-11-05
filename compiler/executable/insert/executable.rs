@@ -29,7 +29,7 @@ use crate::{
     VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
-        RequiredVariablesForWrite, WriteCompilationError,
+        WriteCompilationError, WritePatternCondition,
         insert::{
             ThingPosition, TypeSource, ValueSource, VariableSource,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
@@ -42,7 +42,7 @@ use crate::{
 #[derive(Debug)]
 pub struct InsertExecutable {
     pub executable_id: u64,
-    pub inserts: Vec<ConditionalInsert>,
+    pub root_insert: ConditionalInsert,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
 
@@ -73,7 +73,7 @@ pub fn compile(
             .unwrap_or(true)
     );
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variable_positions.clone());
-    let root_insert = ConditionalInsert::new(
+    let root_insert = ConditionalInsert::build_recursive(
         block.conjunction(),
         block_annotations,
         &mut variable_positions,
@@ -81,54 +81,31 @@ pub fn compile(
         source_span,
     )?;
 
-    let unsafely_used_optional_variable = block
-        .conjunction()
-        .constraints()
-        .iter()
-        .flat_map(|constraint| constraint.ids())
-        .find(|var| variable_registry.is_variable_optional(*var));
-
-    if let Some(var) = unsafely_used_optional_variable {
-        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-        return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
-    }
-    let mut inserts = Vec::with_capacity(1 + block.conjunction().nested_patterns().len());
-    inserts.push(root_insert);
-    for nested_pattern in block.conjunction().nested_patterns() {
-        let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!("Only optionals are allowed as nested patterns in insert")
-        };
-        inserts.push(ConditionalInsert::new(
-            optional.conjunction(),
-            block_annotations,
-            &mut variable_positions,
-            variable_registry,
-            source_span,
-        )?);
-    }
-
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
-        inserts,
+        root_insert,
         output_row_schema: prepare_output_row_schema(input_variable_positions, &variable_positions),
     })
 }
 
 #[derive(Debug)]
 pub struct ConditionalInsert {
+    pub condition: WritePatternCondition,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub required_input_variables: RequiredVariablesForWrite,
+    pub nested_inserts: Vec<ConditionalInsert>,
 }
 
 impl ConditionalInsert {
-    fn new(
+    fn build_recursive(
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
         variable_positions: &mut HashMap<Variable, VariablePosition>,
         variable_registry: &VariableRegistry,
         stage_source_span: Option<Span>,
     ) -> Result<Self, Box<WriteCompilationError>> {
+        let conjunction_annotations =
+            block_annotations.type_annotations_of(conjunction).expect("insert must have type annotations");
         let concept_instructions_map = add_inserted_concepts(
             conjunction,
             block_annotations,
@@ -136,22 +113,34 @@ impl ConditionalInsert {
             variable_positions,
             stage_source_span,
         )?;
+        let condition = WritePatternCondition::build(conjunction, variable_positions, conjunction_annotations);
 
         let connection_instructions =
             add_connections(conjunction, block_annotations, variable_positions, variable_registry)?;
-
-        // We can't just use required_inputs because that's recursive and we only want those at this level.
-        let required_input_variables =
-            RequiredVariablesForWrite::build(conjunction, variable_registry, variable_positions);
-
         let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
-        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
+        let nested_inserts = conjunction
+            .nested_patterns()
+            .iter()
+            .map(|nested| {
+                let NestedPattern::Optional(optional) = nested else {
+                    unreachable!("Only optionals are allowed as nested patterns in insert")
+                };
+                Self::build_recursive(
+                    optional.conjunction(),
+                    block_annotations,
+                    variable_positions,
+                    variable_registry,
+                    stage_source_span,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { condition, concept_instructions, connection_instructions, nested_inserts })
     }
 }
 
 impl fmt::Display for ConditionalInsert {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Required variables: [{}]", self.required_input_variables.0.iter().join(", "))?;
+        writeln!(f, "Checks: [{}]", self.condition)?;
         writeln!(f, "Insert Vertex: [{}]", &self.concept_instructions.iter().join(", "))?;
         writeln!(f, "Insert Edges: [{}]", &self.connection_instructions.iter().join(", "))?;
         Ok(())
@@ -199,7 +188,7 @@ pub(crate) fn add_inserted_concepts(
         };
 
         // Requires variable annotations for this stage to be available.
-        let types = type_annotations.vertex_annotations_of(isa.type_()).unwrap();
+        let types = type_annotations.concept_annotations_of(isa.type_()).unwrap();
         debug_assert!(!types.is_empty());
         let kinds = get_kinds_from_types(types);
 
@@ -459,7 +448,7 @@ fn collect_type_bindings(
 
     filter_variants!(Constraint::Label : constraints)
         .map(|label| {
-            let annotations = type_annotations.vertex_annotations_of(label.type_()).unwrap();
+            let annotations = type_annotations.concept_annotations_of(label.type_()).unwrap();
             #[cfg(debug_assertions)]
             debug_assert!(annotations.len() == 1);
             let type_ = annotations.first().unwrap();
@@ -473,7 +462,7 @@ fn collect_type_bindings(
             Ok((label.type_().clone(), *type_))
         })
         .chain(constraints.iter().flat_map(|con| con.vertices().filter(|v| v.is_label())).map(|label| {
-            let type_ = type_annotations.vertex_annotations_of(label).unwrap().iter().exactly_one().unwrap();
+            let type_ = type_annotations.concept_annotations_of(label).unwrap().iter().exactly_one().unwrap();
             Ok((label.clone(), *type_))
         }))
         .collect()
@@ -493,7 +482,7 @@ pub(crate) fn resolve_links_roles(
                 let input_position = variable_positions.get(&role_type).expect("inputs have positions");
                 Ok((role_type, TypeSource::Variable(*input_position)))
             } else {
-                let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
+                let annotations = type_annotations.concept_annotations_of(role_type_vertex).unwrap();
                 if let Ok(type_) = annotations.iter().exactly_one() {
                     Ok((role_type, TypeSource::Constant(*type_)))
                 } else {

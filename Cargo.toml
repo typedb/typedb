@@ -562,13 +562,13 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.14.0"
+			rev = "a247524c3a83524bf0a41a8c69739adfb812fad6"
 
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			tag = "3.14.0"
+			rev = "d07e949229b2551d59127d3bc3300cd38bdf33ff"
 
 		[workspace.dependencies.unicase]
 			default-features = false
@@ -652,6 +652,10 @@
 [[test]]
 	name = "test_http_driver_connection"
 	path = "tests/behaviour/service/http/driver/connection.rs"
+
+[[test]]
+	name = "test_http_driver_deprecated_optionals"
+	path = "tests/behaviour/service/http/driver/deprecated_optionals.rs"
 
 [[test]]
 	name = "test_http_driver_http"
