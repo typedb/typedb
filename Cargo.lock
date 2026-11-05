@@ -2922,14 +2922,11 @@ dependencies = [
  "encoding",
  "executor",
  "function",
- "itertools 0.14.0",
  "lending_iterator",
  "options",
  "pprof",
- "primitive",
  "query",
  "rand 0.8.8",
- "rand_core 0.3.2",
  "resource",
  "serde",
  "storage",
@@ -3131,6 +3128,7 @@ dependencies = [
  "executor",
  "itertools 0.14.0",
  "lib_benchmark",
+ "microbench_samples",
  "options",
  "primitive",
  "query",
@@ -3138,6 +3136,18 @@ dependencies = [
  "storage",
  "test_utils",
  "typeql",
+]
+
+[[package]]
+name = "microbench_samples"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "database",
+ "lib_benchmark",
+ "options",
+ "query",
+ "storage",
 ]
 
 [[package]]
@@ -3152,6 +3162,7 @@ dependencies = [
  "executor",
  "itertools 0.14.0",
  "lib_benchmark",
+ "microbench_samples",
  "options",
  "primitive",
  "query",

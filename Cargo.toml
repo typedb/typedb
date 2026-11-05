@@ -83,7 +83,7 @@
 		workspace = true
 
 [workspace]
-	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro/common", "tests/benchmarks/micro/reads", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
+	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro/common", "tests/benchmarks/micro/reads", "tests/benchmarks/micro/sample", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
 	resolver = "2"
 
 	[workspace.dependencies]
@@ -211,7 +211,7 @@
 		[workspace.dependencies.erased-serde]
 			default-features = false
 			features = ["alloc", "default", "std"]
-			version = "0.4.10"
+			version = "0.4.11"
 
 		[workspace.dependencies.error]
 			default-features = false
@@ -312,6 +312,11 @@
 			default-features = false
 			features = ["default"]
 			version = "0.2.3"
+
+		[workspace.dependencies.microbench_samples]
+			default-features = false
+			features = []
+			path = "tests/benchmarks/micro/sample"
 
 		[workspace.dependencies.moka]
 			default-features = false
@@ -421,7 +426,7 @@
 		[workspace.dependencies.serde_json]
 			default-features = false
 			features = ["default", "raw_value", "std"]
-			version = "1.0.151"
+			version = "1.0.154"
 
 		[workspace.dependencies.serde_with]
 			default-features = false
@@ -446,7 +451,7 @@
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
-			version = "1.16.2"
+			version = "1.16.4"
 
 		[workspace.dependencies.smol]
 			default-features = false
@@ -479,8 +484,9 @@
 			path = "system"
 
 		[workspace.dependencies.tabled]
-	   		features = ["assert", "default", "derive", "macros", "std", "tabled_derive", "testing_table"]
-	   	version = "0.22.0"
+			default-features = false
+			features = ["assert", "default", "derive", "macros", "std", "tabled_derive", "testing_table"]
+			version = "0.22.0"
 
 		[workspace.dependencies.tempdir]
 			default-features = false
@@ -515,7 +521,7 @@
 		[workspace.dependencies.tokio]
 			default-features = false
 			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
-			version = "1.53.2"
+			version = "1.54.1"
 
 		[workspace.dependencies.tokio-rustls]
 			default-features = false
@@ -535,7 +541,7 @@
 		[workspace.dependencies.tokio-util]
 			default-features = false
 			features = ["codec", "default", "futures-util", "io", "libc", "rt"]
-			version = "0.7.19"
+			version = "0.7.20"
 
 		[workspace.dependencies.tonic]
 			default-features = false
@@ -607,7 +613,7 @@
 		[workspace.dependencies.uuid]
 			default-features = false
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.27.0"
+			version = "1.29.0"
 
 		[workspace.dependencies.xoshiro]
 			default-features = false

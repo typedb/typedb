@@ -8,14 +8,13 @@ use std::sync::Arc;
 use clap::Parser;
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
-    transaction::UnifiedTransactionView,
     typedb_workload::{
         RunDescriptor,
         benchmark::{DbgAssertFn, PreloadDataFn},
         run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
-        samples::{insert_million_entities, sanity_check},
     },
 };
+use microbench_samples::run_sample_benchmarks;
 
 mod insert_entities;
 mod insert_ownerships;
@@ -39,13 +38,6 @@ fn run_benchmarks(mut runner: impl BenchmarkRunner) {
     insert_ownerships::run_all(&mut runner);
     insert_relations::run_all(&mut runner);
     runner.summary();
-}
-
-// Samples for illustration:
-fn run_sample_benchmarks(runner: &mut impl BenchmarkRunner) {
-    let mut sanity_checks = runner.new_group("sanity_checks");
-    sanity_checks.run_benchmark(sanity_check());
-    sanity_checks.run_benchmark(insert_million_entities());
 }
 
 fn main() {

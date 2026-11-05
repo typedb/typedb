@@ -32,6 +32,9 @@
 	[dependencies.lib_benchmark]
 		workspace = true
 
+	[dependencies.microbench_samples]
+		workspace = true
+
 	[dependencies.options]
 		workspace = true
 

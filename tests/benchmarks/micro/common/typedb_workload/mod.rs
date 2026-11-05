@@ -16,7 +16,6 @@ pub mod datagen;
 pub mod profiles;
 pub mod reports;
 pub mod run_configs;
-pub mod samples;
 mod workload;
 
 #[derive(Clone, Copy)]

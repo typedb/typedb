@@ -12,6 +12,7 @@ rust_binary(
     srcs = glob(["*.rs"]),
     deps = [
         "//tests/benchmarks/micro/common:lib_benchmark",
+        "//tests/benchmarks/micro/sample:microbench_samples",
 
         "//common/options",
         "//common/primitive",
