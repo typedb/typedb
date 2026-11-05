@@ -58,6 +58,7 @@ fn insert_data(
             &query,
             None::<GivenRowsSimple>,
             query_string,
+            None,
         )
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -137,6 +138,7 @@ fetch {
             &pipeline,
             None::<GivenRowsSimple>,
             query_str,
+            None,
         )
         .unwrap();
 

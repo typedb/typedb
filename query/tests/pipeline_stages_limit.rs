@@ -69,6 +69,7 @@ fn pipeline_at_limit_is_accepted() {
         &pipeline,
         None::<GivenRowsSimple>,
         &query_str,
+        None,
     );
 
     assert!(result.is_ok());

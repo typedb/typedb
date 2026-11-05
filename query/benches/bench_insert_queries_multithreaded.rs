@@ -127,6 +127,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             &typeql_insert,
             None::<GivenRowsSimple>,
             query_str,
+            None,
         )
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();

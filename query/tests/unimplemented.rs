@@ -75,6 +75,7 @@ fn run_read_query(
             &match_,
             None::<GivenRowsSimple>,
             query,
+            None,
         )
         .map_err(|query_error| Either::Left(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -102,6 +103,7 @@ fn run_write_query(
             &query_as_pipeline,
             None::<GivenRowsSimple>,
             query,
+            None,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();

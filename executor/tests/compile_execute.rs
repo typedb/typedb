@@ -82,6 +82,7 @@ fn setup(
             &query,
             None::<GivenRowsSimple>,
             data,
+            None,
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =

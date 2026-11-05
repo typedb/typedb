@@ -51,6 +51,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &function_manager,
             &schema_query,
             &schema_str,
+            None,
         )
         .unwrap();
     let tx = TransactionSchema::from_parts(
@@ -93,6 +94,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             &data_query,
             None::<GivenRowsSimple>,
             &data_str,
+            None,
         )
         .unwrap();
     let (_output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -159,6 +161,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             &query,
             None::<GivenRowsSimple>,
             query_str,
+            None,
         )
         .unwrap();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

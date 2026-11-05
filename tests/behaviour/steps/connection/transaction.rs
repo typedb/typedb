@@ -208,6 +208,7 @@ fn execute_schema_transaction(
                 .into_structure()
                 .into_schema(),
             &schema_define,
+            None,
         )
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     let (mut profile, result) = transaction.finalise();
