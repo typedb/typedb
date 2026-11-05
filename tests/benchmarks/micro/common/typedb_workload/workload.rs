@@ -50,22 +50,22 @@ impl WorkLoad {
         })
     }
 
-    pub(super) fn prepare_fn(&self) -> PrepareRunFn<Arc<WorkloadInstance>> {
+    pub(super) fn prepare_fn(&self) -> PrepareRunFn<Arc<WorkloadInputBatches>> {
         let query_descriptor = self.query_descriptor.clone();
         let run_descriptor = self.run_descriptor.clone();
-        Box::new(move |_| WorkloadInstance::build(&query_descriptor, &run_descriptor))
+        Box::new(move |_| WorkloadInputBatches::build(&query_descriptor, &run_descriptor))
     }
 
     pub(super) fn runner<TxnType: UnifiedTransactionView>(
         &self,
         name: impl Into<String>,
-    ) -> BenchmarkedFn<Arc<WorkloadInstance>, MultiTxMultiQueryProfile> {
+    ) -> BenchmarkedFn<Arc<WorkloadInputBatches>, MultiTxMultiQueryProfile> {
         let name: String = name.into();
         let query: Arc<String> = Arc::new(self.query_descriptor.query.clone());
         let run_descriptor = self.run_descriptor.clone();
         let tx_type = self.query_descriptor.tx_type;
         let dbg_assert_to_clone = self.dbg_assert.clone();
-        Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInstance>| {
+        Box::new(move |database: Arc<Database<WALClient>>, producer: Arc<WorkloadInputBatches>| {
             let very_beginning = Instant::now();
             let handles: Vec<_> = (0..run_descriptor.parallelism)
                 .map(|_thread_id| {
@@ -96,7 +96,7 @@ impl WorkLoad {
 
     fn new_runner_thread<TxnType: UnifiedTransactionView>(
         database: Arc<Database<WALClient>>,
-        producer: Arc<WorkloadInstance>,
+        producer: Arc<WorkloadInputBatches>,
         query: Arc<String>,
         run_descriptor: RunDescriptor,
         dbg_assert: Option<DbgAssertFn>,
@@ -139,17 +139,15 @@ impl WorkLoad {
 
 /// Pre-generated batches consumed work-stealing style.
 /// Each slot is claimed by exactly one thread via fetch_add, so no locking needed.
-pub struct WorkloadInstance {
-    query: String,
-    variables: Vec<String>,
+pub struct WorkloadInputBatches {
     batches: Vec<UnsafeCell<Option<GivenRowsSimple>>>,
     next_index: AtomicUsize,
 }
 
 // Safety: each index is claimed by exactly one thread (fetch_add ensures uniqueness).
-unsafe impl Sync for WorkloadInstance {}
+unsafe impl Sync for WorkloadInputBatches {}
 
-impl WorkloadInstance {
+impl WorkloadInputBatches {
     fn build(query: &QueryDescriptor, run: &RunDescriptor) -> Arc<Self> {
         let mut rng = RandomDataGen::new();
         let batches = (0..(run.total_txns * run.n_queries_per_tx))
@@ -161,20 +159,7 @@ impl WorkloadInstance {
                 UnsafeCell::new(given_rows_opt)
             })
             .collect();
-        Arc::new(Self {
-            query: query.query.clone(),
-            variables: query.variables.clone(),
-            batches,
-            next_index: AtomicUsize::new(0),
-        })
-    }
-
-    fn query(&self) -> &str {
-        self.query.as_str()
-    }
-
-    fn variables(&self) -> &Vec<String> {
-        &self.variables
+        Arc::new(Self { batches, next_index: AtomicUsize::new(0) })
     }
 
     fn has_remaining(&self) -> bool {

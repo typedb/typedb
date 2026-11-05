@@ -4,20 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, time::Duration};
-
 use datagen::RandomDataGen;
 use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
 use lending_iterator::LendingIterator;
 use query::given_rows::GivenRowEntry;
 
-use crate::{query::AnswerConsumer, typedb_workload::benchmark::TypeDBMicroBenchmark};
+use crate::query::AnswerConsumer;
 
 pub mod benchmark;
 pub mod datagen;
 pub mod profiles;
 pub mod reports;
 pub mod run_configs;
+pub mod samples;
 mod workload;
 
 #[derive(Clone, Copy)]
@@ -56,19 +55,6 @@ pub fn transaction_options_with_profiling() -> options::TransactionOptions {
     let mut tx_options = options::TransactionOptions::default();
     tx_options.enable_profiling = Some(true);
     tx_options
-}
-
-pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
-    // Just to ensure the reported time is just the benchmark_fn
-    TypeDBMicroBenchmark {
-        name: "sanity_check".to_owned(),
-        schema: "define entity person;".to_owned(),
-        preload_data_fn: Some(Box::new(|_| std::thread::sleep(Duration::from_millis(40)))),
-        warmup_fn: None,
-        prepare_run_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
-        benchmark_fn: Box::new(|_, _| std::thread::sleep(Duration::from_millis(10))),
-        _report: PhantomData,
-    }
 }
 
 pub struct CountResults;

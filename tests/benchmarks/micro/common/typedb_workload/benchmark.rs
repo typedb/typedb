@@ -24,7 +24,7 @@ use crate::{
         datagen::RandomDataGen,
         profiles::MultiTxMultiQueryProfile,
         reports::QueryFocusedReport,
-        workload::{WorkLoad, WorkloadInstance},
+        workload::{WorkLoad, WorkloadInputBatches},
     },
 };
 
@@ -86,7 +86,7 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
 }
 
 pub type TypeDBWorkloadBenchmark<Report> =
-    TypeDBMicroBenchmark<Arc<WorkloadInstance>, MultiTxMultiQueryProfile, Report>;
+    TypeDBMicroBenchmark<Arc<WorkloadInputBatches>, MultiTxMultiQueryProfile, Report>;
 impl<Report: SimpleReport<MultiTxMultiQueryProfile>> TypeDBWorkloadBenchmark<Report> {
     pub fn new(
         name: impl Into<String>,
