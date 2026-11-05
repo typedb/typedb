@@ -92,10 +92,8 @@ impl MVCCRangeIterator {
             match operation {
                 StorageOperation::Insert => {
                     self.storage_counters.increment_advance_mvcc_visible();
-                    // SAFETY: see `next_item`
-                    let (key, value) =
-                        unsafe { mem::transmute::<(&[u8], &[u8]), (&'static [u8], &'static [u8])>((key, value)) };
-                    self.next_item = Item::Item { key, value };
+                    // SAFETY: see `Self::next_item`
+                    self.next_item = unsafe { mem::transmute::<Item<'_>, Item<'static>>(Item::Item { key, value }) };
                     return;
                 }
                 StorageOperation::Delete => self.storage_counters.increment_advance_mvcc_deleted(),
