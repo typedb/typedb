@@ -55,7 +55,7 @@ rustfmt_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob([
-        "*",
+        "**/*",
     ]),
     exclude = glob([
         "Cargo.*",
