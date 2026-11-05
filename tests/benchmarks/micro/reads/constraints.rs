@@ -11,7 +11,7 @@ use lib_benchmark::{
     typedb_workload,
     typedb_workload::{
         QueryDescriptor, RunDescriptor, TxType,
-        benchmark::{DbgAssertFn, PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
+        benchmark::{DbgAssertFn, PreloadDataFn, TypeDBQueryWorkloadBenchmark},
         datagen::{IDMaker, IntegerIDMaker, RandomDataGen},
     },
 };
@@ -121,7 +121,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             vec![MID::make_id(i as i64)]
         }
         let id_type = MakeID::ID_TYPE;
-        WorkloadInstance::make_preload_data_fn(
+        TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             format!(
                 r#"
                 given $id: {id_type};
@@ -146,7 +146,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             vec![MID::make_id(rng.integer_in(0, (SCALE_FACTOR - 1) as i64))]
         }
         let id_type = MakeID::ID_TYPE;
-        let load_attributes = WorkloadInstance::make_preload_data_fn(
+        let load_attributes = TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             format!(
                 r#"
                 given $id: {id_type};
@@ -158,7 +158,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             SCALE_FACTOR,
             10_000,
         );
-        let load_owners = WorkloadInstance::make_preload_data_fn(
+        let load_owners = TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             format!(
                 r#"
                 given $id: {id_type};
@@ -198,7 +198,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             ]
         }
 
-        let load_entities = WorkloadInstance::make_preload_data_fn(
+        let load_entities = TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             "given; insert $_ isa e1;".to_owned(),
             vec![],
             |_, _| vec![],
@@ -206,7 +206,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             10_000,
         );
 
-        let load_relations = WorkloadInstance::make_preload_data_fn(
+        let load_relations = TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             r#"
                 given $e1: e1, $e2: e1;
                 insert $_ isa rel, links (role1: $e1, role2: $e2);
@@ -235,7 +235,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             ]
         }
 
-        let load_entities = WorkloadInstance::make_preload_data_fn(
+        let load_entities = TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             "given; insert $_ isa e1;".to_owned(),
             vec![],
             |_, _| vec![],
@@ -243,7 +243,7 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             10_000,
         );
 
-        let load_relations = WorkloadInstance::make_preload_data_fn(
+        let load_relations = TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
             r#"
                 given $e1: e1, $e2: e1;
                 insert $_ isa rel, links (role1: $e1, role2: $e2);

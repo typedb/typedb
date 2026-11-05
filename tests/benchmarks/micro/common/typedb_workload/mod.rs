@@ -4,21 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{sync::Arc, time::Duration};
+use std::{marker::PhantomData, time::Duration};
 
-use benchmark::{WarmupFn, WorkLoad};
-use database::transaction::TransactionWrite;
 use datagen::RandomDataGen;
+use executor::{document::ConceptDocument, pipeline::PipelineExecutionError, row::MaybeOwnedRow};
+use lending_iterator::LendingIterator;
 use query::given_rows::GivenRowEntry;
-use resource::profile::{QueryProfile, TransactionProfile};
-use storage::durability_client::WALClient;
 
-use crate::typedb_workload::benchmark::DbgAssertFn;
+use crate::{query::AnswerConsumer, typedb_workload::benchmark::TypeDBMicroBenchmark};
 
 pub mod benchmark;
 pub mod datagen;
+pub mod profiles;
 pub mod reports;
 pub mod run_configs;
+mod workload;
 
 #[derive(Clone, Copy)]
 pub enum TxType {
@@ -33,22 +33,6 @@ pub struct QueryDescriptor {
     pub variables: Vec<String>,
     pub produce_row: Option<fn(&mut RandomDataGen) -> Vec<GivenRowEntry>>,
     pub tx_type: TxType,
-}
-
-impl QueryDescriptor {
-    pub fn for_warmup(&self) -> Option<WarmupFn> {
-        let warmup_workload = WorkLoad {
-            query_descriptor: self.clone(),
-            run_descriptor: RunDescriptor::WARMUP.clone(),
-            dbg_assert: None,
-        };
-        let runner = warmup_workload.runner::<TransactionWrite<WALClient>>("_warmup");
-        let prepare_fn = warmup_workload.prepare_fn();
-        Some(Box::new(move |db| {
-            let db_clone = db.clone();
-            runner(db, prepare_fn(db_clone));
-        }))
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -74,21 +58,47 @@ pub fn transaction_options_with_profiling() -> options::TransactionOptions {
     tx_options
 }
 
-pub struct TxQueryProfile {
-    pub tx_profile: Option<TransactionProfile>,
-    pub query_profile: Arc<QueryProfile>,
+pub fn sanity_check() -> TypeDBMicroBenchmark<(), (), ()> {
+    // Just to ensure the reported time is just the benchmark_fn
+    TypeDBMicroBenchmark {
+        name: "sanity_check".to_owned(),
+        schema: "define entity person;".to_owned(),
+        preload_data_fn: Some(Box::new(|_| std::thread::sleep(Duration::from_millis(40)))),
+        warmup_fn: None,
+        prepare_run_fn: Box::new(|_| std::thread::sleep(Duration::from_millis(20))),
+        benchmark_fn: Box::new(|_, _| std::thread::sleep(Duration::from_millis(10))),
+        _report: PhantomData,
+    }
 }
 
-pub struct MultiQueryTxProfile {
-    pub tx_profile: TransactionProfile,
-    pub query_profiles: Vec<Arc<QueryProfile>>,
-    pub time_elapsed: Duration,
-}
+pub struct CountResults;
 
-pub struct MultiTxMultiQueryProfile {
-    pub name: String,
-    pub profiles: Vec<MultiQueryTxProfile>,
-    pub run_descriptor: RunDescriptor,
-    pub total_wall_time: Duration,
-    pub tx_type: TxType,
+impl AnswerConsumer for CountResults {
+    type Output = usize;
+    fn consume_rows<Iter>(iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
+    where
+        for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>,
+    {
+        let mut count: usize = 0;
+        while let Some(row) = iter.next() {
+            if let Err(err) = row {
+                return Err(err);
+            }
+            count += 1;
+        }
+        Ok(count)
+    }
+
+    fn consume_docs(
+        iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
+    ) -> Result<Self::Output, Box<PipelineExecutionError>> {
+        let mut count: usize = 0;
+        while let Some(row) = iter.next() {
+            if let Err(err) = row {
+                return Err(err);
+            }
+            count += 1;
+        }
+        Ok(count)
+    }
 }

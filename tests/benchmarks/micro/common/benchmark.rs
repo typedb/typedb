@@ -8,10 +8,7 @@ use std::sync::Arc;
 use database::Database;
 use storage::durability_client::WALClient;
 
-use crate::{
-    Config, Context,
-    typedb_workload::{MultiTxMultiQueryProfile, reports::QueryFocusedReport},
-};
+use crate::database::{Config, Context};
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
@@ -47,14 +44,6 @@ pub trait SimpleBenchmark {
         database: Arc<Database<WALClient>>,
         input: Self::RunInput,
     ) -> Self::IterOutput;
-}
-
-impl SimpleReport<MultiTxMultiQueryProfile> for QueryFocusedReport {
-    fn report(reports: &[MultiTxMultiQueryProfile]) {
-        for r in reports {
-            QueryFocusedReport::from_ref(r).write_and_print(r.name.as_str());
-        }
-    }
 }
 
 pub trait SimpleReport<T> {

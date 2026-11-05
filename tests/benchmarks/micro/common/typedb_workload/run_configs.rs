@@ -31,24 +31,6 @@ pub const SERIAL_MANY_SMALL: RunDescriptor = RunDescriptor {
     n_queries_per_tx: 1,
     n_rows_per_query: ROWS_SMALL,
 };
-pub const SERIAL_MANY_MEDIUM: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_SERIAL,
-    total_txns: TRANSACTIONS_MANY,
-    n_queries_per_tx: 1,
-    n_rows_per_query: ROWS_MEDIUM,
-};
-pub const SERIAL_TONS_MEDIUM: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_SERIAL,
-    total_txns: TRANSACTIONS_TONS,
-    n_queries_per_tx: 1,
-    n_rows_per_query: ROWS_MEDIUM,
-};
-pub const SERIAL_TONS_LARGE: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_SERIAL,
-    total_txns: TRANSACTIONS_TONS,
-    n_queries_per_tx: 1,
-    n_rows_per_query: ROWS_LARGE,
-};
 pub const PARALLEL_MANY_SMALL: RunDescriptor = RunDescriptor {
     parallelism: THREADS_PARALLEL,
     total_txns: TRANSACTIONS_MANY,
@@ -58,24 +40,6 @@ pub const PARALLEL_MANY_SMALL: RunDescriptor = RunDescriptor {
 pub const PARALLEL_MANY_LARGE: RunDescriptor = RunDescriptor {
     parallelism: THREADS_PARALLEL,
     total_txns: TRANSACTIONS_MANY,
-    n_queries_per_tx: 1,
-    n_rows_per_query: ROWS_LARGE,
-};
-pub const PARALLEL_MANY_MEDIUM: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_PARALLEL,
-    total_txns: TRANSACTIONS_MANY,
-    n_queries_per_tx: 1,
-    n_rows_per_query: ROWS_MEDIUM,
-};
-pub const PARALLEL_TONS_MEDIUM: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_PARALLEL,
-    total_txns: TRANSACTIONS_TONS,
-    n_queries_per_tx: 1,
-    n_rows_per_query: ROWS_MEDIUM,
-};
-pub const PARALLEL_TONS_LARGE: RunDescriptor = RunDescriptor {
-    parallelism: THREADS_PARALLEL,
-    total_txns: TRANSACTIONS_TONS,
     n_queries_per_tx: 1,
     n_rows_per_query: ROWS_LARGE,
 };

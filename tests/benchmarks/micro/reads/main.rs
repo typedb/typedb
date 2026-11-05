@@ -11,7 +11,7 @@ use lib_benchmark::{
     typedb_workload::{
         RunDescriptor,
         benchmark::DbgAssertFn,
-        run_configs::{ROWS_LARGE, ROWS_MEDIUM, THREADS_PARALLEL, THREADS_SERIAL, TRANSACTIONS_FEW, TRANSACTIONS_MANY},
+        run_configs::{ROWS_LARGE, THREADS_PARALLEL, THREADS_SERIAL, TRANSACTIONS_MANY},
     },
 };
 

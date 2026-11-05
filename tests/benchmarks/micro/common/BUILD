@@ -12,7 +12,7 @@ package(default_visibility = ["//visibility:public",])
 
 rust_library(
     name = "lib_benchmark",
-    srcs = glob(["*.rs"]),
+    srcs = glob(["*.rs", "typedb_workload/*.rs"]),
     crate_root = "lib.rs",
     deps = [
         "//answer",

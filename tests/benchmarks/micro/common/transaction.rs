@@ -23,7 +23,7 @@ use storage::{
     snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
 };
 
-use crate::{AnswerConsumer, QueryAnswer, execute_read_query_in, execute_write_query_in, utils::PackedResult};
+use crate::query::{AnswerConsumer, QueryAnswer, execute_read_query_in, execute_write_query_in, unpack_result};
 
 #[derive(Debug)]
 pub enum CommitError {
@@ -41,7 +41,7 @@ pub(crate) struct PartialTx {
     pub(crate) profile: TransactionProfile,
 }
 
-pub(crate) trait UnifiedTransactionView: Sized + 'static {
+pub trait UnifiedTransactionView: Sized + 'static {
     type Snapshot: ReadableSnapshot + 'static;
     fn open(database: Arc<Database<WALClient>>, options: TransactionOptions) -> Result<Self, TransactionError>;
     fn query<AC: AnswerConsumer>(
@@ -49,7 +49,7 @@ pub(crate) trait UnifiedTransactionView: Sized + 'static {
         query: &str,
         given_rows: Option<GivenRowsSimple>,
         enable_profiling: bool,
-    ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, Self>;
+    ) -> (Result<QueryAnswer<AC::Output>, Box<QueryError>>, Self);
     fn into_parts(self) -> (Arc<Self::Snapshot>, PartialTx);
     fn reconstruct(snapshot: Arc<Self::Snapshot>, partial_tx: PartialTx) -> Self;
     fn commit(self) -> Result<TransactionProfile, CommitError>;
@@ -69,8 +69,8 @@ impl UnifiedTransactionView for TransactionWrite<WALClient> {
         query: &str,
         given_rows: Option<GivenRowsSimple>,
         enable_profiling: bool,
-    ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, Self> {
-        execute_write_query_in::<Self, AC>(self, query, given_rows, enable_profiling)
+    ) -> (Result<QueryAnswer<AC::Output>, Box<QueryError>>, Self) {
+        unpack_result(execute_write_query_in::<Self, AC>(self, query, given_rows, enable_profiling))
     }
 
     fn into_parts(self) -> (Arc<WriteSnapshot<WALClient>>, PartialTx) {
@@ -143,8 +143,8 @@ impl UnifiedTransactionView for TransactionRead<WALClient> {
         query: &str,
         given_rows: Option<GivenRowsSimple>,
         enable_profiling: bool,
-    ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, Self> {
-        execute_read_query_in::<Self, AC>(self, query, given_rows, enable_profiling)
+    ) -> (Result<QueryAnswer<AC::Output>, Box<QueryError>>, Self) {
+        unpack_result(execute_read_query_in::<Self, AC>(self, query, given_rows, enable_profiling))
     }
 
     fn into_parts(self) -> (Arc<Self::Snapshot>, PartialTx) {

@@ -8,15 +8,17 @@ use std::{marker::PhantomData, sync::Arc};
 use clap::Parser;
 use database::{Database, transaction::TransactionWrite};
 use lib_benchmark::{
-    QueryAnswer, commit, execute_write_query_in,
+    query::QueryAnswer,
     runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+    transaction::UnifiedTransactionView,
     typedb_workload::{
-        RunDescriptor, TxQueryProfile,
-        benchmark::{DbgAssertFn, PreloadDataFn, TypeDBMicroBenchmark, sanity_check},
+        CountResults, RunDescriptor,
+        benchmark::{DbgAssertFn, PreloadDataFn, TypeDBMicroBenchmark},
+        profiles::TxQueryProfile,
         reports::TxQueryProfileReport,
         run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
+        sanity_check,
     },
-    utils::{CountResults, unpack_result},
 };
 use options::TransactionOptions;
 use query::given_rows::GivenRowsSimple;
@@ -62,9 +64,9 @@ fn insert_million_entities() -> TypeDBMicroBenchmark<Option<GivenRowsSimple>, Tx
     let benchmark_fn = Box::new(move |database: Arc<Database<WALClient>>, given_rows: Option<GivenRowsSimple>| {
         let tx = TransactionWrite::open(database, TransactionOptions::default()).unwrap();
         let query = "given ; insert $x isa person;";
-        let (query_result, tx) = unpack_result(execute_write_query_in::<_, CountResults>(tx, query, given_rows, true));
+        let (query_result, tx) = tx.query::<CountResults>(query, given_rows, true);
         let QueryAnswer { profile: query_profile, answer: _ } = query_result.unwrap();
-        let tx_profile = commit(tx).unwrap();
+        let tx_profile = tx.commit().unwrap();
         TxQueryProfile { tx_profile: Some(tx_profile), query_profile }
     });
     TypeDBMicroBenchmark {

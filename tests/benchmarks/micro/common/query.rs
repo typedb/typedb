@@ -8,20 +8,36 @@ use std::sync::Arc;
 
 use executor::{
     ExecutionInterrupt,
+    document::ConceptDocument,
     pipeline::{
         PipelineExecutionError,
         pipeline::Pipeline,
         stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
     },
+    row::MaybeOwnedRow,
 };
+use lending_iterator::LendingIterator;
 use query::{error::QueryError, given_rows::GivenRowsSimple};
+use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    AnswerConsumer, QueryAnswer,
-    transaction::{PartialTx, UnifiedTransactionView, WriteTransactionView},
-    utils::{PackedResult, pack_result},
-};
+use crate::transaction::{PartialTx, UnifiedTransactionView, WriteTransactionView};
+
+pub struct QueryAnswer<T> {
+    pub answer: T,
+    pub profile: Arc<QueryProfile>,
+}
+
+pub trait AnswerConsumer {
+    type Output;
+    fn consume_rows<Iter>(iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
+    where
+        for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>;
+
+    fn consume_docs(
+        iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
+    ) -> Result<Self::Output, Box<PipelineExecutionError>>;
+}
 
 pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsumer>(
     tx: TX,
@@ -128,7 +144,23 @@ fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
     }
 }
 
-// Local util structs & functions
+// util structs & functions
+pub(crate) type PackedResult<OK, ERR, T> = Result<(OK, T), (ERR, T)>;
+
+pub(crate) fn pack_result<OK, ERR, T>(result: Result<OK, ERR>, t: T) -> Result<(OK, T), (ERR, T)> {
+    match result {
+        Ok(ok) => Ok((ok, t)),
+        Err(err) => Err((err, t)),
+    }
+}
+
+pub(crate) fn unpack_result<OK, ERR, T>(result: Result<(OK, T), (ERR, T)>) -> (Result<OK, ERR>, T) {
+    match result {
+        Ok((ok, t)) => (Ok(ok), t),
+        Err((err, t)) => (Err(err), t),
+    }
+}
+
 struct ErrorWrapper<Snapshot, Err> {
     snapshot: Arc<Snapshot>,
     partial_tx: PartialTx,

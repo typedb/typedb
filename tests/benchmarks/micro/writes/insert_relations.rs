@@ -9,7 +9,7 @@ use lib_benchmark::{
     typedb_workload,
     typedb_workload::{
         QueryDescriptor, RunDescriptor, TxType,
-        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
+        benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark},
         datagen::{IDMaker, IntegerIDMaker, LongStringIDMaker, RandomDataGen, ShortStringIDMaker},
     },
 };
@@ -80,7 +80,7 @@ fn preload_entities_with_id<MakeID: IDMaker>() -> PreloadDataFn {
         vec![MID::make_id(i as i64), MID::make_id(i as i64)]
     }
     let id_type = MakeID::ID_TYPE;
-    WorkloadInstance::make_preload_data_fn(
+    TypeDBQueryWorkloadBenchmark::make_preload_data_fn(
         format!(
             r#"
             given $id1: {id_type}, $id2: {id_type};
