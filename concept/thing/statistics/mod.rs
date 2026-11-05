@@ -815,7 +815,7 @@ fn write_to_delta<D>(
 ) -> Result<i64, MVCCReadError> {
     match write {
         Write::Insert { .. } => Ok(1),
-        Write::Delete => {
+        Write::Delete { .. } => {
             if open_sequence_number.next() >= commit_sequence_number {
                 // no concurrent commit could have occurred - this is a real DELETE
                 Ok(-1)

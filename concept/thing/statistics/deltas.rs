@@ -14,6 +14,7 @@ use storage::{
     durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
     record::{CommitRecord, CommitType},
     sequence_number::SequenceNumber,
+    snapshot::write::WriteIntent,
 };
 
 use crate::{
@@ -148,42 +149,31 @@ impl CommitDeltas {
         let mut links_index_deltas = DoubleHashMap::<_, _, Delta>::new();
 
         for (key, write) in commit_record.operations().iterate_writes() {
-            let update = |delta: &mut Delta| {
-                if write.is_delete() {
-                    delta.deletes += 1
-                } else if write.intends_insert() {
-                    delta.inserts += 1
-                } else if write.is_overwrite() {
-                    delta.overwrites += 1
-                } else {
-                    #[cfg(debug_assertions)]
-                    match write {
-                        storage::snapshot::write::Write::Put { action, .. }
-                            if action.load(std::sync::atomic::Ordering::Relaxed)
-                                == storage::snapshot::write::PutAction::Nop => {}
-                        write => unreachable!("Not a delete, insert, an overwrite, or a no-op: {write:?}"),
-                    }
-                }
+            let update = |delta: &mut Delta| match write.intent() {
+                WriteIntent::NewKey => delta.inserts += 1,
+                WriteIntent::Overwrite => delta.overwrites += 1,
+                WriteIntent::Tombstone => delta.deletes += 1,
+                WriteIntent::Nop => (),
             };
 
             match DecodableKey::try_decode(key.bytes()) {
                 Some(DecodableKey::VertexEntityType(entity_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_entities.insert(EntityType::new(entity_type));
                     }
                 }
                 Some(DecodableKey::VertexRelationType(relation_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_relations.insert(RelationType::new(relation_type));
                     }
                 }
                 Some(DecodableKey::VertexAttributeType(attribute_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_attributes.insert(AttributeType::new(attribute_type));
                     }
                 }
                 Some(DecodableKey::VertexRoleType(role_type)) => {
-                    if write.is_delete() {
+                    if write.intent() == WriteIntent::Tombstone {
                         undefined_roles.insert(RoleType::new(role_type));
                     }
                 }

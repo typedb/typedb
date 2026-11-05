@@ -6,11 +6,12 @@
 
 use std::sync::Arc;
 
-use database::{Database, database_manager::DatabaseManager};
+use database::Database;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::{MvccCleanupStrategy, byte_size::ByteSize};
+use options::MvccCleanupStrategy;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
+use test_utils_database::manager;
 use test_utils_storage::create_rocks_resources;
 
 #[test]
@@ -35,15 +36,7 @@ fn create_delete_database() {
 fn prepare_for_writes_iterates_every_loaded_database() {
     init_logging();
     let data_dir = create_tmp_dir("prepare_for_writes");
-    let dbm = DatabaseManager::new(
-        &data_dir,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        MvccCleanupStrategy::Disabled,
-    )
-    .expect("DatabaseManager::new");
+    let dbm = manager(&data_dir);
     for name in ["alpha", "beta", "gamma"] {
         dbm.put_database_unrestricted(name).expect("put_database");
     }

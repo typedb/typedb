@@ -3,8 +3,19 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
+
+rust_library(
+    name = "test_utils_database",
+    srcs = ["test_utils_database.rs"],
+    deps = [
+        "//common/options",
+        "//database",
+        "//diagnostics",
+        "//storage",
+    ]
+)
 
 rust_test(
     name = "test_database",
@@ -12,7 +23,6 @@ rust_test(
         "database.rs",
     ]),
     deps = [
-        "//common/logger",
         "//common/options",
         "//database",
         "//diagnostics",
@@ -20,6 +30,8 @@ rust_test(
         "//encoding",
         "//storage",
         "//storage/tests:test_utils_storage",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@crates//:rocksdb",
@@ -33,10 +45,9 @@ rust_test(
         "import.rs",
     ]),
     deps = [
-        "//common/logger",
-        "//common/options",
         "//database",
-        "//diagnostics",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@crates//:tracing",
@@ -52,10 +63,11 @@ rust_test(
         "//common/concurrency",
         "//common/options",
         "//database",
-        "//diagnostics",
         "//encoding",
         "//resource",
         "//storage",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@crates//:tokio",
@@ -68,17 +80,40 @@ rust_test(
         "transaction.rs",
     ]),
     deps = [
-        "//common/logger",
         "//common/options",
         "//database",
         "//diagnostics",
         "//encoding",
         "//storage",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@crates//:rocksdb",
         "@crates//:tracing",
         "@crates//:tokio",
+    ]
+)
+
+rust_test(
+    name = "test_statistics_backwards_compatibility",
+    srcs = glob([
+        "statistics_backwards_compatibility.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//concept",
+        "//database",
+        "//diagnostics",
+        "//durability",
+        "//executor",
+        "//query",
+        "//storage",
+
+        ":test_utils_database",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
     ]
 )
 
@@ -91,11 +126,12 @@ rust_test(
         "//common/options",
         "//concept",
         "//database",
-        "//diagnostics",
-        "//durability",
         "//executor",
         "//query",
+        "//resource",
         "//storage",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@typeql//rust:typeql",
@@ -115,6 +151,8 @@ rust_test(
         "//executor",
         "//query",
         "//storage",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@typeql//rust:typeql",
@@ -129,11 +167,12 @@ rust_test(
     deps = [
         "//common/options",
         "//database",
-        "//diagnostics",
         "//encoding",
         "//executor",
         "//query",
         "//storage",
+
+        ":test_utils_database",
         "//util/test:test_utils",
 
         "@typeql//rust:typeql",
@@ -169,5 +208,8 @@ rustfmt_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
     license_type = "mpl-header",
 )

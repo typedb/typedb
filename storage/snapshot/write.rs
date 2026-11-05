@@ -26,7 +26,7 @@ pub enum Write {
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
     Put { value: ByteArray<BUFFER_VALUE_INLINE>, action: Arc<AtomicPutAction>, known_to_exist: KnownToExist },
     // Delete with a new version. Conflicts with Require.
-    Delete,
+    Delete { action: Arc<AtomicDeleteAction> },
 }
 
 impl fmt::Debug for Write {
@@ -46,7 +46,7 @@ impl fmt::Debug for Write {
                     write!(f, "Put {{ value: {value:?}, known_to_exist: {known_to_exist} }}")
                 }
             }
-            Self::Delete => write!(f, "Delete"),
+            Self::Delete { action: _ } => write!(f, "Delete"),
         }
     }
 }
@@ -62,7 +62,9 @@ impl PartialEq for Write {
                 (value, action.load(Ordering::Acquire), known_to_exist)
                     == (other_value, other_action.load(Ordering::Acquire), other_known_to_exist)
             }
-            (Self::Delete, Self::Delete) => true,
+            (Self::Delete { action }, Self::Delete { action: other_action }) => {
+                action.load(Ordering::Acquire) == other_action.load(Ordering::Acquire)
+            }
             _ => false,
         }
     }
@@ -80,53 +82,45 @@ impl Write {
     }
 
     pub fn is_delete(&self) -> bool {
-        matches!(self, Write::Delete)
+        matches!(self, Write::Delete { .. })
     }
 
-    pub fn intends_insert(&self) -> bool {
+    pub fn intent(&self) -> WriteIntent {
         match self {
-            Write::Insert { .. } => true,
-            Write::Put { action, .. } => action.load(Ordering::Relaxed) == PutAction::Insert,
-            Write::Delete => false,
-        }
-    }
-
-    pub fn is_overwrite(&self) -> bool {
-        match self {
-            Write::Put { action, .. } => action.load(Ordering::Relaxed) == PutAction::Overwrite,
-            Write::Insert { .. } => false,
-            Write::Delete => false,
+            Write::Insert { .. } => WriteIntent::NewKey,
+            Write::Put { action, .. } => match action.load(Ordering::Relaxed) {
+                PutAction::Nop => WriteIntent::Nop,
+                PutAction::Insert => WriteIntent::NewKey,
+                PutAction::Overwrite => WriteIntent::Overwrite,
+            },
+            Write::Delete { action } => match action.load(Ordering::Relaxed) {
+                DeleteAction::Nop => WriteIntent::Nop,
+                DeleteAction::Delete => WriteIntent::Tombstone,
+            },
         }
     }
 
     pub(crate) fn into_value(self) -> ByteArray<BUFFER_VALUE_INLINE> {
         match self {
             Write::Insert { value } | Write::Put { value, .. } => value,
-            Write::Delete => panic!("Buffered delete does not have a value."),
+            Write::Delete { .. } => panic!("Buffered delete does not have a value."),
         }
     }
 
     pub(crate) fn get_value(&self) -> &ByteArray<BUFFER_VALUE_INLINE> {
         match self {
             Write::Insert { value } | Write::Put { value, .. } => value,
-            Write::Delete => panic!("Buffered delete does not have a value."),
-        }
-    }
-
-    pub fn category(&self) -> WriteCategory {
-        match self {
-            Write::Insert { .. } => WriteCategory::Insert,
-            Write::Put { .. } => WriteCategory::Put,
-            Write::Delete => WriteCategory::Delete,
+            Write::Delete { .. } => panic!("Buffered delete does not have a value."),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WriteCategory {
-    Insert,
-    Put,
-    Delete,
+pub enum WriteIntent {
+    NewKey,
+    Overwrite,
+    Tombstone,
+    Nop,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -269,6 +263,77 @@ impl<'de> Deserialize<'de> for AtomicPutAction {
             Ok(Self::new(PutAction::Insert))
         } else {
             Ok(Self::new(PutAction::Nop))
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum DeleteAction {
+    Nop = 0,
+    Delete = 1,
+}
+
+impl From<DeleteAction> for u8 {
+    fn from(value: DeleteAction) -> Self {
+        match value {
+            DeleteAction::Nop => 0,
+            DeleteAction::Delete => 1,
+        }
+    }
+}
+
+impl TryFrom<u8> for DeleteAction {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Nop),
+            1 => Ok(Self::Delete),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct AtomicDeleteAction {
+    inner: AtomicU8,
+}
+
+impl AtomicDeleteAction {
+    pub fn new(status: DeleteAction) -> Self {
+        Self { inner: AtomicU8::new(status.into()) }
+    }
+
+    pub fn load(&self, order: Ordering) -> DeleteAction {
+        DeleteAction::try_from(self.inner.load(order)).unwrap()
+    }
+
+    pub fn store(&self, value: DeleteAction, order: Ordering) {
+        self.inner.store(value.into(), order);
+    }
+}
+
+impl Serialize for AtomicDeleteAction {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // serializing as AtomicBool to preserve compat with old `reinsert: AtomicBool`
+        AtomicBool::new(self.load(Ordering::Relaxed) != DeleteAction::Nop).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for AtomicDeleteAction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // deserializing as AtomicBool to preserve compat with old `reinsert: AtomicBool`
+        if AtomicBool::deserialize(deserializer)?.load(Ordering::Relaxed) {
+            Ok(Self::new(DeleteAction::Delete))
+        } else {
+            Ok(Self::new(DeleteAction::Nop))
         }
     }
 }

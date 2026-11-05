@@ -4,19 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{
+    path::Path,
     sync::Arc,
     time::{Duration, Instant},
 };
 
 use database::{
     Database,
-    database_manager::DatabaseManager,
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::{TransactionOptions, byte_size::ByteSize};
+use options::TransactionOptions;
 use storage::durability_client::WALClient;
-use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_database::create_db;
 use tokio::{
     runtime::Runtime,
     sync::{Notify, broadcast},
@@ -38,18 +38,8 @@ macro_rules! assert_transaction_timeout {
     };
 }
 
-fn create_database(databases_path: &TempDir) -> Arc<Database<WALClient>> {
-    let database_manager = DatabaseManager::new(
-        databases_path,
-        Arc::new(DiagnosticsManager::new_disabled()),
-        ByteSize::mb(64),
-        ByteSize::mb(64),
-        database::database_manager::ImportOwnership::Exclusive,
-        options::MvccCleanupStrategy::Disabled,
-    )
-    .expect("Expected database manager");
-    database_manager.put_database(DB_NAME).expect("Expected database creation");
-    database_manager.database(DB_NAME).expect("Expected database retrieval")
+fn create_database(databases_path: &Path) -> Arc<Database<WALClient>> {
+    create_db(databases_path, DB_NAME).1
 }
 
 fn open_schema(database: Arc<Database<WALClient>>) -> TransactionSchema<WALClient> {

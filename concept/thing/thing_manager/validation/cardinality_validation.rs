@@ -522,7 +522,7 @@ impl ModifiedCapabilityTypes {
                 Write::Insert { .. } | Write::Put { .. } => {
                     updated_attribute_types.insert(attribute_type);
                 }
-                Write::Delete => {
+                Write::Delete { .. } => {
                     updated_attribute_types.extend(TypeAPI::chain_types(
                         attribute_type,
                         attribute_type.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
@@ -542,7 +542,7 @@ impl ModifiedCapabilityTypes {
                 Write::Insert { .. } | Write::Put { .. } => {
                     updated_role_types.insert(role_type);
                 }
-                Write::Delete => {
+                Write::Delete { .. } => {
                     updated_role_types.extend(TypeAPI::chain_types(
                         role_type,
                         role_type.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
@@ -562,7 +562,7 @@ impl ModifiedCapabilityTypes {
                 Write::Insert { .. } | Write::Put { .. } => {
                     updated_role_types.insert(role_type);
                 }
-                Write::Delete => {
+                Write::Delete { .. } => {
                     updated_role_types.extend(TypeAPI::chain_types(
                         role_type,
                         role_type.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
@@ -591,7 +591,7 @@ impl ModifiedCapabilityTypes {
                             updated_attribute_types.insert(attribute_subtype);
                         }
                     }
-                    Write::Delete => {
+                    Write::Delete { .. } => {
                         let attribute_supertype = AttributeType::new(supertype);
                         for attribute_type in TypeAPI::chain_types(
                             attribute_supertype,
@@ -617,7 +617,7 @@ impl ModifiedCapabilityTypes {
                             updated_role_types.insert(role_subtype);
                         }
                     }
-                    Write::Delete => {
+                    Write::Delete { .. } => {
                         let role_supertype = RoleType::new(supertype);
                         for role_type in TypeAPI::chain_types(
                             role_supertype,

@@ -83,7 +83,7 @@
 		workspace = true
 
 [workspace]
-	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "user", "util/project", "util/test"]
+	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "user", "util/project", "util/test"]
 	resolver = "2"
 
 	[workspace.dependencies]
@@ -482,6 +482,11 @@
 			default-features = false
 			features = []
 			path = "concept/tests"
+
+		[workspace.dependencies.test_utils_database]
+			default-features = false
+			features = []
+			path = "database/tests"
 
 		[workspace.dependencies.test_utils_encoding]
 			default-features = false

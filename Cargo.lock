@@ -1278,6 +1278,7 @@ dependencies = [
  "serde_json",
  "storage",
  "test_utils",
+ "test_utils_database",
  "test_utils_storage",
  "tokio",
  "tracing",
@@ -5424,6 +5425,16 @@ dependencies = [
  "concept",
  "durability",
  "encoding",
+ "storage",
+]
+
+[[package]]
+name = "test_utils_database"
+version = "0.0.0"
+dependencies = [
+ "database",
+ "diagnostics",
+ "options",
  "storage",
 ]
 
