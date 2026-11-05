@@ -32,6 +32,7 @@ pub mod value;
 pub mod value_struct;
 pub mod value_type;
 
+#[inline]
 pub fn decode_value_u64(bytes: &[u8]) -> u64 {
     primitive_encoding::decode_u64(bytes.try_into().unwrap())
 }

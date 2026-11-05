@@ -99,6 +99,18 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
+    /// Replaces the contents with a copy of `bytes`, reusing the inline storage when they fit.
+    #[inline]
+    pub fn set(&mut self, bytes: &[u8]) {
+        match self {
+            ByteArray::Inline { bytes: inline, len } if bytes.len() <= INLINE_BYTES => {
+                inline[..bytes.len()].copy_from_slice(bytes);
+                *len = bytes.len() as u8;
+            }
+            _ => *self = ByteArray::copy(bytes),
+        }
+    }
+
     pub fn starts_with(&self, bytes: &[u8]) -> bool {
         self.len() >= bytes.len() && &self[0..bytes.len()] == bytes
     }

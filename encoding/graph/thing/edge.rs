@@ -59,6 +59,7 @@ impl ThingEdgeHas {
         Self { owner: from, attribute: to }
     }
 
+    #[inline]
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let owner = ObjectVertex::decode(&bytes[Self::range_from()]);
@@ -180,7 +181,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeHas {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHas {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHas {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeHas {
     fn keyspace(&self) -> EncodingKeyspace {
@@ -238,6 +244,7 @@ impl ThingEdgeHasReverse {
         Self { attribute: from, owner: to }
     }
 
+    #[inline]
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let attribute_len = AttributeVertex::RANGE_TYPE_ID.end
@@ -457,7 +464,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
     fn keyspace(&self) -> EncodingKeyspace {
@@ -740,7 +752,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeLinks {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeLinks {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeLinks {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        if self.is_reverse { Self::PREFIX_REVERSE } else { Self::PREFIX }
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeLinks {
     fn keyspace(&self) -> EncodingKeyspace {
@@ -1043,7 +1060,12 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeIndexedRelation {
     fn keyspace(&self) -> EncodingKeyspace {

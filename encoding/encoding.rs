@@ -190,10 +190,7 @@ pub trait Keyable<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Sized {
 pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Clone {
     const INDEX_PREFIX: usize = 0;
 
-    fn prefix(&self) -> Prefix {
-        let byte = self.clone().to_bytes()[Self::INDEX_PREFIX];
-        Prefix::from_prefix_id(PrefixID::new(byte)).expect("Unrecognized prefix byte")
-    }
+    fn prefix(&self) -> Prefix;
 }
 
 pub enum DecodableKey {

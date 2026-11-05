@@ -778,44 +778,33 @@ impl<'bytes> MVCCKey<'bytes> {
         Self { bytes: Bytes::Array(byte_array) }
     }
 
-    fn wrap_slice(bytes: &'bytes [u8]) -> Self {
-        Self { bytes: Bytes::reference(bytes) }
+    /// Splits raw MVCC key bytes into their [KEY], [SEQ], and [OP] parts, borrowing the key from the bytes.
+    /// This is the only place that parses the layout: the accessors below delegate to it.
+    fn split(bytes: &[u8]) -> (&[u8], SequenceNumber, StorageOperation) {
+        let (key, suffix) = bytes.split_at(bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
+        let (inverse_sequence_number_bytes, operation_bytes) = suffix.split_at(SequenceNumber::serialised_len());
+        let sequence_number = SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert();
+        (key, sequence_number, StorageOperation::from(operation_bytes))
     }
 
-    pub(crate) fn is_visible_to(&self, sequence_number: SequenceNumber) -> bool {
-        self.sequence_number() <= sequence_number
+    fn wrap_slice(bytes: &'bytes [u8]) -> Self {
+        Self { bytes: Bytes::reference(bytes) }
     }
 
     fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    fn length(&self) -> usize {
-        self.bytes.length()
-    }
-
     pub fn key(&self) -> &[u8] {
-        &self.bytes()[0..(self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
-    }
-
-    fn into_key(self) -> Bytes<'bytes, MVCC_KEY_INLINE_SIZE> {
-        let end = self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        let bytes = self.bytes;
-        bytes.truncate(end)
+        Self::split(self.bytes()).0
     }
 
     fn sequence_number(&self) -> SequenceNumber {
-        let sequence_number_start = self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        let sequence_number_end = sequence_number_start + SequenceNumber::serialised_len();
-        let inverse_sequence_number_bytes = &self.bytes()[sequence_number_start..sequence_number_end];
-        debug_assert_eq!(SequenceNumber::serialised_len(), inverse_sequence_number_bytes.len());
-        SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert()
+        Self::split(self.bytes()).1
     }
 
     fn operation(&self) -> StorageOperation {
-        let operation_byte_offset = self.length() - Self::OPERATION_START_NEGATIVE_OFFSET;
-        let operation_byte_end = operation_byte_offset + StorageOperation::serialised_len();
-        StorageOperation::from(&self.bytes()[operation_byte_offset..operation_byte_end])
+        Self::split(self.bytes()).2
     }
 }
 
