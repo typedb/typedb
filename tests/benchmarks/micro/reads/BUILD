@@ -18,7 +18,7 @@ rust_binary(
 
         "@crates//:clap",
     ],
-    tags = ["manual"],  # in order for bazel test //... to not fail
+    tags = ["exclusive"],  # in order for bazel test //... to not fail
 #     use_libtest_harness = False,
 )
 

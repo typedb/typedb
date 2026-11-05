@@ -20,7 +20,7 @@ rust_binary(
 
         "@crates//:clap",
     ],
-    tags = ["manual"],
+    tags = ["exclusive"],
 )
 
 rustfmt_test(

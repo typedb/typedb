@@ -38,7 +38,7 @@ rust_library(
         "@crates//:serde",
         "@crates//:tabled",
     ],
-    tags = ["manual"],
+    tags = ["exclusive"],
 )
 
 rustfmt_test(
