@@ -14,7 +14,6 @@ use lib_benchmark::{
         run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
     },
 };
-use microbench_samples::run_sample_benchmarks;
 
 mod insert_entities;
 mod insert_ownerships;
@@ -33,7 +32,6 @@ pub(crate) fn assert_query_row_count_is(run_descriptor: &RunDescriptor) -> DbgAs
 }
 
 fn run_benchmarks(mut runner: impl BenchmarkRunner) {
-    run_sample_benchmarks(&mut runner);
     insert_entities::run_all(&mut runner);
     insert_ownerships::run_all(&mut runner);
     insert_relations::run_all(&mut runner);
