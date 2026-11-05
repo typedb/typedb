@@ -96,6 +96,27 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
         TypeDBQueryWorkloadBenchmark::new(name, schema, preload, query_descriptor, run_descriptor, dbg_assert)
     }
 
+    fn parametrised_ownership(
+        query_descriptor: QueryDescriptor,
+        run_descriptor: RunDescriptor,
+        preload: PreloadDataFn,
+    ) -> TypeDBQueryWorkloadBenchmark {
+        let dbg_assert = assert_query_row_count_is(&run_descriptor);
+        Self::create_workload(query_descriptor, run_descriptor, preload, dbg_assert)
+    }
+
+    fn parametrised_relations(
+        query_descriptor: QueryDescriptor,
+        run_descriptor: RunDescriptor,
+        preload: PreloadDataFn,
+    ) -> TypeDBQueryWorkloadBenchmark {
+        let expected_rows =
+            run_descriptor.n_rows_per_query as f64 * (run_descriptor.total_rows() as f64 / SCALE_FACTOR as f64);
+        let dbg_assert = assert_query_row_count_within(expected_rows, 10.0);
+        Self::create_workload(query_descriptor, run_descriptor, preload, dbg_assert)
+    }
+
+    // Ownerships
     fn ownership_lookups(name: String) -> QueryDescriptor {
         let id_type = MakeID::ID_TYPE;
         QueryDescriptor {
@@ -105,15 +126,6 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             produce_row: Some(|rng| vec![MakeID::make_id(rng.integer_in(0, (SCALE_FACTOR - 1) as i64))]),
             tx_type: TxType::Read,
         }
-    }
-
-    fn parametrised_ownership(
-        query_descriptor: QueryDescriptor,
-        run_descriptor: RunDescriptor,
-        preload: PreloadDataFn,
-    ) -> TypeDBQueryWorkloadBenchmark {
-        let dbg_assert = assert_query_row_count_is(&run_descriptor);
-        Self::create_workload(query_descriptor, run_descriptor, preload, dbg_assert)
     }
 
     fn preload_ownerships_one_to_one() -> PreloadDataFn {
@@ -176,15 +188,15 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
         })
     }
 
-    fn parametrised_relations(
-        query_descriptor: QueryDescriptor,
-        run_descriptor: RunDescriptor,
-        preload: PreloadDataFn,
-    ) -> TypeDBQueryWorkloadBenchmark {
-        let expected_rows =
-            run_descriptor.n_rows_per_query as f64 * (run_descriptor.total_rows() as f64 / SCALE_FACTOR as f64);
-        let dbg_assert = assert_query_row_count_within(expected_rows, 10.0);
-        Self::create_workload(query_descriptor, run_descriptor, preload, dbg_assert)
+    // Relations
+    fn relation_lookups(name: String) -> QueryDescriptor {
+        QueryDescriptor {
+            name: format!("relation_lookups_{name}"),
+            query: "given $e1: e1; match $_ isa rel, links (role1: $e1, role2: $e2);".to_owned(),
+            variables: vec!["e1".to_owned()],
+            produce_row: Some(|rng| vec![rng.entry_entity_raw_in(TypeID::new(0), 0, (SCALE_FACTOR - 1) as u64)]),
+            tx_type: TxType::Read,
+        }
     }
 
     fn preload_relations_one_per_role1() -> PreloadDataFn {
@@ -259,15 +271,5 @@ impl<const SCALE_FACTOR: usize, MakeID: IDMaker> ScaleHelper<SCALE_FACTOR, MakeI
             (*load_entities)(db.clone());
             (*load_relations)(db.clone());
         })
-    }
-
-    fn relation_lookups(name: String) -> QueryDescriptor {
-        QueryDescriptor {
-            name: format!("relation_lookups_{name}"),
-            query: "given $e1: e1; match $_ isa rel, links (role1: $e1, role2: $e2);".to_owned(),
-            variables: vec!["e1".to_owned()],
-            produce_row: Some(|rng| vec![rng.entry_entity_raw_in(TypeID::new(0), 0, (SCALE_FACTOR - 1) as u64)]),
-            tx_type: TxType::Read,
-        }
     }
 }
