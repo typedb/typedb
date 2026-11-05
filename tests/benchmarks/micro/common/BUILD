@@ -37,7 +37,8 @@ rust_library(
         "@crates//:csv",
         "@crates//:serde",
         "@crates//:tabled",
-    ]
+    ],
+    tags = ["manual"],
 )
 
 rustfmt_test(
