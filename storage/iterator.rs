@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
+use std::{cmp::Ordering, error::Error, fmt, mem, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Seekable};
@@ -41,10 +41,8 @@ enum Item<'a> {
 }
 
 impl MVCCRangeIterator {
-    //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
-    //
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
         iterpool: &IteratorPool,
@@ -94,9 +92,9 @@ impl MVCCRangeIterator {
             match operation {
                 StorageOperation::Insert => {
                     self.storage_counters.increment_advance_mvcc_visible();
-                    // SAFETY: see `NextItem::Item`
+                    // SAFETY: see `next_item`
                     let (key, value) =
-                        unsafe { std::mem::transmute::<(&[u8], &[u8]), (&'static [u8], &'static [u8])>((key, value)) };
+                        unsafe { mem::transmute::<(&[u8], &[u8]), (&'static [u8], &'static [u8])>((key, value)) };
                     self.next_item = Item::Item { key, value };
                     return;
                 }
@@ -111,7 +109,7 @@ impl LendingIterator for MVCCRangeIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.find_next_state();
-        match std::mem::replace(&mut self.next_item, Item::Unknown) {
+        match mem::replace(&mut self.next_item, Item::Unknown) {
             Item::Unknown => None,
             Item::Item { key, value } => Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value))),
         }
