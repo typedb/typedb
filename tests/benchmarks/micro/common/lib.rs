@@ -6,7 +6,7 @@
 
 pub mod benchmark;
 pub mod id_maker;
-mod pipelines;
+mod query;
 pub mod runner;
 mod transaction;
 pub mod typedb_workload;
@@ -91,22 +91,6 @@ pub fn commit(tx: impl UnifiedTransactionView) -> Result<TransactionProfile, Com
     tx.commit()
 }
 
-pub fn read_all_instance_types(database: Arc<Database<WALClient>>) -> HashMap<String, Type> {
-    let tx = TransactionRead::open(database, TransactionOptions::default()).unwrap();
-    let snapshot = tx.snapshot.as_ref();
-    let type_manager = &tx.type_manager;
-    let mut map = HashMap::new();
-    for entity_type in type_manager.get_entity_types(snapshot).unwrap() {
-        let label = entity_type.get_label(snapshot, type_manager).unwrap();
-        map.insert(label.scoped_name().as_str().to_owned(), Type::Entity(entity_type));
-    }
-    for relation_type in type_manager.get_relation_types(snapshot).unwrap() {
-        let label = relation_type.get_label(snapshot, type_manager).unwrap();
-        map.insert(label.scoped_name().as_str().to_owned(), Type::Relation(relation_type));
-    }
-    map
-}
-
 pub trait AnswerConsumer {
     type Output;
     fn consume_rows<Iter>(iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
@@ -129,7 +113,7 @@ pub fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsumer>(
     given_rows: Option<GivenRowsSimple>,
     enable_profiling: bool,
 ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
-    pipelines::execute_read_query_in::<_, AC>(tx, query, given_rows, enable_profiling)
+    query::execute_read_query_in::<_, AC>(tx, query, given_rows, enable_profiling)
 }
 
 pub fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView, AC: AnswerConsumer>(
@@ -138,5 +122,5 @@ pub fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView,
     given_rows: Option<GivenRowsSimple>,
     enable_profiling: bool,
 ) -> PackedResult<QueryAnswer<AC::Output>, Box<QueryError>, TX> {
-    pipelines::execute_write_query_in::<_, AC>(tx, query, given_rows, enable_profiling)
+    query::execute_write_query_in::<_, AC>(tx, query, given_rows, enable_profiling)
 }

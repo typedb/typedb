@@ -5,10 +5,13 @@
  */
 
 use lib_benchmark::{
-    id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
-    typedb_workload::{QueryDescriptor, RunDescriptor, TxType, benchmark::TypeDBQueryWorkloadBenchmark},
+    typedb_workload::{
+        QueryDescriptor, RunDescriptor, TxType,
+        benchmark::TypeDBQueryWorkloadBenchmark,
+        datagen::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
+    },
 };
 
 use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};

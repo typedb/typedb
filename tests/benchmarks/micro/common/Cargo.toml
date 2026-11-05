@@ -75,6 +75,9 @@
 	[dependencies.storage]
 		workspace = true
 
+	[dependencies.tabled]
+		workspace = true
+
 	[dependencies.test_utils]
 		workspace = true
 

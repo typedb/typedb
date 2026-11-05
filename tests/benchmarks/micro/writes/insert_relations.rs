@@ -5,13 +5,12 @@
  */
 use encoding::graph::type_::vertex::TypeID;
 use lib_benchmark::{
-    id_maker::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
         QueryDescriptor, RunDescriptor, TxType,
         benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
-        datagen::RandomDataGen,
+        datagen::{IDMaker, IntegerIDMaker, LongStringIDMaker, RandomDataGen, ShortStringIDMaker},
     },
 };
 use query::given_rows::GivenRowEntry;

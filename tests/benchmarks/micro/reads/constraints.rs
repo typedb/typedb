@@ -7,13 +7,12 @@ use std::marker::PhantomData;
 
 use encoding::graph::type_::vertex::TypeID;
 use lib_benchmark::{
-    id_maker::{IDMaker, IntegerIDMaker},
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
     typedb_workload::{
         QueryDescriptor, RunDescriptor, TxType,
         benchmark::{DbgAssertFn, PreloadDataFn, TypeDBQueryWorkloadBenchmark, WorkloadInstance},
-        datagen::RandomDataGen,
+        datagen::{IDMaker, IntegerIDMaker, RandomDataGen},
     },
 };
 use query::given_rows::GivenRowEntry;

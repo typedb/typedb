@@ -18,7 +18,7 @@ pub trait SimpleBenchmark {
     type RunInput;
     type IterOutput;
     type Report: SimpleReport<Self::IterOutput>;
-    /// Create given_rows if needed
+
     fn name(&self) -> &'_ str;
 
     fn init_context(&self) -> Context {
@@ -36,10 +36,11 @@ pub trait SimpleBenchmark {
     fn prepare_database(&self, context: &Context, database: Arc<Database<WALClient>>);
 
     fn warm_up(&self, context: &Context, database: Arc<Database<WALClient>>);
-    /// Create given_rows if needed
+
+    /// Create given_rows if needed, so we don't include that in the timing.
     fn prepare_run(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput;
 
-    /// The actual iteration which gets timed over and over again.
+    /// The actual iteration which gets timed.
     fn run_benchmark(
         &self,
         context: &Context,

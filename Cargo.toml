@@ -478,6 +478,10 @@
 			features = []
 			path = "system"
 
+		[workspace.dependencies.tabled]
+	   		features = ["assert", "default", "derive", "macros", "std", "tabled_derive", "testing_table"]
+	   	version = "0.22.0"
+
 		[workspace.dependencies.tempdir]
 			default-features = false
 			features = []
