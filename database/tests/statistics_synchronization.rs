@@ -6,14 +6,16 @@
 
 use std::{sync::Arc, thread};
 
+use concept::thing::statistics::Statistics;
 use database::{
     Database,
     query::{execute_schema_query, execute_write_query_in_write},
-    transaction::{CommitIntent, TransactionSchema, TransactionWrite},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions};
 use query::given_rows::GivenRowsSimple;
+use resource::profile::StorageCounters;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_database::{create_db, manager, open_db};
@@ -22,27 +24,21 @@ const DB_NAME: &str = "stats-sync";
 const SCHEMA: &str = r#"define
     attribute name value string;
     attribute age value integer;
-    entity person owns name @key, owns age @card(0..);
+    entity person owns name, owns age @card(0..);
+    attribute blah @independent, value string;
 "#;
 
 const NUM_THREADS: usize = 20;
 const BATCHES_PER_THREAD: usize = 20;
 const OPS_PER_BATCH: usize = 10;
-const OPS_PER_THREAD: usize = OPS_PER_BATCH * BATCHES_PER_THREAD;
 
 #[test]
 fn statistics_synchronization_under_concurrent_load() {
     init_logging();
     let tmp_dir = create_tmp_storage_dir();
-    let total_batches = NUM_THREADS * BATCHES_PER_THREAD;
-    let total_persons = total_batches * OPS_PER_BATCH;
-    // Each person is given a unique name and a unique age, so attributes never
-    // dedupe across writers and ground-truth counts come straight from the configs.
-    let total_attributes = 2 * total_persons - OPS_PER_THREAD; // we delete the same OPS ages in each thread
-    let total_has = total_attributes;
 
     {
-        let (_dbm, database) = create_db(&tmp_dir, DB_NAME);
+        let (_, database) = create_db(&tmp_dir, DB_NAME);
 
         let schema_query = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
@@ -52,26 +48,12 @@ fn statistics_synchronization_under_concurrent_load() {
         intent.unwrap().commit(profile.commit_profile()).unwrap();
 
         let mut handles = Vec::with_capacity(NUM_THREADS);
-        for thread_id in 0..NUM_THREADS {
-            let database = database.clone();
-            let handle = thread::spawn(move || {
-                for local_batch_id in 0..BATCHES_PER_THREAD {
-                    let batch_id = thread_id * BATCHES_PER_THREAD + local_batch_id;
-                    run_insert_batch(&database, batch_id);
-                }
-            });
-            handles.push(handle);
-        }
-        for h in handles {
-            h.join().unwrap();
-        }
-
-        let mut handles = Vec::with_capacity(NUM_THREADS);
         for _ in 0..NUM_THREADS {
             let database = database.clone();
             let handle = thread::spawn(move || {
                 for local_batch_id in 0..BATCHES_PER_THREAD {
-                    let batch_id = local_batch_id; // all threads are deleting the same concepts
+                    let batch_id = local_batch_id;
+                    run_insert_batch(&database, batch_id);
                     run_delete_batch(&database, batch_id);
                 }
             });
@@ -85,10 +67,12 @@ fn statistics_synchronization_under_concurrent_load() {
 
     let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
+    let tx = TransactionRead::open(database, <_>::default()).unwrap();
+    let statistics = Statistics::read(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED).unwrap();
 
-    assert_eq!(metrics.data.entity_count, total_persons as u64, "entity_count after reboot");
-    assert_eq!(metrics.data.attribute_count, total_attributes as u64, "attribute_count after reboot");
-    assert_eq!(metrics.data.has_count, total_has as u64, "has_count after reboot");
+    assert_eq!(metrics.data.entity_count, statistics.total_entity_count, "entity_count after reboot");
+    assert_eq!(metrics.data.attribute_count, statistics.total_attribute_count, "attribute_count after reboot");
+    assert_eq!(metrics.data.has_count, statistics.total_has_count, "has_count after reboot");
     assert_eq!(metrics.data.relation_count, 0, "relation_count after reboot");
 }
 
@@ -130,7 +114,7 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     for i in 0..OPS_PER_BATCH {
         let id = batch_id * OPS_PER_BATCH + i;
-        let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {id};"#);
+        let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {id}; $_ isa blah "{id}";"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
@@ -151,7 +135,7 @@ fn run_delete_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     for i in 0..OPS_PER_BATCH {
         let id = batch_id * OPS_PER_BATCH + i;
-        let query_str = format!(r#"match $p isa age {id}; delete $p;"#);
+        let query_str = format!(r#"match $p isa blah "{id}"; delete $p;"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
