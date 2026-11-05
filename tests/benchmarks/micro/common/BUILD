@@ -57,5 +57,8 @@ checkstyle_test(
     include = glob([
         "*",
     ]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
     license_type = "mpl-header",
 )
