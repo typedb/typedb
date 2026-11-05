@@ -46,6 +46,10 @@ pub const PARALLEL_MANY_LARGE: RunDescriptor = RunDescriptor {
 
 pub fn standardised_name(query_descriptor: &QueryDescriptor, run_descriptor: &RunDescriptor) -> String {
     let desc = &query_descriptor.name;
+    if *run_descriptor == CI_MINIMAL {
+        return format!("ci_run_{desc}");
+    }
+
     let parallelism = match run_descriptor.parallelism {
         THREADS_SERIAL => "serial".to_owned(),
         THREADS_THREADED => "threaded".to_owned(),

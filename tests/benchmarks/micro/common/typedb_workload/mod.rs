@@ -33,7 +33,7 @@ pub struct QueryDescriptor {
     pub tx_type: TxType,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct RunDescriptor {
     pub parallelism: usize,
     pub total_txns: usize,

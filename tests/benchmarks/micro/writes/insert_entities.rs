@@ -7,12 +7,16 @@
 use lib_benchmark::{
     runner::{BenchmarkRunner, BenchmarkRunnerGroup},
     typedb_workload,
-    typedb_workload::{QueryDescriptor, RunDescriptor, TxType, benchmark::TypeDBQueryWorkloadBenchmark},
+    typedb_workload::{
+        QueryDescriptor, RunDescriptor, TxType, benchmark::TypeDBQueryWorkloadBenchmark, run_configs::CI_MINIMAL,
+    },
 };
 
 use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
+    runner.new_group("ci_tests_insert_entities").run_benchmark(parametrised_workload(entity_insert(), CI_MINIMAL));
+
     let mut group = runner.new_group("insert_entities");
     for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
         group.run_benchmark(parametrised_workload(entity_insert(), run_descriptor));

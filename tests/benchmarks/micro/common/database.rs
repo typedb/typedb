@@ -54,6 +54,8 @@ impl TypeDB {
     }
 
     pub fn recreate_database(&self, name: &str) -> Result<Arc<Database<WALClient>>, Box<DatabaseCreateError>> {
+        let new_name = name.replace("[", "").replace("]", "");
+        let name = new_name.as_str();
         if self.database_manager.database(name).is_some() {
             self.database_manager.delete_database(name).unwrap();
         }

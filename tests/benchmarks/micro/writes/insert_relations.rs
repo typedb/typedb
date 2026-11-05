@@ -11,6 +11,7 @@ use lib_benchmark::{
         QueryDescriptor, RunDescriptor, TxType,
         benchmark::{PreloadDataFn, TypeDBQueryWorkloadBenchmark},
         datagen::{IDMaker, IntegerIDMaker, LongStringIDMaker, RandomDataGen, ShortStringIDMaker},
+        run_configs::CI_MINIMAL,
     },
 };
 use query::given_rows::GivenRowEntry;
@@ -20,9 +21,28 @@ use crate::{SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};
 const N_ENTITIES: usize = 100_000;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
+    run_ci_all(runner);
+
     run_by_insert(runner);
     run_by_concept(runner);
     run_by_id(runner);
+}
+
+fn run_ci_all(runner: &mut impl BenchmarkRunner) {
+    let mut group = runner.new_group("ci_tests_relations");
+    group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_concept(), CI_MINIMAL));
+    group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
+        relation_by_id::<IntegerIDMaker>("integer"),
+        CI_MINIMAL,
+    ));
+    group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
+        relation_by_id::<ShortStringIDMaker>("short_string"),
+        CI_MINIMAL,
+    ));
+    group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
+        relation_by_id::<LongStringIDMaker>("long_string"),
+        CI_MINIMAL,
+    ));
 }
 
 pub fn run_by_concept(runner: &mut impl BenchmarkRunner) {
@@ -33,20 +53,21 @@ pub fn run_by_concept(runner: &mut impl BenchmarkRunner) {
 }
 
 pub fn run_by_id(runner: &mut impl BenchmarkRunner) {
-    let mut group = runner.new_group("relations_by_id");
+    let mut ci_group = runner.new_group("relations_by_id");
     for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
-        group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
+        ci_group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
             relation_by_id::<IntegerIDMaker>("integer"),
             run_descriptor,
         ));
-        group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
+        ci_group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
             relation_by_id::<ShortStringIDMaker>("short_string"),
             run_descriptor,
         ));
-        group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
+        ci_group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
             relation_by_id::<LongStringIDMaker>("long_string"),
             run_descriptor,
         ));
+        ci_group.run_benchmark(parametrised_workload::<IntegerIDMaker>(relation_by_insert(), run_descriptor));
     }
 }
 

@@ -11,6 +11,7 @@ use lib_benchmark::{
         QueryDescriptor, RunDescriptor, TxType,
         benchmark::TypeDBQueryWorkloadBenchmark,
         datagen::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
+        run_configs::CI_MINIMAL,
     },
 };
 
@@ -18,21 +19,27 @@ use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is
 
 const MAX_ID_INTEGER: usize = 100_000_000;
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
-    let mut group = runner.new_group("insert_entities");
+    run_for_descriptor(&mut runner.new_group("insert_ownerships"), CI_MINIMAL);
+
+    let mut group = runner.new_group("insert_ownerships");
     for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
-        group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
-            insert_ownership::<IntegerIDMaker>("int"),
-            run_descriptor,
-        ));
-        group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
-            insert_ownership::<ShortStringIDMaker>("short_str"),
-            run_descriptor,
-        ));
-        group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
-            insert_ownership::<LongStringIDMaker>("long_str"),
-            run_descriptor,
-        ));
+        run_for_descriptor(&mut group, run_descriptor);
     }
+}
+
+fn run_for_descriptor(group: &mut impl BenchmarkRunnerGroup, run_descriptor: RunDescriptor) {
+    group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
+        insert_ownership::<IntegerIDMaker>("int"),
+        run_descriptor,
+    ));
+    group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
+        insert_ownership::<ShortStringIDMaker>("short_str"),
+        run_descriptor,
+    ));
+    group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
+        insert_ownership::<LongStringIDMaker>("long_str"),
+        run_descriptor,
+    ));
 }
 
 fn parametrised_workload<MakeID: IDMaker>(

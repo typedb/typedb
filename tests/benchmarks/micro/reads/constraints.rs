@@ -13,6 +13,7 @@ use lib_benchmark::{
         QueryDescriptor, RunDescriptor, TxType,
         benchmark::{DbgAssertFn, PreloadDataFn, TypeDBQueryWorkloadBenchmark},
         datagen::{IDMaker, IntegerIDMaker, RandomDataGen},
+        run_configs::CI_MINIMAL,
     },
 };
 use query::given_rows::GivenRowEntry;
@@ -26,6 +27,8 @@ const MANY_RATIO_SMALL: usize = 100;
 const MANY_RATIO_LARGE: usize = 10_000;
 
 pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
+    run_for_ci(runner);
+
     let mut group = runner.new_group("constraints");
     for run_descriptor in [SERIAL_RUN_LARGE, PARALLEL_RUN_LARGE] {
         run_one_to_one_for::<{ SCALE_SMALL }>(&mut group, run_descriptor);
@@ -40,6 +43,12 @@ pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
         run_many_to_one_for::<{ SCALE_MEDIUM }, { MANY_RATIO_LARGE }>(&mut group, run_descriptor);
         run_many_to_one_for::<{ SCALE_LARGE }, { MANY_RATIO_LARGE }>(&mut group, run_descriptor);
     }
+}
+
+fn run_for_ci(runner: &mut impl BenchmarkRunner) {
+    let mut group = runner.new_group("ci_tests_constraints");
+    run_one_to_one_for::<{ SCALE_SMALL }>(&mut group, CI_MINIMAL);
+    run_many_to_one_for::<{ SCALE_SMALL }, { MANY_RATIO_SMALL }>(&mut group, CI_MINIMAL);
 }
 
 fn run_one_to_one_for<const SCALE_FACTOR: usize>(group: &mut impl BenchmarkRunnerGroup, run_descriptor: RunDescriptor) {
