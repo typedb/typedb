@@ -166,8 +166,7 @@ impl ServerStateError for LocalServerStateError {
 
             Self::ConceptReadError { .. } | Self::FunctionReadError { .. } => Internal,
 
-            Self::NotInitialised { .. }
-            | Self::DatabaseSchemaCommitFailed { .. }
+            Self::DatabaseSchemaCommitFailed { .. }
             | Self::DatabaseDataCommitFailed { .. }
             | Self::DatabaseCommitRecordExistsFailed { .. }
             | Self::FailedToOpenPrerequisiteTransaction { .. }
@@ -183,7 +182,7 @@ impl ServerStateError for LocalServerStateError {
             | Self::DatabaseImportPrepareFailed { .. }
             | Self::DatabaseImportFinaliseFailed { .. }
             | Self::DatabaseImportDiscardFailed { .. } => InvalidRequest,
-            Self::ConcurrentImportLimitReached { .. } => Unavailable,
+            Self::NotInitialised { .. } | Self::ConcurrentImportLimitReached { .. } => Unavailable,
         }
     }
 
