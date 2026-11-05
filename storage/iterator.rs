@@ -27,16 +27,17 @@ pub(crate) struct MVCCRangeIterator {
     // The key of the newest visible version seen so far. Versions of a key are adjacent and ordered newest-first, so
     // the versions following it with the same key are older, and hidden. Overwritten in place to avoid per-key copies.
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
-    // The next item to return, consumed from `iterator` but not yet returned.
-    next_item: NextItem,
-}
 
-enum NextItem {
-    Unknown,
+    // The next item to return, consumed from `iterator` but not yet returned.
     // SAFETY: `'static` stands for "owned by `iterator`": like the items of the underlying `DBIterator`, the slices
     // point into the raw iterator's current entry, which stays valid until `iterator` is advanced or sought.
     // Both only happen after `next_item` has been reset to `Unknown`.
-    Item { key: &'static [u8], value: &'static [u8] },
+    next_item: Item<'static>,
+}
+
+enum Item<'a> {
+    Unknown,
+    Item { key: &'a [u8], value: &'a [u8] },
 }
 
 impl MVCCRangeIterator {
@@ -60,15 +61,15 @@ impl MVCCRangeIterator {
             open_sequence_number,
             storage_counters,
             last_visible_key: None,
-            next_item: NextItem::Unknown,
+            next_item: Item::Unknown,
         }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
         self.find_next_state();
         match self.next_item {
-            NextItem::Unknown => None,
-            NextItem::Item { key, value } => Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value))),
+            Item::Unknown => None,
+            Item::Item { key, value } => Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value))),
         }
     }
 
@@ -76,7 +77,7 @@ impl MVCCRangeIterator {
     /// item. The next item stays unknown if the keyspace iterator is exhausted, or fails: a keyspace error is treated as
     /// the end of the range.
     fn find_next_state(&mut self) {
-        if !matches!(self.next_item, NextItem::Unknown) {
+        if !matches!(self.next_item, Item::Unknown) {
             return;
         }
         while let Some(Ok((key, value))) = self.iterator.next() {
@@ -96,7 +97,7 @@ impl MVCCRangeIterator {
                     // SAFETY: see `NextItem::Item`
                     let (key, value) =
                         unsafe { std::mem::transmute::<(&[u8], &[u8]), (&'static [u8], &'static [u8])>((key, value)) };
-                    self.next_item = NextItem::Item { key, value };
+                    self.next_item = Item::Item { key, value };
                     return;
                 }
                 StorageOperation::Delete => self.storage_counters.increment_advance_mvcc_deleted(),
@@ -110,9 +111,9 @@ impl LendingIterator for MVCCRangeIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.find_next_state();
-        match std::mem::replace(&mut self.next_item, NextItem::Unknown) {
-            NextItem::Unknown => None,
-            NextItem::Item { key, value } => Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value))),
+        match std::mem::replace(&mut self.next_item, Item::Unknown) {
+            Item::Unknown => None,
+            Item::Item { key, value } => Some(Ok((StorageKeyReference::new_raw(self.keyspace_id, key), value))),
         }
     }
 }
@@ -120,9 +121,9 @@ impl LendingIterator for MVCCRangeIterator {
 impl Seekable<[u8]> for MVCCRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         self.find_next_state();
-        if let NextItem::Item { key: next_key, .. } = self.next_item {
+        if let Item::Item { key: next_key, .. } = self.next_item {
             if next_key < key {
-                self.next_item = NextItem::Unknown;
+                self.next_item = Item::Unknown;
                 self.iterator.seek(key);
             }
         }
