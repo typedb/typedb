@@ -49,21 +49,21 @@ impl<'runner> BenchmarkRunnerGroup for SimpleRunnerGroup<'runner> {
             return vec![];
         }
         println!("[.] SimpleRunner: Running benchmark {}", combined_name);
-        let mut context = b.init_context();
+        let mut typedb = b.init_typedb();
         println!(" +- Running before_all");
-        b.before_all(&mut context);
-        let database = b.create_database(&mut context);
+        b.before_all(&mut typedb);
+        let database = b.create_database(&mut typedb);
         println!(" +- Preparing database");
-        b.prepare_database(&mut context, database.clone());
+        b.prepare_database(&mut typedb, database.clone());
         println!(" +- Warming up...");
-        b.warm_up(&context, database.clone());
+        b.warm_up(&typedb, database.clone());
         println!(" +- Preparing run");
-        let input = b.prepare_run(&context, database.clone());
+        let input = b.prepare_run(&typedb, database.clone());
 
         let guard =
             self.runner.flamegraph.then(|| pprof::ProfilerGuard::new(100).expect("failed to start pprof profiler"));
         println!(" +- Running benchmark");
-        let iter_result = b.run_benchmark(&context, database.clone(), input);
+        let iter_result = b.run_benchmark(&typedb, database.clone(), input);
         println!(" +- Done. Preparing report");
         if let Some(guard) = guard {
             if let Ok(report) = guard.report().build() {

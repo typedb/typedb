@@ -16,7 +16,7 @@ use storage::durability_client::WALClient;
 
 use crate::{
     benchmark::{SimpleBenchmark, SimpleReport},
-    database::Context,
+    database::TypeDB,
     query::{QueryAnswer, execute_write_query_in, unpack_result},
     transaction::UnifiedTransactionView,
     typedb_workload::{
@@ -57,7 +57,7 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
         self.name.as_str()
     }
 
-    fn prepare_database(&self, _context: &Context, database: Arc<Database<WALClient>>) {
+    fn prepare_database(&self, _typedb: &TypeDB, database: Arc<Database<WALClient>>) {
         crate::database::create_schema(database.clone(), self.schema.as_str());
         if let Some(preload_fn) = &self.preload_data_fn {
             preload_fn(database.clone());
@@ -65,19 +65,19 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
         database.benchmark_only_flush();
     }
 
-    fn warm_up(&self, _context: &Context, database: Arc<Database<WALClient>>) {
+    fn warm_up(&self, _typedb: &TypeDB, database: Arc<Database<WALClient>>) {
         if let Some(warmup_fn) = &self.warmup_fn {
             warmup_fn(database.clone())
         }
     }
 
-    fn prepare_run(&self, _context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput {
+    fn prepare_run(&self, _typedb: &TypeDB, database: Arc<Database<WALClient>>) -> Self::RunInput {
         (self.prepare_run_fn)(database)
     }
 
     fn run_benchmark(
         &self,
-        _context: &Context,
+        _typedb: &TypeDB,
         database: Arc<Database<WALClient>>,
         input: Self::RunInput,
     ) -> Self::IterOutput {

@@ -32,13 +32,13 @@ impl Default for Config {
     }
 }
 
-pub struct Context {
+pub struct TypeDB {
     config: Config,
     _tmp_dir: TempDir,
     database_manager: Arc<DatabaseManager>,
 }
 
-impl Context {
+impl TypeDB {
     pub fn init(config: Config) -> Self {
         let tmp_dir = create_tmp_storage_dir();
         let database_manager = DatabaseManager::new(

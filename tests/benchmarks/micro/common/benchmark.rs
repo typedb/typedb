@@ -8,7 +8,7 @@ use std::sync::Arc;
 use database::Database;
 use storage::durability_client::WALClient;
 
-use crate::database::{Config, Context};
+use crate::database::{Config, TypeDB};
 
 /// See `BenchmarkRunner` implementations for the order in which these functions are called.
 pub trait SimpleBenchmark {
@@ -18,29 +18,29 @@ pub trait SimpleBenchmark {
 
     fn name(&self) -> &'_ str;
 
-    fn init_context(&self) -> Context {
-        Context::init(Config::default())
+    fn init_typedb(&self) -> TypeDB {
+        TypeDB::init(Config::default())
     }
 
     /// Run before any iteration or batch.
-    fn before_all(&self, _context: &mut Context) {}
+    fn before_all(&self, _typedb: &mut TypeDB) {}
 
-    fn create_database(&self, context: &mut Context) -> Arc<Database<WALClient>> {
-        context.recreate_database(self.name()).unwrap()
+    fn create_database(&self, typedb: &mut TypeDB) -> Arc<Database<WALClient>> {
+        typedb.recreate_database(self.name()).unwrap()
     }
 
     /// Load schema & data
-    fn prepare_database(&self, context: &Context, database: Arc<Database<WALClient>>);
+    fn prepare_database(&self, typedb: &TypeDB, database: Arc<Database<WALClient>>);
 
-    fn warm_up(&self, context: &Context, database: Arc<Database<WALClient>>);
+    fn warm_up(&self, typedb: &TypeDB, database: Arc<Database<WALClient>>);
 
     /// Create given_rows if needed, so we don't include that in the timing.
-    fn prepare_run(&self, context: &Context, database: Arc<Database<WALClient>>) -> Self::RunInput;
+    fn prepare_run(&self, typedb: &TypeDB, database: Arc<Database<WALClient>>) -> Self::RunInput;
 
     /// The actual iteration which gets timed.
     fn run_benchmark(
         &self,
-        context: &Context,
+        typedb: &TypeDB,
         database: Arc<Database<WALClient>>,
         input: Self::RunInput,
     ) -> Self::IterOutput;
