@@ -3191,7 +3191,9 @@ impl TypeManager {
         _thing_manager: &ThingManager,
         _relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        Err(Box::new(ConceptWriteError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Cascade }))
+        Err(Box::new(ConceptWriteError::UnimplementedLanguageFeatureCascade {
+            feature: error::UnimplementedFeature::Cascade,
+        }))
         // let annotation = Annotation::Cascade(AnnotationCascade);
         //
         // self.validate_set_type_annotation_general(snapshot, relation_type.clone(), annotation.clone())?;
@@ -3214,7 +3216,9 @@ impl TypeManager {
         _snapshot: &mut impl WritableSnapshot,
         _type_: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        Err(Box::new(ConceptWriteError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Cascade }))
+        Err(Box::new(ConceptWriteError::UnimplementedLanguageFeatureCascade {
+            feature: error::UnimplementedFeature::Cascade,
+        }))
         // let annotation_category = AnnotationCategory::Cascade;
         // self.unset_type_annotation(snapshot, type_, annotation_category)
     }

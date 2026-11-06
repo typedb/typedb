@@ -408,6 +408,8 @@ fn concept_write_origin(error: &ConceptWriteError) -> ErrorOrigin {
         ConceptWriteError::Encoding { .. } => ErrorOrigin::Internal,
 
         ConceptWriteError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),
+
+        ConceptWriteError::UnimplementedLanguageFeatureCascade { .. } => ErrorOrigin::Request,
     }
 }
 
