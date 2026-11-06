@@ -343,7 +343,7 @@ mod tests {
     use resource::constants::snapshot::BUFFER_VALUE_INLINE;
     use serde::{Deserialize, Serialize};
 
-    use crate::snapshot::write::{AtomicPutAction, KnownToExist, PutAction, Write};
+    use crate::snapshot::write::{AtomicDeleteAction, AtomicPutAction, DeleteAction, KnownToExist, PutAction, Write};
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum V1Write {
@@ -462,6 +462,34 @@ mod tests {
                     assert_eq!(expected_value, actual_value);
                     assert_eq!(deserialized_put_action, actual_action.load(Ordering::Relaxed));
                     assert_eq!(expected_known_to_exist, actual_known_to_exist);
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    #[test]
+    fn delete_serializes_the_same_as_v1() {
+        for delete_action in [DeleteAction::Nop, DeleteAction::Delete] {
+            let old_write = V1Write::Delete;
+            let new_write = Write::Delete { action: Arc::new(AtomicDeleteAction::new(delete_action)) };
+
+            let serialized_old = bincode::serialize(&old_write).unwrap();
+            let serialized_new = bincode::serialize(&new_write).unwrap();
+
+            assert_eq!(serialized_old, serialized_new);
+
+            let new_deserialized_as_old: V1Write = bincode::deserialize(&serialized_new).unwrap();
+            let old_deserialized_as_new: Write = bincode::deserialize(&serialized_old).unwrap();
+
+            match (old_write, new_deserialized_as_old) {
+                (V1Write::Delete, V1Write::Delete) => (),
+                _ => unreachable!(),
+            }
+
+            match old_deserialized_as_new {
+                Write::Delete { action: actual_action } => {
+                    assert_eq!(actual_action.load(Ordering::Relaxed), DeleteAction::Delete);
                 }
                 _ => unreachable!(),
             }
