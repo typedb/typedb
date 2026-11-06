@@ -57,19 +57,6 @@ impl VectorIndex {
         *self.live_directory.write().unwrap() = Some(directory);
     }
 
-    fn write_live_file(type_index: &PerTypeVectorIndex, live_file: &Path) -> io::Result<()> {
-        let staging = live_file.with_extension("tmp");
-        let index = type_index.index.read().unwrap();
-        index.save(staging.to_str().unwrap()).map_err(|err| {
-            type_index.dirty.store(true, Ordering::Release);
-            io::Error::other(format!("failed to save vector index {live_file:?}: {err}"))
-        })?;
-        File::open(&staging)?.sync_all()?;
-        fs::rename(&staging, live_file)?;
-        File::open(live_file.parent().unwrap())?.sync_all()?;
-        Ok(())
-    }
-
     fn get_or_create_index_for_type(
         &self,
         type_id: TypeID,
@@ -182,30 +169,15 @@ impl CheckpointAdditionalData for VectorIndex {
     fn save_to_path(&self, path: &Path) -> io::Result<()> {
         fs::create_dir_all(path)?;
         let live_directory = self.live_directory.read().unwrap().clone();
-        if let Some(live_directory) = &live_directory {
-            fs::create_dir_all(live_directory)?;
-        }
         let indexes = self.per_type_indices.read().unwrap();
         let mut manifest = format!("{MANIFEST_VERSION_LINE}\n");
         for (type_id, type_index) in indexes.iter() {
             let type_id = u16::from_be_bytes(type_id.to_bytes());
-            let file_name = index_file_name(type_id);
-            let checkpoint_file = path.join(&file_name);
-
-            match &live_directory {
-                Some(live_directory) => {
-                    let live_file = live_directory.join(&file_name);
-                    if type_index.dirty.swap(false, Ordering::Acquire) || !live_file.exists() {
-                        Self::write_live_file(type_index, &live_file)?;
-                    }
-                    fs::hard_link(&live_file, &checkpoint_file)
-                        .or_else(|_| fs::copy(&live_file, &checkpoint_file).map(|_| ()))?;
-                }
-                None => Self::write_live_file(type_index, &checkpoint_file)?,
-            }
-            let file_length = fs::metadata(&checkpoint_file)?.len();
-            manifest.push_str(&format!("{type_id:#06x} {METRIC_NAME} {} {file_length}\n", type_index.get_dimensions()));
+            let dir_name = type_dir_name(type_id);
+            let live_type_dir = live_directory.as_ref().map(|live| live.join(&dir_name));
+            manifest.push_str(&type_index.checkpoint_to(type_id, live_type_dir.as_deref(), &path.join(&dir_name))?);
         }
+        // Written and fsynced last: a parseable MANIFEST implies every file it names is durable.
         let mut manifest_file = File::create(path.join(MANIFEST_FILE_NAME))?;
         manifest_file.write_all(manifest.as_bytes())?;
         manifest_file.sync_all()?;
@@ -220,43 +192,15 @@ impl CheckpointAdditionalData for VectorIndex {
         if version_line != MANIFEST_VERSION_LINE {
             return Err(invalid_data(format!("unsupported vector store manifest version: '{version_line}'")));
         }
+        let mut entries: HashMap<u16, Vec<ManifestEntry>> = HashMap::new();
+        for line in lines {
+            let (type_id, entry) = parse_manifest_line(line)?;
+            entries.entry(type_id).or_default().push(entry);
+        }
         let store = VectorIndex::new();
         let mut indexes = store.per_type_indices.write().unwrap();
-        for line in lines {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            let &[type_id, metric, dimensions, file_length] = parts.as_slice() else {
-                return Err(invalid_data(format!("malformed vector store manifest line: '{line}'")));
-            };
-            let type_id = type_id
-                .strip_prefix("0x")
-                .and_then(|hex| u16::from_str_radix(hex, 16).ok())
-                .ok_or_else(|| invalid_data(format!("malformed type id in vector store manifest: '{line}'")))?;
-            if metric != METRIC_NAME {
-                return Err(invalid_data(format!("unsupported vector index metric: '{metric}'")));
-            }
-            let dimensions: usize = dimensions
-                .parse()
-                .map_err(|_| invalid_data(format!("malformed dimensions in vector store manifest: '{line}'")))?;
-            let file_length: u64 = file_length
-                .parse()
-                .map_err(|_| invalid_data(format!("malformed file length in vector store manifest: '{line}'")))?;
-
-            let file_name = index_file_name(type_id);
-            let path = dir.join(&file_name);
-            let actual_length = fs::metadata(&path)?.len();
-            if actual_length != file_length {
-                return Err(invalid_data(format!(
-                    "vector index file {file_name} is {actual_length} bytes, manifest says {file_length}"
-                )));
-            }
-            let type_index = PerTypeVectorIndex::new(dimensions)
-                .map_err(|err| invalid_data(format!("failed to create vector index {file_name}: {err}")))?;
-            type_index
-                .index
-                .write()
-                .unwrap()
-                .load(path.to_str().unwrap())
-                .map_err(|err| invalid_data(format!("failed to load vector index {file_name}: {err}")))?;
+        for (type_id, type_entries) in entries {
+            let type_index = PerTypeVectorIndex::restore_from(dir, type_id, &type_entries)?;
             indexes.insert(TypeID::decode(type_id.to_be_bytes()), Arc::new(type_index));
         }
         drop(indexes);
@@ -301,7 +245,12 @@ typedb_error! {
 }
 
 struct PerTypeVectorIndex {
-    index: RwLock<Index>,
+    /// The hot shard: the single mutable, RAM-resident index. Sealed (immutable, mmap'd)
+    /// shards will sit alongside it in the larger-than-memory design; the `Arc` slot
+    /// exists so sealing can later freeze the hot index by swapping handles.
+    /// Never clone this `Arc` and mutate the index after releasing the guard: saving
+    /// (and the future freeze) relies on the lock excluding all in-flight writers.
+    hot: RwLock<Arc<Index>>,
     dirty: AtomicBool,
 }
 
@@ -318,15 +267,15 @@ impl PerTypeVectorIndex {
         };
         let index = usearch::new_index(&options)
             .map_err(|err| VectorIndexError::IndexCreate { dimensions, reason: err.to_string() })?;
-        Ok(Self { index: RwLock::new(index), dirty: AtomicBool::new(true) })
+        Ok(Self { hot: RwLock::new(Arc::new(index)), dirty: AtomicBool::new(true) })
     }
 
     fn get_dimensions(&self) -> usize {
-        self.index.read().unwrap().dimensions()
+        self.hot.read().unwrap().dimensions()
     }
 
     fn reserve(&self, dimensions: usize, additional: usize) -> Result<(), VectorIndexError> {
-        let index = self.index.write().unwrap();
+        let index = self.hot.write().unwrap();
         if index.dimensions() != dimensions {
             return Err(VectorIndexError::DimensionMismatch {
                 index_dimensions: index.dimensions(),
@@ -343,7 +292,7 @@ impl PerTypeVectorIndex {
     }
 
     fn add_value(&self, key: u64, vector: &[f32]) -> Result<(), VectorIndexError> {
-        let index = self.index.write().unwrap();
+        let index = self.hot.write().unwrap();
         if index.contains(key) {
             return Ok(());
         }
@@ -364,20 +313,87 @@ impl PerTypeVectorIndex {
     }
 
     fn get_value(&self, key: u64) -> Option<Vec<f32>> {
-        let index = self.index.read().unwrap();
+        let index = self.hot.read().unwrap();
         let mut buffer = vec![0.0f32; index.dimensions()];
         let found = index.get(key, &mut buffer).unwrap_or_else(|err| panic!("failed to read vector from index: {err}"));
         (found > 0).then_some(buffer)
     }
 
     fn list_by_ann(&self, query: &[f32], count: usize) -> Vec<(u64, f32)> {
-        let index = self.index.read().unwrap();
+        let index = self.hot.read().unwrap();
         let matches = index.search(query, count).unwrap_or_else(|err| panic!("vector index search failed: {err}"));
         matches.keys.into_iter().zip(matches.distances).collect()
     }
 
     fn get_size(&self) -> usize {
-        self.index.read().unwrap().size()
+        self.hot.read().unwrap().size()
+    }
+
+    /// Serializes the hot shard to `target` via a staging file, fsyncing file and parent.
+    fn write_file(&self, target: &Path) -> io::Result<()> {
+        let staging = target.with_extension("tmp");
+        // The read guard is held across the whole save: usearch's save() is not safe
+        // against concurrent add() (it iterates internal tables without locking), so
+        // writers (which take the write lock) must stay excluded for the duration.
+        let index = self.hot.read().unwrap();
+        index.save(staging.to_str().unwrap()).map_err(|err| {
+            self.dirty.store(true, Ordering::Release);
+            io::Error::other(format!("failed to save vector index {target:?}: {err}"))
+        })?;
+        File::open(&staging)?.sync_all()?;
+        fs::rename(&staging, target)?;
+        File::open(target.parent().unwrap())?.sync_all()?;
+        Ok(())
+    }
+
+    /// Writes this type's shard files into `checkpoint_dir`, reusing unchanged live
+    /// files via hard links, and returns this type's MANIFEST lines.
+    fn checkpoint_to(&self, type_id: u16, live_dir: Option<&Path>, checkpoint_dir: &Path) -> io::Result<String> {
+        fs::create_dir_all(checkpoint_dir)?;
+        let checkpoint_file = checkpoint_dir.join(HOT_FILE_NAME);
+        match live_dir {
+            Some(live_dir) => {
+                fs::create_dir_all(live_dir)?;
+                let live_file = live_dir.join(HOT_FILE_NAME);
+                if self.dirty.swap(false, Ordering::Acquire) || !live_file.exists() {
+                    self.write_file(&live_file)?;
+                }
+                fs::hard_link(&live_file, &checkpoint_file)
+                    .or_else(|_| fs::copy(&live_file, &checkpoint_file).map(|_| ()))?;
+            }
+            None => self.write_file(&checkpoint_file)?,
+        }
+        let file_length = fs::metadata(&checkpoint_file)?.len();
+        Ok(format!("{} {METRIC_NAME} {} hot {file_length}\n", type_dir_name(type_id), self.get_dimensions()))
+    }
+
+    /// Inverse of [`Self::checkpoint_to`]: reconstructs this type's index from its
+    /// directory under `dir` and its parsed MANIFEST entries.
+    fn restore_from(dir: &Path, type_id: u16, entries: &[ManifestEntry]) -> io::Result<Self> {
+        let [entry] = entries else {
+            return Err(invalid_data(format!(
+                "expected exactly one hot shard for type {}, found {}",
+                type_dir_name(type_id),
+                entries.len()
+            )));
+        };
+        let path = dir.join(type_dir_name(type_id)).join(HOT_FILE_NAME);
+        let actual_length = fs::metadata(&path)?.len();
+        if actual_length != entry.file_length {
+            return Err(invalid_data(format!(
+                "vector index file {path:?} is {actual_length} bytes, manifest says {}",
+                entry.file_length
+            )));
+        }
+        let type_index = PerTypeVectorIndex::new(entry.dimensions)
+            .map_err(|err| invalid_data(format!("failed to create vector index for {path:?}: {err}")))?;
+        type_index
+            .hot
+            .write()
+            .unwrap()
+            .load(path.to_str().unwrap())
+            .map_err(|err| invalid_data(format!("failed to load vector index {path:?}: {err}")))?;
+        Ok(type_index)
     }
 }
 
@@ -395,18 +411,78 @@ fn stored_vector_writes(
     })
 }
 
+/// Persistence layout (format version 2):
+///
+/// ```text
+/// <dir>/
+/// ├── MANIFEST                       "version 2" + one line per shard file
+/// └── 0x0001/                        one directory per attribute type
+///     └── hot.usearch                the hot shard's snapshot
+/// ```
+///
+/// MANIFEST grammar — the COMPLETE grammar is fixed here even though this version only
+/// ever emits `hot` lines, so that the future multi-shard version reads today's data
+/// with no migration (a hot-only manifest is simply "a database that never sealed"):
+///
+/// ```text
+/// version 2
+/// <type_id_hex> <metric> <dimensions> hot <file_length>
+/// <type_id_hex> <metric> <dimensions> sealed <shard_number> <file_length>   (reserved)
+/// ```
+///
+/// Parsing rules: an unknown shard KIND is a hard error (that data would be unservable;
+/// skipping would silently lose vectors); unknown TRAILING columns beyond a kind's known
+/// arity are ignored (future annotations without a format version bump). The version is
+/// bumped only to reinterpret existing bytes, never to add kinds or trailing columns.
 const MANIFEST_FILE_NAME: &str = "MANIFEST";
 
-const MANIFEST_VERSION_LINE: &str = "version 1";
+const MANIFEST_VERSION_LINE: &str = "version 2";
 
 const METRIC_NAME: &str = "cosine";
 
-fn index_file_name(type_id: u16) -> String {
-    format!("{type_id:#06x}-{METRIC_NAME}.usearch")
+const HOT_FILE_NAME: &str = "hot.usearch";
+
+fn type_dir_name(type_id: u16) -> String {
+    format!("{type_id:#06x}")
 }
 
 fn invalid_data(message: String) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
+}
+
+/// A parsed MANIFEST line for one shard file. This version only ever holds `hot`
+/// entries: `sealed` lines are rejected at parse time.
+struct ManifestEntry {
+    dimensions: usize,
+    file_length: u64,
+}
+
+fn parse_manifest_line(line: &str) -> io::Result<(u16, ManifestEntry)> {
+    let malformed = |what: &str| invalid_data(format!("malformed {what} in vector store manifest line: '{line}'"));
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    let &[type_id, metric, dimensions, kind, ref rest @ ..] = parts.as_slice() else {
+        return Err(malformed("line"));
+    };
+    let type_id = type_id
+        .strip_prefix("0x")
+        .and_then(|hex| u16::from_str_radix(hex, 16).ok())
+        .ok_or_else(|| malformed("type id"))?;
+    if metric != METRIC_NAME {
+        return Err(invalid_data(format!("unsupported vector index metric: '{metric}'")));
+    }
+    let dimensions: usize = dimensions.parse().map_err(|_| malformed("dimensions"))?;
+    match kind {
+        // Trailing columns beyond the known arity are ignored for forward compatibility.
+        "hot" => {
+            let file_length: u64 =
+                rest.first().ok_or_else(|| malformed("line"))?.parse().map_err(|_| malformed("file length"))?;
+            Ok((type_id, ManifestEntry { dimensions, file_length }))
+        }
+        "sealed" => Err(invalid_data(format!(
+            "vector store manifest contains a sealed shard, which this version does not support: '{line}'"
+        ))),
+        _ => Err(invalid_data(format!("unknown shard kind '{kind}' in vector store manifest line: '{line}'"))),
+    }
 }
 
 #[cfg(test)]
@@ -419,6 +495,10 @@ mod test {
             TypeID::decode(type_id.to_be_bytes()),
             AttributeID::Vector(VectorAttributeID::from_type_vector_index_key(key)),
         )
+    }
+
+    fn hot_file(dir: &Path, type_id: u16) -> PathBuf {
+        dir.join(type_dir_name(type_id)).join(HOT_FILE_NAME)
     }
 
     #[test]
@@ -450,15 +530,15 @@ mod test {
         let dir = root.join("extension");
         store.save_to_path(&dir).unwrap();
 
-        assert!(dir.join("0x0001-cosine.usearch").exists());
-        assert!(dir.join("0x0007-cosine.usearch").exists());
+        assert!(hot_file(&dir, 1).exists());
+        assert!(hot_file(&dir, 7).exists());
         assert!(fs::read_to_string(dir.join(MANIFEST_FILE_NAME)).unwrap().starts_with(MANIFEST_VERSION_LINE));
 
         let loaded = VectorIndex::load_from_path(&dir).unwrap();
         assert_eq!(loaded.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
         assert_eq!(loaded.get_value_by_attr_vertex(vertex(7, 200)), Some(vec![0.0, 1.0, 0.0, 0.0]));
 
-        let index_file = dir.join("0x0001-cosine.usearch");
+        let index_file = hot_file(&dir, 1);
         let bytes = fs::read(&index_file).unwrap();
         fs::write(&index_file, &bytes[..bytes.len() - 1]).unwrap();
         assert!(VectorIndex::load_from_path(&dir).is_err());
@@ -479,13 +559,13 @@ mod test {
 
         let (first, second) = (root.join("first"), root.join("second"));
         store.save_to_path(&first).unwrap();
-        assert!(root.join("live").join("0x0001-cosine.usearch").exists());
+        assert!(hot_file(&root.join("live"), 1).exists());
 
         store.add_instance(vertex(7, 300), &[0.0, -1.0]).unwrap();
         store.save_to_path(&second).unwrap();
 
-        let first_clean = fs::read(first.join("0x0001-cosine.usearch")).unwrap();
-        assert_eq!(fs::read(second.join("0x0001-cosine.usearch")).unwrap(), first_clean);
+        let first_clean = fs::read(hot_file(&first, 1)).unwrap();
+        assert_eq!(fs::read(hot_file(&second, 1)).unwrap(), first_clean);
 
         let loaded = VectorIndex::load_from_path(&second).unwrap();
         assert_eq!(loaded.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
@@ -495,10 +575,50 @@ mod test {
         let third = root.join("third");
         loaded.set_live_directory(root.join("live"));
         loaded.save_to_path(&third).unwrap();
-        assert_eq!(
-            fs::read(third.join("0x0007-cosine.usearch")).unwrap(),
-            fs::read(second.join("0x0007-cosine.usearch")).unwrap()
-        );
+        assert_eq!(fs::read(hot_file(&third, 7)).unwrap(), fs::read(hot_file(&second, 7)).unwrap());
+
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn empty_store_checkpoint_roundtrip() {
+        let root = std::env::temp_dir().join(format!("vector_index_empty_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("extension");
+
+        VectorIndex::new().save_to_path(&dir).unwrap();
+        assert_eq!(fs::read_to_string(dir.join(MANIFEST_FILE_NAME)).unwrap(), format!("{MANIFEST_VERSION_LINE}\n"));
+
+        let loaded = VectorIndex::load_from_path(&dir).unwrap();
+        assert!(loaded.per_type_indices.read().unwrap().is_empty());
+
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn manifest_forward_compatibility_rules() {
+        let store = VectorIndex::new();
+        store.add_instance(vertex(1, 100), &[1.0, 0.0]).unwrap();
+
+        let root = std::env::temp_dir().join(format!("vector_index_compat_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("extension");
+        store.save_to_path(&dir).unwrap();
+        let manifest_path = dir.join(MANIFEST_FILE_NAME);
+        let manifest = fs::read_to_string(&manifest_path).unwrap();
+
+        // Unknown trailing columns on a known kind are ignored (forward compatibility).
+        fs::write(&manifest_path, format!("{} future-annotation\n", manifest.trim_end())).unwrap();
+        assert_eq!(VectorIndex::load_from_path(&dir).unwrap().get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
+
+        // A sealed line (reserved for the multi-shard version) is a hard, named error.
+        fs::write(&manifest_path, format!("{manifest}0x0001 cosine 2 sealed 0001 1024\n")).unwrap();
+        let error = VectorIndex::load_from_path(&dir).unwrap_err();
+        assert!(error.to_string().contains("sealed"));
+
+        // An unknown shard kind is a hard error, never silently skipped.
+        fs::write(&manifest_path, format!("{manifest}0x0001 cosine 2 warm 1024\n")).unwrap();
+        assert!(VectorIndex::load_from_path(&dir).is_err());
 
         fs::remove_dir_all(&root).unwrap();
     }
