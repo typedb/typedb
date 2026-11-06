@@ -266,9 +266,9 @@ build:
           export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel run --config=ci --compilation_mode=opt //tests/benchmarks/micro/sample:microbench_samples
-        bazel run --config=ci --compilation_mode=opt //tests/benchmarks/micro/reads:microbench_reads -- ci_tests
-        bazel run --config=ci --compilation_mode=opt //tests/benchmarks/micro/writes:microbench_writes -- ci_tests
+        bazel run --config=ci //tests/benchmarks/micro/sample:microbench_samples
+        bazel run --config=ci //tests/benchmarks/micro/reads:microbench_reads -- ci_tests
+        bazel run --config=ci //tests/benchmarks/micro/writes:microbench_writes -- ci_tests
 
 release:
   filter:

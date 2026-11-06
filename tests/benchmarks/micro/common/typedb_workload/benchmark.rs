@@ -63,7 +63,7 @@ impl<IN, OUT, REPORT: SimpleReport<OUT>> SimpleBenchmark for TypeDBMicroBenchmar
             preload_fn(database.clone());
         }
         #[cfg(debug_assertions)]
-        eprintln!("---\n- WARNING: In debug mode, we don't flush the database.\n---");
+        eprintln!("---\n- WARNING: In debug mode, we don't flush the preloaded database.\n---");
         #[cfg(not(debug_assertions))]
         database.benchmark_only_flush();
     }
