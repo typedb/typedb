@@ -22,11 +22,20 @@ use serde::{
 #[derive(Serialize, Deserialize, Clone)]
 pub enum Write {
     // Insert KeyValue with a new version. Never conflicts. May represent a brand new key or re-inserting an existing key blindly
-    Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
+    Insert {
+        value: ByteArray<BUFFER_VALUE_INLINE>,
+    },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    Put { value: ByteArray<BUFFER_VALUE_INLINE>, action: Arc<AtomicPutAction>, known_to_exist: KnownToExist },
+    Put {
+        value: ByteArray<BUFFER_VALUE_INLINE>,
+        action: Arc<AtomicPutAction>,
+        known_to_exist: KnownToExist,
+    },
     // Delete with a new version. Conflicts with Require.
-    Delete { action: Arc<AtomicDeleteAction> },
+    Delete {
+        #[serde(skip_serializing)]
+        action: Arc<AtomicDeleteAction>,
+    },
 }
 
 impl fmt::Debug for Write {
@@ -314,27 +323,12 @@ impl AtomicDeleteAction {
     }
 }
 
-impl Serialize for AtomicDeleteAction {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        // serializing as AtomicBool to preserve compat with old `reinsert: AtomicBool`
-        AtomicBool::new(self.load(Ordering::Relaxed) != DeleteAction::Nop).serialize(serializer)
-    }
-}
-
 impl<'de> Deserialize<'de> for AtomicDeleteAction {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        // deserializing as AtomicBool to preserve compat with old `reinsert: AtomicBool`
-        if AtomicBool::deserialize(deserializer)?.load(Ordering::Relaxed) {
-            Ok(Self::new(DeleteAction::Delete))
-        } else {
-            Ok(Self::new(DeleteAction::Nop))
-        }
+        Ok(Self::new(DeleteAction::Delete))
     }
 }
 
