@@ -402,12 +402,6 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub trait CheckpointAdditionalData: Sized {
-    const NAME: &'static str;
-    fn save_to_path(&self, path: &Path) -> io::Result<()>;
-    fn load_from_path(path: &Path) -> io::Result<Self>;
-}
-
 #[derive(Debug, Clone)]
 pub enum CheckpointCreateError {
     CheckpointDirCreate { dir: PathBuf, source: Arc<io::Error> },
@@ -446,6 +440,12 @@ impl Error for CheckpointCreateError {
             Self::OldCheckpointRemove { source, .. } => Some(source),
         }
     }
+}
+
+pub trait CheckpointAdditionalData: Sized {
+    const NAME: &'static str;
+    fn save_to_path(&self, path: &Path) -> io::Result<()>;
+    fn load_from_path(path: &Path) -> io::Result<Self>;
 }
 
 typedb_error! {

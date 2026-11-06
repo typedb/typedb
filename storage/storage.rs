@@ -83,18 +83,6 @@ pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
 
-pub trait SecondaryStore: Send + Sync + fmt::Debug {
-    fn stores_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
-
-    fn validate_commit(&self, operations: &OperationsBuffer) -> Result<(), Box<dyn Error + Send + Sync>>;
-
-    fn apply_commit(
-        &self,
-        sequence_number: SequenceNumber,
-        operations: &OperationsBuffer,
-    ) -> Result<(), Box<dyn Error + Send + Sync>>;
-}
-
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
     name: Arc<str>,
@@ -914,6 +902,18 @@ impl StorageOperation {
 pub struct CommitData {
     pub sequence_number: SequenceNumber,
     pub record: Arc<CommitRecord>,
+}
+
+pub trait SecondaryStore: Send + Sync + fmt::Debug {
+    fn stores_value(&self, keyspace_id: KeyspaceId, key: &[u8]) -> bool;
+
+    fn validate_commit(&self, operations: &OperationsBuffer) -> Result<(), Box<dyn Error + Send + Sync>>;
+
+    fn apply_commit(
+        &self,
+        sequence_number: SequenceNumber,
+        operations: &OperationsBuffer,
+    ) -> Result<(), Box<dyn Error + Send + Sync>>;
 }
 
 #[cfg(test)]
