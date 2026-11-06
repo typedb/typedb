@@ -80,10 +80,16 @@ impl VectorIndex {
 
     pub fn add_instance(&self, vertex: AttributeVertex, vector: &[f32]) -> Result<(), VectorIndexError> {
         let id = vertex.attribute_id().unwrap_vector();
-        self.get_or_create_index_for_type(vertex.type_id_(), vector.len())?.add_value(id.as_type_vector_index_key(), vector)
+        self.get_or_create_index_for_type(vertex.type_id_(), vector.len())?
+            .add_value(id.as_type_vector_index_key(), vector)
     }
 
-    pub fn list_instances_by_ann(&self, type_id: TypeID, reference_point: &[f32], count: usize) -> Vec<(AttributeVertex, f32)> {
+    pub fn list_instances_by_ann(
+        &self,
+        type_id: TypeID,
+        reference_point: &[f32],
+        count: usize,
+    ) -> Vec<(AttributeVertex, f32)> {
         let Some(index) = self.per_type_indices.read().unwrap().get(&type_id).cloned() else { return Vec::new() };
         index
             .list_by_ann(reference_point, count)
@@ -115,7 +121,10 @@ impl VectorIndex {
                 _ => None,
             })
             .collect();
-        self.per_type_indices.write().unwrap().retain(|type_id, index| live.get(type_id) == Some(&index.get_dimensions()));
+        self.per_type_indices
+            .write()
+            .unwrap()
+            .retain(|type_id, index| live.get(type_id) == Some(&index.get_dimensions()));
     }
 
     pub fn clear(&self) {
@@ -609,7 +618,10 @@ mod test {
 
         // Unknown trailing columns on a known kind are ignored (forward compatibility).
         fs::write(&manifest_path, format!("{} future-annotation\n", manifest.trim_end())).unwrap();
-        assert_eq!(VectorIndex::load_from_path(&dir).unwrap().get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
+        assert_eq!(
+            VectorIndex::load_from_path(&dir).unwrap().get_value_by_attr_vertex(vertex(1, 100)),
+            Some(vec![1.0, 0.0])
+        );
 
         // A sealed line (reserved for the multi-shard version) is a hard, named error.
         fs::write(&manifest_path, format!("{manifest}0x0001 cosine 2 sealed 0001 1024\n")).unwrap();
