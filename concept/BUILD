@@ -3,30 +3,8 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
-rustfmt_test(
-    name = "rustfmt_test",
-    targets = [
-        ":concept",
-        ":test_crate_concept",
-    ],
-    size = "small",
-)
-
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = [
-    ":__subpackages__",
-    "//answer:__subpackages__",
-    "//executor:__subpackages__",
-    "//function:__subpackages__",
-    "//database:__subpackages__",
-    "//ir:__subpackages__",
-    "//compiler:__subpackages__",
-    "//traversal:__subpackages__",
-    "//query:__subpackages__",
-    "//server:__subpackages__",
-    "//system:__subpackages__",
-    "//tests:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "concept",
@@ -68,6 +46,15 @@ rust_test(
     name = "test_crate_concept",
     crate = ":concept",
     deps = [],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":concept",
+        ":test_crate_concept",
+    ],
+    size = "small",
 )
 
 checkstyle_test(
