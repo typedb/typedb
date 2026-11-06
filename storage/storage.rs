@@ -828,6 +828,11 @@ impl<'bytes> MVCCKey<'bytes> {
     fn operation(&self) -> StorageOperation {
         self.split().2
     }
+
+    fn extract_key(bytes: &'bytes [u8]) -> &'bytes [u8] {
+        let length = bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
+        &bytes[..length]
+    }
 }
 
 enum StorageOperation {

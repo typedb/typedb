@@ -233,7 +233,7 @@ impl<LI: LendingIterator> Peekable<LI> {
         self.get_peeked()
     }
 
-    pub(crate) fn get_peeked(&self) -> Option<&LI::Item<'_>> {
+    pub fn get_peeked(&self) -> Option<&LI::Item<'_>> {
         unsafe {
             // SAFETY: the item reference borrows this iterator. This iterator cannot be advanced while it exists.
             transmute::<Option<&LI::Item<'static>>, Option<&LI::Item<'_>>>(self.item.as_ref())

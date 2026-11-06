@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, error::Error, fmt, mem, sync::Arc};
+use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use lending_iterator::{LendingIterator, Seekable};
+use lending_iterator::{LendingIterator, Peekable, Seekable};
 use resource::profile::StorageCounters;
 
-use super::{MVCC_KEY_INLINE_SIZE, MVCCKey, MVCCStorage, StorageOperation};
 use crate::{
+    MVCC_KEY_INLINE_SIZE, MVCCKey, MVCCStorage, StorageOperation,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceError, KeyspaceId, iterator::KeyspaceRangeIterator},
@@ -21,31 +21,13 @@ use crate::{
 pub(crate) struct MVCCRangeIterator {
     storage_name: Arc<str>,
     keyspace_id: KeyspaceId,
-    iterator: KeyspaceRangeIterator,
+    iterator: Peekable<KeyspaceRangeIterator>,
     open_sequence_number: SequenceNumber,
     storage_counters: StorageCounters,
 
     // The key of the newest visible version seen so far. Versions of a key are adjacent and ordered newest-first, so
     // the versions following it with the same key are older, and hidden. Overwritten in place to avoid per-key copies.
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
-
-    // The next item to return, consumed from `iterator` but not yet returned.
-    // SAFETY: `'static` stands for "owned by `iterator`": like the items of the underlying `DBIterator`, the slices
-    // point into the raw iterator's current entry, which stays valid until `iterator` is advanced or sought.
-    // Both only happen after `next_item` has been reset to `Unknown`.
-    next_item: Option<Result<Item<'static>, MVCCReadError>>,
-}
-
-#[derive(Clone, Copy)]
-struct Item<'a> {
-    key: &'a [u8],
-    value: &'a [u8],
-}
-
-impl<'a> Item<'a> {
-    fn into_key_value(self, keyspace_id: KeyspaceId) -> (StorageKeyReference<'a>, &'a [u8]) {
-        (StorageKeyReference::new_raw(keyspace_id, self.key), self.value)
-    }
 }
 
 impl MVCCRangeIterator {
@@ -64,19 +46,24 @@ impl MVCCRangeIterator {
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace_id: keyspace.id(),
-            iterator,
+            iterator: Peekable::new(iterator),
             open_sequence_number,
             storage_counters,
             last_visible_key: None,
-            next_item: None,
         }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
         self.find_next_state();
-        match self.next_item.as_ref()? {
-            &Ok(item) => Some(Ok(item.into_key_value(self.keyspace_id))),
-            Err(err) => Some(Err(err.clone())),
+        match self.iterator.get_peeked().as_ref()? {
+            &Ok((key, value)) => {
+                let key = StorageKeyReference::new_raw(self.keyspace_id, MVCCKey::extract_key(key));
+                Some(Ok((key, value)))
+            }
+            Err(err) => Some(Err(MVCCReadError::Keyspace {
+                storage_name: self.storage_name.clone(),
+                source: Arc::new(err.clone()),
+            })),
         }
     }
 
@@ -84,24 +71,16 @@ impl MVCCRangeIterator {
     /// item. The next item stays unknown if the keyspace iterator is exhausted, or fails: a keyspace error is treated as
     /// the end of the range.
     fn find_next_state(&mut self) {
-        if self.next_item.is_some() {
+        if self.iterator.get_peeked().is_some() {
             return;
         }
-        while let Some(next) = self.iterator.next() {
-            let (key, value) = match next {
-                Ok((key, value)) => (key, value),
-                Err(err) => {
-                    self.next_item = Some(Err(MVCCReadError::Keyspace {
-                        storage_name: self.storage_name.clone(),
-                        source: Arc::new(err),
-                    }));
-                    return;
-                }
-            };
+        while let Some(next) = self.iterator.peek() {
+            let Ok((key, _)) = next else { return };
             let key = MVCCKey::wrap_slice(key);
             let (key, sequence_number, operation) = key.split();
             if sequence_number > self.open_sequence_number || self.last_visible_key.as_deref() == Some(key) {
                 self.storage_counters.increment_advance_mvcc_invisible();
+                self.iterator.next();
                 continue;
             }
             match &mut self.last_visible_key {
@@ -111,12 +90,12 @@ impl MVCCRangeIterator {
             match operation {
                 StorageOperation::Insert => {
                     self.storage_counters.increment_advance_mvcc_visible();
-                    // SAFETY: see `Self::next_item`
-                    let item = unsafe { mem::transmute::<Item<'_>, Item<'static>>(Item { key, value }) };
-                    self.next_item = Some(Ok(item));
                     return;
                 }
-                StorageOperation::Delete => self.storage_counters.increment_advance_mvcc_deleted(),
+                StorageOperation::Delete => {
+                    self.storage_counters.increment_advance_mvcc_deleted();
+                    self.iterator.next();
+                }
             }
         }
     }
@@ -127,16 +106,25 @@ impl LendingIterator for MVCCRangeIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.find_next_state();
-        Some(self.next_item.take()?.map(|item| item.into_key_value(self.keyspace_id)))
+        match self.iterator.next()? {
+            Ok((key, value)) => {
+                let key = StorageKeyReference::new_raw(self.keyspace_id, MVCCKey::extract_key(key));
+                Some(Ok((key, value)))
+            }
+            Err(err) => Some(Err(MVCCReadError::Keyspace {
+                storage_name: self.storage_name.clone(),
+                source: Arc::new(err.clone()),
+            })),
+        }
     }
 }
 
 impl Seekable<[u8]> for MVCCRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         self.find_next_state();
-        if let Some(Ok(Item { key: next_key, .. })) = self.next_item {
+        if let Some(&Ok((next_key, ..))) = self.iterator.get_peeked() {
             if next_key < key {
-                self.next_item = None;
+                self.iterator.next();
                 self.iterator.seek(key);
             }
         }
