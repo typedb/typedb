@@ -4,7 +4,7 @@
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test", "rustfmt_test")
-package(default_visibility = ["//visibility:public",])
+package(default_visibility = ["//visibility:public"])
 
 rust_test(
     name = "pattern",
