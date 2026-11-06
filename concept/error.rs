@@ -41,6 +41,8 @@ typedb_error!(
         UnsetHasOrderedOwnsUnordered(10, "Concept write failed, cannot unset an ordered owns when the ownership is unordered."),
         UnsetHasUnorderedOwnsOrdered(11, "Concept write failed, cannot unset an unordered owns when the ownership is ordered"),
         SetPlayersOrderedRoleUnordered(12, "Concept write failed, cannot set relation's ordered role players as unordered."),
+
+        UnimplementedLanguageFeatureCascade(254,"The cascade feature is not yet implemented."),
     }
 );
 
