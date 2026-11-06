@@ -253,9 +253,8 @@ impl DatabaseImportService {
             .import_prepare(&name, self.close_sender.clone())
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::ImportPrepareFailed { typedb_source })?;
-        self.active_import = Some(ActiveImport::new(name, importer));
 
-        let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
+        let active_import = self.active_import.insert(ActiveImport::new(name, importer));
         self.stop_signals
             .unless_stopped(active_import.importer.send_schema(schema))
             .await?

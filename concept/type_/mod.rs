@@ -40,7 +40,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{ThingAPI, thing_manager::ThingManager},
+    thing::{ThingAPI, ThingKind, thing_manager::ThingManager},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError, HasAnnotationCategory},
         attribute_type::AttributeType,
@@ -287,6 +287,8 @@ pub trait ObjectTypeAPI: TypeAPI + OwnerAPI + ThingTypeAPI {
 
 pub trait ThingTypeAPI: TypeAPI {
     type InstanceType: ThingAPI;
+
+    fn instances_thing_kind(&self) -> ThingKind;
 }
 
 pub trait TypeQLSyntax {

@@ -36,7 +36,7 @@ use crate::{
     ConceptAPI, ConceptStatus, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance, ThingAPI,
+        HKInstance, ThingAPI, ThingKind,
         object::{Object, ObjectAPI},
         thing_manager::{ObjectOrigin, ThingManager, validation::operation_time_validation::OperationTimeValidation},
     },
@@ -68,6 +68,11 @@ impl Relation {
             ConceptStatus::Persisted => Ok(thing_manager.has_links(snapshot, self, false)),
             ConceptStatus::Put => unreachable!("Encountered a `put` relation"),
             ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept."),
+            ConceptStatus::Nonexistent => {
+                unreachable!(
+                    "Attempting to retrieve players of a nonexistent (not buffered, deleted, or persisted) relation."
+                )
+            }
         }
     }
 
@@ -402,7 +407,7 @@ impl ThingAPI for Relation {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
+        thing_manager.get_status(snapshot, self.vertex(), storage_counters)
     }
 
     fn delete(
@@ -462,6 +467,10 @@ impl ThingAPI for Relation {
 
     fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexRelation
+    }
+
+    fn thing_kind(&self) -> ThingKind {
+        ThingKind::Relation
     }
 }
 

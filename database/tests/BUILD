@@ -62,6 +62,7 @@ rust_test(
     deps = [
         "//common/concurrency",
         "//common/options",
+        "//concept",
         "//database",
         "//encoding",
         "//resource",

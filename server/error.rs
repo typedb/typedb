@@ -341,6 +341,12 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::UnknownEntityType { .. }
         | DatabaseImportError::UnknownRelationType { .. }
         | DatabaseImportError::UnknownRoleType { .. }
+        | DatabaseImportError::UnknownPlayerType { .. }
+        | DatabaseImportError::PlayerLabelScopedIdMissing { .. }
+        | DatabaseImportError::LabelScopedIdMissing { .. }
+        | DatabaseImportError::UnknownOwnedAttribute { .. }
+        | DatabaseImportError::MissingValueType { .. }
+        | DatabaseImportError::ValueTypeMismatch { .. }
         | DatabaseImportError::NoClientChecksumsOnDone { .. }
         | DatabaseImportError::InvalidChecksumsOnDone { .. }
         | DatabaseImportError::IncompleteOwnershipsOnDone { .. }
@@ -350,8 +356,10 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::ItemBeforeSchema { .. }
         | DatabaseImportError::SchemaAlreadyImported { .. }
         | DatabaseImportError::ItemAfterChecksums { .. }
+        | DatabaseImportError::HeaderAfterItems { .. }
         | DatabaseImportError::RelationWithoutRolePlayers { .. }
         | DatabaseImportError::FinalizationSchemaCommitFailed { .. }
+        | DatabaseImportError::ItemOrderViolation { .. }
         | DatabaseImportError::ItemDecode { .. } => ErrorOrigin::Request,
 
         DatabaseImportError::TransactionFailed { .. }
@@ -363,7 +371,8 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
 
         DatabaseImportError::PreparationSchemaCommitFailed { .. }
         | DatabaseImportError::ImporterStopped { .. }
-        | DatabaseImportError::WorkerStopped { .. }
+        | DatabaseImportError::WorkerPanicked { .. }
+        | DatabaseImportError::UnexpectedPhase { .. }
         | DatabaseImportError::ImportingDatabaseStillShared { .. } => ErrorOrigin::Internal,
 
         DatabaseImportError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),

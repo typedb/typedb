@@ -33,7 +33,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{attribute::Attribute, thing_manager::ThingManager},
+    thing::{ThingKind, attribute::Attribute, thing_manager::ThingManager},
     type_::{
         Capability, KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
@@ -271,6 +271,10 @@ impl KindAPI for AttributeType {
 
 impl ThingTypeAPI for AttributeType {
     type InstanceType = Attribute;
+
+    fn instances_thing_kind(&self) -> ThingKind {
+        ThingKind::Attribute
+    }
 }
 
 impl AttributeType {
