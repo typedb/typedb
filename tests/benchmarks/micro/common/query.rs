@@ -1,0 +1,188 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use std::sync::Arc;
+
+use executor::{
+    ExecutionInterrupt,
+    document::ConceptDocument,
+    pipeline::{
+        PipelineExecutionError,
+        pipeline::Pipeline,
+        stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
+    },
+    row::MaybeOwnedRow,
+};
+use lending_iterator::LendingIterator;
+use query::{error::QueryError, given_rows::GivenRowsSimple};
+use resource::profile::QueryProfile;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+
+use crate::transaction::{PartialTx, UnifiedTransactionView, WriteTransactionView};
+
+pub struct QueryAnswer<T> {
+    pub answer: T,
+    pub profile: Arc<QueryProfile>,
+}
+
+pub trait AnswerConsumer {
+    type Output;
+    fn consume_rows<Iter>(iter: &mut Iter) -> Result<Self::Output, Box<PipelineExecutionError>>
+    where
+        for<'a> Iter: LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>>;
+
+    fn consume_documents(
+        iter: &mut impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>,
+    ) -> Result<Self::Output, Box<PipelineExecutionError>>;
+}
+
+pub(super) fn execute_read_query_in<TX: UnifiedTransactionView, AC: AnswerConsumer>(
+    tx: TX,
+    query: &str,
+    given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
+) -> Result<(QueryAnswer<AC::Output>, TX), (Box<QueryError>, TX)> {
+    let (snapshot, partial_tx) = tx.into_parts();
+    let prepare_result = prepare_read_pipeline(snapshot, partial_tx, query, given_rows, enable_profiling);
+    let ReadPipelineWrapper { pipeline, partial_tx, .. } = prepare_result.map_err(to_err_and_tx)?;
+    let interrupt = ExecutionInterrupt::new_uninterruptible();
+    if pipeline.has_fetch() {
+        let result = pipeline
+            .into_documents_iterator(interrupt)
+            .and_then(|(mut iter, context)| pack_result(AC::consume_documents(&mut iter), context));
+        to_result_with_tx(partial_tx, query, result)
+    } else {
+        let result = pipeline
+            .into_rows_iterator(interrupt)
+            .and_then(|(mut iter, context)| pack_result(AC::consume_rows(&mut iter), context));
+        to_result_with_tx(partial_tx, query, result)
+    }
+}
+
+pub(super) fn execute_write_query_in<TX: UnifiedTransactionView + WriteTransactionView, AC: AnswerConsumer>(
+    tx: TX,
+    query: &str,
+    given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
+) -> Result<(QueryAnswer<AC::Output>, TX), (Box<QueryError>, TX)> {
+    let (arc_snapshot, partial_tx) = tx.into_parts();
+    let snapshot = Arc::into_inner(arc_snapshot).expect("Expected exclusive ownership");
+    let prepare_result = prepare_write_pipeline(snapshot, partial_tx, query, given_rows, enable_profiling);
+    let WritePipelineWrapper { pipeline, partial_tx, .. } = prepare_result.map_err(to_err_and_tx)?;
+    let interrupt = ExecutionInterrupt::new_uninterruptible();
+    if pipeline.has_fetch() {
+        let result = pipeline
+            .into_documents_iterator(interrupt)
+            .and_then(|(mut iter, context)| pack_result(AC::consume_documents(&mut iter), context));
+        to_result_with_tx(partial_tx, query, result)
+    } else {
+        let result = pipeline
+            .into_rows_iterator(interrupt)
+            .and_then(|(mut iter, context)| pack_result(AC::consume_rows(&mut iter), context));
+        to_result_with_tx(partial_tx, query, result)
+    }
+}
+
+struct ReadPipelineWrapper<Snapshot: ReadableSnapshot + 'static> {
+    partial_tx: PartialTx,
+    pipeline: Pipeline<Snapshot, ReadPipelineStage<Snapshot>>,
+}
+
+struct WritePipelineWrapper<Snapshot: WritableSnapshot + 'static> {
+    partial_tx: PartialTx,
+    pipeline: Pipeline<Snapshot, WritePipelineStage<Snapshot>>,
+}
+
+fn prepare_read_pipeline<Snapshot: ReadableSnapshot>(
+    snapshot: Arc<Snapshot>,
+    partial_tx: PartialTx,
+    query: &str,
+    given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
+) -> Result<ReadPipelineWrapper<Snapshot>, ErrorWrapper<Snapshot, Box<QueryError>>> {
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let prepare_result = partial_tx.query_manager.prepare_read_pipeline(
+        snapshot.clone(),
+        &partial_tx.type_manager,
+        partial_tx.thing_manager.clone(),
+        partial_tx.function_manager.clone(),
+        &parsed,
+        given_rows,
+        &query,
+        Some(enable_profiling),
+    );
+    match prepare_result {
+        Err(err) => Err(ErrorWrapper { snapshot, partial_tx, err }),
+        Ok(pipeline) => Ok(ReadPipelineWrapper { partial_tx, pipeline }),
+    }
+}
+
+fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
+    snapshot: Snapshot,
+    partial_tx: PartialTx,
+    query: &str,
+    given_rows: Option<GivenRowsSimple>,
+    enable_profiling: bool,
+) -> Result<WritePipelineWrapper<Snapshot>, ErrorWrapper<Snapshot, Box<QueryError>>> {
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let prepare_result = partial_tx.query_manager.prepare_write_pipeline(
+        snapshot,
+        &partial_tx.type_manager,
+        partial_tx.thing_manager.clone(),
+        partial_tx.function_manager.clone(),
+        &parsed,
+        given_rows,
+        &query,
+        Some(enable_profiling),
+    );
+    match prepare_result {
+        Ok(pipeline) => Ok(WritePipelineWrapper { partial_tx, pipeline }),
+        Err((snapshot, err)) => Err(ErrorWrapper { snapshot: Arc::new(snapshot), partial_tx, err }),
+    }
+}
+
+// util structs & functions
+pub(crate) type PackedResult<OK, ERR, T> = Result<(OK, T), (ERR, T)>;
+
+pub(crate) fn pack_result<OK, ERR, T>(result: Result<OK, ERR>, t: T) -> Result<(OK, T), (ERR, T)> {
+    match result {
+        Ok(ok) => Ok((ok, t)),
+        Err(err) => Err((err, t)),
+    }
+}
+
+pub(crate) fn unpack_result<OK, ERR, T>(result: Result<(OK, T), (ERR, T)>) -> (Result<OK, ERR>, T) {
+    match result {
+        Ok((ok, t)) => (Ok(ok), t),
+        Err((err, t)) => (Err(err), t),
+    }
+}
+
+struct ErrorWrapper<Snapshot, Err> {
+    snapshot: Arc<Snapshot>,
+    partial_tx: PartialTx,
+    err: Err,
+}
+
+fn to_err_and_tx<TX: UnifiedTransactionView, Err>(error_wrapper: ErrorWrapper<TX::Snapshot, Err>) -> (Err, TX) {
+    (error_wrapper.err, TX::reconstruct(error_wrapper.snapshot, error_wrapper.partial_tx))
+}
+
+fn to_result_with_tx<T, TX: UnifiedTransactionView>(
+    partial_tx: PartialTx,
+    source_query: &str,
+    result: PackedResult<T, Box<PipelineExecutionError>, ExecutionContext<TX::Snapshot>>,
+) -> PackedResult<QueryAnswer<T>, Box<QueryError>, TX> {
+    match result {
+        Ok((answer, context)) => {
+            Ok((QueryAnswer { answer, profile: context.profile }, TX::reconstruct(context.snapshot, partial_tx)))
+        }
+        Err((err, context)) => Err((
+            Box::new(QueryError::ReadPipelineExecution { source_query: source_query.to_owned(), typedb_source: err }),
+            TX::reconstruct(context.snapshot, partial_tx),
+        )),
+    }
+}

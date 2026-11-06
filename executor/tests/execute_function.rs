@@ -101,7 +101,7 @@ fn setup_common(schema: &str) -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, schema)
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, schema, None)
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 
@@ -127,6 +127,7 @@ fn run_read_query(
             &match_,
             None::<GivenRowsSimple>,
             query,
+            None,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -163,6 +164,7 @@ fn run_write_query(
             &query_as_pipeline,
             None::<GivenRowsSimple>,
             query,
+            None,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();

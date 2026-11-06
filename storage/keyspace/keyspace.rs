@@ -340,6 +340,11 @@ impl Keyspace {
             .map_err(|source| KeyspaceError::Property { name: property_name, source })
             .map(|result_opt| result_opt.unwrap_or(0))
     }
+
+    #[cfg(not(debug_assertions))]
+    pub(crate) fn benchmark_only_flush(&self) {
+        self.kv_storage.flush().expect("This is test only code. We unwrap")
+    }
 }
 
 impl fmt::Debug for Keyspace {

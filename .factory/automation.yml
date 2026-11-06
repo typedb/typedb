@@ -43,8 +43,10 @@ build:
     cargo-toml-sync:
       image: typedb-ubuntu-22.04
       command: |
-        export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
-        export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+          export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+          export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
         tool/rust/sync.sh
         git add .
         git diff --exit-code HEAD || {
@@ -254,6 +256,19 @@ build:
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed
+
+    test-microbenchmarks:
+      image: typedb-ubuntu-22.04
+      dependencies: [ build ]
+      command: |
+        if [ -n "${CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64:-}" ] && [ -n "${CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64:-}" ]; then
+          export CARGO_BAZEL_GENERATOR_URL="$CARGO_BAZEL_GENERATOR_URL_LINUX_X86_64"
+          export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
+        fi
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel run --config=ci //tests/benchmarks/micro/sample:microbench_samples
+        bazel run --config=ci //tests/benchmarks/micro/reads:microbench_reads -- ci_tests
+        bazel run --config=ci //tests/benchmarks/micro/writes:microbench_writes -- ci_tests
 
 release:
   filter:

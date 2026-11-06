@@ -1,0 +1,71 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use lib_benchmark::{
+    runner::{BenchmarkRunner, BenchmarkRunnerGroup},
+    typedb_workload,
+    typedb_workload::{
+        QueryDescriptor, RunDescriptor, TxType,
+        benchmark::TypeDBQueryWorkloadBenchmark,
+        datagen::{IDMaker, IntegerIDMaker, LongStringIDMaker, ShortStringIDMaker},
+        run_configs::CI_MINIMAL,
+    },
+};
+
+use crate::{NO_INITIAL_DATA, SELECTED_RUN_DESCRIPTORS, assert_query_row_count_is};
+
+const MAX_ID_INTEGER: usize = 100_000_000;
+pub(crate) fn run_all(runner: &mut impl BenchmarkRunner) {
+    run_for_descriptor(&mut runner.new_group("insert_ownerships"), CI_MINIMAL);
+
+    let mut group = runner.new_group("insert_ownerships");
+    for &run_descriptor in SELECTED_RUN_DESCRIPTORS {
+        run_for_descriptor(&mut group, run_descriptor);
+    }
+}
+
+fn run_for_descriptor(group: &mut impl BenchmarkRunnerGroup, run_descriptor: RunDescriptor) {
+    group.run_benchmark(parametrised_workload::<IntegerIDMaker>(
+        insert_ownership::<IntegerIDMaker>("int"),
+        run_descriptor,
+    ));
+    group.run_benchmark(parametrised_workload::<ShortStringIDMaker>(
+        insert_ownership::<ShortStringIDMaker>("short_str"),
+        run_descriptor,
+    ));
+    group.run_benchmark(parametrised_workload::<LongStringIDMaker>(
+        insert_ownership::<LongStringIDMaker>("long_str"),
+        run_descriptor,
+    ));
+}
+
+fn parametrised_workload<MakeID: IDMaker>(
+    query_descriptor: QueryDescriptor,
+    run_descriptor: RunDescriptor,
+) -> TypeDBQueryWorkloadBenchmark {
+    let id_type = MakeID::ID_TYPE;
+    let schema = format!(
+        r#"
+    define
+        attribute id, value {id_type};
+        entity person, owns id;
+    "#
+    );
+    let dbg_assert = Some(assert_query_row_count_is(&run_descriptor));
+    let name = typedb_workload::run_configs::standardised_name(&query_descriptor, &run_descriptor);
+    TypeDBQueryWorkloadBenchmark::new(name, schema, NO_INITIAL_DATA, query_descriptor, run_descriptor, dbg_assert)
+}
+
+fn insert_ownership<MakeID: IDMaker>(id_name: &str) -> QueryDescriptor {
+    let id_type = MakeID::ID_TYPE;
+    QueryDescriptor {
+        name: format!("ownerships_{id_name}_id"),
+        query: format!("given $id_val: {id_type}; insert $x isa person, has id == $id_val;"),
+        variables: vec!["id_val".to_owned()],
+        produce_row: Some(|rng| vec![MakeID::make_id(rng.integer_in(0, (MAX_ID_INTEGER - 1) as i64))]),
+        tx_type: TxType::Write,
+    }
+}

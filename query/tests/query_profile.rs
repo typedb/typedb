@@ -41,7 +41,7 @@ fn define_schema(
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, &schema_query, query_str)
+        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, &schema_query, query_str, None)
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
@@ -65,6 +65,7 @@ fn insert_data(
             &query,
             None::<GivenRowsSimple>,
             query_string,
+            None,
         )
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
@@ -188,6 +189,7 @@ fn query_profile_tree_structure() {
             &query,
             None::<GivenRowsSimple>,
             query_str,
+            None,
         )
         .unwrap();
 
