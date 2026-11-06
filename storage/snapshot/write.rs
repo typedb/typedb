@@ -33,7 +33,7 @@ pub enum Write {
     },
     // Delete with a new version. Conflicts with Require.
     Delete {
-        #[serde(skip_serializing)]
+        #[serde(skip_serializing)] // WAL compatibility: the default action is to always delete.
         action: Arc<AtomicDeleteAction>,
     },
 }
