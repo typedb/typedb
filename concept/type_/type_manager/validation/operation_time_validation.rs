@@ -3528,17 +3528,14 @@ impl OperationTimeValidation {
         constraints: &HashSet<CapabilityConstraint<Plays>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
-        if constraints.is_empty() {
+        debug_assert!(
+            constraints.iter().all(|constraint| constraint.requires_operation_time_validation()),
+            "Only operation-time constraints are validated here"
+        );
+        let abstract_constraints = get_abstract_constraints(constraints.iter().cloned());
+        if abstract_constraints.is_empty() {
             return Ok(());
         }
-
-        let cardinality_constraints_iter = filter_by_constraint_category!(constraints.iter(), Cardinality);
-        let abstract_constraints = get_abstract_constraints(constraints.iter().cloned());
-
-        debug_assert!(
-            cardinality_constraints_iter.clone().count() > 0 || !abstract_constraints.is_empty(),
-            "At least one constraint should exist otherwise we don't need to iterate"
-        );
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
@@ -3547,14 +3544,11 @@ impl OperationTimeValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             {
-                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Plays>, u64> =
-                    cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
-
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
                 let relations_iterator = object.get_relations_roles(snapshot, thing_manager, storage_counters.clone());
                 for relation in relations_iterator {
-                    let (_, role_type, count) = relation
+                    let (_, role_type, _) = relation
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
                     if !role_types.contains(&role_type) {
                         continue;
@@ -3590,37 +3584,6 @@ impl OperationTimeValidation {
                             ));
                         }
                     }
-
-                    for (cardinality_constraint, constraint_counts) in cardinality_constraints_counts.iter_mut() {
-                        debug_assert_eq!(
-                            cardinality_constraint.scope(),
-                            ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes,
-                            "Reconsider the algorithm if constraint scope is changed!"
-                        );
-                        if Self::is_suitable_capability_constraint(
-                            snapshot,
-                            type_manager,
-                            cardinality_constraint,
-                            plays,
-                            role_type,
-                            new_role_supertypes,
-                        )
-                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        {
-                            *constraint_counts += count;
-                        }
-                    }
-                }
-
-                for (cardinality_constraint, constraint_counts) in cardinality_constraints_counts.into_iter() {
-                    DataValidation::validate_plays_instances_cardinality_constraint(
-                        snapshot,
-                        type_manager,
-                        &cardinality_constraint,
-                        object,
-                        cardinality_constraint.source().role(),
-                        constraint_counts,
-                    )?;
                 }
             }
         }
@@ -3638,20 +3601,15 @@ impl OperationTimeValidation {
         constraints: &HashSet<CapabilityConstraint<Relates>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
-        if constraints.is_empty() {
-            return Ok(());
-        }
-
-        let cardinality_constraints_iter = filter_by_constraint_category!(constraints.iter(), Cardinality);
+        debug_assert!(
+            constraints.iter().all(|constraint| constraint.requires_operation_time_validation()),
+            "Only operation-time constraints are validated here"
+        );
         let abstract_constraints = get_abstract_constraints(constraints.iter().cloned());
         let distinct_constraints = get_distinct_constraints(constraints.iter().cloned());
-
-        debug_assert!(
-            cardinality_constraints_iter.clone().count() > 0
-                || !abstract_constraints.is_empty()
-                || !distinct_constraints.is_empty(),
-            "At least one constraint should exist otherwise we don't need to iterate"
-        );
+        if abstract_constraints.is_empty() && distinct_constraints.is_empty() {
+            return Ok(());
+        }
 
         for relation_type in relation_types {
             let mut relation_iterator =
@@ -3661,9 +3619,6 @@ impl OperationTimeValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             {
-                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Relates>, u64> =
-                    cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
-
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
                 let role_players_iterator = relation.get_players(snapshot, thing_manager, storage_counters.clone());
@@ -3707,26 +3662,6 @@ impl OperationTimeValidation {
                         }
                     }
 
-                    for (cardinality_constraint, constraint_counts) in cardinality_constraints_counts.iter_mut() {
-                        debug_assert_eq!(
-                            cardinality_constraint.scope(),
-                            ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes,
-                            "Reconsider the algorithm if constraint scope is changed!"
-                        );
-                        if Self::is_suitable_capability_constraint(
-                            snapshot,
-                            type_manager,
-                            cardinality_constraint,
-                            relates,
-                            role_type,
-                            new_role_supertypes,
-                        )
-                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        {
-                            *constraint_counts += count;
-                        }
-                    }
-
                     for distinct_constraint in distinct_constraints.iter() {
                         debug_assert_eq!(
                             distinct_constraint.scope(),
@@ -3755,17 +3690,6 @@ impl OperationTimeValidation {
                             break;
                         }
                     }
-                }
-
-                for (cardinality_constraint, constraint_counts) in cardinality_constraints_counts.into_iter() {
-                    DataValidation::validate_relates_instances_cardinality_constraint(
-                        snapshot,
-                        type_manager,
-                        &cardinality_constraint,
-                        relation,
-                        cardinality_constraint.source().role(),
-                        constraint_counts,
-                    )?;
                 }
             }
         }
