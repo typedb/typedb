@@ -9,9 +9,14 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
+        thing::vertex_attribute::DeterministicAttributeIDPart,
         type_::{CapabilityKind, Kind},
     },
-    value::{label::Label, value::ValueRestriction, value_type::ValueType},
+    value::{
+        label::Label,
+        value::{Value, ValueRestriction},
+        value_type::ValueType,
+    },
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
@@ -21,7 +26,8 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     error::ConceptReadError,
     thing::{
-        object::ObjectAPI,
+        attribute::Attribute,
+        object::{Object, ObjectAPI},
         thing_manager::{
             ThingManager,
             validation::{DataValidationError, validation::DataValidation},
@@ -3134,12 +3140,90 @@ impl OperationTimeValidation {
         todo!()
     }
 
+    // Validate uniqueness within the hierarchy of types that are annotated unique owners of these attribute types
+    fn validate_unique_ownerships(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        unique_constraint: &CapabilityConstraint<Owns>,
+        attribute_types: &[AttributeType],
+        unique_owner_types: &HashSet<ObjectType>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<DataValidationError>> {
+        let read_error = |source| Box::new(DataValidationError::ConceptRead { typedb_source: source });
+        let uniqueness_error = |owner, attribute: &Attribute, value| {
+            DataValidation::create_data_validation_uniqueness_error(
+                snapshot,
+                type_manager,
+                unique_constraint,
+                owner,
+                attribute.type_(),
+                value,
+            )
+        };
+        fn find_second_owner(owned: &[(Object, Attribute)]) -> Option<&(Object, Attribute)> {
+            let (first_owner, _) = owned.first()?;
+            owned.iter().find(|(owner, _)| owner != first_owner)
+        }
+        let mut groups = thing_manager
+            .get_has_reverse_grouped_by_deterministic_id(
+                snapshot,
+                attribute_types,
+                &ValueRestriction::None,
+                storage_counters.clone(),
+            )
+            .map_err(read_error)?;
+        while let Some(group) = lending_iterator::LendingIterator::next(&mut groups) {
+            let (deterministic_part, edges) = group.map_err(read_error)?;
+            let unique_owned: Vec<(Object, Attribute)> = edges
+                .iter()
+                .map(|(has, _)| has.clone().into_owner_attribute())
+                .filter(|(owner, _)| unique_owner_types.contains(&owner.type_()))
+                .collect();
+            if find_second_owner(&unique_owned).is_none() {
+                continue;
+            }
+
+            match deterministic_part {
+                DeterministicAttributeIDPart::InlineShort(_) | DeterministicAttributeIDPart::InlineLong(_) => {
+                    let (owner, attribute) = find_second_owner(&unique_owned).unwrap();
+                    let value =
+                        attribute.get_value(snapshot, thing_manager, storage_counters.clone()).map_err(read_error)?;
+                    return Err(uniqueness_error(*owner, attribute, value));
+                }
+                // hashes can collide, so split the group into one sub-group per value
+                DeterministicAttributeIDPart::HashedShort(_) | DeterministicAttributeIDPart::HashedLong(_) => {
+                    let mut owners_by_attribute: HashMap<Attribute, Vec<Object>> = HashMap::new();
+                    for (owner, attribute) in unique_owned {
+                        owners_by_attribute.entry(attribute).or_default().push(owner);
+                    }
+                    let mut sub_groups: HashMap<Value<'static>, Vec<(Object, Attribute)>> = HashMap::new();
+                    for (attribute, owners) in owners_by_attribute {
+                        let value = attribute
+                            .get_value(snapshot, thing_manager, storage_counters.clone())
+                            .map_err(read_error)?
+                            .into_owned();
+                        let sub_group = sub_groups.entry(value).or_default();
+                        sub_group.extend(owners.into_iter().map(|owner| (owner, attribute.clone())));
+                    }
+
+                    for (value, sub_group) in sub_groups {
+                        if let Some((owner, attribute)) = find_second_owner(&sub_group) {
+                            return Err(uniqueness_error(*owner, attribute, value));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     // validate before ownerships are made
     ///
     /// 1. Optimize this to do 1 forward Has scan for non-unique constraints
     /// 2. Optimize this to do 1 HasReverse scan for unique constraints
     //
-    fn validate_owns_instances_against_constraints(
+    fn validate_new_owns_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -3158,8 +3242,10 @@ impl OperationTimeValidation {
             get_abstract_constraints(existing_constraints.iter().cloned());
         let distinct_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_distinct_constraints(existing_constraints.iter().cloned());
-        let regex_constraints: HashSet<CapabilityConstraint<Owns>> = get_regex_constraints(existing_constraints.iter().cloned());
-        let range_constraints: HashSet<CapabilityConstraint<Owns>> = get_range_constraints(existing_constraints.iter().cloned());
+        let regex_constraints: HashSet<CapabilityConstraint<Owns>> =
+            get_regex_constraints(existing_constraints.iter().cloned());
+        let range_constraints: HashSet<CapabilityConstraint<Owns>> =
+            get_range_constraints(existing_constraints.iter().cloned());
         let values_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_values_constraints(existing_constraints.iter().cloned());
         let unique_constraint = {
@@ -3197,14 +3283,13 @@ impl OperationTimeValidation {
             "At least one constraint should exist otherwise we don't need to iterate"
         );
 
-        let mut unique_attribute_types: HashSet<AttributeType> = HashSet::new();
-        let mut unique_owner_types: HashSet<ObjectType> = HashSet::new();
         if let Some(unique_constraint) = &unique_constraint {
             debug_assert_eq!(
                 unique_constraint.scope(),
                 ConstraintScope::AllInstancesOfTypeOrSubtypes,
                 "Reconsider the algorithm if constraint scope is changed!"
             );
+            let mut unique_attribute_types = Vec::new();
             for attribute_type in attribute_types {
                 if Self::is_interface_type_under_constraint_source(
                     snapshot,
@@ -3215,26 +3300,36 @@ impl OperationTimeValidation {
                 )
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                 {
-                    unique_attribute_types.insert(*attribute_type);
+                    unique_attribute_types.push(*attribute_type);
                 }
             }
 
-            // unique within the entire hierarchy: person owns name @unique; child sub person (inherits unique name) - only 1 person or child can have a unique name
-
-            // company owns name @unique; nonprofit sub company;
-
-            // reverse Has over all names -- group names owned by more than 1 thing
-            //
-            let root_owner_type = unique_constraint.source().owner();
-            let root_owner_subtypes = root_owner_type
-                .get_subtypes_transitive(snapshot, type_manager)
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-            unique_owner_types = TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
-                .chain(object_types.iter().copied())
-                .collect();
+            if !unique_attribute_types.is_empty() {
+                let root_owner_type = unique_constraint.source().owner();
+                let root_owner_subtypes = root_owner_type
+                    .get_subtypes_transitive(snapshot, type_manager)
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+                let unique_owner_types: HashSet<ObjectType> =
+                    TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
+                        .chain(object_types.iter().copied())
+                        .collect();
+                Self::validate_unique_ownerships(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    unique_constraint,
+                    &unique_attribute_types,
+                    &unique_owner_types,
+                    storage_counters.clone(),
+                )?;
+            }
         }
-        // TODO: validate unique in a separate method using ReverseHas, then continue to the remaining ones
 
+        /// TODO:
+        /// Turn this into one ForwardHas iterator per Object Type
+        ///   create the Cardinality Constraints counts map (reset all values to 0 each time the object instance changes)
+        ///   get the Owns that corresponds to the Has we're reading and validate all the constraints as before
+        ///
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
             while let Some(object) = object_iterator
@@ -3336,21 +3431,6 @@ impl OperationTimeValidation {
                     let value = attribute
                         .get_value(snapshot, thing_manager, storage_counters.clone())
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-
-                    if let Some(unique_constraint) = &unique_constraint {
-                        if unique_attribute_types.contains(&attribute_type) {
-                            DataValidation::validate_owns_unique_constraint(
-                                snapshot,
-                                thing_manager,
-                                unique_constraint,
-                                object,
-                                &unique_owner_types,
-                                unique_attribute_types.iter().copied(),
-                                value.clone(),
-                                storage_counters.clone(),
-                            )?;
-                        }
-                    }
 
                     for regex_constraint in regex_constraints.iter() {
                         debug_assert_eq!(

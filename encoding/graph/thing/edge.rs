@@ -234,11 +234,9 @@ impl ThingEdgeHasReverse {
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     const INDEX_FROM_VALUE_PREFIX: usize = Self::LENGTH_PREFIX_FROM_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
-        PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length();
-    pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH
-        + THING_VERTEX_LENGTH_PREFIX_TYPE
-        + AttributeID::max_length()
-        + THING_VERTEX_LENGTH_PREFIX_TYPE;
+        PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::MAX_LENGTH;
+    pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize =
+        PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::MAX_LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(from: AttributeVertex, to: ObjectVertex) -> Self {
         Self { attribute: from, owner: to }
