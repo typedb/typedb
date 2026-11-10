@@ -123,7 +123,7 @@ impl Seekable<[u8]> for MVCCRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         self.find_next_state();
         if let Some(&Ok((next_key, ..))) = self.iterator.get_peeked() {
-            if next_key < key {
+            if MVCCKey::extract_key(next_key) < key {
                 self.iterator.next();
                 self.iterator.seek(key);
             }
