@@ -237,7 +237,7 @@ impl SnapshotRangeIterator {
     }
 
     fn skip_buffered_deletes(buffered: &mut BufferRangeIterator) {
-        while let Some((_, Write::Delete)) = buffered.peek() {
+        while let Some((_, Write::Delete { .. })) = buffered.peek() {
             buffered.next();
         }
     }
