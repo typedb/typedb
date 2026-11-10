@@ -187,7 +187,7 @@ pub trait Keyable<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Sized {
     }
 }
 
-pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Clone {
+pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> {
     const INDEX_PREFIX: usize = 0;
 
     fn prefix(&self) -> Prefix;
