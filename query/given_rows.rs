@@ -91,10 +91,11 @@ impl GivenRowEntry {
             }
             _ => return Err(GivenRowDecodeError::ExpectedInstanceReceivedValue {}),
         };
-        let make_err = {
-            let actual_type = value.value_type_category().name().to_owned();
-            let expected_type = expected_type.to_string();
-            |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
+        let actual_type_category = value.value_type_category();
+        let make_err = |value: String| GivenRowDecodeError::ValueTypeMismatch {
+            expected_type: expected_type.to_string(),
+            actual_type: actual_type_category.name().to_owned(),
+            value,
         };
 
         if !matches!(value, Value::Vector(_)) && value.value_type().is_trivially_castable_to(expected_type.category()) {

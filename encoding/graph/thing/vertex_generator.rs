@@ -436,13 +436,13 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+        committed_vector_index: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
     where
         Snapshot: WritableSnapshot,
     {
         let vector_attribute_id =
-            self.create_attribute_id_vector(type_id, value.as_reference(), snapshot, committed_vector)?;
+            self.create_attribute_id_vector(type_id, value.as_reference(), snapshot, committed_vector_index)?;
         let vertex = AttributeVertex::new(type_id, AttributeID::Vector(vector_attribute_id));
         snapshot.put_val(vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
@@ -453,7 +453,7 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+        committed_vector_index: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<VectorAttributeID, Arc<SnapshotIteratorError>>
     where
         Snapshot: WritableSnapshot,
@@ -463,7 +463,7 @@ impl ThingVertexGenerator {
             vector_bytes,
             snapshot,
             &self.large_value_hasher,
-            committed_vector,
+            committed_vector_index,
         )?;
         let hash = id.get_hash_hash();
         let lock =
@@ -477,12 +477,18 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
-        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+        committed_vector_index: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<Option<VectorAttributeID>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
-        VectorAttributeID::find_hashed_id(type_id, vector_bytes, snapshot, &self.large_value_hasher, committed_vector)
+        VectorAttributeID::find_hashed_id(
+            type_id,
+            vector_bytes,
+            snapshot,
+            &self.large_value_hasher,
+            committed_vector_index,
+        )
     }
 
     pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(

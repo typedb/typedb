@@ -754,7 +754,7 @@ impl UnaryConstraint for Value<Variable> {
     ) -> Result<(), TypeInferenceError> {
         enum PatternValueType {
             Exact(ValueType),
-            Vector(VectorTypeParameters),
+            ParametrizedVector(VectorTypeParameters),
         }
         let pattern_value_type = match self.value_type() {
             ir::pattern::ValueType::Builtin(value_type) => Ok(PatternValueType::Exact(value_type.clone())),
@@ -769,7 +769,7 @@ impl UnaryConstraint for Value<Variable> {
                     Err(source) => Err(TypeInferenceError::ConceptRead { typedb_source: source }),
                 }
             }
-            ir::pattern::ValueType::Vector(parameters) => Ok(PatternValueType::Vector(*parameters)),
+            ir::pattern::ValueType::Vector(parameters) => Ok(PatternValueType::ParametrizedVector(*parameters)),
         }?;
 
         let mut annotations = BTreeSet::new();
@@ -784,14 +784,14 @@ impl UnaryConstraint for Value<Variable> {
             if let Some(attribute_value_type) = attribute_value_type_opt {
                 let matches = match (&pattern_value_type, &attribute_value_type) {
                     (PatternValueType::Exact(value_type), attribute_value_type) => value_type == attribute_value_type,
-                    (PatternValueType::Vector(parameters), ValueType::Vector(definition_key)) => {
+                    (PatternValueType::ParametrizedVector(parameters), ValueType::Vector(definition_key)) => {
                         let definition = context
                             .type_manager
                             .get_vector_definition(context.snapshot, definition_key.clone())
                             .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                         definition.parameters == *parameters
                     }
-                    (PatternValueType::Vector(_), _) => false,
+                    (PatternValueType::ParametrizedVector(_), _) => false,
                 };
                 if matches {
                     annotations.insert(TypeAnnotation::Attribute(attribute_type));

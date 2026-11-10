@@ -295,16 +295,16 @@ impl fmt::Display for AnnotationRegex {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationIndex {
-    specs: Vec<IndexParameters>,
+    parameters: Vec<IndexParameters>,
 }
 
 impl AnnotationIndex {
-    pub fn new(specs: Vec<IndexParameters>) -> Self {
-        Self { specs }
+    pub fn new(parameters: Vec<IndexParameters>) -> Self {
+        Self { parameters }
     }
 
-    pub fn specs(&self) -> &[IndexParameters] {
-        &self.specs
+    pub fn parameters(&self) -> &[IndexParameters] {
+        &self.parameters
     }
 
     pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
@@ -341,11 +341,11 @@ impl fmt::Display for HnswMetric {
 impl fmt::Display for AnnotationIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@{}(", typeql::token::Annotation::Index)?;
-        for (i, spec) in self.specs.iter().enumerate() {
+        for (i, parameters) in self.parameters.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{spec}")?;
+            write!(f, "{parameters}")?;
         }
         write!(f, ")")
     }

@@ -193,6 +193,8 @@ impl VectorSearchExecutor {
                 let mut k = 128.min(total);
                 loop {
                     let results = vector_index.list_instances_by_ann(type_id, &query, k);
+                    // the widening decision uses usearch's approximate distance; final inclusion
+                    // below recomputes the exact similarity (simsimd) against the threshold
                     let last_above_threshold =
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;

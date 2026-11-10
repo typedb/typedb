@@ -234,25 +234,6 @@ impl fmt::Debug for VectorIndex {
     }
 }
 
-impl fmt::Display for VectorIndexError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self as &dyn TypeDBError, f)
-    }
-}
-
-impl Error for VectorIndexError {}
-
-typedb_error! {
-    pub VectorIndexError(component = "Vector store", prefix = "VEC") {
-        IndexCreate(1, "Failed to create vector index with {dimensions} dimensions: {reason}", dimensions: usize, reason: String),
-        IndexGrow(2, "Failed to grow vector index: {reason}", reason: String),
-        IndexAdd(3, "Failed to add vector to index: {reason}", reason: String),
-        DimensionMismatch(4, "Vector dimension mismatch: index has {index_dimensions} dimensions, vector has {vector_dimensions}.", index_dimensions: usize, vector_dimensions: usize),
-        ConflictingDimensionsInCommit(5, "Conflicting vector dimensions ({first} and {second}) for one attribute type in a single commit.", first: usize, second: usize),
-        CommittedWithoutValue(6, "Vector attribute committed without a value: {vertex}.", vertex: String),
-    }
-}
-
 struct PerTypeVectorIndex {
     /// The hot shard: the single mutable, RAM-resident index. Sealed (immutable, mmap'd)
     /// shards will sit alongside it in the larger-than-memory design; the `Arc` slot
@@ -491,6 +472,25 @@ fn parse_manifest_line(line: &str) -> io::Result<(u16, ManifestEntry)> {
             "vector store manifest contains a sealed shard, which this version does not support: '{line}'"
         ))),
         _ => Err(invalid_data(format!("unknown shard kind '{kind}' in vector store manifest line: '{line}'"))),
+    }
+}
+
+impl fmt::Display for VectorIndexError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self as &dyn TypeDBError, f)
+    }
+}
+
+impl Error for VectorIndexError {}
+
+typedb_error! {
+    pub VectorIndexError(component = "Vector store", prefix = "VEC") {
+        IndexCreate(1, "Failed to create vector index with {dimensions} dimensions: {reason}", dimensions: usize, reason: String),
+        IndexGrow(2, "Failed to grow vector index: {reason}", reason: String),
+        IndexAdd(3, "Failed to add vector to index: {reason}", reason: String),
+        DimensionMismatch(4, "Vector dimension mismatch: index has {index_dimensions} dimensions, vector has {vector_dimensions}.", index_dimensions: usize, vector_dimensions: usize),
+        ConflictingDimensionsInCommit(5, "Conflicting vector dimensions ({first} and {second}) for one attribute type in a single commit.", first: usize, second: usize),
+        CommittedWithoutValue(6, "Vector attribute committed without a value: {vertex}.", vertex: String),
     }
 }
 

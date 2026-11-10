@@ -200,7 +200,7 @@ impl<D> Database<D> {
         self.name.clone()
     }
 
-    pub fn vector_index(&self) -> &Arc<VectorIndex> {
+    pub fn vector_index(&self) -> &VectorIndex {
         &self.vector_index
     }
 

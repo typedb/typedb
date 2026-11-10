@@ -1062,12 +1062,12 @@ impl VectorAttributeID {
     pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
     const TAIL_INDEX: usize = Self::LENGTH - 1;
 
-    pub(crate) const fn is_inlineable() -> bool {
-        false
-    }
-
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        false
     }
 
     pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
@@ -1075,7 +1075,7 @@ impl VectorAttributeID {
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+        committed_vector_index: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
@@ -1085,7 +1085,7 @@ impl VectorAttributeID {
             hasher,
             &Self::key_prefix(type_id),
             vector_bytes.bytes(),
-            committed_vector,
+            committed_vector_index,
         )?;
 
         let (ExistingOrNew::Existing(disambiguated_hash) | ExistingOrNew::New(disambiguated_hash)) = existing_or_new;
@@ -1097,7 +1097,7 @@ impl VectorAttributeID {
         vector_bytes: VectorBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+        committed_vector_index: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
@@ -1107,7 +1107,7 @@ impl VectorAttributeID {
             hasher,
             &Self::key_prefix(type_id),
             vector_bytes.bytes(),
-            committed_vector,
+            committed_vector_index,
         )?;
 
         match existing_or_new {
@@ -1128,7 +1128,7 @@ impl VectorAttributeID {
         hasher: &impl Fn(&[u8]) -> u64,
         key_without_hash: &[u8],
         value_bytes: &[u8],
-        committed_vector: &impl Fn(u64) -> Option<Vec<f32>>,
+        committed_vector_index: &impl Fn(u64) -> Option<Vec<f32>>,
     ) -> Result<ExistingOrNew<[u8; Self::HASH_LENGTH + 1]>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
@@ -1137,7 +1137,7 @@ impl VectorAttributeID {
             if storage_value.is_empty() {
                 let vertex = AttributeVertex::decode(storage_key);
                 let index_key = vertex.attribute_id().unwrap_vector().as_type_vector_index_key();
-                let vector = committed_vector(index_key).ok_or_else(|| {
+                let vector = committed_vector_index(index_key).ok_or_else(|| {
                     Arc::new(SnapshotIteratorError::SecondaryStoreValueMissing {
                         description: format!(
                             "vector attribute {vertex:?} exists in storage but its value is missing from the vector store"

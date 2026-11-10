@@ -68,12 +68,12 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             String::from_typeql_literal(&meta.value, meta.span())?,
         )),
         typeql::Annotation::Index(index) => {
-            Annotation::Index(AnnotationIndex::new(index.specs.iter().map(translate_index_spec).collect()))
+            Annotation::Index(AnnotationIndex::new(index.specs.iter().map(translate_index_parameters).collect()))
         }
     })
 }
 
-fn translate_index_spec(spec: &typeql::annotation::IndexSpec) -> IndexParameters {
+fn translate_index_parameters(spec: &typeql::annotation::IndexSpec) -> IndexParameters {
     match spec {
         typeql::annotation::IndexSpec::Hnsw(token::HnswMetric::Cosine) => IndexParameters::Hnsw(HnswMetric::Cosine),
     }
