@@ -105,6 +105,11 @@ typedb_error! {
             "Vector search query variable is bound to a non-vector value of type '{actual_type}'.",
             actual_type: String,
         ),
+        VectorSearchQueryInvalid(
+            32,
+            "Vector search query vector is invalid: {reason}.",
+            reason: String,
+        ),
     }
 }
 

@@ -108,7 +108,8 @@ impl VectorSearchExecutor {
     ) -> Self {
         let VectorSearchInstruction { vector_search, types, checks, inputs } = instruction;
         let var = vector_search.attribute();
-        debug_assert_eq!(sort_by, var, "vector search can only be sorted by its attribute variable");
+        // hard assert: silently accepting another sort variable would drop rows in release builds
+        assert_eq!(sort_by, var, "vector search can only be sorted by its attribute variable");
         let attribute_bound = inputs.iter().any(|&input| input == var);
         let similarity_var = Some(vector_search.similarity());
         let tuple_positions = TuplePositions::Pair([Some(var), similarity_var]);
@@ -221,6 +222,8 @@ impl VectorSearchExecutor {
                 candidates.insert(AttributeVertex::decode(key.bytes()));
             }
 
+            // like `isa`: attributes left with no owner are hidden unless the type is @independent
+            let independent = attribute_type.is_independent(snapshot, thing_manager.type_manager())?;
             for vertex in candidates {
                 let exists = snapshot
                     .get_mapped(vertex.into_storage_key().as_reference(), |_| (), storage_counters.clone())
@@ -230,6 +233,9 @@ impl VectorSearchExecutor {
                     continue;
                 }
                 let attribute = Attribute::new(vertex);
+                if !independent && !attribute.has_owners(snapshot, thing_manager, storage_counters.clone())? {
+                    continue;
+                }
                 let value = attribute.get_value(snapshot, thing_manager, storage_counters.clone())?;
                 if let Value::Vector(vector) = &value {
                     let similarity = cosine_similarity(&query, vector.as_ref());
@@ -262,9 +268,9 @@ pub(crate) fn resolve_query_vector(
     variable: Option<ExecutorVariable>,
     parameter: Option<ParameterID>,
 ) -> Result<Vec<f32>, Box<ConceptReadError>> {
-    if let Some(parameter) = parameter {
+    let vector = if let Some(parameter) = parameter {
         match context.parameters().value_unchecked(&parameter) {
-            Value::Vector(vector) => Ok(vector.to_vec()),
+            Value::Vector(vector) => vector.to_vec(),
             other => unreachable!("vector search query parameter is not a vector: {other}"),
         }
     } else {
@@ -274,16 +280,26 @@ pub(crate) fn resolve_query_vector(
             unreachable!("vector search query variable must have a row position")
         };
         match row.get(position) {
-            VariableValue::Value(Value::Vector(vector)) => Ok(vector.to_vec()),
+            VariableValue::Value(Value::Vector(vector)) => vector.to_vec(),
             other => {
                 let actual_type = match other {
                     VariableValue::Value(value) => value.value_type().to_string(),
                     other => format!("{other:?}"),
                 };
-                Err(Box::new(ConceptReadError::VectorSearchQueryNotAVector { actual_type }))
+                return Err(Box::new(ConceptReadError::VectorSearchQueryNotAVector { actual_type }));
             }
         }
+    };
+    // cosine similarity is undefined for these, and usearch/simsimd would return arbitrary distances
+    if vector.iter().any(|element| !element.is_finite()) {
+        return Err(Box::new(ConceptReadError::VectorSearchQueryInvalid {
+            reason: "it contains a non-finite element".to_owned(),
+        }));
     }
+    if vector.iter().all(|&element| element == 0.0) {
+        return Err(Box::new(ConceptReadError::VectorSearchQueryInvalid { reason: "it has zero norm".to_owned() }));
+    }
+    Ok(vector)
 }
 
 pub(crate) fn resolve_threshold(

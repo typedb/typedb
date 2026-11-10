@@ -319,11 +319,15 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
 
-                if let Some(secondary_store) = self.secondary_store.as_ref() {
-                    secondary_store.apply_commit(sequence_number, commit_record.operations()).map_err(|error| {
-                        StorageCommitError::SecondaryStore { name: self.name.clone(), source: Arc::from(error) }
-                    })?;
-                }
+                // The commit is already durable (WAL synced, KV written), so a secondary-store
+                // failure must NOT stop this commit from becoming applied: that would freeze the
+                // watermark and stall every later transaction for a commit that did happen.
+                // Instead the commit proceeds and the error is surfaced to the client; reads of
+                // the index entries that failed to apply error loudly (SecondaryStoreValueMissing)
+                // rather than returning wrong results.
+                let secondary_store_error = self.secondary_store.as_ref().and_then(|secondary_store| {
+                    secondary_store.apply_commit(sequence_number, commit_record.operations()).err()
+                });
 
                 fail_point!(COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS);
 
@@ -336,7 +340,12 @@ impl<Durability> MVCCStorage<Durability> {
                 Self::persist_commit_status(true, sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
-                Ok(CommitData { sequence_number, record: commit_record })
+                match secondary_store_error {
+                    None => Ok(CommitData { sequence_number, record: commit_record }),
+                    Some(error) => {
+                        Err(StorageCommitError::SecondaryStore { name: self.name.clone(), source: Arc::from(error) })
+                    }
+                }
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();

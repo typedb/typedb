@@ -3699,10 +3699,10 @@ impl<'v, 'a> AttributeValueLookup<'v, 'a> {
     // Whether, among the given value types, only attributes of the value's own value type can be equal to it, so that
     // looking up the value's exact key finds every match
     fn equality_matches_only_own_value_type(value: &Value<'_>, value_type_categories: &[ValueTypeCategory]) -> bool {
-        let value_type = value.value_type();
-        value_type_categories.contains(&value_type.category())
+        let value_type_category = value.value_type_category();
+        value_type_categories.contains(&value_type_category)
             && value_type_categories.iter().all(|category| {
-                *category == value_type.category() || !value_type.is_approximately_castable_to(*category)
+                *category == value_type_category || !value_type_category.is_approximately_castable_to(*category)
             })
     }
 }

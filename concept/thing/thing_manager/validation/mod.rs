@@ -175,5 +175,10 @@ typedb_error!(
             decrement_count: u64,
             current_count: u64,
         ),
+        VectorValueMustBeFinite(
+            23,
+            "Attribute type '{attribute_type}' received a vector containing a non-finite element (NaN or infinity); cosine similarity is undefined for these.",
+            attribute_type: Label,
+        ),
     }
 );

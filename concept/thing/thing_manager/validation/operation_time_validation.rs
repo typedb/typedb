@@ -475,6 +475,15 @@ impl OperationTimeValidation {
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
+        if let Value::Vector(vector) = &value {
+            if vector.iter().any(|element| !element.is_finite()) {
+                return Err(Box::new(ConceptWriteError::DataValidation {
+                    typedb_source: Box::new(DataValidationError::VectorValueMustBeFinite {
+                        attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
+                    }),
+                }));
+            }
+        }
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
             Some(type_value_type) => {

@@ -328,6 +328,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         similarity: Variable,
         source_span: Option<Span>,
     ) -> Result<&VectorSearch<Variable>, Box<RepresentationError>> {
+        // the search always produces both assigned variables, so neither may be bound already
+        // (a pre-bound output would have to be lowered as a check, which has no implementation)
+        if let Some(variable) =
+            [attribute, similarity].into_iter().find(|var| self.context.is_block_input_variable(*var))
+        {
+            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
+            return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
+        }
         let type_var = attribute_type.as_variable();
         let query_var = query.as_variable();
         let search = VectorSearch::new(attribute, attribute_type, query, threshold, similarity, source_span);

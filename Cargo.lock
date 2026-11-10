@@ -1342,6 +1342,7 @@ dependencies = [
  "function",
  "ir",
  "itertools 0.14.0",
+ "lending_iterator",
  "logger",
  "options",
  "query",

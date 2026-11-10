@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use concept::{
@@ -37,7 +37,8 @@ struct Context {
 
 const SCHEMA: &str = r#"define
     attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
-    entity item owns embedding @card(0..);
+    attribute title, value string;
+    entity item owns embedding @card(0..), owns title;
 "#;
 
 fn setup() -> Context {
@@ -368,27 +369,113 @@ fn sort_by_vector_value_is_rejected() {
     assert!(result.is_err(), "sorting by a vector value should be rejected: vectors have no ordering");
 }
 
+fn prepare_read(context: &Context, query: &str) -> Result<(), String> {
+    let pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            context.function_manager.clone(),
+            &pipeline,
+            None::<GivenRowsSimple>,
+            query,
+        )
+        .map(|_| ())
+        .map_err(|err| format!("{err:?}"))
+}
+
 #[test]
-fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
+fn search_requires_a_vector_attribute_type() {
+    let context = setup();
+    let result = prepare_read(
+        &context,
+        r#"match let $e, $s in cosine_similarity_search(item, vector([1.0, 0.0, 0.0], "float32"), 0.5);"#,
+    );
+    assert!(result.is_err(), "searching a non-attribute type must be a query error, not a panic");
+
+    let result = prepare_read(
+        &context,
+        r#"match let $e, $s in cosine_similarity_search(title, vector([1.0, 0.0, 0.0], "float32"), 0.5);"#,
+    );
+    assert!(result.is_err(), "searching a non-vector attribute type must be a query error, not empty rows");
+}
+
+#[test]
+fn search_hides_attributes_left_without_owners() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+    // within one transaction: unlink one embedding, then search; like `isa`, the ownerless
+    // attribute must be hidden (embedding is not @independent)
+    let rows = run_write_query(
+        &context,
+        r#"match $p isa item, has embedding $e; $e == vector([1.0, 0.0, 0.0], "float32");
+        delete has $e of $p;
+        match let $emb, $sim in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#,
+    );
+    assert_eq!(rows.len(), 2, "the ownerless embedding must be hidden from search, got: {rows:?}");
+}
+
+#[test]
+fn search_output_variables_cannot_be_pre_bound() {
+    let context = setup();
+    let result = prepare_read(
+        &context,
+        r#"match
+            let $e, $s in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.5);
+            let $e2, $s in cosine_similarity_search(embedding, vector([0.0, 1.0, 0.0], "float32"), 0.5);"#,
+    );
+    assert!(result.is_err(), "two searches assigning the same similarity variable must be rejected");
+
+    let result = prepare_read(
+        &context,
+        r#"match let $e, $s in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), 0.5);
+        match let $e2, $s in cosine_similarity_search(embedding, vector([0.0, 1.0, 0.0], "float32"), 0.5);"#,
+    );
+    assert!(result.is_err(), "a search output bound by a previous stage must be rejected");
+}
+
+#[test]
+fn non_finite_vectors_are_rejected_and_dedup_is_by_encoded_bytes() {
     let context = setup();
     let snapshot = context.storage.clone().open_snapshot_read();
     let attribute_type =
         context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
     drop(snapshot);
 
-    let vector: Vec<f32> = vec![f32::NAN, 0.0, -0.0];
-    let mut vertices = Vec::new();
-    for _ in 0..2 {
+    // non-finite elements are rejected at write time: cosine similarity is undefined for them
+    let mut snapshot = context.storage.clone().open_snapshot_write();
+    let nan: Vec<f32> = vec![f32::NAN, 0.0, 0.0];
+    let result =
+        context.thing_manager.create_attribute(&mut snapshot, attribute_type, Value::Vector(Cow::Borrowed(&nan)));
+    assert!(result.is_err(), "a NaN vector must be rejected");
+    let inf: Vec<f32> = vec![f32::INFINITY, 0.0, 0.0];
+    let result =
+        context.thing_manager.create_attribute(&mut snapshot, attribute_type, Value::Vector(Cow::Borrowed(&inf)));
+    assert!(result.is_err(), "an infinite vector must be rejected");
+    drop(snapshot);
+
+    // deduplication is decided on the encoded bytes: identical bytes resolve to one attribute,
+    // while -0.0 and 0.0 (equal as f32, different bytes) stay distinct
+    let create = |vector: &Vec<f32>| {
         let mut snapshot = context.storage.clone().open_snapshot_write();
         let attribute = context
             .thing_manager
-            .create_attribute(&mut snapshot, attribute_type, Value::Vector(std::borrow::Cow::Borrowed(&vector)))
+            .create_attribute(&mut snapshot, attribute_type, Value::Vector(Cow::Borrowed(vector)))
             .unwrap();
-        vertices.push(attribute.vertex());
         snapshot.commit(&mut CommitProfile::disabled()).unwrap();
-    }
-    assert_eq!(vertices[0], vertices[1], "an identical NaN vector must resolve to the same attribute ID");
-    assert_eq!(vector_index(&context).get_count_for_type(embedding_type_id(&context)), 1);
+        attribute.vertex()
+    };
+    let negative_zero: Vec<f32> = vec![1.0, 0.0, -0.0];
+    let positive_zero: Vec<f32> = vec![1.0, 0.0, 0.0];
+    let first = create(&negative_zero);
+    let second = create(&negative_zero);
+    let third = create(&positive_zero);
+    assert_eq!(first, second, "identical encoded bytes must resolve to the same attribute ID");
+    assert_ne!(first, third, "-0.0 and 0.0 differ in encoded bytes, so they are distinct attributes");
+    assert_eq!(vector_index(&context).get_count_for_type(embedding_type_id(&context)), 2);
 }
 
 #[test]

@@ -523,6 +523,9 @@ impl Database<WALClient> {
             TypeCache::new(storage.clone(), wal_last_sequence_number)
                 .map_err(|error| TypeCacheInitialise { typedb_source: error })?,
         );
+        // schema-commit pruning never ran for commits that were only replayed from the WAL, so
+        // drop indexes of types that were undefined (or dimension-changed) before the restart
+        vector_index.retain_live_types(&type_cache);
 
         let function_cache = Arc::new(
             FunctionCache::new(

@@ -86,6 +86,9 @@
 
 [dev-dependencies]
 
+	[dev-dependencies.lending_iterator]
+		workspace = true
+
 	[dev-dependencies.serde_json]
 		workspace = true
 

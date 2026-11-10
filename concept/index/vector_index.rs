@@ -45,12 +45,22 @@ use crate::type_::type_manager::type_cache::TypeCache;
 
 pub struct VectorIndex {
     per_type_indices: RwLock<HashMap<TypeID, Arc<PerTypeVectorIndex>>>,
+    /// Indexes of undefined (or dimension-changed) types, kept so transactions whose snapshot
+    /// predates the schema change can still read committed values and search. Cleared at the
+    /// next checkpoint.
+    /// ponytail: a reader that spans a checkpoint loses these; a precise lifetime needs the
+    /// oldest-open-snapshot watermark.
+    retired_type_indices: RwLock<HashMap<TypeID, Arc<PerTypeVectorIndex>>>,
     live_directory: RwLock<Option<PathBuf>>,
 }
 
 impl VectorIndex {
     pub fn new() -> Self {
-        Self { per_type_indices: RwLock::new(HashMap::new()), live_directory: RwLock::new(None) }
+        Self {
+            per_type_indices: RwLock::new(HashMap::new()),
+            retired_type_indices: RwLock::new(HashMap::new()),
+            live_directory: RwLock::new(None),
+        }
     }
 
     pub fn set_live_directory(&self, directory: PathBuf) {
@@ -62,20 +72,36 @@ impl VectorIndex {
         type_id: TypeID,
         dimensions_if_created: usize,
     ) -> Result<Arc<PerTypeVectorIndex>, VectorIndexError> {
+        let reusable =
+            |index: &Arc<PerTypeVectorIndex>| index.get_dimensions() == dimensions_if_created || index.get_size() > 0;
         if let Some(index) = self.per_type_indices.read().unwrap().get(&type_id) {
-            return Ok(index.clone());
+            if reusable(index) {
+                return Ok(index.clone());
+            }
         }
         let mut indices = self.per_type_indices.write().unwrap();
-        if let Some(index) = indices.get(&type_id) {
-            return Ok(index.clone());
+        match indices.get(&type_id) {
+            Some(index) if reusable(index) => Ok(index.clone()),
+            existing => {
+                // an EMPTY index with different dimensions is always stale: the type was undefined
+                // (its instances deleted) and its type ID reused with new dimensions, but startup
+                // WAL replay never runs the schema-commit pruning, so the checkpointed index
+                // survives. A non-empty mismatch is returned as-is so the caller errors.
+                if let Some(stale) = existing {
+                    self.retired_type_indices.write().unwrap().insert(type_id, stale.clone());
+                }
+                let index = Arc::new(PerTypeVectorIndex::new(dimensions_if_created)?);
+                indices.insert(type_id, index.clone());
+                Ok(index)
+            }
         }
-        let index = Arc::new(PerTypeVectorIndex::new(dimensions_if_created)?);
-        indices.insert(type_id, index.clone());
-        Ok(index)
     }
 
     pub fn get_count_for_type(&self, type_id: TypeID) -> usize {
-        self.per_type_indices.read().unwrap().get(&type_id).map_or(0, |index| index.get_size())
+        let live = self.per_type_indices.read().unwrap().get(&type_id).map(|index| index.get_size());
+        live.unwrap_or_else(|| {
+            self.retired_type_indices.read().unwrap().get(&type_id).map_or(0, |index| index.get_size())
+        })
     }
 
     pub fn add_instance(&self, vertex: AttributeVertex, vector: &[f32]) -> Result<(), VectorIndexError> {
@@ -84,13 +110,20 @@ impl VectorIndex {
             .add_value(id.as_type_vector_index_key(), vector)
     }
 
+    pub fn remove_instance(&self, vertex: AttributeVertex) {
+        let Some(index) = self.per_type_indices.read().unwrap().get(&vertex.type_id_()).cloned() else { return };
+        index.remove_value(vertex.attribute_id().unwrap_vector().as_type_vector_index_key());
+    }
+
     pub fn list_instances_by_ann(
         &self,
         type_id: TypeID,
         reference_point: &[f32],
         count: usize,
     ) -> Vec<(AttributeVertex, f32)> {
-        let Some(index) = self.per_type_indices.read().unwrap().get(&type_id).cloned() else { return Vec::new() };
+        let index = self.per_type_indices.read().unwrap().get(&type_id).cloned();
+        let index = index.or_else(|| self.retired_type_indices.read().unwrap().get(&type_id).cloned());
+        let Some(index) = index else { return Vec::new() };
         index
             .list_by_ann(reference_point, count)
             .into_iter()
@@ -106,8 +139,12 @@ impl VectorIndex {
     }
 
     pub fn get_value_by_key(&self, type_id: TypeID, key: u64) -> Option<Vec<f32>> {
-        let index = self.per_type_indices.read().unwrap().get(&type_id)?.clone();
-        index.get_value(key)
+        let index = self.per_type_indices.read().unwrap().get(&type_id).cloned();
+        if let Some(value) = index.and_then(|index| index.get_value(key)) {
+            return Some(value);
+        }
+        let retired = self.retired_type_indices.read().unwrap().get(&type_id).cloned();
+        retired.and_then(|index| index.get_value(key))
     }
 
     pub fn retain_live_types(&self, type_cache: &TypeCache) {
@@ -121,14 +158,21 @@ impl VectorIndex {
                 _ => None,
             })
             .collect();
-        self.per_type_indices
-            .write()
-            .unwrap()
-            .retain(|type_id, index| live.get(type_id) == Some(&index.get_dimensions()));
+        let mut indices = self.per_type_indices.write().unwrap();
+        let mut retired = self.retired_type_indices.write().unwrap();
+        indices.retain(|type_id, index| {
+            let is_live = live.get(type_id) == Some(&index.get_dimensions());
+            if !is_live {
+                // keep serving transactions whose snapshot predates the schema change
+                retired.insert(*type_id, index.clone());
+            }
+            is_live
+        });
     }
 
     pub fn clear(&self) {
         self.per_type_indices.write().unwrap().clear();
+        self.retired_type_indices.write().unwrap().clear();
     }
 }
 
@@ -140,6 +184,7 @@ impl SecondaryStore for VectorIndex {
     fn validate_commit(&self, operations: &OperationsBuffer) -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut pending: HashMap<TypeID, (usize, usize)> = HashMap::new();
         for (vertex, value) in stored_vector_writes(operations) {
+            let Some(value) = value else { continue }; // deletes need no validation or capacity
             if value.is_empty() {
                 return Err(Box::new(VectorIndexError::CommittedWithoutValue { vertex: format!("{vertex:?}") }));
             }
@@ -165,8 +210,13 @@ impl SecondaryStore for VectorIndex {
         operations: &OperationsBuffer,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         for (vertex, value) in stored_vector_writes(operations) {
-            let vector = VectorBytes::new(Bytes::<BUFFER_VALUE_INLINE>::Reference(value)).as_vector();
-            self.add_instance(vertex, &vector)?;
+            match value {
+                Some(value) => {
+                    let vector = VectorBytes::new(Bytes::<BUFFER_VALUE_INLINE>::Reference(value)).as_vector();
+                    self.add_instance(vertex, &vector)?;
+                }
+                None => self.remove_instance(vertex),
+            }
         }
         Ok(())
     }
@@ -191,6 +241,12 @@ impl CheckpointAdditionalData for VectorIndex {
         manifest_file.write_all(manifest.as_bytes())?;
         manifest_file.sync_all()?;
         File::open(path)?.sync_all()?;
+        // the checkpoint is durable: release state retained for pre-delete/pre-undefine readers
+        for type_index in indexes.values() {
+            type_index.recently_removed.write().unwrap().clear();
+        }
+        drop(indexes);
+        self.retired_type_indices.write().unwrap().clear();
         Ok(())
     }
 
@@ -241,6 +297,12 @@ struct PerTypeVectorIndex {
     /// Never clone this `Arc` and mutate the index after releasing the guard: saving
     /// (and the future freeze) relies on the lock excluding all in-flight writers.
     hot: RwLock<Arc<Index>>,
+    /// Values removed from the hot index since the last checkpoint, kept so transactions
+    /// whose snapshot predates the delete can still read them (the index holds the only
+    /// copy of a committed vector). Cleared at checkpoint.
+    /// ponytail: a reader that spans a checkpoint loses these; a precise lifetime needs the
+    /// oldest-open-snapshot watermark.
+    recently_removed: RwLock<HashMap<u64, Vec<f32>>>,
     dirty: AtomicBool,
 }
 
@@ -259,7 +321,11 @@ impl PerTypeVectorIndex {
         };
         let index = usearch::new_index(&options)
             .map_err(|err| VectorIndexError::IndexCreate { dimensions, reason: err.to_string() })?;
-        Ok(Self { hot: RwLock::new(Arc::new(index)), dirty: AtomicBool::new(true) })
+        Ok(Self {
+            hot: RwLock::new(Arc::new(index)),
+            recently_removed: RwLock::new(HashMap::new()),
+            dirty: AtomicBool::new(true),
+        })
     }
 
     fn get_dimensions(&self) -> usize {
@@ -300,15 +366,32 @@ impl PerTypeVectorIndex {
                 .map_err(|err| VectorIndexError::IndexGrow { reason: err.to_string() })?;
         }
         index.add(key, vector).map_err(|err| VectorIndexError::IndexAdd { reason: err.to_string() })?;
+        // a re-added key supersedes any retained removed value (56-bit hash reuse after a delete)
+        self.recently_removed.write().unwrap().remove(&key);
         self.dirty.store(true, Ordering::Release);
         Ok(())
+    }
+
+    fn remove_value(&self, key: u64) {
+        let index = self.hot.write().unwrap();
+        let mut buffer = vec![0.0f32; index.dimensions()];
+        let found = index.get(key, &mut buffer).unwrap_or_else(|err| panic!("failed to read vector from index: {err}"));
+        if found > 0 {
+            index.remove(key).unwrap_or_else(|err| panic!("failed to remove vector from index: {err}"));
+            self.recently_removed.write().unwrap().insert(key, buffer);
+            self.dirty.store(true, Ordering::Release);
+        }
     }
 
     fn get_value(&self, key: u64) -> Option<Vec<f32>> {
         let index = self.hot.read().unwrap();
         let mut buffer = vec![0.0f32; index.dimensions()];
         let found = index.get(key, &mut buffer).unwrap_or_else(|err| panic!("failed to read vector from index: {err}"));
-        (found > 0).then_some(buffer)
+        if found > 0 {
+            return Some(buffer);
+        }
+        drop(index);
+        self.recently_removed.read().unwrap().get(&key).cloned()
     }
 
     fn list_by_ann(&self, query: &[f32], count: usize) -> Vec<(u64, f32)> {
@@ -328,10 +411,9 @@ impl PerTypeVectorIndex {
         // against concurrent add() (it iterates internal tables without locking), so
         // writers (which take the write lock) must stay excluded for the duration.
         let index = self.hot.read().unwrap();
-        index.save(staging.to_str().unwrap()).map_err(|err| {
-            self.dirty.store(true, Ordering::Release);
-            io::Error::other(format!("failed to save vector index {target:?}: {err}"))
-        })?;
+        index
+            .save(staging.to_str().unwrap())
+            .map_err(|err| io::Error::other(format!("failed to save vector index {target:?}: {err}")))?;
         File::open(&staging)?.sync_all()?;
         fs::rename(&staging, target)?;
         File::open(target.parent().unwrap())?.sync_all()?;
@@ -348,7 +430,12 @@ impl PerTypeVectorIndex {
                 fs::create_dir_all(live_dir)?;
                 let live_file = live_dir.join(HOT_FILE_NAME);
                 if self.dirty.swap(false, Ordering::Acquire) || !live_file.exists() {
-                    self.write_file(&live_file)?;
+                    // restore the flag on ANY failure (save, fsync, or rename), or a later
+                    // checkpoint would hard-link the stale live file as if it were clean
+                    if let Err(error) = self.write_file(&live_file) {
+                        self.dirty.store(true, Ordering::Release);
+                        return Err(error);
+                    }
                 }
                 fs::hard_link(&live_file, &checkpoint_file)
                     .or_else(|_| fs::copy(&live_file, &checkpoint_file).map(|_| ()))?;
@@ -389,15 +476,17 @@ impl PerTypeVectorIndex {
     }
 }
 
+/// Yields each vector-attribute write in the buffer: `Some(value)` for an insert/put,
+/// `None` for a delete.
 fn stored_vector_writes(
     operations: &OperationsBuffer,
-) -> impl Iterator<Item = (AttributeVertex, &ByteArray<BUFFER_VALUE_INLINE>)> + '_ {
+) -> impl Iterator<Item = (AttributeVertex, Option<&ByteArray<BUFFER_VALUE_INLINE>>)> + '_ {
     let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
     operations.writes_in_keyspace(keyspace.id()).filter_map(move |(key, write)| {
         let value = match write {
-            StorageWrite::Insert { value } => value,
-            StorageWrite::Put { value, .. } => value,
-            StorageWrite::Delete => return None,
+            StorageWrite::Insert { value } => Some(value),
+            StorageWrite::Put { value, .. } => Some(value),
+            StorageWrite::Delete => None,
         };
         AttributeVertex::is_vector_attribute_vertex(keyspace.id(), key).then(|| (AttributeVertex::decode(key), value))
     })
@@ -527,6 +616,49 @@ mod test {
         let results = store.list_instances_by_ann(TypeID::decode(1u16.to_be_bytes()), &[0.9, 0.1, 0.0], 2);
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].0, vertex(1, 100));
+    }
+
+    #[test]
+    fn remove_drops_from_search_but_retains_value_until_checkpoint() {
+        let type_id = TypeID::decode(1u16.to_be_bytes());
+        let store = VectorIndex::new();
+        store.add_instance(vertex(1, 100), &[1.0, 0.0]).unwrap();
+        store.add_instance(vertex(1, 200), &[0.0, 1.0]).unwrap();
+
+        store.remove_instance(vertex(1, 100));
+        assert_eq!(store.get_count_for_type(type_id), 1, "removed vectors must leave the searchable index");
+        let results = store.list_instances_by_ann(type_id, &[1.0, 0.0], 2);
+        assert!(results.iter().all(|(v, _)| *v != vertex(1, 100)));
+        // pre-delete readers can still fetch the value until the next checkpoint
+        assert_eq!(store.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
+
+        // a colliding key re-added after the delete gets the NEW vector, not the old one
+        store.add_instance(vertex(1, 100), &[-1.0, 0.0]).unwrap();
+        assert_eq!(store.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![-1.0, 0.0]));
+        assert_eq!(store.get_count_for_type(type_id), 2);
+
+        store.remove_instance(vertex(1, 100));
+        let root = std::env::temp_dir().join(format!("vector_index_remove_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        store.save_to_path(&root.join("extension")).unwrap();
+        assert_eq!(store.get_value_by_attr_vertex(vertex(1, 100)), None, "checkpoint releases retained values");
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn empty_stale_index_is_recreated_on_dimension_change() {
+        let type_id = TypeID::decode(1u16.to_be_bytes());
+        let store = VectorIndex::new();
+        store.add_instance(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
+
+        // a non-empty index with different dimensions is a real conflict
+        assert!(store.add_instance(vertex(1, 200), &[1.0, 0.0]).is_err());
+
+        // once its instances are deleted (type undefined, ID reused), new dimensions recreate it
+        store.remove_instance(vertex(1, 100));
+        store.add_instance(vertex(1, 200), &[1.0, 0.0]).unwrap();
+        assert_eq!(store.get_value_by_attr_vertex(vertex(1, 200)), Some(vec![1.0, 0.0]));
+        assert_eq!(store.get_count_for_type(type_id), 1);
     }
 
     #[test]

@@ -247,7 +247,7 @@ fn annotate_stage(
                 &mut running_annotations.values,
             )
             .map_err(|typedb_source| AnnotationError::ExpressionCompilation { typedb_source })?;
-            add_running_value_annotations(running_annotations, &compiled_expressions, block.conjunction());
+            add_running_value_annotations(ctx, running_annotations, &compiled_expressions, block.conjunction())?;
             complete_block_annotations_with_value_types(
                 ctx,
                 &running_annotations,
@@ -715,20 +715,32 @@ fn resolve_reduce_instruction_by_value_type(
 }
 
 fn add_running_value_annotations(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     running_annotations: &mut RunningVariableAnnotations,
     compiled_expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     conjunction: &Conjunction,
-) {
+) -> Result<(), AnnotationError> {
     compiled_expressions.iter().for_each(|(binding, compiled)| {
         let _existing =
             running_annotations.values.insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
         debug_assert!(_existing.is_none() || _existing == Some(compiled.return_type().clone()))
     });
-    conjunction.constraints().iter().for_each(|constraint| {
+    for constraint in conjunction.constraints() {
         if let Constraint::VectorSearch(search) = constraint {
+            // the search always produces its similarity variable: a second producer (another
+            // search, an expression, a function call) has no valid plan
+            if running_annotations.values.contains_key(&search.similarity()) {
+                return Err(AnnotationError::ExpressionCompilation {
+                    typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
+                        variable: ctx.name_for_error(search.similarity()),
+                        source_span: search.source_span(),
+                    }),
+                });
+            }
             running_annotations.values.insert(search.similarity(), ExpressionValueType::Single(ValueType::Double));
         }
-    });
+    }
+    Ok(())
 }
 
 fn collect_value_types_of_function_call_assignments(

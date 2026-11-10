@@ -1057,12 +1057,19 @@ impl BinaryConstraint for VectorSearch<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
+        // only vector-valued attribute types are searchable: anything else contributes nothing,
+        // so a non-vector label leaves the attribute variable without types (an annotation error)
+        // instead of reaching the executor
         if let TypeAnnotation::Attribute(attribute) = right_type {
-            attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?.iter().for_each(|subtype| {
-                collector.insert(TypeAnnotation::Attribute(*subtype));
-            });
+            for subtype in std::iter::once(attribute)
+                .chain(attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?.iter())
+            {
+                let value_type = subtype.get_value_type_without_source(context.snapshot, context.type_manager)?;
+                if matches!(value_type, Some(ValueType::Vector(_))) {
+                    collector.insert(TypeAnnotation::Attribute(*subtype));
+                }
+            }
         }
-        collector.insert(*right_type);
         Ok(())
     }
 }

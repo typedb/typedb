@@ -68,6 +68,7 @@ rust_test(
         "vector_durability.rs",
     ]),
     deps = [
+        "//common/lending_iterator",
         "//common/options",
         "//concept",
         "//database",
