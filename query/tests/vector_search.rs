@@ -332,6 +332,43 @@ fn vector_search_requires_two_assigned_variables() {
 }
 
 #[test]
+fn vector_literal_in_expression_is_rejected() {
+    let context = setup();
+    let query = r#"match let $x = vector([1.0, 0.0, 0.0], "float32");"#;
+    let pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let result = context.query_manager.prepare_read_pipeline(
+        snapshot,
+        &context.type_manager,
+        context.thing_manager.clone(),
+        context.function_manager.clone(),
+        &pipeline,
+        None::<GivenRowsSimple>,
+        query,
+    );
+    assert!(result.is_err(), "a vector constant in an expression should be a compile error, not a panic");
+}
+
+#[test]
+fn sort_by_vector_value_is_rejected() {
+    let context = setup();
+    run_write_query(&context, INSERT);
+    let query = r#"match $a isa item, has embedding $emb; sort $emb;"#;
+    let pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let result = context.query_manager.prepare_read_pipeline(
+        snapshot,
+        &context.type_manager,
+        context.thing_manager.clone(),
+        context.function_manager.clone(),
+        &pipeline,
+        None::<GivenRowsSimple>,
+        query,
+    );
+    assert!(result.is_err(), "sorting by a vector value should be rejected: vectors have no ordering");
+}
+
+#[test]
 fn non_finite_vectors_are_deduplicated_by_encoded_bytes() {
     let context = setup();
     let snapshot = context.storage.clone().open_snapshot_read();

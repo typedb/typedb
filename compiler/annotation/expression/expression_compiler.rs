@@ -9,6 +9,7 @@ use std::{collections::HashMap, marker::PhantomData};
 use answer::variable::Variable;
 use encoding::value::{
     ValueEncodable,
+    value::Value,
     value_type::{ValueType, ValueTypeCategory},
 };
 use error::needs_update_when_feature_is_implemented;
@@ -94,9 +95,20 @@ impl<'this> ExpressionCompilationContext<'this> {
     }
 
     fn compile_constant(&mut self, constant: &ParameterID) -> Result<(), Box<ExpressionCompileError>> {
+        let value = self.parameters.value_unchecked(constant);
+        if matches!(value, Value::Vector(_)) {
+            let source_span = match constant {
+                ParameterID::Value(_, _, span) => Some(*span),
+                _ => None,
+            };
+            return Err(Box::new(ExpressionCompileError::UnsupportedConstantValueType {
+                category: ValueTypeCategory::Vector,
+                source_span,
+            }));
+        }
         self.constant_stack.push(constant.clone());
 
-        self.push_type_single(self.parameters.value_unchecked(constant).value_type());
+        self.push_type_single(value.value_type());
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())

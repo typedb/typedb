@@ -250,7 +250,7 @@ impl<'a> Value<'a> {
     pub fn cast(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
         if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if matches!(self, Value::Vector(_)) || !self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if !self.value_type_category().is_trivially_castable_to(value_type_category) {
             return None;
         }
 
@@ -278,11 +278,9 @@ impl<'a> Value<'a> {
     pub fn approximate_cast_lower_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
         if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if matches!(self, Value::Vector(_))
-            || !self.value_type().is_approximately_castable_to(value_type_category)
-        {
+        } else if !self.value_type_category().is_approximately_castable_to(value_type_category) {
             return None;
-        } else if self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if self.value_type_category().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
         }
 
@@ -323,11 +321,9 @@ impl<'a> Value<'a> {
     pub fn approximate_cast_upper_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
         if self.value_type_category() == value_type_category {
             return Some(self.into_owned());
-        } else if matches!(self, Value::Vector(_))
-            || !self.value_type().is_approximately_castable_to(value_type_category)
-        {
+        } else if !self.value_type_category().is_approximately_castable_to(value_type_category) {
             return None;
-        } else if self.value_type().is_trivially_castable_to(value_type_category) {
+        } else if self.value_type_category().is_trivially_castable_to(value_type_category) {
             return self.cast(value_type_category);
         }
 

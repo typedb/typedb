@@ -147,15 +147,7 @@ impl ValueType {
     }
 
     pub fn is_trivially_castable_to(&self, other: ValueTypeCategory) -> bool {
-        if self.category() == other {
-            return true;
-        }
-        match self {
-            ValueType::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
-            ValueType::Decimal => other == ValueTypeCategory::Double,
-            ValueType::Date => other == ValueTypeCategory::DateTime,
-            _ => false,
-        }
+        self.category().is_trivially_castable_to(other)
     }
 
     pub fn is_trivially_castable_to_exact(&self, other: &ValueType) -> bool {
@@ -165,19 +157,8 @@ impl ValueType {
         }
     }
 
-    // we can approximately cast any numerical type to any other numerical type
     pub fn is_approximately_castable_to(&self, other: ValueTypeCategory) -> bool {
-        if self.category() == other {
-            return true;
-        }
-        match self {
-            ValueType::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
-            ValueType::Decimal => other == ValueTypeCategory::Double || other == ValueTypeCategory::Integer,
-            ValueType::Double => other == ValueTypeCategory::Decimal || other == ValueTypeCategory::Integer,
-            // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
-            ValueType::Date => other == ValueTypeCategory::DateTime,
-            _ => false,
-        }
+        self.category().is_approximately_castable_to(other)
     }
 }
 
@@ -309,14 +290,41 @@ impl ValueTypeCategory {
 
     pub fn order_comparable_categories(&self) -> &'static [ValueTypeCategory] {
         match self {
-            // Durations and structs have no ordering
-            ValueTypeCategory::Duration | ValueTypeCategory::Struct => &[],
+            // Durations, structs and vectors have no ordering
+            ValueTypeCategory::Duration | ValueTypeCategory::Struct | ValueTypeCategory::Vector => &[],
             _ => self.equality_comparable_categories(),
         }
     }
 
     pub fn is_order_comparable(&self) -> bool {
         self.order_comparable_categories().contains(self)
+    }
+
+    pub fn is_trivially_castable_to(self, other: ValueTypeCategory) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            ValueTypeCategory::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
+            ValueTypeCategory::Decimal => other == ValueTypeCategory::Double,
+            ValueTypeCategory::Date => other == ValueTypeCategory::DateTime,
+            _ => false,
+        }
+    }
+
+    // we can approximately cast any numerical type to any other numerical type
+    pub fn is_approximately_castable_to(self, other: ValueTypeCategory) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            ValueTypeCategory::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
+            ValueTypeCategory::Decimal => other == ValueTypeCategory::Double || other == ValueTypeCategory::Integer,
+            ValueTypeCategory::Double => other == ValueTypeCategory::Decimal || other == ValueTypeCategory::Integer,
+            // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
+            ValueTypeCategory::Date => other == ValueTypeCategory::DateTime,
+            _ => false,
+        }
     }
 
     pub fn try_into_value_type(self) -> Option<ValueType> {

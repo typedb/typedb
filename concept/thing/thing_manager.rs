@@ -2065,16 +2065,18 @@ impl ThingManager {
         expected_value_type_category: ValueTypeCategory,
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<Bound<Value<'a>>> {
-        let start_value_type = match range.start_bound() {
-            Bound::Included(Value::Vector(_)) | Bound::Excluded(Value::Vector(_)) => return None,
-            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+        if !expected_value_type_category.is_order_comparable() {
+            return None;
+        }
+        let start_value_type_category = match range.start_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type_category(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
-        if !start_value_type.is_approximately_castable_to(expected_value_type_category) {
+        if !start_value_type_category.is_approximately_castable_to(expected_value_type_category) {
             return None;
         }
         Some(range.start_bound().map(|value| {
-            if expected_value_type_category != start_value_type.category() {
+            if expected_value_type_category != start_value_type_category {
                 value
                     .as_reference()
                     .approximate_cast_lower_bound(expected_value_type_category)
@@ -2089,16 +2091,18 @@ impl ThingManager {
         expected_value_type_category: ValueTypeCategory,
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<Bound<Value<'a>>> {
-        let end_value_type = match range.end_bound() {
-            Bound::Included(Value::Vector(_)) | Bound::Excluded(Value::Vector(_)) => return None,
-            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+        if !expected_value_type_category.is_order_comparable() {
+            return None;
+        }
+        let end_value_type_category = match range.end_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type_category(),
             Bound::Unbounded => return Some(Bound::Unbounded),
         };
-        if !end_value_type.is_approximately_castable_to(expected_value_type_category) {
+        if !end_value_type_category.is_approximately_castable_to(expected_value_type_category) {
             return None;
         }
         Some(range.end_bound().map(|value| {
-            if expected_value_type_category != end_value_type.category() {
+            if expected_value_type_category != end_value_type_category {
                 value
                     .as_reference()
                     .approximate_cast_upper_bound(expected_value_type_category)

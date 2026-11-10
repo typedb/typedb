@@ -8,7 +8,7 @@ use std::{marker::PhantomData, sync::Arc};
 use answer::variable_value::VariableValue;
 use compiler::{annotation::function::FunctionParameterAnnotation, executable::pipeline::GivenExecutable};
 use concept::thing::ThingAPI;
-use encoding::value::{ValueEncodable, value::Value};
+use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
 use error::needs_update_when_feature_is_implemented;
 use ir::pattern::variable_category::VariableOptionality;
 use lending_iterator::LendingIterator;
@@ -134,9 +134,12 @@ fn row_entry_satisfies_types(
         (VariableValue::Value(Value::Vector(vector)), FunctionParameterAnnotation::Vector(parameters)) => {
             vector.len() == parameters.length as usize
         }
-        (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => {
-            !matches!(value, Value::Vector(_)) && *value_type == value.value_type()
-        }
+        (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => match (value_type, value) {
+            // vector expectations are expressed as FunctionParameterAnnotation::Vector (handled above),
+            // and a vector value cannot name its schema-defined value type, so neither side matches here
+            (ValueType::Vector(_), _) | (_, Value::Vector(_)) => false,
+            _ => *value_type == value.value_type(),
+        },
         (VariableValue::Thing(thing), FunctionParameterAnnotation::Concept(types)) => types.contains(&thing.type_()),
         (VariableValue::None, _) => optionality == VariableOptionality::Optional,
         (_, FunctionParameterAnnotation::AnyConcept) => unreachable!("Unexpected"),
