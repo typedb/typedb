@@ -3134,6 +3134,11 @@ impl OperationTimeValidation {
         todo!()
     }
 
+    // validate before ownerships are made
+    ///
+    /// 1. Optimize this to do 1 forward Has scan for non-unique constraints
+    /// 2. Optimize this to do 1 HasReverse scan for unique constraints
+    //
     fn validate_owns_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -3141,25 +3146,25 @@ impl OperationTimeValidation {
         object_types: &HashSet<ObjectType>,
         attribute_types: &HashSet<AttributeType>,
         new_attribute_supertypes: &HashMap<AttributeType, Option<AttributeType>>,
-        constraints: &HashSet<CapabilityConstraint<Owns>>,
+        existing_constraints: &HashSet<CapabilityConstraint<Owns>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
-        if constraints.is_empty() {
+        if existing_constraints.is_empty() {
             return Ok(());
         }
 
-        let cardinality_constraints_iter = filter_by_constraint_category!(constraints.iter(), Cardinality);
+        let cardinality_constraints_iter = filter_by_constraint_category!(existing_constraints.iter(), Cardinality);
         let abstract_constraints: HashSet<CapabilityConstraint<Owns>> =
-            get_abstract_constraints(constraints.iter().cloned());
+            get_abstract_constraints(existing_constraints.iter().cloned());
         let distinct_constraints: HashSet<CapabilityConstraint<Owns>> =
-            get_distinct_constraints(constraints.iter().cloned());
-        let regex_constraints: HashSet<CapabilityConstraint<Owns>> = get_regex_constraints(constraints.iter().cloned());
-        let range_constraints: HashSet<CapabilityConstraint<Owns>> = get_range_constraints(constraints.iter().cloned());
+            get_distinct_constraints(existing_constraints.iter().cloned());
+        let regex_constraints: HashSet<CapabilityConstraint<Owns>> = get_regex_constraints(existing_constraints.iter().cloned());
+        let range_constraints: HashSet<CapabilityConstraint<Owns>> = get_range_constraints(existing_constraints.iter().cloned());
         let values_constraints: HashSet<CapabilityConstraint<Owns>> =
-            get_values_constraints(constraints.iter().cloned());
+            get_values_constraints(existing_constraints.iter().cloned());
         let unique_constraint = {
             let mut unique_constraint: Option<CapabilityConstraint<Owns>> = None;
-            for constraint in filter_by_constraint_category!(constraints.iter(), Unique) {
+            for constraint in filter_by_constraint_category!(existing_constraints.iter(), Unique) {
                 match &unique_constraint {
                     None => unique_constraint = Some(constraint.clone()),
                     Some(existing_unique_constraint) => {
@@ -3214,6 +3219,12 @@ impl OperationTimeValidation {
                 }
             }
 
+            // unique within the entire hierarchy: person owns name @unique; child sub person (inherits unique name) - only 1 person or child can have a unique name
+
+            // company owns name @unique; nonprofit sub company;
+
+            // reverse Has over all names -- group names owned by more than 1 thing
+            //
             let root_owner_type = unique_constraint.source().owner();
             let root_owner_subtypes = root_owner_type
                 .get_subtypes_transitive(snapshot, type_manager)
@@ -3793,7 +3804,7 @@ impl OperationTimeValidation {
     new_acquired_capability_instances_validation!(
         validate_new_acquired_owns_compatible_with_instances,
         Owns,
-        Self::validate_owns_instances_against_constraints
+        Self::validate_new_owns_instances_against_constraints
     );
     new_acquired_capability_instances_validation!(
         validate_new_acquired_plays_compatible_with_instances,
@@ -3809,7 +3820,7 @@ impl OperationTimeValidation {
     new_annotation_constraints_compatible_with_capability_instances_validation!(
         validate_new_annotation_constraints_compatible_with_owns_instances,
         Owns,
-        Self::validate_owns_instances_against_constraints
+        Self::validate_new_owns_instances_against_constraints
     );
     new_annotation_constraints_compatible_with_capability_instances_validation!(
         validate_new_annotation_constraints_compatible_with_plays_instances,
@@ -3826,7 +3837,7 @@ impl OperationTimeValidation {
         validate_updated_constraints_compatible_with_owns_instances_on_object_supertype_change,
         Owns,
         ObjectType,
-        Self::validate_owns_instances_against_constraints
+        Self::validate_new_owns_instances_against_constraints
     );
     updated_constraints_compatible_with_capability_instances_on_object_supertype_change_validation!(
         validate_updated_constraints_compatible_with_plays_instances_on_object_supertype_change,
@@ -3841,10 +3852,11 @@ impl OperationTimeValidation {
         Self::validate_relates_instances_against_constraints
     );
 
+    // TODO: we may be able to delete all constraint UNSETs on supertypes(?)/super-interfaces (cardinality is separately handled)
     affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_unset,
         Owns,
-        Self::validate_owns_instances_against_constraints
+        Self::validate_new_owns_instances_against_constraints
     );
     affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_plays_instances_on_role_supertype_unset,
@@ -3861,7 +3873,7 @@ impl OperationTimeValidation {
         validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_change,
         Owns,
         Self::validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_unset,
-        Self::validate_owns_instances_against_constraints
+        Self::validate_new_owns_instances_against_constraints
     );
     affected_constraints_compatible_with_capability_instances_on_interface_supertype_change_validation!(
         validate_affected_constraints_compatible_with_plays_instances_on_role_supertype_change,
