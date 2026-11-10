@@ -60,6 +60,20 @@ impl Sources {
             sources => sources,
         };
     }
+
+    fn get_peeked(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
+        match self {
+            Sources::Empty => None,
+            Sources::Storage(storage) => storage_peek(storage),
+            Sources::Buffered(buffered) => buffered_peek(buffered),
+            Sources::Merged { storage, buffered, ready_item_source } => {
+                match ready_item_source.expect("resolved by resolve_merge") {
+                    ReadyItemSource::Storage => storage_peek(storage),
+                    ReadyItemSource::Buffered | ReadyItemSource::Both => buffered_peek(buffered),
+                }
+            }
+        }
+    }
 }
 
 impl SnapshotRangeIterator {
@@ -83,17 +97,7 @@ impl SnapshotRangeIterator {
 
     pub fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
         self.resolve_merge();
-        match &mut self.sources {
-            Sources::Empty => None,
-            Sources::Storage(storage) => Self::storage_peek(storage),
-            Sources::Buffered(buffered) => Self::buffered_peek(buffered),
-            Sources::Merged { storage, buffered, ready_item_source } => {
-                match ready_item_source.expect("resolved by resolve_merge") {
-                    ReadyItemSource::Storage => Self::storage_peek(storage),
-                    ReadyItemSource::Buffered | ReadyItemSource::Both => Self::buffered_peek(buffered),
-                }
-            }
-        }
+        self.sources.get_peeked()
     }
 
     pub fn seek(&mut self, key: StorageKeyReference<'_>) {
@@ -103,7 +107,19 @@ impl SnapshotRangeIterator {
             Sources::Empty => (),
             Sources::Storage(storage) => storage.seek(key.bytes()),
             Sources::Buffered(buffered) => buffered.seek(key.bytes()),
-            Sources::Merged { storage, buffered, ready_item_source } => {
+            Sources::Merged { storage, buffered, ready_item_source: None } => {
+                buffered.seek(key.bytes());
+                storage.seek(key.bytes());
+            }
+            Sources::Merged { .. } => {
+                if let Some(peeked) = self.sources.get_peeked() {
+                    if peeked.is_err() || peeked.is_ok_and(|(k, _)| k >= key) {
+                        return;
+                    }
+                }
+                let Sources::Merged { storage, buffered, ready_item_source } = &mut self.sources else {
+                    unreachable!()
+                };
                 *ready_item_source = None;
                 buffered.seek(key.bytes());
                 storage.seek(key.bytes());
@@ -198,48 +214,46 @@ impl SnapshotRangeIterator {
         let item = self.next();
         item.transpose().map(|option| option.map(|(key, value)| (key.into_owned_array(), value.into_array())))
     }
+}
 
-    #[must_use]
-    fn storage_next(
-        storage: &mut MVCCRangeIterator,
-    ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>>
-    {
-        match storage.next()? {
-            Ok((key, value)) => Some(Ok((StorageKey::Reference(key), Bytes::Reference(value)))),
-            Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error }))),
-        }
+#[must_use]
+fn storage_next(
+    storage: &mut MVCCRangeIterator,
+) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>> {
+    match storage.next()? {
+        Ok((key, value)) => Some(Ok((StorageKey::Reference(key), Bytes::Reference(value)))),
+        Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error }))),
     }
+}
 
-    fn storage_peek(
-        storage: &mut MVCCRangeIterator,
-    ) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
-        match storage.peek()? {
-            Ok(ok) => Some(Ok(ok)),
-            Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error }))),
-        }
+fn storage_peek(
+    storage: &mut MVCCRangeIterator,
+) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
+    match storage.peek()? {
+        Ok(ok) => Some(Ok(ok)),
+        Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error }))),
     }
+}
 
-    /// Returns the next buffered write that is not a delete. In merged sources deletes are skipped by `resolve_merge`.
-    #[must_use]
-    fn buffered_next(
-        buffered: &mut BufferRangeIterator,
-    ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>>
-    {
-        Self::skip_buffered_deletes(buffered);
-        buffered.next().map(|(key, write)| Ok((StorageKey::Array(key), Bytes::Array(write.into_value()))))
-    }
+/// Returns the next buffered write that is not a delete. In merged sources deletes are skipped by `resolve_merge`.
+#[must_use]
+fn buffered_next(
+    buffered: &mut BufferRangeIterator,
+) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>> {
+    skip_buffered_deletes(buffered);
+    buffered.next().map(|(key, write)| Ok((StorageKey::Array(key), Bytes::Array(write.into_value()))))
+}
 
-    fn buffered_peek(
-        buffered: &mut BufferRangeIterator,
-    ) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
-        Self::skip_buffered_deletes(buffered);
-        buffered.peek().map(|(key, write)| Ok((StorageKeyReference::from(key), &**write.get_value())))
-    }
+fn buffered_peek(
+    buffered: &mut BufferRangeIterator,
+) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
+    skip_buffered_deletes(buffered);
+    buffered.peek().map(|(key, write)| Ok((StorageKeyReference::from(key), &**write.get_value())))
+}
 
-    fn skip_buffered_deletes(buffered: &mut BufferRangeIterator) {
-        while let Some((_, Write::Delete { .. })) = buffered.peek() {
-            buffered.next();
-        }
+fn skip_buffered_deletes(buffered: &mut BufferRangeIterator) {
+    while let Some((_, Write::Delete { .. })) = buffered.peek() {
+        buffered.next();
     }
 }
 
@@ -251,16 +265,16 @@ impl LendingIterator for SnapshotRangeIterator {
         self.resolve_merge();
         match &mut self.sources {
             Sources::Empty => None,
-            Sources::Storage(storage) => Self::storage_next(storage),
-            Sources::Buffered(buffered) => Self::buffered_next(buffered),
+            Sources::Storage(storage) => storage_next(storage),
+            Sources::Buffered(buffered) => buffered_next(buffered),
             Sources::Merged { storage, buffered, ready_item_source } => {
                 match ready_item_source.take().expect("resolved by resolve_merge") {
-                    ReadyItemSource::Storage => Self::storage_next(storage),
-                    ReadyItemSource::Buffered => Self::buffered_next(buffered),
+                    ReadyItemSource::Storage => storage_next(storage),
+                    ReadyItemSource::Buffered => buffered_next(buffered),
                     ReadyItemSource::Both => {
                         // Skip the storage item and return the buffered one, because their values can differ
                         let _ = storage.next();
-                        Self::buffered_next(buffered)
+                        buffered_next(buffered)
                     }
                 }
             }
