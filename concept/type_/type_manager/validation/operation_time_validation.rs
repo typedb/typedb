@@ -1525,7 +1525,7 @@ impl OperationTimeValidation {
                         Ok(label) => label,
                         Err(err) => return err,
                     };
-                    Box::new( SchemaValidationError::CannotSetAnnotationToCapabilityBecauseItsConstraintDoesNotNarrowItsInterfaceConstraint {
+                    Box::new(SchemaValidationError::CannotSetAnnotationToCapabilityBecauseItsConstraintDoesNotNarrowItsInterfaceConstraint {
                         cap: CapabilityKind::Owns,
                         interface: attribute_label,
                         label: owner_label,
@@ -3140,8 +3140,109 @@ impl OperationTimeValidation {
         todo!()
     }
 
+    // validate before ownerships are made
+    ///
+    /// 1. Optimize this to do 1 forward Has scan for non-unique constraints
+    /// 2. Optimize this to do 1 HasReverse scan for unique constraints
+    //
+    fn validate_new_owns_instances_against_constraints(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        object_types: &HashSet<ObjectType>,
+        attribute_types: &HashSet<AttributeType>,
+        new_attribute_supertypes: &HashMap<AttributeType, Option<AttributeType>>,
+        existing_constraints: &HashSet<CapabilityConstraint<Owns>>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<DataValidationError>> {
+        if existing_constraints.is_empty() {
+            return Ok(());
+        }
+        debug_assert!(
+            existing_constraints.iter().all(|constraint| constraint.requires_operation_time_validation()),
+            "Only operation-time constraints are validated here"
+        );
+
+        let unique_constraint = {
+            let mut unique_constraint: Option<CapabilityConstraint<Owns>> = None;
+            for constraint in filter_by_constraint_category!(existing_constraints.iter(), Unique) {
+                match &unique_constraint {
+                    None => unique_constraint = Some(constraint.clone()),
+                    Some(existing_unique_constraint) => {
+                        if constraint
+                            .source()
+                            .attribute()
+                            .is_supertype_transitive_of(
+                                snapshot,
+                                type_manager,
+                                existing_unique_constraint.source().attribute(),
+                            )
+                            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+                        {
+                            unique_constraint = Some(constraint.clone());
+                        }
+                    }
+                }
+            }
+            unique_constraint
+        };
+
+        if let Some(unique_constraint) = &unique_constraint {
+            debug_assert_eq!(
+                unique_constraint.scope(),
+                ConstraintScope::AllInstancesOfTypeOrSubtypes,
+                "Reconsider the algorithm if constraint scope is changed!"
+            );
+            let mut unique_attribute_types = Vec::new();
+            for attribute_type in attribute_types {
+                if Self::is_interface_type_under_constraint_source(
+                    snapshot,
+                    type_manager,
+                    unique_constraint,
+                    *attribute_type,
+                    new_attribute_supertypes,
+                )
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+                {
+                    unique_attribute_types.push(*attribute_type);
+                }
+            }
+
+            if !unique_attribute_types.is_empty() {
+                let root_owner_type = unique_constraint.source().owner();
+                let root_owner_subtypes = root_owner_type
+                    .get_subtypes_transitive(snapshot, type_manager)
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+                let unique_owner_types: HashSet<ObjectType> =
+                    TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
+                        .chain(object_types.iter().copied())
+                        .collect();
+                Self::validate_ownerships_unique(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    unique_constraint,
+                    &unique_attribute_types,
+                    &unique_owner_types,
+                    storage_counters.clone(),
+                )?;
+            }
+        }
+
+        Self::validate_ownership_edge_and_value_constraints(
+            snapshot,
+            type_manager,
+            thing_manager,
+            object_types,
+            attribute_types,
+            new_attribute_supertypes,
+            existing_constraints,
+            storage_counters,
+        )
+    }
+
     // Validate uniqueness within the hierarchy of types that are annotated unique owners of these attribute types
-    fn validate_unique_ownerships(
+    fn validate_ownerships_unique(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -3218,12 +3319,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    // validate before ownerships are made
-    ///
-    /// 1. Optimize this to do 1 forward Has scan for non-unique constraints
-    /// 2. Optimize this to do 1 HasReverse scan for unique constraints
-    //
-    fn validate_new_owns_instances_against_constraints(
+    fn validate_ownership_edge_and_value_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -3233,11 +3329,6 @@ impl OperationTimeValidation {
         existing_constraints: &HashSet<CapabilityConstraint<Owns>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
-        if existing_constraints.is_empty() {
-            return Ok(());
-        }
-
-        let cardinality_constraints_iter = filter_by_constraint_category!(existing_constraints.iter(), Cardinality);
         let abstract_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_abstract_constraints(existing_constraints.iter().cloned());
         let distinct_constraints: HashSet<CapabilityConstraint<Owns>> =
@@ -3248,88 +3339,19 @@ impl OperationTimeValidation {
             get_range_constraints(existing_constraints.iter().cloned());
         let values_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_values_constraints(existing_constraints.iter().cloned());
-        let unique_constraint = {
-            let mut unique_constraint: Option<CapabilityConstraint<Owns>> = None;
-            for constraint in filter_by_constraint_category!(existing_constraints.iter(), Unique) {
-                match &unique_constraint {
-                    None => unique_constraint = Some(constraint.clone()),
-                    Some(existing_unique_constraint) => {
-                        if constraint
-                            .source()
-                            .attribute()
-                            .is_supertype_transitive_of(
-                                snapshot,
-                                type_manager,
-                                existing_unique_constraint.source().attribute(),
-                            )
-                            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        {
-                            unique_constraint = Some(constraint.clone());
-                        }
-                    }
-                }
-            }
-            unique_constraint
-        };
-
-        debug_assert!(
-            cardinality_constraints_iter.clone().count() > 0
-                || !abstract_constraints.is_empty()
-                || !distinct_constraints.is_empty()
-                || !regex_constraints.is_empty()
-                || !range_constraints.is_empty()
-                || !values_constraints.is_empty()
-                || unique_constraint.is_some(),
-            "At least one constraint should exist otherwise we don't need to iterate"
-        );
-
-        if let Some(unique_constraint) = &unique_constraint {
-            debug_assert_eq!(
-                unique_constraint.scope(),
-                ConstraintScope::AllInstancesOfTypeOrSubtypes,
-                "Reconsider the algorithm if constraint scope is changed!"
-            );
-            let mut unique_attribute_types = Vec::new();
-            for attribute_type in attribute_types {
-                if Self::is_interface_type_under_constraint_source(
-                    snapshot,
-                    type_manager,
-                    unique_constraint,
-                    *attribute_type,
-                    new_attribute_supertypes,
-                )
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                {
-                    unique_attribute_types.push(*attribute_type);
-                }
-            }
-
-            if !unique_attribute_types.is_empty() {
-                let root_owner_type = unique_constraint.source().owner();
-                let root_owner_subtypes = root_owner_type
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-                let unique_owner_types: HashSet<ObjectType> =
-                    TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
-                        .chain(object_types.iter().copied())
-                        .collect();
-                Self::validate_unique_ownerships(
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    unique_constraint,
-                    &unique_attribute_types,
-                    &unique_owner_types,
-                    storage_counters.clone(),
-                )?;
-            }
-        }
 
         /// TODO:
         /// Turn this into one ForwardHas iterator per Object Type
-        ///   create the Cardinality Constraints counts map (reset all values to 0 each time the object instance changes)
         ///   get the Owns that corresponds to the Has we're reading and validate all the constraints as before
         ///
+        if abstract_constraints.is_empty()
+            && distinct_constraints.is_empty()
+            && regex_constraints.is_empty()
+            && range_constraints.is_empty()
+            && values_constraints.is_empty()
+        {
+            return Ok(());
+        }
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type, storage_counters.clone());
             while let Some(object) = object_iterator
@@ -3337,9 +3359,6 @@ impl OperationTimeValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             {
-                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Owns>, u64> =
-                    cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
-
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
                 let has_attribute_iterator = object
@@ -3382,26 +3401,6 @@ impl OperationTimeValidation {
                                 snapshot,
                                 type_manager,
                             ));
-                        }
-                    }
-
-                    for (cardinality_constraint, constraint_counts) in cardinality_constraints_counts.iter_mut() {
-                        debug_assert_eq!(
-                            cardinality_constraint.scope(),
-                            ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes,
-                            "Reconsider the algorithm if constraint scope is changed!"
-                        );
-                        if Self::is_suitable_capability_constraint(
-                            snapshot,
-                            type_manager,
-                            cardinality_constraint,
-                            owns,
-                            attribute_type,
-                            new_attribute_supertypes,
-                        )
-                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        {
-                            *constraint_counts += count;
                         }
                     }
 
@@ -3514,20 +3513,8 @@ impl OperationTimeValidation {
                         }
                     }
                 }
-
-                for (cardinality_constraint, constraint_counts) in cardinality_constraints_counts.into_iter() {
-                    DataValidation::validate_owns_instances_cardinality_constraint(
-                        snapshot,
-                        type_manager,
-                        &cardinality_constraint,
-                        object,
-                        cardinality_constraint.source().attribute(),
-                        constraint_counts,
-                    )?;
-                }
             }
         }
-
         Ok(())
     }
 
