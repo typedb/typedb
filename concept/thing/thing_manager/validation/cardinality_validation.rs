@@ -226,6 +226,9 @@ impl CardinalityValidation {
             out_errors,
             storage_counters.clone(),
         )?;
+
+        // at this point, we've validated the delta, and only need to revalidate untouched/persisted data according to the type modifications
+        // TODO validate this thought
         Self::validate_instances_of_modified_types(
             snapshot,
             thing_manager,
@@ -371,6 +374,28 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
+
+        /// TODO: it's possible that we modified some explicit cardinalities, such as deleting @card(1)
+        ///       but replaced it with an @key. We actually can do a no-op here if we've already validated any
+        ///       modified data, which is handled elsewhere.
+        ///
+        ///   Idea: Get a particular owns' cardinality constraints from a new snapshot/storage directly
+        ///         If the set of cardinality constaints is equal to the current set of constraints
+        ///         Then we can do a no-op here. Right?
+        ///
+        ///   More generally, for every modified owns cardinality,
+        ///   Check that the preexisting (pre-snapshot) cardinality for that exact constraint on the _same_ owns is a subset (we're relaxing or equal)
+        ///   Then we don't have to recheck. Doing anything more complex i think is not feasible
+        ///   Note: cardinality doesn't automatically apply the same to the subtype, see example below
+        ///
+        ///   Example: person owns id @card(1..10), owns email, owns name; attribute id, value string; attribute email sub id, attribute name sub id;
+        ///   Here, 'id' card applies across emails and names. However, it doesn't mean that email itself is card(1..10).
+        ///   If we relaxed owns email to @card(1..20) we can't skip validation because the id card could have passed with all
+        ///    owned id's being names. I think we can only obviously skip if the same owns had a preexisting constraint that is more strict or equal
+        ///
+        /// The same applies for relates, although less interesting because we can't put `key` on that
+        ///
+
         for (object_type, attribute_types) in &modified_types.owns {
             let mut owns_constraints_by_type = HashMap::new();
             let mut objects = thing_manager.get_objects_in_range(
@@ -713,16 +738,19 @@ impl ModifiedCapabilityTypes {
                         Prefix::EdgeOwns => {
                             let updated_attribute_types = self.owns.entry(ObjectType::new(edge.from())).or_default();
                             updated_attribute_types.insert(AttributeType::new(edge.to()));
+                            // TODO: do we here need to also include all subtypes?
                         }
                         Prefix::EdgeOwnsReverse => debug_assert!(false, "Unexpected property on reverse owns"),
                         Prefix::EdgePlays => {
                             let updated_role_types = self.plays.entry(ObjectType::new(edge.from())).or_default();
                             updated_role_types.insert(RoleType::new(edge.to()));
+                            // TODO: do we here need to also include all subtypes? (if applicable)
                         }
                         Prefix::EdgePlaysReverse => debug_assert!(false, "Unexpected property on reverse plays"),
                         Prefix::EdgeRelates => {
                             let updated_role_types = self.relates.entry(RelationType::new(edge.from())).or_default();
                             updated_role_types.insert(RoleType::new(edge.to()));
+                            // TODO: do we here need to also include all subtypes? (if applicable)
                         }
                         Prefix::EdgeRelatesReverse => debug_assert!(false, "Unexpected property on reverse relates"),
                         _ => {}

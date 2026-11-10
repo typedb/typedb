@@ -26,7 +26,7 @@ use encoding::{
             ThingVertex,
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeIndexedRelation, ThingEdgeLinks},
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
-            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_attribute::{AttributeID, AttributeVertex, DeterministicAttributeIDPart},
             vertex_generator::ThingVertexGenerator,
             vertex_object::{ObjectID, ObjectVertex},
         },
@@ -55,7 +55,7 @@ use encoding::{
     },
 };
 use itertools::Itertools;
-use lending_iterator::Peekable;
+use lending_iterator::{Peekable, kgroup::KGroupBy};
 use primitive::either::Either;
 use resource::{
     constants::{
@@ -723,6 +723,30 @@ impl ThingManager {
                 })
             },
         )
+    }
+
+    pub(crate) fn get_attributes_grouped_by_deterministic_id(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_types: &[AttributeType],
+        value_restriction: &ValueRestriction<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<
+        impl for<'b> lending_iterator::LendingIterator<
+            Item<'b> = Result<(&'b DeterministicAttributeIDPart, &'b [Attribute]), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        let mut iterators = Vec::with_capacity(attribute_types.len());
+        for attribute_type in attribute_types {
+            iterators.push(self.get_attributes_in_range(
+                snapshot,
+                *attribute_type,
+                value_restriction,
+                storage_counters.clone(),
+            )?);
+        }
+        Ok(KGroupBy::new(iterators, |attribute: &Attribute| attribute.vertex().attribute_id().deterministic_part()))
     }
 
     pub(crate) fn get_player_relations(
@@ -1403,6 +1427,33 @@ impl ThingManager {
         };
         let key_range = KeyRange::new(range_start, range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+    }
+
+    pub fn get_has_reverse_grouped_by_deterministic_id<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        attribute_types: &[AttributeType],
+        value_restriction: &ValueRestriction<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<
+        impl for<'b> lending_iterator::LendingIterator<
+            Item<'b> = Result<(&'b DeterministicAttributeIDPart, &'b [(Has, u64)]), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        let mut iterators = Vec::with_capacity(attribute_types.len());
+        for attribute_type in attribute_types {
+            iterators.push(self.get_has_reverse_in_range(
+                snapshot,
+                *attribute_type,
+                value_restriction,
+                &..,
+                storage_counters.clone(),
+            )?);
+        }
+        Ok(KGroupBy::new(iterators, |(has, _): &(Has, u64)| {
+            has.attribute().vertex().attribute_id().deterministic_part()
+        }))
     }
 
     pub(crate) fn has_owners(
@@ -2200,7 +2251,7 @@ impl ThingManager {
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     &*unique_constraint.source().attribute().vertex().to_bytes(),
-                    attribute_key.attribute_id().deterministic_bytes(),
+                    attribute_key.attribute_id().deterministic_part().bytes(),
                     &*unique_constraint.source().owner().vertex().to_bytes(),
                 ]
                 .into_iter(),
