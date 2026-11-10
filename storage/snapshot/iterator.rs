@@ -10,6 +10,7 @@ use std::{
     error::Error,
     fmt,
     hash::Hash,
+    mem,
     sync::Arc,
 };
 
@@ -29,9 +30,7 @@ pub struct SnapshotRangeIterator {
 
 /// The sources an iterator still has items from. Buffered ranges are copied when the iterator is created, so a merge
 /// never needs to restart once either side is exhausted: it continues with the other side alone.
-#[derive(Default)]
 enum Sources {
-    #[default]
     Empty,
     Storage(MVCCRangeIterator),
     Buffered(BufferRangeIterator),
@@ -44,20 +43,22 @@ enum Sources {
 }
 
 impl Sources {
-    fn without_storage(self) -> Self {
-        match self {
-            Sources::Merged { buffered, .. } => Sources::Buffered(buffered),
-            Sources::Storage(_) => Sources::Empty,
+    fn drop_storage(&mut self) {
+        let this = mem::replace(self, Self::Empty);
+        *self = match this {
+            Self::Merged { buffered, .. } => Self::Buffered(buffered),
+            Self::Storage(_) => Self::Empty,
             sources => sources,
-        }
+        };
     }
 
-    fn without_buffered(self) -> Self {
-        match self {
-            Sources::Merged { storage, .. } => Sources::Storage(storage),
-            Sources::Buffered(_) => Sources::Empty,
+    fn drop_buffered(&mut self) {
+        let this = mem::replace(self, Self::Empty);
+        *self = match this {
+            Self::Merged { storage, .. } => Self::Storage(storage),
+            Self::Buffered(_) => Self::Empty,
             sources => sources,
-        }
+        };
     }
 }
 
@@ -124,7 +125,7 @@ impl SnapshotRangeIterator {
         {
             let storage_key = match storage.peek() {
                 None => {
-                    self.sources = std::mem::take(&mut self.sources).without_storage();
+                    self.sources.drop_storage();
                     return;
                 }
                 Some(Err(_)) => {
@@ -134,7 +135,7 @@ impl SnapshotRangeIterator {
                 Some(Ok((storage_key, _))) => storage_key,
             };
             let Some((buffered_key, buffered_write)) = buffered.peek() else {
-                self.sources = std::mem::take(&mut self.sources).without_buffered();
+                self.sources.drop_buffered();
                 return;
             };
             let is_delete = buffered_write.is_delete();
