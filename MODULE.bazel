@@ -113,8 +113,8 @@ workspace_refs(
         "typeql+": "d07e949229b2551d59127d3bc3300cd38bdf33ff",
     },
     workspace_tag_dict = {
-#        "typedb_protocol+": "3.14.0",
-#        "typeql+": "3.14.0",
+        "typedb_protocol+": "3.15.0-rc0",
+        "typeql+": "3.15.0-rc0",
     },
 )
 
@@ -125,13 +125,13 @@ native_artifact_files.artifact(
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
     archive_strip_prefix = "typedb-console-{platform}-{version}",
-    tag = "3.14.0",
+    tag = "3.15.0-rc3",
 )
 native_artifact_files.artifact(
     name = "typedb_loader_artifact",
     group_name = "typedb-loader-{platform}",
     artifact_name = "typedb-loader-{platform}-{version}.{ext}",
-    tag = "3.14.0",
+    tag = "3.15.0-rc3",
 )
 use_repo(
     native_artifact_files,
@@ -179,14 +179,14 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "d07e949229b2551d59127d3bc3300cd38bdf33ff",
+    tag = "3.15.0-rc0",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "99e080bd0d599ae235607da4e4e69787e681cbe1",
+    tag = "3.15.0-rc0",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
