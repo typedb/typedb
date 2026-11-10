@@ -67,9 +67,6 @@ impl MVCCRangeIterator {
         }
     }
 
-    /// Unless already known, consumes keyspace items up to the next visible inserted version and records it as the next
-    /// item. The next item stays unknown if the keyspace iterator is exhausted, or fails: a keyspace error is treated as
-    /// the end of the range.
     fn find_next_state(&mut self) {
         if self.iterator.get_peeked().is_some() {
             return;

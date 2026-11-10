@@ -798,7 +798,6 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     /// Splits raw MVCC key bytes into their [KEY], [SEQ], and [OP] parts, borrowing the key from the bytes.
-    /// This is the only place that parses the layout: the accessors below delegate to it.
     #[inline]
     fn split(&self) -> (&[u8], SequenceNumber, StorageOperation) {
         let (key, suffix) = self.bytes.split_at(self.bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
