@@ -121,7 +121,8 @@ impl SnapshotRangeIterator {
     }
 
     fn resolve_merge_sources(&mut self) {
-        while let Sources::Merged { storage, buffered, ready_item_source: ready_item_source @ None } = &mut self.sources
+        while let Sources::Merged { storage, buffered, ready_item_source } = &mut self.sources
+            && ready_item_source.is_none()
         {
             let storage_key = match storage.peek() {
                 None => {
