@@ -528,10 +528,11 @@ fn try_get_variable_check_optionality(
         .get_variable(name)
         .ok_or_else(|| Box::new(VariableNotAvailable { variable: name.to_owned(), declaration: variable.clone() }))?;
     if !optionality_is_checked && context.variable_optionality(translated_variable) == VariableOptionality::Optional {
-        Err(Box::new(FetchRepresentationError::UnsafeOptionalVariableDereference {
+        error::optional_usage_error!(Box::new(FetchRepresentationError::UnsafeOptionalVariableDereference {
             variable: name.to_owned(),
             source_span: variable.span(),
-        }))
+        }));
+        Ok(translated_variable)
     } else {
         Ok(translated_variable)
     }
