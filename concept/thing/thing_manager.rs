@@ -460,11 +460,16 @@ impl ThingManager {
             }
             AttributeID::Vector(_id) => {
                 let vertex = attribute.vertex();
-                let vector = match snapshot.get_write(vertex.into_storage_key().as_reference()) {
-                    Some(Write::Insert { value }) | Some(Write::Put { value, .. }) => {
-                        VectorBytes::new(Bytes::<1>::Reference(value)).as_vector()
-                    }
-                    Some(Write::Delete) => return Err(Box::new(ConceptReadError::InternalMissingAttributeValue {})),
+                let buffered = snapshot
+                    .get_mapped_in_lookup_mode(
+                        vertex.into_storage_key().as_reference(),
+                        SnapshotLookupMode::BufferOnly,
+                        |bytes| VectorBytes::new(Bytes::<1>::Reference(bytes)).as_vector(),
+                        storage_counters,
+                    )
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?;
+                let vector = match buffered {
+                    Some(vector) => vector,
                     None => self
                         .vector_index
                         .get_value_by_attr_vertex(vertex)

@@ -72,7 +72,7 @@ pub(crate) fn type_to_object_type(type_: &Type) -> Result<ObjectType, ()> {
     .into_object_type())
 }
 
-pub(crate) fn get_struct_field_value_type_optionality(
+pub(crate) fn get_or_create_struct_field_value_type_optionality(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     struct_key: DefinitionKey,

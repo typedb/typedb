@@ -1741,7 +1741,7 @@ impl ConjunctionPlan<'_> {
             }
             ConstraintVertex::VectorSearch(planner) => {
                 let search = planner.vector_search();
-                let attribute_var = search.attribute().as_variable().unwrap();
+                let attribute_var = search.attribute();
                 let mut bound_vars = Vec::with_capacity(2);
                 if inputs.contains(&attribute_var) {
                     bound_vars.push(attribute_var);

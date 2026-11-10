@@ -206,6 +206,40 @@ fn committed_vectors_live_in_the_store_and_are_searchable() {
 }
 
 #[test]
+fn search_by_supertype_covers_subtype_vectors() {
+    let context = setup_empty();
+    try_define(
+        &context,
+        r#"define
+        attribute embedding @abstract, value vector(3, "float32") @index(hnsw:cosine);
+        attribute image-embedding sub embedding;
+        attribute text-embedding sub embedding;
+        entity item owns image-embedding @card(0..), owns text-embedding @card(0..);
+    "#,
+    )
+    .unwrap();
+    run_write_query(
+        &context,
+        r#"insert
+        $a isa item, has image-embedding vector([1.0, 0.0, 0.0], "float32");
+        $b isa item, has text-embedding vector([0.9, 0.1, 0.0], "float32");
+    "#,
+    );
+
+    let rows = run_read_query(
+        &context,
+        r#"match let $emb, $_ in cosine_similarity_search(embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#,
+    );
+    assert_eq!(rows.len(), 2, "search by the abstract supertype must cover subtype vectors, got: {rows:?}");
+
+    let rows = run_read_query(
+        &context,
+        r#"match let $emb, $_ in cosine_similarity_search(image-embedding, vector([1.0, 0.0, 0.0], "float32"), -1.0);"#,
+    );
+    assert_eq!(rows.len(), 1, "search by a subtype must only cover that subtype, got: {rows:?}");
+}
+
+#[test]
 fn committed_vector_values_are_read_back_from_the_store() {
     let context = setup();
     run_write_query(&context, INSERT);

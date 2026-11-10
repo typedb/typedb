@@ -1767,7 +1767,11 @@ impl<ID> VectorSearch<ID> {
 }
 
 impl<ID: IrID> VectorSearch<ID> {
-    pub fn attribute(&self) -> &Vertex<ID> {
+    pub fn attribute(&self) -> ID {
+        self.attribute.as_variable().expect("attribute is always a variable (enforced by the constructor)")
+    }
+
+    pub fn attribute_vertex(&self) -> &Vertex<ID> {
         &self.attribute
     }
 
@@ -1783,7 +1787,11 @@ impl<ID: IrID> VectorSearch<ID> {
         self.threshold.clone()
     }
 
-    pub fn similarity(&self) -> &Vertex<ID> {
+    pub fn similarity(&self) -> ID {
+        self.similarity.as_variable().expect("similarity is always a variable (enforced by the constructor)")
+    }
+
+    pub fn similarity_vertex(&self) -> &Vertex<ID> {
         &self.similarity
     }
 

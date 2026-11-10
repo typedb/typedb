@@ -47,7 +47,7 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        ResolvedValueType, SymbolResolutionError, filter_variants, get_struct_field_value_type_optionality,
+        ResolvedValueType, SymbolResolutionError, filter_variants, get_or_create_struct_field_value_type_optionality,
         resolve_attribute_type, resolve_or_create_vector_value_type, resolve_relates, resolve_relates_declared,
         resolve_role_type, resolve_struct_definition_key, resolve_typeql_type, resolve_value_type,
         try_resolve_typeql_type, type_ref_to_label_and_ordering, type_to_object_type,
@@ -211,7 +211,7 @@ fn define_struct_fields(
 
     for field in &struct_definable.fields {
         let (value_type, optional) =
-            get_struct_field_value_type_optionality(snapshot, type_manager, struct_key.clone(), field)
+            get_or_create_struct_field_value_type_optionality(snapshot, type_manager, struct_key.clone(), field)
                 .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
         let field_key = checked_identifier(&field.key)?;
         let definition_status = get_struct_field_status(

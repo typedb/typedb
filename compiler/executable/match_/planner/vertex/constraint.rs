@@ -514,11 +514,11 @@ impl<'a> VectorSearchPlanner<'a> {
         type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) -> Self {
-        let attribute = variable_index[&vector_search.attribute().as_variable().unwrap()];
+        let attribute = variable_index[&vector_search.attribute()];
         let query = vector_search.query().as_variable().map(|var| variable_index[&var]);
-        let similarity = variable_index[&vector_search.similarity().as_variable().unwrap()];
+        let similarity = variable_index[&vector_search.similarity()];
         let unrestricted_expected_size = type_annotations
-            .vertex_annotations_of(vector_search.attribute())
+            .vertex_annotations_of(vector_search.attribute_vertex())
             .map(|types| types.iter().map(|type_| instance_count(type_, statistics)).sum::<u64>() as f64)
             .unwrap_or(0.0);
         Self { vector_search, attribute, query, similarity, unrestricted_expected_size }

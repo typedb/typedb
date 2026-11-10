@@ -248,6 +248,8 @@ impl PerTypeVectorIndex {
     fn new(dimensions: usize) -> Result<Self, VectorIndexError> {
         let options = IndexOptions {
             dimensions,
+            // matches HnswMetric::Cosine, the only metric TypeQL accepts in @index(hnsw:...);
+            // plumb the annotation's metric through here when a second metric is added
             metric: MetricKind::Cos,
             quantization: ScalarKind::F32,
             connectivity: 0,

@@ -153,7 +153,7 @@ impl VectorSearchInstruction<Variable> {
         inputs: Inputs<Variable>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations.vertex_annotations_of(vector_search.attribute()).unwrap().clone();
+        let types = type_annotations.vertex_annotations_of(vector_search.attribute_vertex()).unwrap().clone();
         Self { vector_search, inputs, types, checks: Vec::new() }
     }
 }

@@ -1028,29 +1028,40 @@ impl BinaryConstraint for Owns<Variable> {
 
 impl BinaryConstraint for VectorSearch<Variable> {
     fn left(&self) -> &Vertex<Variable> {
-        self.attribute()
+        self.attribute_vertex()
     }
 
     fn right(&self) -> &Vertex<Variable> {
         self.attribute_type()
     }
 
+    // like a non-exact Isa: the search covers the named attribute type and all its subtypes
     fn annotate_left_to_right_for_type(
         &self,
-        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
+        if let TypeAnnotation::Attribute(attribute) = left_type {
+            attribute.get_supertypes_transitive(context.snapshot, context.type_manager)?.iter().for_each(|supertype| {
+                collector.insert(TypeAnnotation::Attribute(*supertype));
+            });
+        }
         collector.insert(*left_type);
         Ok(())
     }
 
     fn annotate_right_to_left_for_type(
         &self,
-        _context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
+        if let TypeAnnotation::Attribute(attribute) = right_type {
+            attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?.iter().for_each(|subtype| {
+                collector.insert(TypeAnnotation::Attribute(*subtype));
+            });
+        }
         collector.insert(*right_type);
         Ok(())
     }

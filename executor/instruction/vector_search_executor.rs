@@ -107,10 +107,10 @@ impl VectorSearchExecutor {
         sort_by: ExecutorVariable,
     ) -> Self {
         let VectorSearchInstruction { vector_search, types, checks, inputs } = instruction;
-        let var = vector_search.attribute().as_variable().unwrap();
+        let var = vector_search.attribute();
         debug_assert_eq!(sort_by, var, "vector search can only be sorted by its attribute variable");
         let attribute_bound = inputs.iter().any(|&input| input == var);
-        let similarity_var = vector_search.similarity().as_variable();
+        let similarity_var = Some(vector_search.similarity());
         let tuple_positions = TuplePositions::Pair([Some(var), similarity_var]);
         let checker = Checker::<VectorSearchItem>::new(
             checks,
@@ -160,7 +160,7 @@ impl VectorSearchExecutor {
 
         let mut matching: Vec<VectorSearchItem> = Vec::new();
         if self.attribute_bound {
-            let ExecutorVariable::RowPosition(position) = self.vector_search.attribute().as_variable().unwrap() else {
+            let ExecutorVariable::RowPosition(position) = self.vector_search.attribute() else {
                 unreachable!("bound vector search attribute must have a row position")
             };
             if let VariableValue::Thing(Thing::Attribute(attribute)) = row.get(position) {

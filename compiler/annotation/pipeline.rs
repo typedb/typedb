@@ -726,9 +726,7 @@ fn add_running_value_annotations(
     });
     conjunction.constraints().iter().for_each(|constraint| {
         if let Constraint::VectorSearch(search) = constraint {
-            running_annotations
-                .values
-                .insert(search.similarity().as_variable().unwrap(), ExpressionValueType::Single(ValueType::Double));
+            running_annotations.values.insert(search.similarity(), ExpressionValueType::Single(ValueType::Double));
         }
     });
 }

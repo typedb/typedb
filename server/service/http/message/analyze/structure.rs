@@ -465,11 +465,11 @@ fn encode_structure_constraint(
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Optimisations don't represent the structure
         Constraint::VectorSearch(search) => push(StructureConstraint::VectorSearch {
-            attribute: encode_structure_vertex(context, search.attribute())?,
+            attribute: encode_structure_vertex(context, search.attribute_vertex())?,
             attribute_type: encode_structure_vertex(context, search.attribute_type())?,
             query: encode_structure_vertex(context, search.query())?,
             threshold: encode_structure_vertex(context, &Vertex::Parameter(search.threshold()))?,
-            similarity: encode_structure_vertex(context, search.similarity())?,
+            similarity: encode_structure_vertex(context, search.similarity_vertex())?,
         }),
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
