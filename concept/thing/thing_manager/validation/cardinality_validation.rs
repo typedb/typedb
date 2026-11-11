@@ -7,10 +7,13 @@
 use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
     hash::Hash,
+    panic,
+    sync::atomic::{self, AtomicUsize},
+    thread,
 };
 
 use encoding::Keyable;
-use resource::profile::StorageCounters;
+use resource::{profile::StorageCounters, system_info::SystemInfo};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -201,7 +204,7 @@ Please keep these complexities in mind when modifying the collection stage in th
 pub(crate) struct CardinalityValidation {}
 
 impl CardinalityValidation {
-    pub(crate) fn validate_commit<Snapshot: WritableSnapshot>(
+    pub(crate) fn validate_commit<Snapshot: WritableSnapshot + Sync>(
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager,
         out_errors: &mut Vec<DataValidationError>,
@@ -359,7 +362,7 @@ impl CardinalityValidation {
     }
 
     fn validate_instances_of_modified_cardinalities(
-        snapshot: &impl WritableSnapshot,
+        snapshot: &(impl WritableSnapshot + Sync),
         thing_manager: &ThingManager,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
@@ -373,27 +376,65 @@ impl CardinalityValidation {
         let modified_cardinalities =
             SchemaCardinalities::new(snapshot, type_manager)?.diff_from(preexisting_cardinalities);
 
-        Self::validate_owns_cardinalities(
-            snapshot,
-            thing_manager,
-            out_errors,
-            &modified_cardinalities.owns,
-            storage_counters.clone(),
-        )?;
-        Self::validate_plays_cardinalities(
-            snapshot,
-            thing_manager,
-            out_errors,
-            &modified_cardinalities.plays,
-            storage_counters.clone(),
-        )?;
-        Self::validate_relates_cardinalities(
-            snapshot,
-            thing_manager,
-            out_errors,
-            &modified_cardinalities.relates,
-            storage_counters,
-        )?;
+        let tasks: Vec<CardinalityTask<'_>> = (modified_cardinalities.owns.iter())
+            .map(|(&object_type, descriptions)| CardinalityTask::Owns(object_type, descriptions))
+            .chain(
+                (modified_cardinalities.plays.iter())
+                    .map(|(&object_type, descriptions)| CardinalityTask::Plays(object_type, descriptions)),
+            )
+            .chain(
+                (modified_cardinalities.relates.iter())
+                    .map(|(&relation_type, descriptions)| CardinalityTask::Relates(relation_type, descriptions)),
+            )
+            .collect();
+
+        // types are validated independently, so each worker keeps taking the next type until none are left
+        let next_task = AtomicUsize::new(0);
+        let validate_tasks = || -> Result<Vec<DataValidationError>, Box<ConceptReadError>> {
+            let mut errors = Vec::new();
+            while let Some(task) = tasks.get(next_task.fetch_add(1, atomic::Ordering::Relaxed)) {
+                match task {
+                    CardinalityTask::Owns(object_type, descriptions) => Self::validate_owns_cardinalities(
+                        snapshot,
+                        thing_manager,
+                        &mut errors,
+                        *object_type,
+                        descriptions,
+                        storage_counters.clone(),
+                    )?,
+                    CardinalityTask::Plays(object_type, descriptions) => Self::validate_plays_cardinalities(
+                        snapshot,
+                        thing_manager,
+                        &mut errors,
+                        *object_type,
+                        descriptions,
+                        storage_counters.clone(),
+                    )?,
+                    CardinalityTask::Relates(relation_type, descriptions) => Self::validate_relates_cardinalities(
+                        snapshot,
+                        thing_manager,
+                        &mut errors,
+                        *relation_type,
+                        descriptions,
+                        storage_counters.clone(),
+                    )?,
+                }
+            }
+            Ok(errors)
+        };
+
+        let worker_count = SystemInfo::get_cpu_count().min(tasks.len());
+        if worker_count <= 1 {
+            out_errors.extend(validate_tasks()?);
+            return Ok(());
+        }
+        let results: Vec<_> = thread::scope(|scope| {
+            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&validate_tasks)).collect();
+            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
+        });
+        for result in results {
+            out_errors.extend(result?);
+        }
 
         Ok(())
     }
@@ -402,14 +443,16 @@ impl CardinalityValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         out_errors: &mut Vec<DataValidationError>,
-        owns_cardinalities: &HashMap<ObjectType, Vec<CardinalityDescription<Owns>>>,
+        object_type: ObjectType,
+        cardinality_descriptions: &[CardinalityDescription<Owns>],
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_instances_cardinalities(
             snapshot,
             thing_manager,
             out_errors,
-            owns_cardinalities,
+            object_type,
+            cardinality_descriptions,
             |object_type| thing_manager.get_objects_in(snapshot, object_type, storage_counters.clone()),
             |object_type| thing_manager.get_has_in(snapshot, object_type, storage_counters.clone()),
             |has| (has.owner(), has.attribute().type_()),
@@ -430,14 +473,16 @@ impl CardinalityValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         out_errors: &mut Vec<DataValidationError>,
-        plays_cardinalities: &HashMap<ObjectType, Vec<CardinalityDescription<Plays>>>,
+        object_type: ObjectType,
+        cardinality_descriptions: &[CardinalityDescription<Plays>],
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_instances_cardinalities(
             snapshot,
             thing_manager,
             out_errors,
-            plays_cardinalities,
+            object_type,
+            cardinality_descriptions,
             |object_type| thing_manager.get_objects_in(snapshot, object_type, storage_counters.clone()),
             |object_type| thing_manager.get_links_reverse_in(snapshot, object_type, storage_counters.clone()),
             |links| (links.player(), links.role_type()),
@@ -458,14 +503,16 @@ impl CardinalityValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         out_errors: &mut Vec<DataValidationError>,
-        relates_cardinalities: &HashMap<RelationType, Vec<CardinalityDescription<Relates>>>,
+        relation_type: RelationType,
+        cardinality_descriptions: &[CardinalityDescription<Relates>],
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_instances_cardinalities(
             snapshot,
             thing_manager,
             out_errors,
-            relates_cardinalities,
+            relation_type,
+            cardinality_descriptions,
             |relation_type| thing_manager.get_relations_in(snapshot, relation_type, storage_counters.clone()),
             |relation_type| thing_manager.get_links_in(snapshot, relation_type, storage_counters.clone()),
             |links| (links.relation(), links.role_type()),
@@ -491,7 +538,8 @@ impl CardinalityValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         out_errors: &mut Vec<DataValidationError>,
-        cardinalities: &HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
+        type_: CAP::ObjectType,
+        cardinality_descriptions: &[CardinalityDescription<CAP>],
         get_instances_in: impl Fn(CAP::ObjectType) -> InstanceIterator<Instance>,
         get_edges_in: impl Fn(CAP::ObjectType) -> EdgeIterator,
         edge_instance_and_interface: impl Fn(&Edge) -> (Instance, CAP::InterfaceType),
@@ -502,46 +550,44 @@ impl CardinalityValidation {
             u64,
         ) -> Result<(), Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        for (&type_, cardinality_descriptions) in cardinalities {
-            // one counter per constraint, plus an index of which interface types add to which counters
-            let mut counts = vec![0u64; cardinality_descriptions.len()];
-            let mut counted_by: HashMap<CAP::InterfaceType, Vec<usize>> = HashMap::new();
-            for (index, description) in cardinality_descriptions.iter().enumerate() {
-                for &interface_type in &description.relevant_types {
-                    counted_by.entry(interface_type).or_default().push(index);
+        // one counter per constraint, plus an index of which interface types add to which counters
+        let mut counts = vec![0u64; cardinality_descriptions.len()];
+        let mut counted_by: HashMap<CAP::InterfaceType, Vec<usize>> = HashMap::new();
+        for (index, description) in cardinality_descriptions.iter().enumerate() {
+            for &interface_type in &description.relevant_types {
+                counted_by.entry(interface_type).or_default().push(index);
+            }
+        }
+
+        // instances and their edges are both ordered by instance, so walk them together to also visit instances without any edge
+        let mut edges = get_edges_in(type_).peekable();
+        for instance in get_instances_in(type_) {
+            let instance = instance?;
+            while edges.peek().is_some_and(|result| {
+                result.as_ref().map_or(true, |(edge, _)| edge_instance_and_interface(edge).0 == instance)
+            }) {
+                let (edge, count) = edges.next().unwrap()?;
+                if let Some(indices) = counted_by.get(&edge_instance_and_interface(&edge).1) {
+                    for &index in indices {
+                        counts[index] += count;
+                    }
                 }
             }
 
-            // instances and their edges are both ordered by instance, so walk them together to also visit instances without any edge
-            let mut edges = get_edges_in(type_).peekable();
-            for instance in get_instances_in(type_) {
-                let instance = instance?;
-                while edges.peek().is_some_and(|result| {
-                    result.as_ref().map_or(true, |(edge, _)| edge_instance_and_interface(edge).0 == instance)
-                }) {
-                    let (edge, count) = edges.next().unwrap()?;
-                    if let Some(indices) = counted_by.get(&edge_instance_and_interface(&edge).1) {
-                        for &index in indices {
-                            counts[index] += count;
-                        }
-                    }
+            // instances written in this transaction are fully validated by the previous delta checks
+            let key = instance.vertex().into_storage_key();
+            if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_none() {
+                for (description, &count) in cardinality_descriptions.iter().zip(&counts) {
+                    let check = validate_cardinality(
+                        &description.constraint,
+                        instance,
+                        description.constraint.source().interface(),
+                        count,
+                    );
+                    collect_errors!(out_errors, check, |e: Box<_>| *e);
                 }
-
-                // instances written in this transaction are fully validated by the previous delta checks
-                let key = instance.vertex().into_storage_key();
-                if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_none() {
-                    for (description, &count) in cardinality_descriptions.iter().zip(&counts) {
-                        let check = validate_cardinality(
-                            &description.constraint,
-                            instance,
-                            description.constraint.source().interface(),
-                            count,
-                        );
-                        collect_errors!(out_errors, check, |e: Box<_>| *e);
-                    }
-                }
-                counts.fill(0);
             }
+            counts.fill(0);
         }
         Ok(())
     }
@@ -576,6 +622,12 @@ impl CardinalityValidation {
         get_player_counts,
         DataValidation::validate_relates_instances_cardinality_constraint
     );
+}
+
+enum CardinalityTask<'a> {
+    Owns(ObjectType, &'a [CardinalityDescription<Owns>]),
+    Plays(ObjectType, &'a [CardinalityDescription<Plays>]),
+    Relates(RelationType, &'a [CardinalityDescription<Relates>]),
 }
 
 pub(crate) struct SchemaCardinalities {

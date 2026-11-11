@@ -2188,7 +2188,7 @@ impl ThingManager {
         attribute.vertex().lock_unmodifiable(snapshot);
     }
 
-    pub fn finalise<Snapshot: WritableSnapshot>(
+    pub fn finalise<Snapshot: WritableSnapshot + Sync>(
         &self,
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
@@ -2570,7 +2570,7 @@ impl ThingManager {
 
     fn validate_cardinalities(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut (impl WritableSnapshot + Sync),
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let mut errors = Vec::new();

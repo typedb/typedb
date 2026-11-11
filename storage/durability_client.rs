@@ -30,7 +30,7 @@ pub trait UnsequencedDurabilityRecord: DurabilityRecord {}
 /// A durability client must be able to submit records to the durability service, iterate through records from the service,
 /// and in the future collect disjoint durability services' sequenced batches per-epoch and collate them into a single continuous sequence
 ///     Note: the challenge for this is managing the reverse, mapping a global ordering to durability services' ordering
-pub trait DurabilityClient {
+pub trait DurabilityClient: Send + Sync {
     fn register_record_type<Record: DurabilityRecord>(&mut self);
 
     fn current(&self) -> SequenceNumber;
