@@ -510,7 +510,7 @@ impl FileReader {
         let RecordHeader { sequence_number, len, record_type } = self.read_header()?;
 
         let mut decompressed_bytes = Vec::new();
-        lz4::Decoder::new((&mut self.reader).take(len))
+        lz4::Decoder::new((&mut self.reader).take_exact(len))
             .and_then(|mut decoder| decoder.read_to_end(&mut decompressed_bytes))
             .map_err(|err| WALError::Decompression { source: Arc::new(err) })?;
 
@@ -731,10 +731,41 @@ impl Drop for FsyncThread {
     }
 }
 
+struct TakeExact<R> {
+    inner: R,
+    limit: usize,
+}
+
+impl<R: Read> Read for TakeExact<R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.limit == 0 {
+            return Ok(0);
+        }
+
+        let end = usize::min(self.limit, buf.len());
+        let bytes_read = self.inner.read(&mut buf[..end])?;
+
+        if bytes_read == 0 {
+            Err(io::ErrorKind::UnexpectedEof.into())
+        } else {
+            self.limit -= bytes_read;
+            Ok(bytes_read)
+        }
+    }
+}
+
+trait ReadTakeExact: Sized {
+    fn take_exact(self, limit: u64) -> TakeExact<Self>;
+}
+
+impl<T: Read> ReadTakeExact for T {
+    fn take_exact(self, limit: u64) -> TakeExact<Self> {
+        TakeExact { inner: self, limit: limit as usize }
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
     use assert as assert_true;
     use diagnostics::metrics::FsyncMetrics;
     use itertools::Itertools;
