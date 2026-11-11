@@ -511,7 +511,12 @@ impl FileReader {
 
         let mut decompressed_bytes = Vec::new();
         lz4::Decoder::new((&mut self.reader).take_exact(len))
-            .and_then(|mut decoder| decoder.read_to_end(&mut decompressed_bytes))
+            .and_then(|mut decoder| {
+                decoder.read_to_end(&mut decompressed_bytes)?;
+                let (reader, result) = decoder.finish();
+                debug_assert_eq!(reader.limit, 0, "leftover bytes in the compressed record reader");
+                result
+            })
             .map_err(|err| WALError::Decompression { source: Arc::new(err) })?;
 
         Ok(Some(RawRecord { sequence_number, record_type, bytes: Cow::Owned(decompressed_bytes) }))
