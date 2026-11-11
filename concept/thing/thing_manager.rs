@@ -90,8 +90,7 @@ use crate::{
         statistics::Statistics,
         r#struct::StructIndexForAttributeTypeIterator,
         thing_manager::validation::{
-            DataValidationError,
-            cardinality_validation::{CardinalityValidation, ModifiedCapabilityTypes},
+            DataValidationError, cardinality_validation::CardinalityValidation,
             operation_time_validation::OperationTimeValidation,
         },
     },
@@ -844,6 +843,17 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
+    pub fn get_has_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owner_type: ObjectType,
+        storage_counters: StorageCounters,
+    ) -> HasIterator {
+        let prefix = ThingEdgeHas::prefix_from_type(owner_type.vertex());
+        let range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        HasIterator::new(snapshot.iterate_range(&range, storage_counters))
+    }
+
     pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -866,7 +876,7 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
-    pub fn get_has_reverse(
+    pub fn get_has_reverse_in(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
@@ -901,7 +911,7 @@ impl ThingManager {
         };
         let value_type_category = attribute_value_type.category();
         match AttributeValueLookup::new(value_restriction, &[value_type_category]) {
-            AttributeValueLookup::All => self.get_has_reverse(snapshot, attribute_type, storage_counters),
+            AttributeValueLookup::All => self.get_has_reverse_in(snapshot, attribute_type, storage_counters),
             AttributeValueLookup::Exact(value) => {
                 let key_range = match AttributeVertex::build_or_prefix_for_value_equality(
                     attribute_type.vertex().type_id_(),
@@ -1481,6 +1491,17 @@ impl ThingManager {
         LinksIterator::new(snapshot.iterate_range(key_range, storage_counters))
     }
 
+    pub fn get_links_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType,
+        storage_counters: StorageCounters,
+    ) -> LinksIterator {
+        let prefix = ThingEdgeLinks::prefix_from_relation_type(relation_type.vertex().type_id_());
+        let range = KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        LinksIterator::new(snapshot.iterate_range(&range, storage_counters))
+    }
+
     pub fn get_links_by_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1545,6 +1566,20 @@ impl ThingManager {
             snapshot_lookup_mode,
             storage_counters,
         ))
+    }
+
+    pub fn get_links_reverse_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player_type: ObjectType,
+        storage_counters: StorageCounters,
+    ) -> LinksReverseIterator {
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player_type(
+            player_type.vertex().prefix(),
+            player_type.vertex().type_id_(),
+        );
+        let range = KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        LinksReverseIterator::new(snapshot.iterate_range(&range, storage_counters))
     }
 
     pub fn get_links_reverse_by_player_type_range(
@@ -2158,12 +2193,11 @@ impl ThingManager {
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<CleanupIntervals, Vec<ConceptWriteError>> {
-        let modified_types = ModifiedCapabilityTypes::collect(snapshot, self.type_manager())
-            .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
-        self.validate_cardinalities(snapshot, &modified_types, storage_counters.clone())?;
+        self.validate_cardinalities(snapshot, storage_counters.clone())?;
+
         // For immutable schema, the indices are updated at operation time
         if !Snapshot::IMMUTABLE_SCHEMA {
-            self.update_relation_indices_on_schema_commit(snapshot, modified_types.relates(), storage_counters.clone())
+            self.update_relation_indices_on_schema_commit(snapshot, storage_counters.clone())
                 .map_err(|err| vec![*err])?;
         }
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
@@ -2537,12 +2571,10 @@ impl ThingManager {
     fn validate_cardinalities(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        modified_types: &ModifiedCapabilityTypes,
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let mut errors = Vec::new();
-        let validate_result =
-            CardinalityValidation::validate_commit(snapshot, self, modified_types, &mut errors, storage_counters);
+        let validate_result = CardinalityValidation::validate_commit(snapshot, self, &mut errors, storage_counters);
         if let Err(typedb_source) = validate_result {
             errors.push(DataValidationError::ConceptRead { typedb_source });
         }
@@ -2559,11 +2591,10 @@ impl ThingManager {
     fn update_relation_indices_on_schema_commit(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.update_relation_indices_of_modified_links(snapshot, storage_counters.clone())?;
-        self.rebuild_relation_indices_of_requalified_types(snapshot, modified_relates_by_type, storage_counters)
+        self.rebuild_relation_indices_of_requalified_types(snapshot, storage_counters)
     }
 
     fn update_relation_indices_of_modified_links(
@@ -2629,7 +2660,6 @@ impl ThingManager {
     fn rebuild_relation_indices_of_requalified_types(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let read_error = |typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source });
@@ -2637,21 +2667,14 @@ impl ThingManager {
         let mut crossing_types = HashMap::new();
         {
             let before_writes = snapshot.read_snapshot_before_writes();
-            for relation_type in modified_relates_by_type.keys() {
-                let subtypes = relation_type.get_subtypes_transitive(snapshot, type_manager).map_err(read_error)?;
-                for relation_type in TypeAPI::chain_types(*relation_type, subtypes.into_iter().cloned()) {
-                    if crossing_types.contains_key(&relation_type) {
-                        continue;
-                    }
-                    let qualified_now = relation_type
-                        .schema_qualifies_for_relation_index(snapshot, type_manager)
-                        .map_err(read_error)?;
-                    let qualified_before = relation_type
-                        .schema_qualifies_for_relation_index(&before_writes, type_manager)
-                        .map_err(read_error)?;
-                    if qualified_now != qualified_before {
-                        crossing_types.insert(relation_type, qualified_now);
-                    }
+            for relation_type in type_manager.get_relation_types(snapshot).map_err(read_error)? {
+                let qualified_now =
+                    relation_type.schema_qualifies_for_relation_index(snapshot, type_manager).map_err(read_error)?;
+                let qualified_before = relation_type
+                    .schema_qualifies_for_relation_index(&before_writes, type_manager)
+                    .map_err(read_error)?;
+                if qualified_now != qualified_before {
+                    crossing_types.insert(relation_type, qualified_now);
                 }
             }
         }
