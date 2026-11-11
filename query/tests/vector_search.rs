@@ -486,6 +486,14 @@ fn vector_attribute_requires_index_annotation() {
 
     let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
     assert!(result.is_err(), "@index on a non-vector value type should be rejected");
+
+}
+
+#[test]
+fn index_annotation_cannot_be_unset_while_value_type_is_vector() {
+    let context = setup();
+    let result = try_define(&context, r#"undefine @index from embedding;"#);
+    assert!(result.is_err(), "unsetting @index while the value type is still a vector should be rejected");
 }
 
 #[test]
