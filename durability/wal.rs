@@ -738,7 +738,7 @@ impl Drop for FsyncThread {
 
 struct TakeExact<R> {
     inner: R,
-    limit: usize,
+    limit: u64,
 }
 
 impl<R: Read> Read for TakeExact<R> {
@@ -747,13 +747,16 @@ impl<R: Read> Read for TakeExact<R> {
             return Ok(0);
         }
 
-        let end = usize::min(self.limit, buf.len());
+        let end = match usize::try_from(self.limit) {
+            Ok(limit) => usize::min(limit, buf.len()),
+            Err(_) => buf.len(),
+        };
         let bytes_read = self.inner.read(&mut buf[..end])?;
 
         if bytes_read == 0 {
             Err(io::ErrorKind::UnexpectedEof.into())
         } else {
-            self.limit -= bytes_read;
+            self.limit -= bytes_read as u64;
             Ok(bytes_read)
         }
     }
@@ -765,7 +768,7 @@ trait ReadTakeExact: Sized {
 
 impl<T: Read> ReadTakeExact for T {
     fn take_exact(self, limit: u64) -> TakeExact<Self> {
-        TakeExact { inner: self, limit: limit as usize }
+        TakeExact { inner: self, limit }
     }
 }
 
