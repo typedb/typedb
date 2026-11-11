@@ -255,7 +255,7 @@ impl Costed for PlannerVertex<'_> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CostMetaData {
-    Direction(Direction), // Cheapest direction of individual constraints
+    Direction(Direction, Option<VariableVertexId>), // Cheapest direction of individual constraints + SortVariable
     // Pushdown(Pushdown), // Pushdown constraints from function calls if they are very selective
     // Split(Split), // Split negation into disjunctions if one part expensive and low selectivity
     // Sort(Binding), // Produce sorted iterator for var with binding (easy e.g. for monotone functions)
