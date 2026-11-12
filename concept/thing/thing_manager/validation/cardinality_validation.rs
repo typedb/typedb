@@ -424,10 +424,6 @@ impl CardinalityValidation {
         };
 
         let worker_count = SystemInfo::get_cpu_count().min(tasks.len());
-        if worker_count <= 1 {
-            out_errors.extend(validate_tasks()?);
-            return Ok(());
-        }
         let results: Vec<_> = thread::scope(|scope| {
             let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&validate_tasks)).collect();
             workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()

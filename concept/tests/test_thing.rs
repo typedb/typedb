@@ -2002,6 +2002,191 @@ fn independent_relation_without_players_survives_commit() {
 }
 
 #[test]
+fn relations_without_players_are_deleted_when_relation_type_independence_is_unset() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    // more than one relation type, so the scans run in parallel
+    let relation_labels = [Label::build("friendship", None), Label::build("marriage", None)];
+    let person_label = Label::build("person", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        for relation_label in &relation_labels {
+            let relation_type = type_manager.create_relation_type(&mut snapshot, relation_label).unwrap();
+            let role_type = relation_type
+                .create_relates(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    "partner",
+                    Ordering::Unordered,
+                    StorageCounters::DISABLED,
+                )
+                .unwrap()
+                .role();
+            person_type
+                .set_plays(&mut snapshot, &type_manager, &thing_manager, role_type, StorageCounters::DISABLED)
+                .unwrap();
+            type_manager.set_relation_type_independent(&mut snapshot, relation_type).unwrap();
+        }
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        for relation_label in &relation_labels {
+            let relation_type = type_manager.get_relation_type(&snapshot, relation_label).unwrap().unwrap();
+            let role_type =
+                relation_type.get_relates_role_name(&snapshot, &type_manager, "partner").unwrap().unwrap().role();
+            thing_manager.create_relation(&mut snapshot, relation_type).unwrap();
+            let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+            let relation = thing_manager.create_relation(&mut snapshot, relation_type).unwrap();
+            relation
+                .add_player(&mut snapshot, &thing_manager, role_type, Object::Entity(person), StorageCounters::DISABLED)
+                .unwrap();
+        }
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        for relation_label in &relation_labels {
+            let relation_type = type_manager.get_relation_type(&snapshot, relation_label).unwrap().unwrap();
+            type_manager.unset_relation_type_independent(&mut snapshot, relation_type).unwrap();
+        }
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (_, thing_manager) = load_managers(storage.clone(), None);
+        let relations_count = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).count();
+        assert_eq!(relations_count, relation_labels.len());
+    }
+}
+
+#[test]
+fn relation_emptied_by_deleting_a_new_relation_without_players_is_deleted() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let group_label = Label::build("group", None);
+    let friendship_label = Label::build("friendship", None);
+    let person_label = Label::build("person", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let group_type = type_manager.create_relation_type(&mut snapshot, &group_label).unwrap();
+        let member_type = group_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "member",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap()
+            .role();
+        let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
+        let friend_type = friendship_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "friend",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap()
+            .role();
+        friendship_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, member_type, StorageCounters::DISABLED)
+            .unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        person_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, friend_type, StorageCounters::DISABLED)
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let group_type = type_manager.get_relation_type(&snapshot, &group_label).unwrap().unwrap();
+        let member_type = group_type.get_relates_role_name(&snapshot, &type_manager, "member").unwrap().unwrap().role();
+        let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
+        let friend_type =
+            friendship_type.get_relates_role_name(&snapshot, &type_manager, "friend").unwrap().unwrap().role();
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let friendship = thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
+        friendship
+            .add_player(&mut snapshot, &thing_manager, friend_type, Object::Entity(person), StorageCounters::DISABLED)
+            .unwrap();
+        let group = thing_manager.create_relation(&mut snapshot, group_type).unwrap();
+        group
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                member_type,
+                Object::Relation(friendship),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // the group's only member becomes a new friendship without players
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let group_type = type_manager.get_relation_type(&snapshot, &group_label).unwrap().unwrap();
+        let member_type = group_type.get_relates_role_name(&snapshot, &type_manager, "member").unwrap().unwrap().role();
+        let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
+        let group =
+            thing_manager.get_relations_in(&snapshot, group_type, StorageCounters::DISABLED).next().unwrap().unwrap();
+        let friendship = thing_manager
+            .get_relations_in(&snapshot, friendship_type, StorageCounters::DISABLED)
+            .next()
+            .unwrap()
+            .unwrap();
+        let new_friendship = thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
+        group
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                member_type,
+                Object::Relation(new_friendship),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        friendship.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (_, thing_manager) = load_managers(storage.clone(), None);
+        let relations_count = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).count();
+        assert_eq!(relations_count, 0);
+    }
+}
+
+#[test]
 fn schema_transactions_generate_role_player_indices() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
