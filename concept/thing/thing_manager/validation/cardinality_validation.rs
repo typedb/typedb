@@ -527,7 +527,7 @@ impl CardinalityValidation {
 
     fn validate_instances_cardinalities<
         CAP: Capability,
-        Instance: ThingAPI + Copy + PartialEq + 'static,
+        Instance: ThingAPI + Copy + Ord + 'static,
         Edge,
         EdgeIterator: Iterator<Item = Result<(Edge, u64), Box<ConceptReadError>>>,
     >(
@@ -560,10 +560,15 @@ impl CardinalityValidation {
         for instance in get_instances_in(type_) {
             let instance = instance?;
             while edges.peek().is_some_and(|result| {
-                result.as_ref().map_or(true, |(edge, _)| edge_instance_and_interface(edge).0 == instance)
+                result.as_ref().map_or(true, |(edge, _)| edge_instance_and_interface(edge).0 <= instance)
             }) {
                 let (edge, count) = edges.next().unwrap()?;
-                if let Some(indices) = counted_by.get(&edge_instance_and_interface(&edge).1) {
+                let (edge_instance, interface_type) = edge_instance_and_interface(&edge);
+                // an edge whose instance was not returned is skipped, so it cannot stall the walk
+                if edge_instance != instance {
+                    continue;
+                }
+                if let Some(indices) = counted_by.get(&interface_type) {
                     for &index in indices {
                         counts[index] += count;
                     }
