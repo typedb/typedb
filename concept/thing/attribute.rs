@@ -150,6 +150,12 @@ impl Attribute {
         bytes.increment().unwrap();
         Attribute::new(AttributeVertex::decode(&bytes))
     }
+
+    pub fn estimated_write_bytes(value: &Value<'_>) -> usize {
+        let stored_value_bytes =
+            if AttributeID::is_inlineable(value.as_reference()) { 0 } else { value.estimated_write_bytes() };
+        AttributeVertex::MAX_LENGTH + stored_value_bytes
+    }
 }
 
 impl ConceptAPI for Attribute {}

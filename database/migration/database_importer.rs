@@ -27,8 +27,9 @@ use concept::{
         ThingAPI, ThingKind,
         attribute::Attribute,
         entity::Entity,
+        has::Has,
         object::{Object, ObjectAPI},
-        relation::Relation,
+        relation::{Links, Relation},
         thing_manager::{ConceptPersistenceGuarantees, ThingManager},
     },
     type_::{
@@ -374,15 +375,20 @@ impl ImportConcept {
         }
     }
 
-    fn estimated_values_memory_bytes(&self) -> usize {
+    fn estimated_write_bytes(&self) -> usize {
         match self {
-            Self::Entity(EntityItem { attributes, .. }) | Self::Relation(RelationItem { attributes, .. }) => attributes
-                .iter()
-                .filter_map(|attribute| attribute.attribute_by_value.as_ref())
-                .map(|attribute| attribute.value.estimated_memory_bytes())
-                .sum(),
-            Self::Attribute(AttributeItem { value, .. }) => value.estimated_memory_bytes(),
-            Self::DeferredOwnership(_) | Self::DeferredLinks(_) => 0,
+            Self::Entity(EntityItem { attributes, .. }) => {
+                Object::ESTIMATED_WRITE_BYTES + attributes.len() * Has::ESTIMATED_WRITE_BYTES
+            }
+            Self::Relation(RelationItem { attributes, roles, .. }) => {
+                let players: usize = roles.iter().map(|role| role.players.len()).sum();
+                Object::ESTIMATED_WRITE_BYTES
+                    + players * Links::ESTIMATED_WRITE_BYTES
+                    + attributes.len() * Has::ESTIMATED_WRITE_BYTES
+            }
+            Self::Attribute(AttributeItem { value, .. }) => Attribute::estimated_write_bytes(value),
+            Self::DeferredOwnership(_) => Has::ESTIMATED_WRITE_BYTES,
+            Self::DeferredLinks(DeferredLinks { links, .. }) => links.len() * Links::ESTIMATED_WRITE_BYTES,
         }
     }
 }
@@ -571,7 +577,7 @@ impl Debug for DatabaseImporter {
 pub struct ImporterConfiguration {
     scratch_directory: PathBuf,
     max_writes_per_commit: usize,
-    max_value_bytes_per_commit: usize,
+    max_write_bytes_per_commit: usize,
     buffer_size: usize,
     worker_count: usize,
     item_order: ItemOrder,
@@ -582,13 +588,13 @@ pub struct ImporterConfiguration {
 
 impl ImporterConfiguration {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
-    const MAX_VALUE_BYTES_PER_COMMIT: usize = 16 * MB as usize;
+    const MAX_WRITE_BYTES_PER_COMMIT: usize = 16 * MB as usize;
 
     pub fn new(scratch_directory: PathBuf) -> Self {
         Self {
             scratch_directory,
             max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
-            max_value_bytes_per_commit: Self::MAX_VALUE_BYTES_PER_COMMIT,
+            max_write_bytes_per_commit: Self::MAX_WRITE_BYTES_PER_COMMIT,
             buffer_size: 48,
             worker_count: 1,
             item_order: ItemOrder::Unspecified,
@@ -606,8 +612,8 @@ impl ImporterConfiguration {
         Self { max_writes_per_commit, ..self }
     }
 
-    pub fn with_max_value_bytes_per_commit(self, max_value_bytes_per_commit: usize) -> Self {
-        Self { max_value_bytes_per_commit, ..self }
+    pub fn with_max_write_bytes_per_commit(self, max_write_bytes_per_commit: usize) -> Self {
+        Self { max_write_bytes_per_commit, ..self }
     }
 
     pub fn with_guarantees(self, guarantees: Guarantees) -> Self {
@@ -1373,7 +1379,7 @@ struct DatabaseImporterPhase {
     phase: ImportPhase,
     sender: Option<SyncSender<Vec<ImportConcept>>>,
     batch_builder: Vec<ImportConcept>,
-    batch_value_bytes: usize,
+    batch_write_bytes: usize,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
 }
@@ -1400,7 +1406,7 @@ impl ErrorState {
 impl DatabaseImporterPhase {
     const QUEUE_SIZE_MULTIPLIER: usize = 4;
     const BATCH_SIZE: usize = 1_000;
-    const MAX_BATCH_VALUE_BYTES: usize = ImporterConfiguration::MAX_VALUE_BYTES_PER_COMMIT;
+    const MAX_BATCH_WRITE_BYTES: usize = ImporterConfiguration::MAX_WRITE_BYTES_PER_COMMIT;
 
     fn start(importer: &DatabaseImporter, import_phase: ImportPhase) -> Result<Self, DatabaseImportError> {
         let (sender, receiver) = sync_channel(importer.configuration.worker_count() * Self::QUEUE_SIZE_MULTIPLIER);
@@ -1409,7 +1415,7 @@ impl DatabaseImporterPhase {
             phase: import_phase,
             sender: Some(sender),
             batch_builder: Vec::with_capacity(Self::BATCH_SIZE),
-            batch_value_bytes: 0,
+            batch_write_bytes: 0,
             workers: Vec::with_capacity(importer.configuration.worker_count()),
             error_state: importer.error_state.clone(),
         };
@@ -1423,9 +1429,9 @@ impl DatabaseImporterPhase {
     }
 
     fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        self.batch_value_bytes += concept.estimated_values_memory_bytes();
+        self.batch_write_bytes += concept.estimated_write_bytes();
         self.batch_builder.push(concept);
-        if self.batch_builder.len() >= Self::BATCH_SIZE || self.batch_value_bytes >= Self::MAX_BATCH_VALUE_BYTES {
+        if self.batch_builder.len() >= Self::BATCH_SIZE || self.batch_write_bytes >= Self::MAX_BATCH_WRITE_BYTES {
             self.send_batch()?;
         }
         Ok(())
@@ -1436,7 +1442,7 @@ impl DatabaseImporterPhase {
             return Ok(());
         }
         let batch = std::mem::replace(&mut self.batch_builder, Vec::with_capacity(Self::BATCH_SIZE));
-        self.batch_value_bytes = 0;
+        self.batch_write_bytes = 0;
         let sent =
             !self.error_state.is_errored() && self.sender.as_ref().is_some_and(|sender| sender.send(batch).is_ok());
         if sent {
@@ -1489,7 +1495,7 @@ struct ImportWorker {
     data_info: Arc<DataInfo>,
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_items: Vec<ImportConcept>,
-    transaction_value_bytes: usize,
+    transaction_write_bytes: usize,
     transaction_data_info: TransactionDataInfo,
 }
 
@@ -1513,7 +1519,7 @@ impl ImportWorker {
             data_info: importer.data_info.clone(),
             data_transaction: None,
             transaction_items: Vec::new(),
-            transaction_value_bytes: 0,
+            transaction_write_bytes: 0,
             transaction_data_info: TransactionDataInfo::default(),
         };
 
@@ -1556,7 +1562,7 @@ impl ImportWorker {
     }
 
     fn write_and_may_commit(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        self.transaction_value_bytes += concept.estimated_values_memory_bytes();
+        self.transaction_write_bytes += concept.estimated_write_bytes();
         self.transaction_items.push(concept.clone());
         self.write_item(concept)?;
         if self.reached_commit_limit() { self.commit_with_retry() } else { Ok(()) }
@@ -1923,7 +1929,7 @@ impl ImportWorker {
         let pending_writes =
             self.data_transaction.as_ref().map_or(0, |transaction| transaction.snapshot.operations().len());
         pending_writes >= self.configuration.max_writes_per_commit
-            || self.transaction_value_bytes >= self.configuration.max_value_bytes_per_commit
+            || self.transaction_write_bytes >= self.configuration.max_write_bytes_per_commit
     }
 
     fn commit_with_retry(&mut self) -> Result<(), DatabaseImportError> {
@@ -1958,7 +1964,7 @@ impl ImportWorker {
 
     fn merge_transaction_data_info(&mut self) -> Result<(), DatabaseImportError> {
         self.transaction_items.clear();
-        self.transaction_value_bytes = 0;
+        self.transaction_write_bytes = 0;
         let transaction_data_info = std::mem::take(&mut self.transaction_data_info);
         self.data_info.merge(transaction_data_info)
     }

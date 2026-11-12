@@ -209,10 +209,10 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub fn estimated_memory_bytes(&self) -> usize {
+    pub fn estimated_write_bytes(&self) -> usize {
         let heap_bytes = match self {
             Self::String(string) => string.len(),
-            Self::Struct(struct_) => struct_.fields().values().map(Value::estimated_memory_bytes).sum(),
+            Self::Struct(struct_) => struct_.fields().values().map(Value::estimated_write_bytes).sum(),
             Self::Boolean(_)
             | Self::Integer(_)
             | Self::Double(_)
