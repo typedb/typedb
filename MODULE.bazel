@@ -131,8 +131,20 @@ native_artifact_files.artifact(
     artifact_name = "typedb-loader-{platform}-{version}.{ext}",
     tag = "3.14.0",
 )
+# Last release before vector storage, for //tests/assembly:test_upgrade
+native_artifact_files.artifact(
+    name = "typedb_previous_artifact",
+    group_name = "typedb-all-{platform}",
+    artifact_name = "typedb-all-{platform}-{version}.{ext}",
+    tag = "3.14.2",
+)
 use_repo(
     native_artifact_files,
+    "typedb_previous_artifact_linux-x86_64",
+    "typedb_previous_artifact_linux-arm64",
+    "typedb_previous_artifact_mac-x86_64",
+    "typedb_previous_artifact_mac-arm64",
+    "typedb_previous_artifact_windows-x86_64",
     "typedb_console_artifact_linux-x86_64",
     "typedb_console_artifact_linux-arm64",
     "typedb_console_artifact_mac-x86_64",
