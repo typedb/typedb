@@ -486,7 +486,6 @@ fn vector_attribute_requires_index_annotation() {
 
     let result = try_define(&context, r#"define attribute name, value string @index(hnsw:cosine);"#);
     assert!(result.is_err(), "@index on a non-vector value type should be rejected");
-
 }
 
 #[test]
