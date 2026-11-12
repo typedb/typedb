@@ -1594,7 +1594,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Unsatisfiable(_) => {
                 // The conjunction yields no rows, but every selected variable must still own a row position
-                // for later stages to reference
+                // for later stages to compile with
                 let unproduced_selected_variables = conjunction_builder
                     .selected_variables
                     .iter()
