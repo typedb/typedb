@@ -571,7 +571,7 @@ impl Debug for DatabaseImporter {
 pub struct ImporterConfiguration {
     scratch_directory: PathBuf,
     max_writes_per_commit: usize,
-    max_value_bytes_per_commit: usize,
+    commit_value_bytes_threshold: usize,
     buffer_size: usize,
     worker_count: usize,
     item_order: ItemOrder,
@@ -582,13 +582,13 @@ pub struct ImporterConfiguration {
 
 impl ImporterConfiguration {
     const MAX_WRITES_PER_COMMIT: usize = 10_000;
-    const MAX_VALUE_BYTES_PER_COMMIT: usize = 16 * MB as usize;
+    const COMMIT_VALUE_BYTES_THRESHOLD: usize = 16 * MB as usize;
 
     pub fn new(scratch_directory: PathBuf) -> Self {
         Self {
             scratch_directory,
             max_writes_per_commit: Self::MAX_WRITES_PER_COMMIT,
-            max_value_bytes_per_commit: Self::MAX_VALUE_BYTES_PER_COMMIT,
+            commit_value_bytes_threshold: Self::COMMIT_VALUE_BYTES_THRESHOLD,
             buffer_size: 48,
             worker_count: 1,
             item_order: ItemOrder::Unspecified,
@@ -606,8 +606,8 @@ impl ImporterConfiguration {
         Self { max_writes_per_commit, ..self }
     }
 
-    pub fn with_max_value_bytes_per_commit(self, max_value_bytes_per_commit: usize) -> Self {
-        Self { max_value_bytes_per_commit, ..self }
+    pub fn with_commit_value_bytes_threshold(self, commit_value_bytes_threshold: usize) -> Self {
+        Self { commit_value_bytes_threshold, ..self }
     }
 
     pub fn with_guarantees(self, guarantees: Guarantees) -> Self {
@@ -1374,7 +1374,7 @@ struct DatabaseImporterPhase {
     sender: Option<SyncSender<Vec<ImportConcept>>>,
     batch_builder: Vec<ImportConcept>,
     batch_value_bytes: usize,
-    max_batch_value_bytes: usize,
+    commit_value_bytes_threshold: usize,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
 }
@@ -1410,7 +1410,7 @@ impl DatabaseImporterPhase {
             sender: Some(sender),
             batch_builder: Vec::with_capacity(Self::BATCH_SIZE),
             batch_value_bytes: 0,
-            max_batch_value_bytes: importer.configuration.max_value_bytes_per_commit / Self::QUEUE_SIZE_MULTIPLIER,
+            commit_value_bytes_threshold: importer.configuration.commit_value_bytes_threshold,
             workers: Vec::with_capacity(importer.configuration.worker_count()),
             error_state: importer.error_state.clone(),
         };
@@ -1426,7 +1426,7 @@ impl DatabaseImporterPhase {
     fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.batch_value_bytes += concept.value_bytes();
         self.batch_builder.push(concept);
-        if self.batch_builder.len() >= Self::BATCH_SIZE || self.batch_value_bytes >= self.max_batch_value_bytes {
+        if self.batch_builder.len() >= Self::BATCH_SIZE || self.batch_value_bytes >= self.commit_value_bytes_threshold {
             self.send_batch()?;
         }
         Ok(())
@@ -1924,7 +1924,7 @@ impl ImportWorker {
         let pending_writes =
             self.data_transaction.as_ref().map_or(0, |transaction| transaction.snapshot.operations().len());
         pending_writes >= self.configuration.max_writes_per_commit
-            || self.transaction_value_bytes >= self.configuration.max_value_bytes_per_commit
+            || self.transaction_value_bytes >= self.configuration.commit_value_bytes_threshold
     }
 
     fn commit_with_retry(&mut self) -> Result<(), DatabaseImportError> {
