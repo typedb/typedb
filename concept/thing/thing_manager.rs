@@ -3075,11 +3075,16 @@ impl ThingManager {
             }
             Value::Struct(struct_) => {
                 let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
-                let struct_attribute = self
+                let (struct_attribute, struct_known_to_exist) = self
                     .vertex_generator
                     .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
-                self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
+                // index keys end with the attribute, so a new struct has no index entries yet
+                let index_known_to_exist = match struct_known_to_exist {
+                    KnownToExist::NonExistent => KnownToExist::NonExistent,
+                    KnownToExist::Exists | KnownToExist::Unknown => KnownToExist::Unknown,
+                };
+                self.index_struct_fields(snapshot, &struct_attribute, &struct_, index_known_to_exist)?;
                 struct_attribute
             }
         };
@@ -3091,6 +3096,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         attribute_vertex: &AttributeVertex,
         struct_value: &StructValue<'_>,
+        known_to_exist: KnownToExist,
     ) -> Result<(), Box<ConceptWriteError>> {
         let index_entries = struct_value
             .create_index_entries(snapshot, &self.vertex_generator, attribute_vertex)
@@ -3098,8 +3104,12 @@ impl ThingManager {
         for entry in index_entries {
             let StructIndexEntry { key, value } = entry;
             match value {
-                None => snapshot.put(key.into_storage_key().into_owned_array()),
-                Some(value) => snapshot.put_val(key.into_storage_key().into_owned_array(), value.into_array()),
+                None => snapshot.put_with_known_to_exist(key.into_storage_key().into_owned_array(), known_to_exist),
+                Some(value) => snapshot.put_val_with_known_to_exist(
+                    key.into_storage_key().into_owned_array(),
+                    value.into_array(),
+                    known_to_exist,
+                ),
             }
         }
         Ok(())
