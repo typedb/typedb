@@ -100,6 +100,10 @@
 
 [[bench]]
 	harness = false
+	name = "bench_thing_read"
+
+[[bench]]
+	harness = false
 	name = "bench_thing_write"
 
 [[test]]

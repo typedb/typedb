@@ -30,6 +30,30 @@ rust_test(
     use_libtest_harness = False,
 )
 
+# To run this via Bazel, Criterion must be provided the --bench argument:
+#   bazel run --compilation_mode=opt //concept/benches:bench_thing_read -- --bench
+rust_test(
+    name = "bench_thing_read",
+    srcs = glob([
+        "bench_thing_read.rs",
+    ]),
+    deps = [
+        "//concept",
+        "//encoding",
+        "//resource",
+        "//storage",
+        "//durability",
+        "//concept/tests:test_utils_concept",
+        "//encoding/tests:test_utils_encoding",
+        "//util/test:test_utils",
+
+        "@crates//:criterion",
+        "@crates//:rand",
+        "@crates//:pprof",
+    ],
+    use_libtest_harness = False,
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [

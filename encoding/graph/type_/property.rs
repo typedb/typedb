@@ -129,7 +129,12 @@ impl Keyable<BUFFER_KEY_INLINE> for TypeVertexProperty {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for TypeVertexProperty {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeVertexProperty {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 pub trait TypeVertexPropertyEncoding {
     const INFIX: Infix;
@@ -251,7 +256,12 @@ impl Keyable<BUFFER_KEY_INLINE> for TypeEdgeProperty {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for TypeEdgeProperty {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeEdgeProperty {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 pub trait TypeEdgePropertyEncoding: Sized {
     const INFIX: Infix;
@@ -377,7 +387,12 @@ impl Keyable<BUFFER_KEY_INLINE> for FunctionProperty {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for FunctionProperty {}
+impl Prefixed<BUFFER_KEY_INLINE> for FunctionProperty {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Self::PREFIX
+    }
+}
 
 pub trait FunctionPropertyEncoding: Sized {
     const INFIX: Infix;

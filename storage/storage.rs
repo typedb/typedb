@@ -797,44 +797,40 @@ impl<'bytes> MVCCKey<'bytes> {
         Self { bytes: Bytes::Array(byte_array) }
     }
 
-    fn wrap_slice(bytes: &'bytes [u8]) -> Self {
-        Self { bytes: Bytes::reference(bytes) }
+    /// Splits raw MVCC key bytes into their [KEY], [SEQ], and [OP] parts, borrowing the key from the bytes.
+    #[inline]
+    fn split(&self) -> (&[u8], SequenceNumber, StorageOperation) {
+        let (key, suffix) = self.bytes.split_at(self.bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
+        let (inverse_sequence_number_bytes, operation_bytes) = suffix.split_at(SequenceNumber::serialised_len());
+        let sequence_number = SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert();
+        (key, sequence_number, StorageOperation::from(operation_bytes))
     }
 
-    pub(crate) fn is_visible_to(&self, sequence_number: SequenceNumber) -> bool {
-        self.sequence_number() <= sequence_number
+    fn wrap_slice(bytes: &'bytes [u8]) -> Self {
+        Self { bytes: Bytes::reference(bytes) }
     }
 
     fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    fn length(&self) -> usize {
-        self.bytes.length()
-    }
-
+    // TODO: the only reason this is `pub` is the leak in ThingVertexGenerator::sync_from_storage.
+    // It seems to be the only reason MVCCKey is `pub` at all.
     pub fn key(&self) -> &[u8] {
-        &self.bytes()[0..(self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
-    }
-
-    fn into_key(self) -> Bytes<'bytes, MVCC_KEY_INLINE_SIZE> {
-        let end = self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        let bytes = self.bytes;
-        bytes.truncate(end)
+        self.split().0
     }
 
     fn sequence_number(&self) -> SequenceNumber {
-        let sequence_number_start = self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        let sequence_number_end = sequence_number_start + SequenceNumber::serialised_len();
-        let inverse_sequence_number_bytes = &self.bytes()[sequence_number_start..sequence_number_end];
-        debug_assert_eq!(SequenceNumber::serialised_len(), inverse_sequence_number_bytes.len());
-        SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert()
+        self.split().1
     }
 
     fn operation(&self) -> StorageOperation {
-        let operation_byte_offset = self.length() - Self::OPERATION_START_NEGATIVE_OFFSET;
-        let operation_byte_end = operation_byte_offset + StorageOperation::serialised_len();
-        StorageOperation::from(&self.bytes()[operation_byte_offset..operation_byte_end])
+        self.split().2
+    }
+
+    fn extract_key(bytes: &'bytes [u8]) -> &'bytes [u8] {
+        let length = bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
+        &bytes[..length]
     }
 }
 

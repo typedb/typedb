@@ -80,7 +80,12 @@ impl Keyable<BUFFER_KEY_INLINE> for TypeVertex {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for TypeVertex {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeVertex {
+    #[inline]
+    fn prefix(&self) -> Prefix {
+        Prefix::from_prefix_id(PrefixID::new((self.value >> 16) as u8)).expect("Unrecognized prefix byte")
+    }
+}
 
 impl Typed<BUFFER_KEY_INLINE> for TypeVertex {
     fn type_id_(&self) -> TypeID {
