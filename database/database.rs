@@ -471,13 +471,14 @@ impl Database<WALClient> {
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
-        let (vector_index, vector_index_extension_missing) = match &checkpoint {
+        let vector_index = match &checkpoint {
             Some(reader) => match reader.get_additional_data::<VectorIndex>() {
-                Ok(store) => (Arc::new(store), false),
-                Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => (Arc::new(VectorIndex::new()), true),
+                Ok(store) => Arc::new(store),
+                // a checkpoint written before vector support has no index, and no vectors either
+                Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => Arc::new(VectorIndex::new()),
                 Err(err) => return Err(Box::new(CheckpointLoad { name: name.to_string(), typedb_source: err })),
             },
-            None => (Arc::new(VectorIndex::new()), false),
+            None => Arc::new(VectorIndex::new()),
         };
         vector_index.set_live_directory(path.join(Self::VECTOR_INDEX_DIR_NAME));
         let storage = Arc::new(
@@ -491,11 +492,6 @@ impl Database<WALClient> {
             )
             .map_err(|error| StorageOpen { typedb_source: error })?,
         );
-        if vector_index_extension_missing {
-            validate_vector_index_backs_all_committed_vectors(&storage, &vector_index).map_err(|description| {
-                DatabaseOpenError::VectorIndexMissingData { name: name.to_string(), description }
-            })?;
-        }
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
@@ -721,46 +717,6 @@ impl Database<WALClient> {
     }
 }
 
-fn validate_vector_index_backs_all_committed_vectors(
-    storage: &Arc<MVCCStorage<WALClient>>,
-    vector_index: &Arc<VectorIndex>,
-) -> Result<(), String> {
-    use encoding::graph::thing::vertex_attribute::AttributeVertex;
-    use resource::profile::StorageCounters;
-    use storage::{key_range::KeyRange, key_value::StorageKey, snapshot::ReadableSnapshot};
-
-    let keyspace = AttributeVertex::keyspace_for_category(encoding::value::value_type::ValueTypeCategory::Vector);
-    let prefix = encoding::layout::prefix::Prefix::VertexAttribute.prefix_id().to_bytes();
-    let snapshot = storage.clone().open_snapshot_read();
-    let vector_index = vector_index.clone();
-    let missing = snapshot
-        .iterate_range(
-            &KeyRange::new_within(StorageKey::<1>::new_ref(keyspace, &prefix), false),
-            StorageCounters::DISABLED,
-        )
-        .collect_cloned_vec(move |key, _value| {
-            if AttributeVertex::is_vector_attribute_vertex(key.keyspace_id(), key.bytes()) {
-                let vertex = AttributeVertex::decode(key.bytes());
-                vector_index
-                    .get_value_by_attr_vertex(vertex)
-                    .is_none()
-                    .then(|| vertex.attribute_id().unwrap_vector().as_type_vector_index_key())
-            } else {
-                None
-            }
-        })
-        .map_err(|err| format!("storage read failed during vector index check: {err}"))?
-        .into_iter()
-        .flatten()
-        .next();
-    match missing {
-        Some(index_key) => {
-            Err(format!("committed vector attribute (key: {index_key:#018x}) has no value in the vector index"))
-        }
-        None => Ok(()),
-    }
-}
-
 fn make_checkpoint_fn(
     database_name: String,
     path: PathBuf,
@@ -939,7 +895,6 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
-        VectorIndexMissingData(18, "Database '{name}' has committed vector values that are not in the vector index: {description}. The checkpoint was likely written by a server version without vector support - restore a matching checkpoint or roll back the server version.", name: String, description: String),
     }
 }
 
