@@ -660,7 +660,7 @@ async fn long_attribute_values_are_spread_over_commits() {
     };
     let configuration = ImporterConfiguration::new(database_manager.import_directory().to_owned())
         .with_buffer_size(BUFFER_SIZE)
-        .with_commit_value_bytes_threshold(VALUES_PER_COMMIT * VALUE_BYTES);
+        .with_max_value_bytes_per_commit(VALUES_PER_COMMIT * VALUE_BYTES);
     let mut importer = DatabaseImporter::start(Arc::new(handle), configuration, &task_spawner());
     importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
     import_all(importer, items).await;
