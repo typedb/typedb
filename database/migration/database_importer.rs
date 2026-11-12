@@ -1151,10 +1151,12 @@ impl DatabaseImporter {
                 continue;
             }
 
+            // the maximum is also relaxed, since validating it on commit counts the links of players committed
+            // earlier, and it is validated once on restore instead
             let original_cardinality = plays
                 .get_cardinality(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-            if original_cardinality.start() == 0 {
+            if !original_cardinality.requires_validation() {
                 continue;
             }
             match plays
@@ -1176,7 +1178,7 @@ impl DatabaseImporter {
                     snapshot,
                     type_manager,
                     thing_manager,
-                    PlaysAnnotation::Cardinality(Self::relaxed(original_cardinality)),
+                    PlaysAnnotation::Cardinality(AnnotationCardinality::unchecked()),
                 )
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
