@@ -10,7 +10,12 @@ use std::{
     fmt,
     iter::{self, Map, once},
     ops::RangeBounds,
-    sync::Arc,
+    panic,
+    sync::{
+        Arc,
+        atomic::{self, AtomicUsize},
+    },
+    thread,
 };
 
 use bytes::{
@@ -63,6 +68,7 @@ use resource::{
         snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     },
     profile::StorageCounters,
+    system_info::SystemInfo,
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -95,8 +101,8 @@ use crate::{
         },
     },
     type_::{
-        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{AnnotationCascade, AnnotationIndependent},
+        Capability, Independent, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        annotation::AnnotationIndependent,
         attribute_type::AttributeType,
         constraint::{Constraint, get_checked_cardinality_constraints},
         entity_type::EntityType,
@@ -2372,11 +2378,35 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_relations(
+    fn cleanup_relations<Snapshot: WritableSnapshot + Sync>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
+        if !Snapshot::IMMUTABLE_SCHEMA {
+            let relations_without_players =
+                self.get_relations_made_dependent_without_players(snapshot, storage_counters.clone())?;
+            for relation in relations_without_players {
+                relation.delete(snapshot, &self, storage_counters.clone())?;
+            }
+        }
+
+        for key in snapshot
+            .iterate_writes_range(&KeyRange::new_within(
+                ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
+                ObjectVertex::FIXED_WIDTH_ENCODING,
+            ))
+            .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
+        {
+            let relation = Relation::new(ObjectVertex::decode(key.bytes()));
+            if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
+                && !relation.has_players(snapshot, self, storage_counters.clone())?
+            {
+                relation.delete(snapshot, self, storage_counters.clone())?;
+            }
+        }
+
+        // deleting a relation deletes the links it plays in, which may empty further relations
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
@@ -2401,74 +2431,78 @@ impl ThingManager {
             }
         }
 
-        let mut any_deleted = true;
-        while any_deleted {
-            any_deleted = false;
-            for key in snapshot
-                .iterate_writes_range(&KeyRange::new_within(
-                    ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
-                    ObjectVertex::FIXED_WIDTH_ENCODING,
-                ))
-                .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
-            {
-                let relation = Relation::new(ObjectVertex::decode(key.bytes()));
-                if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
-                    && !relation.has_players(snapshot, self, storage_counters.clone())?
-                {
-                    relation.delete(snapshot, self, storage_counters.clone())?;
-                    any_deleted = true;
-                }
-            }
-        }
-
-        let mut any_deleted = true;
-        while any_deleted {
-            any_deleted = false;
-            for relation_type in snapshot
-                .iterate_writes_range(&KeyRange::new_within(
-                    TypeVertexProperty::build_prefix(),
-                    TypeVertexProperty::FIXED_WIDTH_ENCODING,
-                ))
-                .filter_map(|(key, write)| match write {
-                    Write::Put { .. } | Write::Insert { .. } => {
-                        let bytes = Bytes::reference(key.bytes());
-                        if <AnnotationCascade as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
-                            let decoded = TypeVertexProperty::decode(bytes);
-                            RelationType::from_vertex(decoded.type_vertex()).ok()
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None,
-                })
-            {
-                if !self.type_exists(snapshot, relation_type, storage_counters.clone())? {
-                    continue;
-                }
-                let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
-                // Note: revisit independent relation types interactions with @cascade when cascade is implemented
-                once(&relation_type).chain(&subtypes).try_for_each(|type_| {
-                    let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
-                    if is_cascade {
-                        let mut relations: InstanceIterator<Relation> = self.get_instances_in(
-                            snapshot,
-                            *type_,
-                            <Relation as ThingAPI>::Vertex::KEYSPACE,
-                            storage_counters.clone(),
-                        );
-                        while let Some(relation) = Iterator::next(&mut relations).transpose()? {
-                            if !relation.has_players(snapshot, self, storage_counters.clone())? {
-                                relation.delete(snapshot, self, storage_counters.clone())?;
-                                any_deleted = true;
-                            }
-                        }
-                    }
-                    Ok::<(), Box<ConceptWriteError>>(())
-                })?;
-            }
-        }
-
         Ok(())
+    }
+
+    fn get_relations_made_dependent_without_players(
+        &self,
+        snapshot: &(impl WritableSnapshot + Sync),
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<Relation>, Box<ConceptReadError>> {
+        let relation_types = self.get_relation_types_no_longer_independent(snapshot, storage_counters.clone())?;
+
+        // types are scanned independently, so each worker keeps taking the next type until none are left
+        let next_relation_type = AtomicUsize::new(0);
+        let find_relations_without_players = || -> Result<Vec<Relation>, Box<ConceptReadError>> {
+            let mut relations_without_players = Vec::new();
+            while let Some(&relation_type) =
+                relation_types.get(next_relation_type.fetch_add(1, atomic::Ordering::Relaxed))
+            {
+                let mut links = self.get_links_in(snapshot, relation_type, storage_counters.clone()).peekable();
+                for relation in self.get_relations_in(snapshot, relation_type, storage_counters.clone()) {
+                    let relation = relation?;
+                    let mut has_players = false;
+                    while links
+                        .peek()
+                        .is_some_and(|result| result.as_ref().map_or(true, |(edge, _)| edge.relation() == relation))
+                    {
+                        links.next().unwrap()?;
+                        has_players = true;
+                    }
+                    if !has_players {
+                        relations_without_players.push(relation);
+                    }
+                }
+            }
+            Ok(relations_without_players)
+        };
+
+        let worker_count = SystemInfo::get_cpu_count().min(relation_types.len());
+        let results: Vec<_> = thread::scope(|scope| {
+            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&find_relations_without_players)).collect();
+            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
+        });
+        let mut relations_without_players = Vec::new();
+        for result in results {
+            relations_without_players.extend(result?);
+        }
+        Ok(relations_without_players)
+    }
+
+    fn get_relation_types_no_longer_independent(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<RelationType>, Box<ConceptReadError>> {
+        let mut relation_types = Vec::new();
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeVertexProperty::build_prefix(),
+            TypeVertexProperty::FIXED_WIDTH_ENCODING,
+        )) {
+            let bytes = Bytes::reference(key.bytes());
+            if !write.is_delete() || !<Independent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
+                continue;
+            }
+            let Ok(relation_type) = RelationType::from_vertex(TypeVertexProperty::decode(bytes).type_vertex()) else {
+                continue;
+            };
+            if self.type_exists(snapshot, relation_type, storage_counters.clone())?
+                && !self.type_manager().get_is_relation_type_independent(snapshot, relation_type)?
+            {
+                relation_types.push(relation_type);
+            }
+        }
+        Ok(relation_types)
     }
 
     fn cleanup_attributes(
