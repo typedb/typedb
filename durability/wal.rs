@@ -510,8 +510,13 @@ impl FileReader {
         let RecordHeader { sequence_number, len, record_type } = self.read_header()?;
 
         let mut decompressed_bytes = Vec::new();
-        lz4::Decoder::new((&mut self.reader).take(len))
-            .and_then(|mut decoder| decoder.read_to_end(&mut decompressed_bytes))
+        lz4::Decoder::new((&mut self.reader).take_exact(len))
+            .and_then(|mut decoder| {
+                decoder.read_to_end(&mut decompressed_bytes)?;
+                let (reader, result) = decoder.finish();
+                debug_assert_eq!(reader.limit, 0, "leftover bytes in the compressed record reader");
+                result
+            })
             .map_err(|err| WALError::Decompression { source: Arc::new(err) })?;
 
         Ok(Some(RawRecord { sequence_number, record_type, bytes: Cow::Owned(decompressed_bytes) }))
@@ -731,10 +736,44 @@ impl Drop for FsyncThread {
     }
 }
 
+struct TakeExact<R> {
+    inner: R,
+    limit: u64,
+}
+
+impl<R: Read> Read for TakeExact<R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.limit == 0 {
+            return Ok(0);
+        }
+
+        let end = match usize::try_from(self.limit) {
+            Ok(limit) => usize::min(limit, buf.len()),
+            Err(_) => buf.len(),
+        };
+        let bytes_read = self.inner.read(&mut buf[..end])?;
+
+        if bytes_read == 0 {
+            Err(io::ErrorKind::UnexpectedEof.into())
+        } else {
+            self.limit -= bytes_read as u64;
+            Ok(bytes_read)
+        }
+    }
+}
+
+trait ReadTakeExact: Sized {
+    fn take_exact(self, limit: u64) -> TakeExact<Self>;
+}
+
+impl<T: Read> ReadTakeExact for T {
+    fn take_exact(self, limit: u64) -> TakeExact<Self> {
+        TakeExact { inner: self, limit }
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
     use assert as assert_true;
     use diagnostics::metrics::FsyncMetrics;
     use itertools::Itertools;
