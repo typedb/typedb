@@ -19,7 +19,10 @@ use concept::{
     },
     type_::{
         Ordering, OwnerAPI, PlayerAPI,
-        annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent, AnnotationUnique},
+        annotation::{
+            AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationIndependent,
+            AnnotationUnique,
+        },
         attribute_type::AttributeTypeAnnotation,
         object_type::ObjectType,
         owns::OwnsAnnotation,
@@ -2183,6 +2186,306 @@ fn relation_emptied_by_deleting_a_new_relation_without_players_is_deleted() {
         let (_, thing_manager) = load_managers(storage.clone(), None);
         let relations_count = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).count();
         assert_eq!(relations_count, 0);
+    }
+}
+
+#[test]
+fn new_relation_emptied_by_deleting_the_relation_it_plays_is_deleted() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let group_label = Label::build("group", None);
+    let friendship_label = Label::build("friendship", None);
+    let person_label = Label::build("person", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let group_type = type_manager.create_relation_type(&mut snapshot, &group_label).unwrap();
+        let member_type = group_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "member",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap()
+            .role();
+        let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
+        let friend_type = friendship_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                "friend",
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap()
+            .role();
+        friendship_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, member_type, StorageCounters::DISABLED)
+            .unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        person_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, friend_type, StorageCounters::DISABLED)
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
+        let friend_type =
+            friendship_type.get_relates_role_name(&snapshot, &type_manager, "friend").unwrap().unwrap().role();
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let friendship = thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
+        friendship
+            .add_player(&mut snapshot, &thing_manager, friend_type, Object::Entity(person), StorageCounters::DISABLED)
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    // the friendship loses its only player while a new group gets the friendship as its only member
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let group_type = type_manager.get_relation_type(&snapshot, &group_label).unwrap().unwrap();
+        let member_type = group_type.get_relates_role_name(&snapshot, &type_manager, "member").unwrap().unwrap().role();
+        let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
+        let friend_type =
+            friendship_type.get_relates_role_name(&snapshot, &type_manager, "friend").unwrap().unwrap().role();
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let person =
+            thing_manager.get_entities_in(&snapshot, person_type, StorageCounters::DISABLED).next().unwrap().unwrap();
+        let friendship = thing_manager
+            .get_relations_in(&snapshot, friendship_type, StorageCounters::DISABLED)
+            .next()
+            .unwrap()
+            .unwrap();
+        friendship
+            .remove_player_single(
+                &mut snapshot,
+                &thing_manager,
+                friend_type,
+                Object::Entity(person),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        let group = thing_manager.create_relation(&mut snapshot, group_type).unwrap();
+        group
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                member_type,
+                Object::Relation(friendship),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (_, thing_manager) = load_managers(storage.clone(), None);
+        let relations_count = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).count();
+        assert_eq!(relations_count, 0);
+    }
+}
+
+#[test]
+fn attributes_without_owners_are_deleted_when_attribute_type_independence_is_unset() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    // more than one attribute type, so the scans run in parallel, and length only inherits independence from measure
+    let independent_labels = [Label::build("age", None), Label::build("rank", None), Label::build("measure", None)];
+    let measure_label = Label::build("measure", None);
+    let attribute_labels = [Label::build("age", None), Label::build("rank", None), Label::build("length", None)];
+    let person_label = Label::build("person", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        for label in &independent_labels {
+            let attribute_type = type_manager.create_attribute_type(&mut snapshot, label).unwrap();
+            attribute_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
+            attribute_type
+                .set_annotation(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+        }
+        let measure_type = type_manager.get_attribute_type(&snapshot, &measure_label).unwrap().unwrap();
+        measure_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Abstract(AnnotationAbstract),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        let length_type = type_manager.create_attribute_type(&mut snapshot, &attribute_labels[2]).unwrap();
+        length_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, measure_type).unwrap();
+
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        for label in &attribute_labels {
+            let attribute_type = type_manager.get_attribute_type(&snapshot, label).unwrap().unwrap();
+            person_type
+                .set_owns(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    attribute_type,
+                    Ordering::Unordered,
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+        }
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    write_owned_and_unowned_integer_attributes(&storage, &person_label, &attribute_labels);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        for label in &independent_labels {
+            let attribute_type = type_manager.get_attribute_type(&snapshot, label).unwrap().unwrap();
+            attribute_type.unset_annotation(&mut snapshot, &type_manager, AnnotationCategory::Independent).unwrap();
+        }
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    assert_only_owned_integer_attributes_exist(&storage, &attribute_labels);
+}
+
+#[test]
+fn attributes_without_owners_are_deleted_when_attribute_type_loses_independence_by_changing_supertype() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let measure_label = Label::build("measure", None);
+    let quantity_label = Label::build("quantity", None);
+    let attribute_labels = [Label::build("length", None)];
+    let person_label = Label::build("person", None);
+
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        for label in [&measure_label, &quantity_label] {
+            let attribute_type = type_manager.create_attribute_type(&mut snapshot, label).unwrap();
+            attribute_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
+            attribute_type
+                .set_annotation(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    AttributeTypeAnnotation::Abstract(AnnotationAbstract),
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+        }
+        let measure_type = type_manager.get_attribute_type(&snapshot, &measure_label).unwrap().unwrap();
+        measure_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        let length_type = type_manager.create_attribute_type(&mut snapshot, &attribute_labels[0]).unwrap();
+        length_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, measure_type).unwrap();
+
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                length_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    write_owned_and_unowned_integer_attributes(&storage, &person_label, &attribute_labels);
+
+    // length is no longer a subtype of measure when measure stops being independent
+    let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let measure_type = type_manager.get_attribute_type(&snapshot, &measure_label).unwrap().unwrap();
+        let quantity_type = type_manager.get_attribute_type(&snapshot, &quantity_label).unwrap().unwrap();
+        let length_type = type_manager.get_attribute_type(&snapshot, &attribute_labels[0]).unwrap().unwrap();
+        measure_type.unset_annotation(&mut snapshot, &type_manager, AnnotationCategory::Independent).unwrap();
+        length_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, quantity_type).unwrap();
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+
+    assert_only_owned_integer_attributes_exist(&storage, &attribute_labels);
+}
+
+const OWNED_VALUE: i64 = 1;
+const UNOWNED_VALUE: i64 = 2;
+
+fn write_owned_and_unowned_integer_attributes(
+    storage: &std::sync::Arc<storage::MVCCStorage<WALClient>>,
+    owner_label: &Label,
+    attribute_labels: &[Label],
+) {
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let owner_type = type_manager.get_entity_type(&snapshot, owner_label).unwrap().unwrap();
+        let owner = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
+        for label in attribute_labels {
+            let attribute_type = type_manager.get_attribute_type(&snapshot, label).unwrap().unwrap();
+            let owned =
+                thing_manager.create_attribute(&mut snapshot, attribute_type, Value::Integer(OWNED_VALUE)).unwrap();
+            owner.set_has_unordered(&mut snapshot, &thing_manager, &owned, StorageCounters::DISABLED).unwrap();
+            thing_manager.create_attribute(&mut snapshot, attribute_type, Value::Integer(UNOWNED_VALUE)).unwrap();
+        }
+        thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    }
+    snapshot.commit(&mut CommitProfile::disabled()).unwrap();
+}
+
+fn assert_only_owned_integer_attributes_exist(
+    storage: &std::sync::Arc<storage::MVCCStorage<WALClient>>,
+    attribute_labels: &[Label],
+) {
+    let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    for label in attribute_labels {
+        let attribute_type = type_manager.get_attribute_type(&snapshot, label).unwrap().unwrap();
+        let get_attribute = |value| {
+            thing_manager
+                .get_attribute_with_value(&snapshot, attribute_type, Value::Integer(value), StorageCounters::DISABLED)
+                .unwrap()
+        };
+        assert!(get_attribute(OWNED_VALUE).is_some(), "owned {label} was deleted");
+        assert!(get_attribute(UNOWNED_VALUE).is_none(), "unowned {label} was not deleted");
     }
 }
 

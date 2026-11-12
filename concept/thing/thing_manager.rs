@@ -8,7 +8,7 @@ use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
     fmt,
-    iter::{self, Map, once},
+    iter::{self, Map},
     ops::RangeBounds,
     panic,
     sync::{
@@ -102,7 +102,6 @@ use crate::{
     },
     type_::{
         Capability, Independent, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::AnnotationIndependent,
         attribute_type::AttributeType,
         constraint::{Constraint, get_checked_cardinality_constraints},
         entity_type::EntityType,
@@ -2383,11 +2382,20 @@ impl ThingManager {
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
+        // a link inserted and deleted in this transaction leaves no write behind, so the relations emptied by
+        // our own deletes are tracked here rather than found through deleted links
+        let mut relations_played_in = Vec::new();
+
         if !Snapshot::IMMUTABLE_SCHEMA {
             let relations_without_players =
                 self.get_relations_made_dependent_without_players(snapshot, storage_counters.clone())?;
             for relation in relations_without_players {
-                relation.delete(snapshot, &self, storage_counters.clone())?;
+                self.delete_relation_if_without_players(
+                    snapshot,
+                    relation,
+                    &mut relations_played_in,
+                    storage_counters.clone(),
+                )?;
             }
         }
 
@@ -2399,39 +2407,59 @@ impl ThingManager {
             .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
         {
             let relation = Relation::new(ObjectVertex::decode(key.bytes()));
-            if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
-                && !relation.has_players(snapshot, self, storage_counters.clone())?
-            {
-                relation.delete(snapshot, self, storage_counters.clone())?;
-            }
+            self.delete_relation_if_without_players(
+                snapshot,
+                relation,
+                &mut relations_played_in,
+                storage_counters.clone(),
+            )?;
         }
 
-        // deleting a relation deletes the links it plays in, which may empty further relations
-        let mut any_deleted = true;
-        while any_deleted {
-            any_deleted = false;
-            for (key, _) in snapshot
-                .iterate_writes_range(&KeyRange::new_within(
-                    ThingEdgeLinks::prefix(),
-                    ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-                ))
-                .filter(|(_, write)| write.is_delete())
-            {
-                let edge = ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref()));
-                let relation = Relation::new(edge.from());
-                if relation.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
-                    continue;
-                }
-                if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
-                    && !relation.has_players(snapshot, self, storage_counters.clone())?
-                {
-                    relation.delete(snapshot, self, storage_counters.clone())?;
-                    any_deleted = true;
-                }
-            }
+        let relations_of_deleted_links = snapshot
+            .iterate_writes_range(&KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING))
+            .filter(|(_, write)| write.is_delete())
+            .map(|(key, _)| ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref())).from())
+            .dedup();
+        for relation_vertex in relations_of_deleted_links {
+            self.delete_relation_if_without_players(
+                snapshot,
+                Relation::new(relation_vertex),
+                &mut relations_played_in,
+                storage_counters.clone(),
+            )?;
+        }
+
+        while let Some(relation) = relations_played_in.pop() {
+            self.delete_relation_if_without_players(
+                snapshot,
+                relation,
+                &mut relations_played_in,
+                storage_counters.clone(),
+            )?;
         }
 
         Ok(())
+    }
+
+    fn delete_relation_if_without_players(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        out_relations_played_in: &mut Vec<Relation>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let status = relation.get_status(snapshot, self, storage_counters.clone())?;
+        if matches!(status, ConceptStatus::Deleted | ConceptStatus::Nonexistent)
+            || self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
+            || relation.has_players(snapshot, self, storage_counters.clone())?
+        {
+            return Ok(());
+        }
+        for relation_role in relation.get_relations_roles(snapshot, self, storage_counters.clone()) {
+            let (relation_played_in, _, _) = relation_role?;
+            out_relations_played_in.push(relation_played_in);
+        }
+        relation.delete(snapshot, self, storage_counters)
     }
 
     fn get_relations_made_dependent_without_players(
@@ -2505,9 +2533,9 @@ impl ThingManager {
         Ok(relation_types)
     }
 
-    fn cleanup_attributes(
+    fn cleanup_attributes<Snapshot: WritableSnapshot + Sync>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let deleted_reverse_has = iter::chain(
@@ -2555,51 +2583,92 @@ impl ThingManager {
             }
         }
 
-        for attribute_type in snapshot
-            .iterate_writes_range(&KeyRange::new_within(
-                TypeVertexProperty::build_prefix(),
-                TypeVertexProperty::FIXED_WIDTH_ENCODING,
-            ))
-            .filter_map(|(key, write)| {
-                if write.is_delete() {
-                    let bytes = Bytes::reference(key.bytes());
-                    if <AnnotationIndependent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
-                        let decoded = TypeVertexProperty::decode(bytes);
-                        AttributeType::from_vertex(decoded.type_vertex()).ok()
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-        {
-            if !self.type_exists(snapshot, attribute_type, storage_counters.clone())? {
-                continue;
+        if !Snapshot::IMMUTABLE_SCHEMA {
+            let attributes_without_owners =
+                self.get_attributes_made_dependent_without_owners(snapshot, storage_counters.clone())?;
+            for attribute in attributes_without_owners {
+                attribute.delete(snapshot, self, storage_counters.clone())?;
             }
-            let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
-            once(&attribute_type).chain(&subtypes).try_for_each(|type_| {
-                let is_independent = type_.is_independent(snapshot, self.type_manager())?;
-                if let Some(value_type) = type_.get_value_type_without_source(snapshot, self.type_manager())? {
-                    if !is_independent {
-                        let mut attributes: InstanceIterator<Attribute> = self.get_instances_in(
-                            snapshot,
-                            *type_,
-                            AttributeVertex::keyspace_for_category(value_type.category()),
-                            storage_counters.clone(),
-                        );
-                        while let Some(attribute) = Iterator::next(&mut attributes).transpose()? {
-                            if !attribute.has_owners(snapshot, self, storage_counters.clone())? {
-                                attribute.delete(snapshot, self, storage_counters.clone())?;
-                            }
-                        }
-                    }
-                }
-                Ok::<(), Box<ConceptWriteError>>(())
-            })?;
         }
 
         Ok(())
+    }
+
+    fn get_attributes_made_dependent_without_owners(
+        &self,
+        snapshot: &(impl WritableSnapshot + Sync),
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
+        let attribute_types = self.get_attribute_types_no_longer_independent(snapshot, storage_counters.clone())?;
+
+        // types are scanned independently, so each worker keeps taking the next type until none are left
+        let next_attribute_type = AtomicUsize::new(0);
+        let find_attributes_without_owners = || -> Result<Vec<Attribute>, Box<ConceptReadError>> {
+            let mut attributes_without_owners = Vec::new();
+            while let Some(&attribute_type) =
+                attribute_types.get(next_attribute_type.fetch_add(1, atomic::Ordering::Relaxed))
+            {
+                let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
+                else {
+                    continue;
+                };
+                // attributes and their reverse has are both ordered by attribute, so walk them together
+                let mut has_reverse =
+                    self.get_has_reverse_in(snapshot, attribute_type, storage_counters.clone())?.peekable();
+                let attributes: InstanceIterator<Attribute> = self.get_instances_in(
+                    snapshot,
+                    attribute_type,
+                    AttributeVertex::keyspace_for_category(value_type.category()),
+                    storage_counters.clone(),
+                );
+                for attribute in attributes {
+                    let attribute = attribute?;
+                    let mut has_owners = false;
+                    while has_reverse
+                        .peek()
+                        .is_some_and(|result| result.as_ref().map_or(true, |(edge, _)| edge.attribute() == attribute))
+                    {
+                        has_reverse.next().unwrap()?;
+                        has_owners = true;
+                    }
+                    if !has_owners {
+                        attributes_without_owners.push(attribute);
+                    }
+                }
+            }
+            Ok(attributes_without_owners)
+        };
+
+        let worker_count = SystemInfo::get_cpu_count().min(attribute_types.len());
+        let results: Vec<_> = thread::scope(|scope| {
+            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&find_attributes_without_owners)).collect();
+            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
+        });
+        let mut attributes_without_owners = Vec::new();
+        for result in results {
+            attributes_without_owners.extend(result?);
+        }
+        Ok(attributes_without_owners)
+    }
+
+    // independence is inherited, and a type can also lose it by changing supertype, so compare with the schema before this transaction
+    fn get_attribute_types_no_longer_independent(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<AttributeType>, Box<ConceptReadError>> {
+        let type_manager = self.type_manager();
+        let previously_independent =
+            TypeManager::new(type_manager.definition_key_generator(), type_manager.vertex_generator(), None)
+                .get_independent_attribute_types(&snapshot.read_snapshot_before_writes())?;
+        let independent = type_manager.get_independent_attribute_types(snapshot)?;
+        let mut attribute_types = Vec::new();
+        for &attribute_type in previously_independent.difference(&independent) {
+            if self.type_exists(snapshot, attribute_type, storage_counters.clone())? {
+                attribute_types.push(attribute_type);
+            }
+        }
+        Ok(attribute_types)
     }
 
     fn validate_cardinalities(
