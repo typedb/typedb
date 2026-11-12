@@ -1592,7 +1592,24 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(conjunction_builder, constraint),
 
-            PlannerVertex::Unsatisfiable(_) => conjunction_builder.push_check(CheckInstruction::Unsatisfiable),
+            PlannerVertex::Unsatisfiable(_) => {
+                // The conjunction yields no rows, but every selected variable must still own a row position
+                // for later stages to reference
+                let unproduced_selected_variables = conjunction_builder
+                    .selected_variables
+                    .iter()
+                    .filter(|variable| {
+                        self.graph.variable_index.contains_key(variable)
+                            && !conjunction_builder.position_mapping().contains_key(variable)
+                    })
+                    .copied()
+                    .sorted()
+                    .collect_vec();
+                for variable in unproduced_selected_variables {
+                    conjunction_builder.register_output(variable);
+                }
+                conjunction_builder.push_check(CheckInstruction::Unsatisfiable)
+            }
 
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
