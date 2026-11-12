@@ -134,6 +134,46 @@ impl ImportingDatabaseHandle for RejectingCommitsHandle {
     }
 }
 
+#[derive(Debug)]
+struct CountingCommitsHandle {
+    inner: TestImportingDatabaseHandle,
+    data_commits: Arc<AtomicUsize>,
+}
+
+impl ImportingDatabaseHandle for CountingCommitsHandle {
+    fn database_name(&self) -> &str {
+        self.inner.database_name()
+    }
+
+    fn open_schema(&self) -> Result<TransactionSchema<WALClient>, TransactionError> {
+        self.inner.open_schema()
+    }
+
+    fn open_write(
+        &self,
+        concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
+    ) -> Result<TransactionWrite<WALClient>, TransactionError> {
+        self.inner.open_write(concept_persistence_guarantees)
+    }
+
+    fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
+        self.inner.commit_schema(intent)
+    }
+
+    fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
+        self.data_commits.fetch_add(1, Ordering::Relaxed);
+        self.inner.commit_data(intent)
+    }
+
+    fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
+        Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
+    }
+
+    fn finalise(self: Box<Self>) -> Result<(), MigrationOperationError> {
+        Box::new(self.inner).finalise()
+    }
+}
+
 const BUFFER_SIZE: usize = 10;
 
 fn importing_database(database_manager: &Arc<DatabaseManager>, name: &str) -> Arc<dyn ImportingDatabaseHandle> {
@@ -578,6 +618,57 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
         panic!("one relation expected, got {relations:?}")
     };
     assert_eq!(roles.iter().map(|role| role.players.len()).sum::<usize>(), 1);
+}
+
+#[tokio::test]
+async fn long_attribute_values_are_spread_over_commits() {
+    const VALUES: usize = 20;
+    const VALUE_BYTES: usize = 1_000;
+    const VALUES_PER_COMMIT: usize = 3;
+    init_logging();
+    let data_dir = create_tmp_dir("migration_long_values");
+    let database_manager = manager(&data_dir);
+
+    let mut items: Vec<MigrationItem> = (0..VALUES)
+        .flat_map(|i| {
+            [
+                MigrationItem::Attribute(AttributeItem {
+                    globally_unique_id: format!("a{i}"),
+                    label: Label::build("name", None),
+                    value: Value::String(format!("{i:0>VALUE_BYTES$}").into()),
+                }),
+                MigrationItem::Entity(EntityItem {
+                    globally_unique_id: format!("p{i}"),
+                    label: Label::build("person", None),
+                    label_scoped_id: None,
+                    attributes: vec![OwnedAttribute::by_id(format!("a{i}"))],
+                }),
+            ]
+        })
+        .collect();
+    items.push(MigrationItem::Checksums(Checksums::from_counts(Counts {
+        entity_count: VALUES as i64,
+        attribute_count: VALUES as i64,
+        ownership_count: VALUES as i64,
+        ..Counts::default()
+    })));
+
+    let data_commits = Arc::new(AtomicUsize::new(0));
+    let handle = CountingCommitsHandle {
+        inner: test_importing_database(&database_manager, "long-values"),
+        data_commits: data_commits.clone(),
+    };
+    let configuration = ImporterConfiguration::new(database_manager.import_directory().to_owned())
+        .with_buffer_size(BUFFER_SIZE)
+        .with_max_value_bytes_per_commit(VALUES_PER_COMMIT * VALUE_BYTES);
+    let mut importer = DatabaseImporter::start(Arc::new(handle), configuration, &task_spawner());
+    importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
+    import_all(importer, items).await;
+
+    assert!(data_commits.load(Ordering::Relaxed) >= VALUES / VALUES_PER_COMMIT, "{data_commits:?}");
+    let (_, items) = export(&read_transaction(&database_manager, "long-values"), "long-values");
+    let exported_values = items.iter().filter(|item| matches!(item, MigrationItem::Attribute(_))).count();
+    assert_eq!(exported_values, VALUES);
 }
 
 #[tokio::test]

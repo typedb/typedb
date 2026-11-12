@@ -209,6 +209,22 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn size_in_bytes(&self) -> usize {
+        let heap_bytes = match self {
+            Self::String(string) => string.len(),
+            Self::Struct(struct_) => struct_.fields().values().map(Value::size_in_bytes).sum(),
+            Self::Boolean(_)
+            | Self::Integer(_)
+            | Self::Double(_)
+            | Self::Decimal(_)
+            | Self::Date(_)
+            | Self::DateTime(_)
+            | Self::DateTimeTZ(_)
+            | Self::Duration(_) => 0,
+        };
+        size_of::<Self>() + heap_bytes
+    }
+
     pub fn unwrap_string_ref(&self) -> &str {
         match self {
             Self::String(string) => string.as_ref(),
