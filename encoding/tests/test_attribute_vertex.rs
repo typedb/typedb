@@ -156,7 +156,8 @@ fn generate_struct_attribute_vertex() {
             StructBytes::new(Bytes::Array(ByteArray::copy(&struct_bytes_raw)));
         let vertex = thing_vertex_generator
             .create_attribute_struct(type_id, struct_bytes.as_reference(), &mut snapshot)
-            .unwrap();
+            .unwrap()
+            .0;
         let vertex_id = vertex.attribute_id().unwrap_struct();
         assert_eq!(
             vertex_id.get_hash_hash(),
@@ -175,7 +176,8 @@ fn generate_struct_attribute_vertex() {
             StructBytes::new(Bytes::Array(ByteArray::copy(&struct_bytes_raw)));
         let vertex = thing_vertex_generator
             .create_attribute_struct(type_id, struct_bytes.as_reference(), &mut snapshot)
-            .unwrap();
+            .unwrap()
+            .0;
         let vertex_id = vertex.attribute_id().unwrap_struct();
         assert_eq!(vertex_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::HASH_LENGTH]);
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
@@ -185,7 +187,8 @@ fn generate_struct_attribute_vertex() {
                 StructBytes::new(Bytes::Array(ByteArray::copy(&struct_collide_raw)));
             let collide_vertex = thing_vertex_generator
                 .create_attribute_struct(type_id, struct_collide_bytes.as_reference(), &mut snapshot)
-                .unwrap();
+                .unwrap()
+                .0;
 
             let collide_id = collide_vertex.attribute_id().unwrap_struct();
             assert_eq!(collide_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::HASH_LENGTH]);
@@ -198,7 +201,8 @@ fn generate_struct_attribute_vertex() {
                 StructBytes::new(Bytes::Array(ByteArray::copy(&struct_collide_raw)));
             let collide_vertex = thing_vertex_generator
                 .create_attribute_struct(type_id, struct_collide_bytes.as_reference(), &mut snapshot)
-                .unwrap();
+                .unwrap()
+                .0;
 
             let collide_id = collide_vertex.attribute_id().unwrap_struct();
             assert_eq!(collide_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::HASH_LENGTH]);
@@ -302,11 +306,13 @@ fn attribute_id_deterministic_part() {
         let id_a = generator
             .create_attribute_struct(type_id, bytes_a.as_reference(), &mut snapshot)
             .unwrap()
+            .0
             .attribute_id()
             .unwrap_struct();
         let id_b = generator
             .create_attribute_struct(type_id, bytes_b.as_reference(), &mut snapshot)
             .unwrap()
+            .0
             .attribute_id()
             .unwrap_struct();
         assert_ne!(id_a.get_hash_disambiguator(), id_b.get_hash_disambiguator());
