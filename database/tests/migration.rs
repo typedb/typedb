@@ -510,6 +510,79 @@ async fn a_unique_ownership_is_validated_when_the_schema_is_restored() {
 }
 
 #[tokio::test]
+async fn a_maximum_plays_cardinality_is_validated_when_the_schema_is_restored() {
+    const PLAYS_SCHEMA: &str = r#"define
+  entity person, plays friendship:friend @card(0..1);
+  relation friendship, relates friend @card(0..2);
+"#;
+    init_logging();
+    let data_dir = create_tmp_dir("migration_plays_maximum");
+    let database_manager = manager(&data_dir);
+    let person = |id: &str| {
+        MigrationItem::Entity(EntityItem {
+            globally_unique_id: id.to_owned(),
+            label: Label::build("person", None),
+            label_scoped_id: None,
+            attributes: vec![],
+        })
+    };
+    let friendship = |id: &str, players: [&str; 2]| {
+        MigrationItem::Relation(RelationItem {
+            globally_unique_id: id.to_owned(),
+            label: Label::build("friendship", None),
+            label_scoped_id: None,
+            attributes: vec![],
+            roles: vec![friends(players)],
+        })
+    };
+    let checksums = |entity_count: i64| {
+        MigrationItem::Checksums(Checksums::from_counts(Counts {
+            entity_count,
+            relation_count: 2,
+            role_count: 4,
+            ..Counts::default()
+        }))
+    };
+    // a commit per item, so the friendships count the links of players committed earlier
+    let configuration = || {
+        ImporterConfiguration::new(database_manager.import_directory().to_owned())
+            .with_buffer_size(BUFFER_SIZE)
+            .with_max_writes_per_commit(1)
+    };
+
+    let items = vec![
+        person("p1"),
+        person("p2"),
+        person("p3"),
+        person("p4"),
+        friendship("f1", ["p1", "p2"]),
+        friendship("f2", ["p3", "p4"]),
+        checksums(4),
+    ];
+    let mut importer =
+        DatabaseImporter::start(importing_database(&database_manager, "within"), configuration(), &task_spawner());
+    importer.send_schema(PLAYS_SCHEMA.to_owned()).await.expect("schema");
+    import_all(importer, items).await;
+    let (schema, _) = export(&read_transaction(&database_manager, "within"), "within");
+    assert!(schema.contains("plays friendship:friend @card(0..1)"), "the cardinality must be restored: {schema}");
+
+    let items = vec![
+        person("p1"),
+        person("p2"),
+        person("p3"),
+        friendship("f1", ["p1", "p2"]),
+        friendship("f2", ["p1", "p3"]),
+        checksums(3),
+    ];
+    let mut importer =
+        DatabaseImporter::start(importing_database(&database_manager, "exceeded"), configuration(), &task_spawner());
+    importer.send_schema(PLAYS_SCHEMA.to_owned()).await.expect("schema");
+    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    let result = importer.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::FinalizationSchemaCommitFailed { .. })), "{result:?}");
+}
+
+#[tokio::test]
 async fn an_out_of_order_stream_is_rejected() {
     init_logging();
     let data_dir = create_tmp_dir("migration_stream_order");
