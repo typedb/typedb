@@ -152,8 +152,12 @@ impl Attribute {
     }
 
     pub fn estimated_write_bytes(value: &Value<'_>) -> usize {
-        let stored_value_bytes =
-            if AttributeID::is_inlineable(value.as_reference()) { 0 } else { value.estimated_write_bytes() };
+        let stored_value_bytes = match value {
+            _ if AttributeID::is_inlineable(value.as_reference()) => 0,
+            // Struct fields are also indexed, string fields along with their whole value
+            Value::Struct(_) => 2 * value.estimated_write_bytes(),
+            _ => value.estimated_write_bytes(),
+        };
         AttributeVertex::MAX_LENGTH + stored_value_bytes
     }
 }
