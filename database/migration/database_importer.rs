@@ -34,7 +34,9 @@ use concept::{
     },
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
-        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
+        annotation::{
+            AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey, AnnotationUnique,
+        },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
         object_type::ObjectType,
@@ -75,7 +77,7 @@ use storage::{
 use tokio::{sync::mpsc, task::JoinHandle};
 use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
-use concept::type_::annotation::AnnotationUnique;
+
 use crate::{
     migration::{
         Checksums, Counts, MigrationOperationError,
@@ -139,6 +141,7 @@ struct SchemaInfo {
     temporarily_non_independent_attribute_types: HashSet<AttributeType>,
     temporarily_independent_relation_types: HashSet<RelationType>,
     original_keys: HashSet<Owns>,
+    original_uniques: HashSet<Owns>,
     original_cardinalities_owns: HashMap<Owns, Option<AnnotationCardinality>>,
     original_cardinalities_plays: HashMap<Plays, Option<AnnotationCardinality>>,
     original_cardinalities_relates: HashMap<Relates, Option<AnnotationCardinality>>,
@@ -153,6 +156,7 @@ impl SchemaInfo {
             temporarily_non_independent_attribute_types: HashSet::new(),
             temporarily_independent_relation_types: HashSet::new(),
             original_keys: HashSet::new(),
+            original_uniques: HashSet::new(),
             original_cardinalities_owns: HashMap::new(),
             original_cardinalities_plays: HashMap::new(),
             original_cardinalities_relates: HashMap::new(),
@@ -1089,6 +1093,13 @@ impl DatabaseImporter {
                 continue;
             }
 
+            // uniqueness is validated once on restore instead of on every ownership
+            if declared_annotations.iter().any(|annotation| matches!(annotation, OwnsAnnotation::Unique(_))) {
+                owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Unique)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+                schema_info.original_uniques.insert(*owns);
+            }
+
             // handle cardinality
             if self.configuration.item_order == ItemOrder::AttributesEntitiesRelations {
                 // attributes precede their owners, so every ownership is written together with its owner
@@ -1303,6 +1314,11 @@ impl DatabaseImporter {
             owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Cardinality)
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
             owns.set_annotation(snapshot, type_manager, thing_manager, OwnsAnnotation::Key(AnnotationKey))
+                .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
+        }
+
+        for owns in &schema_info.original_uniques {
+            owns.set_annotation(snapshot, type_manager, thing_manager, OwnsAnnotation::Unique(AnnotationUnique))
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
 

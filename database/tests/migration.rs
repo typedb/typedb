@@ -484,6 +484,32 @@ async fn an_ownership_of_a_hashed_attribute_is_exported_by_id() {
 }
 
 #[tokio::test]
+async fn a_unique_ownership_is_validated_when_the_schema_is_restored() {
+    const UNIQUE_SCHEMA: &str = r#"define
+  attribute name, value string;
+  entity person, owns name @unique, plays friendship:friend;
+  relation friendship, relates friend @card(0..2);
+"#;
+    init_logging();
+    let data_dir = create_tmp_dir("migration_unique");
+    let database_manager = manager(&data_dir);
+    import_all(importer_with_schema(&database_manager, "distinct", UNIQUE_SCHEMA).await, source_items()).await;
+    let (schema, _) = export(&read_transaction(&database_manager, "distinct"), "distinct");
+    assert!(schema.contains("@unique"), "the unique annotation must be restored: {schema}");
+
+    let mut items = source_items();
+    for item in &mut items {
+        if let MigrationItem::Entity(EntityItem { attributes, .. }) = item {
+            *attributes = vec![OwnedAttribute::by_id("alice".to_owned())];
+        }
+    }
+    let mut importer = importer_with_schema(&database_manager, "shared", UNIQUE_SCHEMA).await;
+    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    let result = importer.finalize().await;
+    assert!(matches!(result, Err(DatabaseImportError::ConceptWrite { .. })), "{result:?}");
+}
+
+#[tokio::test]
 async fn an_out_of_order_stream_is_rejected() {
     init_logging();
     let data_dir = create_tmp_dir("migration_stream_order");
