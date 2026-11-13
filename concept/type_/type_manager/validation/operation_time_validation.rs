@@ -3125,26 +3125,6 @@ impl OperationTimeValidation {
         Ok(false)
     }
 
-    fn validate_forward_has(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        object_type: ObjectType,
-        // pass in each set of annotations to validate
-    ) -> Result<(), Box<DataValidationError>> {
-        // 1. Build map of Attribute Type to Value Annotations to check - per attribute type value constraints
-        // 2. Turn the Owns into a map of
-
-        // ??? need some help here
-
-        todo!()
-    }
-
-    // validate before ownerships are made
-    ///
-    /// 1. Optimize this to do 1 forward Has scan for non-unique constraints
-    /// 2. Optimize this to do 1 HasReverse scan for unique constraints
-    //
     fn validate_new_owns_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -3340,10 +3320,10 @@ impl OperationTimeValidation {
         let values_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_values_constraints(existing_constraints.iter().cloned());
 
-        /// TODO:
-        /// Turn this into one ForwardHas iterator per Object Type
-        ///   get the Owns that corresponds to the Has we're reading and validate all the constraints as before
-        ///
+        // TODO:
+        //   Turn this into one ForwardHas iterator per Object Type
+        //   get the Owns that corresponds to the Has we're reading and validate all the constraints as before
+
         if abstract_constraints.is_empty()
             && distinct_constraints.is_empty()
             && regex_constraints.is_empty()
