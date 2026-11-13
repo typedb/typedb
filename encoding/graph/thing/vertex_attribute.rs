@@ -20,7 +20,10 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         Typed,
-        common::{FoundOrAbsent, value_hasher::HashedID},
+        common::{
+            FoundOrAbsent,
+            value_hasher::{HASH_DISAMBIGUATOR_LENGTH, HashedID},
+        },
         thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex, max},
         type_::vertex::TypeID,
     },
@@ -314,7 +317,7 @@ impl AttributeID {
     pub const LENGTH_SHORT_ID: usize = ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::Short.length();
     pub const LENGTH_LONG_ID: usize = ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::Long.length();
     pub const MAX_LENGTH: usize = max(Self::LENGTH_SHORT_ID, Self::LENGTH_LONG_ID);
-    const LENGTH_HASH_DISAMBIGUATOR: usize = 1;
+    const LENGTH_HASH_DISAMBIGUATOR: usize = HASH_DISAMBIGUATOR_LENGTH;
 
     pub const MIN: AttributeID = Self::Boolean(BooleanAttributeID::MIN);
 
@@ -750,7 +753,10 @@ impl StringAttributeID {
     const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH_ID.length();
 
-    pub const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
+    // the last byte holds the inline string length, or the hash flag and disambiguator
+    const TAIL_LENGTH: usize = AttributeID::LENGTH_HASH_DISAMBIGUATOR;
+
+    pub const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - Self::TAIL_LENGTH;
 
     pub const HASHED_PREFIX_LENGTH: usize = Self::INLINE_OR_PREFIXED_HASH_LENGTH - Self::HASHED_HASH_LENGTH;
     pub const HASHED_HASH_LENGTH: usize = 8;
@@ -760,10 +766,10 @@ impl StringAttributeID {
     pub const HASHED_HASH_RANGE: Range<usize> =
         Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
     pub const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
-        Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + 1;
+        Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + AttributeID::LENGTH_HASH_DISAMBIGUATOR;
 
     const TAIL_IS_HASH_MASK: u8 = 0b1000_0000;
-    const TAIL_INDEX: usize = Self::LENGTH - 1;
+    const TAIL_INDEX: usize = Self::LENGTH - Self::TAIL_LENGTH;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -951,7 +957,9 @@ impl StringAttributeID {
     }
 }
 
-impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
+impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + AttributeID::LENGTH_HASH_DISAMBIGUATOR }>
+    for StringAttributeID
+{
     const FIXED_WIDTH_KEYS: bool = true;
 }
 
@@ -963,8 +971,8 @@ pub struct StructAttributeID {
 impl StructAttributeID {
     const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     pub(crate) const LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH + Self::VALUE_LENGTH_ID.length();
-    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
-    const TAIL_INDEX: usize = Self::LENGTH - 1;
+    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - AttributeID::LENGTH_HASH_DISAMBIGUATOR;
+    const TAIL_INDEX: usize = Self::LENGTH - AttributeID::LENGTH_HASH_DISAMBIGUATOR;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -1055,6 +1063,6 @@ impl StructAttributeID {
     }
 }
 
-impl HashedID<{ StructAttributeID::HASH_LENGTH + 1 }> for StructAttributeID {
+impl HashedID<{ StructAttributeID::HASH_LENGTH + AttributeID::LENGTH_HASH_DISAMBIGUATOR }> for StructAttributeID {
     const FIXED_WIDTH_KEYS: bool = true;
 }
