@@ -319,7 +319,7 @@ fn transition__recheck_root_optional_dereference_if_write_stage(
         if let Some((id, constraint)) = find_unsafe_dereference_in_constraints(conjunction).next() {
             let variable = context.get_variable_name_or_unnamed(id).to_owned();
             let source_span = constraint.source_span();
-            return Err(Box::new(RepresentationError::DeprecatedOptionalVariableUsedOutsideTry {
+            return Err(Box::new(RepresentationError::DeprecatedOptionalVariableUsedOutsideIf {
                 variable,
                 source_span,
             }));
