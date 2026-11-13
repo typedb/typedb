@@ -830,3 +830,23 @@ fn negation_stops_within_cartesian_product() {
     let (rows, _positions) = run_read_query(&context, query).unwrap();
     assert_eq!(rows.len(), 1);
 }
+
+#[test]
+fn distinct_after_disjunction() {
+    // Regression against #8062
+    let context = setup_common(COMMON_SCHEMA);
+    run_write_query(&context, r#"insert $p isa person, has name "Alice", has age 1;"#).unwrap();
+
+    let query = r#"
+        match
+            $p isa person;
+            { $p has name $x; } or { $p has age $x; };
+        select $p;
+    "#;
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 2);
+
+    let query = format!("{query} distinct;");
+    let (rows, _positions) = run_read_query(&context, &query).unwrap();
+    assert_eq!(rows.len(), 1);
+}

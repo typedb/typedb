@@ -18,7 +18,7 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    ExecutionInterrupt,
+    ExecutionInterrupt, Provenance,
     batch::Batch,
     pipeline::{
         PipelineExecutionError, StageIterator,
@@ -442,8 +442,11 @@ where
                 None => return None,
                 Some(Err(err)) => return Some(Err(err)),
                 Some(Ok(row)) => {
-                    if self.seen.insert(row.clone().into_owned()) {
-                        return Some(Ok(row.clone().into_owned()));
+                    // Don't let multiplicity & provenance come into the picture:
+                    let without_metadata = MaybeOwnedRow::new_borrowed(row.row(), &1, &Provenance::INITIAL);
+                    if self.seen.insert(without_metadata.into_owned()) {
+                        let (values, _, provenance) = row.into_owned_parts();
+                        return Some(Ok(MaybeOwnedRow::new_owned(values, 1, provenance)));
                     }
                     // duplicate → continue loop instead of recursing
                 }
