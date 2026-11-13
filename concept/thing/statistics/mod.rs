@@ -48,7 +48,7 @@ use crate::{
         object::Object,
         relation::Relation,
         statistics::{
-            deltas::CommitDeltas,
+            deltas::{CommitDeltas, Delta},
             sync::{SyncRecord, load_sync_records},
         },
         thing_manager::ThingManager,
@@ -146,6 +146,28 @@ impl Counts {
 
     pub const fn total(self) -> u64 {
         self.visible + self.invisible
+    }
+
+    pub fn saturating_add_assign(&mut self, delta: Delta, label: &str) {
+        self.visible = self.visible.checked_add_signed(delta.net_change()).unwrap_or_else(|| {
+            diagnostics::error_with_report!(
+                "Unexpected underflow in statistics {} count: {} + {}",
+                label,
+                self.visible,
+                delta.net_change()
+            );
+            0
+        });
+
+        self.invisible = self.invisible.checked_add(delta.invisible_keys_created()).unwrap_or_else(|| {
+            diagnostics::error_with_report!(
+                "Unexpected overflow in statistics invisible {} count: {} + {}",
+                label,
+                self.invisible,
+                delta.invisible_keys_created()
+            );
+            u64::MAX
+        });
     }
 }
 
@@ -382,7 +404,7 @@ impl Statistics {
                             storage,
                         )
                         .map_err(|source| StatisticsError::DataRead { source })?;
-                    Self::saturating_add(&mut self.total_count.visible, delta, "total_count");
+                    self.total_count.saturating_add_assign(delta, "total_count");
                     self.sequence_number = seq;
                 }
             }
@@ -453,39 +475,39 @@ impl Statistics {
             self.durably_write(durability)?;
         }
 
-        let mut total_delta = 0;
+        let mut total_delta = Delta::default();
 
-        for (&entity_type, delta) in entity_deltas {
-            self.update_entities(entity_type, delta.net_change());
-            total_delta += delta.net_change();
+        for (&entity_type, &delta) in entity_deltas {
+            self.update_entities(entity_type, delta);
+            total_delta += delta;
         }
-        for (&relation_type, delta) in relation_deltas {
-            self.update_relations(relation_type, delta.net_change());
-            total_delta += delta.net_change();
+        for (&relation_type, &delta) in relation_deltas {
+            self.update_relations(relation_type, delta);
+            total_delta += delta;
         }
-        for (&attribute_type, delta) in attribute_deltas {
-            self.update_attributes(attribute_type, delta.net_change());
+        for (&attribute_type, &delta) in attribute_deltas {
+            self.update_attributes(attribute_type, delta);
         }
 
         for (&owner_type, attribute_deltas) in has_attribute_deltas {
-            for (&attribute_type, delta) in attribute_deltas {
-                self.update_has(owner_type, attribute_type, delta.net_change());
-                total_delta += delta.net_change();
+            for (&attribute_type, &delta) in attribute_deltas {
+                self.update_has(owner_type, attribute_type, delta);
+                total_delta += delta;
             }
         }
 
         for (&relation_type, role_player_deltas) in relation_role_player_deltas {
             for (&role_type, player_deltas) in role_player_deltas {
-                for (&player_type, delta) in player_deltas {
-                    self.update_role_player(player_type, role_type, relation_type, delta.net_change());
-                    total_delta += delta.net_change();
+                for (&player_type, &delta) in player_deltas {
+                    self.update_role_player(player_type, role_type, relation_type, delta);
+                    total_delta += delta;
                 }
             }
         }
 
         for (&player_1_type, player_2_type_deltas) in links_index_deltas {
-            for (&player_2_type, delta) in player_2_type_deltas {
-                self.update_indexed_player(player_1_type, player_2_type, delta.net_change());
+            for (&player_2_type, &delta) in player_2_type_deltas {
+                self.update_indexed_player(player_1_type, player_2_type, delta);
             }
         }
 
@@ -521,7 +543,7 @@ impl Statistics {
             self.relation_role_counts.retain(|_, map| !map.is_empty());
         }
 
-        Self::saturating_add(&mut self.total_count.visible, total_delta, "total_count");
+        self.total_count.saturating_add_assign(total_delta, "total_count");
 
         self.sequence_number = *commit_sequence_number;
 
@@ -535,14 +557,14 @@ impl Statistics {
         commit_sequence_number: SequenceNumber,
         writes: &CommittedWrites,
         storage: &MVCCStorage<D>,
-    ) -> Result<i64, MVCCReadError> {
+    ) -> Result<Delta, MVCCReadError> {
         type CleanupFn = Box<dyn FnOnce(&mut Statistics)>;
 
         if commit_sequence_number <= self.sequence_number {
-            return Ok(0);
+            return Ok(Delta::default());
         }
 
-        let mut total_delta = 0;
+        let mut total_delta = Delta::default();
         let mut deferred_type_cleanups: Vec<CleanupFn> = Vec::new();
 
         for (key, write) in writes.operations.iterate_writes() {
@@ -683,48 +705,33 @@ impl Statistics {
         self.links_index_counts.retain(|_, map| !map.is_empty());
     }
 
-    fn saturating_add(count: &mut u64, delta: i64, label: &str) {
-        match count.checked_add_signed(delta) {
-            Some(value) => *count = value,
-            None => {
-                diagnostics::error_with_report!(
-                    "Unexpected underflow in statistics {} count: {} + {}",
-                    label,
-                    *count,
-                    delta
-                );
-                *count = 0;
-            }
-        }
-    }
-
-    fn update_entities(&mut self, entity_type: EntityType, delta: i64) {
+    fn update_entities(&mut self, entity_type: EntityType, delta: Delta) {
         let count = self.entity_counts.entry(entity_type).or_default();
-        Self::saturating_add(&mut count.visible, delta, "entity");
-        Self::saturating_add(&mut self.total_entity_count.visible, delta, "total_entity");
-        Self::saturating_add(&mut self.total_thing_count.visible, delta, "total_thing");
+        count.saturating_add_assign(delta, "entity");
+        self.total_entity_count.saturating_add_assign(delta, "total_entity");
+        self.total_thing_count.saturating_add_assign(delta, "total_thing");
     }
 
-    fn update_relations(&mut self, relation_type: RelationType, delta: i64) {
+    fn update_relations(&mut self, relation_type: RelationType, delta: Delta) {
         let count = self.relation_counts.entry(relation_type).or_default();
-        Self::saturating_add(&mut count.visible, delta, "relation");
-        Self::saturating_add(&mut self.total_relation_count.visible, delta, "total_relation");
-        Self::saturating_add(&mut self.total_thing_count.visible, delta, "total_thing");
+        count.saturating_add_assign(delta, "relation");
+        self.total_relation_count.saturating_add_assign(delta, "total_relation");
+        self.total_thing_count.saturating_add_assign(delta, "total_thing");
     }
 
-    fn update_attributes(&mut self, attribute_type: AttributeType, delta: i64) {
+    fn update_attributes(&mut self, attribute_type: AttributeType, delta: Delta) {
         let count = self.attribute_counts.entry(attribute_type).or_default();
-        Self::saturating_add(&mut count.visible, delta, "attribute");
-        Self::saturating_add(&mut self.total_attribute_count.visible, delta, "total_attribute");
-        Self::saturating_add(&mut self.total_thing_count.visible, delta, "total_thing");
+        count.saturating_add_assign(delta, "attribute");
+        self.total_attribute_count.saturating_add_assign(delta, "total_attribute");
+        self.total_thing_count.saturating_add_assign(delta, "total_thing");
     }
 
-    fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
+    fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: Delta) {
         let attribute_count = self.has_attribute_counts.double_entry(owner_type, attribute_type).or_default();
-        Self::saturating_add(&mut attribute_count.visible, delta, "has_attribute");
+        attribute_count.saturating_add_assign(delta, "has_attribute");
         let owner_count = self.attribute_owner_counts.double_entry(attribute_type, owner_type).or_default();
-        Self::saturating_add(&mut owner_count.visible, delta, "attribute_owner");
-        Self::saturating_add(&mut self.total_has_count.visible, delta, "total_has");
+        owner_count.saturating_add_assign(delta, "attribute_owner");
+        self.total_has_count.saturating_add_assign(delta, "total_has");
     }
 
     fn update_role_player(
@@ -732,26 +739,26 @@ impl Statistics {
         player_type: ObjectType,
         role_type: RoleType,
         relation_type: RelationType,
-        delta: i64,
+        delta: Delta,
     ) {
         let role_count = self.role_counts.entry(role_type).or_default();
-        Self::saturating_add(&mut role_count.visible, delta, "role");
-        Self::saturating_add(&mut self.total_role_count.visible, delta, "total_role");
+        role_count.saturating_add_assign(delta, "role");
+        self.total_role_count.saturating_add_assign(delta, "total_role");
         let role_player_count = self.role_player_counts.double_entry(player_type, role_type).or_default();
-        Self::saturating_add(&mut role_player_count.visible, delta, "role_player");
+        role_player_count.saturating_add_assign(delta, "role_player");
         let relation_role_count = self.relation_role_counts.double_entry(relation_type, role_type).or_default();
-        Self::saturating_add(&mut relation_role_count.visible, delta, "relation_role");
+        relation_role_count.saturating_add_assign(delta, "relation_role");
         let relation_role_player_count =
             self.relation_role_player_counts.triple_entry(relation_type, role_type, player_type).or_default();
-        Self::saturating_add(&mut relation_role_player_count.visible, delta, "relation_role_player");
+        relation_role_player_count.saturating_add_assign(delta, "relation_role_player");
         let player_role_relation_count =
             self.player_role_relation_counts.triple_entry(player_type, role_type, relation_type).or_default();
-        Self::saturating_add(&mut player_role_relation_count.visible, delta, "player_role_relation");
+        player_role_relation_count.saturating_add_assign(delta, "player_role_relation");
     }
 
-    fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
+    fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: Delta) {
         let player_1_to_2_index_count = self.links_index_counts.double_entry(player_1_type, player_2_type).or_default();
-        Self::saturating_add(&mut player_1_to_2_index_count.visible, delta, "player_1_to_2_index");
+        player_1_to_2_index_count.saturating_add_assign(delta, "player_1_to_2_index");
     }
 
     /// Compute the largest fractional difference of any individual statistic
@@ -863,13 +870,13 @@ fn write_to_delta<D>(
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,
     storage: &MVCCStorage<D>,
-) -> Result<i64, MVCCReadError> {
+) -> Result<Delta, MVCCReadError> {
     match write {
-        Write::Insert { .. } => Ok(1),
+        Write::Insert { .. } => Ok(Delta::new_insert()),
         Write::Delete { .. } => {
             if open_sequence_number.next() >= commit_sequence_number {
                 // no concurrent commit could have occurred - this is a real DELETE
-                Ok(-1)
+                Ok(Delta::new_delete())
             } else {
                 if storage
                     .get::<0>(
@@ -881,30 +888,31 @@ fn write_to_delta<D>(
                     .is_some()
                 {
                     // exists in storage before DELETE is committed
-                    Ok(-1)
+                    Ok(Delta::new_delete())
                 } else {
                     // does not exist in storage before DELETE is committed
-                    Ok(0)
+                    Ok(Delta::default())
                 }
             }
         }
         Write::Put { action, value, .. } => {
             if open_sequence_number.next() >= commit_sequence_number {
                 // no concurrent commit could have occurred - fall back to the flag
-                if action.load(std::sync::atomic::Ordering::Relaxed) != PutAction::Nop { Ok(1) } else { Ok(0) }
+                match action.load(std::sync::atomic::Ordering::Relaxed) {
+                    PutAction::Nop => Ok(Delta::new_nop()),
+                    PutAction::Insert => Ok(Delta::new_insert()),
+                    PutAction::Overwrite => Ok(Delta::new_overwrite()),
+                }
             } else {
-                if let Some(stored_value) = storage.get::<0>(
+                match storage.get::<0>(
                     &IteratorPool::new(),
                     write_key,
                     commit_sequence_number.previous(),
                     StorageCounters::DISABLED,
-                )? && *stored_value == **value
-                {
-                    // exists in storage before PUT is committed
-                    Ok(0)
-                } else {
-                    // does not exist in storage before PUT is committed
-                    Ok(1)
+                )? {
+                    Some(stored_value) if *stored_value == **value => Ok(Delta::new_nop()), // exists in storage before PUT is committed
+                    Some(_) => Ok(Delta::new_overwrite()), // exists in storage with a different value before PUT is committed
+                    None => Ok(Delta::new_insert()),       // does not exist in storage before PUT is committed
                 }
             }
         }
