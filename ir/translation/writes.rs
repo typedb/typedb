@@ -312,6 +312,9 @@ fn add_deletables(
                 deleted_concepts_recursive.insert(translated_variable);
             }
             DeletableKind::Optional { deletables } => {
+                error::optional_usage_error!(RepresentationError::IllegalTryInWriteStage {
+                    source_span: deletable.span
+                });
                 debug_assert!(
                     deletables
                         .iter()
