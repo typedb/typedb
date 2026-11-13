@@ -388,7 +388,6 @@ impl CardinalityValidation {
             )
             .collect();
 
-        // types are validated independently, so each worker keeps taking the next type until none are left
         let next_task = AtomicUsize::new(0);
         let validate_tasks = || -> Result<Vec<DataValidationError>, Box<ConceptReadError>> {
             let mut errors = Vec::new();
