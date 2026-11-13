@@ -100,12 +100,26 @@ macro_rules! capability_cardinality_validation {
         ) -> Result<Vec<CheckedCardinality<$capability_type>>, Box<ConceptReadError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             for interface_type in interface_types {
-                for constraint in object_type
-                    .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())?
-                    .into_iter()
-                {
-                    cardinality_constraints.insert(constraint);
+                let mut constraints = object_type.$get_cardinality_constraints_func(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    interface_type.clone(),
+                )?;
+                if constraints.is_empty() {
+                    for supertype in
+                        interface_type.get_supertypes_transitive(snapshot, thing_manager.type_manager())?.iter()
+                    {
+                        constraints = object_type.$get_cardinality_constraints_func(
+                            snapshot,
+                            thing_manager.type_manager(),
+                            supertype.clone(),
+                        )?;
+                        if !constraints.is_empty() {
+                            break;
+                        }
+                    }
                 }
+                cardinality_constraints.extend(constraints);
             }
 
             let mut checked = Vec::new();
