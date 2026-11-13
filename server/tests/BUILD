@@ -53,5 +53,6 @@ rustfmt_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
+    exclude = glob(["fixtures/*"]),
     license_type = "mpl-header",
 )
