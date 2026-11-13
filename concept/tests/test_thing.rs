@@ -2009,7 +2009,6 @@ fn relations_without_players_are_deleted_when_relation_type_independence_is_unse
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    // more than one relation type, so the scans run in parallel
     let relation_labels = [Label::build("friendship", None), Label::build("marriage", None)];
     let person_label = Label::build("person", None);
 
@@ -2305,7 +2304,7 @@ fn attributes_without_owners_are_deleted_when_attribute_type_independence_is_uns
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    // more than one attribute type, so the scans run in parallel, and length only inherits independence from measure
+    // length only inherits independence from measure
     let independent_labels = [Label::build("age", None), Label::build("rank", None), Label::build("measure", None)];
     let measure_label = Label::build("measure", None);
     let attribute_labels = [Label::build("age", None), Label::build("rank", None), Label::build("length", None)];
