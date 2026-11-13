@@ -8,19 +8,24 @@ use std::{collections::HashMap, iter, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::value::value::Value;
+use concept::{
+    thing::{statistics::Statistics, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
+};
+use encoding::{graph::thing::vertex_generator::ThingVertexGenerator, value::value::Value};
 use executor::{
     ExecutionInterrupt,
     pipeline::{PipelineExecutionError, stage::ExecutionContext},
     row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
-use itertools::Either;
+use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
-use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+use storage::{
+    MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
+};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -109,6 +114,14 @@ fn setup_common(schema: &str) -> Context {
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+}
+
+fn reload_statistics(context: &mut Context) {
+    let mut statistics = Statistics::new(SequenceNumber::MIN);
+    statistics.may_synchronise_from_wal(context.storage.as_ref()).unwrap();
+    let vertex_generator = Arc::new(ThingVertexGenerator::load(context.storage.clone()).unwrap());
+    context.thing_manager =
+        Arc::new(ThingManager::new(vertex_generator, context.type_manager.clone(), Arc::new(statistics)));
 }
 
 fn run_read_query(
@@ -781,4 +794,39 @@ limit 20;
 
     let (rows, _positions) = run_read_query(&context, query).unwrap();
     assert_eq!(rows.len(), 20);
+}
+
+#[test]
+fn negation_stops_within_cartesian_product() {
+    // Regression against #8061 and #8063
+    // The negation stops at its first answer, part-way through a cartesian product, and runs again for the next row
+    let custom_schema = r#"define
+        attribute name value string;
+        entity technique, owns name, plays coverage:technique;
+        entity source, plays coverage:source, plays emission:source;
+        entity asset, plays emission:emitter;
+        relation coverage, relates technique, relates source;
+        relation emission, relates emitter, relates source;
+    "#;
+    let mut context = setup_common(custom_schema);
+    let emissions = (0..100).map(|i| format!("$e{i} isa asset; emission (emitter: $e{i}, source: $s1);")).join("\n");
+    let data = format!(
+        r#"insert
+        $t1 isa technique, has name "t1";
+        $t2 isa technique, has name "t2";
+        $s1 isa source; coverage (technique: $t1, source: $s1);
+        $s2 isa source; coverage (technique: $t2, source: $s2);
+        {emissions}"#
+    );
+    run_write_query(&context, &data).unwrap();
+    // The cartesian product is only planned once the statistics include the data
+    reload_statistics(&mut context);
+
+    let query = r#"
+        match
+            coverage (technique: $t);
+            not { coverage (technique: $t, source: $s); emission (source: $s); };
+    "#;
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 1);
 }
