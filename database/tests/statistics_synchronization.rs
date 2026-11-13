@@ -70,9 +70,9 @@ fn statistics_synchronization_under_concurrent_load() {
     let tx = TransactionRead::open(database, <_>::default()).unwrap();
     let statistics = Statistics::read(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED).unwrap();
 
-    assert_eq!(metrics.data.entity_count, statistics.total_entity_count, "entity_count after reboot");
-    assert_eq!(metrics.data.attribute_count, statistics.total_attribute_count, "attribute_count after reboot");
-    assert_eq!(metrics.data.has_count, statistics.total_has_count, "has_count after reboot");
+    assert_eq!(metrics.data.entity_count, statistics.total_entity_count.visible, "entity_count after reboot");
+    assert_eq!(metrics.data.attribute_count, statistics.total_attribute_count.visible, "attribute_count after reboot");
+    assert_eq!(metrics.data.has_count, statistics.total_has_count.visible, "has_count after reboot");
     assert_eq!(metrics.data.relation_count, 0, "relation_count after reboot");
 }
 

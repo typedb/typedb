@@ -9,6 +9,8 @@ use std::{
     collections::{HashMap, hash_map},
     fmt,
     hash::Hash,
+    iter::Sum,
+    ops::Add,
     sync::Arc,
     time::Instant,
 };
@@ -65,6 +67,7 @@ mod sync;
 #[repr(u64)]
 pub enum StatisticsEncodingVersion {
     V0 = 0,
+    V1 = 1,
 }
 
 impl From<StatisticsEncodingVersion> for u64 {
@@ -93,6 +96,7 @@ impl TryFrom<u64> for StatisticsEncodingVersion {
     fn try_from(u64: u64) -> Result<Self, Self::Error> {
         match u64 {
             0 => Ok(Self::V0),
+            1 => Ok(Self::V1),
             other => Err(UnknownStatisticsEncodingVersion(other)),
         }
     }
@@ -121,6 +125,44 @@ impl<K1: Eq + Hash, K2: Eq + Hash, K3: Eq + Hash, V> TripleHashMapExt<K1, K2, K3
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Counts {
+    pub visible: u64,
+    pub invisible: u64,
+}
+
+impl Counts {
+    pub const fn new() -> Self {
+        Self { visible: 0, invisible: 0 }
+    }
+
+    pub const fn from_visible(visible: u64) -> Self {
+        Self { visible, invisible: 0 }
+    }
+
+    pub const fn is_zero(self) -> bool {
+        self.visible == 0 && self.invisible == 0
+    }
+
+    pub const fn total(self) -> u64 {
+        self.visible + self.invisible
+    }
+}
+
+impl Add for Counts {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self { visible: self.visible + rhs.visible, invisible: self.invisible + rhs.invisible }
+    }
+}
+
+impl<'a> Sum<&'a Counts> for Counts {
+    fn sum<I: Iterator<Item = &'a Counts>>(iter: I) -> Self {
+        iter.copied().reduce(Counts::add).unwrap_or_default()
+    }
+}
+
 /// Thing statistics, reflecting a snapshot of statistics accurate as of a particular sequence number
 /// When types are undefined, we retain the last count of the instances of the type
 /// Invariant: all undefined types are
@@ -130,50 +172,50 @@ pub struct Statistics {
     pub sequence_number: SequenceNumber,
 
     pub last_durable_write_sequence_number: SequenceNumber,
-    pub last_durable_write_total_count: u64,
+    pub last_durable_write_total_count: Counts,
 
-    pub total_count: u64,
+    pub total_count: Counts,
 
-    pub total_thing_count: u64,
-    pub total_entity_count: u64,
-    pub total_relation_count: u64,
-    pub total_attribute_count: u64,
-    pub total_role_count: u64,
-    pub total_has_count: u64,
+    pub total_thing_count: Counts,
+    pub total_entity_count: Counts,
+    pub total_relation_count: Counts,
+    pub total_attribute_count: Counts,
+    pub total_role_count: Counts,
+    pub total_has_count: Counts,
 
-    pub entity_counts: HashMap<EntityType, u64>,
-    pub relation_counts: HashMap<RelationType, u64>,
-    pub attribute_counts: HashMap<AttributeType, u64>,
-    pub role_counts: HashMap<RoleType, u64>,
+    pub entity_counts: HashMap<EntityType, Counts>,
+    pub relation_counts: HashMap<RelationType, Counts>,
+    pub attribute_counts: HashMap<AttributeType, Counts>,
+    pub role_counts: HashMap<RoleType, Counts>,
 
-    pub has_attribute_counts: DoubleHashMap<ObjectType, AttributeType, u64>,
-    pub attribute_owner_counts: DoubleHashMap<AttributeType, ObjectType, u64>,
-    pub role_player_counts: DoubleHashMap<ObjectType, RoleType, u64>,
-    pub relation_role_counts: DoubleHashMap<RelationType, RoleType, u64>,
-    pub relation_role_player_counts: TripleHashMap<RelationType, RoleType, ObjectType, u64>,
-    pub player_role_relation_counts: TripleHashMap<ObjectType, RoleType, RelationType, u64>,
+    pub has_attribute_counts: DoubleHashMap<ObjectType, AttributeType, Counts>,
+    pub attribute_owner_counts: DoubleHashMap<AttributeType, ObjectType, Counts>,
+    pub role_player_counts: DoubleHashMap<ObjectType, RoleType, Counts>,
+    pub relation_role_counts: DoubleHashMap<RelationType, RoleType, Counts>,
+    pub relation_role_player_counts: TripleHashMap<RelationType, RoleType, ObjectType, Counts>,
+    pub player_role_relation_counts: TripleHashMap<ObjectType, RoleType, RelationType, Counts>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
-    pub links_index_counts: DoubleHashMap<ObjectType, ObjectType, u64>,
+    pub links_index_counts: DoubleHashMap<ObjectType, ObjectType, Counts>,
     // future: attribute value distributions, attribute value ownership distributions, etc.
 }
 
 impl Statistics {
-    const ENCODING_VERSION: StatisticsEncodingVersion = StatisticsEncodingVersion::V0;
+    const ENCODING_VERSION: StatisticsEncodingVersion = StatisticsEncodingVersion::V1;
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
             encoding_version: Self::ENCODING_VERSION,
             sequence_number,
-            last_durable_write_total_count: 0,
+            last_durable_write_total_count: Counts::new(),
             last_durable_write_sequence_number: sequence_number,
-            total_count: 0,
-            total_thing_count: 0,
-            total_entity_count: 0,
-            total_relation_count: 0,
-            total_attribute_count: 0,
-            total_role_count: 0,
-            total_has_count: 0,
+            total_count: Counts::new(),
+            total_thing_count: Counts::new(),
+            total_entity_count: Counts::new(),
+            total_relation_count: Counts::new(),
+            total_attribute_count: Counts::new(),
+            total_role_count: Counts::new(),
+            total_has_count: Counts::new(),
             entity_counts: HashMap::new(),
             relation_counts: HashMap::new(),
             attribute_counts: HashMap::new(),
@@ -193,59 +235,58 @@ impl Statistics {
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<Self, Box<ConceptReadError>> {
-        let mut entity_counts = HashMap::new();
+        let mut entity_counts = HashMap::<_, Counts>::new();
         for entity in thing_manager.get_entities(snapshot, storage_counters.clone()) {
-            *entity_counts.entry(entity?.type_()).or_default() += 1;
+            entity_counts.entry(entity?.type_()).or_default().visible += 1;
         }
 
-        let mut relation_counts = HashMap::new();
+        let mut relation_counts = HashMap::<_, Counts>::new();
         for relation in thing_manager.get_relations(snapshot, storage_counters.clone()) {
-            *relation_counts.entry(relation?.type_()).or_default() += 1;
+            relation_counts.entry(relation?.type_()).or_default().visible += 1;
         }
 
-        let mut attribute_counts = HashMap::new();
+        let mut attribute_counts = HashMap::<_, Counts>::new();
         for attribute in thing_manager.get_attributes(snapshot, storage_counters.clone())? {
-            *attribute_counts.entry(attribute?.type_()).or_default() += 1;
+            attribute_counts.entry(attribute?.type_()).or_default().visible += 1;
         }
 
-        let mut has_attribute_counts = DoubleHashMap::new();
-        let mut attribute_owner_counts = DoubleHashMap::new();
+        let mut has_attribute_counts = DoubleHashMap::<_, _, Counts>::new();
+        let mut attribute_owner_counts = DoubleHashMap::<_, _, Counts>::new();
         for has in thing_manager.get_has(snapshot, storage_counters.clone()) {
             let (has, _) = has?;
             let owner = has.owner().type_();
             let attribute = has.attribute().type_();
-            *has_attribute_counts.double_entry(owner, attribute).or_default() += 1;
-            *attribute_owner_counts.double_entry(attribute, owner).or_default() += 1;
+            has_attribute_counts.double_entry(owner, attribute).or_default().visible += 1;
+            attribute_owner_counts.double_entry(attribute, owner).or_default().visible += 1;
         }
 
-        let mut role_counts = HashMap::new();
-        let mut role_player_counts = DoubleHashMap::new();
-        let mut relation_role_counts = DoubleHashMap::new();
-        let mut relation_role_player_counts = TripleHashMap::new();
-        let mut player_role_relation_counts = TripleHashMap::new();
+        let mut role_counts = HashMap::<_, Counts>::new();
+        let mut role_player_counts = DoubleHashMap::<_, _, Counts>::new();
+        let mut relation_role_counts = DoubleHashMap::<_, _, Counts>::new();
+        let mut relation_role_player_counts = TripleHashMap::<_, _, _, Counts>::new();
+        let mut player_role_relation_counts = TripleHashMap::<_, _, _, Counts>::new();
         for links in thing_manager.get_links(snapshot, storage_counters.clone()) {
             let (links, _) = links?;
             let relation = links.relation().type_();
             let role = links.role_type();
             let player = links.player().type_();
-            *role_counts.entry(role).or_default() += 1;
-            *role_player_counts.double_entry(player, role).or_default() += 1;
-            *relation_role_counts.double_entry(relation, role).or_default() += 1;
-            *relation_role_player_counts.triple_entry(relation, role, player).or_default() += 1;
-            *player_role_relation_counts.triple_entry(player, role, relation).or_default() += 1;
+            role_counts.entry(role).or_default().visible += 1;
+            role_player_counts.double_entry(player, role).or_default().visible += 1;
+            relation_role_counts.double_entry(relation, role).or_default().visible += 1;
+            relation_role_player_counts.triple_entry(relation, role, player).or_default().visible += 1;
+            player_role_relation_counts.triple_entry(player, role, relation).or_default().visible += 1;
         }
 
-        let mut links_index_counts = DoubleHashMap::new();
+        let mut links_index_counts = DoubleHashMap::<_, _, Counts>::new();
         for links_index in thing_manager.get_indexed_relations(snapshot, storage_counters) {
             let ((player1, player2, ..), _) = links_index?;
-            *links_index_counts.double_entry(player1.type_(), player2.type_()).or_default() += 1;
+            links_index_counts.double_entry(player1.type_(), player2.type_()).or_default().visible += 1;
         }
 
         let total_entity_count = entity_counts.values().sum();
         let total_relation_count = relation_counts.values().sum();
         let total_attribute_count = attribute_counts.values().sum();
         let total_thing_count = total_entity_count + total_relation_count + total_attribute_count;
-
         let total_role_count = role_counts.values().sum();
         let total_has_count = has_attribute_counts.values().flat_map(|x| x.values()).sum();
 
@@ -256,7 +297,7 @@ impl Statistics {
             encoding_version: Self::ENCODING_VERSION,
             sequence_number: snapshot.open_sequence_number(),
             last_durable_write_sequence_number: SequenceNumber::MIN,
-            last_durable_write_total_count: 0,
+            last_durable_write_total_count: Counts::new(),
             total_count,
             total_thing_count,
             total_entity_count,
@@ -341,7 +382,7 @@ impl Statistics {
                             storage,
                         )
                         .map_err(|source| StatisticsError::DataRead { source })?;
-                    Self::saturating_add(&mut self.total_count, delta, "total_count");
+                    Self::saturating_add(&mut self.total_count.visible, delta, "total_count");
                     self.sequence_number = seq;
                 }
             }
@@ -362,7 +403,7 @@ impl Statistics {
 
     fn may_durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), DurabilityClientError> {
         let count_change_since_last_durable_write =
-            u64::abs_diff(self.total_count, self.last_durable_write_total_count);
+            u64::abs_diff(self.total_count.visible, self.last_durable_write_total_count.visible);
         let sequence_numbers_since_last_durable_write = self.sequence_number - self.last_durable_write_sequence_number;
 
         if count_change_since_last_durable_write > STATISTICS_DURABLE_WRITE_CHANGE_COUNT
@@ -480,7 +521,7 @@ impl Statistics {
             self.relation_role_counts.retain(|_, map| !map.is_empty());
         }
 
-        Self::saturating_add(&mut self.total_count, total_delta, "total_count");
+        Self::saturating_add(&mut self.total_count.visible, total_delta, "total_count");
 
         self.sequence_number = *commit_sequence_number;
 
@@ -659,31 +700,31 @@ impl Statistics {
 
     fn update_entities(&mut self, entity_type: EntityType, delta: i64) {
         let count = self.entity_counts.entry(entity_type).or_default();
-        Self::saturating_add(count, delta, "entity");
-        Self::saturating_add(&mut self.total_entity_count, delta, "total_entity");
-        Self::saturating_add(&mut self.total_thing_count, delta, "total_thing");
+        Self::saturating_add(&mut count.visible, delta, "entity");
+        Self::saturating_add(&mut self.total_entity_count.visible, delta, "total_entity");
+        Self::saturating_add(&mut self.total_thing_count.visible, delta, "total_thing");
     }
 
     fn update_relations(&mut self, relation_type: RelationType, delta: i64) {
         let count = self.relation_counts.entry(relation_type).or_default();
-        Self::saturating_add(count, delta, "relation");
-        Self::saturating_add(&mut self.total_relation_count, delta, "total_relation");
-        Self::saturating_add(&mut self.total_thing_count, delta, "total_thing");
+        Self::saturating_add(&mut count.visible, delta, "relation");
+        Self::saturating_add(&mut self.total_relation_count.visible, delta, "total_relation");
+        Self::saturating_add(&mut self.total_thing_count.visible, delta, "total_thing");
     }
 
     fn update_attributes(&mut self, attribute_type: AttributeType, delta: i64) {
         let count = self.attribute_counts.entry(attribute_type).or_default();
-        Self::saturating_add(count, delta, "attribute");
-        Self::saturating_add(&mut self.total_attribute_count, delta, "total_attribute");
-        Self::saturating_add(&mut self.total_thing_count, delta, "total_thing");
+        Self::saturating_add(&mut count.visible, delta, "attribute");
+        Self::saturating_add(&mut self.total_attribute_count.visible, delta, "total_attribute");
+        Self::saturating_add(&mut self.total_thing_count.visible, delta, "total_thing");
     }
 
     fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
         let attribute_count = self.has_attribute_counts.double_entry(owner_type, attribute_type).or_default();
-        Self::saturating_add(attribute_count, delta, "has_attribute");
+        Self::saturating_add(&mut attribute_count.visible, delta, "has_attribute");
         let owner_count = self.attribute_owner_counts.double_entry(attribute_type, owner_type).or_default();
-        Self::saturating_add(owner_count, delta, "attribute_owner");
-        Self::saturating_add(&mut self.total_has_count, delta, "total_has");
+        Self::saturating_add(&mut owner_count.visible, delta, "attribute_owner");
+        Self::saturating_add(&mut self.total_has_count.visible, delta, "total_has");
     }
 
     fn update_role_player(
@@ -694,23 +735,23 @@ impl Statistics {
         delta: i64,
     ) {
         let role_count = self.role_counts.entry(role_type).or_default();
-        Self::saturating_add(role_count, delta, "role");
-        Self::saturating_add(&mut self.total_role_count, delta, "total_role");
+        Self::saturating_add(&mut role_count.visible, delta, "role");
+        Self::saturating_add(&mut self.total_role_count.visible, delta, "total_role");
         let role_player_count = self.role_player_counts.double_entry(player_type, role_type).or_default();
-        Self::saturating_add(role_player_count, delta, "role_player");
+        Self::saturating_add(&mut role_player_count.visible, delta, "role_player");
         let relation_role_count = self.relation_role_counts.double_entry(relation_type, role_type).or_default();
-        Self::saturating_add(relation_role_count, delta, "relation_role");
+        Self::saturating_add(&mut relation_role_count.visible, delta, "relation_role");
         let relation_role_player_count =
             self.relation_role_player_counts.triple_entry(relation_type, role_type, player_type).or_default();
-        Self::saturating_add(relation_role_player_count, delta, "relation_role_player");
+        Self::saturating_add(&mut relation_role_player_count.visible, delta, "relation_role_player");
         let player_role_relation_count =
             self.player_role_relation_counts.triple_entry(player_type, role_type, relation_type).or_default();
-        Self::saturating_add(player_role_relation_count, delta, "player_role_relation");
+        Self::saturating_add(&mut player_role_relation_count.visible, delta, "player_role_relation");
     }
 
     fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
         let player_1_to_2_index_count = self.links_index_counts.double_entry(player_1_type, player_2_type).or_default();
-        Self::saturating_add(player_1_to_2_index_count, delta, "player_1_to_2_index");
+        Self::saturating_add(&mut player_1_to_2_index_count.visible, delta, "player_1_to_2_index");
     }
 
     /// Compute the largest fractional difference of any individual statistic
@@ -729,26 +770,35 @@ impl Statistics {
     }
 
     // compute largest abs(value_1 - value_2) / min(value_1, value_2)
-    fn largest_difference_frac_maps<T: Hash + Eq>(first: &HashMap<T, u64>, second: &HashMap<T, u64>) -> f64 {
+    fn largest_difference_frac_maps<T: Hash + Eq>(first: &HashMap<T, Counts>, second: &HashMap<T, Counts>) -> f64 {
         let mut largest = 0.0;
         for (key, first_value) in first {
-            let second_value = second.get(key).copied().unwrap_or(0);
-            if *first_value == 0 && second_value == 0 {
+            let second_value = second.get(key).copied().unwrap_or(Counts::new());
+
+            let first_value = first_value.visible;
+            let second_value = second_value.visible;
+
+            if first_value == 0 && second_value == 0 {
                 continue;
-            } else if second_value == 0 || *first_value == 0 {
+            } else if second_value == 0 || first_value == 0 {
                 return f64::MAX;
             }
-            let difference = (*first_value as f64 - second_value as f64).abs();
-            let frac = difference / (min(*first_value, second_value) as f64);
+            let difference = (first_value as f64 - second_value as f64).abs();
+            let frac = difference / (min(first_value, second_value) as f64);
             if frac > largest {
                 largest = frac;
             }
         }
+
         for (key, second_value) in second {
-            let first_value = first.get(key).copied().unwrap_or(0);
-            if first_value == 0 && *second_value == 0 {
+            let first_value = first.get(key).copied().unwrap_or(Counts::new());
+
+            let first_value = first_value.visible;
+            let second_value = second_value.visible;
+
+            if first_value == 0 && second_value == 0 {
                 continue;
-            } else if *second_value == 0 || first_value == 0 {
+            } else if second_value == 0 || first_value == 0 {
                 return f64::MAX;
             }
             // if both maps have a non-zero value, the first loop must have handled it
@@ -757,8 +807,8 @@ impl Statistics {
     }
 
     fn largest_difference_frac_map_maps<T: Hash + Eq, U: Hash + Eq>(
-        first: &HashMap<T, HashMap<U, u64>>,
-        second: &HashMap<T, HashMap<U, u64>>,
+        first: &DoubleHashMap<T, U, Counts>,
+        second: &DoubleHashMap<T, U, Counts>,
     ) -> f64 {
         let mut largest = 0.0;
         let empty_map = HashMap::new();
@@ -788,13 +838,13 @@ impl Statistics {
 
     pub fn reset(&mut self, sequence_number: SequenceNumber) {
         self.sequence_number = sequence_number;
-        self.total_count = 0;
-        self.total_thing_count = 0;
-        self.total_entity_count = 0;
-        self.total_relation_count = 0;
-        self.total_attribute_count = 0;
-        self.total_role_count = 0;
-        self.total_has_count = 0;
+        self.total_count = Counts::new();
+        self.total_thing_count = Counts::new();
+        self.total_entity_count = Counts::new();
+        self.total_relation_count = Counts::new();
+        self.total_attribute_count = Counts::new();
+        self.total_role_count = Counts::new();
+        self.total_has_count = Counts::new();
         self.entity_counts.clear();
         self.relation_counts.clear();
         self.attribute_counts.clear();

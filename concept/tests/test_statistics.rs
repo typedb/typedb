@@ -9,7 +9,12 @@
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use concept::{
-    thing::{ThingAPI, object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
+    thing::{
+        ThingAPI,
+        object::ObjectAPI,
+        statistics::{Counts, Statistics},
+        thing_manager::ThingManager,
+    },
     type_::{
         Ordering, OwnerAPI, PlayerAPI,
         annotation::{AnnotationCardinality, AnnotationIndependent},
@@ -25,19 +30,19 @@ use storage::{
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-fn retain_nonzero_1d<K: Eq + Hash>(map: &mut HashMap<K, u64>) {
-    map.retain(|_, v| *v > 0);
+fn retain_nonzero_1d<K: Eq + Hash>(map: &mut HashMap<K, Counts>) {
+    map.retain(|_, v| !v.is_zero());
 }
 
-fn retain_nonzero_2d<K1: Eq + Hash, K2: Eq + Hash>(map: &mut HashMap<K1, HashMap<K2, u64>>) {
+fn retain_nonzero_2d<K1: Eq + Hash, K2: Eq + Hash>(map: &mut HashMap<K1, HashMap<K2, Counts>>) {
     for inner in map.values_mut() {
-        inner.retain(|_, v| *v > 0);
+        inner.retain(|_, v| !v.is_zero());
     }
     map.retain(|_, inner| !inner.is_empty());
 }
 
 fn retain_nonzero_3d<K1: Eq + Hash, K2: Eq + Hash, K3: Eq + Hash>(
-    map: &mut HashMap<K1, HashMap<K2, HashMap<K3, u64>>>,
+    map: &mut HashMap<K1, HashMap<K2, HashMap<K3, Counts>>>,
 ) {
     for middle in map.values_mut() {
         retain_nonzero_2d(middle);
@@ -157,9 +162,9 @@ fn create_entity() {
     let commit = snapshot.commit(&mut CommitProfile::disabled()).unwrap().unwrap();
 
     let mut manually_tracked = Statistics::new(commit.sequence_number);
-    manually_tracked.total_thing_count += 1;
-    manually_tracked.total_entity_count += 1;
-    *manually_tracked.entity_counts.entry(person_type).or_default() += 1;
+    manually_tracked.total_thing_count.visible += 1;
+    manually_tracked.total_entity_count.visible += 1;
+    manually_tracked.entity_counts.entry(person_type).or_default().visible += 1;
 
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();

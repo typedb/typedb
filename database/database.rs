@@ -655,11 +655,11 @@ impl Database<WALClient> {
         DatabaseMetricsSnapshot {
             schema: SchemaLoadMetrics { type_count: schema.type_cache.get_types_count() },
             data: DataLoadMetrics {
-                entity_count: schema.thing_statistics.total_entity_count,
-                relation_count: schema.thing_statistics.total_relation_count,
-                attribute_count: schema.thing_statistics.total_attribute_count,
-                has_count: schema.thing_statistics.total_has_count,
-                role_count: schema.thing_statistics.total_role_count,
+                entity_count: schema.thing_statistics.total_entity_count.visible,
+                relation_count: schema.thing_statistics.total_relation_count.visible,
+                attribute_count: schema.thing_statistics.total_attribute_count.visible,
+                has_count: schema.thing_statistics.total_has_count.visible,
+                role_count: schema.thing_statistics.total_role_count.visible,
                 storage_in_bytes: self.storage.estimate_size_in_bytes().expect("Expected storage size in bytes"),
                 storage_key_count: self.storage.estimate_key_count().expect("Expected storage key count"),
             },
