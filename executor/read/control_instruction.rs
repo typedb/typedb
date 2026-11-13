@@ -5,7 +5,6 @@
  */
 use std::sync::Arc;
 
-use compiler::VariablePosition;
 use resource::profile::StepProfile;
 
 use crate::{
@@ -123,14 +122,6 @@ pub(super) struct ReshapeForReturn {
 #[derive(Debug)]
 pub(super) struct Yield {
     pub(super) batch: FixedBatch,
-}
-
-impl ReshapeForReturn {
-    pub(crate) fn positions_to_mapping(
-        positions: &[VariablePosition],
-    ) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
-        positions.iter().enumerate().map(|(dst, &src)| (src, VariablePosition::new(dst as u32)))
-    }
 }
 
 macro_rules! impl_from_for_enum {

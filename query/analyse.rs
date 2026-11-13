@@ -29,7 +29,6 @@ use concept::{
     type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType, type_manager::TypeManager},
 };
 use encoding::value::value_type::ValueType;
-use error::todo_must_implement;
 use ir::{
     pattern::{
         ParameterID, Pattern, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,

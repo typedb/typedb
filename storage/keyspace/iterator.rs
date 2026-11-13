@@ -49,7 +49,7 @@ impl KeyspaceRangeIterator {
         } else {
             iterpool.get_iterator_unprefixed(keyspace)
         };
-        let mut iterator = DBIterator::new_from(raw_iterator, start_prefix.as_ref(), storage_counters);
+        let iterator = DBIterator::new_from(raw_iterator, start_prefix.as_ref(), storage_counters);
 
         let continue_condition = match range.end() {
             RangeEnd::WithinStartAsPrefix => {

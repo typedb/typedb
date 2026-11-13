@@ -6,7 +6,7 @@
 
 use std::{
     cmp::min,
-    collections::{BTreeSet, HashMap},
+    collections::HashMap,
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     iter, mem,
@@ -22,7 +22,7 @@ use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
         AssignedVariable, BindingMode, BindingOptionality, IrID, ParameterID, PatternVariableMode,
-        PatternVariableModes, ReferenceOptionality, ScopeId, ValueType, Vertex,
+        PatternVariableModes, ReferenceOptionality, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
@@ -35,7 +35,6 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
-    scope: ScopeId,
     constraints: Vec<Constraint<Variable>>,
 }
 
@@ -47,12 +46,8 @@ impl Deref for Constraints {
 }
 
 impl Constraints {
-    pub(crate) fn new(scope: ScopeId) -> Self {
-        Self { scope, constraints: Vec::new() }
-    }
-
-    pub(crate) fn scope(&self) -> ScopeId {
-        self.scope
+    pub(crate) fn new() -> Self {
+        Self { constraints: Vec::new() }
     }
 
     pub fn constraints(&self) -> &[Constraint<Variable>] {
@@ -408,7 +403,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn add_builtin_function_binding(
         &mut self,
-        mut assigned: Vec<AssignedVariable>,
+        assigned: Vec<AssignedVariable>,
         builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
@@ -455,7 +450,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_function_binding(
         &mut self,
-        mut assigned: Vec<AssignedVariable>,
+        assigned: Vec<AssignedVariable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str,

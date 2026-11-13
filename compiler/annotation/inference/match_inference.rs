@@ -301,7 +301,7 @@ pub(crate) struct TypeInferenceEdge<'this> {
 impl<'this> TypeInferenceEdge<'this> {
     // Construction
 
-    pub(crate) fn build(
+    pub(super) fn build(
         constraint: &'this Constraint<Variable>,
         left: Vertex<Variable>,
         right: Vertex<Variable>,

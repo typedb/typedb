@@ -8,7 +8,7 @@ use std::{
     collections::{Bound, HashMap},
     fmt,
     fmt::Formatter,
-    hash::{Hash, Hasher},
+    hash::Hash,
     sync::Arc,
 };
 
@@ -33,10 +33,7 @@ use encoding::{
 };
 use error::unimplemented_feature;
 use ir::{
-    pattern::{
-        IrID,
-        constraint::{Comparator, IsaKind, SubKind},
-    },
+    pattern::constraint::{Comparator, IsaKind, SubKind},
     pipeline::ParameterRegistry,
 };
 use resource::profile::StorageCounters;

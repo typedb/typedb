@@ -11,8 +11,7 @@ use std::{
 
 use answer::variable::Variable;
 use error::typedb_error;
-use ir::pattern::{Pattern, Vertex, conjunction::Conjunction, constraint::Comparator};
-use itertools::Itertools;
+use ir::pattern::{conjunction::Conjunction, constraint::Comparator};
 use primitive::format_joined::FormatJoined;
 use typeql::common::Span;
 
@@ -22,10 +21,7 @@ use crate::{
     executable::{
         fetch::executable::FetchCompilationError,
         insert::TypeSource,
-        match_::{
-            instructions::{CheckInstruction, CheckVertex},
-            planner::ConjunctionCompilationError,
-        },
+        match_::{instructions::CheckInstruction, planner::ConjunctionCompilationError},
     },
 };
 
