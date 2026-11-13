@@ -917,15 +917,6 @@ impl StringAttributeID {
         self.bytes[Self::TAIL_INDEX] & !Self::TAIL_IS_HASH_MASK
     }
 
-    pub fn get_inline_string_bytes(&self) -> StringBytes<16> {
-        debug_assert!(self.is_inline());
-        let mut bytes = ByteArray::zeros(Self::LENGTH);
-        let inline_string_length = self.get_inline_length();
-        bytes[0..inline_string_length as usize].copy_from_slice(&self.bytes[0..inline_string_length as usize]);
-        bytes.truncate(inline_string_length as usize);
-        StringBytes::new(Bytes::Array(bytes))
-    }
-
     pub fn get_inline_length(&self) -> u8 {
         debug_assert!(self.is_inline());
         self.bytes[Self::TAIL_INDEX]
