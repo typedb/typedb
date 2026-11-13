@@ -18,7 +18,6 @@ use storage::{
 use crate::{EncodingKeyspace, graph::common::FoundOrAbsent};
 
 pub(crate) const HASH_DISAMBIGUATOR_LENGTH: usize = 1;
-// the disambiguator is allocated and passed around as a single u8
 const _: () = assert!(HASH_DISAMBIGUATOR_LENGTH == size_of::<u8>());
 
 pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
