@@ -1595,18 +1595,12 @@ impl ConjunctionPlan<'_> {
             PlannerVertex::Unsatisfiable(_) => {
                 // The conjunction yields no rows, but every selected variable must still own a row position
                 // for later stages to compile with
-                let unproduced_selected_variables = conjunction_builder
-                    .selected_variables
-                    .iter()
-                    .filter(|variable| {
-                        self.graph.variable_index.contains_key(variable)
-                            && !conjunction_builder.position_mapping().contains_key(variable)
-                    })
-                    .copied()
-                    .sorted()
-                    .collect_vec();
-                for variable in unproduced_selected_variables {
-                    conjunction_builder.register_output(variable);
+                for &variable in self.graph.variable_index.keys() {
+                    if conjunction_builder.selected_variables.contains(&variable)
+                        && !conjunction_builder.position_mapping().contains_key(&variable)
+                    {
+                        conjunction_builder.register_output(variable);
+                    }
                 }
                 conjunction_builder.push_check(CheckInstruction::Unsatisfiable)
             }
