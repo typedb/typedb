@@ -753,7 +753,6 @@ impl StringAttributeID {
     const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH_ID.length();
 
-    // the last byte holds the inline string length, or the hash flag and disambiguator
     const TAIL_LENGTH: usize = AttributeID::LENGTH_HASH_DISAMBIGUATOR;
 
     pub const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - Self::TAIL_LENGTH;

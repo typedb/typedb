@@ -294,7 +294,6 @@ impl StructIndexEntry<'_> {
     const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_HASHID_LENGTH: usize = 9;
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
-    // the last byte holds the inline string length, or the hash flag and disambiguator
     const STRING_FIELD_INLINE_LENGTH: usize = Self::STRING_FIELD_LENGTH - HASH_DISAMBIGUATOR_LENGTH;
 
     fn encode_string_into<const INLINE_SIZE: usize>(
