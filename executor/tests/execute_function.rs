@@ -850,3 +850,31 @@ fn distinct_after_disjunction() {
     let (rows, _positions) = run_read_query(&context, &query).unwrap();
     assert_eq!(rows.len(), 1);
 }
+
+#[test]
+fn disjunction_branch_with_duplicate_answers() {
+    // Regression against #8065
+    let custom_schema = r#"define
+        attribute name value string;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+        relation edge, relates start, relates end_;
+    "#;
+    let context = setup_common(custom_schema);
+    let data = r#"insert
+        $x isa node, has name "x";
+        $s1 isa node; $s2 isa node; $t1 isa node; $t2 isa node;
+        edge (start: $x, end_: $s1); edge (start: $x, end_: $s2);
+        edge (start: $s1, end_: $t1); edge (start: $s2, end_: $t1); edge (start: $s2, end_: $t2);
+    "#;
+    run_write_query(&context, data).unwrap();
+
+    // The second branch finds t1 through both s1 and s2, before it finds t2
+    let query = r#"
+        match
+            $x isa node, has name "x";
+            { edge (start: $x, end_: $t); } or { edge (start: $x, end_: $s); edge (start: $s, end_: $t); };
+        limit 4;
+    "#;
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 4);
+}

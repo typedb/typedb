@@ -245,18 +245,20 @@ impl DistinctMapper {
 
 impl StreamModifierResultMapperTrait for DistinctMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
-        let mut input_batch = subquery_result?;
+        let input_batch = subquery_result?;
+        let mut output_batch = FixedBatch::new(input_batch.width());
         for i in 0..input_batch.len() {
             // Don't let multiplicity & provenance come into the picture:
             let without_metadata =
                 MaybeOwnedRow::new_borrowed(input_batch.get_row(i).row(), &1, &Provenance::INITIAL).into_owned();
-            if !self.collector.insert(without_metadata) {
-                input_batch.get_row_mut(i).set_multiplicity(0);
-            } else {
-                input_batch.get_row_mut(i).set_multiplicity(1);
+            if self.collector.insert(without_metadata) {
+                output_batch.append(|mut output_row| {
+                    output_row.copy_from_row(input_batch.get_row(i));
+                    output_row.set_multiplicity(1);
+                });
             }
         }
-        Some(input_batch)
+        Some(output_batch)
     }
 }
 
