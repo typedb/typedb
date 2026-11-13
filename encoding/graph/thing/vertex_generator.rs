@@ -460,13 +460,12 @@ impl ThingVertexGenerator {
         StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
 
-    // also returns whether the vertex existed before, as found by the bucket scan
     pub fn create_attribute_struct<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         value: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-    ) -> Result<(AttributeVertex, KnownToExist), Arc<SnapshotIteratorError>>
+    ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
     where
         Snapshot: WritableSnapshot,
     {
@@ -483,7 +482,7 @@ impl ThingVertexGenerator {
                             KnownToExist::Exists,
                         );
                     } // else in buffer so don't need to re-put
-                    (vertex, KnownToExist::Exists)
+                    vertex
                 }
                 FoundOrAbsent::Absent { item: hashed_id } => {
                     Self::lock_hash_bucket(type_id, &hashed_id.get_hash_hash(), snapshot);
@@ -491,11 +490,11 @@ impl ThingVertexGenerator {
                     // must be a brand new attribute value if commit succeeds: we have exclusive lock on the bucket
                     // and did not discover an existing matching value
                     snapshot.put_val_with_known_to_exist(
-                        vertex.clone().into_storage_key().into_owned_array(),
+                        vertex.into_storage_key().into_owned_array(),
                         ByteArray::from(value.bytes()),
                         KnownToExist::NonExistent,
                     );
-                    (vertex, KnownToExist::NonExistent)
+                    vertex
                 }
             };
         Ok(hashed_vertex)
