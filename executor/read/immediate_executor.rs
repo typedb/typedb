@@ -231,6 +231,7 @@ impl IntersectionExecutor {
         self.input = None;
         self.input_exhausted = false;
         self.iterators.clear();
+        self.cartesian_iterator.clear();
     }
 
     fn prepare(
@@ -591,6 +592,7 @@ impl CartesianIterator {
     }
 
     fn clear(&mut self) {
+        self.is_active = false;
         self.iterators.iter_mut().for_each(|iter| drop(iter.take()));
     }
 
