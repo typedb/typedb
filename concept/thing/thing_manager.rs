@@ -2382,18 +2382,15 @@ impl ThingManager {
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        // a link inserted and deleted in this transaction leaves no write behind, so the relations emptied by
-        // our own deletes are tracked here rather than found through deleted links
-        let mut relations_played_in = Vec::new();
-
+        let mut relations_modified = Vec::new();
         if !Snapshot::IMMUTABLE_SCHEMA {
             let relations_without_players =
                 self.get_relations_made_dependent_without_players(snapshot, storage_counters.clone())?;
             for relation in relations_without_players {
-                self.delete_relation_if_without_players(
+                self.delete_relation_without_players(
                     snapshot,
                     relation,
-                    &mut relations_played_in,
+                    &mut relations_modified,
                     storage_counters.clone(),
                 )?;
             }
@@ -2410,7 +2407,7 @@ impl ThingManager {
             self.delete_relation_if_without_players(
                 snapshot,
                 relation,
-                &mut relations_played_in,
+                &mut relations_modified,
                 storage_counters.clone(),
             )?;
         }
@@ -2424,16 +2421,16 @@ impl ThingManager {
             self.delete_relation_if_without_players(
                 snapshot,
                 Relation::new(relation_vertex),
-                &mut relations_played_in,
+                &mut relations_modified,
                 storage_counters.clone(),
             )?;
         }
 
-        while let Some(relation) = relations_played_in.pop() {
+        while let Some(relation) = relations_modified.pop() {
             self.delete_relation_if_without_players(
                 snapshot,
                 relation,
-                &mut relations_played_in,
+                &mut relations_modified,
                 storage_counters.clone(),
             )?;
         }
@@ -2445,7 +2442,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
-        out_relations_played_in: &mut Vec<Relation>,
+        relations_modified: &mut Vec<Relation>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let status = relation.get_status(snapshot, self, storage_counters.clone())?;
@@ -2455,9 +2452,19 @@ impl ThingManager {
         {
             return Ok(());
         }
+        self.delete_relation_without_players(snapshot, relation, relations_modified, storage_counters)
+    }
+
+    fn delete_relation_without_players(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        relations_modified: &mut Vec<Relation>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
         for relation_role in relation.get_relations_roles(snapshot, self, storage_counters.clone()) {
             let (relation_played_in, _, _) = relation_role?;
-            out_relations_played_in.push(relation_played_in);
+            relations_modified.push(relation_played_in);
         }
         relation.delete(snapshot, self, storage_counters)
     }
@@ -2468,8 +2475,6 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Relation>, Box<ConceptReadError>> {
         let relation_types = self.get_relation_types_no_longer_independent(snapshot, storage_counters.clone())?;
-
-        // types are scanned independently, so each worker keeps taking the next type until none are left
         let next_relation_type = AtomicUsize::new(0);
         let find_relations_without_players = || -> Result<Vec<Relation>, Box<ConceptReadError>> {
             let mut relations_without_players = Vec::new();
@@ -2600,8 +2605,6 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
         let attribute_types = self.get_attribute_types_no_longer_independent(snapshot, storage_counters.clone())?;
-
-        // types are scanned independently, so each worker keeps taking the next type until none are left
         let next_attribute_type = AtomicUsize::new(0);
         let find_attributes_without_owners = || -> Result<Vec<Attribute>, Box<ConceptReadError>> {
             let mut attributes_without_owners = Vec::new();
