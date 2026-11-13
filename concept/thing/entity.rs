@@ -8,7 +8,7 @@ use std::fmt;
 
 use bytes::Bytes;
 use encoding::{
-    AsBytes, Keyable, Prefixed,
+    AsBytes, Prefixed,
     graph::{
         Typed,
         thing::{ThingVertex, vertex_object::ObjectVertex},

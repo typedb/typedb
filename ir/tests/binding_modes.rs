@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 use ir::{
     RepresentationError,
-    pattern::{Pattern, conjunction::Conjunction, variable_category::VariableOptionality},
+    pattern::{Pattern, variable_category::VariableOptionality},
     pipeline::{
         ParameterRegistry, VariableRegistry,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
@@ -628,7 +628,6 @@ fn optionally_bound_in_one_branch() {
             }
             other => {
                 panic!("unexpected error: {other:?}");
-                false
             }
         });
     }
@@ -703,7 +702,6 @@ fn optionally_assigned_is_input_to_sibling_try() {
             }
             other => {
                 panic!("unexpected error: {other:?}");
-                false
             }
         });
     }

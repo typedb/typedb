@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, fmt, sync::Arc};
+use std::{cmp::Ordering, fmt, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{

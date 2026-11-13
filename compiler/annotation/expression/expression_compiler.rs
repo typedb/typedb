@@ -8,7 +8,7 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use answer::variable::Variable;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
-use error::{needs_update_when_feature_is_implemented, todo_must_implement, unimplemented_feature};
+use error::{needs_update_when_feature_is_implemented, unimplemented_feature};
 use ir::pattern::{
     ParameterID,
     expression::{
@@ -25,11 +25,6 @@ use crate::annotation::expression::{
         ExpressionInstruction, list_operations,
         load::{LoadConstant, LoadVariable, MayShortCircuitList, MayShortCircuitValue},
         op_codes::ExpressionOpCode,
-        operators,
-        unary::{
-            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
-            MathFloorDecimal, MathFloorDouble, MathLog10Double, MathLog10Integer, MathRoundDecimal, MathRoundDouble,
-        },
     },
     operation_resolution,
 };

@@ -819,8 +819,7 @@ fn test_disjunction_planning_traversal() {
     assert_eq!(rows.len(), 3);
 }
 
-// #[test]
-// FIXME
+#[test]
 fn test_disjunction_planning_nested_negations() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
@@ -941,8 +940,7 @@ fn test_mismatched_input_types() {
             select $x;
         ";
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
-        let conjunction_executable =
-            compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let conjunction_executable = compile_query(&*snapshot, &type_manager, &statistics, query);
         let executor = MatchExecutor::new(
             &conjunction_executable,
             &snapshot,
@@ -976,8 +974,7 @@ fn test_mismatched_input_types() {
             distinct;
         ";
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
-        let conjunction_executable =
-            compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let conjunction_executable = compile_query(&*snapshot, &type_manager, &statistics, query);
         let executor = MatchExecutor::new(
             &conjunction_executable,
             &snapshot,
@@ -1010,7 +1007,6 @@ fn test_mismatched_input_types() {
 fn compile_query(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    thing_manager: Arc<ThingManager>,
     statistics: &Statistics,
     query: &str,
 ) -> ConjunctionExecutable {

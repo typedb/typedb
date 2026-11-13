@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{collections::BTreeSet, fmt};
+use std::fmt;
 
 use bytes::{Bytes, byte_array::ByteArray};
 use concept::{

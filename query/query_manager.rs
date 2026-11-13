@@ -11,19 +11,12 @@ use std::{
 
 use compiler::{
     VariablePosition,
-    annotation::{
-        expression::compiled_expression::ExpressionValueType,
-        function::FunctionParameterAnnotation,
-        pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
-    },
-    executable::pipeline::{ExecutablePipeline, ExecutableStage, GivenExecutable, compile_pipeline_and_functions},
+    annotation::pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
+    executable::pipeline::{ExecutablePipeline, GivenExecutable, compile_pipeline_and_functions},
     query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
     transformation::transform::apply_transformations,
 };
-use concept::{
-    thing::{ThingAPI, thing_manager::ThingManager},
-    type_::type_manager::TypeManager,
-};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
     batch::Batch,
     pipeline::{
@@ -33,18 +26,14 @@ use executor::{
 };
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
-    LiteralParseError, RepresentationError,
-    pattern::{Vertex, variable_category::VariableOptionality},
+    pattern::variable_category::VariableOptionality,
     pipeline::{
         ParameterRegistry, VariableRegistry,
         fetch::FetchObject,
         function::Function,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     },
-    translation::{
-        literal::{FromTypeQLLiteral, translate_literal},
-        pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
-    },
+    translation::pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
 };
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
@@ -59,12 +48,10 @@ use tracing::{Level, event};
 use typeql::query::{QueryStructure, SchemaQuery};
 
 use crate::{
-    analyse::{
-        AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
-    },
+    analyse::{AnalysedQuery, QueryStructureAnnotations},
     define,
     error::QueryError,
-    given_rows::{GivenRowDecodeError, GivenRows},
+    given_rows::GivenRows,
     query_cache::{ParsedQuery, QueryCache},
     redefine, undefine,
 };
