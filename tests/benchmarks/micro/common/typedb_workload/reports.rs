@@ -257,7 +257,6 @@ impl CommitFocusedReport {
         self.print_summary_table();
         let total_rows = self.run_descriptor.total_rows();
         let rows_per_sec = total_rows as f64 / self.total_wall_time.0.as_secs_f64();
-        let n_q = self.run_descriptor.n_queries_per_tx as f64;
         println!("E2E took: {} ms for {} rows = {:.0} rows/s", self.total_wall_time, total_rows, rows_per_sec);
     }
 

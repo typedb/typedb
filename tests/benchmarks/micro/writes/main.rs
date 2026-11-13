@@ -7,11 +7,11 @@ use std::sync::Arc;
 
 use clap::Parser;
 use lib_benchmark::{
-    runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+    runner::{BenchmarkRunner, SimpleRunner},
     typedb_workload::{
         RunDescriptor,
         benchmark::{DbgAssertFn, PreloadDataFn},
-        run_configs::{CI_MINIMAL, PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
+        run_configs::{PARALLEL_MANY_LARGE, PARALLEL_MANY_SMALL, SERIAL_FEW_LARGE, SERIAL_MANY_SMALL},
     },
 };
 
@@ -21,7 +21,6 @@ mod insert_relations;
 
 const NO_INITIAL_DATA: Option<PreloadDataFn> = None;
 
-const CI_RUNS: [RunDescriptor; 1] = [CI_MINIMAL];
 const STANDARD_RUNS: [RunDescriptor; 4] =
     [SERIAL_MANY_SMALL, SERIAL_FEW_LARGE, PARALLEL_MANY_SMALL, PARALLEL_MANY_LARGE];
 const SELECTED_RUN_DESCRIPTORS: &'static [RunDescriptor] = &STANDARD_RUNS;

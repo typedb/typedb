@@ -29,7 +29,6 @@ use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
 };
-use futures::StreamExt;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
@@ -253,8 +252,6 @@ fn may_take_given_rows(context: &mut Context, with_given: params::WithGiven) -> 
 #[cucumber::when("set query given rows")]
 async fn set_query_given_rows(context: &mut Context, step: &Step) {
     let table = step.table.as_ref().expect("Expected table for given rows");
-    let length = table.rows.len();
-    let width = table.rows.first().unwrap().len() as u32;
     // First row is the variables
     let variables = table.rows[0].iter().map(|s| s.split(":").next().unwrap().to_owned()).collect();
     let rows = table.rows[1..].iter().map(|row| row.iter().map(parse_query_given_row_entry).collect()).collect();
