@@ -211,14 +211,14 @@ impl<'a> Value<'a> {
 
     pub fn estimated_write_bytes(&self) -> usize {
         match self {
-            Self::Boolean(_) => self.encode_boolean().bytes().len(),
-            Self::Integer(_) => self.encode_integer().bytes().len(),
-            Self::Double(_) => self.encode_double().bytes().len(),
-            Self::Decimal(_) => self.encode_decimal().bytes().len(),
-            Self::Date(_) => self.encode_date().bytes().len(),
-            Self::DateTime(_) => self.encode_date_time().bytes().len(),
-            Self::DateTimeTZ(_) => self.encode_date_time_tz().bytes().len(),
-            Self::Duration(_) => self.encode_duration().bytes().len(),
+            Self::Boolean(_)
+            | Self::Integer(_)
+            | Self::Double(_)
+            | Self::Decimal(_)
+            | Self::Date(_)
+            | Self::DateTime(_)
+            | Self::DateTimeTZ(_)
+            | Self::Duration(_) => size_of::<Self>(),
             Self::String(string) => string.len(),
             Self::Struct(struct_) => struct_.fields().values().map(Value::estimated_write_bytes).sum(),
         }
