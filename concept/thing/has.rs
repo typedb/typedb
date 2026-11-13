@@ -18,6 +18,8 @@ pub enum Has {
 }
 
 impl<'a> Has {
+    pub const ESTIMATED_WRITE_BYTES: usize = 2 * ThingEdgeHas::LENGTH_BOUND;
+
     pub(crate) fn new_from_edge(edge: ThingEdgeHas) -> Self {
         Self::Edge(edge)
     }

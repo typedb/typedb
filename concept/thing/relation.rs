@@ -513,6 +513,8 @@ pub enum Links {
 }
 
 impl Links {
+    pub const ESTIMATED_WRITE_BYTES: usize = 2 * ThingEdgeLinks::LENGTH + 2 * ThingEdgeIndexedRelation::LENGTH;
+
     pub fn role_type(&self) -> RoleType {
         match self {
             Links::Edge(edge) | Links::EdgeReverse(edge) => RoleType::build_from_type_id(edge.role_id()),

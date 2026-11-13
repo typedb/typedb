@@ -53,7 +53,7 @@ impl ThingEdgeHas {
     pub const LENGTH_PREFIX_FROM_OBJECT: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
-    const LENGTH_BOUND: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::MAX_LENGTH;
+    pub const LENGTH_BOUND: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::MAX_LENGTH;
 
     pub fn new(from: ObjectVertex, to: AttributeVertex) -> Self {
         Self { owner: from, attribute: to }
@@ -538,7 +538,7 @@ impl ThingEdgeLinks {
     const RANGE_FROM: Range<usize> = Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + ObjectVertex::LENGTH;
     const RANGE_TO: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + ObjectVertex::LENGTH;
     const RANGE_ROLE_ID: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + TypeID::LENGTH;
-    const LENGTH: usize = PrefixID::LENGTH + 2 * ObjectVertex::LENGTH + TypeID::LENGTH;
+    pub const LENGTH: usize = PrefixID::LENGTH + 2 * ObjectVertex::LENGTH + TypeID::LENGTH;
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_TO_TYPE: usize =
@@ -830,7 +830,7 @@ impl ThingEdgeIndexedRelation {
         Self::RANGE_RELATION_ID.end..Self::RANGE_RELATION_ID.end + TypeID::LENGTH;
     const RANGE_END_ROLE_TYPE_ID: Range<usize> =
         Self::RANGE_START_ROLE_TYPE_ID.end..Self::RANGE_START_ROLE_TYPE_ID.end + TypeID::LENGTH;
-    const LENGTH: usize = Self::RANGE_END_ROLE_TYPE_ID.end;
+    pub const LENGTH: usize = Self::RANGE_END_ROLE_TYPE_ID.end;
     const RANGE_START_TYPE: Range<usize> =
         Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX: usize = Self::INDEX_PREFIX + 1;

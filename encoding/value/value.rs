@@ -209,6 +209,21 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn estimated_write_bytes(&self) -> usize {
+        match self {
+            Self::Boolean(_)
+            | Self::Integer(_)
+            | Self::Double(_)
+            | Self::Decimal(_)
+            | Self::Date(_)
+            | Self::DateTime(_)
+            | Self::DateTimeTZ(_)
+            | Self::Duration(_) => size_of::<Self>(),
+            Self::String(string) => string.len(),
+            Self::Struct(struct_) => struct_.fields().values().map(Value::estimated_write_bytes).sum(),
+        }
+    }
+
     pub fn unwrap_string_ref(&self) -> &str {
         match self {
             Self::String(string) => string.as_ref(),

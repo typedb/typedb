@@ -59,6 +59,8 @@ pub enum Object {
 }
 
 impl Object {
+    pub const ESTIMATED_WRITE_BYTES: usize = ObjectVertex::LENGTH;
+
     pub fn unwrap_entity(self) -> Entity {
         match self {
             Self::Entity(entity) => entity,
