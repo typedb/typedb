@@ -49,77 +49,6 @@ macro_rules! collect_errors {
     };
 }
 
-macro_rules! capability_cardinality_validation {
-    (
-        $validate_func_name:ident,
-        $validate_existing_func_name:ident,
-        $capability_type:ident,
-        $object_instance:ident,
-        $get_interface_counts_func:ident,
-        $check_func:path
-    ) => {
-        fn $validate_existing_func_name<'a>(
-            snapshot: &impl ReadableSnapshot,
-            thing_manager: &ThingManager,
-            object: $object_instance,
-            cardinalities: impl Iterator<Item = &'a CardinalityDescription<$capability_type>>,
-            interface_types: &HashSet<<$capability_type as Capability>::InterfaceType>,
-            out_errors: &mut Vec<DataValidationError>,
-            storage_counters: StorageCounters,
-        ) -> Result<(), Box<ConceptReadError>> {
-            let key = object.vertex().into_storage_key();
-            if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_some() {
-                return Ok(());
-            }
-            let mut affected_cardinalities = cardinalities
-                .filter(|cardinality| {
-                    interface_types.iter().any(|interface_type| cardinality.relevant_types.contains(interface_type))
-                })
-                .peekable();
-            if affected_cardinalities.peek().is_none()
-                || !thing_manager.is_persisted_in_storage(snapshot, object.vertex(), storage_counters.clone())?
-            {
-                return Ok(());
-            }
-            let check =
-                Self::$validate_func_name(snapshot, thing_manager, object, affected_cardinalities, storage_counters);
-            collect_errors!(out_errors, check, |e: Box<_>| *e);
-            Ok(())
-        }
-
-        fn $validate_func_name<'a>(
-            snapshot: &impl ReadableSnapshot,
-            thing_manager: &ThingManager,
-            object: $object_instance,
-            cardinalities: impl Iterator<Item = &'a CardinalityDescription<$capability_type>>,
-            storage_counters: StorageCounters,
-        ) -> Result<(), Box<DataValidationError>> {
-            let mut cardinalities = cardinalities.peekable();
-            if cardinalities.peek().is_none() {
-                return Ok(());
-            }
-
-            let counts = object
-                .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-            for cardinality in cardinalities {
-                let count =
-                    cardinality.relevant_types.iter().filter_map(|interface_type| counts.get(interface_type)).sum();
-                $check_func(
-                    snapshot,
-                    thing_manager.type_manager(),
-                    &cardinality.constraint,
-                    object,
-                    cardinality.constraint.source().interface(),
-                    count,
-                )?;
-            }
-
-            Ok(())
-        }
-    };
-}
-
 /*
 The cardinalities validation flow is the following:
 1. Every type's cardinalities are described once per schema (see SchemaCardinalities). A cardinality counts the
@@ -235,15 +164,25 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         thing_manager.for_each_owner_with_modified_has(snapshot, |snapshot, modified| {
-            Self::validate_existing_object_has(
+            let affected_cardinalities = Self::get_affected_cardinalities(
                 snapshot,
                 thing_manager,
                 modified.owner,
                 cardinalities.owns.get(&modified.owner.type_()).into_iter().flatten(),
                 &modified.modified_attribute_types,
-                out_errors,
                 storage_counters.clone(),
-            )
+            )?;
+            if let Some(affected_cardinalities) = affected_cardinalities {
+                let check = Self::validate_owns_cardinality_constraints(
+                    snapshot,
+                    thing_manager,
+                    modified.owner,
+                    affected_cardinalities,
+                    storage_counters.clone(),
+                );
+                collect_errors!(out_errors, check, |e: Box<_>| *e);
+            }
+            Ok(())
         })
     }
 
@@ -255,15 +194,25 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         thing_manager.for_each_player_with_modified_links(snapshot, |snapshot, modified| {
-            Self::validate_existing_object_links(
+            let affected_cardinalities = Self::get_affected_cardinalities(
                 snapshot,
                 thing_manager,
                 modified.player,
                 cardinalities.plays.get(&modified.player.type_()).into_iter().flatten(),
                 &modified.modified_role_types,
-                out_errors,
                 storage_counters.clone(),
-            )
+            )?;
+            if let Some(affected_cardinalities) = affected_cardinalities {
+                let check = Self::validate_plays_cardinality_constraints(
+                    snapshot,
+                    thing_manager,
+                    modified.player,
+                    affected_cardinalities,
+                    storage_counters.clone(),
+                );
+                collect_errors!(out_errors, check, |e: Box<_>| *e);
+            }
+            Ok(())
         })
     }
 
@@ -275,15 +224,25 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         thing_manager.for_each_relation_with_modified_links(snapshot, |snapshot, modified| {
-            Self::validate_existing_relation_links(
+            let affected_cardinalities = Self::get_affected_cardinalities(
                 snapshot,
                 thing_manager,
                 modified.relation,
                 cardinalities.relates.get(&modified.relation.type_()).into_iter().flatten(),
                 &modified.modified_role_types,
-                out_errors,
                 storage_counters.clone(),
-            )
+            )?;
+            if let Some(affected_cardinalities) = affected_cardinalities {
+                let check = Self::validate_relates_cardinality_constraints(
+                    snapshot,
+                    thing_manager,
+                    modified.relation,
+                    affected_cardinalities,
+                    storage_counters.clone(),
+                );
+                collect_errors!(out_errors, check, |e: Box<_>| *e);
+            }
+            Ok(())
         })
     }
 
@@ -493,30 +452,124 @@ impl CardinalityValidation {
         Ok(())
     }
 
-    capability_cardinality_validation!(
-        validate_owns_cardinality_constraints,
-        validate_existing_object_has,
-        Owns,
-        Object,
-        get_has_counts,
-        DataValidation::validate_owns_instances_cardinality_constraint
-    );
-    capability_cardinality_validation!(
-        validate_plays_cardinality_constraints,
-        validate_existing_object_links,
-        Plays,
-        Object,
-        get_played_roles_counts,
-        DataValidation::validate_plays_instances_cardinality_constraint
-    );
-    capability_cardinality_validation!(
-        validate_relates_cardinality_constraints,
-        validate_existing_relation_links,
-        Relates,
-        Relation,
-        get_player_counts,
-        DataValidation::validate_relates_instances_cardinality_constraint
-    );
+    fn validate_owns_cardinality_constraints<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner: Object,
+        cardinalities: impl Iterator<Item = &'a CardinalityDescription<Owns>>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<DataValidationError>> {
+        Self::validate_cardinalities(
+            cardinalities,
+            || owner.get_has_counts(snapshot, thing_manager, storage_counters),
+            |constraint, attribute_type, count| {
+                DataValidation::validate_owns_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
+                    owner,
+                    attribute_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_plays_cardinality_constraints<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        player: Object,
+        cardinalities: impl Iterator<Item = &'a CardinalityDescription<Plays>>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<DataValidationError>> {
+        Self::validate_cardinalities(
+            cardinalities,
+            || player.get_played_roles_counts(snapshot, thing_manager, storage_counters),
+            |constraint, role_type, count| {
+                DataValidation::validate_plays_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
+                    player,
+                    role_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_relates_cardinality_constraints<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: Relation,
+        cardinalities: impl Iterator<Item = &'a CardinalityDescription<Relates>>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<DataValidationError>> {
+        Self::validate_cardinalities(
+            cardinalities,
+            || relation.get_player_counts(snapshot, thing_manager, storage_counters),
+            |constraint, role_type, count| {
+                DataValidation::validate_relates_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
+                    relation,
+                    role_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_cardinalities<'a, CAP: Capability + 'a>(
+        cardinalities: impl Iterator<Item = &'a CardinalityDescription<CAP>>,
+        get_counts: impl FnOnce() -> Result<HashMap<CAP::InterfaceType, u64>, Box<ConceptReadError>>,
+        validate_cardinality: impl Fn(
+            &CapabilityConstraint<CAP>,
+            CAP::InterfaceType,
+            u64,
+        ) -> Result<(), Box<DataValidationError>>,
+    ) -> Result<(), Box<DataValidationError>> {
+        let mut cardinalities = cardinalities.peekable();
+        if cardinalities.peek().is_none() {
+            return Ok(());
+        }
+
+        let counts =
+            get_counts().map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+        for cardinality in cardinalities {
+            let count = cardinality.relevant_types.iter().filter_map(|interface_type| counts.get(interface_type)).sum();
+            validate_cardinality(&cardinality.constraint, cardinality.constraint.source().interface(), count)?;
+        }
+        Ok(())
+    }
+
+    // new instances are validated against all their cardinalities, and persisted ones only against those counting a
+    // modified interface type
+    fn get_affected_cardinalities<'a, CAP: Capability + 'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        instance: impl ThingAPI,
+        cardinalities: impl Iterator<Item = &'a CardinalityDescription<CAP>>,
+        interface_types: &HashSet<CAP::InterfaceType>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<impl Iterator<Item = &'a CardinalityDescription<CAP>>>, Box<ConceptReadError>> {
+        let key = instance.vertex().into_storage_key();
+        if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_some() {
+            return Ok(None);
+        }
+        let mut affected_cardinalities = cardinalities
+            .filter(|cardinality| {
+                interface_types.iter().any(|interface_type| cardinality.relevant_types.contains(interface_type))
+            })
+            .peekable();
+        if affected_cardinalities.peek().is_none()
+            || !thing_manager.is_persisted_in_storage(snapshot, instance.vertex(), storage_counters)?
+        {
+            return Ok(None);
+        }
+        Ok(Some(affected_cardinalities))
+    }
 }
 
 enum CardinalityTask<'a> {
