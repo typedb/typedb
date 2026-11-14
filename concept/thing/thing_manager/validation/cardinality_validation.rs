@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-
 use concurrency::parallel_flat_map;
 use encoding::Keyable;
 use resource::profile::StorageCounters;
@@ -186,7 +184,7 @@ impl CardinalityValidation {
                 thing_manager,
                 modified.owner,
                 owns_cardinalities,
-                &modified.modified_attribute_types,
+                modified.modified_attribute_types,
                 storage_counters.clone(),
             )?;
             if let Some(affected_cardinalities) = affected_cardinalities {
@@ -222,7 +220,7 @@ impl CardinalityValidation {
                 thing_manager,
                 modified.player,
                 plays_cardinalities,
-                &modified.modified_role_types,
+                modified.modified_role_types,
                 storage_counters.clone(),
             )?;
             if let Some(affected_cardinalities) = affected_cardinalities {
@@ -599,7 +597,7 @@ impl CardinalityValidation {
         thing_manager: &ThingManager,
         instance: impl ThingAPI,
         cardinalities: &'a TypeCardinalities<CAP>,
-        interface_types: &'a HashSet<CAP::InterfaceType>,
+        interface_types: impl IntoIterator<Item = &'a CAP::InterfaceType> + Copy + 'a,
         storage_counters: StorageCounters,
     ) -> Result<Option<impl Iterator<Item = usize> + 'a>, Box<ConceptReadError>> {
         let key = instance.vertex().into_storage_key();
@@ -609,7 +607,7 @@ impl CardinalityValidation {
         let mut affected_cardinalities = (0..cardinalities.cardinalities.len())
             .filter(move |&index| {
                 let relevant_types = &cardinalities.cardinalities[index].relevant_types;
-                interface_types.iter().any(|interface_type| relevant_types.contains(interface_type))
+                interface_types.into_iter().any(|interface_type| relevant_types.contains(interface_type))
             })
             .peekable();
         if affected_cardinalities.peek().is_none()

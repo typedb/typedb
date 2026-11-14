@@ -109,9 +109,9 @@ use crate::{
 
 pub mod validation;
 
-pub(crate) struct ModifiedOwnerHas {
+pub(crate) struct ModifiedOwnerHas<'a> {
     pub owner: Object,
-    pub modified_attribute_types: HashSet<AttributeType>,
+    pub modified_attribute_types: &'a [AttributeType],
 }
 
 pub(crate) struct ModifiedRelationLinks {
@@ -120,9 +120,9 @@ pub(crate) struct ModifiedRelationLinks {
     pub removed_role_players: HashSet<(Object, RoleType)>,
 }
 
-pub(crate) struct ModifiedPlayerLinks {
+pub(crate) struct ModifiedPlayerLinks<'a> {
     pub player: Object,
-    pub modified_role_types: HashSet<RoleType>,
+    pub modified_role_types: &'a [RoleType],
 }
 
 #[derive(Clone, Copy)]
@@ -1983,27 +1983,32 @@ impl ThingManager {
     pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, ModifiedOwnerHas) -> Result<(), E>,
+        mut visit: impl FnMut(&mut Snapshot, ModifiedOwnerHas<'_>) -> Result<(), E>,
     ) -> Result<(), E> {
-        let mut group: Option<ModifiedOwnerHas> = None;
-        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedOwnerHas>| match group {
-            Some(modified) => visit(snapshot, modified),
+        // the attribute types of the current owner are collected into one buffer reused across owners
+        let mut owner: Option<Object> = None;
+        let mut modified_attribute_types = Vec::new();
+        let mut flush = |snapshot: &mut Snapshot, owner: Option<Object>, types: &[AttributeType]| match owner {
+            Some(owner) => visit(snapshot, ModifiedOwnerHas { owner, modified_attribute_types: types }),
             None => Ok(()),
         };
         snapshot.visit_writes_in_range(
             &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
             |snapshot, key, _| {
                 let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
-                let owner = Object::new(edge.from());
-                if group.as_ref().is_none_or(|modified| modified.owner != owner) {
-                    flush(snapshot, group.take())?;
-                    group = Some(ModifiedOwnerHas { owner, modified_attribute_types: HashSet::new() });
+                let edge_owner = Object::new(edge.from());
+                if owner != Some(edge_owner) {
+                    flush(snapshot, owner.replace(edge_owner), &modified_attribute_types)?;
+                    modified_attribute_types.clear();
                 }
-                group.as_mut().unwrap().modified_attribute_types.insert(Attribute::new(edge.to()).type_());
+                let attribute_type = Attribute::new(edge.to()).type_();
+                if !modified_attribute_types.contains(&attribute_type) {
+                    modified_attribute_types.push(attribute_type);
+                }
                 Ok(())
             },
         )?;
-        flush(snapshot, group.take())
+        flush(snapshot, owner, &modified_attribute_types)
     }
 
     pub(crate) fn for_each_relation_with_modified_links<Snapshot: ReadableSnapshot, E>(
@@ -2045,27 +2050,32 @@ impl ThingManager {
     pub(crate) fn for_each_player_with_modified_links<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, ModifiedPlayerLinks) -> Result<(), E>,
+        mut visit: impl FnMut(&mut Snapshot, ModifiedPlayerLinks<'_>) -> Result<(), E>,
     ) -> Result<(), E> {
-        let mut group: Option<ModifiedPlayerLinks> = None;
-        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedPlayerLinks>| match group {
-            Some(modified) => visit(snapshot, modified),
+        // the role types of the current player are collected into one buffer reused across players
+        let mut player: Option<Object> = None;
+        let mut modified_role_types = Vec::new();
+        let mut flush = |snapshot: &mut Snapshot, player: Option<Object>, types: &[RoleType]| match player {
+            Some(player) => visit(snapshot, ModifiedPlayerLinks { player, modified_role_types: types }),
             None => Ok(()),
         };
         snapshot.visit_writes_in_range(
             &KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
             |snapshot, key, _| {
                 let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
-                let player = Object::new(edge.player());
-                if group.as_ref().is_none_or(|modified| modified.player != player) {
-                    flush(snapshot, group.take())?;
-                    group = Some(ModifiedPlayerLinks { player, modified_role_types: HashSet::new() });
+                let edge_player = Object::new(edge.player());
+                if player != Some(edge_player) {
+                    flush(snapshot, player.replace(edge_player), &modified_role_types)?;
+                    modified_role_types.clear();
                 }
-                group.as_mut().unwrap().modified_role_types.insert(RoleType::build_from_type_id(edge.role_id()));
+                let role_type = RoleType::build_from_type_id(edge.role_id());
+                if !modified_role_types.contains(&role_type) {
+                    modified_role_types.push(role_type);
+                }
                 Ok(())
             },
         )?;
-        flush(snapshot, group.take())
+        flush(snapshot, player, &modified_role_types)
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
