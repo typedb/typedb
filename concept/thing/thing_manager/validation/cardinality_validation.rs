@@ -105,6 +105,9 @@ macro_rules! capability_cardinality_validation {
                     thing_manager.type_manager(),
                     interface_type.clone(),
                 )?;
+                // every capability has a cardinality, so none are found only if the capability was deleted
+                // its edges are then counted by the capabilities of the interface's supertypes, so retry from the
+                // nearest one, which also collects the constraints of the supertypes above it
                 if constraints.is_empty() {
                     for supertype in
                         interface_type.get_supertypes_transitive(snapshot, thing_manager.type_manager())?.iter()
