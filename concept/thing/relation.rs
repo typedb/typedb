@@ -133,21 +133,6 @@ impl Relation {
         })
     }
 
-    pub fn get_player_counts(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        storage_counters: StorageCounters,
-    ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
-        let mut counts = HashMap::new();
-        let mut rp_iter = self.get_players(snapshot, thing_manager, storage_counters);
-        while let Some((role_player, count)) = rp_iter.next().transpose()? {
-            let value = counts.entry(role_player.role_type()).or_insert(0);
-            *value += count;
-        }
-        Ok(counts)
-    }
-
     /// Semantics:
     ///   When duplicates are not allowed, we use set semantics and put the edge idempotently, which cannot fail other txn's
     ///   When duplicates are allowed, we increment the count of the role player edge and fail other txn's doing the same

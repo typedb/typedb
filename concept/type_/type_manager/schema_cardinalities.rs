@@ -26,9 +26,15 @@ use crate::{
 // the cardinalities instances of each type must satisfy, and the interface types each of them counts
 #[derive(Debug)]
 pub(crate) struct SchemaCardinalities {
-    pub(crate) owns: HashMap<ObjectType, Vec<CardinalityDescription<Owns>>>,
-    pub(crate) plays: HashMap<ObjectType, Vec<CardinalityDescription<Plays>>>,
-    pub(crate) relates: HashMap<RelationType, Vec<CardinalityDescription<Relates>>>,
+    pub(crate) owns: HashMap<ObjectType, TypeCardinalities<Owns>>,
+    pub(crate) plays: HashMap<ObjectType, TypeCardinalities<Plays>>,
+    pub(crate) relates: HashMap<RelationType, TypeCardinalities<Relates>>,
+}
+
+#[derive(Debug)]
+pub(crate) struct TypeCardinalities<CAP: Capability> {
+    pub(crate) cardinalities: Vec<CardinalityDescription<CAP>>,
+    counted_by: HashMap<CAP::InterfaceType, Vec<usize>>,
 }
 
 #[derive(Debug, Clone)]
@@ -44,16 +50,22 @@ impl SchemaCardinalities {
         let mut plays = HashMap::new();
         for object_type in TypeReader::get_object_types(snapshot)? {
             let owns_constraints = TypeReader::get_type_capabilities_constraints::<Owns>(snapshot, object_type)?;
-            owns.insert(object_type, Self::describe_cardinalities(snapshot, owns_constraints)?);
+            if let Some(cardinalities) = Self::describe_cardinalities(snapshot, owns_constraints)? {
+                owns.insert(object_type, cardinalities);
+            }
             let plays_constraints = TypeReader::get_type_capabilities_constraints::<Plays>(snapshot, object_type)?;
-            plays.insert(object_type, Self::describe_cardinalities(snapshot, plays_constraints)?);
+            if let Some(cardinalities) = Self::describe_cardinalities(snapshot, plays_constraints)? {
+                plays.insert(object_type, cardinalities);
+            }
         }
 
         let mut relates = HashMap::new();
         for relation_type in TypeReader::get_relation_types(snapshot)? {
             let relates_constraints =
                 TypeReader::get_type_capabilities_constraints::<Relates>(snapshot, relation_type)?;
-            relates.insert(relation_type, Self::describe_cardinalities(snapshot, relates_constraints)?);
+            if let Some(cardinalities) = Self::describe_cardinalities(snapshot, relates_constraints)? {
+                relates.insert(relation_type, cardinalities);
+            }
         }
 
         Ok(Self { owns, plays, relates })
@@ -62,7 +74,7 @@ impl SchemaCardinalities {
     fn describe_cardinalities<CAP: Capability>(
         snapshot: &impl ReadableSnapshot,
         constraints_by_interface_type: HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>>,
-    ) -> Result<Vec<CardinalityDescription<CAP>>, Box<ConceptReadError>> {
+    ) -> Result<Option<TypeCardinalities<CAP>>, Box<ConceptReadError>> {
         let mut cardinalities = Vec::new();
         for constraint in get_cardinality_constraints(constraints_by_interface_type.into_values().flatten()) {
             if !constraint.requires_validation() {
@@ -74,7 +86,7 @@ impl SchemaCardinalities {
             let relevant_types = TypeAPI::chain_types(source_interface_type, sub_interface_types).collect();
             cardinalities.push(CardinalityDescription { constraint, cardinality, relevant_types });
         }
-        Ok(cardinalities)
+        Ok((!cardinalities.is_empty()).then(|| TypeCardinalities::new(cardinalities)))
     }
 
     // Keep only the cardinalities that instances satisfying the previous state might now violate
@@ -87,17 +99,18 @@ impl SchemaCardinalities {
     }
 
     fn cardinalities_to_revalidate<CAP: Capability>(
-        current: &HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
-        previous: &HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
-    ) -> HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>> {
+        current: &HashMap<CAP::ObjectType, TypeCardinalities<CAP>>,
+        previous: &HashMap<CAP::ObjectType, TypeCardinalities<CAP>>,
+    ) -> HashMap<CAP::ObjectType, TypeCardinalities<CAP>> {
         let mut to_revalidate = HashMap::new();
-        for (object_type, cardinality_descriptions) in current {
+        for (object_type, type_cardinalities) in current {
             let previous_by_source: HashMap<CAP, &CardinalityDescription<CAP>> =
                 (previous.get(object_type).into_iter())
-                    .flatten()
+                    .flat_map(|previous| &previous.cardinalities)
                     .map(|cardinality| (cardinality.constraint.source(), cardinality))
                     .collect();
-            let revalidated: Vec<_> = cardinality_descriptions
+            let revalidated: Vec<_> = type_cardinalities
+                .cardinalities
                 .iter()
                 .filter(|description| {
                     let Some(previous) = previous_by_source.get(&description.constraint.source()) else {
@@ -117,9 +130,30 @@ impl SchemaCardinalities {
                 .cloned()
                 .collect();
             if !revalidated.is_empty() {
-                to_revalidate.insert(*object_type, revalidated);
+                to_revalidate.insert(*object_type, TypeCardinalities::new(revalidated));
             }
         }
         to_revalidate
+    }
+}
+
+impl<CAP: Capability> TypeCardinalities<CAP> {
+    fn new(cardinalities: Vec<CardinalityDescription<CAP>>) -> Self {
+        let mut counted_by: HashMap<CAP::InterfaceType, Vec<usize>> = HashMap::new();
+        for (index, cardinality) in cardinalities.iter().enumerate() {
+            for &interface_type in &cardinality.relevant_types {
+                counted_by.entry(interface_type).or_default().push(index);
+            }
+        }
+        Self { cardinalities, counted_by }
+    }
+
+    // adds edges of an interface type to the counter of each cardinality counting it
+    pub(crate) fn count(&self, counts: &mut [u64], interface_type: CAP::InterfaceType, count: u64) {
+        if let Some(indices) = self.counted_by.get(&interface_type) {
+            for &index in indices {
+                counts[index] += count;
+            }
+        }
     }
 }
