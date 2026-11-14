@@ -100,7 +100,7 @@ fn read_entity_attributes(
         let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone(), statistics);
 
         let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
-        for ele in thing_manager.get_has_reverse(&snapshot, age_type, StorageCounters::DISABLED).unwrap() {
+        for ele in thing_manager.get_has_reverse_in(&snapshot, age_type, StorageCounters::DISABLED).unwrap() {
             black_box(ele).unwrap();
         }
     }

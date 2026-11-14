@@ -8,9 +8,14 @@ use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
     fmt,
-    iter::{self, Map, once},
+    iter::{self, Map},
     ops::RangeBounds,
-    sync::Arc,
+    panic,
+    sync::{
+        Arc,
+        atomic::{self, AtomicUsize},
+    },
+    thread,
 };
 
 use bytes::{
@@ -26,7 +31,7 @@ use encoding::{
             ThingVertex,
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeIndexedRelation, ThingEdgeLinks},
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
-            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_attribute::{AttributeID, AttributeVertex, DeterministicAttributeIDPart},
             vertex_generator::ThingVertexGenerator,
             vertex_object::{ObjectID, ObjectVertex},
         },
@@ -55,7 +60,7 @@ use encoding::{
     },
 };
 use itertools::Itertools;
-use lending_iterator::Peekable;
+use lending_iterator::{Peekable, kgroup::KGroupBy};
 use primitive::either::Either;
 use resource::{
     constants::{
@@ -63,6 +68,7 @@ use resource::{
         snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     },
     profile::StorageCounters,
+    system_info::SystemInfo,
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -90,14 +96,12 @@ use crate::{
         statistics::Statistics,
         r#struct::StructIndexForAttributeTypeIterator,
         thing_manager::validation::{
-            DataValidationError,
-            cardinality_validation::{CardinalityValidation, ModifiedCapabilityTypes},
+            DataValidationError, cardinality_validation::CardinalityValidation,
             operation_time_validation::OperationTimeValidation,
         },
     },
     type_::{
-        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{AnnotationCascade, AnnotationIndependent},
+        Capability, Independent, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
         attribute_type::AttributeType,
         constraint::{Constraint, get_checked_cardinality_constraints},
         entity_type::EntityType,
@@ -725,6 +729,30 @@ impl ThingManager {
         )
     }
 
+    pub(crate) fn get_attributes_grouped_by_deterministic_id(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_types: &[AttributeType],
+        value_restriction: &ValueRestriction<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<
+        impl for<'b> lending_iterator::LendingIterator<
+            Item<'b> = Result<(&'b DeterministicAttributeIDPart, &'b [Attribute]), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        let mut iterators = Vec::with_capacity(attribute_types.len());
+        for attribute_type in attribute_types {
+            iterators.push(self.get_attributes_in_range(
+                snapshot,
+                *attribute_type,
+                value_restriction,
+                storage_counters.clone(),
+            )?);
+        }
+        Ok(KGroupBy::new(iterators, |attribute: &Attribute| attribute.vertex().attribute_id().deterministic_part()))
+    }
+
     pub(crate) fn get_player_relations(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -820,6 +848,17 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
+    pub fn get_has_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owner_type: ObjectType,
+        storage_counters: StorageCounters,
+    ) -> HasIterator {
+        let prefix = ThingEdgeHas::prefix_from_type(owner_type.vertex());
+        let range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        HasIterator::new(snapshot.iterate_range(&range, storage_counters))
+    }
+
     pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -842,7 +881,7 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
-    pub fn get_has_reverse(
+    pub fn get_has_reverse_in(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
@@ -877,7 +916,7 @@ impl ThingManager {
         };
         let value_type_category = attribute_value_type.category();
         match AttributeValueLookup::new(value_restriction, &[value_type_category]) {
-            AttributeValueLookup::All => self.get_has_reverse(snapshot, attribute_type, storage_counters),
+            AttributeValueLookup::All => self.get_has_reverse_in(snapshot, attribute_type, storage_counters),
             AttributeValueLookup::Exact(value) => {
                 let key_range = match AttributeVertex::build_or_prefix_for_value_equality(
                     attribute_type.vertex().type_id_(),
@@ -1405,6 +1444,33 @@ impl ThingManager {
         HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
+    pub fn get_has_reverse_grouped_by_deterministic_id<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        attribute_types: &[AttributeType],
+        value_restriction: &ValueRestriction<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<
+        impl for<'b> lending_iterator::LendingIterator<
+            Item<'b> = Result<(&'b DeterministicAttributeIDPart, &'b [(Has, u64)]), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        let mut iterators = Vec::with_capacity(attribute_types.len());
+        for attribute_type in attribute_types {
+            iterators.push(self.get_has_reverse_in_range(
+                snapshot,
+                *attribute_type,
+                value_restriction,
+                &..,
+                storage_counters.clone(),
+            )?);
+        }
+        Ok(KGroupBy::new(iterators, |(has, _): &(Has, u64)| {
+            has.attribute().vertex().attribute_id().deterministic_part()
+        }))
+    }
+
     pub(crate) fn has_owners(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1428,6 +1494,17 @@ impl ThingManager {
     pub fn get_links(&self, snapshot: &impl ReadableSnapshot, storage_counters: StorageCounters) -> LinksIterator {
         let key_range = &KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
         LinksIterator::new(snapshot.iterate_range(key_range, storage_counters))
+    }
+
+    pub fn get_links_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType,
+        storage_counters: StorageCounters,
+    ) -> LinksIterator {
+        let prefix = ThingEdgeLinks::prefix_from_relation_type(relation_type.vertex().type_id_());
+        let range = KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        LinksIterator::new(snapshot.iterate_range(&range, storage_counters))
     }
 
     pub fn get_links_by_relation_type_range(
@@ -1494,6 +1571,20 @@ impl ThingManager {
             snapshot_lookup_mode,
             storage_counters,
         ))
+    }
+
+    pub fn get_links_reverse_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player_type: ObjectType,
+        storage_counters: StorageCounters,
+    ) -> LinksReverseIterator {
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player_type(
+            player_type.vertex().prefix(),
+            player_type.vertex().type_id_(),
+        );
+        let range = KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        LinksReverseIterator::new(snapshot.iterate_range(&range, storage_counters))
     }
 
     pub fn get_links_reverse_by_player_type_range(
@@ -2102,17 +2193,16 @@ impl ThingManager {
         attribute.vertex().lock_unmodifiable(snapshot);
     }
 
-    pub fn finalise<Snapshot: WritableSnapshot>(
+    pub fn finalise<Snapshot: WritableSnapshot + Sync>(
         &self,
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<CleanupIntervals, Vec<ConceptWriteError>> {
-        let modified_types = ModifiedCapabilityTypes::collect(snapshot, self.type_manager())
-            .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
-        self.validate_cardinalities(snapshot, &modified_types, storage_counters.clone())?;
+        self.validate_cardinalities(snapshot, storage_counters.clone())?;
+
         // For immutable schema, the indices are updated at operation time
         if !Snapshot::IMMUTABLE_SCHEMA {
-            self.update_relation_indices_on_schema_commit(snapshot, modified_types.relates(), storage_counters.clone())
+            self.update_relation_indices_on_schema_commit(snapshot, storage_counters.clone())
                 .map_err(|err| vec![*err])?;
         }
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
@@ -2200,7 +2290,7 @@ impl ThingManager {
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     &*unique_constraint.source().attribute().vertex().to_bytes(),
-                    attribute_key.attribute_id().deterministic_bytes(),
+                    attribute_key.attribute_id().deterministic_part().bytes(),
                     &*unique_constraint.source().owner().vertex().to_bytes(),
                 ]
                 .into_iter(),
@@ -2287,108 +2377,170 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_relations(
+    fn cleanup_relations<Snapshot: WritableSnapshot + Sync>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let mut any_deleted = true;
-        while any_deleted {
-            any_deleted = false;
-            for (key, _) in snapshot
-                .iterate_writes_range(&KeyRange::new_within(
-                    ThingEdgeLinks::prefix(),
-                    ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-                ))
-                .filter(|(_, write)| write.is_delete())
-            {
-                let edge = ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref()));
-                let relation = Relation::new(edge.from());
-                if relation.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
-                    continue;
-                }
-                if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
-                    && !relation.has_players(snapshot, self, storage_counters.clone())?
-                {
-                    relation.delete(snapshot, self, storage_counters.clone())?;
-                    any_deleted = true;
-                }
+        let mut relations_modified = Vec::new();
+        if !Snapshot::IMMUTABLE_SCHEMA {
+            let relations_without_players =
+                self.get_relations_made_dependent_without_players(snapshot, storage_counters.clone())?;
+            for relation in relations_without_players {
+                self.delete_relation_without_players(
+                    snapshot,
+                    relation,
+                    &mut relations_modified,
+                    storage_counters.clone(),
+                )?;
             }
         }
 
-        let mut any_deleted = true;
-        while any_deleted {
-            any_deleted = false;
-            for key in snapshot
-                .iterate_writes_range(&KeyRange::new_within(
-                    ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
-                    ObjectVertex::FIXED_WIDTH_ENCODING,
-                ))
-                .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
-            {
-                let relation = Relation::new(ObjectVertex::decode(key.bytes()));
-                if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
-                    && !relation.has_players(snapshot, self, storage_counters.clone())?
-                {
-                    relation.delete(snapshot, self, storage_counters.clone())?;
-                    any_deleted = true;
-                }
-            }
+        for key in snapshot
+            .iterate_writes_range(&KeyRange::new_within(
+                ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE),
+                ObjectVertex::FIXED_WIDTH_ENCODING,
+            ))
+            .filter_map(|(key, write)| (!write.is_delete()).then_some(key))
+        {
+            let relation = Relation::new(ObjectVertex::decode(key.bytes()));
+            self.delete_relation_if_without_players(
+                snapshot,
+                relation,
+                &mut relations_modified,
+                storage_counters.clone(),
+            )?;
         }
 
-        let mut any_deleted = true;
-        while any_deleted {
-            any_deleted = false;
-            for relation_type in snapshot
-                .iterate_writes_range(&KeyRange::new_within(
-                    TypeVertexProperty::build_prefix(),
-                    TypeVertexProperty::FIXED_WIDTH_ENCODING,
-                ))
-                .filter_map(|(key, write)| match write {
-                    Write::Put { .. } | Write::Insert { .. } => {
-                        let bytes = Bytes::reference(key.bytes());
-                        if <AnnotationCascade as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
-                            let decoded = TypeVertexProperty::decode(bytes);
-                            RelationType::from_vertex(decoded.type_vertex()).ok()
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None,
-                })
-            {
-                if !self.type_exists(snapshot, relation_type, storage_counters.clone())? {
-                    continue;
-                }
-                let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
-                // Note: revisit independent relation types interactions with @cascade when cascade is implemented
-                once(&relation_type).chain(&subtypes).try_for_each(|type_| {
-                    let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
-                    if is_cascade {
-                        let mut relations: InstanceIterator<Relation> = self.get_instances_in(
-                            snapshot,
-                            *type_,
-                            <Relation as ThingAPI>::Vertex::KEYSPACE,
-                            storage_counters.clone(),
-                        );
-                        while let Some(relation) = Iterator::next(&mut relations).transpose()? {
-                            if !relation.has_players(snapshot, self, storage_counters.clone())? {
-                                relation.delete(snapshot, self, storage_counters.clone())?;
-                                any_deleted = true;
-                            }
-                        }
-                    }
-                    Ok::<(), Box<ConceptWriteError>>(())
-                })?;
-            }
+        let relations_of_deleted_links = snapshot
+            .iterate_writes_range(&KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING))
+            .filter(|(_, write)| write.is_delete())
+            .map(|(key, _)| ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref())).from())
+            .dedup();
+        for relation_vertex in relations_of_deleted_links {
+            self.delete_relation_if_without_players(
+                snapshot,
+                Relation::new(relation_vertex),
+                &mut relations_modified,
+                storage_counters.clone(),
+            )?;
+        }
+
+        while let Some(relation) = relations_modified.pop() {
+            self.delete_relation_if_without_players(
+                snapshot,
+                relation,
+                &mut relations_modified,
+                storage_counters.clone(),
+            )?;
         }
 
         Ok(())
     }
 
-    fn cleanup_attributes(
+    fn delete_relation_if_without_players(
         &self,
         snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        relations_modified: &mut Vec<Relation>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let status = relation.get_status(snapshot, self, storage_counters.clone())?;
+        if matches!(status, ConceptStatus::Deleted | ConceptStatus::Nonexistent)
+            || self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())?
+            || relation.has_players(snapshot, self, storage_counters.clone())?
+        {
+            return Ok(());
+        }
+        self.delete_relation_without_players(snapshot, relation, relations_modified, storage_counters)
+    }
+
+    fn delete_relation_without_players(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        relations_modified: &mut Vec<Relation>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        for relation_role in relation.get_relations_roles(snapshot, self, storage_counters.clone()) {
+            let (relation_played_in, _, _) = relation_role?;
+            relations_modified.push(relation_played_in);
+        }
+        relation.delete(snapshot, self, storage_counters)
+    }
+
+    fn get_relations_made_dependent_without_players(
+        &self,
+        snapshot: &(impl WritableSnapshot + Sync),
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<Relation>, Box<ConceptReadError>> {
+        let relation_types = self.get_relation_types_no_longer_independent(snapshot, storage_counters.clone())?;
+        let next_relation_type = AtomicUsize::new(0);
+        let find_relations_without_players = || -> Result<Vec<Relation>, Box<ConceptReadError>> {
+            let mut relations_without_players = Vec::new();
+            while let Some(&relation_type) =
+                relation_types.get(next_relation_type.fetch_add(1, atomic::Ordering::Relaxed))
+            {
+                let mut links = self.get_links_in(snapshot, relation_type, storage_counters.clone()).peekable();
+                for relation in self.get_relations_in(snapshot, relation_type, storage_counters.clone()) {
+                    let relation = relation?;
+                    let mut has_players = false;
+                    while links
+                        .peek()
+                        .is_some_and(|result| result.as_ref().map_or(true, |(edge, _)| edge.relation() == relation))
+                    {
+                        links.next().unwrap()?;
+                        has_players = true;
+                    }
+                    if !has_players {
+                        relations_without_players.push(relation);
+                    }
+                }
+            }
+            Ok(relations_without_players)
+        };
+
+        let worker_count = SystemInfo::get_cpu_count().min(relation_types.len());
+        let results: Vec<_> = thread::scope(|scope| {
+            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&find_relations_without_players)).collect();
+            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
+        });
+        let mut relations_without_players = Vec::new();
+        for result in results {
+            relations_without_players.extend(result?);
+        }
+        Ok(relations_without_players)
+    }
+
+    fn get_relation_types_no_longer_independent(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<RelationType>, Box<ConceptReadError>> {
+        let mut relation_types = Vec::new();
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeVertexProperty::build_prefix(),
+            TypeVertexProperty::FIXED_WIDTH_ENCODING,
+        )) {
+            let bytes = Bytes::reference(key.bytes());
+            if !write.is_delete() || !<Independent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
+                continue;
+            }
+            let Ok(relation_type) = RelationType::from_vertex(TypeVertexProperty::decode(bytes).type_vertex()) else {
+                continue;
+            };
+            if self.type_exists(snapshot, relation_type, storage_counters.clone())?
+                && !self.type_manager().get_is_relation_type_independent(snapshot, relation_type)?
+            {
+                relation_types.push(relation_type);
+            }
+        }
+        Ok(relation_types)
+    }
+
+    fn cleanup_attributes<Snapshot: WritableSnapshot + Sync>(
+        &self,
+        snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let deleted_reverse_has = iter::chain(
@@ -2436,62 +2588,99 @@ impl ThingManager {
             }
         }
 
-        for attribute_type in snapshot
-            .iterate_writes_range(&KeyRange::new_within(
-                TypeVertexProperty::build_prefix(),
-                TypeVertexProperty::FIXED_WIDTH_ENCODING,
-            ))
-            .filter_map(|(key, write)| {
-                if write.is_delete() {
-                    let bytes = Bytes::reference(key.bytes());
-                    if <AnnotationIndependent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
-                        let decoded = TypeVertexProperty::decode(bytes);
-                        AttributeType::from_vertex(decoded.type_vertex()).ok()
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-        {
-            if !self.type_exists(snapshot, attribute_type, storage_counters.clone())? {
-                continue;
+        if !Snapshot::IMMUTABLE_SCHEMA {
+            let attributes_without_owners =
+                self.get_attributes_made_dependent_without_owners(snapshot, storage_counters.clone())?;
+            for attribute in attributes_without_owners {
+                attribute.delete(snapshot, self, storage_counters.clone())?;
             }
-            let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
-            once(&attribute_type).chain(&subtypes).try_for_each(|type_| {
-                let is_independent = type_.is_independent(snapshot, self.type_manager())?;
-                if let Some(value_type) = type_.get_value_type_without_source(snapshot, self.type_manager())? {
-                    if !is_independent {
-                        let mut attributes: InstanceIterator<Attribute> = self.get_instances_in(
-                            snapshot,
-                            *type_,
-                            AttributeVertex::keyspace_for_category(value_type.category()),
-                            storage_counters.clone(),
-                        );
-                        while let Some(attribute) = Iterator::next(&mut attributes).transpose()? {
-                            if !attribute.has_owners(snapshot, self, storage_counters.clone())? {
-                                attribute.delete(snapshot, self, storage_counters.clone())?;
-                            }
-                        }
-                    }
-                }
-                Ok::<(), Box<ConceptWriteError>>(())
-            })?;
         }
 
         Ok(())
     }
 
+    fn get_attributes_made_dependent_without_owners(
+        &self,
+        snapshot: &(impl WritableSnapshot + Sync),
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
+        let attribute_types = self.get_attribute_types_no_longer_independent(snapshot, storage_counters.clone())?;
+        let next_attribute_type = AtomicUsize::new(0);
+        let find_attributes_without_owners = || -> Result<Vec<Attribute>, Box<ConceptReadError>> {
+            let mut attributes_without_owners = Vec::new();
+            while let Some(&attribute_type) =
+                attribute_types.get(next_attribute_type.fetch_add(1, atomic::Ordering::Relaxed))
+            {
+                let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
+                else {
+                    continue;
+                };
+                // attributes and their reverse has are both ordered by attribute, so walk them together
+                let mut has_reverse =
+                    self.get_has_reverse_in(snapshot, attribute_type, storage_counters.clone())?.peekable();
+                let attributes: InstanceIterator<Attribute> = self.get_instances_in(
+                    snapshot,
+                    attribute_type,
+                    AttributeVertex::keyspace_for_category(value_type.category()),
+                    storage_counters.clone(),
+                );
+                for attribute in attributes {
+                    let attribute = attribute?;
+                    let mut has_owners = false;
+                    while has_reverse
+                        .peek()
+                        .is_some_and(|result| result.as_ref().map_or(true, |(edge, _)| edge.attribute() == attribute))
+                    {
+                        has_reverse.next().unwrap()?;
+                        has_owners = true;
+                    }
+                    if !has_owners {
+                        attributes_without_owners.push(attribute);
+                    }
+                }
+            }
+            Ok(attributes_without_owners)
+        };
+
+        let worker_count = SystemInfo::get_cpu_count().min(attribute_types.len());
+        let results: Vec<_> = thread::scope(|scope| {
+            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&find_attributes_without_owners)).collect();
+            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
+        });
+        let mut attributes_without_owners = Vec::new();
+        for result in results {
+            attributes_without_owners.extend(result?);
+        }
+        Ok(attributes_without_owners)
+    }
+
+    // independence is inherited, and a type can also lose it by changing supertype, so compare with the schema before this transaction
+    fn get_attribute_types_no_longer_independent(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<Vec<AttributeType>, Box<ConceptReadError>> {
+        let type_manager = self.type_manager();
+        let previously_independent =
+            TypeManager::new(type_manager.definition_key_generator(), type_manager.vertex_generator(), None)
+                .get_independent_attribute_types(&snapshot.read_snapshot_before_writes())?;
+        let independent = type_manager.get_independent_attribute_types(snapshot)?;
+        let mut attribute_types = Vec::new();
+        for &attribute_type in previously_independent.difference(&independent) {
+            if self.type_exists(snapshot, attribute_type, storage_counters.clone())? {
+                attribute_types.push(attribute_type);
+            }
+        }
+        Ok(attribute_types)
+    }
+
     fn validate_cardinalities(
         &self,
-        snapshot: &mut impl WritableSnapshot,
-        modified_types: &ModifiedCapabilityTypes,
+        snapshot: &mut (impl WritableSnapshot + Sync),
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let mut errors = Vec::new();
-        let validate_result =
-            CardinalityValidation::validate_commit(snapshot, self, modified_types, &mut errors, storage_counters);
+        let validate_result = CardinalityValidation::validate_commit(snapshot, self, &mut errors, storage_counters);
         if let Err(typedb_source) = validate_result {
             errors.push(DataValidationError::ConceptRead { typedb_source });
         }
@@ -2508,11 +2697,10 @@ impl ThingManager {
     fn update_relation_indices_on_schema_commit(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.update_relation_indices_of_modified_links(snapshot, storage_counters.clone())?;
-        self.rebuild_relation_indices_of_requalified_types(snapshot, modified_relates_by_type, storage_counters)
+        self.rebuild_relation_indices_of_requalified_types(snapshot, storage_counters)
     }
 
     fn update_relation_indices_of_modified_links(
@@ -2578,7 +2766,6 @@ impl ThingManager {
     fn rebuild_relation_indices_of_requalified_types(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        modified_relates_by_type: &HashMap<RelationType, HashSet<RoleType>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let read_error = |typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source });
@@ -2586,21 +2773,14 @@ impl ThingManager {
         let mut crossing_types = HashMap::new();
         {
             let before_writes = snapshot.read_snapshot_before_writes();
-            for relation_type in modified_relates_by_type.keys() {
-                let subtypes = relation_type.get_subtypes_transitive(snapshot, type_manager).map_err(read_error)?;
-                for relation_type in TypeAPI::chain_types(*relation_type, subtypes.into_iter().cloned()) {
-                    if crossing_types.contains_key(&relation_type) {
-                        continue;
-                    }
-                    let qualified_now = relation_type
-                        .schema_qualifies_for_relation_index(snapshot, type_manager)
-                        .map_err(read_error)?;
-                    let qualified_before = relation_type
-                        .schema_qualifies_for_relation_index(&before_writes, type_manager)
-                        .map_err(read_error)?;
-                    if qualified_now != qualified_before {
-                        crossing_types.insert(relation_type, qualified_now);
-                    }
+            for relation_type in type_manager.get_relation_types(snapshot).map_err(read_error)? {
+                let qualified_now =
+                    relation_type.schema_qualifies_for_relation_index(snapshot, type_manager).map_err(read_error)?;
+                let qualified_before = relation_type
+                    .schema_qualifies_for_relation_index(&before_writes, type_manager)
+                    .map_err(read_error)?;
+                if qualified_now != qualified_before {
+                    crossing_types.insert(relation_type, qualified_now);
                 }
             }
         }

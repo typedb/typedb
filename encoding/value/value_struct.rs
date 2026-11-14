@@ -28,7 +28,7 @@ use crate::{
     error::EncodingError,
     graph::{
         Typed,
-        common::value_hasher::HashedID,
+        common::value_hasher::{HASH_DISAMBIGUATOR_LENGTH, HashedID},
         definition::{
             definition_key::DefinitionKey,
             r#struct::{StructDefinition, StructDefinitionField},
@@ -294,7 +294,7 @@ impl StructIndexEntry<'_> {
     const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_HASHID_LENGTH: usize = 9;
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
-    const STRING_FIELD_INLINE_LENGTH: usize = Self::STRING_FIELD_LENGTH - 1;
+    const STRING_FIELD_INLINE_LENGTH: usize = Self::STRING_FIELD_LENGTH - HASH_DISAMBIGUATOR_LENGTH;
 
     fn encode_string_into<const INLINE_SIZE: usize>(
         snapshot: &impl ReadableSnapshot,

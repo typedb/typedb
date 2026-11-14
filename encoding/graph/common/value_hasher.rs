@@ -17,8 +17,11 @@ use storage::{
 
 use crate::{EncodingKeyspace, graph::common::FoundOrAbsent};
 
+pub(crate) const HASH_DISAMBIGUATOR_LENGTH: usize = 1;
+const _: () = assert!(HASH_DISAMBIGUATOR_LENGTH == size_of::<u8>());
+
 pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
-    const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;
+    const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - HASH_DISAMBIGUATOR_LENGTH;
     const HASH_DISAMBIGUATOR_BYTE_INDEX: usize = Self::HASH_LENGTH;
     const HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG: u8 = 0b1000_0000;
     const FIXED_WIDTH_KEYS: bool;

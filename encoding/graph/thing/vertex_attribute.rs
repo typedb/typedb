@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
+use std::{cmp::Ordering, fmt, marker::PhantomData, ops::Range, sync::Arc};
 
 use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use error::unimplemented_feature;
@@ -20,8 +20,11 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         Typed,
-        common::{FoundOrAbsent, value_hasher::HashedID},
-        thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
+        common::{
+            FoundOrAbsent,
+            value_hasher::{HASH_DISAMBIGUATOR_LENGTH, HashedID},
+        },
+        thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex, max},
         type_::vertex::TypeID,
     },
     layout::prefix::{Prefix, PrefixID},
@@ -118,7 +121,7 @@ impl AttributeVertex {
         for_comparison: bool,
     ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
         // preallocate upper bound length and then truncate later
-        let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
+        let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::MAX_LENGTH);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         let keyspace = Self::keyspace_for_category(value.value_type().category());
@@ -311,6 +314,11 @@ pub enum AttributeID {
 }
 
 impl AttributeID {
+    pub const LENGTH_SHORT_ID: usize = ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::Short.length();
+    pub const LENGTH_LONG_ID: usize = ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::Long.length();
+    pub const MAX_LENGTH: usize = max(Self::LENGTH_SHORT_ID, Self::LENGTH_LONG_ID);
+    const LENGTH_HASH_DISAMBIGUATOR: usize = HASH_DISAMBIGUATOR_LENGTH;
+
     pub const MIN: AttributeID = Self::Boolean(BooleanAttributeID::MIN);
 
     pub fn new(bytes: &[u8]) -> Self {
@@ -351,7 +359,7 @@ impl AttributeID {
         large_value_hasher: &impl Fn(&[u8]) -> u64,
         for_comparison: bool,
     ) -> (usize, bool) {
-        debug_assert!(bytes.len() >= AttributeID::max_length());
+        debug_assert!(bytes.len() >= AttributeID::MAX_LENGTH);
         match value.value_type().category() {
             ValueTypeCategory::Boolean => (BooleanAttributeID::write(value.encode_boolean(), bytes), true),
             ValueTypeCategory::Integer => (IntegerAttributeID::write(value.encode_integer(), bytes), true),
@@ -433,42 +441,42 @@ impl AttributeID {
         }
     }
 
-    pub fn deterministic_bytes(&self) -> &[u8] {
+    pub fn deterministic_part(&self) -> DeterministicAttributeIDPart {
         match self {
             AttributeID::Boolean(boolean_id) => {
                 debug_assert!(BooleanAttributeID::is_inlineable());
-                boolean_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineShort(boolean_id.bytes())
             }
             AttributeID::Integer(integer_id) => {
                 debug_assert!(IntegerAttributeID::is_inlineable());
-                integer_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineShort(integer_id.bytes())
             }
             AttributeID::Double(double_id) => {
                 debug_assert!(DoubleAttributeID::is_inlineable());
-                double_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineShort(double_id.bytes())
             }
             AttributeID::Decimal(decimal_id) => {
                 debug_assert!(DecimalAttributeID::is_inlineable());
-                decimal_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineLong(decimal_id.bytes())
             }
             AttributeID::Date(date_id) => {
                 debug_assert!(DateAttributeID::is_inlineable());
-                date_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineShort(date_id.bytes())
             }
             AttributeID::DateTime(date_time_id) => {
                 debug_assert!(DateTimeAttributeID::is_inlineable());
-                date_time_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineLong(date_time_id.bytes())
             }
             AttributeID::DateTimeTZ(date_time_tz_id) => {
                 debug_assert!(DateTimeTZAttributeID::is_inlineable());
-                date_time_tz_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineLong(date_time_tz_id.bytes())
             }
             AttributeID::Duration(duration_id) => {
                 debug_assert!(DurationAttributeID::is_inlineable());
-                duration_id.bytes_ref()
+                DeterministicAttributeIDPart::InlineLong(duration_id.bytes())
             }
-            AttributeID::String(string_id) => string_id.deterministic_bytes_ref(),
-            AttributeID::Struct(struct_id) => struct_id.deterministic_bytes_ref(),
+            AttributeID::String(string_id) => string_id.deterministic_part(),
+            AttributeID::Struct(struct_id) => struct_id.deterministic_part(),
         }
     }
 
@@ -504,10 +512,6 @@ impl AttributeID {
             ValueTypeCategory::String => StringAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Struct => StructAttributeID::VALUE_LENGTH_ID,
         }
-    }
-
-    pub(crate) const fn max_length() -> usize {
-        ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::max_length()
     }
 
     pub fn unwrap_boolean(self) -> BooleanAttributeID {
@@ -593,6 +597,41 @@ impl AttributeID {
             AttributeID::String(_) => ValueTypeCategory::String,
             AttributeID::Struct(_) => ValueTypeCategory::Struct,
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+pub enum DeterministicAttributeIDPart {
+    InlineShort([u8; AttributeID::LENGTH_SHORT_ID]),
+    InlineLong([u8; AttributeID::LENGTH_LONG_ID]),
+    HashedShort([u8; AttributeID::LENGTH_SHORT_ID - AttributeID::LENGTH_HASH_DISAMBIGUATOR]),
+    HashedLong([u8; AttributeID::LENGTH_LONG_ID - AttributeID::LENGTH_HASH_DISAMBIGUATOR]),
+}
+
+impl DeterministicAttributeIDPart {
+    pub fn bytes(&self) -> &[u8] {
+        match self {
+            Self::InlineShort(bytes) => bytes,
+            Self::InlineLong(bytes) => bytes,
+            Self::HashedShort(bytes) => bytes,
+            Self::HashedLong(bytes) => bytes,
+        }
+    }
+
+    pub fn is_inline(&self) -> bool {
+        matches!(self, Self::InlineShort(_) | Self::InlineLong(_))
+    }
+}
+
+impl Ord for DeterministicAttributeIDPart {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.bytes().cmp(other.bytes())
+    }
+}
+
+impl PartialOrd for DeterministicAttributeIDPart {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -714,7 +753,9 @@ impl StringAttributeID {
     const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH_ID.length();
 
-    pub const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
+    const TAIL_LENGTH: usize = AttributeID::LENGTH_HASH_DISAMBIGUATOR;
+
+    pub const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - Self::TAIL_LENGTH;
 
     pub const HASHED_PREFIX_LENGTH: usize = Self::INLINE_OR_PREFIXED_HASH_LENGTH - Self::HASHED_HASH_LENGTH;
     pub const HASHED_HASH_LENGTH: usize = 8;
@@ -724,10 +765,10 @@ impl StringAttributeID {
     pub const HASHED_HASH_RANGE: Range<usize> =
         Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
     pub const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
-        Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + 1;
+        Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + AttributeID::LENGTH_HASH_DISAMBIGUATOR;
 
     const TAIL_IS_HASH_MASK: u8 = 0b1000_0000;
-    const TAIL_INDEX: usize = Self::LENGTH - 1;
+    const TAIL_INDEX: usize = Self::LENGTH - Self::TAIL_LENGTH;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -875,15 +916,6 @@ impl StringAttributeID {
         self.bytes[Self::TAIL_INDEX] & !Self::TAIL_IS_HASH_MASK
     }
 
-    pub fn get_inline_string_bytes(&self) -> StringBytes<16> {
-        debug_assert!(self.is_inline());
-        let mut bytes = ByteArray::zeros(Self::LENGTH);
-        let inline_string_length = self.get_inline_length();
-        bytes[0..inline_string_length as usize].copy_from_slice(&self.bytes[0..inline_string_length as usize]);
-        bytes.truncate(inline_string_length as usize);
-        StringBytes::new(Bytes::Array(bytes))
-    }
-
     pub fn get_inline_length(&self) -> u8 {
         debug_assert!(self.is_inline());
         self.bytes[Self::TAIL_INDEX]
@@ -907,12 +939,17 @@ impl StringAttributeID {
         &self.bytes
     }
 
-    pub fn deterministic_bytes_ref(&self) -> &[u8] {
-        if self.is_inline() { self.bytes_ref() } else { &self.bytes_ref()[0..Self::HASHED_HASH_RANGE.end] }
+    pub fn deterministic_part(&self) -> DeterministicAttributeIDPart {
+        match self.is_inline() {
+            true => DeterministicAttributeIDPart::InlineLong(self.bytes),
+            false => DeterministicAttributeIDPart::HashedLong(*self.bytes.first_chunk().unwrap()),
+        }
     }
 }
 
-impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
+impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + AttributeID::LENGTH_HASH_DISAMBIGUATOR }>
+    for StringAttributeID
+{
     const FIXED_WIDTH_KEYS: bool = true;
 }
 
@@ -924,8 +961,8 @@ pub struct StructAttributeID {
 impl StructAttributeID {
     const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     pub(crate) const LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH + Self::VALUE_LENGTH_ID.length();
-    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
-    const TAIL_INDEX: usize = Self::LENGTH - 1;
+    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - AttributeID::LENGTH_HASH_DISAMBIGUATOR;
+    const TAIL_INDEX: usize = Self::LENGTH - AttributeID::LENGTH_HASH_DISAMBIGUATOR;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -1011,11 +1048,11 @@ impl StructAttributeID {
         &self.bytes
     }
 
-    pub fn deterministic_bytes_ref(&self) -> &[u8] {
-        &self.bytes[0..Self::TAIL_INDEX]
+    pub fn deterministic_part(&self) -> DeterministicAttributeIDPart {
+        DeterministicAttributeIDPart::HashedShort(*self.bytes.first_chunk().unwrap())
     }
 }
 
-impl HashedID<{ StructAttributeID::HASH_LENGTH + 1 }> for StructAttributeID {
+impl HashedID<{ StructAttributeID::HASH_LENGTH + AttributeID::LENGTH_HASH_DISAMBIGUATOR }> for StructAttributeID {
     const FIXED_WIDTH_KEYS: bool = true;
 }

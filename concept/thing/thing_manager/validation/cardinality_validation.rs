@@ -7,12 +7,14 @@
 use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
     hash::Hash,
+    panic,
+    sync::atomic::{self, AtomicUsize},
+    thread,
 };
 
-use bytes::Bytes;
 use encoding::Keyable;
-use resource::profile::StorageCounters;
-use storage::snapshot::ReadableSnapshot;
+use resource::{profile::StorageCounters, system_info::SystemInfo};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
@@ -27,12 +29,10 @@ use crate::{
     },
     type_::{
         Capability, OwnerAPI, PlayerAPI, TypeAPI,
-        attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint},
         owns::Owns,
         plays::Plays,
         relates::Relates,
-        role_type::RoleType,
     },
 };
 
@@ -50,14 +50,13 @@ macro_rules! collect_errors {
     };
 }
 
-use encoding::{
-    Prefixed,
-    graph::type_::{edge::TypeEdge, property::TypeEdgeProperty},
-    layout::{infix::Infix, prefix::Prefix},
+use crate::{
+    iterator::InstanceIterator,
+    type_::{
+        annotation::AnnotationCardinality, object_type::ObjectType, relation_type::RelationType,
+        type_manager::TypeManager,
+    },
 };
-use storage::{key_range::KeyRange, snapshot::write::Write};
-
-use crate::type_::{object_type::ObjectType, relation_type::RelationType, type_manager::TypeManager};
 
 macro_rules! capability_cardinality_validation {
     (
@@ -101,12 +100,29 @@ macro_rules! capability_cardinality_validation {
         ) -> Result<Vec<CheckedCardinality<$capability_type>>, Box<ConceptReadError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             for interface_type in interface_types {
-                for constraint in object_type
-                    .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())?
-                    .into_iter()
-                {
-                    cardinality_constraints.insert(constraint);
+                let mut constraints = object_type.$get_cardinality_constraints_func(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    interface_type.clone(),
+                )?;
+                // every capability has a cardinality, so none are found only if the capability was deleted
+                // its edges are then counted by the capabilities of the interface's supertypes, so retry from the
+                // nearest one, which also collects the constraints of the supertypes above it
+                if constraints.is_empty() {
+                    for supertype in
+                        interface_type.get_supertypes_transitive(snapshot, thing_manager.type_manager())?.iter()
+                    {
+                        constraints = object_type.$get_cardinality_constraints_func(
+                            snapshot,
+                            thing_manager.type_manager(),
+                            supertype.clone(),
+                        )?;
+                        if !constraints.is_empty() {
+                            break;
+                        }
+                    }
                 }
+                cardinality_constraints.extend(constraints);
             }
 
             let mut checked = Vec::new();
@@ -205,10 +221,9 @@ Please keep these complexities in mind when modifying the collection stage in th
 pub(crate) struct CardinalityValidation {}
 
 impl CardinalityValidation {
-    pub(crate) fn validate_commit<Snapshot: ReadableSnapshot>(
+    pub(crate) fn validate_commit<Snapshot: WritableSnapshot + Sync>(
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager,
-        modified_types: &ModifiedCapabilityTypes,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -226,13 +241,13 @@ impl CardinalityValidation {
             out_errors,
             storage_counters.clone(),
         )?;
-        Self::validate_instances_of_modified_types(
-            snapshot,
-            thing_manager,
-            modified_types,
-            out_errors,
-            storage_counters,
-        )
+
+        // at this point, we've validated the delta, and only need to revalidate untouched/persisted data according to the type modifications
+        // TODO validate this thought
+        if !Snapshot::IMMUTABLE_SCHEMA {
+            Self::validate_instances_of_modified_cardinalities(snapshot, thing_manager, out_errors, storage_counters)?;
+        }
+        Ok(())
     }
 
     fn validate_new_objects<Snapshot: ReadableSnapshot>(
@@ -363,91 +378,233 @@ impl CardinalityValidation {
         })
     }
 
-    fn validate_instances_of_modified_types(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_instances_of_modified_cardinalities(
+        snapshot: &(impl WritableSnapshot + Sync),
         thing_manager: &ThingManager,
-        modified_types: &ModifiedCapabilityTypes,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
-        for (object_type, attribute_types) in &modified_types.owns {
-            let mut owns_constraints_by_type = HashMap::new();
-            let mut objects = thing_manager.get_objects_in_range(
-                snapshot,
-                &object_type.range_with_subtypes_transitive(snapshot, type_manager)?,
-                storage_counters.clone(),
-            );
-            while let Some(object) = Iterator::next(&mut objects).transpose()? {
-                let constraints = get_or_try_insert_with(&mut owns_constraints_by_type, object.type_(), || {
-                    Self::collect_checked_owns_cardinality_constraints(
+
+        let preexisting_cardinalities = SchemaCardinalities::new(
+            &snapshot.read_snapshot_before_writes(),
+            &TypeManager::new(type_manager.definition_key_generator(), type_manager.vertex_generator(), None),
+        )?;
+        let modified_cardinalities =
+            SchemaCardinalities::new(snapshot, type_manager)?.diff_from(preexisting_cardinalities);
+
+        let tasks: Vec<CardinalityTask<'_>> = (modified_cardinalities.owns.iter())
+            .map(|(&object_type, descriptions)| CardinalityTask::Owns(object_type, descriptions))
+            .chain(
+                (modified_cardinalities.plays.iter())
+                    .map(|(&object_type, descriptions)| CardinalityTask::Plays(object_type, descriptions)),
+            )
+            .chain(
+                (modified_cardinalities.relates.iter())
+                    .map(|(&relation_type, descriptions)| CardinalityTask::Relates(relation_type, descriptions)),
+            )
+            .collect();
+
+        let next_task = AtomicUsize::new(0);
+        let validate_tasks = || -> Result<Vec<DataValidationError>, Box<ConceptReadError>> {
+            let mut errors = Vec::new();
+            while let Some(task) = tasks.get(next_task.fetch_add(1, atomic::Ordering::Relaxed)) {
+                match task {
+                    CardinalityTask::Owns(object_type, descriptions) => Self::validate_owns_cardinalities(
                         snapshot,
                         thing_manager,
-                        object.type_(),
-                        attribute_types,
-                    )
-                })?;
-                let check = CardinalityValidation::validate_owns_cardinality_constraints(
-                    snapshot,
-                    thing_manager,
-                    object,
-                    constraints,
-                    storage_counters.clone(),
-                );
-                collect_errors!(out_errors, check, |e: Box<_>| *e);
+                        &mut errors,
+                        *object_type,
+                        descriptions,
+                        storage_counters.clone(),
+                    )?,
+                    CardinalityTask::Plays(object_type, descriptions) => Self::validate_plays_cardinalities(
+                        snapshot,
+                        thing_manager,
+                        &mut errors,
+                        *object_type,
+                        descriptions,
+                        storage_counters.clone(),
+                    )?,
+                    CardinalityTask::Relates(relation_type, descriptions) => Self::validate_relates_cardinalities(
+                        snapshot,
+                        thing_manager,
+                        &mut errors,
+                        *relation_type,
+                        descriptions,
+                        storage_counters.clone(),
+                    )?,
+                }
             }
+            Ok(errors)
+        };
+
+        let worker_count = SystemInfo::get_cpu_count().min(tasks.len());
+        let results: Vec<_> = thread::scope(|scope| {
+            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&validate_tasks)).collect();
+            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
+        });
+        for result in results {
+            out_errors.extend(result?);
         }
-        for (object_type, role_types) in &modified_types.plays {
-            let mut plays_constraints_by_type = HashMap::new();
-            let mut objects = thing_manager.get_objects_in_range(
-                snapshot,
-                &object_type.range_with_subtypes_transitive(snapshot, type_manager)?,
-                storage_counters.clone(),
-            );
-            while let Some(object) = Iterator::next(&mut objects).transpose()? {
-                let constraints = get_or_try_insert_with(&mut plays_constraints_by_type, object.type_(), || {
-                    Self::collect_checked_plays_cardinality_constraints(
-                        snapshot,
-                        thing_manager,
-                        object.type_(),
-                        role_types,
-                    )
-                })?;
-                let check = CardinalityValidation::validate_plays_cardinality_constraints(
+
+        Ok(())
+    }
+
+    fn validate_owns_cardinalities(
+        snapshot: &impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        object_type: ObjectType,
+        cardinality_descriptions: &[CardinalityDescription<Owns>],
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Self::validate_instances_cardinalities(
+            snapshot,
+            thing_manager,
+            out_errors,
+            object_type,
+            cardinality_descriptions,
+            |object_type| thing_manager.get_objects_in(snapshot, object_type, storage_counters.clone()),
+            |object_type| thing_manager.get_has_in(snapshot, object_type, storage_counters.clone()),
+            |has| (has.owner(), has.attribute().type_()),
+            |constraint, object, attribute_type, count| {
+                DataValidation::validate_owns_instances_cardinality_constraint(
                     snapshot,
-                    thing_manager,
+                    thing_manager.type_manager(),
+                    constraint,
                     object,
-                    constraints,
-                    storage_counters.clone(),
-                );
-                collect_errors!(out_errors, check, |e: Box<_>| *e);
-            }
-        }
-        for (relation_type, role_types) in &modified_types.relates {
-            let mut relates_constraints_by_type = HashMap::new();
-            let mut relations = thing_manager.get_relations_in_range(
-                snapshot,
-                &relation_type.range_with_subtypes_transitive(snapshot, type_manager)?,
-                storage_counters.clone(),
-            );
-            while let Some(relation) = Iterator::next(&mut relations).transpose()? {
-                let constraints = get_or_try_insert_with(&mut relates_constraints_by_type, relation.type_(), || {
-                    Self::collect_checked_relates_cardinality_constraints(
-                        snapshot,
-                        thing_manager,
-                        relation.type_(),
-                        role_types,
-                    )
-                })?;
-                let check = CardinalityValidation::validate_relates_cardinality_constraints(
+                    attribute_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_plays_cardinalities(
+        snapshot: &impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        object_type: ObjectType,
+        cardinality_descriptions: &[CardinalityDescription<Plays>],
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Self::validate_instances_cardinalities(
+            snapshot,
+            thing_manager,
+            out_errors,
+            object_type,
+            cardinality_descriptions,
+            |object_type| thing_manager.get_objects_in(snapshot, object_type, storage_counters.clone()),
+            |object_type| thing_manager.get_links_reverse_in(snapshot, object_type, storage_counters.clone()),
+            |links| (links.player(), links.role_type()),
+            |constraint, object, role_type, count| {
+                DataValidation::validate_plays_instances_cardinality_constraint(
                     snapshot,
-                    thing_manager,
+                    thing_manager.type_manager(),
+                    constraint,
+                    object,
+                    role_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_relates_cardinalities(
+        snapshot: &impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        relation_type: RelationType,
+        cardinality_descriptions: &[CardinalityDescription<Relates>],
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Self::validate_instances_cardinalities(
+            snapshot,
+            thing_manager,
+            out_errors,
+            relation_type,
+            cardinality_descriptions,
+            |relation_type| thing_manager.get_relations_in(snapshot, relation_type, storage_counters.clone()),
+            |relation_type| thing_manager.get_links_in(snapshot, relation_type, storage_counters.clone()),
+            |links| (links.relation(), links.role_type()),
+            |constraint, relation, role_type, count| {
+                DataValidation::validate_relates_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
                     relation,
-                    constraints,
-                    storage_counters.clone(),
-                );
-                collect_errors!(out_errors, check, |e: Box<_>| *e);
+                    role_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_instances_cardinalities<
+        CAP: Capability,
+        Instance: ThingAPI + Copy + Ord + 'static,
+        Edge,
+        EdgeIterator: Iterator<Item = Result<(Edge, u64), Box<ConceptReadError>>>,
+    >(
+        snapshot: &impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        out_errors: &mut Vec<DataValidationError>,
+        type_: CAP::ObjectType,
+        cardinality_descriptions: &[CardinalityDescription<CAP>],
+        get_instances_in: impl Fn(CAP::ObjectType) -> InstanceIterator<Instance>,
+        get_edges_in: impl Fn(CAP::ObjectType) -> EdgeIterator,
+        edge_instance_and_interface: impl Fn(&Edge) -> (Instance, CAP::InterfaceType),
+        validate_cardinality: impl Fn(
+            &CapabilityConstraint<CAP>,
+            Instance,
+            CAP::InterfaceType,
+            u64,
+        ) -> Result<(), Box<DataValidationError>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        // one counter per constraint, plus an index of which interface types add to which counters
+        let mut counts = vec![0u64; cardinality_descriptions.len()];
+        let mut counted_by: HashMap<CAP::InterfaceType, Vec<usize>> = HashMap::new();
+        for (index, description) in cardinality_descriptions.iter().enumerate() {
+            for &interface_type in &description.relevant_types {
+                counted_by.entry(interface_type).or_default().push(index);
             }
+        }
+
+        // instances and their edges are both ordered by instance, so walk them together to also visit instances without any edge
+        let mut edges = get_edges_in(type_).peekable();
+        for instance in get_instances_in(type_) {
+            let instance = instance?;
+            while edges.peek().is_some_and(|result| {
+                result.as_ref().map_or(true, |(edge, _)| edge_instance_and_interface(edge).0 <= instance)
+            }) {
+                let (edge, count) = edges.next().unwrap()?;
+                let (edge_instance, interface_type) = edge_instance_and_interface(&edge);
+                // an edge whose instance was not returned is skipped, so it cannot stall the walk
+                if edge_instance != instance {
+                    continue;
+                }
+                if let Some(indices) = counted_by.get(&interface_type) {
+                    for &index in indices {
+                        counts[index] += count;
+                    }
+                }
+            }
+
+            // instances written in this transaction are fully validated by the previous delta checks
+            let key = instance.vertex().into_storage_key();
+            if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_none() {
+                for (description, &count) in cardinality_descriptions.iter().zip(&counts) {
+                    let check = validate_cardinality(
+                        &description.constraint,
+                        instance,
+                        description.constraint.source().interface(),
+                        count,
+                    );
+                    collect_errors!(out_errors, check, |e: Box<_>| *e);
+                }
+            }
+            counts.fill(0);
         }
         Ok(())
     }
@@ -484,255 +641,124 @@ impl CardinalityValidation {
     );
 }
 
-pub(crate) struct ModifiedCapabilityTypes {
-    owns: HashMap<ObjectType, HashSet<AttributeType>>,
-    plays: HashMap<ObjectType, HashSet<RoleType>>,
-    relates: HashMap<RelationType, HashSet<RoleType>>,
+enum CardinalityTask<'a> {
+    Owns(ObjectType, &'a [CardinalityDescription<Owns>]),
+    Plays(ObjectType, &'a [CardinalityDescription<Plays>]),
+    Relates(RelationType, &'a [CardinalityDescription<Relates>]),
 }
 
-impl ModifiedCapabilityTypes {
-    pub(crate) fn collect(
+pub(crate) struct SchemaCardinalities {
+    owns: HashMap<ObjectType, Vec<CardinalityDescription<Owns>>>,
+    plays: HashMap<ObjectType, Vec<CardinalityDescription<Plays>>>,
+    pub relates: HashMap<RelationType, Vec<CardinalityDescription<Relates>>>,
+}
+
+pub(crate) struct CardinalityDescription<CAP: Capability> {
+    constraint: CapabilityConstraint<CAP>,
+    cardinality: AnnotationCardinality,
+    relevant_types: HashSet<CAP::InterfaceType>,
+}
+
+impl SchemaCardinalities {
+    pub(crate) fn new(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Self, Box<ConceptReadError>> {
-        let mut collection = Self { owns: HashMap::new(), plays: HashMap::new(), relates: HashMap::new() };
-        collection.collect_modified_schema_capability_cardinalities(snapshot, type_manager)?;
-        Ok(collection)
+        let mut owns = HashMap::new();
+        let mut plays = HashMap::new();
+        for object_type in type_manager.get_object_types(snapshot)? {
+            let mut owns_cardinalities = HashSet::new();
+            for attribute_type in object_type.get_owned_attribute_types(snapshot, type_manager)? {
+                owns_cardinalities.extend(object_type.get_owned_attribute_type_constraints_cardinality(
+                    snapshot,
+                    type_manager,
+                    attribute_type,
+                )?);
+            }
+            owns.insert(object_type, Self::describe_cardinalities(snapshot, type_manager, owns_cardinalities)?);
+
+            let mut plays_cardinalities = HashSet::new();
+            for role_type in object_type.get_played_role_types(snapshot, type_manager)? {
+                plays_cardinalities.extend(object_type.get_played_role_type_constraints_cardinality(
+                    snapshot,
+                    type_manager,
+                    role_type,
+                )?);
+            }
+            plays.insert(object_type, Self::describe_cardinalities(snapshot, type_manager, plays_cardinalities)?);
+        }
+
+        let mut relates = HashMap::new();
+        for relation_type in type_manager.get_relation_types(snapshot)? {
+            let mut relates_cardinalities = HashSet::new();
+            for role_type in relation_type.get_related_role_types(snapshot, type_manager)? {
+                relates_cardinalities.extend(relation_type.get_related_role_type_constraints_cardinality(
+                    snapshot,
+                    type_manager,
+                    role_type,
+                )?);
+            }
+            relates.insert(relation_type, Self::describe_cardinalities(snapshot, type_manager, relates_cardinalities)?);
+        }
+
+        Ok(Self { owns, plays, relates })
     }
 
-    pub(crate) fn relates(&self) -> &HashMap<RelationType, HashSet<RoleType>> {
-        &self.relates
-    }
-
-    fn collect_modified_schema_capability_cardinalities(
-        &mut self,
+    fn describe_cardinalities<CAP: Capability>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<(), Box<ConceptReadError>> {
-        // New / deleted capabilities
-
-        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgeOwns),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        )) {
-            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
-            let attribute_type = AttributeType::new(edge.to());
-            let updated_attribute_types = self.owns.entry(ObjectType::new(edge.from())).or_default();
-            match write {
-                Write::Insert { .. } | Write::Put { .. } => {
-                    updated_attribute_types.insert(attribute_type);
-                }
-                Write::Delete { .. } => {
-                    updated_attribute_types.extend(TypeAPI::chain_types(
-                        attribute_type,
-                        attribute_type.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
-                    ));
-                }
+        constraints: HashSet<CapabilityConstraint<CAP>>,
+    ) -> Result<Vec<CardinalityDescription<CAP>>, Box<ConceptReadError>> {
+        let mut cardinalities = Vec::new();
+        for constraint in constraints {
+            if !constraint.requires_validation() {
+                continue;
             }
+            let cardinality = constraint.description().unwrap_cardinality().expect("Only Cardinality constraints");
+            let source_interface_type = constraint.source().interface();
+            let sub_interface_types = source_interface_type.get_subtypes_transitive(snapshot, type_manager)?;
+            let relevant_types =
+                TypeAPI::chain_types(source_interface_type, sub_interface_types.into_iter().cloned()).collect();
+            cardinalities.push(CardinalityDescription { constraint, cardinality, relevant_types });
         }
+        Ok(cardinalities)
+    }
 
-        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgePlays),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        )) {
-            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
-            let role_type = RoleType::new(edge.to());
-            let updated_role_types = self.plays.entry(ObjectType::new(edge.from())).or_default();
-            match write {
-                Write::Insert { .. } | Write::Put { .. } => {
-                    updated_role_types.insert(role_type);
+    // Keep only the cardinalities that instances satisfying the previous state might now violate
+    pub(crate) fn diff_from(mut self, previous: SchemaCardinalities) -> Self {
+        Self::retain_cardinalities_to_revalidate(&mut self.owns, previous.owns);
+        Self::retain_cardinalities_to_revalidate(&mut self.plays, previous.plays);
+        Self::retain_cardinalities_to_revalidate(&mut self.relates, previous.relates);
+        self
+    }
+
+    fn retain_cardinalities_to_revalidate<CAP: Capability>(
+        current: &mut HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
+        mut previous: HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
+    ) {
+        current.retain(|object_type, cardinality_descriptions| {
+            let previous_by_source: HashMap<CAP, CardinalityDescription<CAP>> = previous
+                .remove(object_type)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|cardinality| (cardinality.constraint.source(), cardinality))
+                .collect();
+            cardinality_descriptions.retain(|description| {
+                let Some(previous) = previous_by_source.get(&description.constraint.source()) else {
+                    return true;
+                };
+                // if the previous state was not strictl contained within the current one, we have to recheck the card
+                if !description.cardinality.narrowed_correctly_by(&previous.cardinality) {
+                    return true;
                 }
-                Write::Delete { .. } => {
-                    updated_role_types.extend(TypeAPI::chain_types(
-                        role_type,
-                        role_type.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
-                    ));
-                }
-            }
-        }
-
-        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgeRelates),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        )) {
-            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
-            let role_type = RoleType::new(edge.to());
-            let updated_role_types = self.relates.entry(RelationType::new(edge.from())).or_default();
-            match write {
-                Write::Insert { .. } | Write::Put { .. } => {
-                    updated_role_types.insert(role_type);
-                }
-                Write::Delete { .. } => {
-                    updated_role_types.extend(TypeAPI::chain_types(
-                        role_type,
-                        role_type.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
-                    ));
-                }
-            }
-        }
-
-        // New / deleted subs between objects and interfaces
-
-        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgeSub),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        )) {
-            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
-            let subtype = edge.from();
-            let supertype = edge.to();
-            let prefix = supertype.prefix();
-            match prefix {
-                // Interfaces: owns
-                Prefix::VertexAttributeType => match write {
-                    Write::Insert { .. } | Write::Put { .. } => {
-                        let attribute_subtype = AttributeType::new(subtype);
-                        for &object_type in attribute_subtype.get_owner_types(snapshot, type_manager)?.keys() {
-                            let updated_attribute_types = self.owns.entry(object_type).or_default();
-                            updated_attribute_types.insert(attribute_subtype);
-                        }
-                    }
-                    Write::Delete { .. } => {
-                        let attribute_supertype = AttributeType::new(supertype);
-                        for attribute_type in TypeAPI::chain_types(
-                            attribute_supertype,
-                            attribute_supertype.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
-                        ) {
-                            for &object_type in attribute_type.get_owner_types(snapshot, type_manager)?.keys() {
-                                let updated_attribute_types = self.owns.entry(object_type).or_default();
-                                updated_attribute_types.insert(attribute_type);
-                            }
-                        }
-                    }
-                },
-                // Interfaces: plays and relates
-                Prefix::VertexRoleType => match write {
-                    Write::Insert { .. } | Write::Put { .. } => {
-                        let role_subtype = RoleType::new(subtype);
-                        for &object_type in role_subtype.get_player_types(snapshot, type_manager)?.keys() {
-                            let updated_role_types = self.plays.entry(object_type).or_default();
-                            updated_role_types.insert(role_subtype);
-                        }
-                        for &relation_type in role_subtype.get_relation_types(snapshot, type_manager)?.keys() {
-                            let updated_role_types = self.relates.entry(relation_type).or_default();
-                            updated_role_types.insert(role_subtype);
-                        }
-                    }
-                    Write::Delete { .. } => {
-                        let role_supertype = RoleType::new(supertype);
-                        for role_type in TypeAPI::chain_types(
-                            role_supertype,
-                            role_supertype.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned(),
-                        ) {
-                            for &object_type in role_type.get_player_types(snapshot, type_manager)?.keys() {
-                                let updated_role_types = self.plays.entry(object_type).or_default();
-                                updated_role_types.insert(role_type);
-                            }
-                            for &relation_type in role_type.get_relation_types(snapshot, type_manager)?.keys() {
-                                let updated_role_types = self.relates.entry(relation_type).or_default();
-                                updated_role_types.insert(role_type);
-                            }
-                        }
-                    }
-                },
-                // Objects and Relations: owns, plays, and relates
-                Prefix::VertexEntityType | Prefix::VertexRelationType => match write {
-                    Write::Insert { .. } | Write::Put { .. } => {
-                        let object_subtype = ObjectType::new(subtype);
-                        let object_supertype = ObjectType::new(supertype);
-
-                        let supertype_owned_attribute_types =
-                            object_supertype.get_owned_attribute_types(snapshot, type_manager)?;
-                        for attribute_type in object_subtype.get_owned_attribute_types(snapshot, type_manager)? {
-                            for &supertype_attribute_type in &supertype_owned_attribute_types {
-                                if supertype_attribute_type.is_supertype_transitive_of_or_same(
-                                    snapshot,
-                                    type_manager,
-                                    attribute_type,
-                                )? {
-                                    let updated_attribute_types = self.owns.entry(object_subtype).or_default();
-                                    updated_attribute_types.insert(attribute_type);
-                                    break;
-                                }
-                            }
-                        }
-
-                        let supertype_played_role_types =
-                            object_supertype.get_played_role_types(snapshot, type_manager)?;
-                        for role_type in object_subtype.get_played_role_types(snapshot, type_manager)? {
-                            for &supertype_role_type in &supertype_played_role_types {
-                                if supertype_role_type.is_supertype_transitive_of_or_same(
-                                    snapshot,
-                                    type_manager,
-                                    role_type,
-                                )? {
-                                    let updated_role_types = self.plays.entry(object_subtype).or_default();
-                                    updated_role_types.insert(role_type);
-                                    break;
-                                }
-                            }
-                        }
-
-                        if prefix == Prefix::VertexRelationType {
-                            let relation_subtype = RelationType::new(subtype);
-                            let relation_supertype = RelationType::new(supertype);
-
-                            let supertype_related_role_types =
-                                relation_supertype.get_related_role_types(snapshot, type_manager)?;
-                            for role_type in relation_subtype.get_related_role_types(snapshot, type_manager)? {
-                                for &supertype_role_type in &supertype_related_role_types {
-                                    if supertype_role_type.is_supertype_transitive_of_or_same(
-                                        snapshot,
-                                        type_manager,
-                                        role_type,
-                                    )? {
-                                        let updated_role_types = self.relates.entry(relation_subtype).or_default();
-                                        updated_role_types.insert(role_type);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
-
-        // New / deleted annotations
-
-        for (key, _) in snapshot.iterate_writes_range(&KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::PropertyTypeEdge),
-            TypeEdge::FIXED_WIDTH_ENCODING,
-        )) {
-            let property = TypeEdgeProperty::decode(Bytes::reference(key.bytes()));
-            match property.infix() {
-                Infix::PropertyAnnotationKey | Infix::PropertyAnnotationCardinality => {
-                    let edge = property.type_edge();
-                    match edge.prefix() {
-                        Prefix::EdgeOwns => {
-                            let updated_attribute_types = self.owns.entry(ObjectType::new(edge.from())).or_default();
-                            updated_attribute_types.insert(AttributeType::new(edge.to()));
-                        }
-                        Prefix::EdgeOwnsReverse => debug_assert!(false, "Unexpected property on reverse owns"),
-                        Prefix::EdgePlays => {
-                            let updated_role_types = self.plays.entry(ObjectType::new(edge.from())).or_default();
-                            updated_role_types.insert(RoleType::new(edge.to()));
-                        }
-                        Prefix::EdgePlaysReverse => debug_assert!(false, "Unexpected property on reverse plays"),
-                        Prefix::EdgeRelates => {
-                            let updated_role_types = self.relates.entry(RelationType::new(edge.from())).or_default();
-                            updated_role_types.insert(RoleType::new(edge.to()));
-                        }
-                        Prefix::EdgeRelatesReverse => debug_assert!(false, "Unexpected property on reverse relates"),
-                        _ => {}
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
+                // counting more instances can only break an upper bound, and counting fewer only a lower bound
+                let counts_more = description.relevant_types.difference(&previous.relevant_types).next().is_some();
+                let counts_fewer = previous.relevant_types.difference(&description.relevant_types).next().is_some();
+                (counts_more && description.cardinality.end().is_some())
+                    || (counts_fewer && description.cardinality.start() > 0)
+            });
+            !cardinality_descriptions.is_empty()
+        });
     }
 }
 

@@ -208,13 +208,13 @@ fn generate_struct_attribute_vertex() {
 }
 
 #[test]
-fn attribute_id_deterministic_bytes() {
+fn attribute_id_deterministic_part() {
     let (_tmp_dir, storage) = create_core_storage();
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::new(0);
 
     // Inline value types and short strings (built via the public AttributeID::build_inline):
-    // deterministic_bytes == bytes (the entire ID identifies the value).
+    // deterministic_part == bytes (the entire ID identifies the value).
     {
         let inline_cases = [
             Value::Boolean(true),
@@ -228,9 +228,9 @@ fn attribute_id_deterministic_bytes() {
         for value in inline_cases {
             let id = AttributeID::build_inline(value.as_reference());
             assert_eq!(
-                id.deterministic_bytes(),
+                id.deterministic_part().bytes(),
                 id.bytes(),
-                "inline value {:?} must have deterministic_bytes == bytes",
+                "inline value {:?} must have deterministic_part == bytes",
                 value
             );
         }
@@ -239,7 +239,7 @@ fn attribute_id_deterministic_bytes() {
         assert!(short_id.unwrap_string().is_inline());
     }
 
-    // Hashed strings, default hasher: deterministic_bytes drops the disambiguator byte.
+    // Hashed strings, default hasher: deterministic_part drops the disambiguator byte.
     {
         let long = "Hello world, this is a long attribute string to be encoded.";
         let long_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(long);
@@ -248,13 +248,13 @@ fn attribute_id_deterministic_bytes() {
             .unwrap();
         let id = vertex.attribute_id().unwrap_string();
         assert!(!id.is_inline());
-        assert_eq!(id.deterministic_bytes_ref().len(), StringAttributeID::HASHED_HASH_RANGE.end);
-        assert_eq!(id.deterministic_bytes_ref(), &id.bytes_ref()[..StringAttributeID::HASHED_HASH_RANGE.end]);
+        assert_eq!(id.deterministic_part().bytes().len(), StringAttributeID::HASHED_HASH_RANGE.end);
+        assert_eq!(id.deterministic_part().bytes(), &id.bytes_ref()[..StringAttributeID::HASHED_HASH_RANGE.end]);
         // The trailing disambiguator byte must be excluded.
-        assert!(id.deterministic_bytes_ref().len() < id.bytes_ref().len());
+        assert!(id.deterministic_part().bytes().len() < id.bytes_ref().len());
     }
 
-    // Hashed strings, forced hash collision: deterministic_bytes are equal for distinct
+    // Hashed strings, forced hash collision: deterministic_part are equal for distinct
     // values that share the prefix and (forced) hash, even though disambiguators differ.
     {
         const CONSTANT_HASH: u64 = 0;
@@ -283,13 +283,13 @@ fn attribute_id_deterministic_bytes() {
         assert_ne!(id_a.get_hash_disambiguator(), id_b.get_hash_disambiguator());
         assert_ne!(id_a.bytes_ref(), id_b.bytes_ref());
         assert_eq!(
-            id_a.deterministic_bytes_ref(),
-            id_b.deterministic_bytes_ref(),
-            "hash-collided strings with equal prefixes must produce equal deterministic_bytes"
+            id_a.deterministic_part(),
+            id_b.deterministic_part(),
+            "hash-collided strings with equal prefixes must produce equal deterministic_part"
         );
     }
 
-    // Structs, forced collision: deterministic_bytes are equal across disambiguators.
+    // Structs, forced collision: deterministic_part are equal across disambiguators.
     {
         const CONSTANT_HASH: u64 = 0;
         let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
@@ -312,20 +312,20 @@ fn attribute_id_deterministic_bytes() {
         assert_ne!(id_a.get_hash_disambiguator(), id_b.get_hash_disambiguator());
         assert_ne!(id_a.bytes_ref(), id_b.bytes_ref());
         assert_eq!(
-            id_a.deterministic_bytes_ref(),
-            id_b.deterministic_bytes_ref(),
-            "hash-collided structs must produce equal deterministic_bytes"
+            id_a.deterministic_part(),
+            id_b.deterministic_part(),
+            "hash-collided structs must produce equal deterministic_part"
         );
-        assert_eq!(id_a.deterministic_bytes_ref().len(), id_a.bytes_ref().len() - 1);
+        assert_eq!(id_a.deterministic_part().bytes().len(), id_a.bytes_ref().len() - 1);
     }
 }
 
 #[test]
-fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() {
-    // The unique/key commit-lock keys are derived from `AttributeID::deterministic_bytes()`. For
+fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_part() {
+    // The unique/key commit-lock keys are derived from `AttributeID::deterministic_part()`. For
     // two concurrent transactions writing `has X "shared"` to land on the same lock, the
     // AttributeID computed independently by each snapshot for the same string value must produce
-    // equal `deterministic_bytes`. This test pins that property at the encoding layer:
+    // equal `deterministic_part`. This test pins that property at the encoding layer:
     // independently-opened snapshots, sharing only the underlying storage, must agree on the
     // deterministic prefix - both for the easy case (no prior collisions) and for the
     // forced-collision case where the disambiguator could otherwise diverge.
@@ -349,7 +349,7 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
             .unwrap()
             .attribute_id()
             .unwrap_string();
-        assert_eq!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
+        assert_eq!(id_a.deterministic_part(), id_b.deterministic_part());
     }
 
     // Hashed identical strings, default hasher should have identical prefixes and hashes,
@@ -371,7 +371,7 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
             .attribute_id()
             .unwrap_string();
         assert!(!id_a.is_inline() && !id_b.is_inline());
-        assert_eq!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
+        assert_eq!(id_a.deterministic_part(), id_b.deterministic_part());
 
         snapshot_a.commit(&mut CommitProfile::disabled()).expect("First commit should succeed");
         match snapshot_b.commit(&mut CommitProfile::disabled()) {
@@ -390,7 +390,7 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
     // Forced hash collision: two snapshots, each independently inserts a different long string
     // sharing the same hash prefix. Each snapshot allocates disambiguator=0 (since neither sees
     // the other's pending writes). The full IDs may differ in disambiguator across runs, but
-    // `deterministic_bytes_ref` strips that byte and must be equal.
+    // `deterministic_part` strips that byte and must be equal.
     {
         const CONSTANT_HASH: u64 = 0;
         let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
@@ -411,9 +411,9 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
             .attribute_id()
             .unwrap_string();
         assert_eq!(
-            id_a.deterministic_bytes_ref(),
-            id_b.deterministic_bytes_ref(),
-            "hash-collided strings encoded in independent snapshots must agree on deterministic_bytes"
+            id_a.deterministic_part(),
+            id_b.deterministic_part(),
+            "hash-collided strings encoded in independent snapshots must agree on deterministic_part"
         );
 
         snapshot_a.commit(&mut CommitProfile::disabled()).expect("First commit should succeed");
