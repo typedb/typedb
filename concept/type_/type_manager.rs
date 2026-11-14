@@ -58,10 +58,11 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         sub::{Sub, SubAnnotation},
-        type_manager::type_reader::TypeReader,
+        type_manager::{schema_cardinalities::SchemaCardinalities, type_reader::TypeReader},
     },
 };
 
+pub(crate) mod schema_cardinalities;
 pub mod type_cache;
 pub mod type_reader;
 mod type_writer;
@@ -1190,6 +1191,17 @@ impl TypeManager {
                 }
             }
             Ok(Arc::new(independent))
+        }
+    }
+
+    pub(crate) fn get_schema_cardinalities(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Arc<SchemaCardinalities>, Box<ConceptReadError>> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_schema_cardinalities())
+        } else {
+            Ok(Arc::new(SchemaCardinalities::new(snapshot)?))
         }
     }
 

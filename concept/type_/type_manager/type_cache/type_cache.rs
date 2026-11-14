@@ -33,6 +33,7 @@ use crate::type_::{
     sub::{Sub, SubAnnotation},
     type_manager::{
         preload_schema_from,
+        schema_cardinalities::SchemaCardinalities,
         type_cache::{
             kind_cache::{
                 AttributeTypeCache, CommonTypeCache, EntityTypeCache, ObjectCache, OwnsCache, PlaysCache, RelatesCache,
@@ -71,6 +72,7 @@ pub struct TypeCache {
     role_types_by_name: HashMap<String, Vec<RoleType>>,
     // specific caches to simplify architectures
     independent_attribute_types: Arc<HashSet<AttributeType>>,
+    schema_cardinalities: Arc<SchemaCardinalities>,
 }
 
 selection::impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
@@ -154,6 +156,7 @@ impl TypeCache {
             role_types_by_name,
 
             independent_attribute_types: Arc::new(independent_attribute_types),
+            schema_cardinalities: Arc::new(SchemaCardinalities::new(&snapshot).unwrap()),
         })
     }
 
@@ -535,6 +538,10 @@ impl TypeCache {
 
     pub(crate) fn get_independent_attribute_types(&self) -> Arc<HashSet<AttributeType>> {
         self.independent_attribute_types.clone()
+    }
+
+    pub(crate) fn get_schema_cardinalities(&self) -> Arc<SchemaCardinalities> {
+        self.schema_cardinalities.clone()
     }
 }
 

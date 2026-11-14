@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet, hash_map::Entry},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
 use concurrency::parallel_flat_map;
 use encoding::Keyable;
@@ -16,6 +13,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
+    iterator::{InstanceEdgeWalk, InstanceIterator},
     thing::{
         ThingAPI,
         object::{Object, ObjectAPI},
@@ -26,11 +24,14 @@ use crate::{
         },
     },
     type_::{
-        Capability, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability,
         constraint::{CapabilityConstraint, Constraint},
+        object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
+        relation_type::RelationType,
+        type_manager::schema_cardinalities::{CardinalityDescription, SchemaCardinalities},
     },
 };
 
@@ -48,29 +49,20 @@ macro_rules! collect_errors {
     };
 }
 
-use crate::{
-    iterator::{InstanceEdgeWalk, InstanceIterator},
-    type_::{
-        annotation::AnnotationCardinality, object_type::ObjectType, relation_type::RelationType,
-        type_manager::TypeManager,
-    },
-};
-
 macro_rules! capability_cardinality_validation {
     (
-        $collect_func_name:ident,
         $validate_func_name:ident,
         $validate_existing_func_name:ident,
         $capability_type:ident,
         $object_instance:ident,
-        $get_cardinality_constraints_func:ident,
         $get_interface_counts_func:ident,
         $check_func:path
     ) => {
-        fn $validate_existing_func_name(
+        fn $validate_existing_func_name<'a>(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
             object: $object_instance,
+            cardinalities: impl Iterator<Item = &'a CardinalityDescription<$capability_type>>,
             interface_types: &HashSet<<$capability_type as Capability>::InterfaceType>,
             out_errors: &mut Vec<DataValidationError>,
             storage_counters: StorageCounters,
@@ -79,82 +71,40 @@ macro_rules! capability_cardinality_validation {
             if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_some() {
                 return Ok(());
             }
-            let constraints = Self::$collect_func_name(snapshot, thing_manager, object.type_(), interface_types)?;
-            if constraints.is_empty()
+            let mut affected_cardinalities = cardinalities
+                .filter(|cardinality| {
+                    interface_types.iter().any(|interface_type| cardinality.relevant_types.contains(interface_type))
+                })
+                .peekable();
+            if affected_cardinalities.peek().is_none()
                 || !thing_manager.is_persisted_in_storage(snapshot, object.vertex(), storage_counters.clone())?
             {
                 return Ok(());
             }
-            let check = Self::$validate_func_name(snapshot, thing_manager, object, &constraints, storage_counters);
+            let check =
+                Self::$validate_func_name(snapshot, thing_manager, object, affected_cardinalities, storage_counters);
             collect_errors!(out_errors, check, |e: Box<_>| *e);
             Ok(())
         }
 
-        fn $collect_func_name(
-            snapshot: &impl ReadableSnapshot,
-            thing_manager: &ThingManager,
-            object_type: <$capability_type as Capability>::ObjectType,
-            interface_types: &HashSet<<$capability_type as Capability>::InterfaceType>,
-        ) -> Result<Vec<CheckedCardinality<$capability_type>>, Box<ConceptReadError>> {
-            let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
-            for interface_type in interface_types {
-                let mut constraints = object_type.$get_cardinality_constraints_func(
-                    snapshot,
-                    thing_manager.type_manager(),
-                    interface_type.clone(),
-                )?;
-                // every capability has a cardinality, so none are found only if the capability was deleted
-                // its edges are then counted by the capabilities of the interface's supertypes, so retry from the
-                // nearest one, which also collects the constraints of the supertypes above it
-                if constraints.is_empty() {
-                    for supertype in
-                        interface_type.get_supertypes_transitive(snapshot, thing_manager.type_manager())?.iter()
-                    {
-                        constraints = object_type.$get_cardinality_constraints_func(
-                            snapshot,
-                            thing_manager.type_manager(),
-                            supertype.clone(),
-                        )?;
-                        if !constraints.is_empty() {
-                            break;
-                        }
-                    }
-                }
-                cardinality_constraints.extend(constraints);
-            }
-
-            let mut checked = Vec::new();
-            for constraint in cardinality_constraints {
-                if !constraint.requires_validation() {
-                    continue;
-                }
-                let counted_interface_types =
-                    constraint.covered_interface_types(snapshot, thing_manager.type_manager())?.clone();
-                checked.push(CheckedCardinality { constraint, counted_interface_types });
-            }
-            Ok(checked)
-        }
-
-        fn $validate_func_name(
+        fn $validate_func_name<'a>(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
             object: $object_instance,
-            checked_cardinalities: &[CheckedCardinality<$capability_type>],
+            cardinalities: impl Iterator<Item = &'a CardinalityDescription<$capability_type>>,
             storage_counters: StorageCounters,
         ) -> Result<(), Box<DataValidationError>> {
-            if checked_cardinalities.is_empty() {
+            let mut cardinalities = cardinalities.peekable();
+            if cardinalities.peek().is_none() {
                 return Ok(());
             }
 
             let counts = object
                 .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-            for cardinality in checked_cardinalities {
-                let count = cardinality
-                    .counted_interface_types
-                    .iter()
-                    .filter_map(|interface_type| counts.get(interface_type))
-                    .sum();
+            for cardinality in cardinalities {
+                let count =
+                    cardinality.relevant_types.iter().filter_map(|interface_type| counts.get(interface_type)).sum();
                 $check_func(
                     snapshot,
                     thing_manager.type_manager(),
@@ -170,46 +120,26 @@ macro_rules! capability_cardinality_validation {
     };
 }
 
-struct CheckedCardinality<CAP: Capability> {
-    constraint: CapabilityConstraint<CAP>,
-    counted_interface_types: HashSet<CAP::InterfaceType>,
-}
-
 /*
 The cardinalities validation flow is the following:
-1. Find instances affected by cardinalities changes (separately for 3 capabilities: owns, plays, relates): instance writes are visited straight from the write buffer, grouped by its key order; a capability cardinality change is recorded per type and every instance of the type is visited.
-2. Validate only the affected instances to avoid rescanning the whole system (see capability_cardinality_validation). For each object,
-  2a. Count every capability instance it has (every has, every played role, every roleplayer).
-  2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once).
-  2c. Validate each constraint separately using the counts prepared in 2a. To validate a constraint, take its source type (where this constraint is declared), and count all instances of the source type and its subtypes.
+1. Every type's cardinalities are described once per schema (see SchemaCardinalities). A cardinality counts the
+   instances of its source interface type and its subtypes.
+2. New objects are validated against all the cardinalities of their type.
+3. Existing objects with modified edges are validated against the cardinalities counting any modified interface type.
+4. In schema transactions, every instance of a type is validated against the type's cardinalities that changed
+   (see SchemaCardinalities::diff_from).
 
 Let's consider the following example:
   entity person,
     owns name @card(1..),
-    owns surname, # sub name
+    owns surname @card(0..), # sub name
     owns changed-surname @card(1..2); # sub surname
 
-A query is being run:
-  define person owns surname @card(1..10);
-
-It will be processed like:
-1. person is recorded with surname as the only modified attribute type, and every instance of person is visited.
-2. For each instance of persons:
-  2a. All names, surnames, and changed-surnames are counted (based on instances' explicit types).
-  2b. surname's constraints will be taken: @card(1..) from name and @card(1..10) from surname.
-  2c. For each constraint:
-    @card(1..): combines counts of names, surnames, and changed-surnames. If it's at least 1, it's good.
-    @card(1..10): combines counts of surnames and changed-surnames (without names). If it's from 1 to 10, it's good.
-
-This way, the validation on step 2 always goes up the sub hierarchy to collect current constraints, and then goes down the hierarchy to consider all the suitable instances.
-
-HOWEVER, it won't work if stage 1 is incomplete. For example:
-  undefine owns surname from person;
-
-If we mark only surnames as affected attribute types, we will get 0 constraints on the validation stage (as person does not have any constraints for it anymore, it does not own it).
-Thus, we will not check the cardinality of names, although it might be violated as it does not now count surnames!
-We could potentially use the old version of storage (ignoring the snapshot), but it would make the reasoning even more complicated.
-Please keep these complexities in mind when modifying the collection stage in the following methods.
+person's cardinalities are @card(1..), counting names, surnames, and changed-surnames, and @card(1..2), counting
+changed-surnames. @card(0..) can never be violated, so it is not validated.
+Deleting a surname of an existing person validates @card(1..) only, as it is the only cardinality counting surnames.
+This still holds after undefining person owns surname in the same transaction, as name's @card(1..) still counts
+surnames.
 */
 
 pub(crate) struct CardinalityValidation {}
@@ -221,23 +151,38 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        Self::validate_new_objects(snapshot, thing_manager, out_errors, storage_counters.clone())?;
-        Self::validate_existing_owners_of_modified_has(snapshot, thing_manager, out_errors, storage_counters.clone())?;
+        let cardinalities = thing_manager.type_manager().get_schema_cardinalities(snapshot)?;
+        Self::validate_new_objects(snapshot, thing_manager, &cardinalities, out_errors, storage_counters.clone())?;
+        Self::validate_existing_owners_of_modified_has(
+            snapshot,
+            thing_manager,
+            &cardinalities,
+            out_errors,
+            storage_counters.clone(),
+        )?;
         Self::validate_existing_players_of_modified_links(
             snapshot,
             thing_manager,
+            &cardinalities,
             out_errors,
             storage_counters.clone(),
         )?;
         Self::validate_existing_relations_of_modified_links(
             snapshot,
             thing_manager,
+            &cardinalities,
             out_errors,
             storage_counters.clone(),
         )?;
 
         if !Snapshot::IMMUTABLE_SCHEMA {
-            Self::validate_instances_of_modified_cardinalities(snapshot, thing_manager, out_errors, storage_counters)?;
+            Self::validate_instances_of_modified_cardinalities(
+                snapshot,
+                thing_manager,
+                &cardinalities,
+                out_errors,
+                storage_counters,
+            )?;
         }
         Ok(())
     }
@@ -245,69 +190,35 @@ impl CardinalityValidation {
     fn validate_new_objects<Snapshot: ReadableSnapshot>(
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let type_manager = thing_manager.type_manager();
-        let mut owns_constraints_by_type = HashMap::new();
-        let mut plays_constraints_by_type = HashMap::new();
-        let mut relates_constraints_by_type = HashMap::new();
         thing_manager.for_each_new_object(snapshot, |snapshot, object| {
-            let object_type = object.type_();
-            let owns_constraints = get_or_try_insert_with(&mut owns_constraints_by_type, object_type, || {
-                let attribute_types =
-                    object_type.get_owns(snapshot, type_manager)?.into_iter().map(|owns| owns.attribute()).collect();
-                Self::collect_checked_owns_cardinality_constraints(
-                    snapshot,
-                    thing_manager,
-                    object_type,
-                    &attribute_types,
-                )
-            })?;
             let owns_check = CardinalityValidation::validate_owns_cardinality_constraints(
                 snapshot,
                 thing_manager,
                 object,
-                owns_constraints,
+                cardinalities.owns.get(&object.type_()).into_iter().flatten(),
                 storage_counters.clone(),
             );
             collect_errors!(out_errors, owns_check, |e: Box<_>| *e);
 
-            let plays_constraints = get_or_try_insert_with(&mut plays_constraints_by_type, object_type, || {
-                let role_types =
-                    object_type.get_plays(snapshot, type_manager)?.into_iter().map(|plays| plays.role()).collect();
-                Self::collect_checked_plays_cardinality_constraints(snapshot, thing_manager, object_type, &role_types)
-            })?;
             let plays_check = CardinalityValidation::validate_plays_cardinality_constraints(
                 snapshot,
                 thing_manager,
                 object,
-                plays_constraints,
+                cardinalities.plays.get(&object.type_()).into_iter().flatten(),
                 storage_counters.clone(),
             );
             collect_errors!(out_errors, plays_check, |e: Box<_>| *e);
 
             if let Object::Relation(relation) = object {
-                let relation_type = relation.type_();
-                let relates_constraints =
-                    get_or_try_insert_with(&mut relates_constraints_by_type, relation_type, || {
-                        let role_types = relation_type
-                            .get_relates(snapshot, type_manager)?
-                            .into_iter()
-                            .map(|relates| relates.role())
-                            .collect();
-                        Self::collect_checked_relates_cardinality_constraints(
-                            snapshot,
-                            thing_manager,
-                            relation_type,
-                            &role_types,
-                        )
-                    })?;
                 let relates_check = CardinalityValidation::validate_relates_cardinality_constraints(
                     snapshot,
                     thing_manager,
                     relation,
-                    relates_constraints,
+                    cardinalities.relates.get(&relation.type_()).into_iter().flatten(),
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, relates_check, |e: Box<_>| *e);
@@ -319,6 +230,7 @@ impl CardinalityValidation {
     fn validate_existing_owners_of_modified_has<Snapshot: ReadableSnapshot>(
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -327,6 +239,7 @@ impl CardinalityValidation {
                 snapshot,
                 thing_manager,
                 modified.owner,
+                cardinalities.owns.get(&modified.owner.type_()).into_iter().flatten(),
                 &modified.modified_attribute_types,
                 out_errors,
                 storage_counters.clone(),
@@ -337,6 +250,7 @@ impl CardinalityValidation {
     fn validate_existing_players_of_modified_links<Snapshot: ReadableSnapshot>(
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -345,6 +259,7 @@ impl CardinalityValidation {
                 snapshot,
                 thing_manager,
                 modified.player,
+                cardinalities.plays.get(&modified.player.type_()).into_iter().flatten(),
                 &modified.modified_role_types,
                 out_errors,
                 storage_counters.clone(),
@@ -355,6 +270,7 @@ impl CardinalityValidation {
     fn validate_existing_relations_of_modified_links<Snapshot: ReadableSnapshot>(
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -363,6 +279,7 @@ impl CardinalityValidation {
                 snapshot,
                 thing_manager,
                 modified.relation,
+                cardinalities.relates.get(&modified.relation.type_()).into_iter().flatten(),
                 &modified.modified_role_types,
                 out_errors,
                 storage_counters.clone(),
@@ -373,17 +290,12 @@ impl CardinalityValidation {
     fn validate_instances_of_modified_cardinalities(
         snapshot: &(impl WritableSnapshot + Sync),
         thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let type_manager = thing_manager.type_manager();
-
-        let preexisting_cardinalities = SchemaCardinalities::new(
-            &snapshot.read_snapshot_before_writes(),
-            &TypeManager::new(type_manager.definition_key_generator(), type_manager.vertex_generator(), None),
-        )?;
-        let modified_cardinalities =
-            SchemaCardinalities::new(snapshot, type_manager)?.diff_from(preexisting_cardinalities);
+        let preexisting_cardinalities = SchemaCardinalities::new(&snapshot.read_snapshot_before_writes())?;
+        let modified_cardinalities = cardinalities.diff_from(&preexisting_cardinalities);
 
         let tasks: Vec<CardinalityTask<'_>> = (modified_cardinalities.owns.iter())
             .map(|(&object_type, descriptions)| CardinalityTask::Owns(object_type, descriptions))
@@ -582,32 +494,26 @@ impl CardinalityValidation {
     }
 
     capability_cardinality_validation!(
-        collect_checked_owns_cardinality_constraints,
         validate_owns_cardinality_constraints,
         validate_existing_object_has,
         Owns,
         Object,
-        get_owned_attribute_type_constraints_cardinality,
         get_has_counts,
         DataValidation::validate_owns_instances_cardinality_constraint
     );
     capability_cardinality_validation!(
-        collect_checked_plays_cardinality_constraints,
         validate_plays_cardinality_constraints,
         validate_existing_object_links,
         Plays,
         Object,
-        get_played_role_type_constraints_cardinality,
         get_played_roles_counts,
         DataValidation::validate_plays_instances_cardinality_constraint
     );
     capability_cardinality_validation!(
-        collect_checked_relates_cardinality_constraints,
         validate_relates_cardinality_constraints,
         validate_existing_relation_links,
         Relates,
         Relation,
-        get_related_role_type_constraints_cardinality,
         get_player_counts,
         DataValidation::validate_relates_instances_cardinality_constraint
     );
@@ -617,133 +523,4 @@ enum CardinalityTask<'a> {
     Owns(ObjectType, &'a [CardinalityDescription<Owns>]),
     Plays(ObjectType, &'a [CardinalityDescription<Plays>]),
     Relates(RelationType, &'a [CardinalityDescription<Relates>]),
-}
-
-pub(crate) struct SchemaCardinalities {
-    owns: HashMap<ObjectType, Vec<CardinalityDescription<Owns>>>,
-    plays: HashMap<ObjectType, Vec<CardinalityDescription<Plays>>>,
-    relates: HashMap<RelationType, Vec<CardinalityDescription<Relates>>>,
-}
-
-pub(crate) struct CardinalityDescription<CAP: Capability> {
-    constraint: CapabilityConstraint<CAP>,
-    covered_interface_types: HashSet<CAP::InterfaceType>,
-}
-
-impl<CAP: Capability> CardinalityDescription<CAP> {
-    fn cardinality(&self) -> AnnotationCardinality {
-        self.constraint.description().unwrap_cardinality().expect("Only Cardinality constraints")
-    }
-}
-
-impl SchemaCardinalities {
-    pub(crate) fn new(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Self, Box<ConceptReadError>> {
-        let mut owns = HashMap::new();
-        let mut plays = HashMap::new();
-        for object_type in type_manager.get_object_types(snapshot)? {
-            let mut owns_cardinalities = HashSet::new();
-            for attribute_type in object_type.get_owned_attribute_types(snapshot, type_manager)? {
-                owns_cardinalities.extend(object_type.get_owned_attribute_type_constraints_cardinality(
-                    snapshot,
-                    type_manager,
-                    attribute_type,
-                )?);
-            }
-            owns.insert(object_type, Self::describe_cardinalities(snapshot, type_manager, owns_cardinalities)?);
-
-            let mut plays_cardinalities = HashSet::new();
-            for role_type in object_type.get_played_role_types(snapshot, type_manager)? {
-                plays_cardinalities.extend(object_type.get_played_role_type_constraints_cardinality(
-                    snapshot,
-                    type_manager,
-                    role_type,
-                )?);
-            }
-            plays.insert(object_type, Self::describe_cardinalities(snapshot, type_manager, plays_cardinalities)?);
-        }
-
-        let mut relates = HashMap::new();
-        for relation_type in type_manager.get_relation_types(snapshot)? {
-            let mut relates_cardinalities = HashSet::new();
-            for role_type in relation_type.get_related_role_types(snapshot, type_manager)? {
-                relates_cardinalities.extend(relation_type.get_related_role_type_constraints_cardinality(
-                    snapshot,
-                    type_manager,
-                    role_type,
-                )?);
-            }
-            relates.insert(relation_type, Self::describe_cardinalities(snapshot, type_manager, relates_cardinalities)?);
-        }
-
-        Ok(Self { owns, plays, relates })
-    }
-
-    fn describe_cardinalities<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        constraints: HashSet<CapabilityConstraint<CAP>>,
-    ) -> Result<Vec<CardinalityDescription<CAP>>, Box<ConceptReadError>> {
-        let mut cardinalities = Vec::new();
-        for constraint in constraints {
-            if !constraint.requires_validation() {
-                continue;
-            }
-            let covered_interface_types = constraint.covered_interface_types(snapshot, type_manager)?.clone();
-            cardinalities.push(CardinalityDescription { constraint, covered_interface_types });
-        }
-        Ok(cardinalities)
-    }
-
-    // Keep only the cardinalities that instances satisfying the previous state might now violate
-    pub(crate) fn diff_from(mut self, previous: SchemaCardinalities) -> Self {
-        Self::retain_cardinalities_to_revalidate(&mut self.owns, previous.owns);
-        Self::retain_cardinalities_to_revalidate(&mut self.plays, previous.plays);
-        Self::retain_cardinalities_to_revalidate(&mut self.relates, previous.relates);
-        self
-    }
-
-    fn retain_cardinalities_to_revalidate<CAP: Capability>(
-        current: &mut HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
-        mut previous: HashMap<CAP::ObjectType, Vec<CardinalityDescription<CAP>>>,
-    ) {
-        current.retain(|object_type, cardinality_descriptions| {
-            let previous_by_source: HashMap<CAP, CardinalityDescription<CAP>> = previous
-                .remove(object_type)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|cardinality| (cardinality.constraint.source(), cardinality))
-                .collect();
-            cardinality_descriptions.retain(|description| {
-                let Some(previous) = previous_by_source.get(&description.constraint.source()) else {
-                    return true;
-                };
-                // if the previous state was not contained within the current one, we have to recheck the card
-                if !description.cardinality().narrowed_correctly_by(&previous.cardinality()) {
-                    return true;
-                }
-                // counting more instances can only break an upper bound, and counting fewer only a lower bound
-                let counts_more =
-                    description.covered_interface_types.difference(&previous.covered_interface_types).next().is_some();
-                let counts_fewer =
-                    previous.covered_interface_types.difference(&description.covered_interface_types).next().is_some();
-                (counts_more && description.cardinality().end().is_some())
-                    || (counts_fewer && description.cardinality().start() > 0)
-            });
-            !cardinality_descriptions.is_empty()
-        });
-    }
-}
-
-fn get_or_try_insert_with<K: Eq + Hash, V, E>(
-    map: &mut HashMap<K, V>,
-    key: K,
-    value_producer: impl FnOnce() -> Result<V, E>,
-) -> Result<&V, E> {
-    match map.entry(key) {
-        Entry::Occupied(entry) => Ok(entry.into_mut()),
-        Entry::Vacant(entry) => Ok(entry.insert(value_producer()?)),
-    }
 }
