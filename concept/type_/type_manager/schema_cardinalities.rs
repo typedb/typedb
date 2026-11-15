@@ -33,15 +33,21 @@ pub(crate) struct SchemaCardinalities {
 
 #[derive(Debug)]
 pub(crate) struct TypeCardinalities<CAP: Capability> {
-    pub(crate) cardinalities: Vec<CardinalityDescription<CAP>>,
+    cardinalities: Vec<CardinalityDescription<CAP>>,
     counted_by: HashMap<CAP::InterfaceType, Vec<usize>>,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct CardinalityDescription<CAP: Capability> {
     pub(crate) constraint: CapabilityConstraint<CAP>,
-    pub(crate) cardinality: AnnotationCardinality,
-    pub(crate) relevant_types: HashSet<CAP::InterfaceType>,
+    cardinality: AnnotationCardinality,
+    relevant_types: HashSet<CAP::InterfaceType>,
+}
+
+// one counter per cardinality of a type, kept in storage that is reused across instances
+pub(crate) struct CardinalityCounters<'a, CAP: Capability> {
+    cardinalities: &'a TypeCardinalities<CAP>,
+    counts: &'a mut Vec<u64>,
 }
 
 impl SchemaCardinalities {
@@ -148,12 +154,44 @@ impl<CAP: Capability> TypeCardinalities<CAP> {
         Self { cardinalities, counted_by }
     }
 
+    pub(crate) fn counters<'a>(&'a self, storage: &'a mut Vec<u64>) -> CardinalityCounters<'a, CAP> {
+        storage.clear();
+        storage.resize(self.cardinalities.len(), 0);
+        CardinalityCounters { cardinalities: self, counts: storage }
+    }
+
+    pub(crate) fn counts_any<'b>(&self, interface_types: impl IntoIterator<Item = &'b CAP::InterfaceType>) -> bool
+    where
+        CAP::InterfaceType: 'b,
+    {
+        interface_types.into_iter().any(|interface_type| self.counted_by.contains_key(interface_type))
+    }
+}
+
+impl<CAP: Capability> CardinalityDescription<CAP> {
+    pub(crate) fn counts_any<'b>(&self, interface_types: impl IntoIterator<Item = &'b CAP::InterfaceType>) -> bool
+    where
+        CAP::InterfaceType: 'b,
+    {
+        interface_types.into_iter().any(|interface_type| self.relevant_types.contains(interface_type))
+    }
+}
+
+impl<'a, CAP: Capability> CardinalityCounters<'a, CAP> {
     // adds edges of an interface type to the counter of each cardinality counting it
-    pub(crate) fn count(&self, counts: &mut [u64], interface_type: CAP::InterfaceType, count: u64) {
-        if let Some(indices) = self.counted_by.get(&interface_type) {
+    pub(crate) fn count(&mut self, interface_type: CAP::InterfaceType, count: u64) {
+        if let Some(indices) = self.cardinalities.counted_by.get(&interface_type) {
             for &index in indices {
-                counts[index] += count;
+                self.counts[index] += count;
             }
         }
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (&'a CardinalityDescription<CAP>, u64)> + '_ {
+        self.cardinalities.cardinalities.iter().zip(self.counts.iter().copied())
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.counts.fill(0);
     }
 }

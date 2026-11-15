@@ -29,7 +29,7 @@ use crate::{
         plays::Plays,
         relates::Relates,
         relation_type::RelationType,
-        type_manager::schema_cardinalities::{SchemaCardinalities, TypeCardinalities},
+        type_manager::schema_cardinalities::{CardinalityDescription, SchemaCardinalities, TypeCardinalities},
     },
 };
 
@@ -121,7 +121,7 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let mut counts = Vec::new();
+        let mut counter_storage = Vec::new();
         thing_manager.for_each_new_object(snapshot, |snapshot, object| {
             if let Some(owns_cardinalities) = cardinalities.owns.get(&object.type_()) {
                 let check = Self::validate_owns_cardinality_constraints(
@@ -129,8 +129,8 @@ impl CardinalityValidation {
                     thing_manager,
                     object,
                     owns_cardinalities,
-                    0..owns_cardinalities.cardinalities.len(),
-                    &mut counts,
+                    |_| true,
+                    &mut counter_storage,
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
@@ -142,8 +142,8 @@ impl CardinalityValidation {
                     thing_manager,
                     object,
                     plays_cardinalities,
-                    0..plays_cardinalities.cardinalities.len(),
-                    &mut counts,
+                    |_| true,
+                    &mut counter_storage,
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
@@ -157,8 +157,8 @@ impl CardinalityValidation {
                     thing_manager,
                     relation,
                     relates_cardinalities,
-                    0..relates_cardinalities.cardinalities.len(),
-                    &mut counts,
+                    |_| true,
+                    &mut counter_storage,
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
@@ -174,27 +174,27 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let mut counts = Vec::new();
+        let mut counter_storage = Vec::new();
         thing_manager.for_each_owner_with_modified_has(snapshot, |snapshot, modified| {
             let Some(owns_cardinalities) = cardinalities.owns.get(&modified.owner.type_()) else {
                 return Ok(());
             };
-            let affected_cardinalities = Self::get_affected_cardinalities(
+            let modified_types = modified.modified_attribute_types;
+            if Self::is_affected_persisted_instance(
                 snapshot,
                 thing_manager,
                 modified.owner,
                 owns_cardinalities,
-                modified.modified_attribute_types,
+                modified_types,
                 storage_counters.clone(),
-            )?;
-            if let Some(affected_cardinalities) = affected_cardinalities {
+            )? {
                 let check = Self::validate_owns_cardinality_constraints(
                     snapshot,
                     thing_manager,
                     modified.owner,
                     owns_cardinalities,
-                    affected_cardinalities,
-                    &mut counts,
+                    |description| description.counts_any(modified_types),
+                    &mut counter_storage,
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
@@ -210,27 +210,27 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let mut counts = Vec::new();
+        let mut counter_storage = Vec::new();
         thing_manager.for_each_player_with_modified_links(snapshot, |snapshot, modified| {
             let Some(plays_cardinalities) = cardinalities.plays.get(&modified.player.type_()) else {
                 return Ok(());
             };
-            let affected_cardinalities = Self::get_affected_cardinalities(
+            let modified_types = modified.modified_role_types;
+            if Self::is_affected_persisted_instance(
                 snapshot,
                 thing_manager,
                 modified.player,
                 plays_cardinalities,
-                modified.modified_role_types,
+                modified_types,
                 storage_counters.clone(),
-            )?;
-            if let Some(affected_cardinalities) = affected_cardinalities {
+            )? {
                 let check = Self::validate_plays_cardinality_constraints(
                     snapshot,
                     thing_manager,
                     modified.player,
                     plays_cardinalities,
-                    affected_cardinalities,
-                    &mut counts,
+                    |description| description.counts_any(modified_types),
+                    &mut counter_storage,
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
@@ -246,27 +246,27 @@ impl CardinalityValidation {
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let mut counts = Vec::new();
+        let mut counter_storage = Vec::new();
         thing_manager.for_each_relation_with_modified_links(snapshot, |snapshot, modified| {
             let Some(relates_cardinalities) = cardinalities.relates.get(&modified.relation.type_()) else {
                 return Ok(());
             };
-            let affected_cardinalities = Self::get_affected_cardinalities(
+            let modified_types = &modified.modified_role_types;
+            if Self::is_affected_persisted_instance(
                 snapshot,
                 thing_manager,
                 modified.relation,
                 relates_cardinalities,
-                &modified.modified_role_types,
+                modified_types,
                 storage_counters.clone(),
-            )?;
-            if let Some(affected_cardinalities) = affected_cardinalities {
+            )? {
                 let check = Self::validate_relates_cardinality_constraints(
                     snapshot,
                     thing_manager,
                     modified.relation,
                     relates_cardinalities,
-                    affected_cardinalities,
-                    &mut counts,
+                    |description| description.counts_any(modified_types),
+                    &mut counter_storage,
                     storage_counters.clone(),
                 );
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
@@ -441,7 +441,8 @@ impl CardinalityValidation {
             u64,
         ) -> Result<(), Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        let mut counts = vec![0u64; cardinalities.cardinalities.len()];
+        let mut counter_storage = Vec::new();
+        let mut counters = cardinalities.counters(&mut counter_storage);
 
         let mut walk = InstanceEdgeWalk::new(get_instances_in(type_), get_edges_in(type_), |(edge, _)| {
             edge_instance_and_interface(edge).0
@@ -449,13 +450,13 @@ impl CardinalityValidation {
         while let Some(instance) = walk.next_instance().transpose()? {
             while let Some((edge, count)) = walk.next_edge().transpose()? {
                 let (_, interface_type) = edge_instance_and_interface(&edge);
-                cardinalities.count(&mut counts, interface_type, count);
+                counters.count(interface_type, count);
             }
 
             // instances written in this transaction are fully validated by the previous delta checks
             let key = instance.vertex().into_storage_key();
             if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_none() {
-                for (description, &count) in cardinalities.cardinalities.iter().zip(&counts) {
+                for (description, count) in counters.iter() {
                     let check = validate_cardinality(
                         &description.constraint,
                         instance,
@@ -465,7 +466,7 @@ impl CardinalityValidation {
                     collect_errors!(out_errors, check, |e: Box<_>| *e);
                 }
             }
-            counts.fill(0);
+            counters.reset();
         }
         Ok(())
     }
@@ -475,14 +476,14 @@ impl CardinalityValidation {
         thing_manager: &ThingManager,
         owner: Object,
         cardinalities: &TypeCardinalities<Owns>,
-        validated: impl Iterator<Item = usize>,
-        counts: &mut Vec<u64>,
+        is_validated: impl Fn(&CardinalityDescription<Owns>) -> bool,
+        counter_storage: &mut Vec<u64>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         Self::validate_cardinalities(
             cardinalities,
-            validated,
-            counts,
+            is_validated,
+            counter_storage,
             || {
                 let has = owner.get_has_unordered(snapshot, thing_manager, storage_counters)?;
                 Ok(has.map(|has| has.map(|(has, count)| (has.attribute().type_(), count))))
@@ -505,14 +506,14 @@ impl CardinalityValidation {
         thing_manager: &ThingManager,
         player: Object,
         cardinalities: &TypeCardinalities<Plays>,
-        validated: impl Iterator<Item = usize>,
-        counts: &mut Vec<u64>,
+        is_validated: impl Fn(&CardinalityDescription<Plays>) -> bool,
+        counter_storage: &mut Vec<u64>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         Self::validate_cardinalities(
             cardinalities,
-            validated,
-            counts,
+            is_validated,
+            counter_storage,
             || {
                 let relations_roles = player.get_relations_roles(snapshot, thing_manager, storage_counters);
                 Ok(relations_roles.map(|relation_role| relation_role.map(|(_, role_type, count)| (role_type, count))))
@@ -535,14 +536,14 @@ impl CardinalityValidation {
         thing_manager: &ThingManager,
         relation: Relation,
         cardinalities: &TypeCardinalities<Relates>,
-        validated: impl Iterator<Item = usize>,
-        counts: &mut Vec<u64>,
+        is_validated: impl Fn(&CardinalityDescription<Relates>) -> bool,
+        counter_storage: &mut Vec<u64>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         Self::validate_cardinalities(
             cardinalities,
-            validated,
-            counts,
+            is_validated,
+            counter_storage,
             || {
                 let players = relation.get_players(snapshot, thing_manager, storage_counters);
                 Ok(players.map(|player| player.map(|(role_player, count)| (role_player.role_type(), count))))
@@ -560,14 +561,14 @@ impl CardinalityValidation {
         )
     }
 
-    // counts the instance's edges into one counter per cardinality, reusing the counters across instances
+    // counts the instance's edges into one counter per cardinality, reusing the counter storage across instances
     fn validate_cardinalities<
         CAP: Capability,
         EdgeIterator: Iterator<Item = Result<(CAP::InterfaceType, u64), Box<ConceptReadError>>>,
     >(
         cardinalities: &TypeCardinalities<CAP>,
-        validated: impl Iterator<Item = usize>,
-        counts: &mut Vec<u64>,
+        is_validated: impl Fn(&CardinalityDescription<CAP>) -> bool,
+        counter_storage: &mut Vec<u64>,
         get_edges: impl FnOnce() -> Result<EdgeIterator, Box<ConceptReadError>>,
         validate_cardinality: impl Fn(
             &CapabilityConstraint<CAP>,
@@ -577,45 +578,38 @@ impl CardinalityValidation {
     ) -> Result<(), Box<DataValidationError>> {
         let to_validation_error =
             |source: Box<ConceptReadError>| Box::new(DataValidationError::ConceptRead { typedb_source: source });
-        counts.clear();
-        counts.resize(cardinalities.cardinalities.len(), 0);
+        let mut counters = cardinalities.counters(counter_storage);
         for edge in get_edges().map_err(to_validation_error)? {
             let (interface_type, count) = edge.map_err(to_validation_error)?;
-            cardinalities.count(counts, interface_type, count);
+            counters.count(interface_type, count);
         }
-        for index in validated {
-            let constraint = &cardinalities.cardinalities[index].constraint;
-            validate_cardinality(constraint, constraint.source().interface(), counts[index])?;
+        for (description, count) in counters.iter().filter(|(description, _)| is_validated(description)) {
+            let constraint = &description.constraint;
+            validate_cardinality(constraint, constraint.source().interface(), count)?;
         }
         Ok(())
     }
 
     // new instances are validated against all their cardinalities, and persisted ones only against those counting a
     // modified interface type
-    fn get_affected_cardinalities<'a, CAP: Capability>(
+    fn is_affected_persisted_instance<'a, CAP: Capability>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         instance: impl ThingAPI,
-        cardinalities: &'a TypeCardinalities<CAP>,
-        interface_types: impl IntoIterator<Item = &'a CAP::InterfaceType> + Copy + 'a,
+        cardinalities: &TypeCardinalities<CAP>,
+        modified_types: impl IntoIterator<Item = &'a CAP::InterfaceType>,
         storage_counters: StorageCounters,
-    ) -> Result<Option<impl Iterator<Item = usize> + 'a>, Box<ConceptReadError>> {
+    ) -> Result<bool, Box<ConceptReadError>>
+    where
+        CAP::InterfaceType: 'a,
+    {
         let key = instance.vertex().into_storage_key();
-        if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_some() {
-            return Ok(None);
-        }
-        let mut affected_cardinalities = (0..cardinalities.cardinalities.len())
-            .filter(move |&index| {
-                let relevant_types = &cardinalities.cardinalities[index].relevant_types;
-                interface_types.into_iter().any(|interface_type| relevant_types.contains(interface_type))
-            })
-            .peekable();
-        if affected_cardinalities.peek().is_none()
-            || !thing_manager.is_persisted_in_storage(snapshot, instance.vertex(), storage_counters)?
+        if thing_manager.get_buffered_status(snapshot, key.as_reference()).is_some()
+            || !cardinalities.counts_any(modified_types)
         {
-            return Ok(None);
+            return Ok(false);
         }
-        Ok(Some(affected_cardinalities))
+        thing_manager.is_persisted_in_storage(snapshot, instance.vertex(), storage_counters)
     }
 }
 
