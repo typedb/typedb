@@ -15,6 +15,7 @@ use crate::{
 
 pub mod adaptors;
 pub mod higher_order;
+pub mod kgroup;
 pub mod kmerge;
 
 pub trait LendingIterator: 'static {

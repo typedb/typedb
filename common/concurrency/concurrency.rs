@@ -6,8 +6,10 @@
 
 pub use crate::{
     interval_runner::IntervalRunner,
+    parallel::parallel_flat_map,
     tokio_task::{IntervalTaskParameters, TokioTaskSpawner, TokioTaskTracker},
 };
 
 mod interval_runner;
+mod parallel;
 mod tokio_task;

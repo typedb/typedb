@@ -207,3 +207,7 @@
 [[test]]
 	name = "test_encryption"
 	path = "tests/encryption.rs"
+
+[[test]]
+	name = "test_migration"
+	path = "tests/migration.rs"
