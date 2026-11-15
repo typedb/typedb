@@ -1524,6 +1524,14 @@ impl ImportPhase {
         }
     }
 
+    // entities and relations are written into new objects only, so their commits cannot conflict
+    fn commit_retries(&self) -> usize {
+        match self {
+            Self::AllUnordered | Self::Attributes | Self::Deferred => 3,
+            Self::Entities | Self::Relations => 0,
+        }
+    }
+
     fn is_ahead_of_phase_for(&self, thing_kind: ThingKind, item_order: ItemOrder) -> bool {
         let thing_phase = Self::phase_for(thing_kind, item_order);
         match item_order {
@@ -1696,8 +1704,6 @@ struct ImportWorker {
 }
 
 impl ImportWorker {
-    const MAX_COMMIT_ISOLATION_FAILURE_RETRIES: usize = 3;
-
     fn start(
         importer: &DatabaseImporter,
         phase: ImportPhase,
@@ -1759,7 +1765,10 @@ impl ImportWorker {
 
     fn write_and_may_commit(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.transaction_write_bytes += concept.estimated_write_bytes();
-        self.transaction_items.push(concept.clone());
+        // the items are only kept to reapply them when a commit is retried
+        if self.phase.commit_retries() > 0 {
+            self.transaction_items.push(concept.clone());
+        }
         self.write_item(concept)?;
         if self.reached_commit_limit() { self.commit_with_retry() } else { Ok(()) }
     }
@@ -2128,16 +2137,14 @@ impl ImportWorker {
 
     fn commit_with_retry(&mut self) -> Result<(), DatabaseImportError> {
         let Some(mut transaction) = self.data_transaction.take() else { return Ok(()) };
+        let retries = self.phase.commit_retries();
         for attempt in 1.. {
             match self.commit_write_transaction(transaction) {
                 Ok(()) => return self.merge_transaction_data_info(),
-                Err(error)
-                    if attempt <= Self::MAX_COMMIT_ISOLATION_FAILURE_RETRIES && is_isolation_conflict(&error) =>
-                {
+                Err(error) if attempt <= retries && is_isolation_conflict(&error) => {
                     event!(
                         Level::DEBUG,
-                        "Import commit was rejected by an isolation conflict, retrying ({attempt}/{}).",
-                        Self::MAX_COMMIT_ISOLATION_FAILURE_RETRIES
+                        "Import commit was rejected by an isolation conflict, retrying ({attempt}/{retries})."
                     );
                     transaction = self.reapply_transaction()?;
                 }
