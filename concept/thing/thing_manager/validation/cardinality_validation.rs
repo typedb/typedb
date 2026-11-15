@@ -7,13 +7,11 @@
 use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
     hash::Hash,
-    panic,
-    sync::atomic::{self, AtomicUsize},
-    thread,
 };
 
+use concurrency::parallel_flat_map;
 use encoding::Keyable;
-use resource::{profile::StorageCounters, system_info::SystemInfo};
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -403,49 +401,36 @@ impl CardinalityValidation {
             )
             .collect();
 
-        let next_task = AtomicUsize::new(0);
-        let validate_tasks = || -> Result<Vec<DataValidationError>, Box<ConceptReadError>> {
+        out_errors.extend(parallel_flat_map(&tasks, |task| -> Result<_, Box<ConceptReadError>> {
             let mut errors = Vec::new();
-            while let Some(task) = tasks.get(next_task.fetch_add(1, atomic::Ordering::Relaxed)) {
-                match task {
-                    CardinalityTask::Owns(object_type, descriptions) => Self::validate_owns_cardinalities(
-                        snapshot,
-                        thing_manager,
-                        &mut errors,
-                        *object_type,
-                        descriptions,
-                        storage_counters.clone(),
-                    )?,
-                    CardinalityTask::Plays(object_type, descriptions) => Self::validate_plays_cardinalities(
-                        snapshot,
-                        thing_manager,
-                        &mut errors,
-                        *object_type,
-                        descriptions,
-                        storage_counters.clone(),
-                    )?,
-                    CardinalityTask::Relates(relation_type, descriptions) => Self::validate_relates_cardinalities(
-                        snapshot,
-                        thing_manager,
-                        &mut errors,
-                        *relation_type,
-                        descriptions,
-                        storage_counters.clone(),
-                    )?,
-                }
+            match task {
+                CardinalityTask::Owns(object_type, descriptions) => Self::validate_owns_cardinalities(
+                    snapshot,
+                    thing_manager,
+                    &mut errors,
+                    *object_type,
+                    descriptions,
+                    storage_counters.clone(),
+                )?,
+                CardinalityTask::Plays(object_type, descriptions) => Self::validate_plays_cardinalities(
+                    snapshot,
+                    thing_manager,
+                    &mut errors,
+                    *object_type,
+                    descriptions,
+                    storage_counters.clone(),
+                )?,
+                CardinalityTask::Relates(relation_type, descriptions) => Self::validate_relates_cardinalities(
+                    snapshot,
+                    thing_manager,
+                    &mut errors,
+                    *relation_type,
+                    descriptions,
+                    storage_counters.clone(),
+                )?,
             }
             Ok(errors)
-        };
-
-        let worker_count = SystemInfo::get_cpu_count().min(tasks.len());
-        let results: Vec<_> = thread::scope(|scope| {
-            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&validate_tasks)).collect();
-            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
-        });
-        for result in results {
-            out_errors.extend(result?);
-        }
-
+        })?);
         Ok(())
     }
 

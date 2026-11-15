@@ -24,6 +24,9 @@
 	[dependencies.chrono-tz]
 		workspace = true
 
+	[dependencies.concurrency]
+		workspace = true
+
 	[dependencies.diagnostics]
 		workspace = true
 
