@@ -36,7 +36,7 @@ use crate::{
             response_builders::database_manager::database_import_res_done,
         },
         import_service::DatabaseImportServiceError,
-        migration::item::decode_item,
+        migration::item::{LabelCache, decode_item},
     },
     state::ServerState,
 };
@@ -51,11 +51,12 @@ struct ActiveImport {
     name: String,
     started: Instant,
     importer: DatabaseImporterHandle,
+    labels: LabelCache,
 }
 
 impl ActiveImport {
     fn new(name: String, importer: DatabaseImporterHandle) -> Self {
-        Self { name, started: Instant::now(), importer }
+        Self { name, started: Instant::now(), importer, labels: LabelCache::default() }
     }
 }
 
@@ -267,8 +268,10 @@ impl DatabaseImportService {
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
+        // decoded here with the import's label cache, so the importer's coordinating thread only routes items
+        let items: Vec<_> = items.into_iter().map(|item| decode_item(item, &mut active_import.labels)).collect();
         self.stop_signals
-            .unless_stopped(active_import.importer.send_batch(items.into_iter().map(decode_item)))
+            .unless_stopped(active_import.importer.send_batch(items))
             .await?
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
@@ -314,7 +317,7 @@ impl DatabaseImportService {
     }
 
     async fn do_close(&mut self) -> bool {
-        let Some(ActiveImport { name, started, importer }) = self.active_import.take() else {
+        let Some(ActiveImport { name, started, importer, .. }) = self.active_import.take() else {
             return false;
         };
         if let Ok(total_items) = importer.abort().await {

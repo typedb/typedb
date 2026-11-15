@@ -8,6 +8,7 @@ use std::{
     borrow::Borrow,
     collections::BTreeMap,
     fmt::{self, Display, Formatter},
+    sync::Arc,
 };
 
 use bytes::util::Base64Formatter;
@@ -41,7 +42,7 @@ pub enum MigrationItem {
 #[derive(Debug, Clone)]
 pub struct EntityItem {
     pub globally_unique_id: String,
-    pub label: Label,
+    pub label: Arc<Label>,
     pub label_scoped_id: Option<u64>,
     pub attributes: Vec<OwnedAttribute>,
 }
@@ -49,7 +50,7 @@ pub struct EntityItem {
 #[derive(Debug, Clone)]
 pub struct RelationItem {
     pub globally_unique_id: String,
-    pub label: Label,
+    pub label: Arc<Label>,
     pub label_scoped_id: Option<u64>,
     pub attributes: Vec<OwnedAttribute>,
     pub roles: Vec<Role>,
@@ -58,7 +59,7 @@ pub struct RelationItem {
 #[derive(Debug, Clone)]
 pub struct AttributeItem {
     pub globally_unique_id: String,
-    pub label: Label,
+    pub label: Arc<Label>,
     pub value: Value<'static>,
 }
 
@@ -97,13 +98,13 @@ impl OwnedAttribute {
 
 #[derive(Debug, Clone)]
 pub struct AttributeReferencedByValue {
-    pub label: Label,
+    pub label: Arc<Label>,
     pub value: Value<'static>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Role {
-    pub label: Label,
+    pub label: Arc<Label>,
     pub players: Vec<Player>,
 }
 
@@ -121,7 +122,7 @@ impl Player {
 
 #[derive(Debug, Clone)]
 pub struct LabelScopedId {
-    pub label: Label,
+    pub label: Arc<Label>,
     pub label_scoped_id: u64,
 }
 
@@ -182,8 +183,8 @@ fn encode_type_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
-) -> Result<Label, Box<ConceptReadError>> {
-    Ok(type_.get_label(snapshot, type_manager)?.clone())
+) -> Result<Arc<Label>, Box<ConceptReadError>> {
+    Ok(Arc::new(type_.get_label(snapshot, type_manager)?.clone()))
 }
 
 fn encode_owned_attributes(

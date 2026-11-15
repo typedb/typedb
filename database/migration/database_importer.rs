@@ -1793,14 +1793,14 @@ impl ImportWorker {
     fn import_attribute(
         &mut self,
         globally_unique_id: String,
-        label: Label,
+        label: Arc<Label>,
         value: Value<'static>,
     ) -> Result<(), DatabaseImportError> {
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let attribute_type = type_manager
                 .get_attribute_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label })?;
+                .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label: (*label).clone() })?;
 
             debug_assert!(attribute_type.is_independent(&snapshot, &type_manager).unwrap());
             let attribute = thing_manager
@@ -1821,7 +1821,7 @@ impl ImportWorker {
     fn import_entity(
         &mut self,
         globally_unique_id: String,
-        label: Label,
+        label: Arc<Label>,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
     ) -> Result<(), DatabaseImportError> {
@@ -1829,7 +1829,7 @@ impl ImportWorker {
             let entity_type = type_manager
                 .get_entity_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownEntityType { label })?;
+                .ok_or_else(|| DatabaseImportError::UnknownEntityType { label: (*label).clone() })?;
 
             let entity = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id
@@ -1854,7 +1854,7 @@ impl ImportWorker {
     fn import_relation(
         &mut self,
         globally_unique_id: String,
-        label: Label,
+        label: Arc<Label>,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
         roles: Vec<Role>,
@@ -1866,7 +1866,7 @@ impl ImportWorker {
             let relation_type = type_manager
                 .get_relation_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
+                .ok_or_else(|| DatabaseImportError::UnknownRelationType { label: (*label).clone() })?;
 
             let relation = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id
@@ -1905,16 +1905,16 @@ impl ImportWorker {
                         .type_manager()
                         .get_attribute_type(snapshot, &label)
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                        .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label: label.clone() })?;
+                        .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label: (*label).clone() })?;
 
                     let expected_value_type = attribute_type
                         .get_value_type_without_source(snapshot, thing_manager.type_manager())
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                        .ok_or_else(|| DatabaseImportError::MissingValueType { label: label.clone() })?;
+                        .ok_or_else(|| DatabaseImportError::MissingValueType { label: (*label).clone() })?;
                     let value_value_type = value.value_type();
                     if value_value_type != expected_value_type {
                         return Err(DatabaseImportError::ValueTypeMismatch {
-                            label,
+                            label: (*label).clone(),
                             expected_value_type,
                             actual_value: value.into_owned(),
                             actual_value_type: value_value_type,
@@ -1988,7 +1988,7 @@ impl ImportWorker {
             let role_type = type_manager
                 .get_role_type(snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: label.clone() })?;
+                .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: (*label).clone() })?;
             for player in players {
                 let resolved = if self.configuration.use_external_label_scoped_ids() {
                     Self::resolve_player_by_label_scoped_id(snapshot, type_manager, player)?
@@ -2051,7 +2051,7 @@ impl ImportWorker {
         let player_type = type_manager
             .get_object_type(snapshot, &label)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-            .ok_or_else(|| DatabaseImportError::UnknownPlayerType { label })?;
+            .ok_or_else(|| DatabaseImportError::UnknownPlayerType { label: (*label).clone() })?;
         let object_id = ObjectID::new(label_scoped_id);
         let object = match player_type {
             ObjectType::Entity(entity_type) => {
