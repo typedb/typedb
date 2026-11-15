@@ -568,7 +568,6 @@ pub struct DatabaseImporter {
     error_state: ErrorState,
 
     schema_imported: bool,
-    schema_relaxation_pending: bool,
     phase: Option<DatabaseImporterPhase>,
 }
 
@@ -693,7 +692,6 @@ impl DatabaseImporter {
             data_info,
             error_state: error_state.clone(),
             schema_imported: false,
-            schema_relaxation_pending: false,
             phase: None,
         };
         let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
@@ -752,7 +750,7 @@ impl DatabaseImporter {
                     self.database_name,
                     self.configuration.as_guarantees()
                 );
-                self.relax_schema_if_pending()
+                Ok(())
             }
             MigrationItem::Entity(entity) => self.import_concept(ImportConcept::Entity(entity)),
             MigrationItem::Relation(relation) => self.import_concept(ImportConcept::Relation(relation)),
@@ -764,7 +762,7 @@ impl DatabaseImporter {
         let phase = concept.phase(self.configuration.item_order);
         match self.phase.as_ref().map(|current| current.phase) {
             None => {
-                self.relax_schema_if_pending()?;
+                self.relax_schema()?;
                 self.phase = Some(DatabaseImporterPhase::start(self, phase)?);
             }
             Some(current_phase) if current_phase != phase => {
@@ -785,9 +783,7 @@ impl DatabaseImporter {
         if schema.trim().is_empty() {
             return Ok(());
         }
-        self.submit_original_schema(schema)?;
-        self.schema_relaxation_pending = true;
-        Ok(())
+        self.submit_original_schema(schema)
     }
 
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
@@ -884,14 +880,6 @@ impl DatabaseImporter {
             },
             _ => Err(DatabaseImportError::InvalidSchemaDefineQuery {}),
         }
-    }
-
-    fn relax_schema_if_pending(&mut self) -> Result<(), DatabaseImportError> {
-        if !self.schema_relaxation_pending {
-            return Ok(());
-        }
-        self.schema_relaxation_pending = false;
-        self.relax_schema()
     }
 
     fn relax_schema(&mut self) -> Result<(), DatabaseImportError> {
