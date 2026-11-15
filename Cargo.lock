@@ -955,6 +955,7 @@ dependencies = [
  "bytes 0.0.0",
  "chrono",
  "chrono-tz",
+ "concurrency",
  "criterion",
  "diagnostics",
  "durability",

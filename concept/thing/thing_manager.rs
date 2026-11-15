@@ -10,12 +10,7 @@ use std::{
     fmt,
     iter::{self, Map},
     ops::RangeBounds,
-    panic,
-    sync::{
-        Arc,
-        atomic::{self, AtomicUsize},
-    },
-    thread,
+    sync::Arc,
 };
 
 use bytes::{
@@ -23,6 +18,7 @@ use bytes::{
     byte_array::ByteArray,
     util::{concat_bytes, increment},
 };
+use concurrency::parallel_flat_map;
 use encoding::{
     AsBytes, DecodableKey, EncodingKeyspace, Keyable, Prefixed,
     graph::{
@@ -68,7 +64,6 @@ use resource::{
         snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     },
     profile::StorageCounters,
-    system_info::SystemInfo,
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -2475,36 +2470,20 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Relation>, Box<ConceptReadError>> {
         let relation_types = self.get_relation_types_no_longer_independent(snapshot, storage_counters.clone())?;
-        let next_relation_type = AtomicUsize::new(0);
-        let find_relations_without_players = || -> Result<Vec<Relation>, Box<ConceptReadError>> {
+        parallel_flat_map(&relation_types, |&relation_type| {
             let mut relations_without_players = Vec::new();
-            while let Some(&relation_type) =
-                relation_types.get(next_relation_type.fetch_add(1, atomic::Ordering::Relaxed))
-            {
-                let mut walk = InstanceEdgeWalk::new(
-                    self.get_relations_in(snapshot, relation_type, storage_counters.clone()),
-                    self.get_links_in(snapshot, relation_type, storage_counters.clone()),
-                    |(links, _)| links.relation(),
-                );
-                while let Some(relation) = walk.next_instance().transpose()? {
-                    if walk.next_edge().transpose()?.is_none() {
-                        relations_without_players.push(relation);
-                    }
+            let mut walk = InstanceEdgeWalk::new(
+                self.get_relations_in(snapshot, relation_type, storage_counters.clone()),
+                self.get_links_in(snapshot, relation_type, storage_counters.clone()),
+                |(links, _)| links.relation(),
+            );
+            while let Some(relation) = walk.next_instance().transpose()? {
+                if walk.next_edge().transpose()?.is_none() {
+                    relations_without_players.push(relation);
                 }
             }
             Ok(relations_without_players)
-        };
-
-        let worker_count = SystemInfo::get_cpu_count().min(relation_types.len());
-        let results: Vec<_> = thread::scope(|scope| {
-            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&find_relations_without_players)).collect();
-            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
-        });
-        let mut relations_without_players = Vec::new();
-        for result in results {
-            relations_without_players.extend(result?);
-        }
-        Ok(relations_without_players)
+        })
     }
 
     fn get_relation_types_no_longer_independent(
@@ -2600,46 +2579,29 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
         let attribute_types = self.get_attribute_types_no_longer_independent(snapshot, storage_counters.clone())?;
-        let next_attribute_type = AtomicUsize::new(0);
-        let find_attributes_without_owners = || -> Result<Vec<Attribute>, Box<ConceptReadError>> {
+        parallel_flat_map(&attribute_types, |&attribute_type| {
+            let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
+                return Ok(Vec::new());
+            };
+            let attributes: InstanceIterator<Attribute> = self.get_instances_in(
+                snapshot,
+                attribute_type,
+                AttributeVertex::keyspace_for_category(value_type.category()),
+                storage_counters.clone(),
+            );
+            let mut walk = InstanceEdgeWalk::new(
+                attributes,
+                self.get_has_reverse_in(snapshot, attribute_type, storage_counters.clone())?,
+                |(has, _)| has.attribute(),
+            );
             let mut attributes_without_owners = Vec::new();
-            while let Some(&attribute_type) =
-                attribute_types.get(next_attribute_type.fetch_add(1, atomic::Ordering::Relaxed))
-            {
-                let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
-                else {
-                    continue;
-                };
-                let attributes: InstanceIterator<Attribute> = self.get_instances_in(
-                    snapshot,
-                    attribute_type,
-                    AttributeVertex::keyspace_for_category(value_type.category()),
-                    storage_counters.clone(),
-                );
-                let mut walk = InstanceEdgeWalk::new(
-                    attributes,
-                    self.get_has_reverse_in(snapshot, attribute_type, storage_counters.clone())?,
-                    |(has, _)| has.attribute(),
-                );
-                while let Some(attribute) = walk.next_instance().transpose()? {
-                    if walk.next_edge().transpose()?.is_none() {
-                        attributes_without_owners.push(attribute);
-                    }
+            while let Some(attribute) = walk.next_instance().transpose()? {
+                if walk.next_edge().transpose()?.is_none() {
+                    attributes_without_owners.push(attribute);
                 }
             }
             Ok(attributes_without_owners)
-        };
-
-        let worker_count = SystemInfo::get_cpu_count().min(attribute_types.len());
-        let results: Vec<_> = thread::scope(|scope| {
-            let workers: Vec<_> = (0..worker_count).map(|_| scope.spawn(&find_attributes_without_owners)).collect();
-            workers.into_iter().map(|worker| worker.join().unwrap_or_else(|err| panic::resume_unwind(err))).collect()
-        });
-        let mut attributes_without_owners = Vec::new();
-        for result in results {
-            attributes_without_owners.extend(result?);
-        }
-        Ok(attributes_without_owners)
+        })
     }
 
     // independence is inherited, and a type can also lose it by changing supertype, so compare with the schema before this transaction
