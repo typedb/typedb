@@ -3125,7 +3125,7 @@ impl OperationTimeValidation {
         Ok(false)
     }
 
-    fn validate_new_owns_instances_against_constraints(
+    fn validate_owns_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -3775,7 +3775,7 @@ impl OperationTimeValidation {
     new_acquired_capability_instances_validation!(
         validate_new_acquired_owns_compatible_with_instances,
         Owns,
-        Self::validate_new_owns_instances_against_constraints
+        Self::validate_owns_instances_against_constraints
     );
     new_acquired_capability_instances_validation!(
         validate_new_acquired_plays_compatible_with_instances,
@@ -3791,7 +3791,7 @@ impl OperationTimeValidation {
     new_annotation_constraints_compatible_with_capability_instances_validation!(
         validate_new_annotation_constraints_compatible_with_owns_instances,
         Owns,
-        Self::validate_new_owns_instances_against_constraints
+        Self::validate_owns_instances_against_constraints
     );
     new_annotation_constraints_compatible_with_capability_instances_validation!(
         validate_new_annotation_constraints_compatible_with_plays_instances,
@@ -3808,7 +3808,7 @@ impl OperationTimeValidation {
         validate_updated_constraints_compatible_with_owns_instances_on_object_supertype_change,
         Owns,
         ObjectType,
-        Self::validate_new_owns_instances_against_constraints
+        Self::validate_owns_instances_against_constraints
     );
     updated_constraints_compatible_with_capability_instances_on_object_supertype_change_validation!(
         validate_updated_constraints_compatible_with_plays_instances_on_object_supertype_change,
@@ -3827,7 +3827,7 @@ impl OperationTimeValidation {
     affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_unset,
         Owns,
-        Self::validate_new_owns_instances_against_constraints
+        Self::validate_owns_instances_against_constraints
     );
     affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation!(
         validate_affected_constraints_compatible_with_plays_instances_on_role_supertype_unset,
@@ -3844,7 +3844,7 @@ impl OperationTimeValidation {
         validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_change,
         Owns,
         Self::validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_unset,
-        Self::validate_new_owns_instances_against_constraints
+        Self::validate_owns_instances_against_constraints
     );
     affected_constraints_compatible_with_capability_instances_on_interface_supertype_change_validation!(
         validate_affected_constraints_compatible_with_plays_instances_on_role_supertype_change,
