@@ -83,7 +83,7 @@ use tracing::{trace, warn};
 use crate::{
     ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
-    iterator::InstanceIterator,
+    iterator::{InstanceEdgeWalk, InstanceIterator},
     thing::{
         ThingAPI,
         attribute::{Attribute, AttributeIterator},
@@ -2481,18 +2481,13 @@ impl ThingManager {
             while let Some(&relation_type) =
                 relation_types.get(next_relation_type.fetch_add(1, atomic::Ordering::Relaxed))
             {
-                let mut links = self.get_links_in(snapshot, relation_type, storage_counters.clone()).peekable();
-                for relation in self.get_relations_in(snapshot, relation_type, storage_counters.clone()) {
-                    let relation = relation?;
-                    let mut has_players = false;
-                    while links
-                        .peek()
-                        .is_some_and(|result| result.as_ref().map_or(true, |(edge, _)| edge.relation() == relation))
-                    {
-                        links.next().unwrap()?;
-                        has_players = true;
-                    }
-                    if !has_players {
+                let mut walk = InstanceEdgeWalk::new(
+                    self.get_relations_in(snapshot, relation_type, storage_counters.clone()),
+                    self.get_links_in(snapshot, relation_type, storage_counters.clone()),
+                    |(links, _)| links.relation(),
+                );
+                while let Some(relation) = walk.next_instance().transpose()? {
+                    if walk.next_edge().transpose()?.is_none() {
                         relations_without_players.push(relation);
                     }
                 }
@@ -2615,26 +2610,19 @@ impl ThingManager {
                 else {
                     continue;
                 };
-                // attributes and their reverse has are both ordered by attribute, so walk them together
-                let mut has_reverse =
-                    self.get_has_reverse_in(snapshot, attribute_type, storage_counters.clone())?.peekable();
                 let attributes: InstanceIterator<Attribute> = self.get_instances_in(
                     snapshot,
                     attribute_type,
                     AttributeVertex::keyspace_for_category(value_type.category()),
                     storage_counters.clone(),
                 );
-                for attribute in attributes {
-                    let attribute = attribute?;
-                    let mut has_owners = false;
-                    while has_reverse
-                        .peek()
-                        .is_some_and(|result| result.as_ref().map_or(true, |(edge, _)| edge.attribute() == attribute))
-                    {
-                        has_reverse.next().unwrap()?;
-                        has_owners = true;
-                    }
-                    if !has_owners {
+                let mut walk = InstanceEdgeWalk::new(
+                    attributes,
+                    self.get_has_reverse_in(snapshot, attribute_type, storage_counters.clone())?,
+                    |(has, _)| has.attribute(),
+                );
+                while let Some(attribute) = walk.next_instance().transpose()? {
+                    if walk.next_edge().transpose()?.is_none() {
                         attributes_without_owners.push(attribute);
                     }
                 }
