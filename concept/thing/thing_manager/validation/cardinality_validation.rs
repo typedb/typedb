@@ -51,7 +51,7 @@ macro_rules! collect_errors {
 }
 
 use crate::{
-    iterator::InstanceIterator,
+    iterator::{InstanceEdgeWalk, InstanceIterator},
     type_::{
         annotation::AnnotationCardinality, object_type::ObjectType, relation_type::RelationType,
         type_manager::TypeManager,
@@ -242,8 +242,6 @@ impl CardinalityValidation {
             storage_counters.clone(),
         )?;
 
-        // at this point, we've validated the delta, and only need to revalidate untouched/persisted data according to the type modifications
-        // TODO validate this thought
         if !Snapshot::IMMUTABLE_SCHEMA {
             Self::validate_instances_of_modified_cardinalities(snapshot, thing_manager, out_errors, storage_counters)?;
         }
@@ -571,19 +569,12 @@ impl CardinalityValidation {
             }
         }
 
-        // instances and their edges are both ordered by instance, so walk them together to also visit instances without any edge
-        let mut edges = get_edges_in(type_).peekable();
-        for instance in get_instances_in(type_) {
-            let instance = instance?;
-            while edges.peek().is_some_and(|result| {
-                result.as_ref().map_or(true, |(edge, _)| edge_instance_and_interface(edge).0 <= instance)
-            }) {
-                let (edge, count) = edges.next().unwrap()?;
-                let (edge_instance, interface_type) = edge_instance_and_interface(&edge);
-                // an edge whose instance was not returned is skipped, so it cannot stall the walk
-                if edge_instance != instance {
-                    continue;
-                }
+        let mut walk = InstanceEdgeWalk::new(get_instances_in(type_), get_edges_in(type_), |(edge, _)| {
+            edge_instance_and_interface(edge).0
+        });
+        while let Some(instance) = walk.next_instance().transpose()? {
+            while let Some((edge, count)) = walk.next_edge().transpose()? {
+                let (_, interface_type) = edge_instance_and_interface(&edge);
                 if let Some(indices) = counted_by.get(&interface_type) {
                     for &index in indices {
                         counts[index] += count;
@@ -650,7 +641,7 @@ enum CardinalityTask<'a> {
 pub(crate) struct SchemaCardinalities {
     owns: HashMap<ObjectType, Vec<CardinalityDescription<Owns>>>,
     plays: HashMap<ObjectType, Vec<CardinalityDescription<Plays>>>,
-    pub relates: HashMap<RelationType, Vec<CardinalityDescription<Relates>>>,
+    relates: HashMap<RelationType, Vec<CardinalityDescription<Relates>>>,
 }
 
 pub(crate) struct CardinalityDescription<CAP: Capability> {
@@ -747,7 +738,7 @@ impl SchemaCardinalities {
                 let Some(previous) = previous_by_source.get(&description.constraint.source()) else {
                     return true;
                 };
-                // if the previous state was not strictl contained within the current one, we have to recheck the card
+                // if the previous state was not contained within the current one, we have to recheck the card
                 if !description.cardinality.narrowed_correctly_by(&previous.cardinality) {
                     return true;
                 }

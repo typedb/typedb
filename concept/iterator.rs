@@ -7,7 +7,7 @@
 // FIXME: exported macros must provide their own use-declarations or use fully qualified paths
 //        As it stands, this macro requires imports at point of use.
 
-use std::{cmp::Ordering, marker::PhantomData};
+use std::{cmp::Ordering, iter::Peekable, marker::PhantomData};
 
 use encoding::{Keyable, graph::thing::ThingVertex};
 use lending_iterator::{LendingIterator, Seekable};
@@ -93,6 +93,59 @@ where
         } else {
             // arbitary?
             Ordering::Equal
+        }
+    }
+}
+
+// walks instances with their edges, both sorted by instance, so instances without edges are visited too
+pub(crate) struct InstanceEdgeWalk<Instance, Instances, Edges: Iterator, EdgeInstance> {
+    instances: Instances,
+    edges: Peekable<Edges>,
+    edge_instance: EdgeInstance,
+    current: Option<Instance>,
+}
+
+impl<Instance, Edge, Instances, Edges, EdgeInstance> InstanceEdgeWalk<Instance, Instances, Edges, EdgeInstance>
+where
+    Instance: Ord + Clone,
+    Instances: Iterator<Item = Result<Instance, Box<ConceptReadError>>>,
+    Edges: Iterator<Item = Result<Edge, Box<ConceptReadError>>>,
+    EdgeInstance: Fn(&Edge) -> Instance,
+{
+    pub(crate) fn new(instances: Instances, edges: Edges, edge_instance: EdgeInstance) -> Self {
+        Self { instances, edges: edges.peekable(), edge_instance, current: None }
+    }
+
+    // skips the remaining edges of the current instance, then moves to the next one
+    pub(crate) fn next_instance(&mut self) -> Option<Result<Instance, Box<ConceptReadError>>> {
+        while let Some(edge) = self.next_edge() {
+            if let Err(error) = edge {
+                return Some(Err(error));
+            }
+        }
+        self.current = None;
+        let instance = self.instances.next()?;
+        if let Ok(instance) = &instance {
+            self.current = Some(instance.clone());
+        }
+        Some(instance)
+    }
+
+    // the next edge of the current instance, skipping edges of instances not returned
+    pub(crate) fn next_edge(&mut self) -> Option<Result<Edge, Box<ConceptReadError>>> {
+        let current = self.current.as_ref()?;
+        loop {
+            let edge_instance = match self.edges.peek()? {
+                Ok(edge) => (self.edge_instance)(edge),
+                Err(_) => return self.edges.next(),
+            };
+            match edge_instance.cmp(current) {
+                Ordering::Less => {
+                    self.edges.next();
+                }
+                Ordering::Equal => return self.edges.next(),
+                Ordering::Greater => return None,
+            }
         }
     }
 }
@@ -222,4 +275,69 @@ macro_rules! edge_iterator {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Item<T> = Result<T, Box<ConceptReadError>>;
+
+    fn walk(instances: Vec<Item<u64>>, edges: Vec<Item<(u64, char)>>) -> Item<Vec<(u64, Vec<char>)>> {
+        let mut walk = InstanceEdgeWalk::new(instances.into_iter(), edges.into_iter(), |&(instance, _)| instance);
+        let mut visited = Vec::new();
+        while let Some(instance) = walk.next_instance().transpose()? {
+            let mut edges = Vec::new();
+            while let Some((_, edge)) = walk.next_edge().transpose()? {
+                edges.push(edge);
+            }
+            visited.push((instance, edges));
+        }
+        Ok(visited)
+    }
+
+    fn error<T>() -> Item<T> {
+        Err(Box::new(ConceptReadError::OrderingValueMissing {}))
+    }
+
+    #[test]
+    fn instances_are_visited_with_their_edges_including_those_without_edges() {
+        let visited = walk(vec![Ok(1), Ok(2), Ok(3), Ok(4)], vec![Ok((1, 'a')), Ok((1, 'b')), Ok((3, 'c'))]).unwrap();
+        assert_eq!(visited, vec![(1, vec!['a', 'b']), (2, vec![]), (3, vec!['c']), (4, vec![])]);
+    }
+
+    #[test]
+    fn edges_of_instances_not_returned_are_skipped() {
+        let edges = vec![Ok((0, 'a')), Ok((1, 'b')), Ok((2, 'c')), Ok((3, 'd')), Ok((5, 'e'))];
+        let visited = walk(vec![Ok(1), Ok(3), Ok(4)], edges).unwrap();
+        assert_eq!(visited, vec![(1, vec!['b']), (3, vec!['d']), (4, vec![])]);
+    }
+
+    #[test]
+    fn unread_edges_are_skipped_when_moving_to_the_next_instance() {
+        let edges = vec![Ok((1, 'a')), Ok((1, 'b')), Ok((2, 'c'))];
+        let mut walk =
+            InstanceEdgeWalk::new(vec![Ok(1), Ok(2)].into_iter(), edges.into_iter(), |&(i, _): &(u64, char)| i);
+        assert_eq!(walk.next_instance().unwrap().unwrap(), 1);
+        assert_eq!(walk.next_edge().unwrap().unwrap(), (1, 'a'));
+        assert_eq!(walk.next_instance().unwrap().unwrap(), 2);
+        assert_eq!(walk.next_edge().unwrap().unwrap(), (2, 'c'));
+        assert!(walk.next_edge().is_none());
+        assert!(walk.next_instance().is_none());
+    }
+
+    #[test]
+    fn errors_are_returned() {
+        assert!(walk(vec![Ok(1)], vec![error()]).is_err());
+        assert!(walk(vec![Ok(1), error()], vec![]).is_err());
+    }
+
+    #[test]
+    fn an_error_in_unread_edges_is_returned_when_moving_to_the_next_instance() {
+        let edges = vec![Ok((1, 'a')), error()];
+        let mut walk =
+            InstanceEdgeWalk::new(vec![Ok(1), Ok(2)].into_iter(), edges.into_iter(), |&(i, _): &(u64, char)| i);
+        assert_eq!(walk.next_instance().unwrap().unwrap(), 1);
+        assert!(walk.next_instance().unwrap().is_err());
+    }
 }
