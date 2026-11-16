@@ -51,9 +51,9 @@ use options::MvccCleanupStrategy;
 use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, CLEANUP_WAKEUP_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
-    MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
+    MVCCStorage, StorageBulkLoadError, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    keyspace::rocks_resources::RocksResources,
+    keyspace::{CompactionHandle, rocks_resources::RocksResources},
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
@@ -664,6 +664,14 @@ impl Database<WALClient> {
                 storage_key_count: self.storage.estimate_key_count().expect("Expected storage key count"),
             },
         }
+    }
+
+    pub fn enable_bulk_loading(&self) -> Result<(), StorageBulkLoadError> {
+        self.storage.enable_bulk_loading()
+    }
+
+    pub fn finish_bulk_loading(&self) -> Result<CompactionHandle, StorageBulkLoadError> {
+        self.storage.finish_bulk_loading()
     }
 
     #[cfg(not(debug_assertions))]

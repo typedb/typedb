@@ -53,7 +53,7 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        CompactionHandle, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
@@ -453,6 +453,20 @@ impl<Durability> MVCCStorage<Durability> {
         )
     }
 
+    // compactions are deferred while data is loaded in bulk, until the bulk load is finished
+    pub fn enable_bulk_loading(&self) -> Result<(), StorageBulkLoadError> {
+        self.keyspaces
+            .enable_bulk_loading()
+            .map_err(|source| StorageBulkLoadError::Keyspace { name: self.name.clone(), source })
+    }
+
+    // the bulk loaded data is compacted in the background, without blocking reads or writes
+    pub fn finish_bulk_loading(&self) -> Result<CompactionHandle, StorageBulkLoadError> {
+        self.keyspaces
+            .finish_bulk_loading()
+            .map_err(|source| StorageBulkLoadError::Keyspace { name: self.name.clone(), source })
+    }
+
     pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
         checkpoint.add_storage(&self.keyspaces, self.metadata())
     }
@@ -758,6 +772,12 @@ typedb_error! {
         DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<str>, typedb_source: DurabilityClientError),
         KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<str>, errors: Vec<KeyspaceDeleteError>),
         DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<str>, source: Arc<io::Error>),
+    }
+}
+
+typedb_error! {
+    pub StorageBulkLoadError(component = "Storage bulk load", prefix = "STB") {
+        Keyspace(1, "Bulk loading into database '{name}' failed to configure a storage keyspace.", name: Arc<str>, source: KeyspaceError),
     }
 }
 

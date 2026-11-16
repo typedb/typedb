@@ -30,6 +30,7 @@ use futures::future::join_all;
 use resource::{constants::server::MAX_CONCURRENT_IMPORTS, profile::CommitProfile};
 use storage::{
     durability_client::{DurabilityClient, WALClient},
+    keyspace::CompactionHandle,
     snapshot::snapshot_id::SnapshotId,
 };
 use tokio::{
@@ -138,6 +139,14 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+    }
+
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.staged_database.enable_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.staged_database.finish_bulk_loading().map_err(|error| Arc::new(error) as _)
     }
 
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {

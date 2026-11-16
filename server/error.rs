@@ -365,6 +365,7 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         DatabaseImportError::TransactionFailed { .. }
         | DatabaseImportError::DataCommitFailed { .. }
         | DatabaseImportError::FinalisationFailed { .. }
+        | DatabaseImportError::BulkLoadFailed { .. }
         | DatabaseImportError::CacheError { .. }
         | DatabaseImportError::Interrupted { .. }
         | DatabaseImportError::WorkerInterrupted { .. } => ErrorOrigin::System,

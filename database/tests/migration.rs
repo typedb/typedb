@@ -34,7 +34,9 @@ use database::{
 use encoding::value::{label::Label, value::Value};
 use options::TransactionOptions;
 use resource::profile::CommitProfile;
-use storage::{StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict};
+use storage::{
+    StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, keyspace::CompactionHandle,
+};
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_database::manager;
 use tokio::sync::watch;
@@ -73,6 +75,14 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
         intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
+    }
+
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.staged_database.enable_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.staged_database.finish_bulk_loading().map_err(|error| Arc::new(error) as _)
     }
 
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
@@ -125,6 +135,14 @@ impl ImportingDatabaseHandle for RejectingCommitsHandle {
         }
     }
 
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.inner.enable_bulk_loading()
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.inner.finish_bulk_loading()
+    }
+
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
@@ -163,6 +181,14 @@ impl ImportingDatabaseHandle for CountingCommitsHandle {
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
         self.data_commits.fetch_add(1, Ordering::Relaxed);
         self.inner.commit_data(intent)
+    }
+
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.inner.enable_bulk_loading()
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.inner.finish_bulk_loading()
     }
 
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {

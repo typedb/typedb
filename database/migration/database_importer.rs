@@ -73,6 +73,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use storage::{
     StorageCommitError,
     durability_client::WALClient,
+    keyspace::CompactionHandle,
     snapshot::{ReadableSnapshot, WritableSnapshot, write::KnownToExist},
 };
 use tokio::{sync::mpsc, task::JoinHandle};
@@ -570,6 +571,8 @@ pub struct DatabaseImporter {
 
     schema_imported: bool,
     phase: Option<DatabaseImporterPhase>,
+    bulk_loading_configured: bool,
+    bulk_load_compaction: Option<CompactionHandle>,
     activity: Arc<Mutex<ImportActivity>>,
     _progress_logger: IntervalRunner,
 }
@@ -673,6 +676,18 @@ impl ImporterConfiguration {
     fn skip_predecessor_phase_existence_checks(&self) -> bool {
         matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
     }
+
+    fn commit_retries(&self, phase: ImportPhase) -> usize {
+        match (self.item_order, phase) {
+            (ItemOrder::AttributesEntitiesRelations, ImportPhase::Entities | ImportPhase::Relations) => 0,
+            _ => 3,
+        }
+    }
+
+    fn use_bulk_load(&self, phase: ImportPhase) -> bool {
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
+            && matches!(phase, ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred)
+    }
 }
 
 impl DatabaseImporter {
@@ -699,6 +714,8 @@ impl DatabaseImporter {
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
+            bulk_loading_configured: false,
+            bulk_load_compaction: None,
             activity,
             _progress_logger: progress_logger,
         };
@@ -785,6 +802,9 @@ impl DatabaseImporter {
     }
 
     fn start_phase(&mut self, phase: ImportPhase) -> Result<(), DatabaseImportError> {
+        if self.configuration.use_bulk_load(phase) && !self.bulk_loading_configured {
+            self.run_stage("configuring the storage to load data in bulk", Self::enable_bulk_loading)?;
+        }
         event!(
             Level::INFO,
             "Import to '{}': starting the {phase} phase after {} items.",
@@ -871,9 +891,35 @@ impl DatabaseImporter {
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
         self.run_stage("importing deferred ownerships", Self::import_deferred_ownerships)?;
         self.run_stage("importing deferred links", Self::import_deferred_links)?;
+        if self.bulk_loading_configured {
+            self.run_stage("starting the background compaction of the bulk loaded data", Self::finish_bulk_loading)?;
+        }
         self.run_stage("verifying checksums", |importer| importer.validate_imported_data())?;
         self.run_stage("restoring the schema and validating the data against it", Self::restore_relaxed_schema)?;
+        if let Some(compaction) = self.bulk_load_compaction.take() {
+            self.run_stage("waiting for the background compaction", |_| {
+                compaction.wait();
+                Ok(())
+            })?;
+        }
         self.run_stage("finalising the database", Self::finalise_importing_database)
+    }
+
+    fn enable_bulk_loading(&mut self) -> Result<(), DatabaseImportError> {
+        self.importing_database()?
+            .enable_bulk_loading()
+            .map_err(|typedb_source| DatabaseImportError::BulkLoadFailed { typedb_source })?;
+        self.bulk_loading_configured = true;
+        Ok(())
+    }
+
+    fn finish_bulk_loading(&mut self) -> Result<(), DatabaseImportError> {
+        let compaction = self
+            .importing_database()?
+            .finish_bulk_loading()
+            .map_err(|typedb_source| DatabaseImportError::BulkLoadFailed { typedb_source })?;
+        self.bulk_load_compaction = Some(compaction);
+        Ok(())
     }
 
     fn finalise_importing_database(&mut self) -> Result<(), DatabaseImportError> {
@@ -1524,14 +1570,6 @@ impl ImportPhase {
         }
     }
 
-    // entities and relations are written into new objects only, so their commits cannot conflict
-    fn commit_retries(&self) -> usize {
-        match self {
-            Self::AllUnordered | Self::Attributes | Self::Deferred => 3,
-            Self::Entities | Self::Relations => 0,
-        }
-    }
-
     fn is_ahead_of_phase_for(&self, thing_kind: ThingKind, item_order: ItemOrder) -> bool {
         let thing_phase = Self::phase_for(thing_kind, item_order);
         match item_order {
@@ -1766,7 +1804,7 @@ impl ImportWorker {
     fn write_and_may_commit(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.transaction_write_bytes += concept.estimated_write_bytes();
         // the items are only kept to reapply them when a commit is retried
-        if self.phase.commit_retries() > 0 {
+        if self.configuration.commit_retries(self.phase) > 0 {
             self.transaction_items.push(concept.clone());
         }
         self.write_item(concept)?;
@@ -2137,7 +2175,7 @@ impl ImportWorker {
 
     fn commit_with_retry(&mut self) -> Result<(), DatabaseImportError> {
         let Some(mut transaction) = self.data_transaction.take() else { return Ok(()) };
-        let retries = self.phase.commit_retries();
+        let retries = self.configuration.commit_retries(self.phase);
         for attempt in 1.. {
             match self.commit_write_transaction(transaction) {
                 Ok(()) => return self.merge_transaction_data_info(),
@@ -2289,5 +2327,6 @@ typedb_error! {
         ValueTypeMismatch(43, "Type {label} requires a value type of {expected_value_type} but got value {actual_value} of value type {actual_value_type}.", label: Label, expected_value_type: ValueType, actual_value: Value<'static>, actual_value_type: ValueType),
         HeaderAfterItems(44, "A header was received after instance items. It is a sign of a corrupted file or a client bug."),
         UnknownOwnedAttribute(45, "Cannot process an ownership of unknown attribute '{id}': the import guarantees that attributes precede their owners and that inline attributes are referenced by value. It is a sign of a corrupted file or a client bug.", id: String),
+        BulkLoadFailed(46, "Configuring the storage of the imported database to load data in bulk failed.", typedb_source: MigrationOperationError),
     }
 }

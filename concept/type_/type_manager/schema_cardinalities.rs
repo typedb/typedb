@@ -178,7 +178,6 @@ impl<CAP: Capability> CardinalityDescription<CAP> {
 }
 
 impl<'a, CAP: Capability> CardinalityCounters<'a, CAP> {
-    // adds edges of an interface type to the counter of each cardinality counting it
     pub(crate) fn count(&mut self, interface_type: CAP::InterfaceType, count: u64) {
         if let Some(indices) = self.cardinalities.counted_by.get(&interface_type) {
             for &index in indices {

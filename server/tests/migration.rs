@@ -38,7 +38,7 @@ use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use prost::Message;
 use resource::{constants::server::DISTRIBUTION_INFO, profile::CommitProfile};
 use server::service::migration::item::{EncodedItem, LabelCache, decode_item, encode_item};
-use storage::durability_client::WALClient;
+use storage::{durability_client::WALClient, keyspace::CompactionHandle};
 use test_utils::{TempDir, create_tmp_dir, init_logging};
 use tokio::sync::watch;
 use typedb_protocol::migration::Item;
@@ -74,6 +74,14 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
         intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
+    }
+
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.staged_database.enable_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.staged_database.finish_bulk_loading().map_err(|error| Arc::new(error) as _)
     }
 
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
