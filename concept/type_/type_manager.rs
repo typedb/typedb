@@ -378,7 +378,7 @@ macro_rules! get_filtered_constraints_methods {
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
             ) -> Result<HashSet<$constraint_type<$type_>>, Box<ConceptReadError>> {
-                Ok($filtering_method(type_.$get_constraints_method(snapshot, self)?.into_iter().cloned()))
+                Ok($filtering_method(type_.$get_constraints_method(snapshot, self)?.into_iter()))
             }
         )*
     }
@@ -395,7 +395,7 @@ macro_rules! get_type_capability_filtered_constraints_methods {
                 object_type: <$capability as Capability>::ObjectType,
                 interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<HashSet<CapabilityConstraint<$capability>>, Box<ConceptReadError>> {
-                Ok($filtering_method(object_type.$get_constraints_method(snapshot, self, interface_type)?.into_iter().cloned()))
+                Ok($filtering_method(object_type.$get_constraints_method(snapshot, self, interface_type)?.into_iter()))
             }
         )*
     }

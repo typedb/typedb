@@ -82,7 +82,7 @@ impl SchemaCardinalities {
         constraints_by_interface_type: HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>>,
     ) -> Result<Option<TypeCardinalities<CAP>>, Box<ConceptReadError>> {
         let mut cardinalities = Vec::new();
-        for constraint in get_cardinality_constraints(constraints_by_interface_type.into_values().flatten()) {
+        for constraint in get_cardinality_constraints(constraints_by_interface_type.values().flatten()) {
             if !constraint.requires_validation() {
                 continue;
             }
