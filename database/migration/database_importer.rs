@@ -17,6 +17,7 @@ use std::{
         mpsc::{Receiver, SyncSender, sync_channel},
     },
     thread,
+    time::{Duration, Instant},
 };
 
 use bytes::{Bytes, byte_array::ByteArray};
@@ -569,6 +570,8 @@ pub struct DatabaseImporter {
 
     schema_imported: bool,
     phase: Option<DatabaseImporterPhase>,
+    progress_logged_at: Instant,
+    progress_logged_item_count: u64,
 }
 
 impl Debug for DatabaseImporter {
@@ -674,6 +677,7 @@ impl ImporterConfiguration {
 
 impl DatabaseImporter {
     const DRAIN_CHUNK_SIZE: usize = 10_000;
+    const PROGRESS_LOG_INTERVAL: Duration = Duration::from_secs(30);
 
     pub fn start(
         importing_database: Arc<dyn ImportingDatabaseHandle>,
@@ -693,6 +697,8 @@ impl DatabaseImporter {
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
+            progress_logged_at: Instant::now(),
+            progress_logged_item_count: 0,
         };
         let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
         DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
@@ -707,7 +713,7 @@ impl DatabaseImporter {
                     return Err(DatabaseImportError::SchemaAlreadyImported {});
                 }
                 Some(ImportMessage::Schema(schema)) => {
-                    self.import_schema(schema)?;
+                    self.run_stage("defining the schema", |importer| importer.import_schema(schema))?;
                     self.schema_imported = true;
                 }
                 Some(ImportMessage::Items(_)) if !self.schema_imported => {
@@ -718,6 +724,7 @@ impl DatabaseImporter {
                         self.check_stopped()?;
                         self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
                     }
+                    self.log_progress_if_due();
                 }
                 Some(ImportMessage::Finalize) => {
                     self.finish_phase()?;
@@ -745,10 +752,11 @@ impl DatabaseImporter {
                 }
                 self.configuration = self.configuration.clone().with_guarantees(guarantees);
                 event!(
-                    Level::DEBUG,
-                    "Importing '{original_database}' from TypeDB {typedb_version} to '{}' with {:?}.",
+                    Level::INFO,
+                    "Importing '{original_database}' from TypeDB {typedb_version} to '{}' with {:?}, using {} workers.",
                     self.database_name,
-                    self.configuration.as_guarantees()
+                    self.configuration.as_guarantees(),
+                    self.configuration.worker_count()
                 );
                 Ok(())
             }
@@ -762,21 +770,78 @@ impl DatabaseImporter {
         let phase = concept.phase(self.configuration.item_order);
         match self.phase.as_ref().map(|current| current.phase) {
             None => {
-                self.relax_schema()?;
-                self.phase = Some(DatabaseImporterPhase::start(self, phase)?);
+                self.run_stage("relaxing the schema for the import", Self::relax_schema)?;
+                self.start_phase(phase)?;
             }
             Some(current_phase) if current_phase != phase => {
                 current_phase.validate_transition(phase, self.configuration.item_order)?;
                 self.finish_phase()?;
-                self.phase = Some(DatabaseImporterPhase::start(self, phase)?);
+                self.start_phase(phase)?;
             }
             Some(_) => (),
         }
         self.phase.as_mut().expect("a phase runs while importing").import_concept(concept)
     }
 
+    fn start_phase(&mut self, phase: ImportPhase) -> Result<(), DatabaseImportError> {
+        event!(
+            Level::INFO,
+            "Import to '{}': starting the {phase} phase after {} items.",
+            self.database_name,
+            self.total_item_count()
+        );
+        self.phase = Some(DatabaseImporterPhase::start(self, phase)?);
+        Ok(())
+    }
+
     fn finish_phase(&mut self) -> Result<(), DatabaseImportError> {
-        self.phase.take().map_or(Ok(()), DatabaseImporterPhase::finish)
+        let Some(phase) = self.phase.take() else { return Ok(()) };
+        let (import_phase, started) = (phase.phase, phase.started);
+        phase.finish()?;
+        event!(
+            Level::INFO,
+            "Import to '{}': finished the {import_phase} phase in {}s, with {} items imported so far.",
+            self.database_name,
+            started.elapsed().as_secs(),
+            self.total_item_count()
+        );
+        Ok(())
+    }
+
+    fn log_progress_if_due(&mut self) {
+        let elapsed = self.progress_logged_at.elapsed();
+        if elapsed < Self::PROGRESS_LOG_INTERVAL {
+            return;
+        }
+        let item_count = self.total_item_count();
+        let rate = item_count.saturating_sub(self.progress_logged_item_count) as f64 / elapsed.as_secs_f64();
+        let phase = self.phase.as_ref().map_or("no".to_owned(), |phase| phase.phase.to_string());
+        event!(
+            Level::INFO,
+            "Import to '{}': {item_count} items imported, {rate:.0} items/s over the last {}s, in the {phase} phase.",
+            self.database_name,
+            elapsed.as_secs()
+        );
+        self.progress_logged_at = Instant::now();
+        self.progress_logged_item_count = item_count;
+    }
+
+    fn run_stage(
+        &mut self,
+        stage: &str,
+        run: impl FnOnce(&mut Self) -> Result<(), DatabaseImportError>,
+    ) -> Result<(), DatabaseImportError> {
+        self.check_stopped()?;
+        event!(Level::INFO, "Import to '{}': {stage}...", self.database_name);
+        let started = Instant::now();
+        run(self)?;
+        event!(
+            Level::INFO,
+            "Import to '{}': finished {stage} in {}s.",
+            self.database_name,
+            started.elapsed().as_secs()
+        );
+        Ok(())
     }
 
     fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
@@ -787,16 +852,14 @@ impl DatabaseImporter {
     }
 
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
-        self.check_stopped()?;
-        self.import_deferred_ownerships()?;
-        self.check_stopped()?;
-        self.import_deferred_links()?;
-        self.check_stopped()?;
-        self.validate_imported_data()?;
-        self.check_stopped()?;
-        self.restore_relaxed_schema()?;
-        self.check_stopped()?;
+        self.run_stage("importing deferred ownerships", Self::import_deferred_ownerships)?;
+        self.run_stage("importing deferred links", Self::import_deferred_links)?;
+        self.run_stage("verifying checksums", |importer| importer.validate_imported_data())?;
+        self.run_stage("restoring the schema and validating the data against it", Self::restore_relaxed_schema)?;
+        self.run_stage("finalising the database", Self::finalise_importing_database)
+    }
 
+    fn finalise_importing_database(&mut self) -> Result<(), DatabaseImportError> {
         let Some(importing_database) = self.importing_database.take() else {
             return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
         };
@@ -844,11 +907,12 @@ impl DatabaseImporter {
                 self.import_concept(to_import_concept(deferred))?;
                 written += 1;
             }
+            self.log_progress_if_due();
         }
         self.finish_phase()?;
         if written > 0 {
             event!(
-                Level::DEBUG,
+                Level::INFO,
                 "Wrote {written} {deferred_name} deferred until their referenced instances were imported."
             );
         }
@@ -1474,6 +1538,7 @@ impl Display for ImportPhase {
 
 struct DatabaseImporterPhase {
     phase: ImportPhase,
+    started: Instant,
     sender: Option<SyncSender<Vec<ImportConcept>>>,
     batch_builder: Vec<ImportConcept>,
     batch_write_bytes: usize,
@@ -1510,6 +1575,7 @@ impl DatabaseImporterPhase {
         let receiver = Arc::new(Mutex::new(receiver));
         let mut phase = Self {
             phase: import_phase,
+            started: Instant::now(),
             sender: Some(sender),
             batch_builder: Vec::with_capacity(Self::BATCH_SIZE),
             batch_write_bytes: 0,
