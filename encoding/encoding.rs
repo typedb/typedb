@@ -130,15 +130,7 @@ impl KeyspaceSet for EncodingKeyspace {
         options.set_write_buffer_manager(&resources.write_buffer_manager());
         options.set_memtable_whole_key_filtering(false);
         options.set_optimize_filters_for_hits(false); // true => don't build bloom filters for the last level
-        options.set_compression_per_level(&[
-            DBCompressionType::None,
-            DBCompressionType::None,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-        ]);
+        options.set_compression_type(DBCompressionType::Lz4);
 
         let mut block_options = BlockBasedOptions::default();
         block_options.set_block_cache(&resources.cache());
