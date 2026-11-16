@@ -6,6 +6,7 @@
 
 use concurrency::parallel_flat_map;
 use encoding::Keyable;
+use itertools::Itertools;
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -192,7 +193,6 @@ impl CardinalityValidation {
         )
     }
 
-    // every edge of a new instance is buffered, so it is counted from the buffer alone, against all its cardinalities
     fn validate_new_instances<'c, CAP: Capability + 'c, Instance: Copy + Ord>(
         out_errors: &mut Vec<DataValidationError>,
         new_instances: impl Iterator<Item = Instance>,
@@ -205,7 +205,7 @@ impl CardinalityValidation {
             u64,
         ) -> Result<(), Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        let mut counter_storage = Vec::new();
+        let mut counter_storage = Vec::new(); // reusable to avoid reallocating for each instance
         let mut walk =
             InstanceEdgeWalk::new(new_instances.map(Ok), buffered_edges.map(Ok), |&(instance, _, _)| instance);
         while let Some(instance) = walk.next_instance().transpose()? {
@@ -225,23 +225,23 @@ impl CardinalityValidation {
         Ok(())
     }
 
-    fn validate_existing_owners_of_modified_has<Snapshot: ReadableSnapshot>(
-        snapshot: &mut Snapshot,
+    fn validate_existing_owners_of_modified_has(
+        snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let mut counter_storage = Vec::new();
-        thing_manager.for_each_owner_with_modified_has(snapshot, |snapshot, modified| {
-            let Some(owns_cardinalities) = cardinalities.owns.get(&modified.owner.type_()) else {
+        let buffered_has = thing_manager.buffered_has(snapshot);
+        Self::for_each_instance_with_modified_edges(buffered_has, |owner, modified_types| {
+            let Some(owns_cardinalities) = cardinalities.owns.get(&owner.type_()) else {
                 return Ok(());
             };
-            let modified_types = modified.modified_attribute_types;
             if Self::is_affected_persisted_instance(
                 snapshot,
                 thing_manager,
-                modified.owner,
+                owner,
                 owns_cardinalities,
                 modified_types,
                 storage_counters.clone(),
@@ -249,7 +249,7 @@ impl CardinalityValidation {
                 let check = Self::validate_owns_cardinality_constraints(
                     snapshot,
                     thing_manager,
-                    modified.owner,
+                    owner,
                     owns_cardinalities,
                     |description| description.counts_any(modified_types),
                     &mut counter_storage,
@@ -261,23 +261,23 @@ impl CardinalityValidation {
         })
     }
 
-    fn validate_existing_players_of_modified_links<Snapshot: ReadableSnapshot>(
-        snapshot: &mut Snapshot,
+    fn validate_existing_players_of_modified_links(
+        snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let mut counter_storage = Vec::new();
-        thing_manager.for_each_player_with_modified_links(snapshot, |snapshot, modified| {
-            let Some(plays_cardinalities) = cardinalities.plays.get(&modified.player.type_()) else {
+        let buffered_links_reverse = thing_manager.buffered_links_reverse(snapshot);
+        Self::for_each_instance_with_modified_edges(buffered_links_reverse, |player, modified_types| {
+            let Some(plays_cardinalities) = cardinalities.plays.get(&player.type_()) else {
                 return Ok(());
             };
-            let modified_types = modified.modified_role_types;
             if Self::is_affected_persisted_instance(
                 snapshot,
                 thing_manager,
-                modified.player,
+                player,
                 plays_cardinalities,
                 modified_types,
                 storage_counters.clone(),
@@ -285,7 +285,7 @@ impl CardinalityValidation {
                 let check = Self::validate_plays_cardinality_constraints(
                     snapshot,
                     thing_manager,
-                    modified.player,
+                    player,
                     plays_cardinalities,
                     |description| description.counts_any(modified_types),
                     &mut counter_storage,
@@ -297,23 +297,23 @@ impl CardinalityValidation {
         })
     }
 
-    fn validate_existing_relations_of_modified_links<Snapshot: ReadableSnapshot>(
-        snapshot: &mut Snapshot,
+    fn validate_existing_relations_of_modified_links(
+        snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let mut counter_storage = Vec::new();
-        thing_manager.for_each_relation_with_modified_links(snapshot, |snapshot, modified| {
-            let Some(relates_cardinalities) = cardinalities.relates.get(&modified.relation.type_()) else {
+        let buffered_links = thing_manager.buffered_links(snapshot);
+        Self::for_each_instance_with_modified_edges(buffered_links, |relation, modified_types| {
+            let Some(relates_cardinalities) = cardinalities.relates.get(&relation.type_()) else {
                 return Ok(());
             };
-            let modified_types = &modified.modified_role_types;
             if Self::is_affected_persisted_instance(
                 snapshot,
                 thing_manager,
-                modified.relation,
+                relation,
                 relates_cardinalities,
                 modified_types,
                 storage_counters.clone(),
@@ -321,7 +321,7 @@ impl CardinalityValidation {
                 let check = Self::validate_relates_cardinality_constraints(
                     snapshot,
                     thing_manager,
-                    modified.relation,
+                    relation,
                     relates_cardinalities,
                     |description| description.counts_any(modified_types),
                     &mut counter_storage,
@@ -331,6 +331,23 @@ impl CardinalityValidation {
             }
             Ok(())
         })
+    }
+
+    fn for_each_instance_with_modified_edges<Instance: Copy + PartialEq, InterfaceType: Copy + PartialEq>(
+        buffered_edges: impl Iterator<Item = (Instance, InterfaceType, u64)>,
+        mut visit: impl FnMut(Instance, &[InterfaceType]) -> Result<(), Box<ConceptReadError>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let mut modified_types = Vec::new();
+        for (instance, edges) in &buffered_edges.chunk_by(|&(instance, _, _)| instance) {
+            modified_types.clear();
+            for (_, interface_type, _) in edges {
+                if !modified_types.contains(&interface_type) {
+                    modified_types.push(interface_type);
+                }
+            }
+            visit(instance, &modified_types)?;
+        }
+        Ok(())
     }
 
     fn validate_instances_of_modified_cardinalities(

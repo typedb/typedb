@@ -110,20 +110,10 @@ use crate::{
 
 pub mod validation;
 
-pub(crate) struct ModifiedOwnerHas<'a> {
-    pub owner: Object,
-    pub modified_attribute_types: &'a [AttributeType],
-}
-
 pub(crate) struct ModifiedRelationLinks {
     pub relation: Relation,
     pub modified_role_types: HashSet<RoleType>,
     pub removed_role_players: HashSet<(Object, RoleType)>,
-}
-
-pub(crate) struct ModifiedPlayerLinks<'a> {
-    pub player: Object,
-    pub modified_role_types: &'a [RoleType],
 }
 
 #[derive(Clone, Copy)]
@@ -1964,99 +1954,6 @@ impl ThingManager {
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
-    // the objects inserted in this snapshot, in key order
-    pub(crate) fn buffered_new_objects(&self, snapshot: &impl WritableSnapshot) -> impl Iterator<Item = Object> {
-        let objects = KeyRange::new(
-            RangeStart::Inclusive(ObjectVertex::MIN.into_storage_key()),
-            RangeEnd::EndPrefixInclusive(ObjectVertex::MAX.into_storage_key()),
-            ObjectVertex::FIXED_WIDTH_ENCODING,
-        );
-        snapshot.buffered_writes_in_range(&objects).filter_map(|(key, write)| match write {
-            Write::Insert { .. } => Some(Object::new(ObjectVertex::decode(key))),
-            Write::Delete { .. } => None,
-            Write::Put { .. } => unreachable!("Encountered a Put for an object"),
-        })
-    }
-
-    // the buffered has edges as owner, attribute type and count, in key order
-    pub(crate) fn buffered_has(
-        &self,
-        snapshot: &impl WritableSnapshot,
-    ) -> impl Iterator<Item = (Object, AttributeType, u64)> {
-        let has = KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        snapshot.buffered_writes_in_range(&has).map(|(key, write)| {
-            let edge = ThingEdgeHas::decode(Bytes::reference(key));
-            (Object::new(edge.from()), Attribute::new(edge.to()).type_(), Self::buffered_edge_count(write))
-        })
-    }
-
-    // the buffered links edges as relation, role type and count, in key order
-    pub(crate) fn buffered_links(
-        &self,
-        snapshot: &impl WritableSnapshot,
-    ) -> impl Iterator<Item = (Relation, RoleType, u64)> {
-        let links = KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
-        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
-            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
-            (
-                Relation::new(edge.relation()),
-                RoleType::build_from_type_id(edge.role_id()),
-                Self::buffered_edge_count(write),
-            )
-        })
-    }
-
-    // the buffered reverse links edges as player, role type and count, in key order
-    pub(crate) fn buffered_links_reverse(
-        &self,
-        snapshot: &impl WritableSnapshot,
-    ) -> impl Iterator<Item = (Object, RoleType, u64)> {
-        let links =
-            KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE);
-        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
-            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
-            (Object::new(edge.player()), RoleType::build_from_type_id(edge.role_id()), Self::buffered_edge_count(write))
-        })
-    }
-
-    fn buffered_edge_count(write: &Write) -> u64 {
-        match write {
-            Write::Insert { value } | Write::Put { value, .. } => decode_value_u64(value),
-            Write::Delete { .. } => 0,
-        }
-    }
-
-    pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(
-        &self,
-        snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, ModifiedOwnerHas<'_>) -> Result<(), E>,
-    ) -> Result<(), E> {
-        // the attribute types of the current owner are collected into one buffer reused across owners
-        let mut owner: Option<Object> = None;
-        let mut modified_attribute_types = Vec::new();
-        let mut flush = |snapshot: &mut Snapshot, owner: Option<Object>, types: &[AttributeType]| match owner {
-            Some(owner) => visit(snapshot, ModifiedOwnerHas { owner, modified_attribute_types: types }),
-            None => Ok(()),
-        };
-        snapshot.visit_writes_in_range(
-            &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
-            |snapshot, key, _| {
-                let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
-                let edge_owner = Object::new(edge.from());
-                if owner != Some(edge_owner) {
-                    flush(snapshot, owner.replace(edge_owner), &modified_attribute_types)?;
-                    modified_attribute_types.clear();
-                }
-                let attribute_type = Attribute::new(edge.to()).type_();
-                if !modified_attribute_types.contains(&attribute_type) {
-                    modified_attribute_types.push(attribute_type);
-                }
-                Ok(())
-            },
-        )?;
-        flush(snapshot, owner, &modified_attribute_types)
-    }
-
     pub(crate) fn for_each_relation_with_modified_links<Snapshot: ReadableSnapshot, E>(
         &self,
         snapshot: &mut Snapshot,
@@ -2093,35 +1990,63 @@ impl ThingManager {
         flush(snapshot, group.take())
     }
 
-    pub(crate) fn for_each_player_with_modified_links<Snapshot: ReadableSnapshot, E>(
+    /// ---- Optimized iterators that borrow from the snapshot BTree directly, without cloning ---
+    pub(crate) fn buffered_new_objects(&self, snapshot: &impl WritableSnapshot) -> impl Iterator<Item = Object> {
+        let objects = KeyRange::new(
+            RangeStart::Inclusive(ObjectVertex::MIN.into_storage_key()),
+            RangeEnd::EndPrefixInclusive(ObjectVertex::MAX.into_storage_key()),
+            ObjectVertex::FIXED_WIDTH_ENCODING,
+        );
+        snapshot.buffered_writes_in_range(&objects).filter_map(|(key, write)| match write {
+            Write::Insert { .. } => Some(Object::new(ObjectVertex::decode(key))),
+            Write::Delete { .. } => None,
+            Write::Put { .. } => unreachable!("Encountered a Put for an object"),
+        })
+    }
+
+    pub(crate) fn buffered_has(
         &self,
-        snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, ModifiedPlayerLinks<'_>) -> Result<(), E>,
-    ) -> Result<(), E> {
-        // the role types of the current player are collected into one buffer reused across players
-        let mut player: Option<Object> = None;
-        let mut modified_role_types = Vec::new();
-        let mut flush = |snapshot: &mut Snapshot, player: Option<Object>, types: &[RoleType]| match player {
-            Some(player) => visit(snapshot, ModifiedPlayerLinks { player, modified_role_types: types }),
-            None => Ok(()),
-        };
-        snapshot.visit_writes_in_range(
-            &KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
-            |snapshot, key, _| {
-                let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
-                let edge_player = Object::new(edge.player());
-                if player != Some(edge_player) {
-                    flush(snapshot, player.replace(edge_player), &modified_role_types)?;
-                    modified_role_types.clear();
-                }
-                let role_type = RoleType::build_from_type_id(edge.role_id());
-                if !modified_role_types.contains(&role_type) {
-                    modified_role_types.push(role_type);
-                }
-                Ok(())
-            },
-        )?;
-        flush(snapshot, player, &modified_role_types)
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Object, AttributeType, u64)> {
+        let has = KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        snapshot.buffered_writes_in_range(&has).map(|(key, write)| {
+            let edge = ThingEdgeHas::decode(Bytes::reference(key));
+            (Object::new(edge.from()), Attribute::new(edge.to()).type_(), Self::buffered_edge_count(write))
+        })
+    }
+
+    pub(crate) fn buffered_links(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Relation, RoleType, u64)> {
+        let links = KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
+            (
+                Relation::new(edge.relation()),
+                RoleType::build_from_type_id(edge.role_id()),
+                Self::buffered_edge_count(write),
+            )
+        })
+    }
+
+    pub(crate) fn buffered_links_reverse(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Object, RoleType, u64)> {
+        let links =
+            KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE);
+        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
+            (Object::new(edge.player()), RoleType::build_from_type_id(edge.role_id()), Self::buffered_edge_count(write))
+        })
+    }
+
+    fn buffered_edge_count(write: &Write) -> u64 {
+        match write {
+            Write::Insert { value } | Write::Put { value, .. } => decode_value_u64(value),
+            Write::Delete { .. } => 0,
+        }
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
