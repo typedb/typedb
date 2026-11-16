@@ -44,6 +44,7 @@ use encoding::{
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
+        decode_value_u64,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
         integer_bytes::IntegerBytes,
@@ -1963,21 +1964,66 @@ impl ThingManager {
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
-    pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
-        &self,
-        snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, Object) -> Result<(), E>,
-    ) -> Result<(), E> {
+    // the objects inserted in this snapshot, in key order
+    pub(crate) fn buffered_new_objects(&self, snapshot: &impl WritableSnapshot) -> impl Iterator<Item = Object> {
         let objects = KeyRange::new(
             RangeStart::Inclusive(ObjectVertex::MIN.into_storage_key()),
             RangeEnd::EndPrefixInclusive(ObjectVertex::MAX.into_storage_key()),
             ObjectVertex::FIXED_WIDTH_ENCODING,
         );
-        snapshot.visit_writes_in_range(&objects, |snapshot, key, write| match write {
-            Write::Insert { .. } => visit(snapshot, Object::new(ObjectVertex::decode(key.bytes()))),
-            Write::Delete { .. } => Ok(()),
+        snapshot.buffered_writes_in_range(&objects).filter_map(|(key, write)| match write {
+            Write::Insert { .. } => Some(Object::new(ObjectVertex::decode(key))),
+            Write::Delete { .. } => None,
             Write::Put { .. } => unreachable!("Encountered a Put for an object"),
         })
+    }
+
+    // the buffered has edges as owner, attribute type and count, in key order
+    pub(crate) fn buffered_has(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Object, AttributeType, u64)> {
+        let has = KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        snapshot.buffered_writes_in_range(&has).map(|(key, write)| {
+            let edge = ThingEdgeHas::decode(Bytes::reference(key));
+            (Object::new(edge.from()), Attribute::new(edge.to()).type_(), Self::buffered_edge_count(write))
+        })
+    }
+
+    // the buffered links edges as relation, role type and count, in key order
+    pub(crate) fn buffered_links(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Relation, RoleType, u64)> {
+        let links = KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
+            (
+                Relation::new(edge.relation()),
+                RoleType::build_from_type_id(edge.role_id()),
+                Self::buffered_edge_count(write),
+            )
+        })
+    }
+
+    // the buffered reverse links edges as player, role type and count, in key order
+    pub(crate) fn buffered_links_reverse(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Object, RoleType, u64)> {
+        let links =
+            KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE);
+        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
+            (Object::new(edge.player()), RoleType::build_from_type_id(edge.role_id()), Self::buffered_edge_count(write))
+        })
+    }
+
+    fn buffered_edge_count(write: &Write) -> u64 {
+        match write {
+            Write::Insert { value } | Write::Put { value, .. } => decode_value_u64(value),
+            Write::Delete { .. } => 0,
+        }
     }
 
     pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(

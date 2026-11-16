@@ -79,7 +79,9 @@ impl CardinalityValidation {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinalities = thing_manager.type_manager().get_schema_cardinalities(snapshot)?;
-        Self::validate_new_objects(snapshot, thing_manager, &cardinalities, out_errors, storage_counters.clone())?;
+        Self::validate_new_owners(snapshot, thing_manager, &cardinalities, out_errors)?;
+        Self::validate_new_players(snapshot, thing_manager, &cardinalities, out_errors)?;
+        Self::validate_new_relations(snapshot, thing_manager, &cardinalities, out_errors)?;
         Self::validate_existing_owners_of_modified_has(
             snapshot,
             thing_manager,
@@ -114,57 +116,113 @@ impl CardinalityValidation {
         Ok(())
     }
 
-    fn validate_new_objects<Snapshot: ReadableSnapshot>(
-        snapshot: &mut Snapshot,
+    fn validate_new_owners(
+        snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         cardinalities: &SchemaCardinalities,
         out_errors: &mut Vec<DataValidationError>,
-        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Self::validate_new_instances(
+            out_errors,
+            thing_manager.buffered_new_objects(snapshot),
+            thing_manager.buffered_has(snapshot),
+            |owner: Object| cardinalities.owns.get(&owner.type_()),
+            |constraint, owner, attribute_type, count| {
+                DataValidation::validate_owns_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
+                    owner,
+                    attribute_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_new_players(
+        snapshot: &impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
+        out_errors: &mut Vec<DataValidationError>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        Self::validate_new_instances(
+            out_errors,
+            thing_manager.buffered_new_objects(snapshot),
+            thing_manager.buffered_links_reverse(snapshot),
+            |player: Object| cardinalities.plays.get(&player.type_()),
+            |constraint, player, role_type, count| {
+                DataValidation::validate_plays_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
+                    player,
+                    role_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    fn validate_new_relations(
+        snapshot: &impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        cardinalities: &SchemaCardinalities,
+        out_errors: &mut Vec<DataValidationError>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let new_relations = thing_manager.buffered_new_objects(snapshot).filter_map(|object| match object {
+            Object::Relation(relation) => Some(relation),
+            Object::Entity(_) => None,
+        });
+        Self::validate_new_instances(
+            out_errors,
+            new_relations,
+            thing_manager.buffered_links(snapshot),
+            |relation: Relation| cardinalities.relates.get(&relation.type_()),
+            |constraint, relation, role_type, count| {
+                DataValidation::validate_relates_instances_cardinality_constraint(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    constraint,
+                    relation,
+                    role_type,
+                    count,
+                )
+            },
+        )
+    }
+
+    // every edge of a new instance is buffered, so it is counted from the buffer alone, against all its cardinalities
+    fn validate_new_instances<'c, CAP: Capability + 'c, Instance: Copy + Ord>(
+        out_errors: &mut Vec<DataValidationError>,
+        new_instances: impl Iterator<Item = Instance>,
+        buffered_edges: impl Iterator<Item = (Instance, CAP::InterfaceType, u64)>,
+        cardinalities_of: impl Fn(Instance) -> Option<&'c TypeCardinalities<CAP>>,
+        validate_cardinality: impl Fn(
+            &CapabilityConstraint<CAP>,
+            Instance,
+            CAP::InterfaceType,
+            u64,
+        ) -> Result<(), Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let mut counter_storage = Vec::new();
-        thing_manager.for_each_new_object(snapshot, |snapshot, object| {
-            if let Some(owns_cardinalities) = cardinalities.owns.get(&object.type_()) {
-                let check = Self::validate_owns_cardinality_constraints(
-                    snapshot,
-                    thing_manager,
-                    object,
-                    owns_cardinalities,
-                    |_| true,
-                    &mut counter_storage,
-                    storage_counters.clone(),
-                );
+        let mut walk =
+            InstanceEdgeWalk::new(new_instances.map(Ok), buffered_edges.map(Ok), |&(instance, _, _)| instance);
+        while let Some(instance) = walk.next_instance().transpose()? {
+            let Some(cardinalities) = cardinalities_of(instance) else {
+                continue;
+            };
+            let mut counters = cardinalities.counters(&mut counter_storage);
+            while let Some((_, interface_type, count)) = walk.next_edge().transpose()? {
+                counters.count(interface_type, count);
+            }
+            for (description, count) in counters.iter() {
+                let constraint = &description.constraint;
+                let check = validate_cardinality(constraint, instance, constraint.source().interface(), count);
                 collect_errors!(out_errors, check, |e: Box<_>| *e);
             }
-
-            if let Some(plays_cardinalities) = cardinalities.plays.get(&object.type_()) {
-                let check = Self::validate_plays_cardinality_constraints(
-                    snapshot,
-                    thing_manager,
-                    object,
-                    plays_cardinalities,
-                    |_| true,
-                    &mut counter_storage,
-                    storage_counters.clone(),
-                );
-                collect_errors!(out_errors, check, |e: Box<_>| *e);
-            }
-
-            if let Object::Relation(relation) = object
-                && let Some(relates_cardinalities) = cardinalities.relates.get(&relation.type_())
-            {
-                let check = Self::validate_relates_cardinality_constraints(
-                    snapshot,
-                    thing_manager,
-                    relation,
-                    relates_cardinalities,
-                    |_| true,
-                    &mut counter_storage,
-                    storage_counters.clone(),
-                );
-                collect_errors!(out_errors, check, |e: Box<_>| *e);
-            }
-            Ok(())
-        })
+        }
+        Ok(())
     }
 
     fn validate_existing_owners_of_modified_has<Snapshot: ReadableSnapshot>(

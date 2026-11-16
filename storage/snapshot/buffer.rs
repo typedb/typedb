@@ -7,7 +7,7 @@
 use std::{
     borrow::Borrow,
     cmp::Ordering,
-    collections::{BTreeMap, Bound},
+    collections::{BTreeMap, Bound, btree_map},
     fmt,
     iter::{IntoIterator, Peekable},
     sync::Arc,
@@ -207,19 +207,9 @@ impl WriteBuffer {
         range: KeyRange<Bytes<'_, INLINE>>,
         limit: usize,
     ) -> BufferRangeIterator {
-        let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
-        let end = if matches!(range_end, RangeEnd::Unbounded) {
-            Bound::Unbounded
-        } else {
-            Bound::Excluded(&*exclusive_end_bytes)
-        };
-        let start_as_bound = range_start_as_bound(range_start);
-        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
-            self.writes
-                .range::<[u8], _>((start_bytes, end))
+            self.writes_in_range(range)
                 .take(limit)
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
@@ -228,6 +218,14 @@ impl WriteBuffer {
 
     // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
     pub(crate) fn any_not_deleted_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
+        self.writes_in_range(range).any(|(_, write)| !write.is_delete())
+    }
+
+    // the writes in the range in key order, borrowed from the buffer
+    pub fn writes_in_range<const INLINE: usize>(
+        &self,
+        range: KeyRange<Bytes<'_, INLINE>>,
+    ) -> btree_map::Range<'_, ByteArray<BUFFER_KEY_INLINE>, Write> {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
@@ -237,7 +235,7 @@ impl WriteBuffer {
         };
         let start_as_bound = range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
-        self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
+        self.writes.range::<[u8], _>((start_bytes, end))
     }
 
     pub(crate) fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {

@@ -6,7 +6,7 @@
 
 use std::{
     any::type_name,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, btree_map},
     error::Error,
     fmt,
     iter::empty,
@@ -170,6 +170,16 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn operations_mut(&mut self) -> &mut OperationsBuffer;
 
     fn read_snapshot_before_writes(&self) -> impl ReadableSnapshot;
+
+    // the buffered writes in the range in key order, borrowed from the buffer
+    fn buffered_writes_in_range<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+    ) -> btree_map::Range<'_, ByteArray<BUFFER_KEY_INLINE>, Write> {
+        self.operations()
+            .writes_in(range.start().get_value().keyspace_id())
+            .writes_in_range(range.map(|key| key.as_bytes(), |fixed_width| fixed_width))
+    }
 
     /// Insert a key with a new version
     fn insert(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
