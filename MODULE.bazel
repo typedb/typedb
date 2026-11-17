@@ -105,17 +105,49 @@ oci.pull(
 )
 use_repo(oci, "typedb-ubuntu-x86_64", "typedb-ubuntu-x86_64_linux_amd64", "typedb-ubuntu-arm64", "typedb-ubuntu-arm64_linux_arm64")
 
+# ===========================================================
+# TypeDB repos
+# ===========================================================
+
+bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
+git_override(
+    module_name = "typedb_bazel_distribution",
+    remote = "https://github.com/typedb/bazel-distribution",
+    commit = "28485723a1a690ca2daf3af4d5210bbe1d37377d",
+)
+
+bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+git_override(
+    module_name = "typedb_dependencies",
+    remote = "https://github.com/typedb/dependencies",
+    commit = "be9e35d316db96606526446df2f9c38157b19646",
+)
+
+bazel_dep(name = "typeql", version = "0.0.0")
+git_override(
+    module_name = "typeql",
+    remote = "https://github.com/typedb/typeql",
+    commit = "4c4a2d571cc7fb6b1e69eb3508d612cf854eeca9",
+)
+
+bazel_dep(name = "typedb_protocol", version = "0.0.0")
+git_override(
+    module_name = "typedb_protocol",
+    remote = "https://github.com/typedb/typedb-protocol",
+    commit = "ec6fb5e721425a0c08e7afb31bb57fe979659bc5",
+)
+
+bazel_dep(name = "typedb_behaviour", version = "0.0.0")
+git_override(
+    module_name = "typedb_behaviour",
+    remote = "https://github.com/typedb/typedb-behaviour",
+    commit = "c1a415e58adfc779d2b43cea0ed4478703c3b748",
+)
+
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
 workspace_refs(
     name = "typedb_workspace_refs",
-    workspace_commit_dict = {
-#        "typedb_protocol+": "99e080bd0d599ae235607da4e4e69787e681cbe1",
-#        "typeql+": "d07e949229b2551d59127d3bc3300cd38bdf33ff",
-    },
-    workspace_tag_dict = {
-        "typedb_protocol+": "3.15.0",
-        "typeql+": "3.15.0",
-    },
+    module_file = "//:MODULE.bazel",
 )
 
 # TypeDB Console and Loader artifacts
@@ -155,45 +187,6 @@ use_repo(
     "typedb_loader_artifact_mac-x86_64-extracted",
     "typedb_loader_artifact_mac-arm64-extracted",
     "typedb_loader_artifact_windows-x86_64-extracted",
-)
-
-# ===========================================================
-# TypeDB repos
-# ===========================================================
-
-bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
-git_override(
-    module_name = "typedb_bazel_distribution",
-    remote = "https://github.com/typedb/bazel-distribution",
-    commit = "c496caa8603aed28411b806e37ce3ebfe7e2812a",
-)
-
-bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-git_override(
-    module_name = "typedb_dependencies",
-    remote = "https://github.com/typedb/dependencies",
-    commit = "70adfe8c89d8c860c02abda0623c408662ddd295",
-)
-
-bazel_dep(name = "typeql", version = "0.0.0")
-git_override(
-    module_name = "typeql",
-    remote = "https://github.com/typedb/typeql",
-    tag = "3.15.0",
-)
-
-bazel_dep(name = "typedb_protocol", version = "0.0.0")
-git_override(
-    module_name = "typedb_protocol",
-    remote = "https://github.com/typedb/typedb-protocol",
-    tag = "3.15.0",
-)
-
-bazel_dep(name = "typedb_behaviour", version = "0.0.0")
-git_override(
-    module_name = "typedb_behaviour",
-    remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "a07218a2e764386c5ca786f635990e9c1fcb1d26",
 )
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")

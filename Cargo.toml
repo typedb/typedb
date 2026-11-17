@@ -151,7 +151,7 @@
 		[workspace.dependencies.clap]
 			default-features = false
 			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-			version = "4.6.7"
+			version = "4.6.8"
 
 		[workspace.dependencies.compiler]
 			default-features = false
@@ -386,7 +386,7 @@
 		[workspace.dependencies.rpassword]
 			default-features = false
 			features = []
-			version = "7.5.4"
+			version = "7.5.5"
 
 		[workspace.dependencies.rustls-pemfile]
 			default-features = false
@@ -446,7 +446,7 @@
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
-			version = "1.16.4"
+			version = "1.16.5"
 
 		[workspace.dependencies.smol]
 			default-features = false
@@ -582,13 +582,13 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.15.0"
+			rev = "ec6fb5e721425a0c08e7afb31bb57fe979659bc5"
 
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			tag = "3.15.0"
+			rev = "4c4a2d571cc7fb6b1e69eb3508d612cf854eeca9"
 
 		[workspace.dependencies.unicase]
 			default-features = false
@@ -608,7 +608,7 @@
 		[workspace.dependencies.uuid]
 			default-features = false
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.29.0"
+			version = "1.29.3"
 
 		[workspace.dependencies.xoshiro]
 			default-features = false
@@ -618,7 +618,7 @@
 		[workspace.dependencies.xxhash-rust]
 			default-features = false
 			features = ["xxh3"]
-			version = "0.8.19"
+			version = "0.8.21"
 
 		[workspace.dependencies.yaml-rust2]
 			default-features = false
