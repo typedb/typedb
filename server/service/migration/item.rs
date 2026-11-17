@@ -3,19 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, sync::Arc};
 
 use concept::error::ConceptDecodeError;
 use database::migration::{
-    Checksums, Counts,
+    Checksums, Counts, MigrationOperationError,
     database_exporter::ExportMessage,
     item::{
-        AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
-        OwnedAttribute, Player, RelationItem, Role,
+        AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemKind, ItemOrder,
+        LabelCache, LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role,
+        estimated_attribute_write_bytes, estimated_object_write_bytes,
     },
 };
-use encoding::value::{label::Label, value::Value};
+use encoding::value::value::Value;
 use error::{typedb_error, unimplemented_feature};
+use prost::Message;
 use typedb_protocol::{
     migration,
     migration::{Item, MigrationValue, item},
@@ -83,22 +85,26 @@ pub fn encode_item(item: ExportMessage) -> EncodedItem {
     EncodedItem::Item(Item { item: Some(encoded) })
 }
 
-// decoded labels by their wire string: an import names only the schema's few types and roles,
-// so each label is parsed once and then shared, instead of once per item, role and player
-#[derive(Debug, Default)]
-pub struct LabelCache {
-    labels: HashMap<String, Arc<Label>>,
+// the item is routed by its kind, and decoded by the import worker that writes it
+pub fn decodable_item(item_proto: Item) -> Result<DecodableItem<Item>, ItemDecodeError> {
+    let (kind, estimated_write_bytes) = match item_proto.item.as_ref().ok_or(ItemDecodeError::EmptyItem {})? {
+        item::Item::Header(_) => (ItemKind::Header, 0),
+        item::Item::Checksums(_) => (ItemKind::Checksums, 0),
+        item::Item::Entity(entity) => (ItemKind::Entity, estimated_object_write_bytes(entity.attributes.len(), 0)),
+        item::Item::Relation(relation) => {
+            let players = relation.roles.iter().map(|role| role.players.len()).sum();
+            (ItemKind::Relation, estimated_object_write_bytes(relation.attributes.len(), players))
+        }
+        item::Item::Attribute(attribute) => {
+            let value_bytes = attribute.value.as_ref().map_or(0, Message::encoded_len);
+            (ItemKind::Attribute, estimated_attribute_write_bytes(value_bytes))
+        }
+    };
+    Ok(DecodableItem::new(item_proto, kind, estimated_write_bytes, decode_routed_item))
 }
 
-impl LabelCache {
-    fn get(&mut self, label: String) -> Arc<Label> {
-        if let Some(cached) = self.labels.get(&label) {
-            return cached.clone();
-        }
-        let parsed = Arc::new(Label::parse_from(&label, None));
-        self.labels.insert(label, parsed.clone());
-        parsed
-    }
+fn decode_routed_item(item_proto: Item, labels: &mut LabelCache) -> Result<MigrationItem, MigrationOperationError> {
+    decode_item(item_proto, labels).map_err(|error| Arc::new(error) as _)
 }
 
 pub fn decode_item(item_proto: Item, labels: &mut LabelCache) -> Result<MigrationItem, ItemDecodeError> {
@@ -317,6 +323,8 @@ fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>,
 
 #[cfg(test)]
 mod tests {
+    use encoding::value::label::Label;
+
     use super::*;
 
     #[test]

@@ -22,8 +22,8 @@ use database::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
         item::{
-            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
-            OwnedAttribute, Player, RelationItem, Role,
+            AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemKind, ItemOrder,
+            LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role,
         },
     },
     transaction::{
@@ -215,7 +215,7 @@ fn importer_with_rejected_commits(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
     rejections: usize,
-) -> (DatabaseImporterHandle, Arc<AtomicUsize>) {
+) -> (DatabaseImporterHandle<MigrationItem>, Arc<AtomicUsize>) {
     let rejections_left = Arc::new(AtomicUsize::new(rejections));
     let handle = RejectingCommitsHandle {
         inner: test_importing_database(database_manager, name),
@@ -236,7 +236,7 @@ fn task_spawner() -> TokioTaskSpawner {
     TokioTaskTracker::new(shutdown_receiver).get_spawner()
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle<MigrationItem> {
     importer_with_spawner(database_manager, name, &task_spawner())
 }
 
@@ -244,7 +244,7 @@ fn importer_with_spawner(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
     task_spawner: &TokioTaskSpawner,
-) -> DatabaseImporterHandle {
+) -> DatabaseImporterHandle<MigrationItem> {
     let scratch_directory = database_manager.import_directory().to_owned();
     DatabaseImporter::start(
         importing_database(database_manager, name),
@@ -257,7 +257,7 @@ async fn importer_with_schema(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
     schema: &str,
-) -> DatabaseImporterHandle {
+) -> DatabaseImporterHandle<MigrationItem> {
     let mut importer = importer(database_manager, name);
     importer.send_schema(schema.to_owned()).await.expect("schema");
     importer
@@ -344,8 +344,8 @@ fn empty_checksums() -> MigrationItem {
     MigrationItem::Checksums(Checksums::new())
 }
 
-async fn import_all(mut importer: DatabaseImporterHandle, items: Vec<MigrationItem>) {
-    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+async fn import_all(mut importer: DatabaseImporterHandle<MigrationItem>, items: Vec<MigrationItem>) {
+    importer.send_batch(items.into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     importer.finalize().await.expect("import");
 }
 
@@ -530,7 +530,7 @@ async fn a_unique_ownership_is_validated_when_the_schema_is_restored() {
         }
     }
     let mut importer = importer_with_schema(&database_manager, "shared", UNIQUE_SCHEMA).await;
-    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.send_batch(items.into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ConceptWrite { .. })), "{result:?}");
 }
@@ -603,7 +603,7 @@ async fn a_maximum_plays_cardinality_is_validated_when_the_schema_is_restored() 
     let mut importer =
         DatabaseImporter::start(importing_database(&database_manager, "exceeded"), configuration(), &task_spawner());
     importer.send_schema(PLAYS_SCHEMA.to_owned()).await.expect("schema");
-    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.send_batch(items.into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::FinalizationSchemaCommitFailed { .. })), "{result:?}");
 }
@@ -616,11 +616,11 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut early = importer(&database_manager, "early");
     early
-        .send(MigrationItem::Header {
+        .send(DecodableItem::decoded(MigrationItem::Header {
             typedb_version: "3.0.0-test".to_owned(),
             original_database: "source".to_owned(),
             guarantees: Guarantees::default(),
-        })
+        }))
         .await
         .expect("send");
     let result = early.finalize().await;
@@ -634,14 +634,14 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut late = importer_with_schema(&database_manager, "late", SCHEMA).await;
     for item in source_items() {
-        late.send(item).await.expect("send");
+        late.send(DecodableItem::decoded(item)).await.expect("send");
     }
-    late.send(MigrationItem::Entity(EntityItem {
+    late.send(DecodableItem::decoded(MigrationItem::Entity(EntityItem {
         globally_unique_id: "p3".to_owned(),
         label: Arc::new(Label::build("person", None)),
         label_scoped_id: None,
         attributes: vec![],
-    }))
+    })))
     .await
     .expect("send");
     let result = late.finalize().await;
@@ -649,7 +649,7 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut duplicate = importer_with_schema(&database_manager, "duplicate", SCHEMA).await;
     for item in [empty_checksums(), empty_checksums()] {
-        duplicate.send(item).await.expect("send");
+        duplicate.send(DecodableItem::decoded(item)).await.expect("send");
     }
     let result = duplicate.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
@@ -686,7 +686,7 @@ async fn an_inline_attribute_referenced_by_id_under_the_by_value_guarantee_is_re
         empty_checksums(),
     ];
     for item in items {
-        if importer.send(item).await.is_err() {
+        if importer.send(DecodableItem::decoded(item)).await.is_err() {
             break;
         }
     }
@@ -897,7 +897,7 @@ async fn a_commit_rejected_more_often_than_the_retries_fails_the_import() {
     let database_manager = manager(&data_dir);
     let (mut importer, rejections_left) = importer_with_rejected_commits(&database_manager, "rejected", 4);
     importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
-    importer.send_batch(source_items().into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.send_batch(source_items().into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::DataCommitFailed { .. })), "{result:?}");
     assert_eq!(rejections_left.load(Ordering::Relaxed), 0);
@@ -914,13 +914,13 @@ async fn a_relation_without_role_players_is_rejected() {
     for (name, roles) in [("no-roles", no_roles), ("empty-role", empty_role)] {
         let mut importer = importer_with_schema(&database_manager, name, SCHEMA).await;
         importer
-            .send(MigrationItem::Relation(RelationItem {
+            .send(DecodableItem::decoded(MigrationItem::Relation(RelationItem {
                 globally_unique_id: "f1".to_owned(),
                 label: Arc::new(Label::build("friendship", None)),
                 label_scoped_id: None,
                 attributes: vec![],
                 roles,
-            }))
+            })))
             .await
             .expect("send");
         let result = importer.finalize().await;
@@ -935,9 +935,11 @@ async fn an_item_that_fails_to_decode_fails_the_import() {
     let database_manager = manager(&data_dir);
 
     let mut importer = importer_with_schema(&database_manager, "undecodable", SCHEMA).await;
-    // Any TypeDB error stands in for the server's item decoding error.
-    let batch = [Ok(empty_checksums()), Err(DatabaseImportError::ImporterStopped {})];
-    importer.send_batch(batch).await.expect("send");
+    // Any TypeDB error stands in for the server's item decoding error, raised by the worker decoding the entity.
+    let undecodable = DecodableItem::new(empty_checksums(), ItemKind::Entity, 0, |_, _| {
+        Err(Arc::new(DatabaseImportError::ImporterStopped {}) as _)
+    });
+    importer.send_batch(vec![undecodable]).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ItemDecode { .. })), "{result:?}");
 }

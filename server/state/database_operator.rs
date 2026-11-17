@@ -37,6 +37,7 @@ use tokio::{
     sync::{RwLock, Semaphore, mpsc::Sender},
     task::JoinHandle,
 };
+use typedb_protocol::migration::Item;
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
@@ -66,7 +67,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         &self,
         name: &str,
         close_sender: Sender<()>,
-    ) -> Result<DatabaseImporterHandle, ArcServerStateError>;
+    ) -> Result<DatabaseImporterHandle<Item>, ArcServerStateError>;
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -214,7 +215,7 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    pub fn start_importer(&self, importing_database: Arc<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
+    pub fn start_importer(&self, importing_database: Arc<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle<Item> {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         let configuration = ImporterConfiguration::new(scratch_directory).with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
         DatabaseImporter::start(importing_database, configuration, &self.background_task_spawner)
@@ -313,7 +314,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         &self,
         name: &str,
         close_sender: Sender<()>,
-    ) -> Result<DatabaseImporterHandle, ArcServerStateError> {
+    ) -> Result<DatabaseImporterHandle<Item>, ArcServerStateError> {
         let map_err =
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;

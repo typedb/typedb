@@ -8,7 +8,6 @@ use std::{
     collections::{HashMap, HashSet},
     fmt,
     fmt::{Debug, Display, Formatter},
-    iter,
     marker::PhantomData,
     path::PathBuf,
     sync::{
@@ -62,7 +61,7 @@ use encoding::{
     },
     value::{ValueEncodable, label::Label, value::Value, value_type::ValueType},
 };
-use error::{TypeDBError, typedb_error};
+use error::typedb_error;
 use query::error::QueryError;
 use resource::{
     constants::{common::MB, snapshot::BUFFER_KEY_INLINE},
@@ -85,8 +84,8 @@ use crate::{
         Checksums, Counts, MigrationOperationError,
         importing_database_handle::ImportingDatabaseHandle,
         item::{
-            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
-            OwnedAttribute, Player, RelationItem, Role,
+            AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemOrder, LabelCache,
+            LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role, estimated_object_write_bytes,
         },
     },
     query::execute_schema_query,
@@ -383,14 +382,10 @@ impl ImportConcept {
 
     fn estimated_write_bytes(&self) -> usize {
         match self {
-            Self::Entity(EntityItem { attributes, .. }) => {
-                Object::ESTIMATED_WRITE_BYTES + attributes.len() * Has::ESTIMATED_WRITE_BYTES
-            }
+            Self::Entity(EntityItem { attributes, .. }) => estimated_object_write_bytes(attributes.len(), 0),
             Self::Relation(RelationItem { attributes, roles, .. }) => {
-                let players: usize = roles.iter().map(|role| role.players.len()).sum();
-                Object::ESTIMATED_WRITE_BYTES
-                    + players * Links::ESTIMATED_WRITE_BYTES
-                    + attributes.len() * Has::ESTIMATED_WRITE_BYTES
+                let players = roles.iter().map(|role| role.players.len()).sum();
+                estimated_object_write_bytes(attributes.len(), players)
             }
             Self::Attribute(AttributeItem { value, .. }) => Attribute::estimated_write_bytes(value),
             Self::DeferredOwnership(_) => Has::ESTIMATED_WRITE_BYTES,
@@ -460,43 +455,56 @@ impl AttributesInfo {
     }
 }
 
-type ImportItems = Box<dyn Iterator<Item = Result<MigrationItem, MigrationOperationError>> + Send>;
+// an item handed to a phase's workers: a received item is decoded by the worker that writes it
+enum PhaseItem<Source: 'static> {
+    Received(ThingKind, DecodableItem<Source>),
+    Concept(ImportConcept),
+}
 
-enum ImportMessage {
+impl<Source> PhaseItem<Source> {
+    fn phase(&self, item_order: ItemOrder) -> ImportPhase {
+        match self {
+            Self::Received(thing_kind, _) => ImportPhase::phase_for(*thing_kind, item_order),
+            Self::Concept(concept) => concept.phase(item_order),
+        }
+    }
+
+    fn estimated_write_bytes(&self) -> usize {
+        match self {
+            Self::Received(_, item) => item.estimated_write_bytes(),
+            Self::Concept(concept) => concept.estimated_write_bytes(),
+        }
+    }
+}
+
+enum ImportMessage<Source: 'static> {
     Schema(String),
-    Items(ImportItems),
+    Items(Vec<DecodableItem<Source>>),
     Finalize,
 }
 
 type ImportResult = Result<u64, DatabaseImportError>;
 
-pub struct DatabaseImporterHandle {
-    message_sender: Option<mpsc::Sender<ImportMessage>>,
+pub struct DatabaseImporterHandle<Source: 'static> {
+    message_sender: Option<mpsc::Sender<ImportMessage<Source>>>,
     error_state: ErrorState,
     join_handle: Option<JoinHandle<ImportResult>>,
 }
 
-impl DatabaseImporterHandle {
+impl<Source> DatabaseImporterHandle<Source> {
     pub async fn send_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
         self.send_message(ImportMessage::Schema(schema)).await
     }
 
-    pub async fn send(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
-        self.send_message(ImportMessage::Items(Box::new(iter::once(Ok(item))))).await
+    pub async fn send(&mut self, item: DecodableItem<Source>) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(vec![item])).await
     }
 
-    pub async fn send_batch<E>(
-        &mut self,
-        items: impl IntoIterator<Item = Result<MigrationItem, E>, IntoIter: Send + 'static>,
-    ) -> Result<(), DatabaseImportError>
-    where
-        E: TypeDBError + Send + Sync + 'static,
-    {
-        let items = items.into_iter().map(|item| item.map_err(|error| Arc::new(error) as MigrationOperationError));
-        self.send_message(ImportMessage::Items(Box::new(items))).await
+    pub async fn send_batch(&mut self, items: Vec<DecodableItem<Source>>) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(items)).await
     }
 
-    async fn send_message(&mut self, message: ImportMessage) -> Result<(), DatabaseImportError> {
+    async fn send_message(&mut self, message: ImportMessage<Source>) -> Result<(), DatabaseImportError> {
         let sent = match &self.message_sender {
             Some(sender) => sender.send(message).await.is_ok(),
             None => false,
@@ -546,7 +554,7 @@ impl DatabaseImporterHandle {
     }
 }
 
-impl Drop for DatabaseImporterHandle {
+impl<Source> Drop for DatabaseImporterHandle<Source> {
     fn drop(&mut self) {
         if self.join_handle.is_some() {
             event!(Level::WARN, "An import was dropped before it was finalised or aborted. Aborting the import.");
@@ -555,13 +563,13 @@ impl Drop for DatabaseImporterHandle {
     }
 }
 
-impl std::fmt::Debug for DatabaseImporterHandle {
+impl<Source> std::fmt::Debug for DatabaseImporterHandle<Source> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DatabaseImporterHandle").finish_non_exhaustive()
     }
 }
 
-pub struct DatabaseImporter {
+pub struct DatabaseImporter<Source: 'static> {
     importing_database: Option<Arc<dyn ImportingDatabaseHandle>>,
     database_name: String,
     configuration: ImporterConfiguration,
@@ -570,14 +578,15 @@ pub struct DatabaseImporter {
     error_state: ErrorState,
 
     schema_imported: bool,
-    phase: Option<DatabaseImporterPhase>,
+    phase: Option<DatabaseImporterPhase<Source>>,
+    labels: LabelCache,
     bulk_loading_configured: bool,
     bulk_load_compaction: Option<CompactionHandle>,
     activity: Arc<Mutex<ImportActivity>>,
     _progress_logger: IntervalRunner,
 }
 
-impl Debug for DatabaseImporter {
+impl<Source> Debug for DatabaseImporter<Source> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DatabaseImporter").field("database_name", &self.database_name).finish_non_exhaustive()
     }
@@ -690,7 +699,7 @@ impl ImporterConfiguration {
     }
 }
 
-impl DatabaseImporter {
+impl<Source: Send + 'static> DatabaseImporter<Source> {
     const DRAIN_CHUNK_SIZE: usize = 10_000;
     const PROGRESS_LOG_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
@@ -698,7 +707,7 @@ impl DatabaseImporter {
         importing_database: Arc<dyn ImportingDatabaseHandle>,
         importer_configuration: ImporterConfiguration,
         task_spawner: &TokioTaskSpawner,
-    ) -> DatabaseImporterHandle {
+    ) -> DatabaseImporterHandle<Source> {
         let (sender, receiver) = mpsc::channel(importer_configuration.buffer_size);
         let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
@@ -714,6 +723,7 @@ impl DatabaseImporter {
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
+            labels: LabelCache::default(),
             bulk_loading_configured: false,
             bulk_load_compaction: None,
             activity,
@@ -723,7 +733,7 @@ impl DatabaseImporter {
         DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
     }
 
-    fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
+    fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage<Source>>) -> ImportResult {
         loop {
             self.check_stopped()?;
             match receiver.blocking_recv() {
@@ -741,7 +751,7 @@ impl DatabaseImporter {
                 Some(ImportMessage::Items(items)) => {
                     for item in items {
                         self.check_stopped()?;
-                        self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
+                        self.route(item)?;
                     }
                 }
                 Some(ImportMessage::Finalize) => {
@@ -757,6 +767,19 @@ impl DatabaseImporter {
         match self.error_state.error() {
             Some(error) => Err(error),
             None => Ok(()),
+        }
+    }
+
+    fn route(&mut self, item: DecodableItem<Source>) -> Result<(), DatabaseImportError> {
+        match item.kind().thing_kind() {
+            None => {
+                let decoded = item
+                    .decode(&mut self.labels)
+                    .map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?;
+                self.apply(decoded)
+            }
+            Some(_) if self.data_info.has_expected_checksums() => Err(DatabaseImportError::ItemAfterChecksums {}),
+            Some(thing_kind) => self.import_concept(PhaseItem::Received(thing_kind, item)),
         }
     }
 
@@ -778,14 +801,18 @@ impl DatabaseImporter {
                 );
                 Ok(())
             }
-            MigrationItem::Entity(entity) => self.import_concept(ImportConcept::Entity(entity)),
-            MigrationItem::Relation(relation) => self.import_concept(ImportConcept::Relation(relation)),
-            MigrationItem::Attribute(attribute) => self.import_concept(ImportConcept::Attribute(attribute)),
+            MigrationItem::Entity(entity) => self.import_concept(PhaseItem::Concept(ImportConcept::Entity(entity))),
+            MigrationItem::Relation(relation) => {
+                self.import_concept(PhaseItem::Concept(ImportConcept::Relation(relation)))
+            }
+            MigrationItem::Attribute(attribute) => {
+                self.import_concept(PhaseItem::Concept(ImportConcept::Attribute(attribute)))
+            }
         }
     }
 
-    fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        let phase = concept.phase(self.configuration.item_order);
+    fn import_concept(&mut self, item: PhaseItem<Source>) -> Result<(), DatabaseImportError> {
+        let phase = item.phase(self.configuration.item_order);
         match self.phase.as_ref().map(|current| current.phase) {
             None => {
                 self.run_stage("relaxing the schema for the import", Self::relax_schema)?;
@@ -798,7 +825,7 @@ impl DatabaseImporter {
             }
             Some(_) => (),
         }
-        self.phase.as_mut().expect("a phase runs while importing").import_concept(concept)
+        self.phase.as_mut().expect("a phase runs while importing").import_item(item)
     }
 
     fn start_phase(&mut self, phase: ImportPhase) -> Result<(), DatabaseImportError> {
@@ -967,7 +994,7 @@ impl DatabaseImporter {
         for chunk in records.into_chunks(Self::DRAIN_CHUNK_SIZE) {
             self.check_stopped()?;
             for (_key, deferred) in chunk.map_err(|source| DatabaseImportError::CacheError { source })? {
-                self.import_concept(to_import_concept(deferred))?;
+                self.import_concept(PhaseItem::Concept(to_import_concept(deferred)))?;
                 written += 1;
             }
         }
@@ -1615,11 +1642,11 @@ impl Display for ImportActivity {
     }
 }
 
-struct DatabaseImporterPhase {
+struct DatabaseImporterPhase<Source: 'static> {
     phase: ImportPhase,
     started: Instant,
-    sender: Option<SyncSender<Vec<ImportConcept>>>,
-    batch_builder: Vec<ImportConcept>,
+    sender: Option<SyncSender<Vec<PhaseItem<Source>>>>,
+    batch_builder: Vec<PhaseItem<Source>>,
     batch_write_bytes: usize,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
@@ -1644,12 +1671,15 @@ impl ErrorState {
     }
 }
 
-impl DatabaseImporterPhase {
+impl<Source> DatabaseImporterPhase<Source> {
     const QUEUE_SIZE_MULTIPLIER: usize = 4;
     const BATCH_SIZE: usize = 1_000;
     const MAX_BATCH_WRITE_BYTES: usize = ImporterConfiguration::MAX_WRITE_BYTES_PER_COMMIT;
 
-    fn start(importer: &DatabaseImporter, import_phase: ImportPhase) -> Result<Self, DatabaseImportError> {
+    fn start(importer: &DatabaseImporter<Source>, import_phase: ImportPhase) -> Result<Self, DatabaseImportError>
+    where
+        Source: Send,
+    {
         let (sender, receiver) = sync_channel(importer.configuration.worker_count() * Self::QUEUE_SIZE_MULTIPLIER);
         let receiver = Arc::new(Mutex::new(receiver));
         let mut phase = Self {
@@ -1670,9 +1700,9 @@ impl DatabaseImporterPhase {
         Ok(phase)
     }
 
-    fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        self.batch_write_bytes += concept.estimated_write_bytes();
-        self.batch_builder.push(concept);
+    fn import_item(&mut self, item: PhaseItem<Source>) -> Result<(), DatabaseImportError> {
+        self.batch_write_bytes += item.estimated_write_bytes();
+        self.batch_builder.push(item);
         if self.batch_builder.len() >= Self::BATCH_SIZE || self.batch_write_bytes >= Self::MAX_BATCH_WRITE_BYTES {
             self.send_batch()?;
         }
@@ -1721,7 +1751,7 @@ impl DatabaseImporterPhase {
     }
 }
 
-impl Drop for DatabaseImporterPhase {
+impl<Source> Drop for DatabaseImporterPhase<Source> {
     fn drop(&mut self) {
         if !self.workers.is_empty() {
             self.interrupt();
@@ -1739,13 +1769,14 @@ struct ImportWorker {
     transaction_items: Vec<ImportConcept>,
     transaction_write_bytes: usize,
     transaction_data_info: TransactionDataInfo,
+    labels: LabelCache,
 }
 
 impl ImportWorker {
-    fn start(
-        importer: &DatabaseImporter,
+    fn start<Source: Send + 'static>(
+        importer: &DatabaseImporter<Source>,
         phase: ImportPhase,
-        receiver: Arc<Mutex<Receiver<Vec<ImportConcept>>>>,
+        receiver: Arc<Mutex<Receiver<Vec<PhaseItem<Source>>>>>,
         error_state: ErrorState,
         name: String,
     ) -> Result<thread::JoinHandle<()>, DatabaseImportError> {
@@ -1761,6 +1792,7 @@ impl ImportWorker {
             transaction_items: Vec::new(),
             transaction_write_bytes: 0,
             transaction_data_info: TransactionDataInfo::default(),
+            labels: LabelCache::default(),
         };
 
         let spawned = thread::Builder::new().name(name).spawn(move || worker.run(receiver, error_state));
@@ -1774,24 +1806,25 @@ impl ImportWorker {
         }
     }
 
-    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<ImportConcept>>>>, error_state: ErrorState) {
+    fn run<Source>(mut self, receiver: Arc<Mutex<Receiver<Vec<PhaseItem<Source>>>>>, error_state: ErrorState) {
         if let Err(error) = self.import_batches(&receiver, &error_state) {
             error_state.stop_with_error(error);
         }
     }
 
-    fn import_batches(
+    fn import_batches<Source>(
         &mut self,
-        receiver: &Mutex<Receiver<Vec<ImportConcept>>>,
+        receiver: &Mutex<Receiver<Vec<PhaseItem<Source>>>>,
         error_state: &ErrorState,
     ) -> Result<(), DatabaseImportError> {
         loop {
             let received = receiver.lock().unwrap().recv();
             let Ok(batch) = received else { break };
-            for concept in batch {
+            for item in batch {
                 if error_state.is_errored() {
                     return Ok(());
                 }
+                let concept = self.decode(item)?;
                 self.write_and_may_commit(concept)?;
             }
         }
@@ -1799,6 +1832,21 @@ impl ImportWorker {
             return Ok(());
         }
         self.commit_with_retry()
+    }
+
+    fn decode<Source>(&mut self, item: PhaseItem<Source>) -> Result<ImportConcept, DatabaseImportError> {
+        let decoded = match item {
+            PhaseItem::Received(_, item) => item
+                .decode(&mut self.labels)
+                .map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?,
+            PhaseItem::Concept(concept) => return Ok(concept),
+        };
+        match decoded {
+            MigrationItem::Entity(entity) => Ok(ImportConcept::Entity(entity)),
+            MigrationItem::Relation(relation) => Ok(ImportConcept::Relation(relation)),
+            MigrationItem::Attribute(attribute) => Ok(ImportConcept::Attribute(attribute)),
+            MigrationItem::Header { .. } | MigrationItem::Checksums(_) => Err(DatabaseImportError::ItemKindMismatch {}),
+        }
     }
 
     fn write_and_may_commit(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
@@ -2328,5 +2376,6 @@ typedb_error! {
         HeaderAfterItems(44, "A header was received after instance items. It is a sign of a corrupted file or a client bug."),
         UnknownOwnedAttribute(45, "Cannot process an ownership of unknown attribute '{id}': the import guarantees that attributes precede their owners and that inline attributes are referenced by value. It is a sign of a corrupted file or a client bug.", id: String),
         BulkLoadFailed(46, "Configuring the storage of the imported database to load data in bulk failed.", typedb_source: MigrationOperationError),
+        ItemKindMismatch(47, "A received item decoded to a different kind of item than it was routed as. It is a sign of a bug."),
     }
 }

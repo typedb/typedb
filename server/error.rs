@@ -265,6 +265,7 @@ impl ServerStateError for LocalServerStateError {
             Self::DatabaseImport { typedb_source } => match typedb_source {
                 DatabaseImportServiceError::DuplicateImport { .. }
                 | DatabaseImportServiceError::ImportNotInitialised { .. }
+                | DatabaseImportServiceError::ItemDecode { .. }
                 | DatabaseImportServiceError::ClientClosed { .. } => Request,
                 DatabaseImportServiceError::ImportPrepareFailed { typedb_source } => typedb_source.error_origin(),
                 DatabaseImportServiceError::DatabaseImport { typedb_source } => database_import_origin(typedb_source),
@@ -374,6 +375,7 @@ fn database_import_origin(error: &DatabaseImportError) -> ErrorOrigin {
         | DatabaseImportError::ImporterStopped { .. }
         | DatabaseImportError::WorkerPanicked { .. }
         | DatabaseImportError::UnexpectedPhase { .. }
+        | DatabaseImportError::ItemKindMismatch { .. }
         | DatabaseImportError::ImportingDatabaseStillShared { .. } => ErrorOrigin::Internal,
 
         DatabaseImportError::ConceptRead { typedb_source } => concept_read_origin(typedb_source),

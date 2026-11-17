@@ -36,7 +36,7 @@ use crate::{
             response_builders::database_manager::database_import_res_done,
         },
         import_service::DatabaseImportServiceError,
-        migration::item::{LabelCache, decode_item},
+        migration::item::decodable_item,
     },
     state::ServerState,
 };
@@ -50,13 +50,12 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 struct ActiveImport {
     name: String,
     started: Instant,
-    importer: DatabaseImporterHandle,
-    labels: LabelCache,
+    importer: DatabaseImporterHandle<MigrationItemProto>,
 }
 
 impl ActiveImport {
-    fn new(name: String, importer: DatabaseImporterHandle) -> Self {
-        Self { name, started: Instant::now(), importer, labels: LabelCache::default() }
+    fn new(name: String, importer: DatabaseImporterHandle<MigrationItemProto>) -> Self {
+        Self { name, started: Instant::now(), importer }
     }
 }
 
@@ -268,8 +267,11 @@ impl DatabaseImportService {
         items: Vec<MigrationItemProto>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
-        // decoded here with the import's label cache, so the importer's coordinating thread only routes items
-        let items: Vec<_> = items.into_iter().map(|item| decode_item(item, &mut active_import.labels)).collect();
+        let items = items
+            .into_iter()
+            .map(decodable_item)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|typedb_source| DatabaseImportServiceError::ItemDecode { typedb_source })?;
         self.stop_signals
             .unless_stopped(active_import.importer.send_batch(items))
             .await?

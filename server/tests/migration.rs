@@ -24,7 +24,7 @@ use database::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
         item::{
-            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, MigrationItem,
+            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelCache, MigrationItem,
             OwnedAttribute, Player, RelationItem, Role,
         },
     },
@@ -37,7 +37,7 @@ use diagnostics::diagnostics_manager::DiagnosticsManager;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use prost::Message;
 use resource::{constants::server::DISTRIBUTION_INFO, profile::CommitProfile};
-use server::service::migration::item::{EncodedItem, LabelCache, decode_item, encode_item};
+use server::service::migration::item::{EncodedItem, decodable_item, decode_item, encode_item};
 use storage::{durability_client::WALClient, keyspace::CompactionHandle};
 use test_utils::{TempDir, create_tmp_dir, init_logging};
 use tokio::sync::watch;
@@ -114,7 +114,7 @@ fn task_spawner() -> TokioTaskSpawner {
     TokioTaskTracker::new(shutdown_receiver).get_spawner()
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle<Item> {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
     let handle = TestImportingDatabaseHandle { database_manager: database_manager.clone(), staged_database };
     let configuration = ImporterConfiguration::new(database_manager.import_directory().to_owned());
@@ -170,8 +170,7 @@ async fn import(
 ) -> Result<(), DatabaseImportError> {
     let mut importer = importer(database_manager, name);
     importer.send_schema(schema.to_owned()).await?;
-    let mut labels = LabelCache::default();
-    let items: Vec<_> = items.into_iter().map(|item| decode_item(item, &mut labels)).collect();
+    let items = items.into_iter().map(|item| decodable_item(item).expect("routable item")).collect();
     importer.send_batch(items).await?;
     importer.finalize().await.map(|_| ())
 }
