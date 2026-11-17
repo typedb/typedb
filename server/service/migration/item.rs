@@ -12,7 +12,6 @@ use database::migration::{
     item::{
         AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemKind, ItemOrder,
         LabelCache, LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role,
-        estimated_attribute_write_bytes, estimated_object_write_bytes,
     },
 };
 use encoding::value::value::Value;
@@ -85,26 +84,31 @@ pub fn encode_item(item: ExportMessage) -> EncodedItem {
     EncodedItem::Item(Item { item: Some(encoded) })
 }
 
-// the item is routed by its kind, and decoded by the import worker that writes it
-pub fn decodable_item(item_proto: Item) -> Result<DecodableItem<Item>, ItemDecodeError> {
-    let (kind, estimated_write_bytes) = match item_proto.item.as_ref().ok_or(ItemDecodeError::EmptyItem {})? {
-        item::Item::Header(_) => (ItemKind::Header, 0),
-        item::Item::Checksums(_) => (ItemKind::Checksums, 0),
-        item::Item::Entity(entity) => (ItemKind::Entity, estimated_object_write_bytes(entity.attributes.len(), 0)),
-        item::Item::Relation(relation) => {
-            let players = relation.roles.iter().map(|role| role.players.len()).sum();
-            (ItemKind::Relation, estimated_object_write_bytes(relation.attributes.len(), players))
-        }
-        item::Item::Attribute(attribute) => {
-            let value_bytes = attribute.value.as_ref().map_or(0, Message::encoded_len);
-            (ItemKind::Attribute, estimated_attribute_write_bytes(value_bytes))
-        }
+// an encoded item is routed by the field of its one-of, which is its first field, and decoded by the import worker
+// that writes it, with its encoded length standing in for the bytes it writes
+pub fn decodable_item(encoded: Vec<u8>) -> Result<DecodableItem<Vec<u8>>, ItemDecodeError> {
+    if encoded.is_empty() {
+        return Err(ItemDecodeError::EmptyItem {});
+    }
+    let (field, _) = prost::encoding::decode_key(&mut encoded.as_slice())
+        .map_err(|source| ItemDecodeError::MalformedItem { source })?;
+    let kind = match field {
+        1 => ItemKind::Attribute,
+        2 => ItemKind::Entity,
+        3 => ItemKind::Relation,
+        15 => ItemKind::Header,
+        16 => ItemKind::Checksums,
+        field => return Err(ItemDecodeError::UnknownItemKind { field }),
     };
-    Ok(DecodableItem::new(item_proto, kind, estimated_write_bytes, decode_routed_item))
+    let estimated_write_bytes = encoded.len();
+    Ok(DecodableItem::new(encoded, kind, estimated_write_bytes, decode_encoded_item))
 }
 
-fn decode_routed_item(item_proto: Item, labels: &mut LabelCache) -> Result<MigrationItem, MigrationOperationError> {
-    decode_item(item_proto, labels).map_err(|error| Arc::new(error) as _)
+fn decode_encoded_item(encoded: Vec<u8>, labels: &mut LabelCache) -> Result<MigrationItem, MigrationOperationError> {
+    let decoded = Item::decode(encoded.as_slice())
+        .map_err(|source| ItemDecodeError::MalformedItem { source })
+        .and_then(|item| decode_item(item, labels));
+    decoded.map_err(|error| Arc::new(error) as _)
 }
 
 pub fn decode_item(item_proto: Item, labels: &mut LabelCache) -> Result<MigrationItem, ItemDecodeError> {
@@ -166,6 +170,8 @@ typedb_error! {
         ConceptDecode(4, "Error decoding an item's concept.", typedb_source: Box<ConceptDecodeError>),
         AbsentOwnedAttributeValue(5, "An owned attribute referenced by value, but without a value, was received."),
         UnknownItemOrder(6, "A header with an unknown item order '{item_order}' was received. Ensure using compatible client protocol.", item_order: i32),
+        MalformedItem(7, "A malformed item was received. It is a sign of a corrupted file or a client bug.", source: prost::DecodeError),
+        UnknownItemKind(8, "An item of an unknown kind (field {field}) was received. Ensure using compatible client protocol.", field: u32),
     }
 }
 

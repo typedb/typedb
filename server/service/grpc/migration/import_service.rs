@@ -22,10 +22,7 @@ use tokio::sync::{
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{Level, event};
-use typedb_protocol::{
-    database_manager::import::{Client as ProtocolClient, Server as ProtocolServer},
-    migration::Item as MigrationItemProto,
-};
+use typedb_protocol::database_manager::import::{Client as ProtocolClient, Server as ProtocolServer};
 
 use crate::{
     error::LocalServerStateError,
@@ -50,11 +47,11 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 struct ActiveImport {
     name: String,
     started: Instant,
-    importer: DatabaseImporterHandle<MigrationItemProto>,
+    importer: DatabaseImporterHandle<Vec<u8>>,
 }
 
 impl ActiveImport {
-    fn new(name: String, importer: DatabaseImporterHandle<MigrationItemProto>) -> Self {
+    fn new(name: String, importer: DatabaseImporterHandle<Vec<u8>>) -> Self {
         Self { name, started: Instant::now(), importer }
     }
 }
@@ -262,10 +259,7 @@ impl DatabaseImportService {
         Ok(Continue(()))
     }
 
-    async fn handle_items(
-        &mut self,
-        items: Vec<MigrationItemProto>,
-    ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
+    async fn handle_items(&mut self, items: Vec<Vec<u8>>) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
         let items = items
             .into_iter()

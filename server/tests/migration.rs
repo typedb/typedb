@@ -114,7 +114,7 @@ fn task_spawner() -> TokioTaskSpawner {
     TokioTaskTracker::new(shutdown_receiver).get_spawner()
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle<Item> {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle<Vec<u8>> {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
     let handle = TestImportingDatabaseHandle { database_manager: database_manager.clone(), staged_database };
     let configuration = ImporterConfiguration::new(database_manager.import_directory().to_owned());
@@ -170,7 +170,7 @@ async fn import(
 ) -> Result<(), DatabaseImportError> {
     let mut importer = importer(database_manager, name);
     importer.send_schema(schema.to_owned()).await?;
-    let items = items.into_iter().map(|item| decodable_item(item).expect("routable item")).collect();
+    let items = items.into_iter().map(|item| decodable_item(item.encode_to_vec()).expect("routable item")).collect();
     importer.send_batch(items).await?;
     importer.finalize().await.map(|_| ())
 }

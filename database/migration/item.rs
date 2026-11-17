@@ -25,10 +25,7 @@ use concept::{
     },
     type_::{TypeAPI, role_type::RoleType, type_manager::TypeManager},
 };
-use encoding::{
-    graph::thing::vertex_attribute::AttributeVertex,
-    value::{label::Label, value::Value},
-};
+use encoding::value::{label::Label, value::Value};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -360,13 +357,9 @@ impl DecodableItem<MigrationItem> {
     }
 }
 
-// items are batched by the bytes they write before they are decoded, so these estimate it from their contents
+// items are batched by the bytes they write before they are decoded, so this estimates it from their contents
 pub fn estimated_object_write_bytes(owned_attributes: usize, players: usize) -> usize {
     Object::ESTIMATED_WRITE_BYTES
         + owned_attributes * Has::ESTIMATED_WRITE_BYTES
         + players * Links::ESTIMATED_WRITE_BYTES
-}
-
-pub fn estimated_attribute_write_bytes(value_bytes: usize) -> usize {
-    AttributeVertex::MAX_LENGTH + value_bytes
 }
