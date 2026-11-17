@@ -1007,6 +1007,120 @@ fn test_mismatched_input_types() {
     }
 }
 
+// https://github.com/typedb/typedb/issues/7725: attribute self-comparisons crashed the server.
+// A value equals itself: ==, <=, >= keep every row; !=, <, > keep none.
+// Released versions as measured; Fixed is the row count asserted below.
+//
+// | Shape                       | 3.12.3  | 3.13.6  | 3.14.0  | Fixed |
+// | --------------------------- | ------- | ------- | ------- | ----- |
+// | Independent string $n == $n | Crashes | Crashes | Crashes | 2     |
+// | Independent string $n != $n | Crashes | Crashes | Crashes | 0     |
+// | Independent string $n < $n  | Crashes | Crashes | Crashes | 0     |
+// | Independent string $n <= $n | Crashes | Crashes | Crashes | 2     |
+// | Independent string $n > $n  | Crashes | Crashes | Crashes | 0     |
+// | Independent string $n >= $n | Crashes | Crashes | Crashes | 2     |
+#[test]
+fn test_independent_attribute_self_comparison() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let schema = "define attribute name @independent, value string;";
+    let data = "insert $_ isa name 'John'; $_ isa name 'James';";
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let cases = [
+        ("match $n isa name; $n == $n;", 2),
+        ("match $n isa name; $n != $n;", 0),
+        ("match $n isa name; $n < $n;", 0),
+        ("match $n isa name; $n <= $n;", 2),
+        ("match $n isa name; $n > $n;", 0),
+        ("match $n isa name; $n >= $n;", 2),
+    ];
+    for (query, expected) in cases {
+        assert_eq!(
+            count_query_rows(&storage, &type_manager, thing_manager.clone(), &statistics, query),
+            expected,
+            "{query}"
+        );
+    }
+}
+
+// Released versions as measured; Fixed is the row count asserted below.
+//
+// | Shape                             | 3.12.3  | 3.13.6  | 3.14.0  | Fixed |
+// | --------------------------------- | ------- | ------- | ------- | ----- |
+// | Decimal attribute $x == $x        | Crashes | Crashes | Crashes | 1     |
+// | Decimal attribute $x != $x        | Crashes | Crashes | Crashes | 0     |
+// | Decimal attribute $x < $x         | Crashes | Crashes | Crashes | 0     |
+// | Decimal attribute $x <= $x        | Crashes | Crashes | Crashes | 1     |
+// | Decimal attribute $x > $x         | Crashes | Crashes | Crashes | 0     |
+// | Decimal attribute $x >= $x        | Crashes | Crashes | Crashes | 1     |
+// | Double attribute $x == $x         | Crashes | Crashes | Crashes | 1     |
+// | Same query without comparison     | Passes  | Passes  | Passes  | 1     |
+// | Two attribute witnesses, $a == $b | Passes  | Passes  | Passes  | 1     |
+#[test]
+fn test_owned_attribute_self_comparison() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let schema = "define
+        attribute nc, value decimal;
+        attribute nd, value double;
+        entity sample, owns nc, owns nd;
+    ";
+    let data = "insert $s isa sample, has nc 0.1dec, has nd 0.1;";
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let cases = [
+        ("match $s isa sample, has nc $x; $x == $x;", 1),
+        ("match $s isa sample, has nc $x; $x != $x;", 0),
+        ("match $s isa sample, has nc $x; $x < $x;", 0),
+        ("match $s isa sample, has nc $x; $x <= $x;", 1),
+        ("match $s isa sample, has nc $x; $x > $x;", 0),
+        ("match $s isa sample, has nc $x; $x >= $x;", 1),
+        ("match $s isa sample, has nd $x; $x == $x;", 1),
+        ("match $s isa sample, has nc $x;", 1),
+        ("match $s isa sample, has nc $a, has nc $b; $a == $b;", 1),
+    ];
+    for (query, expected) in cases {
+        assert_eq!(
+            count_query_rows(&storage, &type_manager, thing_manager.clone(), &statistics, query),
+            expected,
+            "{query}"
+        );
+    }
+}
+
+fn count_query_rows(
+    storage: &Arc<MVCCStorage<WALClient>>,
+    type_manager: &TypeManager,
+    thing_manager: Arc<ThingManager>,
+    statistics: &Statistics,
+    query: &str,
+) -> usize {
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let executable = compile_query(&*snapshot, type_manager, thing_manager.clone(), statistics, query);
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        FixedBatch::from(MaybeOwnedRow::empty()),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
+    executor
+        .into_iterator(context, ExecutionInterrupt::new_uninterruptible())
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap()
+        .len()
+}
+
 fn compile_query(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
