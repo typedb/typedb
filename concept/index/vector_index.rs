@@ -547,7 +547,8 @@ fn stored_vector_writes(
     operations: &OperationsBuffer,
 ) -> impl Iterator<Item = (AttributeVertex, Option<&ByteArray<BUFFER_VALUE_INLINE>>)> + '_ {
     let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Vector);
-    operations.writes_in_keyspace(keyspace.id()).filter_map(move |(key, write)| {
+    operations.writes_in(keyspace.id()).writes().iter().filter_map(move |(key, write)| {
+        let key: &[u8] = key;
         let value = match write {
             StorageWrite::Insert { value } => Some(value),
             StorageWrite::Put { value, .. } => Some(value),

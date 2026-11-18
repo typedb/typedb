@@ -83,10 +83,6 @@ impl OperationsBuffer {
         self.locks.is_empty()
     }
 
-    pub fn writes_in_keyspace(&self, keyspace_id: KeyspaceId) -> impl Iterator<Item = (&[u8], &Write)> + '_ {
-        self.write_buffers[keyspace_id.0 as usize].writes().iter().map(|(key, write)| (&**key, write))
-    }
-
     pub fn iterate_writes<'this>(
         &'this self,
     ) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
@@ -244,7 +240,7 @@ impl WriteBuffer {
         self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
     }
 
-    pub(crate) fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
+    pub fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
         &self.writes
     }
 
