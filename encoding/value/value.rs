@@ -597,8 +597,7 @@ impl<'a> ValueRestriction<'a> {
     fn wider_value<'v>(first: &'v Value<'a>, second: &'v Value<'a>) -> &'v Value<'a> {
         let first_category = first.value_type_category();
         let second_category = second.value_type_category();
-        if first_category != second_category && first.value_type_category().is_trivially_castable_to(second_category)
-        {
+        if first_category != second_category && first.value_type_category().is_trivially_castable_to(second_category) {
             second
         } else {
             first

@@ -6,12 +6,12 @@
 
 use std::sync::Arc;
 
+use concept::thing::ThingAPI;
 use database::{
     Database,
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
-use concept::thing::ThingAPI;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::{
     graph::{

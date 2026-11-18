@@ -158,9 +158,8 @@ fn read(database: &Db, query: &str) -> usize {
 fn run_parallel(threads: usize, ops_per_thread: usize, op: impl Fn() + Sync) -> (Duration, Vec<Duration>) {
     let start = Instant::now();
     let latencies = thread::scope(|scope| {
-        let handles: Vec<_> = (0..threads)
-            .map(|_| scope.spawn(|| (0..ops_per_thread).map(|_| timed(&op)).collect::<Vec<_>>()))
-            .collect();
+        let handles: Vec<_> =
+            (0..threads).map(|_| scope.spawn(|| (0..ops_per_thread).map(|_| timed(&op)).collect::<Vec<_>>())).collect();
         handles.into_iter().flat_map(|handle| handle.join().unwrap()).collect()
     });
     (start.elapsed(), latencies)

@@ -93,11 +93,8 @@ impl VectorIndex {
                 if let Some(stale) = existing {
                     self.retired_type_indices.write().unwrap().insert(type_id, stale.clone());
                 }
-                let id = VectorIndexID {
-                    type_id,
-                    dimensions: dimensions_if_created,
-                    precision: VectorPrecision::Float32,
-                };
+                let id =
+                    VectorIndexID { type_id, dimensions: dimensions_if_created, precision: VectorPrecision::Float32 };
                 let index = Arc::new(PerTypeVectorIndex::new(id)?);
                 indices.insert(type_id, index.clone());
                 Ok(index)

@@ -136,7 +136,9 @@ fn row_entry_satisfies_types(
         }
         // a vector value cannot name its schema-defined value type (`value_type()` is unreachable for vectors)
         (VariableValue::Value(Value::Vector(_)), FunctionParameterAnnotation::Value(_)) => false,
-        (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => *value_type == value.value_type(),
+        (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => {
+            *value_type == value.value_type()
+        }
         (VariableValue::Thing(thing), FunctionParameterAnnotation::Concept(types)) => types.contains(&thing.type_()),
         (VariableValue::None, _) => optionality == VariableOptionality::Optional,
         (_, FunctionParameterAnnotation::AnyConcept) => unreachable!("Unexpected"),
