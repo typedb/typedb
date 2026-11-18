@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::Bytes;
+use bytes::{Bytes, byte_array::ByteArray};
 use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
 use resource::profile::StorageCounters;
@@ -19,7 +19,11 @@ use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, 
 use serde::{Deserialize, Serialize};
 
 use super::{IteratorPool, constants, iterator};
-use crate::{key_range::KeyRange, keyspace::rocks_resources::RocksResources, write_batches::WriteBatches};
+use crate::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    keyspace::rocks_resources::RocksResources,
+    write_batches::WriteBatches,
+};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct KeyspaceId(pub u8);
@@ -277,6 +281,19 @@ impl Keyspace {
         let mut iterator = self.kv_storage.raw_iterator_opt(self.new_read_options());
         iterator.seek_for_prev(key);
         iterator.item().map(|(k, v)| mapper(k, v))
+    }
+
+    pub(crate) fn iterate<const PREFIX_INLINE_SIZE: usize>(
+        &self,
+        iterpool: &IteratorPool,
+        storage_counters: StorageCounters,
+    ) -> iterator::KeyspaceRangeIterator {
+        iterator::KeyspaceRangeIterator::new(
+            self,
+            iterpool,
+            &KeyRange::new_within(Bytes::<'static, 0>::copy(&[]), false),
+            storage_counters,
+        )
     }
 
     pub(crate) fn iterate_range<const PREFIX_INLINE_SIZE: usize>(

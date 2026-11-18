@@ -245,6 +245,11 @@ impl<'bytes> StorageKeyReference<'bytes> {
         Self { keyspace_id, reference }
     }
 
+    pub(crate) fn as_ref(&self) -> StorageKeyReference<'_> {
+        let Self { keyspace_id, reference } = self;
+        StorageKeyReference { keyspace_id: *keyspace_id, reference }
+    }
+
     pub fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
     }

@@ -234,6 +234,7 @@ impl<I, F, K> Seekable<K> for Filter<I, F>
 where
     I: Seekable<K>,
     F: Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
+    K: ?Sized,
 {
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)

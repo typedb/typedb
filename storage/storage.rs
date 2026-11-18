@@ -768,19 +768,14 @@ typedb_error! {
     }
 }
 
-/// MVCC keys are made of three parts: the [KEY][SEQ][OP]
-pub struct MVCCKey<'bytes> {
-    bytes: Bytes<'bytes, MVCC_KEY_INLINE_SIZE>,
-}
-
 // byte array inline size can be adjusted to avoid allocation since these key are often short-lived
 const MVCC_KEY_INLINE_SIZE: usize = 128;
 
-impl<'bytes> MVCCKey<'bytes> {
-    const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
-    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize =
-        Self::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
+pub struct MVCCKeyArray {
+    bytes: ByteArray<MVCC_KEY_INLINE_SIZE>,
+}
 
+impl MVCCKeyArray {
     fn build(key: &[u8], sequence_number: SequenceNumber, storage_operation: StorageOperation) -> Self {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
         let mut byte_array = ByteArray::zeros(length);
@@ -794,12 +789,28 @@ impl<'bytes> MVCCKey<'bytes> {
         sequence_number.invert().serialise_be_into(&mut bytes[key_end..sequence_number_end]);
         bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
 
-        Self { bytes: Bytes::Array(byte_array) }
+        Self { bytes: byte_array }
     }
+
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+/// MVCC keys are made of three parts: the [KEY][SEQ][OP]
+#[derive(Clone, Copy)]
+pub struct MVCCKey<'bytes> {
+    bytes: &'bytes [u8],
+}
+
+impl<'bytes> MVCCKey<'bytes> {
+    const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
+    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize =
+        Self::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
 
     /// Splits raw MVCC key bytes into their [KEY], [SEQ], and [OP] parts, borrowing the key from the bytes.
     #[inline]
-    fn split(&self) -> (&[u8], SequenceNumber, StorageOperation) {
+    fn split(self) -> (&'bytes [u8], SequenceNumber, StorageOperation) {
         let (key, suffix) = self.bytes.split_at(self.bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
         let (inverse_sequence_number_bytes, operation_bytes) = suffix.split_at(SequenceNumber::serialised_len());
         let sequence_number = SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert();
@@ -807,24 +818,20 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn wrap_slice(bytes: &'bytes [u8]) -> Self {
-        Self { bytes: Bytes::reference(bytes) }
-    }
-
-    fn bytes(&self) -> &[u8] {
-        &self.bytes
+        Self { bytes }
     }
 
     // TODO: the only reason this is `pub` is the leak in ThingVertexGenerator::sync_from_storage.
     // It seems to be the only reason MVCCKey is `pub` at all.
-    pub fn key(&self) -> &[u8] {
+    pub fn key(self) -> &'bytes [u8] {
         self.split().0
     }
 
-    fn sequence_number(&self) -> SequenceNumber {
+    fn sequence_number(self) -> SequenceNumber {
         self.split().1
     }
 
-    fn operation(&self) -> StorageOperation {
+    fn operation(self) -> StorageOperation {
         self.split().2
     }
 
