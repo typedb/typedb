@@ -371,7 +371,7 @@
 		[workspace.dependencies.regex]
 			default-features = false
 			features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-			version = "1.13.1"
+			version = "1.13.2"
 
 		[workspace.dependencies.resource]
 			default-features = false
@@ -446,7 +446,7 @@
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
-			version = "1.16.5"
+			version = "1.16.6"
 
 		[workspace.dependencies.smol]
 			default-features = false
