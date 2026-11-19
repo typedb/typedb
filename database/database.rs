@@ -446,11 +446,11 @@ impl Database<WALClient> {
         event!(Level::TRACE, "Reading database '{}' properties.", &name);
         let properties = match DatabaseProperties::try_read(path, name)? {
             None => {
-                let properties = DatabaseProperties::values_for_prehistoric_database();
+                let properties = DatabaseProperties::values_for_pre_properties_database();
                 DatabaseProperties::validate_compatibility(&properties)?;
                 event!(
                     Level::INFO,
-                    "Reading database '{}' properties did not exist. Writing prehistoric defaults.",
+                    "Reading database '{}' properties did not exist. Writing pre_properties defaults.",
                     &name
                 );
                 properties.write(path, name)?;

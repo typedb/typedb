@@ -21,7 +21,7 @@ impl StorageProperties {
         extension: STORAGE_VERSION_EXTENSION,
     });
 
-    pub fn values_for_prehistoric_database() -> Self {
+    pub fn values_for_pre_properties_database() -> Self {
         Self { version: ExtendableVersion { version: 1, extension: 1 } }
     }
 

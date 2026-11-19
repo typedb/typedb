@@ -28,11 +28,11 @@ impl DatabaseProperties {
     pub const SERVER_PROPERTIES_FILE_VERSION: ServerSupportedVersion =
         ServerSupportedVersion(ExtendableVersion { version: 1, extension: 1 });
 
-    pub(crate) fn values_for_prehistoric_database() -> Self {
+    pub(crate) fn values_for_pre_properties_database() -> Self {
         let database_id = rand::thread_rng().next_u64();
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
-        let wal = WALProperties::values_for_prehistoric_database();
-        let storage = StorageProperties::values_for_prehistoric_database();
+        let wal = WALProperties::values_for_pre_properties_database();
+        let storage = StorageProperties::values_for_pre_properties_database();
         Self { database_id, properties_file_version, wal, storage }
     }
 
@@ -107,7 +107,8 @@ impl DatabaseProperties {
         }
 
         #[cfg(windows)]
-        {   // TODO: This supposedly always fails, but we use it in the WAL sync?
+        {
+            // TODO: This supposedly always fails, but we use it in the WAL sync?
             if let Ok(directory) = fs::File::open(dir) {
                 let _ = directory.sync_all();
             }
@@ -143,6 +144,6 @@ pub mod tests {
 
         write_and_readback(DatabaseProperties::create_for_new_database());
 
-        write_and_readback(DatabaseProperties::values_for_prehistoric_database());
+        write_and_readback(DatabaseProperties::values_for_pre_properties_database());
     }
 }
