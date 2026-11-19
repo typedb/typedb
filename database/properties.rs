@@ -70,24 +70,21 @@ impl DatabaseProperties {
     }
 
     pub(crate) fn write(&self, dir: &Path, db_name: &str) -> Result<(), DatabaseOpenError> {
-        self.write_at_dir(dir).map_err(|err| match err {
-            Either::First(io_error) => {
-                DatabaseOpenError::PropertiesWrite { name: db_name.to_owned(), source: Arc::new(io_error) }
-            }
-            Either::Second(serde_error) => {
-                DatabaseOpenError::PropertiesSerialize { name: db_name.to_owned(), source: Arc::new(serde_error) }
-            }
-        })
-    }
-
-    fn write_at_dir(&self, dir: &Path) -> Result<(), Either<std::io::Error, serde_yaml2::ser::Errors>> {
-        let yaml = serde_yaml2::to_string(self).map_err(|e| Either::Second(e))?;
-
+        let yaml = serde_yaml2::to_string(self).map_err(|serde_error| DatabaseOpenError::PropertiesSerialize {
+            name: db_name.to_owned(),
+            source: Arc::new(serde_error),
+        })?;
         // Write to a temp file, then rename, so a crash never leaves a half-written file.
         let final_path = dir.join(Self::FILENAME);
         let tmp_path = dir.join(format!("{}.tmp", Self::FILENAME));
-        std::fs::write(&tmp_path, yaml).map_err(|e| Either::First(e))?;
-        std::fs::rename(&tmp_path, &final_path).map_err(|e| Either::First(e))?;
+        std::fs::write(&tmp_path, yaml).map_err(|io_error| DatabaseOpenError::PropertiesWrite {
+            name: db_name.to_owned(),
+            source: Arc::new(io_error),
+        })?;
+        std::fs::rename(&tmp_path, &final_path).map_err(|io_error| DatabaseOpenError::PropertiesWrite {
+            name: db_name.to_owned(),
+            source: Arc::new(io_error),
+        })?;
         Ok(())
     }
 }
@@ -105,7 +102,7 @@ pub mod tests {
                 fs::remove_dir_all(&dir).unwrap();
             };
             fs::create_dir_all(&dir).unwrap();
-            props.write_at_dir(&dir).unwrap();
+            props.write(&dir, "testdb").unwrap();
             let readback = DatabaseProperties::try_read(&dir, "testdb").unwrap().unwrap();
             assert_eq!(readback, props);
             fs::remove_dir_all(&dir).unwrap();
