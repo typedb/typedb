@@ -231,7 +231,7 @@ build:
             export CARGO_BAZEL_GENERATOR_SHA256="$CARGO_BAZEL_GENERATOR_SHA256_LINUX_X86_64"
         fi
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/assembly:test_upgrade --test_output=errors
+        bazel test --config=ci //tests/assembly:test_upgrade_to_vector_storage --test_output=errors
 
     test-admin-assembly:
       image: typedb-ubuntu-22.04

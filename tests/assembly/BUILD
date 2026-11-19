@@ -32,8 +32,8 @@ upgrade_platforms = {
 }
 
 rust_test(
-    name = "test_upgrade",
-    srcs = ["upgrade.rs"],
+    name = "test_upgrade_to_vector_storage",
+    srcs = ["upgrade/to_vector_storage.rs"],
     data = ["//:assemble-typedb-all"] + select({
         "@typedb_bazel_distribution//platform:is_" + key : ["@typedb_previous_artifact_{}//file".format(platform)]
         for key, (platform, _) in upgrade_platforms.items()
@@ -66,14 +66,14 @@ rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_assembly",
-        ":test_upgrade",
+        ":test_upgrade_to_vector_storage",
     ],
     size = "small",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "upgrade/*"]),
     exclude = glob([
         "Cargo.*",
         "script.tql",
