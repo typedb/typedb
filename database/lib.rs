@@ -77,7 +77,7 @@ impl DatabaseProperties {
         Ok(Some(properties))
     }
 
-    fn write_during_open(&self, dir: &Path, db_name: &str) -> Result<(), DatabaseOpenError> {
+    fn write(&self, dir: &Path, db_name: &str) -> Result<(), DatabaseOpenError> {
         self.write_at_dir(dir).map_err(|err| match err {
             Either::First(io_error) => {
                 DatabaseOpenError::PropertiesWrite { name: db_name.to_owned(), source: Arc::new(io_error) }

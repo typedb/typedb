@@ -721,7 +721,7 @@ typedb_error! {
         RecoverFromCheckpoint(10, "Failed to recover from checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
         RecoverFromDurability(11, "Failed to recover from durability logs for database '{name}'.", name: String, typedb_source: StorageRecoveryError),
 
-        StorageVersionTooOldForServer(12, "The database uses an older storage version ({database_version}) this server cannot support ({server_version}).", server_version: ExtendableVersion, database_version: ExtendableVersion),
+        StorageVersionTooOldForServer(12, "The database uses an older storage version ({database_version}) this server does not support ({server_version}).", server_version: ExtendableVersion, database_version: ExtendableVersion),
         StorageVersionTooNewForServer(13, "The database uses a newer storage version ({database_version}) this server does not support ({server_version}).", server_version: ExtendableVersion, database_version: ExtendableVersion),
     }
 }

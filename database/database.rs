@@ -350,7 +350,7 @@ impl Database<WALClient> {
             StorageProperties::create_for_new_database(),
         );
         debug_assert!(properties.validate_compatible().is_ok());
-        properties.write_during_open(path, name)?;
+        properties.write(path, name)?;
 
         let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
@@ -453,7 +453,7 @@ impl Database<WALClient> {
                     "Reading database '{}' properties did not exist. Writing prehistoric defaults.",
                     &name
                 );
-                properties.write_during_open(path, name)?;
+                properties.write(path, name)?;
                 properties
             }
             Some(properties) => {
