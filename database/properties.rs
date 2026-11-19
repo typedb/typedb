@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs::File, io::Read, path::Path, sync::Arc};
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::Path,
+    sync::Arc,
+};
 
 use durability::properties::WALProperties;
 use primitive::either::Either;
@@ -131,7 +136,7 @@ pub mod tests {
     fn write_and_read() {
         fn write_and_readback(props: DatabaseProperties) {
             let dir =
-                std::env::temp_dir().join(Path::new(format!("dbprops_readback_{}", rand::thread_rng().next_u64())));
+                std::env::temp_dir().join(Path::new(&format!("dbprops_readback_{}", rand::thread_rng().next_u64())));
             if fs::exists(&dir).unwrap() {
                 fs::remove_dir_all(&dir).unwrap();
             };
