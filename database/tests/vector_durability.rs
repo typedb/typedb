@@ -125,7 +125,7 @@ fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
         let store = db.vector_index();
         assert_eq!(store.get_count_for_type(type_id), 3, "vectors must be restored from the checkpoint extension");
 
-        let results = store.list_instances_by_ann(type_id, &[1.0, 0.0, 0.0], 3);
+        let results = store.list_approximate_nearest_neighbours(type_id, &[1.0, 0.0, 0.0], 3);
         let mut found: Vec<Vec<f32>> =
             results.iter().filter_map(|(attribute, _)| store.get_value_by_attr_vertex(attribute.vertex())).collect();
         found.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -179,7 +179,7 @@ fn database_reopens_after_vector_type_is_redefined_within_the_checkpoint_interva
         let type_id = lookup_attribute_type_id(&db, "embedding2");
         assert_eq!(db.vector_index().get_count_for_type(type_id), 1);
         assert_eq!(
-            db.vector_index().list_instances_by_ann(type_id, &[0.0, 1.0, 0.0, 0.0], 1).len(),
+            db.vector_index().list_approximate_nearest_neighbours(type_id, &[0.0, 1.0, 0.0, 0.0], 1).len(),
             1,
             "the redefined type must be searchable after the restart"
         );
@@ -241,7 +241,7 @@ fn deleted_vectors_leave_the_index_and_stay_gone_across_restart() {
         type_id = lookup_embedding_type_id(&db);
         insert_vectors(db.clone(), r#"match $e isa embedding; $e == vector([1.0, 0.0, 0.0], "float32"); delete $e;"#);
         assert_eq!(db.vector_index().get_count_for_type(type_id), 2, "a deleted vector must leave the index");
-        let results = db.vector_index().list_instances_by_ann(type_id, &[1.0, 0.0, 0.0], 3);
+        let results = db.vector_index().list_approximate_nearest_neighbours(type_id, &[1.0, 0.0, 0.0], 3);
         assert_eq!(results.len(), 2);
         drop(db);
     }

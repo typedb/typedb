@@ -195,7 +195,7 @@ impl VectorSearchExecutor {
             if total > 0 {
                 let mut k = INITIAL_ANN_COUNT.min(total);
                 loop {
-                    let results = vector_index.list_instances_by_ann(type_id, &query, k);
+                    let results = vector_index.list_approximate_nearest_neighbours(type_id, &query, k);
                     let last_above_threshold =
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;

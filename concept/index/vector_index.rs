@@ -111,7 +111,7 @@ impl VectorIndex {
         index.remove_value(vertex.attribute_id().unwrap_vector().as_type_vector_index_key());
     }
 
-    pub fn list_instances_by_ann(
+    pub fn list_approximate_nearest_neighbours(
         &self,
         type_id: TypeID,
         reference_point: &[f32],
@@ -602,7 +602,8 @@ mod test {
         assert_eq!(store.get_value_by_attr_vertex(vertex(2, 100)), None);
         assert_eq!(store.get_count_for_type(TypeID::decode(1u16.to_be_bytes())), 2);
 
-        let results = store.list_instances_by_ann(TypeID::decode(1u16.to_be_bytes()), &[0.9, 0.1, 0.0], 2);
+        let results =
+            store.list_approximate_nearest_neighbours(TypeID::decode(1u16.to_be_bytes()), &[0.9, 0.1, 0.0], 2);
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].0.vertex(), vertex(1, 100));
     }
@@ -624,7 +625,10 @@ mod test {
                     start.wait();
                     for i in 0..200u64 {
                         let key = 2000 + thread as u64 * 200 + i;
-                        assert_eq!(store.list_instances_by_ann(type_id, &vector_for(key + 7), 10).len(), 10);
+                        assert_eq!(
+                            store.list_approximate_nearest_neighbours(type_id, &vector_for(key + 7), 10).len(),
+                            10
+                        );
                         store.add_instance(vertex(1, key << 8), &vector_for(key)).unwrap();
                     }
                 });
@@ -642,7 +646,7 @@ mod test {
 
         store.remove_instance(vertex(1, 100));
         assert_eq!(store.get_count_for_type(type_id), 1, "removed vectors must leave the searchable index");
-        let results = store.list_instances_by_ann(type_id, &[1.0, 0.0], 2);
+        let results = store.list_approximate_nearest_neighbours(type_id, &[1.0, 0.0], 2);
         assert!(results.iter().all(|(attribute, _)| attribute.vertex() != vertex(1, 100)));
         assert_eq!(store.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
 
