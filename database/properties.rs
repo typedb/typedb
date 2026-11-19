@@ -11,7 +11,7 @@ use primitive::either::Either;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use storage::properties::StorageProperties;
-use versioning::{ExtendableVersion, ServerSupportedVersion};
+use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};
 
 use crate::database::DatabaseOpenError;
 
@@ -44,9 +44,22 @@ impl DatabaseProperties {
         Self { database_id, properties_file_version, wal, storage }
     }
 
-    pub(crate) fn validate_compatible(&self) -> Result<(), DatabaseOpenError> {
-        WALProperties::validate_compatibility(&self.wal).map_err(|source| DatabaseOpenError::WALOpen { source })?;
-        StorageProperties::validate_compatibility(&self.storage)
+    pub(crate) fn validate_compatibility(properties: &Self) -> Result<(), DatabaseOpenError> {
+        Self::SERVER_PROPERTIES_FILE_VERSION.is_compatible(&properties.properties_file_version).map_err(
+            |mismatch| match mismatch {
+                IncompatibleVersion::ResourceIsOlderThanServer => DatabaseOpenError::PropertiesFileTooOldForServer {
+                    server_version: Self::SERVER_PROPERTIES_FILE_VERSION.0.clone(),
+                    file_version: properties.properties_file_version.clone(),
+                },
+                IncompatibleVersion::ResourceIsNewerThanServer => DatabaseOpenError::PropertiesFileTooNewForServer {
+                    server_version: Self::SERVER_PROPERTIES_FILE_VERSION.0.clone(),
+                    file_version: properties.properties_file_version.clone(),
+                },
+            },
+        )?;
+        WALProperties::validate_compatibility(&properties.wal)
+            .map_err(|source| DatabaseOpenError::WALOpen { source })?;
+        StorageProperties::validate_compatibility(&properties.storage)
             .map_err(|typedb_source| DatabaseOpenError::StorageOpen { typedb_source })?;
         Ok(())
     }
@@ -74,30 +87,50 @@ impl DatabaseProperties {
             name: db_name.to_owned(),
             source: Arc::new(serde_error),
         })?;
-        // Write to a temp file, then rename, so a crash never leaves a half-written file.
+        let write_error =
+            |io_error| DatabaseOpenError::PropertiesWrite { name: db_name.to_owned(), source: Arc::new(io_error) };
+
+        // Write to a temp file, fsync it, then rename over the real file and fsync the directory,
+        // so a crash leaves either the old file or the new one, never a half-written one.
         let final_path = dir.join(Self::FILENAME);
         let tmp_path = dir.join(format!("{}.tmp", Self::FILENAME));
-        std::fs::write(&tmp_path, yaml).map_err(|io_error| DatabaseOpenError::PropertiesWrite {
-            name: db_name.to_owned(),
-            source: Arc::new(io_error),
-        })?;
-        std::fs::rename(&tmp_path, &final_path).map_err(|io_error| DatabaseOpenError::PropertiesWrite {
-            name: db_name.to_owned(),
-            source: Arc::new(io_error),
-        })?;
+
+        let mut tmp_file = File::create(&tmp_path).map_err(write_error)?;
+        tmp_file.write_all(yaml.as_bytes()).map_err(write_error)?;
+        tmp_file.sync_all().map_err(write_error)?;
+        drop(tmp_file);
+
+        std::fs::rename(&tmp_path, &final_path).map_err(write_error)?;
+        #[cfg(unix)]
+        {
+            File::open(dir).and_then(|dir| dir.sync_all()).map_err(write_error)?;
+        }
+
+        #[cfg(windows)]
+        {   // TODO: This supposedly always fails, but we use it in the WAL sync?
+            if let Ok(directory) = fs::File::open(dir) {
+                let _ = directory.sync_all();
+            }
+            Ok(())
+        }
+
         Ok(())
     }
 }
 
+#[cfg(test)]
 pub mod tests {
     use std::{fs, path::Path};
+
+    use rand::RngCore;
 
     use crate::properties::DatabaseProperties;
 
     #[test]
     fn write_and_read() {
         fn write_and_readback(props: DatabaseProperties) {
-            let dir = std::env::temp_dir().join(Path::new("test_write_and_readback_database_properties"));
+            let dir =
+                std::env::temp_dir().join(Path::new(format!("dbprops_readback_{}", rand::thread_rng().next_u64())));
             if fs::exists(&dir).unwrap() {
                 fs::remove_dir_all(&dir).unwrap();
             };

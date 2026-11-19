@@ -59,6 +59,7 @@ use storage::{
     snapshot::snapshot_id::SnapshotId,
 };
 use tracing::{Level, debug, error, event, info, trace};
+use versioning::ExtendableVersion;
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
@@ -344,7 +345,7 @@ impl Database<WALClient> {
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
         let properties = DatabaseProperties::create_for_new_database();
-        debug_assert!(properties.validate_compatible().is_ok());
+        debug_assert!(DatabaseProperties::validate_compatibility(&properties).is_ok());
         properties.write(path, name)?;
 
         let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
@@ -438,11 +439,15 @@ impl Database<WALClient> {
             std::path::absolute(path)
         );
 
+        if !WAL::wal_directory_exists_in(path) {
+            return Err(Box::new(NotADatabase { name: name.to_owned() }));
+        }
+
         event!(Level::TRACE, "Reading database '{}' properties.", &name);
         let properties = match DatabaseProperties::try_read(path, name)? {
             None => {
                 let properties = DatabaseProperties::values_for_prehistoric_database();
-                properties.validate_compatible()?;
+                DatabaseProperties::validate_compatibility(&properties)?;
                 event!(
                     Level::INFO,
                     "Reading database '{}' properties did not exist. Writing prehistoric defaults.",
@@ -452,7 +457,7 @@ impl Database<WALClient> {
                 properties
             }
             Some(properties) => {
-                properties.validate_compatible()?;
+                DatabaseProperties::validate_compatibility(&properties)?;
                 properties
             }
         };
@@ -878,6 +883,18 @@ typedb_error! {
         PropertiesParse(19, "Error while parsing properties for '{name}'.", name: String, source: Arc<serde::de::value::Error>),
         PropertiesWrite(20, "Error while writing properties for '{name}'.", name: String, source: Arc<io::Error>),
         PropertiesSerialize(21, "Error while serializing properties for '{name}'.", name: String, source: Arc<serde_yaml2::ser::Errors>),
+        PropertiesFileTooOldForServer(
+            22,
+            "The database uses an older properties file version ({file_version}) this server does not support ({server_version}).",
+            server_version: ExtendableVersion,
+            file_version: ExtendableVersion
+        ),
+        PropertiesFileTooNewForServer(
+            23,
+            "The database uses a new properties file version ({file_version}) this server does not support ({server_version}).",
+            server_version: ExtendableVersion,
+            file_version: ExtendableVersion
+        ),
     }
 }
 

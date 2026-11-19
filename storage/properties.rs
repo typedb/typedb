@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use durability::properties::WALProperties;
 use resource::constants::storage::{STORAGE_VERSION_BASE, STORAGE_VERSION_EXTENSION};
 use serde::{Deserialize, Serialize};
 use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};

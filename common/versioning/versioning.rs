@@ -80,11 +80,12 @@ pub enum IncompatibleVersion {
     ResourceIsNewerThanServer,
 }
 
+#[cfg(test)]
 pub mod tests {
     use crate::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};
 
     #[test]
-    fn test_comaptibility_check() {
+    fn test_compatibility_check() {
         fn tests(
             server_version: ServerSupportedVersion,
             cases: &[(&ExtendableVersion, Result<(), IncompatibleVersion>)],

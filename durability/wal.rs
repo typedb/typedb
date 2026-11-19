@@ -52,8 +52,6 @@ pub struct WAL {
 
 impl WAL {
     pub const WAL_DIR_NAME: &'static str = "wal";
-    pub const VERSION: ExtendableVersion =
-        ExtendableVersion { version: WAL_VERSION_BASE, extension: WAL_VERSION_EXTENSION };
 
     pub fn create(directory: impl AsRef<Path>, metrics: FsyncMetrics) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
@@ -108,6 +106,11 @@ impl WAL {
             fsync_thread,
             metrics,
         })
+    }
+
+    pub fn wal_directory_exists_in(directory: impl AsRef<Path>) -> bool {
+        let directory = directory.as_ref().to_owned();
+        directory.join(Self::WAL_DIR_NAME).exists()
     }
 
     fn increment(&self) -> DurabilitySequenceNumber {
