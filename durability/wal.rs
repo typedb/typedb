@@ -31,8 +31,9 @@ use fail_point::{
 };
 use itertools::Itertools;
 use logger::result::ResultExt;
-use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
+use resource::constants::storage::{WAL_SYNC_INTERVAL_MICROSECONDS, WAL_VERSION_BASE, WAL_VERSION_EXTENSION};
 use tracing::{debug, warn};
+use versioning::ExtendableVersion;
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -51,6 +52,8 @@ pub struct WAL {
 
 impl WAL {
     pub const WAL_DIR_NAME: &'static str = "wal";
+    pub const VERSION: ExtendableVersion =
+        ExtendableVersion { version: WAL_VERSION_BASE, extension: WAL_VERSION_EXTENSION };
 
     pub fn create(directory: impl AsRef<Path>, metrics: FsyncMetrics) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
@@ -236,6 +239,8 @@ pub enum WALError {
     Compression { source: Arc<io::Error> },
     Decompression { source: Arc<io::Error> },
     Sync { source: Arc<io::Error> },
+    WALVersionTooOldForServer { server_version: ExtendableVersion, database_version: ExtendableVersion },
+    WALVersionTooNewForServer { server_version: ExtendableVersion, database_version: ExtendableVersion },
 }
 
 impl fmt::Display for WALError {
@@ -254,6 +259,8 @@ impl Error for WALError {
             Self::Compression { source, .. } => Some(source),
             Self::Decompression { source, .. } => Some(source),
             Self::Sync { source, .. } => Some(source),
+            Self::WALVersionTooOldForServer { .. } => None,
+            Self::WALVersionTooNewForServer { .. } => None,
         }
     }
 }

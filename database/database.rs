@@ -33,6 +33,7 @@ use diagnostics::{
 };
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
+    properties::WALProperties,
     wal::{WAL, WALError},
 };
 use encoding::{
@@ -54,6 +55,7 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     keyspace::rocks_resources::RocksResources,
+    properties::StorageProperties,
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
@@ -62,6 +64,7 @@ use tracing::{Level, debug, error, event, info, trace};
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
+    DatabaseProperties,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
         CorruptionPartialResetTypeVertexGeneratorInUse,
@@ -160,6 +163,8 @@ impl SchemaWriteTransactionState {
 pub struct Database<D> {
     name: Arc<str>,
     pub(super) path: PathBuf,
+    pub(super) properties: DatabaseProperties,
+
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
@@ -340,6 +345,13 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
+        let properties = DatabaseProperties::create_for_new_database(
+            WALProperties::create_for_new_database(),
+            StorageProperties::create_for_new_database(),
+        );
+        debug_assert!(properties.validate_compatible().is_ok());
+        properties.write_during_open(path, name)?;
+
         let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
@@ -393,6 +405,7 @@ impl Database<WALClient> {
         Ok(Database::<WALClient> {
             name: Arc::<str>::from(name),
             path: path.to_owned(),
+            properties,
             storage,
             definition_key_generator,
             type_vertex_generator,
@@ -430,6 +443,24 @@ impl Database<WALClient> {
             std::path::absolute(path)
         );
 
+        event!(Level::TRACE, "Reading database '{}' properties.", &name);
+        let properties = match DatabaseProperties::try_read(path, name)? {
+            None => {
+                let properties = DatabaseProperties::values_for_prehistoric_database();
+                properties.validate_compatible()?;
+                event!(
+                    Level::TRACE,
+                    "Reading database '{}' properties did not exist. Writing prehistoric defaults.",
+                    &name
+                );
+                properties.write_during_open(path, name)?;
+                properties
+            }
+            Some(properties) => {
+                properties.validate_compatible()?;
+                properties
+            }
+        };
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
         let wal = match WAL::load(path, wal_metrics) {
             Ok(wal) => wal,
@@ -536,6 +567,7 @@ impl Database<WALClient> {
         let database = Database::<WALClient> {
             name: Arc::<str>::from(name),
             path: path.to_owned(),
+            properties,
             storage,
             definition_key_generator,
             type_vertex_generator,
@@ -847,6 +879,10 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        PropertiesRead(18, "Error while reading properties file for '{name}'.", name: String, source: Arc<io::Error>),
+        PropertiesParse(19, "Error while parsing properties for '{name}'.", name: String, source: Arc<serde::de::value::Error>),
+        PropertiesWrite(20, "Error while writing properties for '{name}'.", name: String, source: Arc<io::Error>),
+        PropertiesSerialize(21, "Error while serializing properties for '{name}'.", name: String, source: Arc<serde_yaml2::ser::Errors>),
     }
 }
 

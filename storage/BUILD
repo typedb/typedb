@@ -23,6 +23,7 @@ rust_library(
         "//common/logger",
         "//common/options",
         "//common/primitive",
+        "//common/versioning",
         "//diagnostics",
         "//durability",
         "//resource",

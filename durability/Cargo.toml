@@ -39,6 +39,9 @@
 	[dependencies.tracing]
 		workspace = true
 
+	[dependencies.versioning]
+		workspace = true
+
 [dev-dependencies]
 
 	[dev-dependencies.bincode]

@@ -83,7 +83,7 @@
 		workspace = true
 
 [workspace]
-	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro/common", "tests/benchmarks/micro/reads", "tests/benchmarks/micro/sample", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
+	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "common/versioning", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro/common", "tests/benchmarks/micro/reads", "tests/benchmarks/micro/sample", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
 	resolver = "2"
 
 	[workspace.dependencies]
@@ -151,7 +151,7 @@
 		[workspace.dependencies.clap]
 			default-features = false
 			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-			version = "4.6.8"
+			version = "4.6.7"
 
 		[workspace.dependencies.compiler]
 			default-features = false
@@ -371,7 +371,7 @@
 		[workspace.dependencies.regex]
 			default-features = false
 			features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-			version = "1.13.2"
+			version = "1.13.1"
 
 		[workspace.dependencies.resource]
 			default-features = false
@@ -386,7 +386,7 @@
 		[workspace.dependencies.rpassword]
 			default-features = false
 			features = []
-			version = "7.5.5"
+			version = "7.5.4"
 
 		[workspace.dependencies.rustls-pemfile]
 			default-features = false
@@ -446,7 +446,7 @@
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
-			version = "1.16.6"
+			version = "1.16.4"
 
 		[workspace.dependencies.smol]
 			default-features = false
@@ -608,7 +608,12 @@
 		[workspace.dependencies.uuid]
 			default-features = false
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.29.3"
+			version = "1.29.0"
+
+		[workspace.dependencies.versioning]
+			default-features = false
+			features = []
+			path = "common/versioning"
 
 		[workspace.dependencies.xoshiro]
 			default-features = false
@@ -618,7 +623,7 @@
 		[workspace.dependencies.xxhash-rust]
 			default-features = false
 			features = ["xxh3"]
-			version = "0.8.21"
+			version = "0.8.19"
 
 		[workspace.dependencies.yaml-rust2]
 			default-features = false

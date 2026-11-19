@@ -44,6 +44,7 @@ use resource::{
 };
 use rocksdb::WriteBatch;
 use tracing::trace;
+use versioning::ExtendableVersion;
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
@@ -76,6 +77,7 @@ pub mod iterator;
 pub mod key_range;
 pub mod key_value;
 pub mod keyspace;
+pub mod properties;
 pub mod record;
 pub mod recovery;
 pub mod sequence_number;
@@ -718,6 +720,9 @@ typedb_error! {
 
         RecoverFromCheckpoint(10, "Failed to recover from checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
         RecoverFromDurability(11, "Failed to recover from durability logs for database '{name}'.", name: String, typedb_source: StorageRecoveryError),
+
+        StorageVersionTooOldForServer(12, "The database uses an older storage version ({database_version}) this server cannot support ({server_version}).", server_version: ExtendableVersion, database_version: ExtendableVersion),
+        StorageVersionTooNewForServer(13, "The database uses a newer storage version ({database_version}) this server does not support ({server_version}).", server_version: ExtendableVersion, database_version: ExtendableVersion),
     }
 }
 
