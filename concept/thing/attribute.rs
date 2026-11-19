@@ -188,11 +188,14 @@ impl ThingAPI for Attribute {
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        // always lock the attribute, even if put in this snapshot since we don't know
-        // if it pre-existed or concurrently created/deleted, or even put again later in this transaction
-        // contrast this with entities/relations:
-        // those cannot be shared or concurrently created by other transactions unless pre-existing as Persisted
-        thing_manager.lock_existing_attribute(snapshot, self);
+        // If concurrent deletes may occur, always lock the attribute.
+        // Even if put in this snapshot since we don't know if it pre-existed or concurrently created/deleted,
+        // or even put again later in this transaction.
+        // Contrast this with entities/relations: those cannot be shared or concurrently created
+        // by other transactions unless pre-existing as Persisted
+        if thing_manager.concurrent_deletes_may_occur() {
+            thing_manager.lock_existing_attribute(snapshot, self);
+        }
         Ok(())
     }
 

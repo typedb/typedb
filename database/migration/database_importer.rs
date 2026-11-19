@@ -2332,6 +2332,10 @@ impl ConceptPersistenceGuarantees for AttributesEntitiesRelationsConceptPersiste
             ImportPhase::AllUnordered => true,
         }
     }
+
+    fn concurrent_deletes_may_occur(&self) -> bool {
+        false
+    }
 }
 
 typedb_error! {

@@ -138,6 +138,8 @@ pub trait ConceptPersistenceGuarantees: fmt::Debug + Send + Sync {
     fn new_attribute_may_exist(&self, type_: AttributeType) -> bool;
 
     fn new_edge_may_exist(&self) -> bool;
+
+    fn concurrent_deletes_may_occur(&self) -> bool;
 }
 
 impl ThingManager {
@@ -1961,6 +1963,10 @@ impl ThingManager {
         snapshot
             .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+    }
+
+    pub fn concurrent_deletes_may_occur(&self) -> bool {
+        self.concept_persistence_guarantees.as_ref().is_none_or(|guarantees| guarantees.concurrent_deletes_may_occur())
     }
 
     pub(crate) fn for_each_relation_with_modified_links<Snapshot: ReadableSnapshot, E>(
