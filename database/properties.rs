@@ -12,7 +12,6 @@ use std::{
 };
 
 use durability::properties::WALProperties;
-use primitive::either::Either;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use storage::properties::StorageProperties;
@@ -50,7 +49,7 @@ impl DatabaseProperties {
     }
 
     pub(crate) fn validate_compatibility(properties: &Self) -> Result<(), DatabaseOpenError> {
-        Self::SERVER_PROPERTIES_FILE_VERSION.is_compatible(&properties.properties_file_version).map_err(
+        Self::SERVER_PROPERTIES_FILE_VERSION.check_compatible(&properties.properties_file_version).map_err(
             |mismatch| match mismatch {
                 IncompatibleVersion::ResourceIsOlderThanServer => DatabaseOpenError::PropertiesFileTooOldForServer {
                     server_version: Self::SERVER_PROPERTIES_FILE_VERSION.0.clone(),

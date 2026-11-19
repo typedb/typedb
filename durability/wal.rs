@@ -31,7 +31,7 @@ use fail_point::{
 };
 use itertools::Itertools;
 use logger::result::ResultExt;
-use resource::constants::storage::{WAL_SYNC_INTERVAL_MICROSECONDS, WAL_VERSION_BASE, WAL_VERSION_EXTENSION};
+use resource::constants::storage::{WAL_SYNC_INTERVAL_MICROSECONDS, WAL_VERSION_VERSION, WAL_VERSION_EXTENSION};
 use tracing::{debug, warn};
 use versioning::ExtendableVersion;
 
@@ -109,8 +109,7 @@ impl WAL {
     }
 
     pub fn wal_directory_exists_in(directory: impl AsRef<Path>) -> bool {
-        let directory = directory.as_ref().to_owned();
-        directory.join(Self::WAL_DIR_NAME).exists()
+        directory.as_ref().join(Self::WAL_DIR_NAME).exists()
     }
 
     fn increment(&self) -> DurabilitySequenceNumber {

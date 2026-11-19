@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use resource::constants::storage::{STORAGE_VERSION_BASE, STORAGE_VERSION_EXTENSION};
+use resource::constants::storage::{STORAGE_VERSION_VERSION, STORAGE_VERSION_EXTENSION};
 use serde::{Deserialize, Serialize};
 use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};
 
@@ -17,7 +17,7 @@ pub struct StorageProperties {
 
 impl StorageProperties {
     pub const SERVER_STORAGE_VERSION: ServerSupportedVersion = ServerSupportedVersion(ExtendableVersion {
-        version: STORAGE_VERSION_BASE,
+        version: STORAGE_VERSION_VERSION,
         extension: STORAGE_VERSION_EXTENSION,
     });
 
@@ -30,7 +30,7 @@ impl StorageProperties {
     }
 
     pub fn validate_compatibility(database: &Self) -> Result<(), StorageOpenError> {
-        Self::SERVER_STORAGE_VERSION.is_compatible(&database.version).map_err(
+        Self::SERVER_STORAGE_VERSION.check_compatible(&database.version).map_err(
             |incompatibility| match incompatibility {
                 IncompatibleVersion::ResourceIsOlderThanServer => StorageOpenError::StorageVersionTooOldForServer {
                     server_version: Self::SERVER_STORAGE_VERSION.0.clone(),

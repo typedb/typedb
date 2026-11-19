@@ -450,7 +450,7 @@ impl Database<WALClient> {
                 DatabaseProperties::validate_compatibility(&properties)?;
                 event!(
                     Level::INFO,
-                    "Reading database '{}' properties did not exist. Writing pre_properties defaults.",
+                    "Reading database '{}': Properties did not exist. Writing pre_properties defaults.",
                     &name
                 );
                 properties.write(path, name)?;
@@ -885,13 +885,13 @@ typedb_error! {
         PropertiesSerialize(21, "Error while serializing properties for '{name}'.", name: String, source: Arc<serde_yaml2::ser::Errors>),
         PropertiesFileTooOldForServer(
             22,
-            "The database uses an older properties file version ({file_version}) this server does not support ({server_version}).",
+            "The database uses an older properties file version ({file_version}) than the server supports ({server_version}).",
             server_version: ExtendableVersion,
             file_version: ExtendableVersion
         ),
         PropertiesFileTooNewForServer(
             23,
-            "The database uses a new properties file version ({file_version}) this server does not support ({server_version}).",
+            "The database uses a new properties file version ({file_version}) than the server supports ({server_version}).",
             server_version: ExtendableVersion,
             file_version: ExtendableVersion
         ),

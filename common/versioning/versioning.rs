@@ -57,7 +57,7 @@ impl<'de> Deserialize<'de> for ExtendableVersion {
 pub struct ServerSupportedVersion(pub ExtendableVersion);
 
 impl ServerSupportedVersion {
-    pub fn is_compatible(&self, resource: &ExtendableVersion) -> Result<(), IncompatibleVersion> {
+    pub fn check_compatible(&self, resource: &ExtendableVersion) -> Result<(), IncompatibleVersion> {
         if self.0.version == resource.version {
             if self.0.extension >= resource.extension {
                 Ok(())
@@ -91,7 +91,7 @@ pub mod tests {
             cases: &[(&ExtendableVersion, Result<(), IncompatibleVersion>)],
         ) {
             for (resource_version, expected) in cases {
-                let actual = server_version.is_compatible(resource_version);
+                let actual = server_version.check_compatible(resource_version);
                 match (actual, expected) {
                     (Ok(()), Ok(())) => (),
                     (Err(a), Err(e)) => {

@@ -28,7 +28,6 @@ rust_library(
         "//common/fail_point",
         "//common/logger",
         "//common/options",
-        "//common/primitive",
         "//common/versioning",
         "//compiler",
         "//concept",

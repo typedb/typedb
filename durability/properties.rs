@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use resource::constants::storage::{WAL_VERSION_BASE, WAL_VERSION_EXTENSION};
+use resource::constants::storage::{WAL_VERSION_VERSION, WAL_VERSION_EXTENSION};
 use serde::{Deserialize, Serialize};
 use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};
 
@@ -16,7 +16,7 @@ pub struct WALProperties {
 
 impl WALProperties {
     pub const SERVER_WAL_VERSION: ServerSupportedVersion =
-        ServerSupportedVersion(ExtendableVersion { version: WAL_VERSION_BASE, extension: WAL_VERSION_EXTENSION });
+        ServerSupportedVersion(ExtendableVersion { version: WAL_VERSION_VERSION, extension: WAL_VERSION_EXTENSION });
 
     pub fn values_for_pre_properties_database() -> Self {
         Self { version: ExtendableVersion { version: 1, extension: 1 } }
@@ -27,7 +27,7 @@ impl WALProperties {
     }
 
     pub fn validate_compatibility(database: &Self) -> Result<(), DurabilityServiceError> {
-        Self::SERVER_WAL_VERSION.is_compatible(&database.version).map_err(|incompatibility| match incompatibility {
+        Self::SERVER_WAL_VERSION.check_compatible(&database.version).map_err(|incompatibility| match incompatibility {
             IncompatibleVersion::ResourceIsOlderThanServer => DurabilityServiceError::WAL {
                 source: WALError::WALVersionTooOldForServer {
                     server_version: Self::SERVER_WAL_VERSION.0.clone(),
