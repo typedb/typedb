@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use resource::constants::storage::{WAL_VERSION_VERSION, WAL_VERSION_EXTENSION};
+use resource::constants::storage::{WAL_VERSION_EXTENSION, WAL_VERSION_VERSION};
 use serde::{Deserialize, Serialize};
 use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};
 
@@ -27,20 +27,22 @@ impl WALProperties {
     }
 
     pub fn validate_compatibility(database: &Self) -> Result<(), DurabilityServiceError> {
-        Self::SERVER_WAL_VERSION.check_compatible(&database.version).map_err(|incompatibility| match incompatibility {
-            IncompatibleVersion::ResourceIsOlderThanServer => DurabilityServiceError::WAL {
-                source: WALError::WALVersionTooOldForServer {
-                    server_version: Self::SERVER_WAL_VERSION.0.clone(),
-                    database_version: database.version.clone(),
+        Self::SERVER_WAL_VERSION.check_compatible(&database.version).map_err(
+            |incompatibility| match incompatibility {
+                IncompatibleVersion::ResourceIsOlderThanServer => DurabilityServiceError::WAL {
+                    source: WALError::WALVersionTooOldForServer {
+                        server_version: Self::SERVER_WAL_VERSION.0.clone(),
+                        database_version: database.version.clone(),
+                    },
+                },
+                IncompatibleVersion::ResourceIsNewerThanServer => DurabilityServiceError::WAL {
+                    source: WALError::WALVersionTooNewForServer {
+                        server_version: Self::SERVER_WAL_VERSION.0.clone(),
+                        database_version: database.version.clone(),
+                    },
                 },
             },
-            IncompatibleVersion::ResourceIsNewerThanServer => DurabilityServiceError::WAL {
-                source: WALError::WALVersionTooNewForServer {
-                    server_version: Self::SERVER_WAL_VERSION.0.clone(),
-                    database_version: database.version.clone(),
-                },
-            },
-        })?;
+        )?;
         Ok(())
     }
 }

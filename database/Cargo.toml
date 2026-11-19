@@ -60,9 +60,6 @@
 	[dependencies.options]
 		workspace = true
 
-	[dependencies.primitive]
-		workspace = true
-
 	[dependencies.query]
 		workspace = true
 

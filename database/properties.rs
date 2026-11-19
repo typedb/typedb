@@ -105,19 +105,7 @@ impl DatabaseProperties {
         drop(tmp_file);
 
         std::fs::rename(&tmp_path, &final_path).map_err(write_error)?;
-        #[cfg(unix)]
-        {
-            File::open(dir).and_then(|dir| dir.sync_all()).map_err(write_error)?;
-        }
-
-        #[cfg(windows)]
-        {
-            // TODO: This supposedly always fails, but we use it in the WAL sync?
-            if let Ok(directory) = fs::File::open(dir) {
-                let _ = directory.sync_all();
-            }
-            Ok(())
-        }
+        durability::sync_directory(dir).map_err(write_error)?;
 
         Ok(())
     }

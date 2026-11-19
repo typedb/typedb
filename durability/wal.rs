@@ -31,7 +31,7 @@ use fail_point::{
 };
 use itertools::Itertools;
 use logger::result::ResultExt;
-use resource::constants::storage::{WAL_SYNC_INTERVAL_MICROSECONDS, WAL_VERSION_VERSION, WAL_VERSION_EXTENSION};
+use resource::constants::storage::{WAL_SYNC_INTERVAL_MICROSECONDS, WAL_VERSION_EXTENSION, WAL_VERSION_VERSION};
 use tracing::{debug, warn};
 use versioning::ExtendableVersion;
 
