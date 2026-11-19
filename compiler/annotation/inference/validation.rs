@@ -82,7 +82,6 @@ fn check_non_type_constraints_satisfiable(
     _variable_registry: &VariableRegistry,
 ) -> Result<(), TypeInferenceError> {
     let not_only_type_constraints = graph.conjunction.constraints().iter().any(|constraint| match constraint {
-        Constraint::Is(_)
         | Constraint::Isa(_)
         | Constraint::Iid(_)
         | Constraint::Links(_)
@@ -94,7 +93,8 @@ fn check_non_type_constraints_satisfiable(
         | Constraint::DeleteConcepts(_)
         | Constraint::Comparison(_) => true,
 
-        Constraint::IsSet(_)
+        Constraint::Is(_) // There will be a different thing constraint which bound the variables.
+        | Constraint::IsSet(_)  // There will be a different thing constraint which bound the variables.
         | Constraint::Kind(_)
         | Constraint::Label(_)
         | Constraint::RoleName(_)
