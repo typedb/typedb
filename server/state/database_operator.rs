@@ -40,7 +40,7 @@ use tokio::{
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
-    service::grpc::migration::import_service::DatabaseImportService,
+    service::{grpc::migration::import_service::DatabaseImportService, migration::item::ImportableItem},
 };
 
 const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
@@ -66,7 +66,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         &self,
         name: &str,
         close_sender: Sender<()>,
-    ) -> Result<DatabaseImporterHandle<Vec<u8>>, ArcServerStateError>;
+    ) -> Result<DatabaseImporterHandle<ImportableItem>, ArcServerStateError>;
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -217,7 +217,7 @@ impl LocalDatabaseOperator {
     pub fn start_importer(
         &self,
         importing_database: Arc<dyn ImportingDatabaseHandle>,
-    ) -> DatabaseImporterHandle<Vec<u8>> {
+    ) -> DatabaseImporterHandle<ImportableItem> {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         let configuration = ImporterConfiguration::new(scratch_directory).with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
         DatabaseImporter::start(importing_database, configuration, &self.background_task_spawner)
@@ -316,7 +316,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         &self,
         name: &str,
         close_sender: Sender<()>,
-    ) -> Result<DatabaseImporterHandle<Vec<u8>>, ArcServerStateError> {
+    ) -> Result<DatabaseImporterHandle<ImportableItem>, ArcServerStateError> {
         let map_err =
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;

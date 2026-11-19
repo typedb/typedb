@@ -3,7 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{borrow::Cow, sync::Arc};
+use std::{
+    borrow::Cow,
+    sync::{Arc, LazyLock},
+};
 
 use concept::error::ConceptDecodeError;
 use database::migration::{
@@ -16,7 +19,10 @@ use database::migration::{
 };
 use encoding::value::value::Value;
 use error::{typedb_error, unimplemented_feature};
-use prost::Message;
+use prost::{
+    Message,
+    encoding::{WireType, encode_key, encode_varint},
+};
 use typedb_protocol::{
     migration,
     migration::{Item, MigrationValue, item},
@@ -84,31 +90,66 @@ pub fn encode_item(item: ExportMessage) -> EncodedItem {
     EncodedItem::Item(Item { item: Some(encoded) })
 }
 
-// an encoded item is routed by the field of its one-of, which is its first field, and decoded by the import worker
-// that writes it, with its encoded length standing in for the bytes it writes
-pub fn decodable_item(encoded: Vec<u8>) -> Result<DecodableItem<Vec<u8>>, ItemDecodeError> {
+pub enum ImportableItem {
+    EncodedItem(Vec<u8>),
+}
+
+// the item is routed by its kind, and decoded by the import worker that writes it
+pub fn decodable_item(item: ImportableItem) -> Result<DecodableItem<ImportableItem>, ItemDecodeError> {
+    let (kind, estimated_write_bytes) = match &item {
+        ImportableItem::EncodedItem(encoded) => (read_item_kind(encoded)?, encoded.len()),
+    };
+    Ok(DecodableItem::new(item, kind, estimated_write_bytes, decode_importable_item))
+}
+
+const MAX_ITEM_FIELD: u32 = u8::MAX as u32;
+
+// prost has no constants for the fields of the one-of, so each field up to the limit is probed with an empty item
+static ITEM_KINDS_BY_FIELD: LazyLock<[Option<ItemKind>; MAX_ITEM_FIELD as usize + 1]> =
+    LazyLock::new(|| std::array::from_fn(|field| empty_item_at(field as u32).map(|item| item_kind(&item))));
+
+fn read_item_kind(encoded: &[u8]) -> Result<ItemKind, ItemDecodeError> {
     if encoded.is_empty() {
         return Err(ItemDecodeError::EmptyItem {});
     }
-    let (field, _) = prost::encoding::decode_key(&mut encoded.as_slice())
-        .map_err(|source| ItemDecodeError::MalformedItem { source })?;
-    let kind = match field {
-        1 => ItemKind::Attribute,
-        2 => ItemKind::Entity,
-        3 => ItemKind::Relation,
-        15 => ItemKind::Header,
-        16 => ItemKind::Checksums,
-        field => return Err(ItemDecodeError::UnknownItemKind { field }),
-    };
-    let estimated_write_bytes = encoded.len();
-    Ok(DecodableItem::new(encoded, kind, estimated_write_bytes, decode_encoded_item))
+    let field = read_field(encoded).map_err(|source| ItemDecodeError::MalformedItem { source })?;
+    ITEM_KINDS_BY_FIELD.get(field as usize).copied().flatten().ok_or(ItemDecodeError::UnknownItemKind { field })
 }
 
-fn decode_encoded_item(encoded: Vec<u8>, labels: &mut LabelCache) -> Result<MigrationItem, MigrationOperationError> {
-    let decoded = Item::decode(encoded.as_slice())
-        .map_err(|source| ItemDecodeError::MalformedItem { source })
-        .and_then(|item| decode_item(item, labels));
-    decoded.map_err(|error| Arc::new(error) as _)
+fn empty_item_at(field: u32) -> Option<item::Item> {
+    if field == 0 {
+        return None;
+    }
+    let mut encoded = Vec::new();
+    encode_key(field, WireType::LengthDelimited, &mut encoded);
+    encode_varint(0, &mut encoded);
+    Item::decode(encoded.as_slice()).ok()?.item
+}
+
+fn item_kind(item: &item::Item) -> ItemKind {
+    match item {
+        item::Item::Attribute(_) => ItemKind::Attribute,
+        item::Item::Entity(_) => ItemKind::Entity,
+        item::Item::Relation(_) => ItemKind::Relation,
+        item::Item::Header(_) => ItemKind::Header,
+        item::Item::Checksums(_) => ItemKind::Checksums,
+    }
+}
+
+fn read_field(mut encoded: &[u8]) -> Result<u32, prost::DecodeError> {
+    prost::encoding::decode_key(&mut encoded).map(|(field, _)| field)
+}
+
+fn decode_importable_item(
+    item: ImportableItem,
+    labels: &mut LabelCache,
+) -> Result<MigrationItem, MigrationOperationError> {
+    let item_proto = match item {
+        ImportableItem::EncodedItem(encoded) => {
+            Item::decode(encoded.as_slice()).map_err(|source| ItemDecodeError::MalformedItem { source })
+        }
+    };
+    item_proto.and_then(|item_proto| decode_item(item_proto, labels)).map_err(|error| Arc::new(error) as _)
 }
 
 pub fn decode_item(item_proto: Item, labels: &mut LabelCache) -> Result<MigrationItem, ItemDecodeError> {
@@ -332,6 +373,13 @@ mod tests {
     use encoding::value::label::Label;
 
     use super::*;
+
+    #[test]
+    fn every_item_kind_has_a_field_within_the_limit() {
+        // the table only probes up to the limit, so no item kind may have a field beyond it
+        let beyond_limit = (MAX_ITEM_FIELD + 1..=u16::MAX as u32).filter_map(empty_item_at).collect::<Vec<_>>();
+        assert!(beyond_limit.is_empty(), "item kinds beyond the probed fields: {beyond_limit:?}");
+    }
 
     #[test]
     fn items_map_to_the_expected_wire_messages() {

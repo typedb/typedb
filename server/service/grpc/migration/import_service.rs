@@ -33,7 +33,7 @@ use crate::{
             response_builders::database_manager::database_import_res_done,
         },
         import_service::DatabaseImportServiceError,
-        migration::item::decodable_item,
+        migration::item::{ImportableItem, decodable_item},
     },
     state::ServerState,
 };
@@ -47,11 +47,11 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 struct ActiveImport {
     name: String,
     started: Instant,
-    importer: DatabaseImporterHandle<Vec<u8>>,
+    importer: DatabaseImporterHandle<ImportableItem>,
 }
 
 impl ActiveImport {
-    fn new(name: String, importer: DatabaseImporterHandle<Vec<u8>>) -> Self {
+    fn new(name: String, importer: DatabaseImporterHandle<ImportableItem>) -> Self {
         Self { name, started: Instant::now(), importer }
     }
 }
@@ -224,7 +224,7 @@ impl DatabaseImportService {
                 .await
                 .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
             Client::ReqPart(ReqPart { items }) => self
-                .handle_items(items)
+                .handle_items(items.into_iter().map(ImportableItem::EncodedItem).collect())
                 .await
                 .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
             Client::Done(Done {}) => self
@@ -259,7 +259,10 @@ impl DatabaseImportService {
         Ok(Continue(()))
     }
 
-    async fn handle_items(&mut self, items: Vec<Vec<u8>>) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
+    async fn handle_items(
+        &mut self,
+        items: Vec<ImportableItem>,
+    ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
         let items = items
             .into_iter()
