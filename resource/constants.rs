@@ -169,10 +169,10 @@ pub mod storage {
     pub const COMMIT_WAIT_FOR_FSYNC: bool = true;
 
     pub const WAL_VERSION_BASE: u16 = 1;
-    pub const WAL_VERSION_EXTENSION: u16  = 1;
+    pub const WAL_VERSION_EXTENSION: u16 = 1;
 
     pub const STORAGE_VERSION_BASE: u16 = 1;
-    pub const STORAGE_VERSION_EXTENSION: u16  = 1;
+    pub const STORAGE_VERSION_EXTENSION: u16 = 1;
 }
 
 pub mod encoding {

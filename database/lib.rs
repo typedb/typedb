@@ -11,7 +11,7 @@ use std::{fs::File, io::Read, path::Path, sync::Arc};
 
 use durability::properties::WALProperties;
 use primitive::either::Either;
-use rand::Rng;
+use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use storage::properties::StorageProperties;
 use versioning::{ExtendableVersion, ServerSupportedVersion};
@@ -39,7 +39,7 @@ impl DatabaseProperties {
         ServerSupportedVersion(ExtendableVersion { version: 1, extension: 1 });
 
     pub(crate) fn values_for_prehistoric_database() -> Self {
-        let database_id = rand::rng().next_u64();
+        let database_id = rand::thread_rng().next_u64();
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
         let wal = WALProperties::values_for_prehistoric_database();
         let storage = StorageProperties::values_for_prehistoric_database();
@@ -47,7 +47,7 @@ impl DatabaseProperties {
     }
 
     pub(crate) fn create_for_new_database(wal: WALProperties, storage: StorageProperties) -> Self {
-        let database_id = rand::rng().next_u64();
+        let database_id = rand::thread_rng().next_u64();
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
         Self { database_id, properties_file_version, wal, storage }
     }

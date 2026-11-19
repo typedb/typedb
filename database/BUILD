@@ -44,6 +44,7 @@ rust_library(
 
         "@typeql//rust:typeql",
         "@crates//:itertools",
+        "@crates//:rand",
         "@crates//:rocksdb",
         "@crates//:serde",
         "@crates//:serde_yaml2",

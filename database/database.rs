@@ -449,7 +449,7 @@ impl Database<WALClient> {
                 let properties = DatabaseProperties::values_for_prehistoric_database();
                 properties.validate_compatible()?;
                 event!(
-                    Level::TRACE,
+                    Level::INFO,
                     "Reading database '{}' properties did not exist. Writing prehistoric defaults.",
                     &name
                 );

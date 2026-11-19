@@ -11,9 +11,8 @@
 	path = "lib.rs"
 
 [dependencies]
-rand = "0.10.3"
 
-[dependencies.bytes]
+	[dependencies.bytes]
 		workspace = true
 
 	[dependencies.cache]
@@ -65,6 +64,9 @@ rand = "0.10.3"
 		workspace = true
 
 	[dependencies.query]
+		workspace = true
+
+	[dependencies.rand]
 		workspace = true
 
 	[dependencies.resource]
