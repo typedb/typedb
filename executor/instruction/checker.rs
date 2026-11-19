@@ -104,6 +104,10 @@ impl<T> Checker<T> {
                 }
                 _ => continue,
             };
+            // The target has no input value yet; self-comparisons are evaluated by the tuple filter.
+            if other.as_variable() == Some(target_variable) {
+                continue;
+            }
             let other_variable_value = get_vertex_value(&other, row.as_ref(), &context.parameters);
             let Some(other_value) = Self::read_value(
                 context.snapshot.as_ref(),
