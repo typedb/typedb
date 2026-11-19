@@ -474,7 +474,6 @@ impl Database<WALClient> {
         let vector_index = match &checkpoint {
             Some(reader) => match reader.get_additional_data::<VectorIndex>() {
                 Ok(store) => Arc::new(store),
-                // a checkpoint written before vector support has no index, and no vectors either
                 Err(CheckpointLoadError::AdditionalDataNotFound { .. }) => Arc::new(VectorIndex::new()),
                 Err(err) => return Err(Box::new(CheckpointLoad { name: name.to_string(), typedb_source: err })),
             },
@@ -519,8 +518,6 @@ impl Database<WALClient> {
             TypeCache::new(storage.clone(), wal_last_sequence_number)
                 .map_err(|error| TypeCacheInitialise { typedb_source: error })?,
         );
-        // schema-commit pruning never ran for commits that were only replayed from the WAL, so
-        // drop indexes of types that were undefined (or dimension-changed) before the restart
         vector_index.retain_live_types(&type_cache);
 
         let function_cache = Arc::new(

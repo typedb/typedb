@@ -206,7 +206,6 @@ impl<Durability> MVCCStorage<Durability> {
         })
     }
 
-    // for tests only
     pub fn set_secondary_store(&mut self, secondary_store: Arc<dyn SecondaryStore>) {
         self.secondary_store = Some(secondary_store);
     }
@@ -319,12 +318,6 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
 
-                // The commit is already durable (WAL synced, KV written), so a secondary-store
-                // failure must NOT stop this commit from becoming applied: that would freeze the
-                // watermark and stall every later transaction for a commit that did happen.
-                // Instead the commit proceeds and the error is surfaced to the client; reads of
-                // the index entries that failed to apply error loudly (SecondaryStoreValueMissing)
-                // rather than returning wrong results.
                 let secondary_store_error = self.secondary_store.as_ref().and_then(|secondary_store| {
                     secondary_store.apply_commit(sequence_number, commit_record.operations()).err()
                 });

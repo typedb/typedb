@@ -46,7 +46,6 @@ use crate::{
 };
 
 const INITIAL_ANN_COUNT: usize = 16;
-// both kernels compute f32 cosine; they differ by rounding only (~1e-6)
 const ANN_DISTANCE_MARGIN: f64 = 1e-4;
 
 pub(crate) fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
@@ -112,7 +111,6 @@ impl VectorSearchExecutor {
     ) -> Self {
         let VectorSearchInstruction { vector_search, types, checks, inputs } = instruction;
         let var = vector_search.attribute();
-        // hard assert: silently accepting another sort variable would drop rows in release builds
         assert_eq!(sort_by, var, "vector search can only be sorted by its attribute variable");
         let attribute_bound = inputs.iter().any(|&input| input == var);
         let similarity_var = Some(vector_search.similarity());
@@ -195,19 +193,13 @@ impl VectorSearchExecutor {
 
             let total = vector_index.get_count_for_type(type_id);
             if total > 0 {
-                // usearch's search effort is max(expansion_search, k), so a small k keeps selective
-                // searches cheap; broad ones widen below
                 let mut k = INITIAL_ANN_COUNT.min(total);
                 loop {
                     let results = vector_index.list_instances_by_ann(type_id, &query, k);
-                    // the widening decision uses usearch's distance; final inclusion below
-                    // recomputes the exact similarity (simsimd) against the threshold
                     let last_above_threshold =
                         results.last().is_some_and(|&(_, distance)| 1.0 - distance as f64 >= threshold);
                     let exhausted = results.len() >= total || k >= total;
                     if !last_above_threshold || exhausted {
-                        // drop clear misses before the per-candidate storage lookups below; the
-                        // margin covers usearch and simsimd computing cosine slightly differently
                         candidates.extend(results.into_iter().filter_map(|(attribute, distance)| {
                             (1.0 - distance as f64 >= threshold - ANN_DISTANCE_MARGIN).then_some(attribute)
                         }));
@@ -232,7 +224,6 @@ impl VectorSearchExecutor {
                 candidates.insert(Attribute::new(AttributeVertex::decode(key.bytes())));
             }
 
-            // like `isa`: attributes left with no owner are hidden unless the type is @independent
             let independent = attribute_type.is_independent(snapshot, thing_manager.type_manager())?;
             for attribute in candidates {
                 let exists = snapshot
@@ -299,7 +290,6 @@ pub(crate) fn resolve_query_vector(
             }
         }
     };
-    // cosine similarity is undefined for these, and usearch/simsimd would return arbitrary distances
     if vector.iter().any(|element| !element.is_finite()) {
         return Err(Box::new(ConceptReadError::VectorSearchQueryInvalid {
             reason: "it contains a non-finite element".to_owned(),

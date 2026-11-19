@@ -310,7 +310,6 @@ impl ValueTypeCategory {
 
     pub fn order_comparable_categories(&self) -> &'static [ValueTypeCategory] {
         match self {
-            // Durations, structs and vectors have no ordering
             ValueTypeCategory::Duration | ValueTypeCategory::Struct | ValueTypeCategory::Vector => &[],
             _ => self.equality_comparable_categories(),
         }

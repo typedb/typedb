@@ -134,7 +134,6 @@ fn row_entry_satisfies_types(
         (VariableValue::Value(Value::Vector(vector)), FunctionParameterAnnotation::Vector(parameters)) => {
             vector.len() == parameters.length as usize
         }
-        // a vector value cannot name its schema-defined value type (`value_type()` is unreachable for vectors)
         (VariableValue::Value(Value::Vector(_)), FunctionParameterAnnotation::Value(_)) => false,
         (VariableValue::Value(value), FunctionParameterAnnotation::Value(value_type)) => {
             *value_type == value.value_type()

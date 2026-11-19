@@ -180,7 +180,6 @@ pub enum ConstraintInstruction<ID> {
     // type -> thing
     IsaReverse(thing::IsaReverseInstruction<ID>),
 
-    // query vector -> attribute + similarity
     VectorSearch(thing::VectorSearchInstruction<ID>),
 
     // owner -> attribute

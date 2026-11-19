@@ -4,9 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-// A database created by the previous release must open in the current one, which upgrades
-// its storage by adding the vector index to the checkpoint.
-
 use std::{
     fs,
     io::Write,
@@ -42,7 +39,6 @@ fn extract(archive: &str, into: &str) -> PathBuf {
     } else {
         run(&format!("tar -xf {archive} -C {into}"));
     }
-    // each archive holds a single top-level `typedb-all-<platform>-<version>` directory
     let root = fs::read_dir(into).unwrap().next().unwrap().unwrap().path();
     fs::canonicalize(root).unwrap()
 }
@@ -69,14 +65,12 @@ fn start_server(distribution: &Path, data: &Path, extra_args: &str) -> Child {
     server
 }
 
-// SIGTERM, not SIGKILL: the server must shut down gracefully so it writes its final checkpoint
 fn stop_server(server: Child) {
     run(&format!("kill -s TERM {}", server.id()));
     let output = server.wait_with_output().unwrap();
     assert!(output.status.success(), "server did not shut down cleanly: {output:?}");
 }
 
-// The console bundled with the assembly may predate vector syntax, so queries go over HTTP
 fn http(token: Option<&str>, method: &str, path: &str, body: &str) -> String {
     let mut cmd = Command::new("curl");
     cmd.args([
@@ -112,7 +106,6 @@ fn query(token: &str, transaction_type: &str, query: &str) -> String {
     http(Some(token), "POST", "query", &body)
 }
 
-// completed checkpoints only: one still being written has a `.tmp` extension
 fn latest_checkpoint(data: &Path) -> Option<PathBuf> {
     let mut checkpoints: Vec<PathBuf> = fs::read_dir(data.join(DATABASE).join("checkpoint"))
         .ok()?
@@ -123,7 +116,6 @@ fn latest_checkpoint(data: &Path) -> Option<PathBuf> {
     checkpoints.pop()
 }
 
-// Servers checkpoint periodically, not on shutdown, so the test waits for one to be written
 fn wait_for_checkpoint(data: &Path, newer_than: Option<&Path>) -> PathBuf {
     let started_at = Instant::now();
     loop {
@@ -147,7 +139,6 @@ fn database_from_previous_version_is_upgraded() {
     http(Some(&token), "POST", &format!("databases/{DATABASE}"), "");
     query(&token, "schema", "define entity person, owns name; attribute name, value string;");
     query(&token, "write", r#"insert $a isa person, has name "Alice"; $b isa person, has name "Bob";"#);
-    // so the current version opens a checkpoint lacking the vector index, not only a WAL
     let previous_checkpoint = wait_for_checkpoint(&data, None);
     stop_server(server);
     assert!(!previous_checkpoint.join("VECTOR_INDEX").exists(), "the previous version must not write a vector index");

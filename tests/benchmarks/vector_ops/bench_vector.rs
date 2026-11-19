@@ -4,10 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! YCSB-style vector search micro-benchmarks: write, read, mixed.
-//! Each workload reports per-op latency (p50/p99) and aggregate throughput across thread counts.
-//! Ops go through TypeQL + transactions, i.e. the same path a client query takes.
-
 #![deny(unused_must_use)]
 
 use std::{
@@ -36,8 +32,6 @@ const WRITE_OPS: usize = 2_000;
 const READ_OPS: usize = 2_000;
 const MIXED_OPS: usize = 2_000;
 const THREAD_COUNTS: [usize; 3] = [1, 4, 8];
-// Elements are uniform in [0, 1), so random pairs have cosine similarity ~0.75. Lower thresholds
-// match more of the dataset and push the executor's k-widening loop harder.
 const THRESHOLDS: [f64; 3] = [0.85, 0.8, 0.75];
 
 type Db = Arc<Database<WALClient>>;
@@ -69,7 +63,6 @@ fn create_database() -> (TempDir, Db) {
     let (mut profile, intent) = tx.finalise();
     intent.unwrap().commit(profile.commit_profile()).unwrap();
 
-    // every seeded item has a vector and a "tag-<n>" string, so both kinds of read have data
     let next_tag = Cell::new(0);
     let seed_attributes = || {
         next_tag.set(next_tag.get() + 1);
@@ -85,7 +78,6 @@ fn vector_attribute() -> String {
     format!("has embedding {}", random_vector_literal())
 }
 
-/// Baseline: a unique string attribute, to compare vector writes against.
 fn string_attribute() -> String {
     format!(r#"has tag "tag-{}""#, rand::random::<u64>())
 }
@@ -95,7 +87,6 @@ fn random_vector_literal() -> String {
     format!(r#"vector([{}], "float32")"#, elements.join(", "))
 }
 
-/// One write transaction inserting `count` items, one query each, each owning one `attribute()`.
 fn insert(database: &Db, count: usize, attribute: impl Fn() -> String) {
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     for _ in 0..count {
@@ -116,19 +107,16 @@ fn insert(database: &Db, count: usize, attribute: impl Fn() -> String) {
     intent.unwrap().commit(profile.commit_profile()).unwrap();
 }
 
-/// One read transaction running one similarity search; returns the number of answers.
 fn search(database: &Db, threshold: f64) -> usize {
     let query =
         format!("match let $e, $s in cosine_similarity_search(embedding, {}, {threshold:?});", random_vector_literal());
     read(database, &query)
 }
 
-/// Vector read for the vector-vs-string comparisons: the threshold that returns a handful of answers.
 fn search_selective(database: &Db) -> usize {
     search(database, THRESHOLDS[0])
 }
 
-/// Baseline: one read transaction looking up a seeded string attribute by value (1 answer).
 fn lookup_string(database: &Db) -> usize {
     let query = format!(r#"match $t isa tag; $t == "tag-{}";"#, rand::random::<u64>() % SEED_VECTORS as u64);
     read(database, &query)
@@ -154,7 +142,6 @@ fn read(database: &Db, query: &str) -> usize {
     rows.collect_owned().unwrap().len()
 }
 
-/// Runs `op` `ops_per_thread` times on each of `threads` threads; returns wall time and per-op latencies.
 fn run_parallel(threads: usize, ops_per_thread: usize, op: impl Fn() + Sync) -> (Duration, Vec<Duration>) {
     let start = Instant::now();
     let latencies = thread::scope(|scope| {
@@ -171,7 +158,6 @@ fn timed(op: impl Fn()) -> Duration {
     start.elapsed()
 }
 
-/// Latencies are per call; throughput counts `ops_per_call` ops per call.
 fn report(label: &str, threads: usize, elapsed: Duration, ops_per_call: usize, mut latencies: Vec<Duration>) {
     latencies.sort_unstable();
     let calls = latencies.len();
@@ -220,7 +206,6 @@ fn bench_read(database: &Db) {
     }
 }
 
-/// YCSB-style: every thread picks each op at random, 50% insert (1 per transaction) / 50% read.
 fn bench_mixed() {
     eprintln!("\n=== mixed: each op 50% insert / 50% read; vector reads @{} ===", THRESHOLDS[0]);
     let kinds: [(&str, fn() -> String, fn(&Db) -> usize); 2] =
@@ -265,7 +250,6 @@ fn main() {
         bench_write();
     }
     if workload.is_empty() || workload == "read" {
-        // ponytail: one shared dataset for all read runs; reads don't mutate it
         let (_tmp, database) = create_database();
         bench_read(&database);
     }

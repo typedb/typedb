@@ -361,8 +361,6 @@ fn decode_string_as_value(value: String, expected_type: &ValueType) -> Result<Gi
     let translated_value = Value::from_typeql_literal(&parsed_value, None).map_err(|typedb_source| {
         GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: value.clone(), typedb_source }
     })?;
-    // a vector value cannot name its schema-defined value type; vector entries arrive as JSON
-    // arrays through decode_value, never as parsed string literals
     let type_matches = match (expected_type, &translated_value) {
         (ValueType::Vector(_), _) | (_, Value::Vector(_)) => false,
         _ => &translated_value.value_type() == expected_type,

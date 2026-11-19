@@ -414,8 +414,6 @@ fn search_requires_a_vector_attribute_type() {
 fn search_hides_attributes_left_without_owners() {
     let context = setup();
     run_write_query(&context, INSERT);
-    // within one transaction: unlink one embedding, then search; like `isa`, the ownerless
-    // attribute must be hidden (embedding is not @independent)
     let rows = run_write_query(
         &context,
         r#"match $p isa item, has embedding $e; $e == vector([1.0, 0.0, 0.0], "float32");
@@ -452,7 +450,6 @@ fn non_finite_vectors_are_rejected_and_dedup_is_by_encoded_bytes() {
         context.type_manager.get_attribute_type(&snapshot, &Label::build("embedding", None)).unwrap().unwrap();
     drop(snapshot);
 
-    // non-finite elements are rejected at write time: cosine similarity is undefined for them
     let mut snapshot = context.storage.clone().open_snapshot_write();
     let nan: Vec<f32> = vec![f32::NAN, 0.0, 0.0];
     let result =
@@ -464,8 +461,6 @@ fn non_finite_vectors_are_rejected_and_dedup_is_by_encoded_bytes() {
     assert!(result.is_err(), "an infinite vector must be rejected");
     drop(snapshot);
 
-    // deduplication is decided on the encoded bytes: identical bytes resolve to one attribute,
-    // while -0.0 and 0.0 (equal as f32, different bytes) stay distinct
     let create = |vector: &Vec<f32>| {
         let mut snapshot = context.storage.clone().open_snapshot_write();
         let attribute = context

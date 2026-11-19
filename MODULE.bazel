@@ -131,7 +131,6 @@ native_artifact_files.artifact(
     artifact_name = "typedb-loader-{platform}-{version}.{ext}",
     tag = "3.15.0",
 )
-# Last release before vector storage, for //tests/assembly:test_upgrade
 native_artifact_files.artifact(
     name = "typedb_previous_artifact",
     group_name = "typedb-all-{platform}",

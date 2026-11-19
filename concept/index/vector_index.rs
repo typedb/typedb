@@ -48,11 +48,6 @@ use crate::{
 
 pub struct VectorIndex {
     per_type_indices: RwLock<HashMap<TypeID, Arc<PerTypeVectorIndex>>>,
-    /// Indexes of undefined (or dimension-changed) types, kept so transactions whose snapshot
-    /// predates the schema change can still read committed values and search. Cleared at the
-    /// next checkpoint.
-    /// ponytail: a reader that spans a checkpoint loses these; a precise lifetime needs the
-    /// oldest-open-snapshot watermark.
     retired_type_indices: RwLock<HashMap<TypeID, Arc<PerTypeVectorIndex>>>,
     live_directory: RwLock<Option<PathBuf>>,
 }
@@ -86,10 +81,6 @@ impl VectorIndex {
         match indices.get(&type_id) {
             Some(index) if reusable(index) => Ok(index.clone()),
             existing => {
-                // an EMPTY index with different dimensions is always stale: the type was undefined
-                // (its instances deleted) and its type ID reused with new dimensions, but startup
-                // WAL replay never runs the schema-commit pruning, so the checkpointed index
-                // survives. A non-empty mismatch is returned as-is so the caller errors.
                 if let Some(stale) = existing {
                     self.retired_type_indices.write().unwrap().insert(type_id, stale.clone());
                 }
@@ -246,7 +237,6 @@ impl CheckpointAdditionalData for VectorIndex {
             let live_type_dir = live_directory.as_ref().map(|live| live.join(&dir_name));
             manifest.push_str(&type_index.checkpoint_to(type_id, live_type_dir.as_deref(), &path.join(&dir_name))?);
         }
-        // Written and fsynced last: a parseable MANIFEST implies every file it names is durable.
         let mut manifest_file = File::create(path.join(MANIFEST_FILE_NAME))?;
         manifest_file.write_all(manifest.as_bytes())?;
         manifest_file.sync_all()?;
@@ -309,22 +299,8 @@ pub struct VectorIndexID {
 const ADD_KEY_LOCK_STRIPES: usize = 64; // add_value derives 6 stripe bits
 
 struct PerTypeVectorIndex {
-    /// The hot shard: the single mutable, RAM-resident index. Sealed (immutable, mmap'd)
-    /// shards will sit alongside it in the larger-than-memory design; the `Arc` slot
-    /// exists so sealing can later freeze the hot index by swapping handles.
-    /// Adds and searches take the shared lock (usearch's add is thread-safe while capacity and
-    /// thread contexts are reserved); growing, removing and saving take the exclusive lock.
-    /// Never clone this `Arc` and mutate the index after releasing the guard: saving
-    /// (and the future freeze) relies on the lock excluding all in-flight writers.
     hot: RwLock<Arc<Index>>,
-    /// Striped per-key locks: usearch checks `contains` then inserts, so two commits adding the
-    /// same key (the same vector value) under the shared lock would otherwise both insert it.
     add_key_locks: [Mutex<()>; ADD_KEY_LOCK_STRIPES],
-    /// Values removed from the hot index since the last checkpoint, kept so transactions
-    /// whose snapshot predates the delete can still read them (the index holds the only
-    /// copy of a committed vector). Cleared at checkpoint.
-    /// ponytail: a reader that spans a checkpoint loses these; a precise lifetime needs the
-    /// oldest-open-snapshot watermark.
     recently_removed: RwLock<HashMap<u64, Vec<f32>>>,
     dirty: AtomicBool,
     id: VectorIndexID,
@@ -335,8 +311,6 @@ impl PerTypeVectorIndex {
         let dimensions = id.dimensions;
         let options = IndexOptions {
             dimensions,
-            // matches HnswMetric::Cosine, the only metric TypeQL accepts in @index(hnsw:...);
-            // plumb the annotation's metric through here when a second metric is added
             metric: MetricKind::Cos,
             quantization: match id.precision {
                 VectorPrecision::Float32 => ScalarKind::F32,
@@ -367,8 +341,6 @@ impl PerTypeVectorIndex {
 
     fn reserve(&self, dimensions: usize, additional: usize) -> Result<(), VectorIndexError> {
         {
-            // the common case needs no growth: check under the shared lock so commits validating
-            // here don't queue behind (and block searches behind) other commits' in-flight adds
             let index = self.hot.read().unwrap();
             Self::check_dimensions(&index, dimensions)?;
             if index.size() + additional <= index.capacity() {
@@ -376,7 +348,6 @@ impl PerTypeVectorIndex {
             }
         }
         let index = self.hot.write().unwrap();
-        // concurrent commits each reserve only their own count; add_value grows on overflow
         let required = index.size() + additional;
         if required > index.capacity() {
             index
@@ -397,7 +368,6 @@ impl PerTypeVectorIndex {
     }
 
     fn add_value(&self, key: u64, vector: &[f32]) -> Result<(), VectorIndexError> {
-        // the key's low byte is the hash-collision tail (almost always 0): stripe on mixed high bits
         let stripe = (key.wrapping_mul(0x9E37_79B9_7F4A_7C15) >> 58) as usize;
         let _key_lock = self.add_key_locks[stripe].lock().unwrap();
         let added = {
@@ -409,8 +379,6 @@ impl PerTypeVectorIndex {
             index.add(key, vector).is_ok()
         };
         if !added {
-            // out of capacity, or of usearch thread contexts (one per hardware thread); with the
-            // exclusive lock no other add holds a context, so only capacity can still be short
             let index = self.hot.write().unwrap();
             if index.size() >= index.capacity() {
                 index
@@ -419,7 +387,6 @@ impl PerTypeVectorIndex {
             }
             index.add(key, vector).map_err(|err| VectorIndexError::IndexAdd { reason: err.to_string() })?;
         }
-        // a re-added key supersedes any retained removed value (56-bit hash reuse after a delete)
         self.recently_removed.write().unwrap().remove(&key);
         self.dirty.store(true, Ordering::Release);
         Ok(())
@@ -449,9 +416,6 @@ impl PerTypeVectorIndex {
 
     fn list_by_ann(&self, query: &[f32], count: usize) -> Vec<(u64, f32)> {
         let matches = self.hot.read().unwrap().search(query, count);
-        // fails when every usearch thread context (one per hardware thread) is taken by another
-        // search or add; with the exclusive lock none are, so the retry only fails on a real error
-        // ponytail: oversubscribed callers serialise here; reserve more contexts if that shows up
         let matches = matches.or_else(|_| self.hot.write().unwrap().search(query, count));
         let matches = matches.unwrap_or_else(|err| panic!("vector index search failed: {err}"));
         matches.keys.into_iter().zip(matches.distances).collect()
@@ -461,12 +425,8 @@ impl PerTypeVectorIndex {
         self.hot.read().unwrap().size()
     }
 
-    /// Serializes the hot shard to `target` via a staging file, fsyncing file and parent.
     fn write_file(&self, target: &Path) -> io::Result<()> {
         let staging = target.with_extension("tmp");
-        // The exclusive guard is held across the whole save: usearch's save() is not safe
-        // against concurrent add() (it iterates internal tables without locking), and adds
-        // run under the shared lock. Searches wait for the save too.
         let index = self.hot.write().unwrap();
         index
             .save(staging.to_str().unwrap())
@@ -477,8 +437,6 @@ impl PerTypeVectorIndex {
         Ok(())
     }
 
-    /// Writes this type's shard files into `checkpoint_dir`, reusing unchanged live
-    /// files via hard links, and returns this type's MANIFEST lines.
     fn checkpoint_to(&self, type_id: u16, live_dir: Option<&Path>, checkpoint_dir: &Path) -> io::Result<String> {
         fs::create_dir_all(checkpoint_dir)?;
         let checkpoint_file = checkpoint_dir.join(HOT_FILE_NAME);
@@ -487,8 +445,6 @@ impl PerTypeVectorIndex {
                 fs::create_dir_all(live_dir)?;
                 let live_file = live_dir.join(HOT_FILE_NAME);
                 if self.dirty.swap(false, Ordering::Acquire) || !live_file.exists() {
-                    // restore the flag on ANY failure (save, fsync, or rename), or a later
-                    // checkpoint would hard-link the stale live file as if it were clean
                     if let Err(error) = self.write_file(&live_file) {
                         self.dirty.store(true, Ordering::Release);
                         return Err(error);
@@ -503,8 +459,6 @@ impl PerTypeVectorIndex {
         Ok(format!("{} {METRIC_NAME} {} hot {file_length}\n", type_dir_name(type_id), self.get_dimensions()))
     }
 
-    /// Inverse of [`Self::checkpoint_to`]: reconstructs this type's index from its
-    /// directory under `dir` and its parsed MANIFEST entries.
     fn restore_from(dir: &Path, type_id: u16, entries: &[ManifestEntry]) -> io::Result<Self> {
         let [entry] = entries else {
             return Err(invalid_data(format!(
@@ -538,8 +492,6 @@ impl PerTypeVectorIndex {
     }
 }
 
-/// Yields each vector-attribute write in the buffer: `Some(value)` for an insert/put,
-/// `None` for a delete.
 fn stored_vector_writes(
     operations: &OperationsBuffer,
 ) -> impl Iterator<Item = (AttributeVertex, Option<&ByteArray<BUFFER_VALUE_INLINE>>)> + '_ {
@@ -555,29 +507,6 @@ fn stored_vector_writes(
     })
 }
 
-/// Persistence layout (format version 2):
-///
-/// ```text
-/// <dir>/
-/// ├── MANIFEST                       "version 2" + one line per shard file
-/// └── 0x0001/                        one directory per attribute type
-///     └── hot.usearch                the hot shard's snapshot
-/// ```
-///
-/// MANIFEST grammar — the COMPLETE grammar is fixed here even though this version only
-/// ever emits `hot` lines, so that the future multi-shard version reads today's data
-/// with no migration (a hot-only manifest is simply "a database that never sealed"):
-///
-/// ```text
-/// version 2
-/// <type_id_hex> <metric> <dimensions> hot <file_length>
-/// <type_id_hex> <metric> <dimensions> sealed <shard_number> <file_length>   (reserved)
-/// ```
-///
-/// Parsing rules: an unknown shard KIND is a hard error (that data would be unservable;
-/// skipping would silently lose vectors); unknown TRAILING columns beyond a kind's known
-/// arity are ignored (future annotations without a format version bump). The version is
-/// bumped only to reinterpret existing bytes, never to add kinds or trailing columns.
 const MANIFEST_FILE_NAME: &str = "MANIFEST";
 
 const MANIFEST_VERSION_LINE: &str = "version 2";
@@ -594,8 +523,6 @@ fn invalid_data(message: String) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
 }
 
-/// A parsed MANIFEST line for one shard file. This version only ever holds `hot`
-/// entries: `sealed` lines are rejected at parse time.
 struct ManifestEntry {
     dimensions: usize,
     file_length: u64,
@@ -616,7 +543,6 @@ fn parse_manifest_line(line: &str) -> io::Result<(u16, ManifestEntry)> {
     }
     let dimensions: usize = dimensions.parse().map_err(|_| malformed("dimensions"))?;
     match kind {
-        // Trailing columns beyond the known arity are ignored for forward compatibility.
         "hot" => {
             let file_length: u64 =
                 rest.first().ok_or_else(|| malformed("line"))?.parse().map_err(|_| malformed("file length"))?;
@@ -683,7 +609,6 @@ mod test {
 
     #[test]
     fn concurrent_searches_and_adds_beyond_hardware_threads() {
-        // usearch has one search/add context per hardware thread; callers beyond that must not fail
         let type_id = TypeID::decode(1u16.to_be_bytes());
         let store = VectorIndex::new();
         let vector_for = |seed: u64| (0..64).map(|i| ((seed * 64 + i) as f32).sin()).collect::<Vec<_>>();
@@ -719,10 +644,8 @@ mod test {
         assert_eq!(store.get_count_for_type(type_id), 1, "removed vectors must leave the searchable index");
         let results = store.list_instances_by_ann(type_id, &[1.0, 0.0], 2);
         assert!(results.iter().all(|(attribute, _)| attribute.vertex() != vertex(1, 100)));
-        // pre-delete readers can still fetch the value until the next checkpoint
         assert_eq!(store.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![1.0, 0.0]));
 
-        // a colliding key re-added after the delete gets the NEW vector, not the old one
         store.add_instance(vertex(1, 100), &[-1.0, 0.0]).unwrap();
         assert_eq!(store.get_value_by_attr_vertex(vertex(1, 100)), Some(vec![-1.0, 0.0]));
         assert_eq!(store.get_count_for_type(type_id), 2);
@@ -741,10 +664,8 @@ mod test {
         let store = VectorIndex::new();
         store.add_instance(vertex(1, 100), &[1.0, 0.0, 0.0]).unwrap();
 
-        // a non-empty index with different dimensions is a real conflict
         assert!(store.add_instance(vertex(1, 200), &[1.0, 0.0]).is_err());
 
-        // once its instances are deleted (type undefined, ID reused), new dimensions recreate it
         store.remove_instance(vertex(1, 100));
         store.add_instance(vertex(1, 200), &[1.0, 0.0]).unwrap();
         assert_eq!(store.get_value_by_attr_vertex(vertex(1, 200)), Some(vec![1.0, 0.0]));
@@ -840,19 +761,16 @@ mod test {
         let manifest_path = dir.join(MANIFEST_FILE_NAME);
         let manifest = fs::read_to_string(&manifest_path).unwrap();
 
-        // Unknown trailing columns on a known kind are ignored (forward compatibility).
         fs::write(&manifest_path, format!("{} future-annotation\n", manifest.trim_end())).unwrap();
         assert_eq!(
             VectorIndex::load_from_path(&dir).unwrap().get_value_by_attr_vertex(vertex(1, 100)),
             Some(vec![1.0, 0.0])
         );
 
-        // A sealed line (reserved for the multi-shard version) is a hard, named error.
         fs::write(&manifest_path, format!("{manifest}0x0001 cosine 2 sealed 0001 1024\n")).unwrap();
         let error = VectorIndex::load_from_path(&dir).unwrap_err();
         assert!(error.to_string().contains("sealed"));
 
-        // An unknown shard kind is a hard error, never silently skipped.
         fs::write(&manifest_path, format!("{manifest}0x0001 cosine 2 warm 1024\n")).unwrap();
         assert!(VectorIndex::load_from_path(&dir).is_err());
 

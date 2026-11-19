@@ -161,7 +161,6 @@ fn database_reopens_after_vector_type_is_redefined_within_the_checkpoint_interva
     let tmp = create_tmp_storage_dir();
     let db_path = tmp.join("vector-redefine-restart");
     {
-        // the whole history stays in the WAL tail: adds, deletes, undefine/redefine, new-dimension adds
         let db = open_db(&db_path);
         define_schema(db.clone());
         insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
@@ -176,8 +175,6 @@ fn database_reopens_after_vector_type_is_redefined_within_the_checkpoint_interva
         drop(db);
     }
     {
-        // replay must tolerate the dimension change: the stale index is empty by the time the
-        // 4-dimensional adds replay, so it is recreated instead of failing the open
         let db = open_db(&db_path);
         let type_id = lookup_attribute_type_id(&db, "embedding2");
         assert_eq!(db.vector_index().get_count_for_type(type_id), 1);
@@ -201,7 +198,6 @@ fn open_readers_keep_reading_vectors_across_delete_and_undefine() {
     define_schema(db.clone());
     insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
 
-    // the reader's snapshot predates the delete and the undefine
     let reader = TransactionRead::open(db.clone(), TransactionOptions::default()).expect("read txn");
 
     insert_vectors(db.clone(), "match $x isa item; delete $x;");

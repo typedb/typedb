@@ -5,8 +5,6 @@
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 
-# Run all workloads, or one of: write | read | mixed
-#   bazel run --compilation_mode=opt //tests/benchmarks/vector_ops:bench_vector -- read
 rust_test(
     name = "bench_vector",
     srcs = ["bench_vector.rs"],

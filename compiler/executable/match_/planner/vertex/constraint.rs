@@ -54,7 +54,6 @@ pub(crate) enum ConstraintVertex<'a> {
 impl ConstraintVertex<'_> {
     pub(super) fn is_valid(&self, vertex_plan: &[VertexId]) -> bool {
         match self {
-            // the search needs its query vector up front: a variable query must be bound first
             Self::VectorSearch(inner) => {
                 inner.query.is_none_or(|query| vertex_plan.contains(&VertexId::Variable(query)))
             }

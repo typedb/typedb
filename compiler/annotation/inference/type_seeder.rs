@@ -278,8 +278,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         Ok(())
     }
 
-    // A variable query vector (e.g. bound by a `given` row) can only hold the vector value type of the searched
-    // attribute types
     fn annotate_vector_search_query_vertices(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
@@ -901,9 +899,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                     FunctionParameterAnnotation::AnyConcept => {
                         debug_assert!(false, "We can't return AnyConcept");
                     }
-                    FunctionParameterAnnotation::Vector(_) => {
-                        // vector-valued variables are tracked outside type inference
-                    }
+                    FunctionParameterAnnotation::Vector(_) => {}
                 }
             }
             // TODO: Should we be pruning, or should we be error-ing?
@@ -1107,7 +1103,6 @@ impl BinaryConstraint for VectorSearch<Variable> {
         self.attribute_type()
     }
 
-    // like a non-exact Isa: the search covers the named attribute type and all its subtypes
     fn annotate_left_to_right_for_type(
         &self,
         context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
@@ -1129,9 +1124,6 @@ impl BinaryConstraint for VectorSearch<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut ConceptVertexTypes,
     ) -> Result<(), Box<ConceptReadError>> {
-        // only vector-valued attribute types are searchable: anything else contributes nothing,
-        // so a non-vector label leaves the attribute variable without types (an annotation error)
-        // instead of reaching the executor
         if let TypeAnnotation::Attribute(attribute) = right_type {
             for subtype in std::iter::once(attribute)
                 .chain(attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?.iter())
