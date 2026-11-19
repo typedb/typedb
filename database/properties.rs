@@ -15,7 +15,7 @@ use versioning::{ExtendableVersion, ServerSupportedVersion};
 
 use crate::database::DatabaseOpenError;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct DatabaseProperties {
     properties_file_version: ExtendableVersion,
     database_id: u64,
@@ -87,5 +87,36 @@ impl DatabaseProperties {
         std::fs::write(&tmp_path, yaml).map_err(|e| Either::First(e))?;
         std::fs::rename(&tmp_path, &final_path).map_err(|e| Either::First(e))?;
         Ok(())
+    }
+}
+
+pub mod tests {
+    use std::{fs, path::Path};
+
+    use durability::properties::WALProperties;
+    use storage::properties::StorageProperties;
+
+    use crate::properties::DatabaseProperties;
+
+    #[test]
+    fn write_and_read() {
+        fn write_and_readback(props: DatabaseProperties) {
+            let dir = std::env::temp_dir().join(Path::new("test_write_and_readback_database_properties"));
+            if fs::exists(&dir).unwrap() {
+                fs::remove_dir_all(&dir).unwrap();
+            };
+            fs::create_dir_all(&dir).unwrap();
+            props.write_at_dir(&dir).unwrap();
+            let readback = DatabaseProperties::try_read(&dir, "testdb").unwrap().unwrap();
+            assert_eq!(readback, props);
+            fs::remove_dir_all(&dir).unwrap();
+        }
+
+        write_and_readback(DatabaseProperties::create_for_new_database(
+            WALProperties::create_for_new_database(),
+            StorageProperties::create_for_new_database(),
+        ));
+
+        write_and_readback(DatabaseProperties::values_for_prehistoric_database());
     }
 }

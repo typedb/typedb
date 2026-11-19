@@ -11,7 +11,7 @@ use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion}
 
 use crate::StorageOpenError;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct StorageProperties {
     pub version: ExtendableVersion,
 }

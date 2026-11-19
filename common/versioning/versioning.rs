@@ -3,11 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{fmt, fmt::Formatter};
+use std::{fmt, fmt::Formatter, str::FromStr};
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtendableVersion {
     pub version: u16,
     pub extension: u16,
@@ -16,6 +16,40 @@ pub struct ExtendableVersion {
 impl fmt::Display for ExtendableVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}.{}", self.version, self.extension)
+    }
+}
+
+impl FromStr for ExtendableVersion {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (version_str, extension_str) =
+            s.split_once('.').ok_or_else(|| format!("expected '<version>.<extension>', got '{s}'"))?;
+        let version = version_str.parse::<u16>().map_err(|_| format!("Invalid version: {version_str}"))?;
+        let extension = extension_str.parse::<u16>().map_err(|_| format!("Invalid extension: {extension_str}"))?;
+        Ok(Self { version, extension })
+    }
+}
+
+impl Serialize for ExtendableVersion {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for ExtendableVersion {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl de::Visitor<'_> for Visitor {
+            type Value = ExtendableVersion;
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a string of the form '<version>.<extension>'")
+            }
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                v.parse().map_err(E::custom)
+            }
+        }
+        deserializer.deserialize_string(Visitor)
     }
 }
 

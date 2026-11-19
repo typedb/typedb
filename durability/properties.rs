@@ -9,7 +9,7 @@ use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion}
 
 use crate::{DurabilityServiceError, wal::WALError};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct WALProperties {
     pub version: ExtendableVersion,
 }
