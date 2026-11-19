@@ -33,7 +33,6 @@ use diagnostics::{
 };
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
-    properties::WALProperties,
     wal::{WAL, WALError},
 };
 use encoding::{
@@ -55,7 +54,6 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     keyspace::rocks_resources::RocksResources,
-    properties::StorageProperties,
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
@@ -345,10 +343,7 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
-        let properties = DatabaseProperties::create_for_new_database(
-            WALProperties::create_for_new_database(),
-            StorageProperties::create_for_new_database(),
-        );
+        let properties = DatabaseProperties::create_for_new_database();
         debug_assert!(properties.validate_compatible().is_ok());
         properties.write(path, name)?;
 

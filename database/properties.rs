@@ -36,9 +36,11 @@ impl DatabaseProperties {
         Self { database_id, properties_file_version, wal, storage }
     }
 
-    pub(crate) fn create_for_new_database(wal: WALProperties, storage: StorageProperties) -> Self {
+    pub(crate) fn create_for_new_database() -> Self {
         let database_id = rand::thread_rng().next_u64();
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
+        let wal = WALProperties::create_for_new_database();
+        let storage = StorageProperties::create_for_new_database();
         Self { database_id, properties_file_version, wal, storage }
     }
 
@@ -93,9 +95,6 @@ impl DatabaseProperties {
 pub mod tests {
     use std::{fs, path::Path};
 
-    use durability::properties::WALProperties;
-    use storage::properties::StorageProperties;
-
     use crate::properties::DatabaseProperties;
 
     #[test]
@@ -112,10 +111,7 @@ pub mod tests {
             fs::remove_dir_all(&dir).unwrap();
         }
 
-        write_and_readback(DatabaseProperties::create_for_new_database(
-            WALProperties::create_for_new_database(),
-            StorageProperties::create_for_new_database(),
-        ));
+        write_and_readback(DatabaseProperties::create_for_new_database());
 
         write_and_readback(DatabaseProperties::values_for_prehistoric_database());
     }
