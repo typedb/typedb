@@ -61,7 +61,7 @@ impl DatabaseProperties {
 
     fn try_read(dir: &Path, db_name: &str) -> Result<Option<Self>, Box<DatabaseOpenError>> {
         let file_path = dir.join(Self::FILENAME);
-        let exists = !std::fs::exists(&file_path).map_err(|io_error| {
+        let exists = std::fs::exists(&file_path).map_err(|io_error| {
             Box::new(DatabaseOpenError::PropertiesRead { name: db_name.to_owned(), source: Arc::new(io_error) })
         })?;
         if !exists {
