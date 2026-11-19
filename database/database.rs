@@ -64,12 +64,12 @@ use tracing::{Level, debug, error, event, info, trace};
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
-    DatabaseProperties,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
     database_manager::DatabaseManager,
+    properties::DatabaseProperties,
     transaction::TransactionError,
 };
 
