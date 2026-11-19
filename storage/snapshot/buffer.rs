@@ -55,6 +55,10 @@ impl OperationsBuffer {
         self.write_buffers.iter().all(|buffer| buffer.is_empty())
     }
 
+    pub(crate) fn contains_delete(&self) -> bool {
+        self.write_buffers.iter().any(WriteBuffer::contains_delete)
+    }
+
     pub fn writes_in(&self, keyspace_id: KeyspaceId) -> &WriteBuffer {
         &self.write_buffers[keyspace_id.0 as usize]
     }
@@ -126,15 +130,26 @@ impl<'a> IntoIterator for &'a OperationsBuffer {
 pub struct WriteBuffer {
     pub(crate) keyspace_id: KeyspaceId,
     writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>,
+    // set by any delete since the buffer was cleared, even if the key is written again after it
+    contains_delete: bool,
 }
 
 impl WriteBuffer {
     pub(crate) fn new(keyspace_id: KeyspaceId) -> WriteBuffer {
-        WriteBuffer { keyspace_id, writes: BTreeMap::new() }
+        WriteBuffer { keyspace_id, writes: BTreeMap::new(), contains_delete: false }
+    }
+
+    fn from_writes(keyspace_id: KeyspaceId, writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>) -> WriteBuffer {
+        let contains_delete = writes.values().any(Write::is_delete);
+        WriteBuffer { keyspace_id, writes, contains_delete }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
         self.writes.is_empty()
+    }
+
+    pub(crate) fn contains_delete(&self) -> bool {
+        self.contains_delete
     }
 
     pub(crate) fn insert(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
@@ -192,6 +207,7 @@ impl WriteBuffer {
         // with a different value for overwrite or a brand new key so we always have to write a
         // delete marker instead of removing an element from the map in some cases
         self.writes.insert(key, Write::Delete { action: Arc::new(AtomicDeleteAction::new(DeleteAction::Delete)) });
+        self.contains_delete = true;
     }
 
     pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {
@@ -251,7 +267,8 @@ impl WriteBuffer {
     }
 
     pub fn clear(&mut self) {
-        self.writes.clear()
+        self.writes.clear();
+        self.contains_delete = false;
     }
 }
 
@@ -476,7 +493,7 @@ impl<'de> Deserialize<'de> for WriteBuffer {
                 let keyspace_id = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
                     seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(WriteBuffer { keyspace_id, writes: buffer })
+                Ok(WriteBuffer::from_writes(keyspace_id, buffer))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<WriteBuffer, V::Error>
@@ -505,7 +522,7 @@ impl<'de> Deserialize<'de> for WriteBuffer {
                 let keyspace_id = keyspace_id.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
                     buffer.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(WriteBuffer { keyspace_id, writes: buffer })
+                Ok(WriteBuffer::from_writes(keyspace_id, buffer))
             }
         }
 

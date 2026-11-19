@@ -1872,6 +1872,23 @@ impl ThingManager {
         Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range, storage_counters)))
     }
 
+    pub fn instance_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        instance: &impl ThingAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        if !snapshot.contains_delete()
+            && matches!(self.guarantees_known_to_exist(&instance.vertex()), KnownToExist::Exists)
+        {
+            return Ok(true);
+        }
+        match self.get_status(snapshot, instance.vertex(), storage_counters)? {
+            ConceptStatus::Inserted | ConceptStatus::Put | ConceptStatus::Persisted => Ok(true),
+            ConceptStatus::Deleted | ConceptStatus::Nonexistent => Ok(false),
+        }
+    }
+
     pub(crate) fn get_status(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1904,25 +1921,10 @@ impl ThingManager {
         vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        if let Some(concept_persistence_guarantees) = &self.concept_persistence_guarantees {
-            // TODO: ugly hack to get around generic trait method: re-decode
-            let prefix = vertex.prefix();
-            let type_id = vertex.type_id_();
-            let known_to_exist = match prefix {
-                Prefix::VertexEntity => concept_persistence_guarantees
-                    .object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id))),
-                Prefix::VertexRelation => concept_persistence_guarantees
-                    .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
-                Prefix::VertexAttribute => {
-                    concept_persistence_guarantees.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
-                }
-                _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
-            };
-            match known_to_exist {
-                KnownToExist::Exists => return Ok(true),
-                KnownToExist::NonExistent => return Ok(false),
-                KnownToExist::Unknown => {}
-            }
+        match self.guarantees_known_to_exist(&vertex) {
+            KnownToExist::Exists => return Ok(true),
+            KnownToExist::NonExistent => return Ok(false),
+            KnownToExist::Unknown => {}
         }
         let key = vertex.into_storage_key();
         Ok(snapshot
@@ -1931,15 +1933,22 @@ impl ThingManager {
             .is_some())
     }
 
-    pub fn instance_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        instance: &impl ThingAPI,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        match self.get_status(snapshot, instance.vertex(), storage_counters)? {
-            ConceptStatus::Inserted | ConceptStatus::Put | ConceptStatus::Persisted => Ok(true),
-            ConceptStatus::Deleted | ConceptStatus::Nonexistent => Ok(false),
+    fn guarantees_known_to_exist(&self, vertex: &impl ThingVertex) -> KnownToExist {
+        let Some(concept_persistence_guarantees) = &self.concept_persistence_guarantees else {
+            return KnownToExist::Unknown;
+        };
+        // TODO: ugly hack to get around generic trait method: re-decode
+        let prefix = vertex.prefix();
+        let type_id = vertex.type_id_();
+        match prefix {
+            Prefix::VertexEntity => concept_persistence_guarantees
+                .object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id))),
+            Prefix::VertexRelation => concept_persistence_guarantees
+                .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
+            Prefix::VertexAttribute => {
+                concept_persistence_guarantees.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
+            }
+            _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
         }
     }
 
