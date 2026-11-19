@@ -357,7 +357,6 @@ impl DecodableItem<MigrationItem> {
     }
 }
 
-// items are batched by the bytes they write before they are decoded, so this estimates it from their contents
 pub fn estimated_object_write_bytes(owned_attributes: usize, players: usize) -> usize {
     Object::ESTIMATED_WRITE_BYTES
         + owned_attributes * Has::ESTIMATED_WRITE_BYTES

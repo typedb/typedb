@@ -695,7 +695,10 @@ impl ImporterConfiguration {
 
     fn use_bulk_load(&self, phase: ImportPhase) -> bool {
         matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
-            && matches!(phase, ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred)
+            && matches!(
+                phase,
+                ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred
+            )
     }
 }
 
