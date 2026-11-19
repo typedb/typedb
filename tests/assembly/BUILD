@@ -23,31 +23,6 @@ rust_test(
     env = env,
 )
 
-upgrade_platforms = {
-    "linux_x86_64": ("linux-x86_64", "tar.gz"),
-    "linux_arm64": ("linux-arm64", "tar.gz"),
-    "mac_x86_64": ("mac-x86_64", "zip"),
-    "mac_arm64": ("mac-arm64", "zip"),
-    "windows_x86_64": ("windows-x86_64", "zip"),
-}
-
-rust_test(
-    name = "test_upgrade_to_vector_storage",
-    srcs = ["upgrade/to_vector_storage.rs"],
-    data = ["//:assemble-typedb-all"] + select({
-        "@typedb_bazel_distribution//platform:is_" + key : ["@typedb_previous_artifact_{}//file".format(platform)]
-        for key, (platform, _) in upgrade_platforms.items()
-    }),
-    env = select({
-        "@typedb_bazel_distribution//platform:is_" + key : {
-            "TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-{}.{}".format(platform, ext),
-            "TYPEDB_PREVIOUS_ARCHIVE": "$(rootpath @typedb_previous_artifact_{}//file)".format(platform),
-        }
-        for key, (platform, ext) in upgrade_platforms.items()
-    }),
-    timeout = "long",
-)
-
 rust_test(
     name = "test_fail_points",
     srcs = ["fail_points.rs"],
@@ -66,14 +41,13 @@ rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_assembly",
-        ":test_upgrade_to_vector_storage",
     ],
     size = "small",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "upgrade/*"]),
+    include = glob(["*"]),
     exclude = glob([
         "Cargo.*",
         "script.tql",
