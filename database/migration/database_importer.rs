@@ -1128,7 +1128,7 @@ impl<Source: Send + 'static> DatabaseImporter<Source> {
             // AER order: we only need to make relations that have any relation players independent
             let mut relation_types = Vec::new();
             for relation_type in all_relation_types {
-                if Self::relation_has_relation_players(relation_type, snapshot, type_manager)? {
+                if Self::relation_has_relation_players(snapshot, type_manager, relation_type)? {
                     relation_types.push(relation_type);
                 }
             }
@@ -1149,9 +1149,9 @@ impl<Source: Send + 'static> DatabaseImporter<Source> {
     }
 
     fn relation_has_relation_players(
-        relation_type: RelationType,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
+        relation_type: RelationType,
     ) -> Result<bool, DatabaseImportError> {
         let all_relates = relation_type
             .get_relates(snapshot, type_manager)
@@ -1295,8 +1295,6 @@ impl<Source: Send + 'static> DatabaseImporter<Source> {
                 continue;
             }
 
-            // the maximum is also relaxed, since validating it on commit counts the links of players committed
-            // earlier, and it is validated once on restore instead
             let original_cardinality = plays
                 .get_cardinality(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
