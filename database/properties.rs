@@ -28,8 +28,8 @@ pub struct DatabaseProperties {
 }
 
 impl DatabaseProperties {
-    pub const FILENAME: &'static str = "properties.yml";
-    pub const SERVER_PROPERTIES_FILE_VERSION: ServerSupportedVersion =
+    const FILENAME: &'static str = "properties.yml";
+    const SERVER_PROPERTIES_FILE_VERSION: ServerSupportedVersion =
         ServerSupportedVersion(ExtendableVersion { version: 1, extension: 1 });
 
     pub(crate) fn values_for_pre_properties_database() -> Self {
@@ -112,7 +112,7 @@ impl DatabaseProperties {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use std::{fs, path::Path};
 
     use rand::RngCore;

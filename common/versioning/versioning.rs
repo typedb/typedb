@@ -58,7 +58,7 @@ pub struct ServerSupportedVersion(pub ExtendableVersion);
 
 impl ServerSupportedVersion {
     pub fn check_compatible(&self, resource: &ExtendableVersion) -> Result<(), IncompatibleVersion> {
-        match (self.0.version.cmp(resource.version), self.0.extension.cmp(resource.extension)) {
+        match (self.0.version.cmp(&resource.version), self.0.extension.cmp(&resource.extension)) {
             (Ordering::Less, _) => Err(IncompatibleVersion::ResourceIsNewerThanServer),
             (Ordering::Greater, _) => Err(IncompatibleVersion::ResourceIsOlderThanServer),
             (Ordering::Equal, Ordering::Less) => Err(IncompatibleVersion::ResourceIsNewerThanServer),
@@ -74,7 +74,7 @@ pub enum IncompatibleVersion {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion};
 
     #[test]
