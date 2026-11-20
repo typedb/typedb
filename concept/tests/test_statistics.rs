@@ -13,7 +13,6 @@ use concept::{
         ThingAPI,
         object::ObjectAPI,
         statistics::{Counts, Statistics},
-        thing_manager::ThingManager,
     },
     type_::{
         Ordering, OwnerAPI, PlayerAPI,
@@ -142,9 +141,9 @@ macro_rules! assert_statistics_eq {
     };
 }
 
-fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingManager) -> Statistics {
-    let snapshot = storage.clone().open_snapshot_read();
-    Statistics::read(&snapshot, thing_manager, StorageCounters::DISABLED).unwrap()
+fn read_statistics(storage: Arc<MVCCStorage<WALClient>>) -> Statistics {
+    let open_sequence_number = storage.snapshot_watermark();
+    Statistics::read(storage, open_sequence_number, StorageCounters::DISABLED).unwrap()
 }
 
 #[test]
@@ -169,7 +168,7 @@ fn create_entity() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -201,7 +200,7 @@ fn delete_twice() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -258,7 +257,7 @@ fn put_has_twice() {
 
     synchronised.sequence_number += 1;
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -315,7 +314,7 @@ fn put_plays() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -355,7 +354,7 @@ fn unset_has() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -390,7 +389,7 @@ fn delete_attribute() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -436,7 +435,7 @@ fn delete_relation() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -490,7 +489,7 @@ fn remove_player() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+    assert_statistics_eq!(synchronised, read_statistics(storage));
 }
 
 #[test]
@@ -554,7 +553,7 @@ fn relation_index_counts() {
     let mut synchronised = Statistics::new(SequenceNumber::MIN);
     synchronised.may_synchronise_from_wal(&storage).unwrap();
 
-    let read = read_statistics(storage, &thing_manager);
+    let read = read_statistics(storage);
     assert!(!read.links_index_counts.is_empty(), "expected links_index_counts to be populated by data-snapshot writes");
     assert_statistics_eq!(synchronised, read);
 }

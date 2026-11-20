@@ -18,6 +18,7 @@ use std::{
 use durability::DurabilityRecordType;
 use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
 use error::typedb_error;
+use lending_iterator::LendingIterator;
 use resource::{
     constants::database::{STATISTICS_DURABLE_WRITE_CHANGE_COUNT, STATISTICS_DURABLE_WRITE_SEQ_NUMBERS},
     profile::StorageCounters,
@@ -25,14 +26,13 @@ use resource::{
 use storage::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
-    iterator::MVCCReadError,
+    iterator::{MVCCReadError, Visibility},
     key_value::StorageKeyReference,
     keyspace::IteratorPool,
     record::CommitType,
     recovery::commit_recovery::StorageRecoveryError,
     sequence_number::SequenceNumber,
     snapshot::{
-        ReadableSnapshot,
         buffer::OperationsBuffer,
         write::{PutAction, Write},
     },
@@ -40,7 +40,6 @@ use storage::{
 use tracing::{Level, event};
 
 use crate::{
-    error::ConceptReadError,
     thing::{
         ThingAPI,
         attribute::Attribute,
@@ -51,7 +50,6 @@ use crate::{
             deltas::{CommitDeltas, Delta},
             sync::{SyncRecord, load_sync_records},
         },
-        thing_manager::ThingManager,
     },
     type_::{
         TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
@@ -149,22 +147,29 @@ impl Counts {
     }
 
     pub fn saturating_add_assign(&mut self, delta: Delta, label: &str) {
-        self.visible = self.visible.checked_add_signed(delta.net_change()).unwrap_or_else(|| {
+        self.saturating_add_assign_visible(delta.net_change(), label);
+        self.saturating_add_assign_invisible(delta.invisible_keys_created(), label);
+    }
+
+    fn saturating_add_assign_visible(&mut self, rhs: i64, label: &str) {
+        self.visible = self.visible.checked_add_signed(rhs).unwrap_or_else(|| {
             diagnostics::error_with_report!(
                 "Unexpected underflow in statistics {} count: {} + {}",
                 label,
                 self.visible,
-                delta.net_change()
+                rhs
             );
             0
         });
+    }
 
-        self.invisible = self.invisible.checked_add(delta.invisible_keys_created()).unwrap_or_else(|| {
+    fn saturating_add_assign_invisible(&mut self, rhs: u64, label: &str) {
+        self.invisible = self.invisible.checked_add(rhs).unwrap_or_else(|| {
             diagnostics::error_with_report!(
                 "Unexpected overflow in statistics invisible {} count: {} + {}",
                 label,
                 self.invisible,
-                delta.invisible_keys_created()
+                rhs
             );
             u64::MAX
         });
@@ -252,57 +257,101 @@ impl Statistics {
         }
     }
 
-    pub fn read(
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+    pub fn read<D: 'static>(
+        storage: Arc<MVCCStorage<D>>,
+        open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
-    ) -> Result<Self, Box<ConceptReadError>> {
+    ) -> Result<Self, Box<MVCCReadError>> {
         let mut entity_counts = HashMap::<_, Counts>::new();
-        for entity in thing_manager.get_entities(snapshot, storage_counters.clone()) {
-            entity_counts.entry(entity?.type_()).or_default().visible += 1;
-        }
-
         let mut relation_counts = HashMap::<_, Counts>::new();
-        for relation in thing_manager.get_relations(snapshot, storage_counters.clone()) {
-            relation_counts.entry(relation?.type_()).or_default().visible += 1;
-        }
-
         let mut attribute_counts = HashMap::<_, Counts>::new();
-        for attribute in thing_manager.get_attributes(snapshot, storage_counters.clone())? {
-            attribute_counts.entry(attribute?.type_()).or_default().visible += 1;
-        }
-
         let mut has_attribute_counts = DoubleHashMap::<_, _, Counts>::new();
         let mut attribute_owner_counts = DoubleHashMap::<_, _, Counts>::new();
-        for has in thing_manager.get_has(snapshot, storage_counters.clone()) {
-            let (has, _) = has?;
-            let owner = has.owner().type_();
-            let attribute = has.attribute().type_();
-            has_attribute_counts.double_entry(owner, attribute).or_default().visible += 1;
-            attribute_owner_counts.double_entry(attribute, owner).or_default().visible += 1;
-        }
-
         let mut role_counts = HashMap::<_, Counts>::new();
         let mut role_player_counts = DoubleHashMap::<_, _, Counts>::new();
         let mut relation_role_counts = DoubleHashMap::<_, _, Counts>::new();
         let mut relation_role_player_counts = TripleHashMap::<_, _, _, Counts>::new();
         let mut player_role_relation_counts = TripleHashMap::<_, _, _, Counts>::new();
-        for links in thing_manager.get_links(snapshot, storage_counters.clone()) {
-            let (links, _) = links?;
-            let relation = links.relation().type_();
-            let role = links.role_type();
-            let player = links.player().type_();
-            role_counts.entry(role).or_default().visible += 1;
-            role_player_counts.double_entry(player, role).or_default().visible += 1;
-            relation_role_counts.double_entry(relation, role).or_default().visible += 1;
-            relation_role_player_counts.triple_entry(relation, role, player).or_default().visible += 1;
-            player_role_relation_counts.triple_entry(player, role, relation).or_default().visible += 1;
-        }
-
         let mut links_index_counts = DoubleHashMap::<_, _, Counts>::new();
-        for links_index in thing_manager.get_indexed_relations(snapshot, storage_counters) {
-            let ((player1, player2, ..), _) = links_index?;
-            links_index_counts.double_entry(player1.type_(), player2.type_()).or_default().visible += 1;
+
+        let mut storage_iterator = storage.iterate_raw(open_sequence_number, storage_counters);
+        while let Some(item) = storage_iterator.next() {
+            let mvcc_key_value = item?;
+            let update: fn(&mut Counts, &str) = match mvcc_key_value.visibility() {
+                Visibility::Future => continue, // ignore keys written by concurrent transactions while this update was running
+                Visibility::Shadowed | Visibility::Deleted => {
+                    |counts, label| counts.saturating_add_assign_invisible(1, label)
+                }
+                Visibility::Visible => |counts, label| counts.saturating_add_assign_visible(1, label),
+            };
+            match DecodableKey::try_decode(mvcc_key_value.key().bytes()) {
+                Some(DecodableKey::EntityVertex(entity_vertex)) => {
+                    let type_ = Entity::new(entity_vertex).type_();
+                    update(entity_counts.entry(type_).or_default(), "entity");
+                }
+                Some(DecodableKey::RelationVertex(relation_vertex)) => {
+                    let type_ = Relation::new(relation_vertex).type_();
+                    update(relation_counts.entry(type_).or_default(), "relation");
+                }
+                Some(DecodableKey::AttributeVertex(attribute_vertex)) => {
+                    let type_ = Attribute::new(attribute_vertex).type_();
+                    update(attribute_counts.entry(type_).or_default(), "attribute");
+                }
+                Some(DecodableKey::ThingEdgeHas(has_edge)) => {
+                    let from = Object::new(has_edge.from()).type_();
+                    let to = Attribute::new(has_edge.to()).type_();
+                    update(has_attribute_counts.double_entry(from, to).or_default(), "has_attribute");
+                    update(attribute_owner_counts.double_entry(to, from).or_default(), "attribute_owner");
+                }
+                Some(DecodableKey::ThingEdgeHasReverse(_)) => (), // already covered by the forward edge
+                Some(DecodableKey::ThingEdgeLinks(links_edge)) => {
+                    if !links_edge.is_reverse() {
+                        let relation = Relation::new(links_edge.from()).type_();
+                        let role = RoleType::build_from_type_id(links_edge.role_id());
+                        let player = Object::new(links_edge.to()).type_();
+                        update(role_counts.entry(role).or_default(), "role");
+                        update(relation_role_counts.double_entry(relation, role).or_default(), "role_player");
+                        update(role_player_counts.double_entry(player, role).or_default(), "role_player");
+                        update(
+                            relation_role_player_counts.triple_entry(relation, role, player).or_default(),
+                            "relation_role_player",
+                        );
+                        update(
+                            player_role_relation_counts.triple_entry(player, role, relation).or_default(),
+                            "player_role_relation",
+                        );
+                    }
+                }
+                Some(DecodableKey::ThingEdgeIndexedRelation(index_edge)) => {
+                    let from = Object::new(index_edge.from()).type_();
+                    let to = Object::new(index_edge.to()).type_();
+                    update(links_index_counts.double_entry(from, to).or_default(), "links_index");
+                }
+
+                None
+                | Some(DecodableKey::VertexEntityType(_))
+                | Some(DecodableKey::VertexRelationType(_))
+                | Some(DecodableKey::VertexAttributeType(_))
+                | Some(DecodableKey::VertexRoleType(_))
+                | Some(DecodableKey::DefinitionStruct(_))
+                | Some(DecodableKey::DefinitionFunction(_))
+                | Some(DecodableKey::TypeEdgeSub(_))
+                | Some(DecodableKey::TypeEdgeSubReverse(_))
+                | Some(DecodableKey::TypeEdgeOwns(_))
+                | Some(DecodableKey::TypeEdgeOwnsReverse(_))
+                | Some(DecodableKey::TypeEdgePlays(_))
+                | Some(DecodableKey::TypeEdgePlaysReverse(_))
+                | Some(DecodableKey::TypeEdgeRelates(_))
+                | Some(DecodableKey::TypeEdgeRelatesReverse(_))
+                | Some(DecodableKey::PropertyTypeVertex(_))
+                | Some(DecodableKey::PropertyTypeEdge(_))
+                | Some(DecodableKey::PropertyObjectVertex(_))
+                | Some(DecodableKey::PropertyFunction(_))
+                | Some(DecodableKey::IndexLabelToType(_))
+                | Some(DecodableKey::IndexNameToDefinitionStruct(_))
+                | Some(DecodableKey::IndexNameToDefinitionFunction(_))
+                | Some(DecodableKey::IndexValueToStruct(_)) => (),
+            }
         }
 
         let total_entity_count = entity_counts.values().sum();
@@ -317,7 +366,7 @@ impl Statistics {
 
         Ok(Self {
             encoding_version: Self::ENCODING_VERSION,
-            sequence_number: snapshot.open_sequence_number(),
+            sequence_number: open_sequence_number,
             last_durable_write_sequence_number: SequenceNumber::MIN,
             last_durable_write_total_count: Counts::new(),
             total_count,

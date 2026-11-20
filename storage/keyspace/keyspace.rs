@@ -283,19 +283,6 @@ impl Keyspace {
         iterator.item().map(|(k, v)| mapper(k, v))
     }
 
-    pub(crate) fn iterate<const PREFIX_INLINE_SIZE: usize>(
-        &self,
-        iterpool: &IteratorPool,
-        storage_counters: StorageCounters,
-    ) -> iterator::KeyspaceRangeIterator {
-        iterator::KeyspaceRangeIterator::new(
-            self,
-            iterpool,
-            &KeyRange::new_within(Bytes::<'static, 0>::copy(&[]), false),
-            storage_counters,
-        )
-    }
-
     pub(crate) fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
         iterpool: &IteratorPool,

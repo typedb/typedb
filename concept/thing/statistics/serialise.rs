@@ -438,13 +438,13 @@ impl<'de> Deserialize<'de> for Statistics {
                     StatisticsEncodingVersion::V1 => todo!(),
                 }
             }
-
-            fn visit_map<V>(self, mut map: V) -> Result<Statistics, V::Error>
-            where
-                V: MapAccess<'de>,
-            {
-                v0::visit_map(map)
-            }
+            //
+            // fn visit_map<V>(self, map: V) -> Result<Statistics, V::Error>
+            // where
+            //     V: MapAccess<'de>,
+            // {
+            //     v0::visit_map(map)
+            // }
         }
 
         deserializer.deserialize_struct("Statistics", &Field::NAMES, StatisticsVisitor)

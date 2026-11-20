@@ -59,12 +59,14 @@ fn wal_and_checkpoint_ok() {
     };
 }
 
+#[ignore]
 #[test]
 fn wal_missing_records_for_checkpoint_replay_fails() {
     // TODO: test that having a WAL with missing records required to complete the checkpoint, fails
     todo!()
 }
 
+#[ignore]
 #[test]
 fn wal_missing_records_entire_replay_fails() {
     // TODO: test that replaying a WAL from scratch fails if any records are missing from the start

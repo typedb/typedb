@@ -18,7 +18,7 @@ use crate::{
     sequence_number::SequenceNumber,
 };
 
-pub(crate) struct MVCCRangeRawIterator {
+pub struct MVCCRangeRawIterator {
     storage_name: Arc<str>,
     keyspace_id: KeyspaceId,
     iterator: KeyspaceRangeIterator,
@@ -53,14 +53,14 @@ impl MVCCRangeRawIterator {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Visibility {
+pub enum Visibility {
     Future,
     Shadowed,
     Visible,
     Deleted,
 }
 
-pub(crate) struct MVCCKeyValue<'a> {
+pub struct MVCCKeyValue<'a> {
     key: StorageKeyReference<'a>,
     value: &'a [u8],
     visibility: Visibility,
@@ -85,6 +85,18 @@ impl<'a> MVCCKeyValue<'a> {
 
     fn is_visible(&self) -> bool {
         self.visibility == Visibility::Visible
+    }
+
+    pub fn key(&self) -> StorageKeyReference<'a> {
+        self.key
+    }
+
+    pub fn value(&self) -> &'a [u8] {
+        self.value
+    }
+
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
     }
 }
 

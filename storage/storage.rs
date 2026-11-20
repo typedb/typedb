@@ -33,7 +33,7 @@ use fail_point::{
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
-use lending_iterator::LendingIterator;
+use lending_iterator::{LendingIterator, Peekable};
 use logger::{error, result::ResultExt};
 use resource::{
     constants::{
@@ -49,9 +49,9 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationManager, ValidatedCommit},
-    iterator::MVCCRangeIterator,
+    iterator::{MVCCRangeIterator, MVCCRangeRawIterator},
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
@@ -526,6 +526,14 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
+    pub fn iterate_raw(
+        self: Arc<Self>,
+        open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
+    ) -> StorageIterator<Durability> {
+        StorageIterator::new(self, open_sequence_number, storage_counters)
+    }
+
     pub(crate) fn iterate_range<'this, const PS: usize>(
         &'this self,
         iterpool: &IteratorPool,
@@ -701,6 +709,46 @@ impl<Durability> MVCCStorage<Durability> {
     }
 }
 
+pub struct StorageIterator<D> {
+    storage: Arc<MVCCStorage<D>>,
+    open_sequence_number: SequenceNumber,
+    iterator: Option<Peekable<MVCCRangeRawIterator>>,
+    next_keyspace: usize,
+    storage_counters: StorageCounters,
+}
+
+impl<D> StorageIterator<D> {
+    pub fn new(
+        storage: Arc<MVCCStorage<D>>,
+        open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
+    ) -> Self {
+        Self { storage, open_sequence_number, iterator: None, next_keyspace: 0, storage_counters }
+    }
+}
+
+impl<D: 'static> LendingIterator for StorageIterator<D> {
+    type Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.iterator.as_mut().is_none_or(|iter| iter.peek().is_none()) {
+            let keyspace_id = self.storage.keyspaces.iter().nth(self.next_keyspace)?.id();
+            self.iterator = Some(Peekable::new(MVCCRangeRawIterator::new(
+                &self.storage,
+                &IteratorPool::new(),
+                &KeyRange::new_within(
+                    StorageKey::Array(StorageKeyArray::new_raw(keyspace_id, ByteArray::<0>::zeros(0))),
+                    false,
+                ),
+                self.open_sequence_number,
+                self.storage_counters.clone(),
+            )));
+            self.next_keyspace += 1;
+        }
+        self.iterator.as_mut()?.next()
+    }
+}
+
 typedb_error! {
     pub StorageOpenError(component = "Storage open", prefix = "STO") {
         StorageDirectoryExists(1, "Failed to open database '{name}' in directory '{path:?}'", name: String, path: PathBuf),
@@ -834,11 +882,6 @@ impl<'bytes> MVCCKey<'bytes> {
     fn operation(self) -> StorageOperation {
         self.split().2
     }
-
-    fn extract_key(bytes: &'bytes [u8]) -> &'bytes [u8] {
-        let length = bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        &bytes[..length]
-    }
 }
 
 enum StorageOperation {
@@ -866,14 +909,6 @@ impl StorageOperation {
 
     const fn serialised_len() -> usize {
         Self::BYTES
-    }
-
-    /// Returns `true` if the storage operation is [`Insert`].
-    ///
-    /// [`Insert`]: StorageOperation::Insert
-    #[must_use]
-    fn is_insert(&self) -> bool {
-        matches!(self, Self::Insert)
     }
 
     /// Returns `true` if the storage operation is [`Delete`].
