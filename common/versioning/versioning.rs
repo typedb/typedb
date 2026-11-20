@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{fmt, fmt::Formatter, str::FromStr};
+use std::{cmp::Ordering, fmt, fmt::Formatter, str::FromStr};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
@@ -58,18 +58,11 @@ pub struct ServerSupportedVersion(pub ExtendableVersion);
 
 impl ServerSupportedVersion {
     pub fn check_compatible(&self, resource: &ExtendableVersion) -> Result<(), IncompatibleVersion> {
-        if self.0.version == resource.version {
-            if self.0.extension >= resource.extension {
-                Ok(())
-            } else {
-                Err(IncompatibleVersion::ResourceIsNewerThanServer)
-            }
-        } else {
-            if self.0.version > resource.version {
-                Err(IncompatibleVersion::ResourceIsOlderThanServer)
-            } else {
-                Err(IncompatibleVersion::ResourceIsNewerThanServer)
-            }
+        match (self.0.version.cmp(resource.version), self.0.extension.cmp(resource.extension)) {
+            (Ordering::Less, _) => Err(IncompatibleVersion::ResourceIsNewerThanServer),
+            (Ordering::Greater, _) => Err(IncompatibleVersion::ResourceIsOlderThanServer),
+            (Ordering::Equal, Ordering::Less) => Err(IncompatibleVersion::ResourceIsNewerThanServer),
+            (Ordering::Equal, Ordering::Equal) | (Ordering::Equal, Ordering::Greater) => Ok(()),
         }
     }
 }
