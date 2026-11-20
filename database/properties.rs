@@ -20,9 +20,20 @@ use versioning::{ExtendableVersion, IncompatibleVersion, ServerSupportedVersion}
 use crate::database::DatabaseOpenError;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(transparent)]
+pub struct DatabaseUid(u64);
+
+impl DatabaseUid {
+    fn next_random() -> Self {
+        // Keep within i64 range so we can store in a TypeDB integer.
+        Self(rand::thread_rng().next_u64() >> 1)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct DatabaseProperties {
     properties_file_version: ExtendableVersion,
-    database_id: u64,
+    database_id: DatabaseUid,
     wal: WALProperties,
     storage: StorageProperties,
 }
@@ -33,7 +44,7 @@ impl DatabaseProperties {
         ServerSupportedVersion(ExtendableVersion { version: 1, extension: 1 });
 
     pub(crate) fn values_for_pre_properties_database() -> Self {
-        let database_id = rand::thread_rng().next_u64();
+        let database_id = DatabaseUid::next_random();
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
         let wal = WALProperties::values_for_pre_properties_database();
         let storage = StorageProperties::values_for_pre_properties_database();
@@ -41,7 +52,7 @@ impl DatabaseProperties {
     }
 
     pub(crate) fn create_for_new_database() -> Self {
-        let database_id = rand::thread_rng().next_u64();
+        let database_id = DatabaseUid::next_random();
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
         let wal = WALProperties::create_for_new_database();
         let storage = StorageProperties::create_for_new_database();
