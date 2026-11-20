@@ -13,5 +13,6 @@ pub mod database;
 pub mod database_manager;
 mod database_registry;
 pub mod migration;
+pub mod properties;
 pub mod query;
 pub mod transaction;

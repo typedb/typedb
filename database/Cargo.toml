@@ -63,6 +63,9 @@
 	[dependencies.query]
 		workspace = true
 
+	[dependencies.rand]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
@@ -70,6 +73,9 @@
 		workspace = true
 
 	[dependencies.serde]
+		workspace = true
+
+	[dependencies.serde_yaml2]
 		workspace = true
 
 	[dependencies.storage]
@@ -82,6 +88,9 @@
 		workspace = true
 
 	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.versioning]
 		workspace = true
 
 [dev-dependencies]

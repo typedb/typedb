@@ -167,6 +167,12 @@ pub mod storage {
     pub const WAL_SYNC_INTERVAL_MICROSECONDS: u64 = 1000;
     pub const WATERMARK_WAIT_INTERVAL_MICROSECONDS: u64 = 50;
     pub const COMMIT_WAIT_FOR_FSYNC: bool = true;
+
+    pub const WAL_VERSION_VERSION: u16 = 1;
+    pub const WAL_VERSION_EXTENSION: u16 = 1;
+
+    pub const STORAGE_VERSION_VERSION: u16 = 1;
+    pub const STORAGE_VERSION_EXTENSION: u16 = 1;
 }
 
 pub mod encoding {

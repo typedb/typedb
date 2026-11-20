@@ -66,6 +66,9 @@
 	[dependencies.typeql]
 		workspace = true
 
+	[dependencies.versioning]
+		workspace = true
+
 [dev-dependencies]
 
 	[dev-dependencies.criterion]

@@ -28,6 +28,7 @@ rust_library(
         "//common/fail_point",
         "//common/logger",
         "//common/options",
+        "//common/versioning",
         "//compiler",
         "//concept",
         "//diagnostics",
@@ -42,8 +43,10 @@ rust_library(
 
         "@typeql//rust:typeql",
         "@crates//:itertools",
+        "@crates//:rand",
         "@crates//:rocksdb",
         "@crates//:serde",
+        "@crates//:serde_yaml2",
         "@crates//:tracing",
         "@crates//:tokio",
     ],
