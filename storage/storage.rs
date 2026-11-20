@@ -710,9 +710,10 @@ impl<Durability> MVCCStorage<Durability> {
 }
 
 pub struct StorageIterator<D> {
-    storage: Arc<MVCCStorage<D>>,
     open_sequence_number: SequenceNumber,
     iterator: Option<Peekable<MVCCRangeRawIterator>>,
+    storage: Arc<MVCCStorage<D>>, // must be dropped after `iterator`
+
     next_keyspace: usize,
     storage_counters: StorageCounters,
 }
@@ -732,6 +733,7 @@ impl<D: 'static> LendingIterator for StorageIterator<D> {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.iterator.as_mut().is_none_or(|iter| iter.peek().is_none()) {
+            self.iterator = None;
             let keyspace_id = self.storage.keyspaces.iter().nth(self.next_keyspace)?.id();
             self.iterator = Some(Peekable::new(MVCCRangeRawIterator::new(
                 &self.storage,
