@@ -71,10 +71,11 @@ use crate::{
 
 macro_rules! for_type_and_subtypes_transitive {
     ($snapshot:ident, $type_manager:ident, $type_:ident, $closure:expr) => {
-        let subtypes = $type_
-            .get_subtypes_transitive($snapshot, $type_manager)
-            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-        TypeAPI::chain_types($type_.clone(), subtypes.into_iter().cloned())
+        $type_
+            .get_type_and_subtypes_transitive($snapshot, $type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
+            .iter()
+            .copied()
             .try_for_each(|subtype| $closure(subtype))?;
     };
 }
@@ -236,26 +237,14 @@ macro_rules! new_acquired_capability_instances_validation {
             default_constraints: HashSet<CapabilityConstraint<$capability_type>>,
             storage_counters: StorageCounters,
         ) -> Result<(), Box<SchemaValidationError>> {
-            let affected_object_types = TypeAPI::chain_types(
-                capability.object(),
-                capability
-                    .object()
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
-            let affected_interface_types = TypeAPI::chain_types(
-                capability.interface(),
-                capability
-                    .interface()
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
+            let affected_object_types = capability
+                .object()
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
+            let affected_interface_types = capability
+                .interface()
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             $validation_func(
                 snapshot,
@@ -286,26 +275,14 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
             annotation: Annotation,
             storage_counters: StorageCounters,
         ) -> Result<(), Box<SchemaValidationError>> {
-            let affected_object_types = TypeAPI::chain_types(
-                capability.object(),
-                capability
-                    .object()
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
-            let affected_interface_types = TypeAPI::chain_types(
-                capability.interface(),
-                capability
-                    .interface()
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
+            let affected_object_types = capability
+                .object()
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
+            let affected_interface_types = capability
+                .interface()
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let constraints = get_operation_time_checked_constraints(
                 annotation.to_capability_constraints(capability.clone()).into_iter(),
             );
@@ -341,15 +318,9 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
             new_supertype: $object_type,
             storage_counters: StorageCounters,
         ) -> Result<(), Box<SchemaValidationError>> {
-            let affected_object_types = TypeAPI::chain_types(
-                type_.clone(),
-                type_
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
+            let affected_object_types = type_
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let type_capabilities_declared =
                 TypeReader::get_capabilities_declared::<$capability_type>(snapshot, type_.clone())
                     .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
@@ -361,16 +332,10 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                     .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for new_capability in new_capabilities.into_iter() {
-                let affected_interface_types = TypeAPI::chain_types(
-                    new_capability.interface(),
-                    new_capability
-                        .interface()
-                        .get_subtypes_transitive(snapshot, type_manager)
-                        .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                        .into_iter()
-                        .cloned(),
-                )
-                .collect();
+                let affected_interface_types = new_capability
+                    .interface()
+                    .get_type_and_subtypes_transitive(snapshot, type_manager)
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 let mut constraints = get_operation_time_checked_constraints(
                     new_capability
                         .get_constraints(snapshot, type_manager)
@@ -468,12 +433,9 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 .get_supertype_root(snapshot, type_manager)
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .unwrap_or(unset_supertype);
-            let unset_supertype_root_subtypes = unset_supertype_root
-                .get_subtypes_transitive(snapshot, type_manager)
+            let affected_interface_types = unset_supertype_root
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-            let affected_interface_types =
-                TypeAPI::chain_types(unset_supertype_root, unset_supertype_root_subtypes.into_iter().cloned())
-                    .collect();
             let updated_supertypes = HashMap::from([(interface_type, None)]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
@@ -563,18 +525,15 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 .get_supertype_root(snapshot, type_manager)
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .unwrap_or(interface_supertype.clone());
-            let supertype_root_subtypes = supertype_root
-                .get_subtypes_transitive(snapshot, type_manager)
+            let supertype_root_and_subtypes = supertype_root
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-            let all_supertype_root_subtypes =
-                TypeAPI::chain_types(supertype_root, supertype_root_subtypes.into_iter().cloned());
-            let interface_subtypes = interface_type
-                .get_subtypes_transitive(snapshot, type_manager)
+            let interface_type_and_subtypes = interface_type
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-            let all_interface_subtypes =
-                TypeAPI::chain_types(interface_type.clone(), interface_subtypes.into_iter().cloned());
 
-            let affected_interface_types = all_supertype_root_subtypes.chain(all_interface_subtypes).collect();
+            let affected_interface_types =
+                supertype_root_and_subtypes.iter().chain(interface_type_and_subtypes.iter()).copied().collect();
             let updated_supertypes = HashMap::from([(interface_type, Some(interface_supertype))]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
@@ -616,15 +575,9 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
         ) -> Result<(), Box<SchemaValidationError>> {
             let constraints =
                 get_operation_time_checked_constraints(annotation.to_type_constraints(type_.clone()).into_iter());
-            let affected_types = TypeAPI::chain_types(
-                type_.clone(),
-                type_
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
+            let affected_types = type_
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             $validation_func(snapshot, type_manager, thing_manager, &affected_types, &constraints, storage_counters)
                 .map_err(|typedb_source| {
@@ -665,15 +618,9 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
                 )
             );
 
-            let affected_types = TypeAPI::chain_types(
-                type_.clone(),
-                type_
-                    .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-                    .into_iter()
-                    .cloned(),
-            )
-            .collect();
+            let affected_types = type_
+                .get_type_and_subtypes_transitive(snapshot, type_manager)
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             $validation_func(snapshot, type_manager, thing_manager, &affected_types, &constraints, storage_counters)
                 .map_err(|typedb_source| {
@@ -693,10 +640,7 @@ fn collect_object_types_with_interface_type_and_subtypes<CAP: Capability>(
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashSet<CAP::ObjectType>,
 ) -> Result<(), Box<ConceptReadError>> {
-    let interface_subtypes = interface_type.get_subtypes_transitive(snapshot, type_manager)?;
-    let all_interface_subtypes = TypeAPI::chain_types(interface_type, interface_subtypes.into_iter().cloned());
-
-    for interface_subtype in all_interface_subtypes {
+    for &interface_subtype in &*interface_type.get_type_and_subtypes_transitive(snapshot, type_manager)? {
         out_object_types.extend(
             TypeReader::get_object_types_with_capabilities_for_interface::<CAP>(snapshot, interface_subtype)?
                 .into_keys(),
@@ -1773,13 +1717,12 @@ impl OperationTimeValidation {
         owns_ordering: Ordering,
     ) -> Result<(), Box<SchemaValidationError>> {
         let updated_owns = HashMap::from([(owns, owns_ordering)]);
-        let owner_subtypes = owns
+        let affected_owner_types = owns
             .owner()
-            .get_subtypes_transitive(snapshot, type_manager)
+            .get_type_and_subtypes_transitive(snapshot, type_manager)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-        let affected_owner_types = TypeAPI::chain_types(owns.owner(), owner_subtypes.into_iter().cloned());
 
-        for owner_type in affected_owner_types {
+        for &owner_type in &*affected_owner_types {
             validate_sibling_owns_ordering_match_for_type(snapshot, type_manager, owner_type, &updated_owns)?;
         }
 
@@ -3189,14 +3132,11 @@ impl OperationTimeValidation {
             }
 
             if !unique_attribute_types.is_empty() {
-                let root_owner_type = unique_constraint.source().owner();
-                let root_owner_subtypes = root_owner_type
-                    .get_subtypes_transitive(snapshot, type_manager)
+                let covered_owner_types = unique_constraint
+                    .covered_object_types(snapshot, type_manager)
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
                 let unique_owner_types: HashSet<ObjectType> =
-                    TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned())
-                        .chain(object_types.iter().copied())
-                        .collect();
+                    covered_owner_types.iter().copied().chain(object_types.iter().copied()).collect();
                 Self::validate_ownerships_unique(
                     snapshot,
                     type_manager,

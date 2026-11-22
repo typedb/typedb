@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{
@@ -31,8 +31,8 @@ use crate::{
         },
     },
     type_::{
-        ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI, attribute_type::AttributeType, constraint::Constraint,
-        entity_type::EntityType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
+        ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI, attribute_type::AttributeType, entity_type::EntityType,
+        object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
     },
 };
 
@@ -428,20 +428,12 @@ impl OperationTimeValidation {
             .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
-            let root_owner_type = constraint.source().owner();
-            let root_owner_subtypes =
-                root_owner_type
-                    .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-            let owner_and_subtypes: HashSet<ObjectType> =
-                TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
-
-            let root_attribute_type = constraint.source().attribute();
-            let root_attribute_subtypes = root_attribute_type
-                .get_subtypes_transitive(snapshot, thing_manager.type_manager())
+            let owner_types = constraint
+                .covered_object_types(snapshot, thing_manager.type_manager())
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
-            let attribute_and_subtypes =
-                TypeAPI::chain_types(root_attribute_type, root_attribute_subtypes.into_iter().cloned());
+            let attribute_types = constraint
+                .covered_interface_types(snapshot, thing_manager.type_manager())
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
             let value = get_value().map_err(|typedb_source| DataValidationError::ConceptRead { typedb_source })?;
             DataValidation::validate_owns_unique_constraint(
@@ -449,8 +441,8 @@ impl OperationTimeValidation {
                 thing_manager,
                 &constraint,
                 owner.into_object(),
-                &owner_and_subtypes,
-                attribute_and_subtypes,
+                &owner_types,
+                attribute_types.iter().copied(),
                 value,
                 storage_counters,
             )?;

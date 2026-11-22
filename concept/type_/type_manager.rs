@@ -185,6 +185,24 @@ macro_rules! get_subtypes_transitive_methods {
     }
 }
 
+macro_rules! get_type_and_subtypes_transitive_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            pub(crate) fn $method_name(
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            ) -> Result<MaybeOwns<'_, HashSet<$type_>>, Box<ConceptReadError>> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
+                } else {
+                    Ok(MaybeOwns::Owned(TypeReader::get_type_and_subtypes_transitive(snapshot, type_)?))
+                }
+            }
+        )*
+    }
+}
+
 macro_rules! get_type_label_methods {
     ($(
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
@@ -535,6 +553,13 @@ impl TypeManager {
         fn get_relation_type_subtypes_transitive() -> RelationType = get_subtypes_transitive;
         fn get_role_type_subtypes_transitive() -> RoleType = get_subtypes_transitive;
         fn get_attribute_type_subtypes_transitive() -> AttributeType = get_subtypes_transitive;
+    }
+
+    get_type_and_subtypes_transitive_methods! {
+        fn get_entity_type_and_subtypes_transitive() -> EntityType = get_type_and_subtypes_transitive;
+        fn get_relation_type_and_subtypes_transitive() -> RelationType = get_type_and_subtypes_transitive;
+        fn get_role_type_and_subtypes_transitive() -> RoleType = get_type_and_subtypes_transitive;
+        fn get_attribute_type_and_subtypes_transitive() -> AttributeType = get_type_and_subtypes_transitive;
     }
 
     get_type_label_methods! {

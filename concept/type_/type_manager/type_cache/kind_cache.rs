@@ -108,6 +108,7 @@ pub(crate) struct CommonTypeCache<T: KindAPI> {
     pub(super) supertypes_transitive: Vec<T>, // TODO: use smallvec if we want to have some inline - benchmark.
     pub(super) subtypes: HashSet<T>,
     pub(super) subtypes_transitive: Vec<T>, // TODO: benchmark smallvec
+    pub(super) type_and_subtypes_transitive: HashSet<T>,
 }
 
 #[derive(Debug)]
@@ -340,6 +341,7 @@ where
         let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
         let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
         let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
+        let type_and_subtypes_transitive = TypeAPI::chain_types(type_, subtypes_transitive.iter().copied()).collect();
         Self {
             type_,
             label,
@@ -350,6 +352,7 @@ where
             supertypes_transitive,
             subtypes,
             subtypes_transitive,
+            type_and_subtypes_transitive,
         }
     }
 }

@@ -279,6 +279,14 @@ impl TypeCache {
         &T::get_cache(self, type_).common_type_cache().subtypes_transitive
     }
 
+    pub(crate) fn get_type_and_subtypes_transitive<'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<T>
+    where
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
+    {
+        &T::get_cache(self, type_).common_type_cache().type_and_subtypes_transitive
+    }
+
     pub(crate) fn get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label
     where
         T: KindAPI + CacheGetter<CacheType = CACHE>,

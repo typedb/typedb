@@ -9,19 +9,23 @@ use std::{collections::HashSet, fmt, hash::Hash};
 use encoding::value::value::Value;
 use error::typedb_error;
 use itertools::Itertools;
+use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::type_::{
-    Capability, KindAPI, Ordering,
-    annotation::{
-        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc,
-        AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique,
-        AnnotationValues,
+use crate::{
+    error::ConceptReadError,
+    type_::{
+        Capability, KindAPI, Ordering, TypeAPI,
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
+            AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex,
+            AnnotationUnique, AnnotationValues,
+        },
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        type_manager::TypeManager,
     },
-    owns::Owns,
-    plays::Plays,
-    relates::Relates,
-    type_manager::TypeManager,
 };
 
 macro_rules! with_constraint_description {
@@ -395,6 +399,41 @@ pub struct CapabilityConstraint<CAP: Capability> {
 impl<CAP: Capability> CapabilityConstraint<CAP> {
     pub(crate) fn new(description: ConstraintDescription, source: CAP) -> Self {
         Self { description, source }
+    }
+
+    pub(crate) fn covered_object_types<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<CAP::ObjectType>>, Box<ConceptReadError>> {
+        let source = self.source.object();
+        if self.covers_subtypes() {
+            source.get_type_and_subtypes_transitive(snapshot, type_manager)
+        } else {
+            Ok(MaybeOwns::Owned(HashSet::from([source])))
+        }
+    }
+
+    pub(crate) fn covered_interface_types<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<CAP::InterfaceType>>, Box<ConceptReadError>> {
+        let source = self.source.interface();
+        if self.covers_subtypes() {
+            source.get_type_and_subtypes_transitive(snapshot, type_manager)
+        } else {
+            Ok(MaybeOwns::Owned(HashSet::from([source])))
+        }
+    }
+
+    pub(crate) fn covers_subtypes(&self) -> bool {
+        match self.description.scope() {
+            ConstraintScope::SingleInstanceOfType => false,
+            ConstraintScope::SingleInstanceOfTypeOrSubtype
+            | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
+            | ConstraintScope::AllInstancesOfTypeOrSubtypes => true,
+        }
     }
 }
 

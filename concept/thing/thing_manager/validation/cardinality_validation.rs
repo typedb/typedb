@@ -128,12 +128,8 @@ macro_rules! capability_cardinality_validation {
                 if !constraint.requires_validation() {
                     continue;
                 }
-                let source_interface_type = constraint.source().interface();
-                let sub_interface_types =
-                    source_interface_type.get_subtypes_transitive(snapshot, thing_manager.type_manager())?;
                 let counted_interface_types =
-                    TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
-                        .collect();
+                    constraint.covered_interface_types(snapshot, thing_manager.type_manager())?.clone();
                 checked.push(CheckedCardinality { constraint, counted_interface_types });
             }
             Ok(checked)
@@ -176,7 +172,7 @@ macro_rules! capability_cardinality_validation {
 
 struct CheckedCardinality<CAP: Capability> {
     constraint: CapabilityConstraint<CAP>,
-    counted_interface_types: Vec<CAP::InterfaceType>,
+    counted_interface_types: HashSet<CAP::InterfaceType>,
 }
 
 /*
@@ -549,7 +545,7 @@ impl CardinalityValidation {
         let mut counts = vec![0u64; cardinality_descriptions.len()];
         let mut counted_by: HashMap<CAP::InterfaceType, Vec<usize>> = HashMap::new();
         for (index, description) in cardinality_descriptions.iter().enumerate() {
-            for &interface_type in &description.relevant_types {
+            for &interface_type in &description.covered_interface_types {
                 counted_by.entry(interface_type).or_default().push(index);
             }
         }
@@ -631,8 +627,13 @@ pub(crate) struct SchemaCardinalities {
 
 pub(crate) struct CardinalityDescription<CAP: Capability> {
     constraint: CapabilityConstraint<CAP>,
-    cardinality: AnnotationCardinality,
-    relevant_types: HashSet<CAP::InterfaceType>,
+    covered_interface_types: HashSet<CAP::InterfaceType>,
+}
+
+impl<CAP: Capability> CardinalityDescription<CAP> {
+    fn cardinality(&self) -> AnnotationCardinality {
+        self.constraint.description().unwrap_cardinality().expect("Only Cardinality constraints")
+    }
 }
 
 impl SchemaCardinalities {
@@ -690,12 +691,8 @@ impl SchemaCardinalities {
             if !constraint.requires_validation() {
                 continue;
             }
-            let cardinality = constraint.description().unwrap_cardinality().expect("Only Cardinality constraints");
-            let source_interface_type = constraint.source().interface();
-            let sub_interface_types = source_interface_type.get_subtypes_transitive(snapshot, type_manager)?;
-            let relevant_types =
-                TypeAPI::chain_types(source_interface_type, sub_interface_types.into_iter().cloned()).collect();
-            cardinalities.push(CardinalityDescription { constraint, cardinality, relevant_types });
+            let covered_interface_types = constraint.covered_interface_types(snapshot, type_manager)?.clone();
+            cardinalities.push(CardinalityDescription { constraint, covered_interface_types });
         }
         Ok(cardinalities)
     }
@@ -724,14 +721,16 @@ impl SchemaCardinalities {
                     return true;
                 };
                 // if the previous state was not contained within the current one, we have to recheck the card
-                if !description.cardinality.narrowed_correctly_by(&previous.cardinality) {
+                if !description.cardinality().narrowed_correctly_by(&previous.cardinality()) {
                     return true;
                 }
                 // counting more instances can only break an upper bound, and counting fewer only a lower bound
-                let counts_more = description.relevant_types.difference(&previous.relevant_types).next().is_some();
-                let counts_fewer = previous.relevant_types.difference(&description.relevant_types).next().is_some();
-                (counts_more && description.cardinality.end().is_some())
-                    || (counts_fewer && description.cardinality.start() > 0)
+                let counts_more =
+                    description.covered_interface_types.difference(&previous.covered_interface_types).next().is_some();
+                let counts_fewer =
+                    previous.covered_interface_types.difference(&description.covered_interface_types).next().is_some();
+                (counts_more && description.cardinality().end().is_some())
+                    || (counts_fewer && description.cardinality().start() > 0)
             });
             !cardinality_descriptions.is_empty()
         });

@@ -304,6 +304,16 @@ impl TypeReader {
         Ok(subtypes_transitive)
     }
 
+    pub fn get_type_and_subtypes_transitive<T>(
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+    ) -> Result<HashSet<T>, Box<ConceptReadError>>
+    where
+        T: TypeAPI,
+    {
+        Ok(TypeAPI::chain_types(type_, Self::get_subtypes_transitive(snapshot, type_)?).collect())
+    }
+
     pub(crate) fn get_label(
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI,
@@ -389,9 +399,7 @@ impl TypeReader {
     ) -> Result<HashSet<CAP::ObjectType>, Box<ConceptReadError>> {
         let mut object_types = HashSet::new();
 
-        let all_subtypes =
-            TypeAPI::chain_types(capability.object(), Self::get_subtypes_transitive(snapshot, capability.object())?);
-        for object_type in all_subtypes {
+        for object_type in Self::get_type_and_subtypes_transitive(snapshot, capability.object())? {
             let object_type_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, object_type, false)?;
             if object_type_capabilities.contains(&capability) {
                 object_types.insert(object_type);

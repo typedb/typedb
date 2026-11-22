@@ -169,6 +169,14 @@ impl TypeAPI for EntityType {
         type_manager.get_entity_type_subtypes_transitive(snapshot, *self)
     }
 
+    fn get_type_and_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<EntityType>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_and_subtypes_transitive(snapshot, *self)
+    }
+
     fn next_possible(&self) -> Option<Self> {
         self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
     }

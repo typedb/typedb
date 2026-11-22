@@ -57,9 +57,8 @@ macro_rules! validate_types {
             });
             for root in roots {
                 let root = root?;
-                $func(snapshot, type_manager, root.clone(), validation_errors)?;
-                for subtype in root.get_subtypes_transitive(snapshot, type_manager)?.into_iter() {
-                    $func(snapshot, type_manager, subtype.clone(), validation_errors)?;
+                for &type_ in &*root.get_type_and_subtypes_transitive(snapshot, type_manager)? {
+                    $func(snapshot, type_manager, type_, validation_errors)?;
                 }
             }
             Ok(())

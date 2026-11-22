@@ -313,6 +313,20 @@ impl TypeAPI for ObjectType {
         })))
     }
 
+    fn get_type_and_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<ObjectType>>, Box<ConceptReadError>> {
+        Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
+            object
+                .get_type_and_subtypes_transitive(snapshot, type_manager)?
+                .iter()
+                .map(|type_| (*type_).into_object_type())
+                .collect()
+        })))
+    }
+
     fn next_possible(&self) -> Option<Self> {
         match self {
             ObjectType::Entity(entity) => Some(
