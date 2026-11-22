@@ -12,7 +12,7 @@ use std::{
     marker::PhantomData,
     path::PathBuf,
     sync::{
-        Arc, Mutex, OnceLock, RwLock,
+        Arc, Mutex, OnceLock, PoisonError, RwLock,
         atomic::{AtomicU64, AtomicUsize},
         mpsc::{Receiver, SyncSender, sync_channel},
     },
@@ -49,7 +49,7 @@ use concept::{
         type_manager::TypeManager,
     },
 };
-use concurrency::TokioTaskSpawner;
+use concurrency::{IntervalRunner, TokioTaskSpawner};
 use encoding::{
     graph::{
         Typed,
@@ -570,8 +570,8 @@ pub struct DatabaseImporter {
 
     schema_imported: bool,
     phase: Option<DatabaseImporterPhase>,
-    progress_logged_at: Instant,
-    progress_logged_item_count: u64,
+    activity: Arc<Mutex<ImportActivity>>,
+    _progress_logger: IntervalRunner,
 }
 
 impl Debug for DatabaseImporter {
@@ -677,7 +677,7 @@ impl ImporterConfiguration {
 
 impl DatabaseImporter {
     const DRAIN_CHUNK_SIZE: usize = 10_000;
-    const PROGRESS_LOG_INTERVAL: Duration = Duration::from_secs(30);
+    const PROGRESS_LOG_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
     pub fn start(
         importing_database: Arc<dyn ImportingDatabaseHandle>,
@@ -688,6 +688,8 @@ impl DatabaseImporter {
         let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
         let data_info = Arc::new(DataInfo::new(&importer_configuration.scratch_directory, &database_name));
+        let activity = Arc::new(Mutex::new(ImportActivity::default()));
+        let progress_logger = Self::start_progress_logger(database_name.clone(), data_info.clone(), activity.clone());
         let importer = Self {
             importing_database: Some(importing_database),
             database_name,
@@ -697,8 +699,8 @@ impl DatabaseImporter {
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
-            progress_logged_at: Instant::now(),
-            progress_logged_item_count: 0,
+            activity,
+            _progress_logger: progress_logger,
         };
         let join_handle = task_spawner.spawn_blocking(move || importer.listen(receiver));
         DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
@@ -724,7 +726,6 @@ impl DatabaseImporter {
                         self.check_stopped()?;
                         self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
                     }
-                    self.log_progress_if_due();
                 }
                 Some(ImportMessage::Finalize) => {
                     self.finish_phase()?;
@@ -791,13 +792,16 @@ impl DatabaseImporter {
             self.total_item_count()
         );
         self.phase = Some(DatabaseImporterPhase::start(self, phase)?);
+        self.update_activity(|activity| activity.phase = Some(phase));
         Ok(())
     }
 
     fn finish_phase(&mut self) -> Result<(), DatabaseImportError> {
         let Some(phase) = self.phase.take() else { return Ok(()) };
         let (import_phase, started) = (phase.phase, phase.started);
-        phase.finish()?;
+        let finished = phase.finish();
+        self.update_activity(|activity| activity.phase = None);
+        finished?;
         event!(
             Level::INFO,
             "Import to '{}': finished the {import_phase} phase in {}s, with {} items imported so far.",
@@ -808,33 +812,46 @@ impl DatabaseImporter {
         Ok(())
     }
 
-    fn log_progress_if_due(&mut self) {
-        let elapsed = self.progress_logged_at.elapsed();
-        if elapsed < Self::PROGRESS_LOG_INTERVAL {
-            return;
-        }
-        let item_count = self.total_item_count();
-        let rate = item_count.saturating_sub(self.progress_logged_item_count) as f64 / elapsed.as_secs_f64();
-        let phase = self.phase.as_ref().map_or("no".to_owned(), |phase| phase.phase.to_string());
-        event!(
-            Level::INFO,
-            "Import to '{}': {item_count} items imported, {rate:.0} items/s over the last {}s, in the {phase} phase.",
-            self.database_name,
-            elapsed.as_secs()
-        );
-        self.progress_logged_at = Instant::now();
-        self.progress_logged_item_count = item_count;
+    fn start_progress_logger(
+        database_name: String,
+        data_info: Arc<DataInfo>,
+        activity: Arc<Mutex<ImportActivity>>,
+    ) -> IntervalRunner {
+        let mut logged_at = Instant::now();
+        let mut logged_item_count = 0;
+        let log_progress = move || {
+            let elapsed = logged_at.elapsed();
+            let item_count = data_info.total_item_count.load(core::sync::atomic::Ordering::Relaxed);
+            let rate = item_count.saturating_sub(logged_item_count) as f64 / elapsed.as_secs_f64();
+            let activity = activity.lock().unwrap_or_else(PoisonError::into_inner).to_string();
+            event!(
+                Level::INFO,
+                "Import to '{}': {item_count} items imported, {rate:.0} items/s over the last {}s, {activity}.",
+                database_name,
+                elapsed.as_secs()
+            );
+            logged_at = Instant::now();
+            logged_item_count = item_count;
+        };
+        IntervalRunner::new_with_initial_delay(log_progress, Self::PROGRESS_LOG_INTERVAL, Self::PROGRESS_LOG_INTERVAL)
+    }
+
+    fn update_activity(&self, update: impl FnOnce(&mut ImportActivity)) {
+        update(&mut self.activity.lock().unwrap_or_else(PoisonError::into_inner));
     }
 
     fn run_stage(
         &mut self,
-        stage: &str,
+        stage: &'static str,
         run: impl FnOnce(&mut Self) -> Result<(), DatabaseImportError>,
     ) -> Result<(), DatabaseImportError> {
         self.check_stopped()?;
         event!(Level::INFO, "Import to '{}': {stage}...", self.database_name);
         let started = Instant::now();
-        run(self)?;
+        self.update_activity(|activity| activity.stage = Some(stage));
+        let ran = run(self);
+        self.update_activity(|activity| activity.stage = None);
+        ran?;
         event!(
             Level::INFO,
             "Import to '{}': finished {stage} in {}s.",
@@ -907,7 +924,6 @@ impl DatabaseImporter {
                 self.import_concept(to_import_concept(deferred))?;
                 written += 1;
             }
-            self.log_progress_if_due();
         }
         self.finish_phase()?;
         if written > 0 {
@@ -1533,6 +1549,23 @@ impl ImportPhase {
 impl Display for ImportPhase {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         fmt::Debug::fmt(self, f)
+    }
+}
+
+#[derive(Debug, Default)]
+struct ImportActivity {
+    stage: Option<&'static str>,
+    phase: Option<ImportPhase>,
+}
+
+impl Display for ImportActivity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match (self.stage, self.phase) {
+            (Some(stage), Some(phase)) => write!(f, "{stage}, in the {phase} phase"),
+            (Some(stage), None) => write!(f, "{stage}"),
+            (None, Some(phase)) => write!(f, "in the {phase} phase"),
+            (None, None) => write!(f, "waiting for items"),
+        }
     }
 }
 
