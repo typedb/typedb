@@ -11,7 +11,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     error::ConceptReadError,
     type_::{
-        Capability, TypeAPI,
+        Capability,
         annotation::AnnotationCardinality,
         constraint::{CapabilityConstraint, Constraint, get_cardinality_constraints},
         object_type::ObjectType,
@@ -23,7 +23,6 @@ use crate::{
     },
 };
 
-// the cardinalities instances of each type must satisfy, and the interface types each of them counts
 #[derive(Debug)]
 pub(crate) struct SchemaCardinalities {
     pub(crate) owns: HashMap<ObjectType, TypeCardinalities<Owns>>,
@@ -40,14 +39,8 @@ pub(crate) struct TypeCardinalities<CAP: Capability> {
 #[derive(Debug, Clone)]
 pub(crate) struct CardinalityDescription<CAP: Capability> {
     pub(crate) constraint: CapabilityConstraint<CAP>,
-    cardinality: AnnotationCardinality,
-    relevant_types: HashSet<CAP::InterfaceType>,
-}
-
-// one counter per cardinality of a type, kept in storage that is reused across instances
-pub(crate) struct CardinalityCounters<'a, CAP: Capability> {
-    cardinalities: &'a TypeCardinalities<CAP>,
-    counts: &'a mut Vec<u64>,
+    // cache to support diffing between two different cardinality constraints, and to avoid recomputing
+    covered_interface_types: HashSet<CAP::InterfaceType>,
 }
 
 impl SchemaCardinalities {
@@ -56,11 +49,11 @@ impl SchemaCardinalities {
         let mut plays = HashMap::new();
         for object_type in TypeReader::get_object_types(snapshot)? {
             let owns_constraints = TypeReader::get_type_capabilities_constraints::<Owns>(snapshot, object_type)?;
-            if let Some(cardinalities) = Self::describe_cardinalities(snapshot, owns_constraints)? {
+            if let Some(cardinalities) = Self::type_cardinalities(snapshot, owns_constraints)? {
                 owns.insert(object_type, cardinalities);
             }
             let plays_constraints = TypeReader::get_type_capabilities_constraints::<Plays>(snapshot, object_type)?;
-            if let Some(cardinalities) = Self::describe_cardinalities(snapshot, plays_constraints)? {
+            if let Some(cardinalities) = Self::type_cardinalities(snapshot, plays_constraints)? {
                 plays.insert(object_type, cardinalities);
             }
         }
@@ -69,7 +62,7 @@ impl SchemaCardinalities {
         for relation_type in TypeReader::get_relation_types(snapshot)? {
             let relates_constraints =
                 TypeReader::get_type_capabilities_constraints::<Relates>(snapshot, relation_type)?;
-            if let Some(cardinalities) = Self::describe_cardinalities(snapshot, relates_constraints)? {
+            if let Some(cardinalities) = Self::type_cardinalities(snapshot, relates_constraints)? {
                 relates.insert(relation_type, cardinalities);
             }
         }
@@ -77,7 +70,7 @@ impl SchemaCardinalities {
         Ok(Self { owns, plays, relates })
     }
 
-    fn describe_cardinalities<CAP: Capability>(
+    fn type_cardinalities<CAP: Capability>(
         snapshot: &impl ReadableSnapshot,
         constraints_by_interface_type: HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>>,
     ) -> Result<Option<TypeCardinalities<CAP>>, Box<ConceptReadError>> {
@@ -86,11 +79,8 @@ impl SchemaCardinalities {
             if !constraint.requires_validation() {
                 continue;
             }
-            let cardinality = constraint.description().unwrap_cardinality().expect("Only Cardinality constraints");
-            let source_interface_type = constraint.source().interface();
-            let sub_interface_types = TypeReader::get_subtypes_transitive(snapshot, source_interface_type)?;
-            let relevant_types = TypeAPI::chain_types(source_interface_type, sub_interface_types).collect();
-            cardinalities.push(CardinalityDescription { constraint, cardinality, relevant_types });
+            let covered_interface_types = TypeReader::get_constraint_covered_interface_types(snapshot, &constraint)?;
+            cardinalities.push(CardinalityDescription { constraint, covered_interface_types });
         }
         Ok((!cardinalities.is_empty()).then(|| TypeCardinalities::new(cardinalities)))
     }
@@ -124,14 +114,22 @@ impl SchemaCardinalities {
                     };
                     // if the previous state was not strictly contained within the current one,
                     // we have to recheck the card
-                    if !description.cardinality.narrowed_correctly_by(&previous.cardinality) {
+                    if !description.cardinality().narrowed_correctly_by(&previous.cardinality()) {
                         return true;
                     }
                     // counting more instances can only break an upper bound, and counting fewer only a lower bound
-                    let counts_more = description.relevant_types.difference(&previous.relevant_types).next().is_some();
-                    let counts_fewer = previous.relevant_types.difference(&description.relevant_types).next().is_some();
-                    (counts_more && description.cardinality.end().is_some())
-                        || (counts_fewer && description.cardinality.start() > 0)
+                    let counts_more = description
+                        .covered_interface_types
+                        .difference(&previous.covered_interface_types)
+                        .next()
+                        .is_some();
+                    let counts_fewer = previous
+                        .covered_interface_types
+                        .difference(&description.covered_interface_types)
+                        .next()
+                        .is_some();
+                    (counts_more && description.cardinality().end().is_some())
+                        || (counts_fewer && description.cardinality().start() > 0)
                 })
                 .cloned()
                 .collect();
@@ -147,7 +145,7 @@ impl<CAP: Capability> TypeCardinalities<CAP> {
     fn new(cardinalities: Vec<CardinalityDescription<CAP>>) -> Self {
         let mut counted_by: HashMap<CAP::InterfaceType, Vec<usize>> = HashMap::new();
         for (index, cardinality) in cardinalities.iter().enumerate() {
-            for &interface_type in &cardinality.relevant_types {
+            for &interface_type in &cardinality.covered_interface_types {
                 counted_by.entry(interface_type).or_default().push(index);
             }
         }
@@ -157,7 +155,7 @@ impl<CAP: Capability> TypeCardinalities<CAP> {
     pub(crate) fn counters<'a>(&'a self, storage: &'a mut Vec<u64>) -> CardinalityCounters<'a, CAP> {
         storage.clear();
         storage.resize(self.cardinalities.len(), 0);
-        CardinalityCounters { cardinalities: self, counts: storage }
+        CardinalityCounters { cardinalities: self, cardinality_counts: storage }
     }
 
     pub(crate) fn counts_any<'b>(&self, interface_types: impl IntoIterator<Item = &'b CAP::InterfaceType>) -> bool
@@ -173,24 +171,34 @@ impl<CAP: Capability> CardinalityDescription<CAP> {
     where
         CAP::InterfaceType: 'b,
     {
-        interface_types.into_iter().any(|interface_type| self.relevant_types.contains(interface_type))
+        interface_types.into_iter().any(|interface_type| self.covered_interface_types.contains(interface_type))
     }
+
+    fn cardinality(&self) -> AnnotationCardinality {
+        self.constraint.description().unwrap_cardinality().expect("Only Cardinality constraints")
+    }
+}
+
+// Instantiate in order to count cardinalities indexed to the constraints
+pub(crate) struct CardinalityCounters<'a, CAP: Capability> {
+    cardinalities: &'a TypeCardinalities<CAP>,
+    cardinality_counts: &'a mut Vec<u64>,
 }
 
 impl<'a, CAP: Capability> CardinalityCounters<'a, CAP> {
     pub(crate) fn count(&mut self, interface_type: CAP::InterfaceType, count: u64) {
         if let Some(indices) = self.cardinalities.counted_by.get(&interface_type) {
             for &index in indices {
-                self.counts[index] += count;
+                self.cardinality_counts[index] += count;
             }
         }
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = (&'a CardinalityDescription<CAP>, u64)> + '_ {
-        self.cardinalities.cardinalities.iter().zip(self.counts.iter().copied())
+        self.cardinalities.cardinalities.iter().zip(self.cardinality_counts.iter().copied())
     }
 
     pub(crate) fn reset(&mut self) {
-        self.counts.fill(0);
+        self.cardinality_counts.fill(0);
     }
 }
