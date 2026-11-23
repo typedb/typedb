@@ -104,6 +104,19 @@ impl<T> Checker<T> {
                 }
                 _ => continue,
             };
+            // The target has no input value yet, but a value always equals itself: reflexive
+            // comparators cannot restrict, and strict ones match nothing. Stored doubles are
+            // finite, so NaN cannot break reflexivity.
+            if other.as_variable() == Some(target_variable) {
+                match comparator {
+                    Comparator::Equal | Comparator::LessOrEqual | Comparator::GreaterOrEqual => continue,
+                    Comparator::NotEqual | Comparator::Less | Comparator::Greater => {
+                        return Ok(ValueRestriction::Unsatisfiable);
+                    }
+                    // Left to the tuple filter.
+                    Comparator::Like | Comparator::Contains => continue,
+                }
+            }
             let other_variable_value = get_vertex_value(&other, row.as_ref(), &context.parameters);
             let Some(other_value) = Self::read_value(
                 context.snapshot.as_ref(),
