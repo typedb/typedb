@@ -38,6 +38,7 @@ pub fn initialise_logging_global(logdir: &PathBuf) {
     ;
 
     fs::create_dir_all(logdir.clone()).expect("Failed to create log dir");
+    // TODO: as in 2.x, also rotate by size and delete old files by age and total size; only hourly rotation is done now
     let file_appender = RollingFileAppender::new(Rotation::HOURLY, logdir, "typedb.log");
     let subscriber = SubscriberBuilder::default()
         .with_max_level(Level::TRACE)

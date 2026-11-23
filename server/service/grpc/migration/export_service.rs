@@ -28,6 +28,7 @@ use crate::{
     error::LocalServerStateError,
     service::{
         TransactionType,
+        action::Action,
         export_service::DatabaseExportError,
         grpc::{
             error::IntoGrpcStatus,
@@ -40,18 +41,6 @@ use crate::{
     state::ServerState,
     transaction::Transaction,
 };
-
-macro_rules! unwrap_else_send_error_and_return {
-    ($self:ident, $expr:expr) => {{
-        match $expr {
-            Ok(result) => result,
-            Err(error) => {
-                Self::send_error(&$self.response_sender, error);
-                return;
-            }
-        }
-    }};
-}
 
 pub(crate) const DATABASE_EXPORT_REQUEST_BUFFER_SIZE: usize = 10;
 const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
@@ -101,36 +90,36 @@ impl DatabaseExportService {
         }
     }
 
-    pub(crate) async fn export(mut self) {
+    pub(crate) async fn export(mut self, action: Action) {
+        action.report_start().await;
+        let result = self.try_export().await;
+        action.finish(&result);
+        if let Err(status) = result {
+            Self::send_terminal_status(&self.response_sender, status);
+        }
+    }
+
+    async fn try_export(&mut self) -> Result<(), Status> {
         let start = Instant::now();
         event!(Level::DEBUG, "Exporting '{}' from TypeDB {}.", self.database_name, self.distribution_info.version);
-        let Some(transaction) = self.open_transaction().await else {
-            return;
-        };
+        let transaction = self.open_transaction().await?;
 
-        let mut exporter = unwrap_else_send_error_and_return!(
-            self,
+        let mut exporter =
             DatabaseExporter::new(&transaction, self.distribution_info.version.to_string(), self.database_name.clone())
-                .map_err(DatabaseExportError::from)
-        );
-        while let Some(items) = unwrap_else_send_error_and_return!(
-            self,
-            exporter.next_batch(Self::ITEM_BATCH_SIZE).map_err(DatabaseExportError::from)
-        ) {
+                .map_err(Self::error_export_status)?;
+        while let Some(items) = exporter.next_batch(Self::ITEM_BATCH_SIZE).map_err(Self::error_export_status)? {
             let mut batch = Vec::with_capacity(items.len());
             for item in items {
                 match encode_item(item) {
-                    EncodedItem::Schema(schema) => {
-                        unwrap_else_send_error_and_return!(self, self.send_schema(schema).await)
-                    }
+                    EncodedItem::Schema(schema) => self.send_schema(schema).await.map_err(Self::error_export_status)?,
                     EncodedItem::Item(item) => batch.push(item),
                 }
             }
             self.count_items(&batch);
-            unwrap_else_send_error_and_return!(self, self.send_items(batch).await);
+            self.send_items(batch).await.map_err(Self::error_export_status)?;
         }
 
-        unwrap_else_send_error_and_return!(self, self.send_done().await);
+        self.send_done().await.map_err(Self::error_export_status)?;
         event!(
             Level::INFO,
             "Export '{}' from TypeDB {} finished successfully. {} items exported in {} seconds.",
@@ -139,6 +128,7 @@ impl DatabaseExportService {
             self.total_item_count,
             start.elapsed().as_secs()
         );
+        Ok(())
     }
 
     fn count_items(&mut self, batch: &[MigrationItemProto]) {
@@ -173,11 +163,8 @@ impl DatabaseExportService {
         }
     }
 
-    fn send_error(response_sender: &ResponseSender, error: DatabaseExportError) {
-        Self::send_terminal_status(
-            response_sender,
-            LocalServerStateError::DatabaseExport { typedb_source: error }.into_status(),
-        );
+    fn error_export_status(error: impl Into<DatabaseExportError>) -> Status {
+        LocalServerStateError::DatabaseExport { typedb_source: error.into() }.into_status()
     }
 
     fn send_terminal_status(response_sender: &ResponseSender, status: Status) {
@@ -207,7 +194,7 @@ impl DatabaseExportService {
         self.send_message(database_export_res_done()).await
     }
 
-    async fn open_transaction(&self) -> Option<TransactionRead<WALClient>> {
+    async fn open_transaction(&self) -> Result<TransactionRead<WALClient>, Status> {
         let opened = self
             .server_state
             .transactions()
@@ -220,14 +207,11 @@ impl DatabaseExportService {
             )
             .await;
         match opened {
-            Ok(Transaction::Read(transaction)) => Some(transaction),
+            Ok(Transaction::Read(transaction)) => Ok(transaction),
             Ok(_) => {
                 unreachable!("Expected a read transaction for an export")
             }
-            Err(err) => {
-                Self::send_terminal_status(&self.response_sender, err.into_status());
-                None
-            }
+            Err(err) => Err(err.into_status()),
         }
     }
 

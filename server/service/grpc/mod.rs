@@ -10,7 +10,6 @@ pub use error::{IntoGrpcStatus, IntoProtocolErrorMessage};
 pub mod analyze;
 pub(crate) mod authenticator;
 pub(crate) mod concept;
-mod diagnostics;
 mod document;
 pub(crate) mod encryption;
 mod error;

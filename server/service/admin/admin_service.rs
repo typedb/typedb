@@ -6,11 +6,20 @@
 
 use std::sync::Arc;
 
+use diagnostics::metrics::ActionKind;
 use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::Credential;
 use tonic::{Request, Response, Status};
 
-use crate::{admin_proto, authentication::Accessor, service::grpc::IntoGrpcStatus, state::ServerState};
+use crate::{
+    admin_proto,
+    authentication::Accessor,
+    service::{
+        action::{Action, ActionOrigin},
+        grpc::IntoGrpcStatus,
+    },
+    state::ServerState,
+};
 
 #[derive(Debug, Clone)]
 pub struct AdminService {
@@ -70,14 +79,19 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
             return Err(Status::invalid_argument("Password must not be empty"));
         }
 
-        let credential = Credential::new_password(&password);
-        let accessor = Accessor(DEFAULT_USER_NAME.to_string());
-        self.server_state
-            .users()
-            .update(accessor, &username, None, Some(credential))
-            .await
-            .map_err(IntoGrpcStatus::into_status)?;
+        Action::new(self.server_state.clone(), ActionKind::UsersUpdate, ActionOrigin::admin())
+            .with_target_username(username.as_str())
+            .run(|| async {
+                let credential = Credential::new_password(&password);
+                let accessor = Accessor(DEFAULT_USER_NAME.to_string());
+                self.server_state
+                    .users()
+                    .update(accessor, &username, None, Some(credential))
+                    .await
+                    .map_err(IntoGrpcStatus::into_status)?;
 
-        Ok(Response::new(admin_proto::user_reset_password::Res {}))
+                Ok(Response::new(admin_proto::user_reset_password::Res {}))
+            })
+            .await
     }
 }

@@ -21,7 +21,7 @@ use database::query::{
     execute_write_query_in_schema, execute_write_query_in_write,
 };
 use diagnostics::metrics::{
-    ClientEndpoint, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics,
+    ActionKind, ClientEndpoint, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics,
 };
 use executor::{
     ExecutionInterrupt, InterruptType,
@@ -49,10 +49,13 @@ use tokio::{
 };
 use tracing::{Level, event};
 use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
+use uuid::Uuid;
 
 use crate::{
+    audit::AuditReason,
     service::{
         QueryType, TransactionType,
+        action::{Action, ActionOrigin, ActionStart},
         http::message::{
             analyze::{
                 AnalysedQueryResponse, encode_analyzed_query,
@@ -63,7 +66,7 @@ use crate::{
         may_encode_pipeline_structure,
         transaction_service::{
             Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
-            init_transaction_timeout, is_write_pipeline, with_readable_transaction,
+            init_transaction_timeout, is_write_pipeline, pipeline_query_type, with_readable_transaction,
         },
     },
     state::ServerState,
@@ -115,7 +118,7 @@ macro_rules! unwrap_or_execute_else_respond_error_and_return_break {
 
 #[derive(Debug)]
 pub(crate) enum TransactionRequest {
-    Query(QueryOptions, Option<GivenRowsHttp>, String),
+    Query(QueryOptions, Option<GivenRowsHttp>, String, Option<ActionStart>),
     AnalyseQuery(String),
     Commit,
     Rollback,
@@ -123,6 +126,12 @@ pub(crate) enum TransactionRequest {
 }
 
 pub(crate) struct TransactionResponder(pub(crate) oneshot::Sender<TransactionServiceResponse>);
+
+impl TransactionResponder {
+    fn is_request_ended(&self) -> bool {
+        self.0.is_closed()
+    }
+}
 
 impl Debug for TransactionResponder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -151,6 +160,8 @@ fn respond_transaction_response(
 #[derive(Debug)]
 pub(crate) struct TransactionService {
     server_state: Arc<ServerState>,
+    close_reported_as: Option<(ActionOrigin, Uuid)>,
+    database_name: Option<Arc<str>>,
 
     request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
@@ -158,9 +169,10 @@ pub(crate) struct TransactionService {
 
     timeout_at: Instant,
 
+    is_open: bool,
     transaction: Option<Transaction>,
     query_manager: Weak<QueryManager>,
-    query_queue: VecDeque<(TransactionResponder, QueueOptions, Arc<TypeQLPipeline>, Option<GivenRowsHttp>, String)>,
+    query_queue: VecDeque<QueuedQuery>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
     running_read_queries: JoinSet<ControlFlow<(), ()>>,
 
@@ -243,11 +255,14 @@ impl TransactionService {
     pub(crate) fn new(
         server_state: Arc<ServerState>,
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
+        close_reported_as: Option<(ActionOrigin, Uuid)>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
         let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
         Self {
             server_state,
+            close_reported_as,
+            database_name: None,
 
             request_stream,
             query_interrupt_sender,
@@ -255,6 +270,7 @@ impl TransactionService {
 
             timeout_at: init_transaction_timeout(None),
 
+            is_open: false,
             transaction: None,
             query_manager: Weak::new(),
             query_queue: VecDeque::with_capacity(20),
@@ -293,8 +309,10 @@ impl TransactionService {
             ClientEndpoint::Http,
         ));
         self.query_manager = with_readable_transaction!(&transaction, |txn| { Arc::downgrade(&txn.query_manager) });
+        self.database_name = Some(database_name);
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
+        self.is_open = true;
 
         let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
         Ok(processing_time_millis)
@@ -307,7 +325,7 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
-                        self.do_close().await;
+                        self.do_close(AuditReason::Shutdown).await;
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
@@ -315,12 +333,12 @@ impl TransactionService {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
-                        self.do_close().await;
+                        self.do_close(AuditReason::ServerStateChange).await;
                         return;
                     }
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
-                        self.do_close().await;
+                        self.do_close(AuditReason::Timeout).await;
                         return;
                     }
                     write_query_result = write_query_worker => {
@@ -341,7 +359,7 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
-                        self.do_close().await;
+                        self.do_close(AuditReason::Shutdown).await;
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
@@ -349,12 +367,12 @@ impl TransactionService {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
-                        self.do_close().await;
+                        self.do_close(AuditReason::ServerStateChange).await;
                         return;
                     }
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
-                        self.do_close().await;
+                        self.do_close(AuditReason::Timeout).await;
                         return;
                     }
                     Some(read_query_result) = self.running_read_queries.join_next(), if !self.running_read_queries.is_empty() => {
@@ -370,7 +388,7 @@ impl TransactionService {
                 Continue(()) => (),
                 Break(()) => {
                     event!(Level::TRACE, "Stream ended, closing transaction service.");
-                    self.do_close().await;
+                    self.do_close(AuditReason::RequestFailure).await;
                     return;
                 }
             }
@@ -382,8 +400,13 @@ impl TransactionService {
         match next {
             None => Break(()),
             Some((request, response_sender)) => match request {
-                TransactionRequest::Query(query_options, given_rows, query) => {
-                    self.handle_query(query_options, given_rows, query, response_sender).await
+                TransactionRequest::Query(..) | TransactionRequest::AnalyseQuery(_)
+                    if response_sender.is_request_ended() =>
+                {
+                    Continue(())
+                }
+                TransactionRequest::Query(query_options, given_rows, query, start) => {
+                    self.handle_query(query_options, given_rows, query, start, response_sender).await
                 }
                 TransactionRequest::AnalyseQuery(query) => self.handle_analyse_query(query, response_sender).await,
                 TransactionRequest::Commit => self.handle_commit(response_sender).await,
@@ -421,40 +444,41 @@ impl TransactionService {
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotCommitReadTransaction {});
             }
             Transaction::Write(transaction) => {
-                let txn_metrics = self.txn_metrics.take();
-                spawn(async move {
-                    unwrap_or_execute_else_respond_error_and_return_break!(
-                        commit_write_transaction(server_state, transaction).await.1,
-                        responder,
-                        |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
-                    );
-                    if let Some(mut m) = txn_metrics {
-                        m.mark_committed();
-                    }
-                    respond_else_return_break!(responder, TransactionServiceResponse::Ok);
-                    Break(())
-                })
-                .await
-                .expect("Expected write transaction commit completion")
+                let commit_result = spawn(async move { commit_write_transaction(server_state, transaction).await.1 })
+                    .await
+                    .expect("Expected write transaction commit completion");
+                self.finish_commit(
+                    responder,
+                    commit_result.map_err(|typedb_source| TransactionServiceError::DataCommitFailed { typedb_source }),
+                )
             }
             Transaction::Schema(transaction) => {
-                let txn_metrics = self.txn_metrics.take();
-                spawn(async move {
-                    unwrap_or_execute_else_respond_error_and_return_break!(
-                        commit_schema_transaction(server_state, transaction).await.1,
-                        responder,
-                        |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
-                    );
-                    if let Some(mut m) = txn_metrics {
-                        m.mark_committed();
-                    }
-                    respond_else_return_break!(responder, TransactionServiceResponse::Ok);
-                    Break(())
-                })
-                .await
-                .expect("Expected schema transaction commit completion")
+                let commit_result = spawn(async move { commit_schema_transaction(server_state, transaction).await.1 })
+                    .await
+                    .expect("Expected schema transaction commit completion");
+                self.finish_commit(
+                    responder,
+                    commit_result
+                        .map_err(|typedb_source| TransactionServiceError::SchemaCommitFailed { typedb_source }),
+                )
             }
         }
+    }
+
+    fn finish_commit(
+        &mut self,
+        responder: TransactionResponder,
+        commit_result: Result<(), TransactionServiceError>,
+    ) -> ControlFlow<(), ()> {
+        if let Err(error) = commit_result {
+            respond_error_and_return_break!(responder, error);
+        }
+        self.is_open = false;
+        if let Some(mut m) = self.txn_metrics.take() {
+            m.mark_committed();
+        }
+        respond_else_return_break!(responder, TransactionServiceResponse::Ok);
+        Break(())
     }
 
     async fn handle_rollback(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
@@ -496,12 +520,37 @@ impl TransactionService {
     }
 
     async fn handle_close(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
-        self.do_close().await;
+        self.close_transaction().await;
         respond_else_return_break!(responder, TransactionServiceResponse::Ok);
         Break(())
     }
 
-    async fn do_close(&mut self) {
+    async fn do_close(&mut self, reason: AuditReason) {
+        if !self.is_open {
+            return;
+        }
+        let action = self.new_close_action(reason);
+        if let Some(action) = &action {
+            action.report_start().await;
+        }
+        self.close_transaction().await;
+        if let Some(action) = action {
+            action.succeed();
+        }
+    }
+
+    fn new_close_action(&self, reason: AuditReason) -> Option<Action> {
+        let (origin, transaction_id) = self.close_reported_as.clone()?;
+        let action = Action::new(self.server_state.clone(), ActionKind::TransactionClose, origin)
+            .with_transaction_id(transaction_id)
+            .forced_by(reason);
+        Some(match &self.database_name {
+            Some(database_name) => action.with_database(database_name.clone()),
+            None => action,
+        })
+    }
+
+    async fn close_transaction(&mut self) {
         let _ = self.interrupt_running_queries(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
@@ -513,6 +562,7 @@ impl TransactionService {
             Some(Transaction::Schema(transaction)) => transaction.close(),
         }
         self.txn_metrics.take(); // drop -> submit
+        self.is_open = false;
     }
 
     async fn interrupt_running_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
@@ -538,12 +588,11 @@ impl TransactionService {
 
     async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (responder, query_options, pipeline, given_rows, source_query) in
-            self.query_queue.drain(0..self.query_queue.len())
-        {
-            if query_options.is_query() && is_write_pipeline(&pipeline) {
-                write_queries.push_back((responder, query_options, pipeline, given_rows, source_query));
+        for query in self.query_queue.drain(0..self.query_queue.len()) {
+            if query.is_write() {
+                write_queries.push_back(query);
             } else {
+                let responder = query.responder;
                 respond_else_return_break!(
                     responder,
                     TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
@@ -589,14 +638,15 @@ impl TransactionService {
 
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (responder, options, pipeline, given_rows, source) in self.query_queue.drain(0..self.query_queue.len()) {
-            if options.is_query() && is_write_pipeline(&pipeline) {
+        for query in self.query_queue.drain(0..self.query_queue.len()) {
+            if query.is_write() {
+                let responder = query.responder;
                 respond_else_return_break!(
                     responder,
                     TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
                 );
             } else {
-                read_queries.push_back((responder, options, pipeline, given_rows, source));
+                read_queries.push_back(query);
             }
         }
         self.query_queue = read_queries;
@@ -605,20 +655,23 @@ impl TransactionService {
 
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         self.finish_running_write_query_no_transmit(interrupt).await?;
+        self.drop_queries_of_ended_requests();
         let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
-        for (responder, options, pipeline, given_rows, source_query) in requests.into_iter() {
-            if options.is_query() && is_write_pipeline(&pipeline) {
-                let QueueOptions::Query(query_options) = options else { unreachable!() };
-                if let Break(()) =
-                    self.run_write_query(responder, query_options, pipeline, given_rows, source_query).await
-                {
-                    return Break(());
+        for QueuedQuery { responder, options, pipeline, given_rows, source_query } in requests.into_iter() {
+            match (options, is_write_pipeline(&pipeline)) {
+                (QueueOptions::Query(query_options), true) => {
+                    if let Break(()) =
+                        self.run_write_query(responder, query_options, pipeline, given_rows, source_query).await
+                    {
+                        return Break(());
+                    }
+                    if let Break(()) = self.finish_running_write_query_no_transmit(interrupt).await {
+                        return Break(());
+                    }
                 }
-                if let Break(()) = self.finish_running_write_query_no_transmit(interrupt).await {
-                    return Break(());
+                (options, _) => {
+                    self.query_queue.push_back(QueuedQuery { responder, options, pipeline, given_rows, source_query });
                 }
-            } else {
-                self.query_queue.push_back((responder, options, pipeline, given_rows, source_query));
             }
         }
         Continue(())
@@ -627,8 +680,11 @@ impl TransactionService {
     async fn may_accept_from_queue(&mut self) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
 
+        self.drop_queries_of_ended_requests();
         // unblock requests until the first write request, which we begin executing if it exists
-        while let Some((responder, queue_options, pipeline, given_rows, source_query)) = self.query_queue.pop_front() {
+        while let Some(QueuedQuery { responder, options: queue_options, pipeline, given_rows, source_query }) =
+            self.query_queue.pop_front()
+        {
             let is_write = is_write_pipeline(&pipeline);
             match (queue_options, is_write) {
                 (QueueOptions::Analyze, _) => {
@@ -648,11 +704,16 @@ impl TransactionService {
         Continue(())
     }
 
+    fn drop_queries_of_ended_requests(&mut self) {
+        self.query_queue.retain(|query| !query.responder.is_request_ended());
+    }
+
     async fn handle_query(
         &mut self,
         query_options: QueryOptions,
         given_rows: Option<GivenRowsHttp>,
         query: String,
+        start: Option<ActionStart>,
         responder: TransactionResponder,
     ) -> ControlFlow<(), ()> {
         if let Some(m) = self.txn_metrics.as_mut() {
@@ -663,6 +724,9 @@ impl TransactionService {
         let pipeline = match self.query_manager.upgrade().expect("transaction is open").parse(&query) {
             Ok(ParsedQuery::Pipeline(pipeline)) => pipeline,
             Ok(ParsedQuery::Schema(schema_query)) => {
+                if !Self::report_query_start_unless_request_ended(start, QueryType::Schema, &responder).await {
+                    return Continue(());
+                }
                 // schema queries are handled immediately so there is a query response or a fatal error
                 return match self.handle_query_schema(schema_query, query).await {
                     Ok(response) => {
@@ -680,9 +744,18 @@ impl TransactionService {
                 return Continue(());
             }
         };
+        if !Self::report_query_start_unless_request_ended(start, pipeline_query_type(&pipeline), &responder).await {
+            return Continue(());
+        }
 
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-            self.query_queue.push_back((responder, QueueOptions::Query(query_options), pipeline, given_rows, query));
+            self.query_queue.push_back(QueuedQuery {
+                responder,
+                options: QueueOptions::Query(query_options),
+                pipeline,
+                given_rows,
+                source_query: query,
+            });
             // queued queries are not handled yet so there will be no query response yet
             Continue(())
         } else if is_write_pipeline(&pipeline) {
@@ -691,6 +764,18 @@ impl TransactionService {
             self.spawn_read_query(responder, query_options, pipeline, given_rows, query);
             Continue(())
         }
+    }
+
+    async fn report_query_start_unless_request_ended(
+        start: Option<ActionStart>,
+        query_type: QueryType,
+        responder: &TransactionResponder,
+    ) -> bool {
+        let is_started = match start {
+            Some(start) => start.report_query_unless_ended(query_type).await,
+            None => true,
+        };
+        is_started && !responder.is_request_ended()
     }
 
     fn spawn_read_query(
@@ -1231,7 +1316,13 @@ impl TransactionService {
         };
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
             // queued queries are not handled yet so there will be no query response yet
-            self.query_queue.push_back((responder, QueueOptions::Analyze, pipeline, None, query));
+            self.query_queue.push_back(QueuedQuery {
+                responder,
+                options: QueueOptions::Analyze,
+                pipeline,
+                given_rows: None,
+                source_query: query,
+            });
             Continue(())
         } else {
             self.run_analyse_query(responder, pipeline, query).await
@@ -1282,6 +1373,21 @@ impl TransactionService {
         .await
         .expect("Expected read query completion");
         Continue(())
+    }
+}
+
+#[derive(Debug)]
+struct QueuedQuery {
+    responder: TransactionResponder,
+    options: QueueOptions,
+    pipeline: Arc<TypeQLPipeline>,
+    given_rows: Option<GivenRowsHttp>,
+    source_query: String,
+}
+
+impl QueuedQuery {
+    fn is_write(&self) -> bool {
+        self.options.is_query() && is_write_pipeline(&self.pipeline)
     }
 }
 

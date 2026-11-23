@@ -197,12 +197,19 @@
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.test_utils_server]
+		workspace = true
+
 	[dev-dependencies.typedb-admin]
 		workspace = true
 
 [[test]]
 	name = "test_admin_service"
 	path = "service/admin/admin_service_test.rs"
+
+[[test]]
+	name = "test_audit"
+	path = "tests/audit.rs"
 
 [[test]]
 	name = "test_encryption"

@@ -47,6 +47,7 @@ use crate::{
     state::{BoxServerStatus, ServerState},
 };
 
+pub mod audit;
 pub mod authentication;
 pub mod error;
 pub mod parameters;
@@ -396,7 +397,7 @@ impl Server {
             .merge(http::typedb_service::HTTPTypeDBService::create_unprotected_router(http_service))
             .layer(http::typedb_service::HTTPTypeDBService::create_cors_layer())
             .layer(axum::extract::DefaultBodyLimit::max(HTTP_MAX_MESSAGE_SIZE))
-            .into_make_service();
+            .into_make_service_with_connect_info::<SocketAddr>();
 
         let shutdown_handle = Handle::new();
         let shutdown_handle_clone = shutdown_handle.clone();
