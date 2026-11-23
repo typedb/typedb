@@ -121,6 +121,7 @@ impl KeyspaceSet for EncodingKeyspace {
         options.create_missing_column_families(true);
         if let Ok(parallelism) = std::thread::available_parallelism() {
             options.set_max_background_jobs(parallelism.get() as c_int);
+            options.set_max_subcompactions(parallelism.get() as u32);
         };
         options.set_target_file_size_base(64 * MB);
         options.set_write_buffer_size(64 * MB as usize);

@@ -133,6 +133,12 @@ pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<Self>>, Box<ConceptReadError>>;
 
+    fn get_type_and_subtypes_transitive<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Self>>, Box<ConceptReadError>>;
+
     fn is_supertype_of(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -199,11 +205,8 @@ pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
     where
         Self: PartialOrd,
     {
-        let subtypes = self.get_subtypes_transitive(snapshot, type_manager)?;
-        let (min, max) = minmax_or!(
-            Self::chain_types(*self, subtypes.into_iter().cloned()),
-            unreachable!("Expected at least one type")
-        );
+        let type_and_subtypes = self.get_type_and_subtypes_transitive(snapshot, type_manager)?;
+        let (min, max) = minmax_or!(type_and_subtypes.iter().copied(), unreachable!("Expected at least one type"));
         Ok((Bound::Included(min), Bound::Included(max)))
     }
 

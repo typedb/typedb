@@ -15,6 +15,7 @@ rust_library(
     ]),
     deps = [
         "//common/bytes",
+        "//common/concurrency",
         "//common/error",
         "//common/iterator",
         "//common/lending_iterator",

@@ -25,6 +25,9 @@ typedb-all-*/
 .project
 .classpath
 
+# Claude Code
+.claude/
+
 # Compiled
 dist/
 out/
