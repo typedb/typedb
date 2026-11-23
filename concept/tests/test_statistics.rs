@@ -142,8 +142,8 @@ macro_rules! assert_statistics_eq {
 }
 
 fn read_statistics(storage: Arc<MVCCStorage<WALClient>>) -> Statistics {
-    let open_sequence_number = storage.snapshot_watermark();
-    Statistics::read(storage, open_sequence_number, StorageCounters::DISABLED).unwrap()
+    let snapshot = storage.clone().open_snapshot_read();
+    Statistics::read(&snapshot, StorageCounters::DISABLED).unwrap()
 }
 
 #[test]

@@ -68,7 +68,7 @@ fn statistics_synchronization_under_concurrent_load() {
     let (_dbm, database) = open_db(&tmp_dir, DB_NAME);
     let metrics = database.get_metrics();
     let tx = TransactionRead::open(database, <_>::default()).unwrap();
-    let statistics = Statistics::read(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED).unwrap();
+    let statistics = Statistics::read(&*tx.snapshot, StorageCounters::DISABLED).unwrap();
 
     assert_eq!(metrics.data.entity_count, statistics.total_entity_count.visible, "entity_count after reboot");
     assert_eq!(metrics.data.attribute_count, statistics.total_attribute_count.visible, "attribute_count after reboot");

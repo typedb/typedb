@@ -338,7 +338,7 @@ impl<Durability> MVCCStorage<Durability> {
         commit_profile: &mut CommitProfile,
     ) -> Result<DurablyPersistedCommit, StorageCommitError>
     where
-        Durability: DurabilityClient,
+        Durability: DurabilityClient + 'static,
     {
         use StorageCommitError::{Durability, MVCCRead};
 
@@ -365,7 +365,7 @@ impl<Durability> MVCCStorage<Durability> {
         storage_counters: StorageCounters,
     ) -> Result<(), MVCCReadError>
     where
-        Durability: DurabilityClient,
+        Durability: DurabilityClient + 'static,
     {
         for buffer in snapshot.operations() {
             let writes = buffer.writes();

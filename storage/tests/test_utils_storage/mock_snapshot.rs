@@ -4,11 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::iter::empty;
+use std::{iter::empty, sync::Arc};
 
 use bytes::byte_array::ByteArray;
+use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::{
+    MVCCStorage,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::IteratorPool,
@@ -56,6 +58,15 @@ impl ReadableSnapshot for MockSnapshot {
         _: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         Err(SnapshotGetError::MockError {})
+    }
+
+    fn iterate_raw(
+        &self,
+        _storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <storage::iterator::MVCCRangeRawIterator as LendingIterator>::Item<'a>>
+    {
+        let _s: Arc<MVCCStorage<()>> = todo!();
+        _s.iterate_raw(self.open_sequence_number(), _storage_counters)
     }
 
     fn iterate_range<const PS: usize>(

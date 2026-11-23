@@ -186,7 +186,7 @@ impl<D> fmt::Debug for Database<D> {
     }
 }
 
-impl<D> Database<D> {
+impl<D: 'static> Database<D> {
     const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
 
     pub fn name(&self) -> &str {

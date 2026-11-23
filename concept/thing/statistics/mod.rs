@@ -33,6 +33,7 @@ use storage::{
     recovery::commit_recovery::StorageRecoveryError,
     sequence_number::SequenceNumber,
     snapshot::{
+        ReadableSnapshot,
         buffer::OperationsBuffer,
         write::{PutAction, Write},
     },
@@ -257,9 +258,8 @@ impl Statistics {
         }
     }
 
-    pub fn read<D: 'static>(
-        storage: Arc<MVCCStorage<D>>,
-        open_sequence_number: SequenceNumber,
+    pub fn read(
+        snapshot: &impl ReadableSnapshot,
         storage_counters: StorageCounters,
     ) -> Result<Self, Box<MVCCReadError>> {
         let mut entity_counts = HashMap::<_, Counts>::new();
@@ -274,7 +274,7 @@ impl Statistics {
         let mut player_role_relation_counts = TripleHashMap::<_, _, _, Counts>::new();
         let mut links_index_counts = DoubleHashMap::<_, _, Counts>::new();
 
-        let mut storage_iterator = storage.iterate_raw(open_sequence_number, storage_counters);
+        let mut storage_iterator = snapshot.iterate_raw(storage_counters);
         while let Some(item) = storage_iterator.next() {
             let mvcc_key_value = item?;
             let update: fn(&mut Counts, &str) = match mvcc_key_value.visibility() {
@@ -328,6 +328,7 @@ impl Statistics {
                     update(links_index_counts.double_entry(from, to).or_default(), "links_index");
                 }
 
+                // TODO: remove entries for deleted types
                 None
                 | Some(DecodableKey::VertexEntityType(_))
                 | Some(DecodableKey::VertexRelationType(_))
@@ -366,7 +367,7 @@ impl Statistics {
 
         Ok(Self {
             encoding_version: Self::ENCODING_VERSION,
-            sequence_number: open_sequence_number,
+            sequence_number: snapshot.open_sequence_number(),
             last_durable_write_sequence_number: SequenceNumber::MIN,
             last_durable_write_total_count: Counts::new(),
             total_count,

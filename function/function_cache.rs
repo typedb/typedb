@@ -26,7 +26,7 @@ pub struct FunctionCache {
 }
 
 impl FunctionCache {
-    pub fn new<D>(
+    pub fn new<D: 'static>(
         storage: Arc<MVCCStorage<D>>,
         type_manager: &TypeManager,
         open_sequence_number: SequenceNumber,

@@ -26,7 +26,7 @@ use crate::{
     CommitData, MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
     isolation_manager::{ReadSnapshotDropGuard, WriteSnapshotDropGuard},
-    iterator::MVCCReadError,
+    iterator::{MVCCRangeRawIterator, MVCCReadError},
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceId},
@@ -62,7 +62,7 @@ pub enum SnapshotLookupMode {
     StorageOnly,
 }
 
-pub trait ReadableSnapshot {
+pub trait ReadableSnapshot: 'static {
     const IMMUTABLE_SCHEMA: bool;
 
     fn open_sequence_number(&self) -> SequenceNumber;
@@ -102,6 +102,11 @@ pub trait ReadableSnapshot {
     ) -> Result<bool, SnapshotGetError> {
         Ok(self.get_mapped(key, |_| (), storage_counters)?.is_some())
     }
+
+    fn iterate_raw(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>>;
 
     fn iterate_range<const PS: usize>(
         &self,
@@ -281,7 +286,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     }
 }
 
-pub trait CommittableSnapshot<D>: WritableSnapshot
+pub trait CommittableSnapshot<D: 'static>: WritableSnapshot
 where
     D: DurabilityClient,
 {
@@ -325,7 +330,7 @@ impl<D> ReadSnapshot<D> {
     }
 }
 
-impl<D> ReadableSnapshot for ReadSnapshot<D> {
+impl<D: 'static> ReadableSnapshot for ReadSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -361,6 +366,16 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
                 .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
         }
+    }
+
+    fn iterate_raw(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>>
+    where
+        D: 'static,
+    {
+        self.storage.clone().iterate_raw(self.open_sequence_number, storage_counters)
     }
 
     fn iterate_range<const PS: usize>(
@@ -478,7 +493,7 @@ impl<D> WriteSnapshot<D> {
     }
 }
 
-impl<D> ReadableSnapshot for WriteSnapshot<D> {
+impl<D: 'static> ReadableSnapshot for WriteSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -521,6 +536,13 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
             },
             SnapshotLookupMode::StorageOnly => get_from_storage(key),
         }
+    }
+
+    fn iterate_raw(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>> {
+        self.storage.clone().iterate_raw(self.open_sequence_number, storage_counters)
     }
 
     fn iterate_range_in_lookup_mode<const PS: usize>(
@@ -597,7 +619,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D> WritableSnapshot for WriteSnapshot<D> {
+impl<D: 'static> WritableSnapshot for WriteSnapshot<D> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -611,7 +633,7 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
+impl<D: DurabilityClient + 'static> CommittableSnapshot<D> for WriteSnapshot<D> {
     fn commit(
         self,
         commit_profile: &mut CommitProfile,
@@ -687,7 +709,7 @@ impl<D> SchemaSnapshot<D> {
     }
 }
 
-impl<D> ReadableSnapshot for SchemaSnapshot<D> {
+impl<D: 'static> ReadableSnapshot for SchemaSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -730,6 +752,13 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
             },
             SnapshotLookupMode::StorageOnly => get_from_storage(key),
         }
+    }
+
+    fn iterate_raw(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>> {
+        self.storage.clone().iterate_raw(self.open_sequence_number, storage_counters)
     }
 
     fn iterate_range_in_lookup_mode<const PS: usize>(
@@ -806,7 +835,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D> WritableSnapshot for SchemaSnapshot<D> {
+impl<D: 'static> WritableSnapshot for SchemaSnapshot<D> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -820,7 +849,7 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
+impl<D: DurabilityClient + 'static> CommittableSnapshot<D> for SchemaSnapshot<D> {
     fn commit(
         self,
         commit_profile: &mut CommitProfile,
@@ -925,6 +954,14 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         self.get(key, storage_counters)
+    }
+
+    fn iterate_raw(
+        &self,
+        _storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>> {
+        let _s: Arc<MVCCStorage<()>> = todo!();
+        _s.iterate_raw(self.open_sequence_number, _storage_counters)
     }
 
     fn iterate_range<const PS: usize>(
