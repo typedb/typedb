@@ -16,11 +16,13 @@ use server::{
 };
 use test_utils::create_tmp_storage_dir;
 
+use self::connection_string::{Addresses, ConnectionString};
 use crate::{
     Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION, generic_step,
     message::{authenticate, authenticate_default, check_health, databases, send_get_request, users, version},
 };
 
+mod connection_string;
 mod database;
 mod transaction;
 mod user;
@@ -139,38 +141,19 @@ async fn connection_opens_with_a_wrong_host(context: &mut Context, may_error: pa
     );
 }
 
-fn parse_connection_string(connection_string: &str) -> Result<(String, String, String), HttpBehaviourTestError> {
-    let invalid = |reason: &str| HttpBehaviourTestError::InvalidConnectionString { reason: reason.to_owned() };
-    let remainder =
-        connection_string.strip_prefix("typedb://").ok_or_else(|| invalid("expected the 'typedb://' scheme"))?;
-    let (credentials, address) =
-        remainder.rsplit_once('@').ok_or_else(|| invalid("expected credentials, separated from the address by '@'"))?;
-    let (username, password) = credentials
-        .split_once(':')
-        .filter(|(username, password)| !username.is_empty() && !password.is_empty())
-        .ok_or_else(|| invalid("expected a non-empty username and password, separated by ':'"))?;
-    let (protocol, address) = address
-        .split_once("://")
-        .filter(|(protocol, _)| [Context::HTTP_PROTOCOL, Context::HTTPS_PROTOCOL].contains(protocol))
-        .ok_or_else(|| invalid("expected the address to specify the 'http://' or the 'https://' scheme"))?;
-    let address = address.split(['/', '?']).next().unwrap();
-    if address.is_empty() {
-        return Err(invalid("expected a non-empty address"));
-    }
-    let address =
-        if address.contains(':') { address.to_owned() } else { change_host(Context::DEFAULT_ADDRESS, address) };
-    let endpoint = Context::versioned_endpoint(protocol, &address, Context::DEFAULT_API_VERSION);
-    Ok((endpoint, username.to_owned(), password.to_owned()))
-}
-
 async fn connection_opens_with_connection_string(
     context: &mut Context,
     connection_string: &str,
     may_error: params::MayError,
 ) {
     let result = async {
-        let (endpoint, username, password) = parse_connection_string(connection_string)?;
-        authenticate(context.http_client(), &endpoint, &username, &password).await
+        let connection_string: ConnectionString = connection_string.parse()?;
+        let address = match connection_string.addresses() {
+            Addresses::Direct(addresses) => &addresses[0],
+            Addresses::Translated(addresses) => &addresses[0].0,
+        };
+        let endpoint = format!("{}/{}", address, Context::DEFAULT_API_VERSION);
+        authenticate(context.http_client(), &endpoint, connection_string.username(), connection_string.password()).await
     }
     .await;
     if let Either::Left(response) = may_error.check(result) {
