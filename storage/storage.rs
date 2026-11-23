@@ -732,7 +732,7 @@ impl<D: 'static> LendingIterator for StorageIterator<D> {
     type Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        if self.iterator.as_mut().is_none_or(|iter| iter.peek().is_none()) {
+        while self.iterator.as_mut().is_none_or(|iter| iter.peek().is_none()) {
             self.iterator = None;
             let keyspace_id = self.storage.keyspaces.iter().nth(self.next_keyspace)?.id();
             self.iterator = Some(Peekable::new(MVCCRangeRawIterator::new(
