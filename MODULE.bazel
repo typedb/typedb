@@ -141,7 +141,7 @@ bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "6cb99621b617372d758fa49652517926183bd90b",
+    commit = "4b3c992153841e36c87f27c8618c5fefbfcef643",
 )
 
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")

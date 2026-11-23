@@ -472,6 +472,7 @@ typedb_error! {
         HyperError(4, "Hyper error.", source: Arc<hyper::Error>),
         StatusError(5, "Status Error {code}: {message}", code: StatusCode, message: String),
         UnavailableRowVariable(6, "Cannot get concept from a concept row by variable '{variable}'.", variable: String),
+        InvalidConnectionString(7, "Invalid connection string: {reason}.", reason: String),
     }
 }
 
