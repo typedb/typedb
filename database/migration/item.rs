@@ -6,19 +6,21 @@
 
 use std::{
     borrow::Borrow,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fmt::{self, Display, Formatter},
+    sync::Arc,
 };
 
 use bytes::util::Base64Formatter;
 use concept::{
     error::ConceptReadError,
     thing::{
-        ThingAPI,
+        ThingAPI, ThingKind,
         attribute::Attribute,
         entity::Entity,
+        has::Has,
         object::{Object, ObjectAPI},
-        relation::Relation,
+        relation::{Links, Relation},
         thing_manager::ThingManager,
     },
     type_::{TypeAPI, role_type::RoleType, type_manager::TypeManager},
@@ -27,7 +29,7 @@ use encoding::value::{label::Label, value::Value};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::migration::Checksums;
+use crate::migration::{Checksums, MigrationOperationError};
 
 #[derive(Debug)]
 pub enum MigrationItem {
@@ -41,7 +43,7 @@ pub enum MigrationItem {
 #[derive(Debug, Clone)]
 pub struct EntityItem {
     pub globally_unique_id: String,
-    pub label: Label,
+    pub label: Arc<Label>,
     pub label_scoped_id: Option<u64>,
     pub attributes: Vec<OwnedAttribute>,
 }
@@ -49,7 +51,7 @@ pub struct EntityItem {
 #[derive(Debug, Clone)]
 pub struct RelationItem {
     pub globally_unique_id: String,
-    pub label: Label,
+    pub label: Arc<Label>,
     pub label_scoped_id: Option<u64>,
     pub attributes: Vec<OwnedAttribute>,
     pub roles: Vec<Role>,
@@ -58,7 +60,7 @@ pub struct RelationItem {
 #[derive(Debug, Clone)]
 pub struct AttributeItem {
     pub globally_unique_id: String,
-    pub label: Label,
+    pub label: Arc<Label>,
     pub value: Value<'static>,
 }
 
@@ -97,13 +99,13 @@ impl OwnedAttribute {
 
 #[derive(Debug, Clone)]
 pub struct AttributeReferencedByValue {
-    pub label: Label,
+    pub label: Arc<Label>,
     pub value: Value<'static>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Role {
-    pub label: Label,
+    pub label: Arc<Label>,
     pub players: Vec<Player>,
 }
 
@@ -121,7 +123,7 @@ impl Player {
 
 #[derive(Debug, Clone)]
 pub struct LabelScopedId {
-    pub label: Label,
+    pub label: Arc<Label>,
     pub label_scoped_id: u64,
 }
 
@@ -182,8 +184,8 @@ fn encode_type_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
-) -> Result<Label, Box<ConceptReadError>> {
-    Ok(type_.get_label(snapshot, type_manager)?.clone())
+) -> Result<Arc<Label>, Box<ConceptReadError>> {
+    Ok(Arc::new(type_.get_label(snapshot, type_manager)?.clone()))
 }
 
 fn encode_owned_attributes(
@@ -265,4 +267,98 @@ fn encode_player(
             label_scoped_id: encode_label_scoped_id(&player),
         }),
     })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemKind {
+    Header,
+    Checksums,
+    Entity,
+    Relation,
+    Attribute,
+}
+
+impl ItemKind {
+    // instances are imported by the workers, and the other items by the importer itself
+    pub(crate) fn thing_kind(&self) -> Option<ThingKind> {
+        match self {
+            Self::Header | Self::Checksums => None,
+            Self::Entity => Some(ThingKind::Entity),
+            Self::Relation => Some(ThingKind::Relation),
+            Self::Attribute => Some(ThingKind::Attribute),
+        }
+    }
+}
+
+// decoded labels by their wire string: an import names only the schema's few types and roles,
+// so each label is parsed once and then shared, instead of once per item, role and player
+#[derive(Debug, Default)]
+pub struct LabelCache {
+    labels: HashMap<String, Arc<Label>>,
+}
+
+impl LabelCache {
+    pub fn get(&mut self, label: String) -> Arc<Label> {
+        if let Some(cached) = self.labels.get(&label) {
+            return cached.clone();
+        }
+        let parsed = Arc::new(Label::parse_from(&label, None));
+        self.labels.insert(label, parsed.clone());
+        parsed
+    }
+}
+
+pub type ItemDecoder<T> = fn(T, &mut LabelCache) -> Result<MigrationItem, MigrationOperationError>;
+
+// an item as it was received, routed by its kind and decoded by the worker that writes it,
+// so that decoding is spread across the workers
+pub struct DecodableItem<T: 'static> {
+    source: T,
+    kind: ItemKind,
+    estimated_write_bytes: usize,
+    decoder: ItemDecoder<T>,
+}
+
+impl<T: 'static> DecodableItem<T> {
+    pub fn new(source: T, kind: ItemKind, estimated_write_bytes: usize, decoder: ItemDecoder<T>) -> Self {
+        Self { source, kind, estimated_write_bytes, decoder }
+    }
+
+    pub(crate) fn kind(&self) -> ItemKind {
+        self.kind
+    }
+
+    pub(crate) fn estimated_write_bytes(&self) -> usize {
+        self.estimated_write_bytes
+    }
+
+    pub(crate) fn decode(self, labels: &mut LabelCache) -> Result<MigrationItem, MigrationOperationError> {
+        (self.decoder)(self.source, labels)
+    }
+}
+
+impl DecodableItem<MigrationItem> {
+    pub fn decoded(item: MigrationItem) -> Self {
+        let (kind, estimated_write_bytes) = match &item {
+            MigrationItem::Header { .. } => (ItemKind::Header, 0),
+            MigrationItem::Checksums(_) => (ItemKind::Checksums, 0),
+            MigrationItem::Entity(EntityItem { attributes, .. }) => {
+                (ItemKind::Entity, estimated_object_write_bytes(attributes.len(), 0))
+            }
+            MigrationItem::Relation(RelationItem { attributes, roles, .. }) => {
+                let players = roles.iter().map(|role| role.players.len()).sum();
+                (ItemKind::Relation, estimated_object_write_bytes(attributes.len(), players))
+            }
+            MigrationItem::Attribute(AttributeItem { value, .. }) => {
+                (ItemKind::Attribute, Attribute::estimated_write_bytes(value))
+            }
+        };
+        Self::new(item, kind, estimated_write_bytes, |item, _| Ok(item))
+    }
+}
+
+pub fn estimated_object_write_bytes(owned_attributes: usize, players: usize) -> usize {
+    Object::ESTIMATED_WRITE_BYTES
+        + owned_attributes * Has::ESTIMATED_WRITE_BYTES
+        + players * Links::ESTIMATED_WRITE_BYTES
 }

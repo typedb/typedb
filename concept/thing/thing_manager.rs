@@ -44,6 +44,7 @@ use encoding::{
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
+        decode_value_u64,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
         integer_bytes::IntegerBytes,
@@ -109,20 +110,10 @@ use crate::{
 
 pub mod validation;
 
-pub(crate) struct ModifiedOwnerHas {
-    pub owner: Object,
-    pub modified_attribute_types: HashSet<AttributeType>,
-}
-
 pub(crate) struct ModifiedRelationLinks {
     pub relation: Relation,
     pub modified_role_types: HashSet<RoleType>,
     pub removed_role_players: HashSet<(Object, RoleType)>,
-}
-
-pub(crate) struct ModifiedPlayerLinks {
-    pub player: Object,
-    pub modified_role_types: HashSet<RoleType>,
 }
 
 #[derive(Clone, Copy)]
@@ -147,6 +138,8 @@ pub trait ConceptPersistenceGuarantees: fmt::Debug + Send + Sync {
     fn new_attribute_may_exist(&self, type_: AttributeType) -> bool;
 
     fn new_edge_may_exist(&self) -> bool;
+
+    fn concurrent_deletes_may_occur(&self) -> bool;
 }
 
 impl ThingManager {
@@ -1881,6 +1874,23 @@ impl ThingManager {
         Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range, storage_counters)))
     }
 
+    pub fn instance_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        instance: &impl ThingAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        if !snapshot.contains_delete()
+            && matches!(self.guarantees_known_to_exist(&instance.vertex()), KnownToExist::Exists)
+        {
+            return Ok(true);
+        }
+        match self.get_status(snapshot, instance.vertex(), storage_counters)? {
+            ConceptStatus::Inserted | ConceptStatus::Put | ConceptStatus::Persisted => Ok(true),
+            ConceptStatus::Deleted | ConceptStatus::Nonexistent => Ok(false),
+        }
+    }
+
     pub(crate) fn get_status(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1913,25 +1923,10 @@ impl ThingManager {
         vertex: impl ThingVertex,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        if let Some(concept_persistence_guarantees) = &self.concept_persistence_guarantees {
-            // TODO: ugly hack to get around generic trait method: re-decode
-            let prefix = vertex.prefix();
-            let type_id = vertex.type_id_();
-            let known_to_exist = match prefix {
-                Prefix::VertexEntity => concept_persistence_guarantees
-                    .object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id))),
-                Prefix::VertexRelation => concept_persistence_guarantees
-                    .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
-                Prefix::VertexAttribute => {
-                    concept_persistence_guarantees.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
-                }
-                _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
-            };
-            match known_to_exist {
-                KnownToExist::Exists => return Ok(true),
-                KnownToExist::NonExistent => return Ok(false),
-                KnownToExist::Unknown => {}
-            }
+        match self.guarantees_known_to_exist(&vertex) {
+            KnownToExist::Exists => return Ok(true),
+            KnownToExist::NonExistent => return Ok(false),
+            KnownToExist::Unknown => {}
         }
         let key = vertex.into_storage_key();
         Ok(snapshot
@@ -1940,15 +1935,22 @@ impl ThingManager {
             .is_some())
     }
 
-    pub fn instance_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        instance: &impl ThingAPI,
-        storage_counters: StorageCounters,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        match self.get_status(snapshot, instance.vertex(), storage_counters)? {
-            ConceptStatus::Inserted | ConceptStatus::Put | ConceptStatus::Persisted => Ok(true),
-            ConceptStatus::Deleted | ConceptStatus::Nonexistent => Ok(false),
+    fn guarantees_known_to_exist(&self, vertex: &impl ThingVertex) -> KnownToExist {
+        let Some(concept_persistence_guarantees) = &self.concept_persistence_guarantees else {
+            return KnownToExist::Unknown;
+        };
+        // TODO: ugly hack to get around generic trait method: re-decode
+        let prefix = vertex.prefix();
+        let type_id = vertex.type_id_();
+        match prefix {
+            Prefix::VertexEntity => concept_persistence_guarantees
+                .object_known_to_exist(ObjectType::Entity(EntityType::build_from_type_id(type_id))),
+            Prefix::VertexRelation => concept_persistence_guarantees
+                .object_known_to_exist(ObjectType::Relation(RelationType::build_from_type_id(type_id))),
+            Prefix::VertexAttribute => {
+                concept_persistence_guarantees.attribute_known_to_exist(AttributeType::build_from_type_id(type_id))
+            }
+            _ => unreachable!("Expected a thing vertex, got prefix {prefix:?}"),
         }
     }
 
@@ -1963,47 +1965,8 @@ impl ThingManager {
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
-    pub(crate) fn for_each_new_object<Snapshot: ReadableSnapshot, E>(
-        &self,
-        snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, Object) -> Result<(), E>,
-    ) -> Result<(), E> {
-        let objects = KeyRange::new(
-            RangeStart::Inclusive(ObjectVertex::MIN.into_storage_key()),
-            RangeEnd::EndPrefixInclusive(ObjectVertex::MAX.into_storage_key()),
-            ObjectVertex::FIXED_WIDTH_ENCODING,
-        );
-        snapshot.visit_writes_in_range(&objects, |snapshot, key, write| match write {
-            Write::Insert { .. } => visit(snapshot, Object::new(ObjectVertex::decode(key.bytes()))),
-            Write::Delete { .. } => Ok(()),
-            Write::Put { .. } => unreachable!("Encountered a Put for an object"),
-        })
-    }
-
-    pub(crate) fn for_each_owner_with_modified_has<Snapshot: ReadableSnapshot, E>(
-        &self,
-        snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, ModifiedOwnerHas) -> Result<(), E>,
-    ) -> Result<(), E> {
-        let mut group: Option<ModifiedOwnerHas> = None;
-        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedOwnerHas>| match group {
-            Some(modified) => visit(snapshot, modified),
-            None => Ok(()),
-        };
-        snapshot.visit_writes_in_range(
-            &KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING),
-            |snapshot, key, _| {
-                let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
-                let owner = Object::new(edge.from());
-                if group.as_ref().is_none_or(|modified| modified.owner != owner) {
-                    flush(snapshot, group.take())?;
-                    group = Some(ModifiedOwnerHas { owner, modified_attribute_types: HashSet::new() });
-                }
-                group.as_mut().unwrap().modified_attribute_types.insert(Attribute::new(edge.to()).type_());
-                Ok(())
-            },
-        )?;
-        flush(snapshot, group.take())
+    pub fn concurrent_deletes_may_occur(&self) -> bool {
+        self.concept_persistence_guarantees.as_ref().is_none_or(|guarantees| guarantees.concurrent_deletes_may_occur())
     }
 
     pub(crate) fn for_each_relation_with_modified_links<Snapshot: ReadableSnapshot, E>(
@@ -2042,30 +2005,63 @@ impl ThingManager {
         flush(snapshot, group.take())
     }
 
-    pub(crate) fn for_each_player_with_modified_links<Snapshot: ReadableSnapshot, E>(
+    /// ---- Optimized iterators that borrow from the snapshot BTree directly, without cloning ---
+    pub(crate) fn buffered_new_objects(&self, snapshot: &impl WritableSnapshot) -> impl Iterator<Item = Object> {
+        let objects = KeyRange::new(
+            RangeStart::Inclusive(ObjectVertex::MIN.into_storage_key()),
+            RangeEnd::EndPrefixInclusive(ObjectVertex::MAX.into_storage_key()),
+            ObjectVertex::FIXED_WIDTH_ENCODING,
+        );
+        snapshot.buffered_writes_in_range(&objects).filter_map(|(key, write)| match write {
+            Write::Insert { .. } => Some(Object::new(ObjectVertex::decode(key))),
+            Write::Delete { .. } => None,
+            Write::Put { .. } => unreachable!("Encountered a Put for an object"),
+        })
+    }
+
+    pub(crate) fn buffered_has(
         &self,
-        snapshot: &mut Snapshot,
-        mut visit: impl FnMut(&mut Snapshot, ModifiedPlayerLinks) -> Result<(), E>,
-    ) -> Result<(), E> {
-        let mut group: Option<ModifiedPlayerLinks> = None;
-        let mut flush = |snapshot: &mut Snapshot, group: Option<ModifiedPlayerLinks>| match group {
-            Some(modified) => visit(snapshot, modified),
-            None => Ok(()),
-        };
-        snapshot.visit_writes_in_range(
-            &KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
-            |snapshot, key, _| {
-                let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
-                let player = Object::new(edge.player());
-                if group.as_ref().is_none_or(|modified| modified.player != player) {
-                    flush(snapshot, group.take())?;
-                    group = Some(ModifiedPlayerLinks { player, modified_role_types: HashSet::new() });
-                }
-                group.as_mut().unwrap().modified_role_types.insert(RoleType::build_from_type_id(edge.role_id()));
-                Ok(())
-            },
-        )?;
-        flush(snapshot, group.take())
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Object, AttributeType, u64)> {
+        let has = KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        snapshot.buffered_writes_in_range(&has).map(|(key, write)| {
+            let edge = ThingEdgeHas::decode(Bytes::reference(key));
+            (Object::new(edge.from()), Attribute::new(edge.to()).type_(), Self::buffered_edge_count(write))
+        })
+    }
+
+    pub(crate) fn buffered_links(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Relation, RoleType, u64)> {
+        let links = KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
+            (
+                Relation::new(edge.relation()),
+                RoleType::build_from_type_id(edge.role_id()),
+                Self::buffered_edge_count(write),
+            )
+        })
+    }
+
+    pub(crate) fn buffered_links_reverse(
+        &self,
+        snapshot: &impl WritableSnapshot,
+    ) -> impl Iterator<Item = (Object, RoleType, u64)> {
+        let links =
+            KeyRange::new_within(ThingEdgeLinks::prefix_reverse(), ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE);
+        snapshot.buffered_writes_in_range(&links).map(|(key, write)| {
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key));
+            (Object::new(edge.player()), RoleType::build_from_type_id(edge.role_id()), Self::buffered_edge_count(write))
+        })
+    }
+
+    fn buffered_edge_count(write: &Write) -> u64 {
+        match write {
+            Write::Insert { value } | Write::Put { value, .. } => decode_value_u64(value),
+            Write::Delete { .. } => 0,
+        }
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {

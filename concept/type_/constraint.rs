@@ -385,6 +385,10 @@ impl<T: KindAPI> Constraint<T> for TypeConstraint<T> {
         self.description.clone()
     }
 
+    fn category(&self) -> ConstraintCategory {
+        self.description.category()
+    }
+
     fn source(&self) -> T {
         self.source
     }
@@ -442,6 +446,10 @@ impl<CAP: Capability> Constraint<CAP> for CapabilityConstraint<CAP> {
         self.description.clone()
     }
 
+    fn category(&self) -> ConstraintCategory {
+        self.description.category()
+    }
+
     fn source(&self) -> CAP {
         self.source
     }
@@ -494,10 +502,10 @@ macro_rules! filter_out_operation_time_unchecked_constraints {
 }
 pub(crate) use filter_out_operation_time_unchecked_constraints;
 
-pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_cardinality_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Cardinality).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Cardinality).cloned().collect()
 }
 
 pub(crate) fn get_cardinality_constraint<'a, CAP: Capability>(
@@ -512,10 +520,10 @@ pub(crate) fn get_cardinality_constraint<'a, CAP: Capability>(
         .next()
 }
 
-pub(crate) fn get_abstract_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_abstract_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Abstract).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Abstract).cloned().collect()
 }
 
 pub(crate) fn get_abstract_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
@@ -536,10 +544,10 @@ pub(crate) fn get_abstract_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
 }
 
 #[expect(unused)]
-pub(crate) fn get_unique_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_unique_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Unique).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Unique).cloned().collect()
 }
 
 pub(crate) fn get_unique_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
@@ -554,34 +562,34 @@ pub(crate) fn get_unique_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
     }
 }
 
-pub(crate) fn get_distinct_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_distinct_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Distinct).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Distinct).cloned().collect()
 }
 
-pub(crate) fn get_independent_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_independent_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Independent).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Independent).cloned().collect()
 }
 
-pub(crate) fn get_regex_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_regex_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Regex).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Regex).cloned().collect()
 }
 
-pub(crate) fn get_range_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_range_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Range).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Range).cloned().collect()
 }
 
-pub(crate) fn get_values_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item = C>,
+pub(crate) fn get_values_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> HashSet<C> {
-    filter_by_constraint_category!(constraints.into_iter(), Values).collect()
+    filter_by_constraint_category!(constraints.into_iter(), Values).cloned().collect()
 }
 
 pub(crate) fn get_checked_cardinality_constraints<'a, C: Constraint<T> + 'a, T: Hash + Eq>(

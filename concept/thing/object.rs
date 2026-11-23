@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    fmt,
-    iter::Map,
-    ops::RangeBounds,
-};
+use std::{collections::BTreeMap, fmt, iter::Map, ops::RangeBounds};
 
 use bytes::Bytes;
 use encoding::{
@@ -484,36 +479,6 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         thing_manager.get_player_relations_roles(snapshot, self, storage_counters)
-    }
-
-    fn get_has_counts(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        storage_counters: StorageCounters,
-    ) -> Result<HashMap<AttributeType, u64>, Box<ConceptReadError>> {
-        let mut counts = HashMap::new();
-        let mut has_iter = self.get_has_unordered(snapshot, thing_manager, storage_counters)?;
-        while let Some((has, count)) = Iterator::next(&mut has_iter).transpose()? {
-            let value = counts.entry(has.attribute().type_()).or_insert(0);
-            *value += count;
-        }
-        Ok(counts)
-    }
-
-    fn get_played_roles_counts(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        storage_counters: StorageCounters,
-    ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
-        let mut counts = HashMap::new();
-        let mut relation_role_iter = self.get_relations_roles(snapshot, thing_manager, storage_counters);
-        while let Some((_, role_type, count)) = Iterator::next(&mut relation_role_iter).transpose()? {
-            let value = counts.entry(role_type).or_insert(0);
-            *value += count;
-        }
-        Ok(counts)
     }
 
     fn has_indexed_relation_player(

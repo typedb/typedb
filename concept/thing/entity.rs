@@ -81,7 +81,7 @@ impl ThingAPI for Entity {
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if ObjectOrigin::of(snapshot, self).is_unknown_transaction() {
+        if thing_manager.concurrent_deletes_may_occur() && ObjectOrigin::of(snapshot, self).is_unknown_transaction() {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())

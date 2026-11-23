@@ -22,10 +22,7 @@ use tokio::sync::{
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{Level, event};
-use typedb_protocol::{
-    database_manager::import::{Client as ProtocolClient, Server as ProtocolServer},
-    migration::Item as MigrationItemProto,
-};
+use typedb_protocol::database_manager::import::{Client as ProtocolClient, Server as ProtocolServer};
 
 use crate::{
     error::LocalServerStateError,
@@ -36,7 +33,7 @@ use crate::{
             response_builders::database_manager::database_import_res_done,
         },
         import_service::DatabaseImportServiceError,
-        migration::item::decode_item,
+        migration::item::{ImportableItem, decodable_item},
     },
     state::ServerState,
 };
@@ -50,11 +47,11 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 struct ActiveImport {
     name: String,
     started: Instant,
-    importer: DatabaseImporterHandle,
+    importer: DatabaseImporterHandle<ImportableItem>,
 }
 
 impl ActiveImport {
-    fn new(name: String, importer: DatabaseImporterHandle) -> Self {
+    fn new(name: String, importer: DatabaseImporterHandle<ImportableItem>) -> Self {
         Self { name, started: Instant::now(), importer }
     }
 }
@@ -227,7 +224,7 @@ impl DatabaseImportService {
                 .await
                 .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
             Client::ReqPart(ReqPart { items }) => self
-                .handle_items(items)
+                .handle_items(items.into_iter().map(ImportableItem::EncodedItem).collect())
                 .await
                 .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
             Client::Done(Done {}) => self
@@ -264,11 +261,16 @@ impl DatabaseImportService {
 
     async fn handle_items(
         &mut self,
-        items: Vec<MigrationItemProto>,
+        items: Vec<ImportableItem>,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let active_import = self.active_import.as_mut().ok_or(DatabaseImportServiceError::ImportNotInitialised {})?;
+        let items = items
+            .into_iter()
+            .map(decodable_item)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|typedb_source| DatabaseImportServiceError::ItemDecode { typedb_source })?;
         self.stop_signals
-            .unless_stopped(active_import.importer.send_batch(items.into_iter().map(decode_item)))
+            .unless_stopped(active_import.importer.send_batch(items))
             .await?
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
 
@@ -314,7 +316,7 @@ impl DatabaseImportService {
     }
 
     async fn do_close(&mut self) -> bool {
-        let Some(ActiveImport { name, started, importer }) = self.active_import.take() else {
+        let Some(ActiveImport { name, started, importer, .. }) = self.active_import.take() else {
             return false;
         };
         if let Ok(total_items) = importer.abort().await {

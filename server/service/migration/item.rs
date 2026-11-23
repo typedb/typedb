@@ -3,19 +3,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    sync::{Arc, LazyLock},
+};
 
 use concept::error::ConceptDecodeError;
 use database::migration::{
-    Checksums, Counts,
+    Checksums, Counts, MigrationOperationError,
     database_exporter::ExportMessage,
     item::{
-        AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
-        OwnedAttribute, Player, RelationItem, Role,
+        AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemKind, ItemOrder,
+        LabelCache, LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role,
     },
 };
-use encoding::value::{label::Label, value::Value};
+use encoding::value::value::Value;
 use error::{typedb_error, unimplemented_feature};
+use prost::{
+    Message,
+    encoding::{WireType, encode_key, encode_varint},
+};
 use typedb_protocol::{
     migration,
     migration::{Item, MigrationValue, item},
@@ -83,7 +90,69 @@ pub fn encode_item(item: ExportMessage) -> EncodedItem {
     EncodedItem::Item(Item { item: Some(encoded) })
 }
 
-pub fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
+pub enum ImportableItem {
+    EncodedItem(Vec<u8>),
+}
+
+// the item is routed by its kind, and decoded by the import worker that writes it
+pub fn decodable_item(item: ImportableItem) -> Result<DecodableItem<ImportableItem>, ItemDecodeError> {
+    let (kind, estimated_write_bytes) = match &item {
+        ImportableItem::EncodedItem(encoded) => (read_item_kind(encoded)?, encoded.len()),
+    };
+    Ok(DecodableItem::new(item, kind, estimated_write_bytes, decode_importable_item))
+}
+
+const MAX_ITEM_FIELD: u32 = u8::MAX as u32;
+
+// prost has no constants for the fields of the one-of, so each field up to the limit is probed with an empty item
+static ITEM_KINDS_BY_FIELD: LazyLock<[Option<ItemKind>; MAX_ITEM_FIELD as usize + 1]> =
+    LazyLock::new(|| std::array::from_fn(|field| empty_item_at(field as u32).map(|item| item_kind(&item))));
+
+fn read_item_kind(encoded: &[u8]) -> Result<ItemKind, ItemDecodeError> {
+    if encoded.is_empty() {
+        return Err(ItemDecodeError::EmptyItem {});
+    }
+    let field = read_field(encoded).map_err(|source| ItemDecodeError::MalformedItem { source })?;
+    ITEM_KINDS_BY_FIELD.get(field as usize).copied().flatten().ok_or(ItemDecodeError::UnknownItemKind { field })
+}
+
+fn empty_item_at(field: u32) -> Option<item::Item> {
+    if field == 0 {
+        return None;
+    }
+    let mut encoded = Vec::new();
+    encode_key(field, WireType::LengthDelimited, &mut encoded);
+    encode_varint(0, &mut encoded);
+    Item::decode(encoded.as_slice()).ok()?.item
+}
+
+fn item_kind(item: &item::Item) -> ItemKind {
+    match item {
+        item::Item::Attribute(_) => ItemKind::Attribute,
+        item::Item::Entity(_) => ItemKind::Entity,
+        item::Item::Relation(_) => ItemKind::Relation,
+        item::Item::Header(_) => ItemKind::Header,
+        item::Item::Checksums(_) => ItemKind::Checksums,
+    }
+}
+
+fn read_field(mut encoded: &[u8]) -> Result<u32, prost::DecodeError> {
+    prost::encoding::decode_key(&mut encoded).map(|(field, _)| field)
+}
+
+fn decode_importable_item(
+    item: ImportableItem,
+    labels: &mut LabelCache,
+) -> Result<MigrationItem, MigrationOperationError> {
+    let item_proto = match item {
+        ImportableItem::EncodedItem(encoded) => {
+            Item::decode(encoded.as_slice()).map_err(|source| ItemDecodeError::MalformedItem { source })
+        }
+    };
+    item_proto.and_then(|item_proto| decode_item(item_proto, labels)).map_err(|error| Arc::new(error) as _)
+}
+
+pub fn decode_item(item_proto: Item, labels: &mut LabelCache) -> Result<MigrationItem, ItemDecodeError> {
     let Item { item } = item_proto;
     let item = item.ok_or(ItemDecodeError::EmptyItem {})?;
     let decoded = match item {
@@ -95,18 +164,18 @@ pub fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
         item::Item::Entity(item::Entity { globally_unique_id, label, label_scoped_id, attributes }) => {
             MigrationItem::Entity(EntityItem {
                 globally_unique_id,
-                label: Label::parse_from(&label, None),
+                label: labels.get(label),
                 label_scoped_id,
-                attributes: decode_owned_attributes(attributes)?,
+                attributes: decode_owned_attributes(attributes, labels)?,
             })
         }
         item::Item::Relation(item::Relation { globally_unique_id, label, label_scoped_id, attributes, roles }) => {
             MigrationItem::Relation(RelationItem {
                 globally_unique_id,
-                label: Label::parse_from(&label, None),
+                label: labels.get(label),
                 label_scoped_id,
-                attributes: decode_owned_attributes(attributes)?,
-                roles: decode_relation_roles(roles),
+                attributes: decode_owned_attributes(attributes, labels)?,
+                roles: decode_relation_roles(roles, labels),
             })
         }
         item::Item::Attribute(item::Attribute { globally_unique_id, label, attributes, value }) => {
@@ -115,11 +184,7 @@ pub fn decode_item(item_proto: Item) -> Result<MigrationItem, ItemDecodeError> {
             }
             let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentAttributeValue {})?)
                 .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
-            MigrationItem::Attribute(AttributeItem {
-                globally_unique_id,
-                label: Label::parse_from(&label, None),
-                value,
-            })
+            MigrationItem::Attribute(AttributeItem { globally_unique_id, label: labels.get(label), value })
         }
         item::Item::Checksums(item::Checksums {
             entity_count,
@@ -146,6 +211,8 @@ typedb_error! {
         ConceptDecode(4, "Error decoding an item's concept.", typedb_source: Box<ConceptDecodeError>),
         AbsentOwnedAttributeValue(5, "An owned attribute referenced by value, but without a value, was received."),
         UnknownItemOrder(6, "A header with an unknown item order '{item_order}' was received. Ensure using compatible client protocol.", item_order: i32),
+        MalformedItem(7, "A malformed item was received. It is a sign of a corrupted file or a client bug.", source: prost::DecodeError),
+        UnknownItemKind(8, "An item of an unknown kind (field {field}) was received. Ensure using compatible client protocol.", field: u32),
     }
 }
 
@@ -205,7 +272,10 @@ fn encode_owned_attributes(owned_attributes: Vec<OwnedAttribute>) -> Vec<item::O
         .collect()
 }
 
-fn decode_owned_attributes(attributes: Vec<item::OwnedAttribute>) -> Result<Vec<OwnedAttribute>, ItemDecodeError> {
+fn decode_owned_attributes(
+    attributes: Vec<item::OwnedAttribute>,
+    labels: &mut LabelCache,
+) -> Result<Vec<OwnedAttribute>, ItemDecodeError> {
     attributes
         .into_iter()
         .map(|item::OwnedAttribute { globally_unique_id, attribute_by_value }| {
@@ -213,7 +283,7 @@ fn decode_owned_attributes(attributes: Vec<item::OwnedAttribute>) -> Result<Vec<
                 .map(|item::owned_attribute::AttributeReferencedByValue { label, value }| {
                     let value = decode_migration_value(value.ok_or(ItemDecodeError::AbsentOwnedAttributeValue {})?)
                         .map_err(|typedb_source| ItemDecodeError::ConceptDecode { typedb_source })?;
-                    Ok(AttributeReferencedByValue { label: Label::parse_from(&label, None), value })
+                    Ok(AttributeReferencedByValue { label: labels.get(label), value })
                 })
                 .transpose()?;
             Ok(OwnedAttribute { globally_unique_id, attribute_by_value })
@@ -239,18 +309,18 @@ fn encode_relation_roles(roles: Vec<Role>) -> Vec<item::relation::Role> {
         .collect()
 }
 
-fn decode_relation_roles(roles: Vec<item::relation::Role>) -> Vec<Role> {
+fn decode_relation_roles(roles: Vec<item::relation::Role>, labels: &mut LabelCache) -> Vec<Role> {
     roles
         .into_iter()
         .map(|item::relation::Role { label, players }| Role {
-            label: Label::parse_from(&label, None),
+            label: labels.get(label),
             players: players
                 .into_iter()
                 .map(|item::relation::role::Player { globally_unique_id, label_scoped_id }| Player {
                     globally_unique_id,
                     label_scoped_id: label_scoped_id.map(
                         |item::relation::role::player::LabelScopedId { label, label_scoped_id }| LabelScopedId {
-                            label: Label::parse_from(&label, None),
+                            label: labels.get(label),
                             label_scoped_id,
                         },
                     ),
@@ -300,7 +370,16 @@ fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>,
 
 #[cfg(test)]
 mod tests {
+    use encoding::value::label::Label;
+
     use super::*;
+
+    #[test]
+    fn every_item_kind_has_a_field_within_the_limit() {
+        // the table only probes up to the limit, so no item kind may have a field beyond it
+        let beyond_limit = (MAX_ITEM_FIELD + 1..=u16::MAX as u32).filter_map(empty_item_at).collect::<Vec<_>>();
+        assert!(beyond_limit.is_empty(), "item kinds beyond the probed fields: {beyond_limit:?}");
+    }
 
     #[test]
     fn items_map_to_the_expected_wire_messages() {
@@ -313,7 +392,7 @@ mod tests {
                 | MigrationItem::Checksums(_) => (),
             }
             assert_eq!(wire_item(encode_item(ExportMessage::Item(item))), expected);
-            let decoded = decode_item(expected.clone()).expect("decoded item");
+            let decoded = decode_item(expected.clone(), &mut LabelCache::default()).expect("decoded item");
             assert_eq!(
                 wire_item(encode_item(ExportMessage::Item(decoded))),
                 expected,
@@ -329,7 +408,7 @@ mod tests {
             original_database: "source".to_owned(),
             guarantees: None,
         }));
-        match decode_item(header).expect("decoded header") {
+        match decode_item(header, &mut LabelCache::default()).expect("decoded header") {
             MigrationItem::Header { guarantees, .. } => assert_eq!(guarantees, Guarantees::default()),
             other => panic!("expected a header, got {other:?}"),
         }
@@ -342,7 +421,10 @@ mod tests {
             original_database: "source".to_owned(),
             guarantees: Some(item::header::Guarantees { item_order: 99, ..Default::default() }),
         }));
-        assert!(matches!(decode_item(header), Err(ItemDecodeError::UnknownItemOrder { item_order: 99 })));
+        assert!(matches!(
+            decode_item(header, &mut LabelCache::default()),
+            Err(ItemDecodeError::UnknownItemOrder { item_order: 99 })
+        ));
     }
 
     #[test]
@@ -392,14 +474,14 @@ mod tests {
             (
                 MigrationItem::Entity(EntityItem {
                     globally_unique_id: "e1".to_owned(),
-                    label: Label::build("person", None),
+                    label: Arc::new(Label::build("person", None)),
                     label_scoped_id: Some(3),
                     attributes: vec![
                         OwnedAttribute::by_id("a1".to_owned()),
                         OwnedAttribute {
                             globally_unique_id: "a2".to_owned(),
                             attribute_by_value: Some(AttributeReferencedByValue {
-                                label: Label::build("age", None),
+                                label: Arc::new(Label::build("age", None)),
                                 value: Value::Integer(42),
                             }),
                         },
@@ -426,17 +508,17 @@ mod tests {
             (
                 MigrationItem::Relation(RelationItem {
                     globally_unique_id: "r1".to_owned(),
-                    label: Label::build("friendship", None),
+                    label: Arc::new(Label::build("friendship", None)),
                     label_scoped_id: None,
                     attributes: vec![OwnedAttribute::by_id("a1".to_owned())],
                     roles: vec![Role {
-                        label: Label::build_scoped("friend", "friendship", None),
+                        label: Arc::new(Label::build_scoped("friend", "friendship", None)),
                         players: vec![
                             Player::by_id("e1".to_owned()),
                             Player {
                                 globally_unique_id: "e2".to_owned(),
                                 label_scoped_id: Some(LabelScopedId {
-                                    label: Label::build("person", None),
+                                    label: Arc::new(Label::build("person", None)),
                                     label_scoped_id: 7,
                                 }),
                             },
@@ -469,7 +551,7 @@ mod tests {
             (
                 MigrationItem::Attribute(AttributeItem {
                     globally_unique_id: "a1".to_owned(),
-                    label: Label::build("name", None),
+                    label: Arc::new(Label::build("name", None)),
                     value: Value::String(Cow::Borrowed("Alice")),
                 }),
                 wire(item::Item::Attribute(item::Attribute {

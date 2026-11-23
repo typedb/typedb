@@ -58,10 +58,11 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         sub::{Sub, SubAnnotation},
-        type_manager::type_reader::TypeReader,
+        type_manager::{schema_cardinalities::SchemaCardinalities, type_reader::TypeReader},
     },
 };
 
+pub(crate) mod schema_cardinalities;
 pub mod type_cache;
 pub mod type_reader;
 mod type_writer;
@@ -377,7 +378,7 @@ macro_rules! get_filtered_constraints_methods {
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
             ) -> Result<HashSet<$constraint_type<$type_>>, Box<ConceptReadError>> {
-                Ok($filtering_method(type_.$get_constraints_method(snapshot, self)?.into_iter().cloned()))
+                Ok($filtering_method(type_.$get_constraints_method(snapshot, self)?.into_iter()))
             }
         )*
     }
@@ -394,7 +395,7 @@ macro_rules! get_type_capability_filtered_constraints_methods {
                 object_type: <$capability as Capability>::ObjectType,
                 interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<HashSet<CapabilityConstraint<$capability>>, Box<ConceptReadError>> {
-                Ok($filtering_method(object_type.$get_constraints_method(snapshot, self, interface_type)?.into_iter().cloned()))
+                Ok($filtering_method(object_type.$get_constraints_method(snapshot, self, interface_type)?.into_iter()))
             }
         )*
     }
@@ -1190,6 +1191,17 @@ impl TypeManager {
                 }
             }
             Ok(Arc::new(independent))
+        }
+    }
+
+    pub(crate) fn get_schema_cardinalities(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Arc<SchemaCardinalities>, Box<ConceptReadError>> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_schema_cardinalities())
+        } else {
+            Ok(Arc::new(SchemaCardinalities::new(snapshot)?))
         }
     }
 

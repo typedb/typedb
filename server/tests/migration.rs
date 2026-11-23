@@ -24,7 +24,7 @@ use database::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
         item::{
-            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, MigrationItem,
+            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelCache, MigrationItem,
             OwnedAttribute, Player, RelationItem, Role,
         },
     },
@@ -37,8 +37,8 @@ use diagnostics::diagnostics_manager::DiagnosticsManager;
 use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use prost::Message;
 use resource::{constants::server::DISTRIBUTION_INFO, profile::CommitProfile};
-use server::service::migration::item::{EncodedItem, decode_item, encode_item};
-use storage::durability_client::WALClient;
+use server::service::migration::item::{EncodedItem, ImportableItem, decodable_item, decode_item, encode_item};
+use storage::{durability_client::WALClient, keyspace::CompactionHandle};
 use test_utils::{TempDir, create_tmp_dir, init_logging};
 use tokio::sync::watch;
 use typedb_protocol::migration::Item;
@@ -76,6 +76,14 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
         intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
     }
 
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.staged_database.enable_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.staged_database.finish_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
@@ -106,7 +114,7 @@ fn task_spawner() -> TokioTaskSpawner {
     TokioTaskTracker::new(shutdown_receiver).get_spawner()
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle<ImportableItem> {
     let staged_database = database_manager.prepare_imported_database(name.to_owned()).expect("prepare");
     let handle = TestImportingDatabaseHandle { database_manager: database_manager.clone(), staged_database };
     let configuration = ImporterConfiguration::new(database_manager.import_directory().to_owned());
@@ -150,7 +158,8 @@ fn encode_stream(items: Vec<MigrationItem>) -> Vec<u8> {
 }
 
 fn decode_items(items: &[Item]) -> Vec<MigrationItem> {
-    items.iter().cloned().map(|item| decode_item(item).expect("decoded item")).collect()
+    let mut labels = LabelCache::default();
+    items.iter().cloned().map(|item| decode_item(item, &mut labels).expect("decoded item")).collect()
 }
 
 async fn import(
@@ -161,7 +170,11 @@ async fn import(
 ) -> Result<(), DatabaseImportError> {
     let mut importer = importer(database_manager, name);
     importer.send_schema(schema.to_owned()).await?;
-    importer.send_batch(items.into_iter().map(decode_item)).await?;
+    let items = items
+        .into_iter()
+        .map(|item| decodable_item(ImportableItem::EncodedItem(item.encode_to_vec())).expect("routable item"))
+        .collect();
+    importer.send_batch(items).await?;
     importer.finalize().await.map(|_| ())
 }
 

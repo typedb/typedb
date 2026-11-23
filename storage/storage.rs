@@ -16,8 +16,9 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        Arc,
+        Arc, RwLock,
         atomic::{AtomicU64, Ordering},
+        mpsc::RecvError,
     },
     thread::sleep,
     time::Duration,
@@ -53,7 +54,7 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        CompactionHandle, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
@@ -91,6 +92,7 @@ pub struct MVCCStorage<Durability> {
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
     earliest_uncleaned: AtomicU64,
+    durability_mode: RwLock<DurabilityMode>,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -128,6 +130,7 @@ impl<Durability> MVCCStorage<Durability> {
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
             earliest_uncleaned: AtomicU64::new(0),
+            durability_mode: RwLock::new(DurabilityMode::Strict),
         })
     }
 
@@ -191,6 +194,7 @@ impl<Durability> MVCCStorage<Durability> {
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
             earliest_uncleaned: AtomicU64::new(earliest_uncleaned.number()),
+            durability_mode: RwLock::new(DurabilityMode::Strict),
         })
     }
 
@@ -281,16 +285,21 @@ impl<Durability> MVCCStorage<Durability> {
 
         fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
 
-        let sync_notifier = self.durability_client.request_sync();
+        let wait_for_sync = match *self.durability_mode.read().unwrap() {
+            DurabilityMode::Strict => true,
+            DurabilityMode::Relaxed => false,
+        };
+        let sync_notifier = self.durability_client.request_sync(wait_for_sync);
         let validate_result = self.isolation_manager.validate_commit(sequence_number, record, &self.durability_client);
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
         let result = match validate_result {
             Ok(ValidatedCommit::Write(write_batches, commit_record)) => {
-                sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
-                // Write to the k-v store
-                commit_profile.snapshot_durable_write_data_confirmed();
+                sync_notifier.recv().unwrap(); // in strict mode, the WAL is persisted before writing to the KV store
+                if wait_for_sync {
+                    commit_profile.snapshot_durable_write_data_confirmed();
+                }
 
                 self.keyspaces
                     .write(write_batches)
@@ -453,8 +462,42 @@ impl<Durability> MVCCStorage<Durability> {
         )
     }
 
-    pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
-        checkpoint.add_storage(&self.keyspaces, self.metadata())
+    pub fn enable_bulk_loading(&self) -> Result<(), StorageBulkLoadError> {
+        let mut durability_mode = self.durability_mode.write().unwrap();
+        self.keyspaces
+            .enable_bulk_loading()
+            .map_err(|source| StorageBulkLoadError::Keyspace { name: self.name.clone(), source })?;
+        *durability_mode = DurabilityMode::Relaxed;
+        Ok(())
+    }
+
+    pub fn finish_bulk_loading(&self) -> Result<CompactionHandle, StorageBulkLoadError>
+    where
+        Durability: DurabilityClient,
+    {
+        let mut durability_mode = self.durability_mode.write().unwrap();
+        let compaction_handle = self
+            .keyspaces
+            .finish_bulk_loading()
+            .map_err(|source| StorageBulkLoadError::Keyspace { name: self.name.clone(), source })?;
+        self.durability_client
+            .request_sync(true)
+            .recv()
+            .map_err(|source| StorageBulkLoadError::DurabilitySync { name: self.name.clone(), source })?;
+        *durability_mode = DurabilityMode::Strict;
+        Ok(compaction_handle)
+    }
+
+    pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError>
+    where
+        Durability: DurabilityClient,
+    {
+        checkpoint.add_storage(&self.keyspaces, self.metadata())?;
+        // relaxed commits may be in the checkpointed keyspaces before they are synced to the WAL
+        self.durability_client
+            .request_sync(true)
+            .recv()
+            .map_err(|source| CheckpointCreateError::DurabilitySync { source })
     }
 
     pub fn delete_storage(self) -> Result<(), StorageDeleteError>
@@ -762,6 +805,13 @@ typedb_error! {
 }
 
 typedb_error! {
+    pub StorageBulkLoadError(component = "Storage bulk load", prefix = "STB") {
+        Keyspace(1, "Bulk loading into database '{name}' failed to configure a storage keyspace.", name: Arc<str>, source: KeyspaceError),
+        DurabilitySync(2, "Finishing the bulk load into database '{name}' failed to sync the write-ahead log.", name: Arc<str>, source: RecvError),
+    }
+}
+
+typedb_error! {
     pub StorageResetError(component = "Storage reset", prefix = "STR") {
         KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<str>, source: KeyspaceError),
         Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<str>, typedb_source: DurabilityClientError),
@@ -876,6 +926,14 @@ impl StorageOperation {
     fn is_delete(&self) -> bool {
         matches!(self, Self::Delete)
     }
+}
+
+#[derive(Debug)]
+enum DurabilityMode {
+    // a commit waits for its WAL record to be synced before writing to the KV store
+    Strict,
+    // a commit does not wait for its WAL record to be synced, so a crash may lose the most recent commits
+    Relaxed,
 }
 
 #[derive(Debug)]

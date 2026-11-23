@@ -22,8 +22,8 @@ use database::{
             ImportingDatabaseHandle, open_import_schema_transaction, open_import_write_transaction,
         },
         item::{
-            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
-            OwnedAttribute, Player, RelationItem, Role,
+            AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemKind, ItemOrder,
+            LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role,
         },
     },
     transaction::{
@@ -34,7 +34,9 @@ use database::{
 use encoding::value::{label::Label, value::Value};
 use options::TransactionOptions;
 use resource::profile::CommitProfile;
-use storage::{StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict};
+use storage::{
+    StorageCommitError, durability_client::WALClient, isolation_manager::IsolationConflict, keyspace::CompactionHandle,
+};
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_database::manager;
 use tokio::sync::watch;
@@ -73,6 +75,14 @@ impl ImportingDatabaseHandle for TestImportingDatabaseHandle {
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError> {
         intent.commit(&mut CommitProfile::disabled()).map_err(|error| Arc::new(error) as _)
+    }
+
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.staged_database.enable_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.staged_database.finish_bulk_loading().map_err(|error| Arc::new(error) as _)
     }
 
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
@@ -125,6 +135,14 @@ impl ImportingDatabaseHandle for RejectingCommitsHandle {
         }
     }
 
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.inner.enable_bulk_loading()
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.inner.finish_bulk_loading()
+    }
+
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
@@ -165,6 +183,14 @@ impl ImportingDatabaseHandle for CountingCommitsHandle {
         self.inner.commit_data(intent)
     }
 
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.inner.enable_bulk_loading()
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.inner.finish_bulk_loading()
+    }
+
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
@@ -189,7 +215,7 @@ fn importer_with_rejected_commits(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
     rejections: usize,
-) -> (DatabaseImporterHandle, Arc<AtomicUsize>) {
+) -> (DatabaseImporterHandle<MigrationItem>, Arc<AtomicUsize>) {
     let rejections_left = Arc::new(AtomicUsize::new(rejections));
     let handle = RejectingCommitsHandle {
         inner: test_importing_database(database_manager, name),
@@ -210,7 +236,7 @@ fn task_spawner() -> TokioTaskSpawner {
     TokioTaskTracker::new(shutdown_receiver).get_spawner()
 }
 
-fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle {
+fn importer(database_manager: &Arc<DatabaseManager>, name: &str) -> DatabaseImporterHandle<MigrationItem> {
     importer_with_spawner(database_manager, name, &task_spawner())
 }
 
@@ -218,7 +244,7 @@ fn importer_with_spawner(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
     task_spawner: &TokioTaskSpawner,
-) -> DatabaseImporterHandle {
+) -> DatabaseImporterHandle<MigrationItem> {
     let scratch_directory = database_manager.import_directory().to_owned();
     DatabaseImporter::start(
         importing_database(database_manager, name),
@@ -231,7 +257,7 @@ async fn importer_with_schema(
     database_manager: &Arc<DatabaseManager>,
     name: &str,
     schema: &str,
-) -> DatabaseImporterHandle {
+) -> DatabaseImporterHandle<MigrationItem> {
     let mut importer = importer(database_manager, name);
     importer.send_schema(schema.to_owned()).await.expect("schema");
     importer
@@ -270,29 +296,29 @@ fn source_items() -> Vec<MigrationItem> {
     vec![
         MigrationItem::Attribute(AttributeItem {
             globally_unique_id: alice.clone(),
-            label: Label::build("name", None),
+            label: Arc::new(Label::build("name", None)),
             value: Value::String("Alice".into()),
         }),
         MigrationItem::Attribute(AttributeItem {
             globally_unique_id: bob.clone(),
-            label: Label::build("name", None),
+            label: Arc::new(Label::build("name", None)),
             value: Value::String("Bob".into()),
         }),
         MigrationItem::Entity(EntityItem {
             globally_unique_id: "p1".to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id(alice)],
         }),
         MigrationItem::Entity(EntityItem {
             globally_unique_id: "p2".to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id(bob)],
         }),
         MigrationItem::Relation(RelationItem {
             globally_unique_id: "f1".to_owned(),
-            label: Label::build("friendship", None),
+            label: Arc::new(Label::build("friendship", None)),
             label_scoped_id: None,
             attributes: vec![],
             roles: vec![friends(["p1", "p2"])],
@@ -309,7 +335,7 @@ fn source_items() -> Vec<MigrationItem> {
 
 fn friends<const N: usize>(ids: [&str; N]) -> Role {
     Role {
-        label: Label::build_scoped("friend", "friendship", None),
+        label: Arc::new(Label::build_scoped("friend", "friendship", None)),
         players: ids.into_iter().map(|id| Player::by_id(id.to_owned())).collect(),
     }
 }
@@ -318,8 +344,8 @@ fn empty_checksums() -> MigrationItem {
     MigrationItem::Checksums(Checksums::new())
 }
 
-async fn import_all(mut importer: DatabaseImporterHandle, items: Vec<MigrationItem>) {
-    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+async fn import_all(mut importer: DatabaseImporterHandle<MigrationItem>, items: Vec<MigrationItem>) {
+    importer.send_batch(items.into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     importer.finalize().await.expect("import");
 }
 
@@ -371,7 +397,7 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
                     let Some(AttributeReferencedByValue { label, value }) = attribute_by_value else {
                         panic!("inline attributes are owned by value: {item:?}")
                     };
-                    assert_eq!(*label, Label::build("name", None));
+                    assert_eq!(**label, Label::build("name", None));
                     assert!(matches!(value, Value::String(name) if name == "Alice" || name == "Bob"), "{item:?}");
                 }
             }
@@ -381,7 +407,7 @@ async fn an_exported_stream_opens_with_the_schema_and_closes_with_the_checksums(
                     let Some(LabelScopedId { label, .. }) = &player.label_scoped_id else {
                         panic!("players are referenced by label-scoped id: {item:?}")
                     };
-                    assert_eq!(*label, Label::build("person", None));
+                    assert_eq!(**label, Label::build("person", None));
                 }
             }
             _ => (),
@@ -432,23 +458,23 @@ async fn an_ownership_of_a_hashed_attribute_is_exported_by_id() {
     let items = vec![
         MigrationItem::Attribute(AttributeItem {
             globally_unique_id: "long".to_owned(),
-            label: Label::build("name", None),
+            label: Arc::new(Label::build("name", None)),
             value: Value::String(long_name.clone().into()),
         }),
         MigrationItem::Attribute(AttributeItem {
             globally_unique_id: "bob".to_owned(),
-            label: Label::build("name", None),
+            label: Arc::new(Label::build("name", None)),
             value: Value::String("Bob".into()),
         }),
         MigrationItem::Entity(EntityItem {
             globally_unique_id: "p1".to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id("long".to_owned())],
         }),
         MigrationItem::Entity(EntityItem {
             globally_unique_id: "p2".to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id("bob".to_owned())],
         }),
@@ -504,7 +530,7 @@ async fn a_unique_ownership_is_validated_when_the_schema_is_restored() {
         }
     }
     let mut importer = importer_with_schema(&database_manager, "shared", UNIQUE_SCHEMA).await;
-    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.send_batch(items.into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ConceptWrite { .. })), "{result:?}");
 }
@@ -521,7 +547,7 @@ async fn a_maximum_plays_cardinality_is_validated_when_the_schema_is_restored() 
     let person = |id: &str| {
         MigrationItem::Entity(EntityItem {
             globally_unique_id: id.to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![],
         })
@@ -529,7 +555,7 @@ async fn a_maximum_plays_cardinality_is_validated_when_the_schema_is_restored() 
     let friendship = |id: &str, players: [&str; 2]| {
         MigrationItem::Relation(RelationItem {
             globally_unique_id: id.to_owned(),
-            label: Label::build("friendship", None),
+            label: Arc::new(Label::build("friendship", None)),
             label_scoped_id: None,
             attributes: vec![],
             roles: vec![friends(players)],
@@ -577,7 +603,7 @@ async fn a_maximum_plays_cardinality_is_validated_when_the_schema_is_restored() 
     let mut importer =
         DatabaseImporter::start(importing_database(&database_manager, "exceeded"), configuration(), &task_spawner());
     importer.send_schema(PLAYS_SCHEMA.to_owned()).await.expect("schema");
-    importer.send_batch(items.into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.send_batch(items.into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::FinalizationSchemaCommitFailed { .. })), "{result:?}");
 }
@@ -590,11 +616,11 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut early = importer(&database_manager, "early");
     early
-        .send(MigrationItem::Header {
+        .send(DecodableItem::decoded(MigrationItem::Header {
             typedb_version: "3.0.0-test".to_owned(),
             original_database: "source".to_owned(),
             guarantees: Guarantees::default(),
-        })
+        }))
         .await
         .expect("send");
     let result = early.finalize().await;
@@ -608,14 +634,14 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut late = importer_with_schema(&database_manager, "late", SCHEMA).await;
     for item in source_items() {
-        late.send(item).await.expect("send");
+        late.send(DecodableItem::decoded(item)).await.expect("send");
     }
-    late.send(MigrationItem::Entity(EntityItem {
+    late.send(DecodableItem::decoded(MigrationItem::Entity(EntityItem {
         globally_unique_id: "p3".to_owned(),
-        label: Label::build("person", None),
+        label: Arc::new(Label::build("person", None)),
         label_scoped_id: None,
         attributes: vec![],
-    }))
+    })))
     .await
     .expect("send");
     let result = late.finalize().await;
@@ -623,7 +649,7 @@ async fn an_out_of_order_stream_is_rejected() {
 
     let mut duplicate = importer_with_schema(&database_manager, "duplicate", SCHEMA).await;
     for item in [empty_checksums(), empty_checksums()] {
-        duplicate.send(item).await.expect("send");
+        duplicate.send(DecodableItem::decoded(item)).await.expect("send");
     }
     let result = duplicate.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::DuplicateClientChecksums { .. })), "{result:?}");
@@ -648,19 +674,19 @@ async fn an_inline_attribute_referenced_by_id_under_the_by_value_guarantee_is_re
         },
         MigrationItem::Attribute(AttributeItem {
             globally_unique_id: "bob".to_owned(),
-            label: Label::build("name", None),
+            label: Arc::new(Label::build("name", None)),
             value: Value::String("Bob".into()),
         }),
         MigrationItem::Entity(EntityItem {
             globally_unique_id: "p1".to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![OwnedAttribute::by_id("bob".to_owned())],
         }),
         empty_checksums(),
     ];
     for item in items {
-        if importer.send(item).await.is_err() {
+        if importer.send(DecodableItem::decoded(item)).await.is_err() {
             break;
         }
     }
@@ -676,7 +702,7 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
     let person = |id: String| {
         MigrationItem::Entity(EntityItem {
             globally_unique_id: id,
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![],
         })
@@ -686,7 +712,7 @@ async fn a_relation_whose_players_arrive_later_survives_batch_commits() {
 
     let mut items = vec![MigrationItem::Relation(RelationItem {
         globally_unique_id: "f1".to_owned(),
-        label: Label::build("friendship", None),
+        label: Arc::new(Label::build("friendship", None)),
         label_scoped_id: None,
         attributes: vec![],
         roles: vec![friends(["p1"])],
@@ -733,12 +759,12 @@ async fn long_attribute_values_are_spread_over_commits() {
             [
                 MigrationItem::Attribute(AttributeItem {
                     globally_unique_id: format!("a{i}"),
-                    label: Label::build("name", None),
+                    label: Arc::new(Label::build("name", None)),
                     value: Value::String(format!("{i:0>VALUE_BYTES$}").into()),
                 }),
                 MigrationItem::Entity(EntityItem {
                     globally_unique_id: format!("p{i}"),
-                    label: Label::build("person", None),
+                    label: Arc::new(Label::build("person", None)),
                     label_scoped_id: None,
                     attributes: vec![OwnedAttribute::by_id(format!("a{i}"))],
                 }),
@@ -783,7 +809,7 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
     let person = |id: &str| {
         MigrationItem::Entity(EntityItem {
             globally_unique_id: id.to_owned(),
-            label: Label::build("person", None),
+            label: Arc::new(Label::build("person", None)),
             label_scoped_id: None,
             attributes: vec![],
         })
@@ -796,23 +822,23 @@ async fn a_relation_playing_in_another_relation_is_linked_at_the_end() {
         person("p2"),
         MigrationItem::Relation(RelationItem {
             globally_unique_id: "f1".to_owned(),
-            label: Label::build("friendship", None),
+            label: Arc::new(Label::build("friendship", None)),
             label_scoped_id: None,
             attributes: vec![],
             roles: vec![friends(["p1", "p2"])],
         }),
         MigrationItem::Relation(RelationItem {
             globally_unique_id: "e1".to_owned(),
-            label: Label::build("endorsement", None),
+            label: Arc::new(Label::build("endorsement", None)),
             label_scoped_id: None,
             attributes: vec![],
             roles: vec![
                 Role {
-                    label: Label::build_scoped("subject", "endorsement", None),
+                    label: Arc::new(Label::build_scoped("subject", "endorsement", None)),
                     players: vec![Player::by_id("f1".to_owned())],
                 },
                 Role {
-                    label: Label::build_scoped("endorser", "endorsement", None),
+                    label: Arc::new(Label::build_scoped("endorser", "endorsement", None)),
                     players: vec![Player::by_id("p1".to_owned())],
                 },
             ],
@@ -871,7 +897,7 @@ async fn a_commit_rejected_more_often_than_the_retries_fails_the_import() {
     let database_manager = manager(&data_dir);
     let (mut importer, rejections_left) = importer_with_rejected_commits(&database_manager, "rejected", 4);
     importer.send_schema(SCHEMA.to_owned()).await.expect("schema");
-    importer.send_batch(source_items().into_iter().map(Ok::<_, DatabaseImportError>)).await.expect("send");
+    importer.send_batch(source_items().into_iter().map(DecodableItem::decoded).collect()).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::DataCommitFailed { .. })), "{result:?}");
     assert_eq!(rejections_left.load(Ordering::Relaxed), 0);
@@ -888,13 +914,13 @@ async fn a_relation_without_role_players_is_rejected() {
     for (name, roles) in [("no-roles", no_roles), ("empty-role", empty_role)] {
         let mut importer = importer_with_schema(&database_manager, name, SCHEMA).await;
         importer
-            .send(MigrationItem::Relation(RelationItem {
+            .send(DecodableItem::decoded(MigrationItem::Relation(RelationItem {
                 globally_unique_id: "f1".to_owned(),
-                label: Label::build("friendship", None),
+                label: Arc::new(Label::build("friendship", None)),
                 label_scoped_id: None,
                 attributes: vec![],
                 roles,
-            }))
+            })))
             .await
             .expect("send");
         let result = importer.finalize().await;
@@ -909,9 +935,11 @@ async fn an_item_that_fails_to_decode_fails_the_import() {
     let database_manager = manager(&data_dir);
 
     let mut importer = importer_with_schema(&database_manager, "undecodable", SCHEMA).await;
-    // Any TypeDB error stands in for the server's item decoding error.
-    let batch = [Ok(empty_checksums()), Err(DatabaseImportError::ImporterStopped {})];
-    importer.send_batch(batch).await.expect("send");
+    // Any TypeDB error stands in for the server's item decoding error, raised by the worker decoding the entity.
+    let undecodable = DecodableItem::new(empty_checksums(), ItemKind::Entity, 0, |_, _| {
+        Err(Arc::new(DatabaseImportError::ImporterStopped {}) as _)
+    });
+    importer.send_batch(vec![undecodable]).await.expect("send");
     let result = importer.finalize().await;
     assert!(matches!(result, Err(DatabaseImportError::ItemDecode { .. })), "{result:?}");
 }

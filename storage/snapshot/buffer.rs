@@ -7,7 +7,7 @@
 use std::{
     borrow::Borrow,
     cmp::Ordering,
-    collections::{BTreeMap, Bound},
+    collections::{BTreeMap, Bound, btree_map},
     fmt,
     iter::{IntoIterator, Peekable},
     sync::Arc,
@@ -53,6 +53,10 @@ impl OperationsBuffer {
 
     pub(crate) fn is_writes_empty(&self) -> bool {
         self.write_buffers.iter().all(|buffer| buffer.is_empty())
+    }
+
+    pub(crate) fn contains_delete(&self) -> bool {
+        self.write_buffers.iter().any(WriteBuffer::contains_delete)
     }
 
     pub fn writes_in(&self, keyspace_id: KeyspaceId) -> &WriteBuffer {
@@ -126,15 +130,26 @@ impl<'a> IntoIterator for &'a OperationsBuffer {
 pub struct WriteBuffer {
     pub(crate) keyspace_id: KeyspaceId,
     writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>,
+    // set by any delete since the buffer was cleared, even if the key is written again after it
+    contains_delete: bool,
 }
 
 impl WriteBuffer {
     pub(crate) fn new(keyspace_id: KeyspaceId) -> WriteBuffer {
-        WriteBuffer { keyspace_id, writes: BTreeMap::new() }
+        WriteBuffer { keyspace_id, writes: BTreeMap::new(), contains_delete: false }
+    }
+
+    fn from_writes(keyspace_id: KeyspaceId, writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>) -> WriteBuffer {
+        let contains_delete = writes.values().any(Write::is_delete);
+        WriteBuffer { keyspace_id, writes, contains_delete }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
         self.writes.is_empty()
+    }
+
+    pub(crate) fn contains_delete(&self) -> bool {
+        self.contains_delete
     }
 
     pub(crate) fn insert(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
@@ -192,6 +207,7 @@ impl WriteBuffer {
         // with a different value for overwrite or a brand new key so we always have to write a
         // delete marker instead of removing an element from the map in some cases
         self.writes.insert(key, Write::Delete { action: Arc::new(AtomicDeleteAction::new(DeleteAction::Delete)) });
+        self.contains_delete = true;
     }
 
     pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {
@@ -207,19 +223,9 @@ impl WriteBuffer {
         range: KeyRange<Bytes<'_, INLINE>>,
         limit: usize,
     ) -> BufferRangeIterator {
-        let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
-        let end = if matches!(range_end, RangeEnd::Unbounded) {
-            Bound::Unbounded
-        } else {
-            Bound::Excluded(&*exclusive_end_bytes)
-        };
-        let start_as_bound = range_start_as_bound(range_start);
-        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
-            self.writes
-                .range::<[u8], _>((start_bytes, end))
+            self.writes_in_range(range)
                 .take(limit)
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
@@ -228,6 +234,14 @@ impl WriteBuffer {
 
     // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
     pub(crate) fn any_not_deleted_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
+        self.writes_in_range(range).any(|(_, write)| !write.is_delete())
+    }
+
+    // the writes in the range in key order, borrowed from the buffer
+    pub fn writes_in_range<const INLINE: usize>(
+        &self,
+        range: KeyRange<Bytes<'_, INLINE>>,
+    ) -> btree_map::Range<'_, ByteArray<BUFFER_KEY_INLINE>, Write> {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
@@ -237,7 +251,7 @@ impl WriteBuffer {
         };
         let start_as_bound = range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
-        self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
+        self.writes.range::<[u8], _>((start_bytes, end))
     }
 
     pub(crate) fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
@@ -253,7 +267,8 @@ impl WriteBuffer {
     }
 
     pub fn clear(&mut self) {
-        self.writes.clear()
+        self.writes.clear();
+        self.contains_delete = false;
     }
 }
 
@@ -478,7 +493,7 @@ impl<'de> Deserialize<'de> for WriteBuffer {
                 let keyspace_id = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
                     seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(WriteBuffer { keyspace_id, writes: buffer })
+                Ok(WriteBuffer::from_writes(keyspace_id, buffer))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<WriteBuffer, V::Error>
@@ -507,7 +522,7 @@ impl<'de> Deserialize<'de> for WriteBuffer {
                 let keyspace_id = keyspace_id.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
                     buffer.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(WriteBuffer { keyspace_id, writes: buffer })
+                Ok(WriteBuffer::from_writes(keyspace_id, buffer))
             }
         }
 

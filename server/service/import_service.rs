@@ -6,7 +6,7 @@
 use database::migration::database_importer::DatabaseImportError;
 use error::typedb_error;
 
-use crate::error::ArcServerStateError;
+use crate::{error::ArcServerStateError, service::migration::item::ItemDecodeError};
 
 typedb_error! {
     pub DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {
@@ -17,5 +17,6 @@ typedb_error! {
         ImportClosed(10, "The import was closed by the server. The import is aborted and can be retried."),
         ShutdownInterrupt(11, "The import was interrupted by server shutdown. The import is aborted and can be retried."),
         ClientClosed(12, "The import stream was closed by the client before completion. The import is aborted and can be retried."),
+        ItemDecode(13, "A migration item could not be read.", typedb_source: ItemDecodeError),
     }
 }

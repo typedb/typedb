@@ -12,7 +12,7 @@ use std::{
     num::ParseIntError,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::Arc,
+    sync::{Arc, mpsc::RecvError},
 };
 
 use chrono::{DateTime, Utc};
@@ -426,6 +426,8 @@ pub enum CheckpointCreateError {
 
     KeyspaceCheckpoint { dir: PathBuf, source: KeyspaceCheckpointError },
 
+    DurabilitySync { source: RecvError },
+
     MetadataFileCreate { file_path: PathBuf, source: Arc<io::Error> },
     MetadataWrite { file_path: PathBuf, source: Arc<io::Error> },
 
@@ -449,6 +451,7 @@ impl Error for CheckpointCreateError {
             Self::CheckpointDirRead { source, .. } => Some(source),
             Self::MissingStorageData { .. } => None,
             Self::KeyspaceCheckpoint { source, .. } => Some(source),
+            Self::DurabilitySync { source } => Some(source),
             Self::MetadataFileCreate { source, .. } => Some(source),
             Self::MetadataWrite { source, .. } => Some(source),
             Self::ExtensionDuplicate { .. } => None,

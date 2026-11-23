@@ -8,15 +8,17 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex, mpsc},
+    thread::{self, JoinHandle},
 };
 
 use bytes::Bytes;
 use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
-use resource::profile::StorageCounters;
+use resource::{constants::common::GB, profile::StorageCounters};
 use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint};
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use super::{IteratorPool, constants, iterator};
 use crate::{key_range::KeyRange, keyspace::rocks_resources::RocksResources, write_batches::WriteBatches};
@@ -42,6 +44,51 @@ impl fmt::Display for KeyspaceId {
 pub(crate) const KEYSPACE_MAXIMUM_COUNT: usize = 10;
 pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KeyspaceId(KEYSPACE_MAXIMUM_COUNT as u8 - 1);
 pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KeyspaceId(KEYSPACE_ID_MAX.0 + 1);
+
+struct CompactionConfiguration {
+    disable_auto_compactions: bool,
+    level_zero_slowdown_writes_trigger: i32,
+    level_zero_stop_writes_trigger: i32,
+    soft_pending_compaction_bytes_limit: usize,
+    hard_pending_compaction_bytes_limit: usize,
+}
+
+impl CompactionConfiguration {
+    const DEFAULT: Self = Self {
+        disable_auto_compactions: false,
+        level_zero_slowdown_writes_trigger: 20,
+        level_zero_stop_writes_trigger: 36,
+        soft_pending_compaction_bytes_limit: 64 * GB as usize,
+        hard_pending_compaction_bytes_limit: 256 * GB as usize,
+    };
+
+    const BULK_LOAD: Self = Self {
+        disable_auto_compactions: true,
+        level_zero_slowdown_writes_trigger: 1 << 30,
+        level_zero_stop_writes_trigger: 1 << 30,
+        soft_pending_compaction_bytes_limit: 0,
+        hard_pending_compaction_bytes_limit: 0,
+    };
+
+    fn configure(&self, options: &mut Options) {
+        options.set_disable_auto_compactions(self.disable_auto_compactions);
+        options.set_level_zero_slowdown_writes_trigger(self.level_zero_slowdown_writes_trigger);
+        options.set_level_zero_stop_writes_trigger(self.level_zero_stop_writes_trigger);
+        options.set_soft_pending_compaction_bytes_limit(self.soft_pending_compaction_bytes_limit);
+        options.set_hard_pending_compaction_bytes_limit(self.hard_pending_compaction_bytes_limit);
+    }
+
+    // an open keyspace only takes these options by name
+    fn apply(&self, kv_storage: &DB) -> Result<(), rocksdb::Error> {
+        kv_storage.set_options(&[
+            ("disable_auto_compactions", &self.disable_auto_compactions.to_string()),
+            ("level0_slowdown_writes_trigger", &self.level_zero_slowdown_writes_trigger.to_string()),
+            ("level0_stop_writes_trigger", &self.level_zero_stop_writes_trigger.to_string()),
+            ("soft_pending_compaction_bytes_limit", &self.soft_pending_compaction_bytes_limit.to_string()),
+            ("hard_pending_compaction_bytes_limit", &self.hard_pending_compaction_bytes_limit.to_string()),
+        ])
+    }
+}
 
 pub trait KeyspaceSet: Copy {
     fn iter() -> impl Iterator<Item = Self>;
@@ -78,7 +125,9 @@ impl Keyspaces {
                 .validate_new_keyspace(keyspace)
                 .map_err(|error| KeyspaceOpenError::Validation { source: error })?;
             fail_point!(KEYSPACE_OPEN_FAIL);
-            keyspaces.keyspaces.push(Keyspace::open(path, keyspace, &keyspace.rocks_configuration(resources))?);
+            let mut options = keyspace.rocks_configuration(resources);
+            CompactionConfiguration::DEFAULT.configure(&mut options);
+            keyspaces.keyspaces.push(Keyspace::open(path, keyspace, &options)?);
             keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
         Ok(keyspaces)
@@ -158,6 +207,18 @@ impl Keyspaces {
         Ok(())
     }
 
+    pub(crate) fn enable_bulk_loading(&self) -> Result<(), KeyspaceError> {
+        self.keyspaces.iter().try_for_each(Keyspace::enable_bulk_loading)
+    }
+
+    pub(crate) fn finish_bulk_loading(&self) -> Result<CompactionHandle, KeyspaceError> {
+        let (finished, receiver) = mpsc::channel();
+        for keyspace in &self.keyspaces {
+            keyspace.finish_bulk_loading(finished.clone())?;
+        }
+        Ok(CompactionHandle { receiver })
+    }
+
     pub fn estimate_size_in_bytes(&self) -> Result<u64, KeyspaceError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
             let size = keyspace.estimate_size_in_bytes()?;
@@ -208,10 +269,11 @@ pub(crate) struct Keyspace {
     path: PathBuf,
     name: &'static str,
     id: KeyspaceId,
-    pub(super) kv_storage: DB,
+    pub(super) kv_storage: Arc<DB>,
     read_options: ReadOptions,
     write_options: WriteOptions,
     prefix_length: Option<usize>,
+    background_compaction: Mutex<Option<BackgroundCompaction>>,
 }
 
 impl Keyspace {
@@ -233,7 +295,16 @@ impl Keyspace {
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
         let prefix_length = keyspace.prefix_length();
-        Self { path, name: keyspace.name(), id: keyspace.id(), kv_storage, read_options, write_options, prefix_length }
+        Self {
+            path,
+            name: keyspace.name(),
+            id: keyspace.id(),
+            background_compaction: Mutex::new(None),
+            kv_storage: Arc::new(kv_storage),
+            read_options,
+            write_options,
+            prefix_length,
+        }
     }
 
     pub(super) fn new_read_options(&self) -> ReadOptions {
@@ -310,10 +381,46 @@ impl Keyspace {
     }
 
     pub(crate) fn delete(self) -> Result<(), KeyspaceDeleteError> {
+        drop(self.background_compaction);
         drop(self.kv_storage);
         fs::remove_dir_all(self.path.clone())
             .map_err(|error| KeyspaceDeleteError::DirectoryRemove { name: self.name, source: Arc::new(error) })?;
         Ok(())
+    }
+
+    pub(crate) fn enable_bulk_loading(&self) -> Result<(), KeyspaceError> {
+        CompactionConfiguration::BULK_LOAD
+            .apply(&self.kv_storage)
+            .map_err(|source| KeyspaceError::SetOptions { name: self.name, source })
+    }
+
+    pub(crate) fn finish_bulk_loading(&self, finished: mpsc::Sender<()>) -> Result<(), KeyspaceError> {
+        self.wait_for_background_compaction();
+        let kv_storage = self.kv_storage.clone();
+        let name = self.name;
+        let thread = thread::Builder::new()
+            .name(format!("compaction-{name}"))
+            .spawn(move || {
+                // dropped when the compaction ends, however it ends
+                let _finished = finished;
+                if let Err(error) = kv_storage.flush() {
+                    warn!("Failed to flush keyspace '{name}' while finishing bulk load: {error}");
+                }
+                kv_storage.compact_range(None::<&[u8]>, None::<&[u8]>);
+                if let Err(error) = CompactionConfiguration::DEFAULT.apply(&kv_storage) {
+                    warn!("Failed to restore the options of keyspace '{name}' while finishing bulk load: {error}");
+                }
+            })
+            .map_err(|source| KeyspaceError::CompactionStart { name, source: Arc::new(source) })?;
+        *self.background_compaction.lock().unwrap() =
+            Some(BackgroundCompaction { kv_storage: self.kv_storage.clone(), thread: Some(thread) });
+        Ok(())
+    }
+
+    fn wait_for_background_compaction(&self) {
+        if let Some(background_compaction) = self.background_compaction.lock().unwrap().take() {
+            background_compaction.wait();
+        }
     }
 
     pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
@@ -344,6 +451,43 @@ impl Keyspace {
     #[cfg(not(debug_assertions))]
     pub(crate) fn benchmark_only_flush(&self) {
         self.kv_storage.flush().expect("This is test only code. We unwrap")
+    }
+}
+
+struct BackgroundCompaction {
+    kv_storage: Arc<DB>,
+    thread: Option<JoinHandle<()>>,
+}
+
+impl BackgroundCompaction {
+    fn wait(mut self) {
+        if let Some(thread) = self.thread.take() {
+            if thread.join().is_err() {
+                warn!("The background compaction of a keyspace panicked.");
+            }
+        }
+    }
+}
+
+impl Drop for BackgroundCompaction {
+    fn drop(&mut self) {
+        if let Some(thread) = self.thread.take() {
+            if !thread.is_finished() {
+                self.kv_storage.cancel_all_background_work(true);
+            }
+            let _ = thread.join();
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct CompactionHandle {
+    receiver: mpsc::Receiver<()>,
+}
+
+impl CompactionHandle {
+    pub fn wait(self) {
+        let _ = self.receiver.recv();
     }
 }
 
@@ -422,6 +566,8 @@ pub enum KeyspaceError {
     Iterate { name: &'static str, source: rocksdb::Error },
     DeleteRange { name: &'static str, source: rocksdb::Error },
     Property { name: &'static str, source: rocksdb::Error },
+    SetOptions { name: &'static str, source: rocksdb::Error },
+    CompactionStart { name: &'static str, source: Arc<io::Error> },
 }
 
 impl fmt::Display for KeyspaceError {
@@ -439,6 +585,8 @@ impl Error for KeyspaceError {
             Self::Iterate { source, .. } => Some(source),
             Self::DeleteRange { source, .. } => Some(source),
             Self::Property { source, .. } => Some(source),
+            Self::SetOptions { source, .. } => Some(source),
+            Self::CompactionStart { source, .. } => Some(source),
         }
     }
 }

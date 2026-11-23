@@ -83,6 +83,10 @@ impl ReadableSnapshot for MockSnapshot {
         None
     }
 
+    fn contains_delete(&self) -> bool {
+        false
+    }
+
     fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
         empty()
     }

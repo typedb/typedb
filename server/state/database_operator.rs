@@ -30,6 +30,7 @@ use futures::future::join_all;
 use resource::{constants::server::MAX_CONCURRENT_IMPORTS, profile::CommitProfile};
 use storage::{
     durability_client::{DurabilityClient, WALClient},
+    keyspace::CompactionHandle,
     snapshot::snapshot_id::SnapshotId,
 };
 use tokio::{
@@ -39,7 +40,7 @@ use tokio::{
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
-    service::grpc::migration::import_service::DatabaseImportService,
+    service::{grpc::migration::import_service::DatabaseImportService, migration::item::ImportableItem},
 };
 
 const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
@@ -65,7 +66,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         &self,
         name: &str,
         close_sender: Sender<()>,
-    ) -> Result<DatabaseImporterHandle, ArcServerStateError>;
+    ) -> Result<DatabaseImporterHandle<ImportableItem>, ArcServerStateError>;
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -140,6 +141,14 @@ impl ImportingDatabaseHandle for ImportingLocalDatabaseHandle {
         import_commit(intent, |typedb_source| LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
     }
 
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError> {
+        self.staged_database.enable_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError> {
+        self.staged_database.finish_bulk_loading().map_err(|error| Arc::new(error) as _)
+    }
+
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>> {
         Arc::try_unwrap(self).map(|this| Box::new(this) as _).map_err(|this| this as _)
     }
@@ -205,7 +214,10 @@ impl LocalDatabaseOperator {
         .await;
     }
 
-    pub fn start_importer(&self, importing_database: Arc<dyn ImportingDatabaseHandle>) -> DatabaseImporterHandle {
+    pub fn start_importer(
+        &self,
+        importing_database: Arc<dyn ImportingDatabaseHandle>,
+    ) -> DatabaseImporterHandle<ImportableItem> {
         let scratch_directory = self.database_manager.import_directory().to_owned();
         let configuration = ImporterConfiguration::new(scratch_directory).with_buffer_size(IMPORT_MESSAGE_BUFFER_SIZE);
         DatabaseImporter::start(importing_database, configuration, &self.background_task_spawner)
@@ -304,7 +316,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         &self,
         name: &str,
         close_sender: Sender<()>,
-    ) -> Result<DatabaseImporterHandle, ArcServerStateError> {
+    ) -> Result<DatabaseImporterHandle<ImportableItem>, ArcServerStateError> {
         let map_err =
             |typedb_source| arc_server_state_err(LocalServerStateError::DatabaseImportPrepareFailed { typedb_source });
         self.record_import(name.to_string(), close_sender).await.map_err(map_err)?;

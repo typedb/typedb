@@ -8,7 +8,6 @@ use std::{
     collections::{HashMap, HashSet},
     fmt,
     fmt::{Debug, Display, Formatter},
-    iter,
     marker::PhantomData,
     path::PathBuf,
     sync::{
@@ -62,7 +61,7 @@ use encoding::{
     },
     value::{ValueEncodable, label::Label, value::Value, value_type::ValueType},
 };
-use error::{TypeDBError, typedb_error};
+use error::typedb_error;
 use query::error::QueryError;
 use resource::{
     constants::{common::MB, snapshot::BUFFER_KEY_INLINE},
@@ -73,6 +72,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use storage::{
     StorageCommitError,
     durability_client::WALClient,
+    keyspace::CompactionHandle,
     snapshot::{ReadableSnapshot, WritableSnapshot, write::KnownToExist},
 };
 use tokio::{sync::mpsc, task::JoinHandle};
@@ -84,8 +84,8 @@ use crate::{
         Checksums, Counts, MigrationOperationError,
         importing_database_handle::ImportingDatabaseHandle,
         item::{
-            AttributeItem, AttributeReferencedByValue, EntityItem, Guarantees, ItemOrder, LabelScopedId, MigrationItem,
-            OwnedAttribute, Player, RelationItem, Role,
+            AttributeItem, AttributeReferencedByValue, DecodableItem, EntityItem, Guarantees, ItemOrder, LabelCache,
+            LabelScopedId, MigrationItem, OwnedAttribute, Player, RelationItem, Role, estimated_object_write_bytes,
         },
     },
     query::execute_schema_query,
@@ -382,14 +382,10 @@ impl ImportConcept {
 
     fn estimated_write_bytes(&self) -> usize {
         match self {
-            Self::Entity(EntityItem { attributes, .. }) => {
-                Object::ESTIMATED_WRITE_BYTES + attributes.len() * Has::ESTIMATED_WRITE_BYTES
-            }
+            Self::Entity(EntityItem { attributes, .. }) => estimated_object_write_bytes(attributes.len(), 0),
             Self::Relation(RelationItem { attributes, roles, .. }) => {
-                let players: usize = roles.iter().map(|role| role.players.len()).sum();
-                Object::ESTIMATED_WRITE_BYTES
-                    + players * Links::ESTIMATED_WRITE_BYTES
-                    + attributes.len() * Has::ESTIMATED_WRITE_BYTES
+                let players = roles.iter().map(|role| role.players.len()).sum();
+                estimated_object_write_bytes(attributes.len(), players)
             }
             Self::Attribute(AttributeItem { value, .. }) => Attribute::estimated_write_bytes(value),
             Self::DeferredOwnership(_) => Has::ESTIMATED_WRITE_BYTES,
@@ -459,43 +455,56 @@ impl AttributesInfo {
     }
 }
 
-type ImportItems = Box<dyn Iterator<Item = Result<MigrationItem, MigrationOperationError>> + Send>;
+// an item handed to a phase's workers: a received item is decoded by the worker that writes it
+enum PhaseItem<Source: 'static> {
+    Received(ThingKind, DecodableItem<Source>),
+    Concept(ImportConcept),
+}
 
-enum ImportMessage {
+impl<Source> PhaseItem<Source> {
+    fn phase(&self, item_order: ItemOrder) -> ImportPhase {
+        match self {
+            Self::Received(thing_kind, _) => ImportPhase::phase_for(*thing_kind, item_order),
+            Self::Concept(concept) => concept.phase(item_order),
+        }
+    }
+
+    fn estimated_write_bytes(&self) -> usize {
+        match self {
+            Self::Received(_, item) => item.estimated_write_bytes(),
+            Self::Concept(concept) => concept.estimated_write_bytes(),
+        }
+    }
+}
+
+enum ImportMessage<Source: 'static> {
     Schema(String),
-    Items(ImportItems),
+    Items(Vec<DecodableItem<Source>>),
     Finalize,
 }
 
 type ImportResult = Result<u64, DatabaseImportError>;
 
-pub struct DatabaseImporterHandle {
-    message_sender: Option<mpsc::Sender<ImportMessage>>,
+pub struct DatabaseImporterHandle<Source: 'static> {
+    message_sender: Option<mpsc::Sender<ImportMessage<Source>>>,
     error_state: ErrorState,
     join_handle: Option<JoinHandle<ImportResult>>,
 }
 
-impl DatabaseImporterHandle {
+impl<Source> DatabaseImporterHandle<Source> {
     pub async fn send_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
         self.send_message(ImportMessage::Schema(schema)).await
     }
 
-    pub async fn send(&mut self, item: MigrationItem) -> Result<(), DatabaseImportError> {
-        self.send_message(ImportMessage::Items(Box::new(iter::once(Ok(item))))).await
+    pub async fn send(&mut self, item: DecodableItem<Source>) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(vec![item])).await
     }
 
-    pub async fn send_batch<E>(
-        &mut self,
-        items: impl IntoIterator<Item = Result<MigrationItem, E>, IntoIter: Send + 'static>,
-    ) -> Result<(), DatabaseImportError>
-    where
-        E: TypeDBError + Send + Sync + 'static,
-    {
-        let items = items.into_iter().map(|item| item.map_err(|error| Arc::new(error) as MigrationOperationError));
-        self.send_message(ImportMessage::Items(Box::new(items))).await
+    pub async fn send_batch(&mut self, items: Vec<DecodableItem<Source>>) -> Result<(), DatabaseImportError> {
+        self.send_message(ImportMessage::Items(items)).await
     }
 
-    async fn send_message(&mut self, message: ImportMessage) -> Result<(), DatabaseImportError> {
+    async fn send_message(&mut self, message: ImportMessage<Source>) -> Result<(), DatabaseImportError> {
         let sent = match &self.message_sender {
             Some(sender) => sender.send(message).await.is_ok(),
             None => false,
@@ -545,7 +554,7 @@ impl DatabaseImporterHandle {
     }
 }
 
-impl Drop for DatabaseImporterHandle {
+impl<Source> Drop for DatabaseImporterHandle<Source> {
     fn drop(&mut self) {
         if self.join_handle.is_some() {
             event!(Level::WARN, "An import was dropped before it was finalised or aborted. Aborting the import.");
@@ -554,13 +563,13 @@ impl Drop for DatabaseImporterHandle {
     }
 }
 
-impl std::fmt::Debug for DatabaseImporterHandle {
+impl<Source> std::fmt::Debug for DatabaseImporterHandle<Source> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DatabaseImporterHandle").finish_non_exhaustive()
     }
 }
 
-pub struct DatabaseImporter {
+pub struct DatabaseImporter<Source: 'static> {
     importing_database: Option<Arc<dyn ImportingDatabaseHandle>>,
     database_name: String,
     configuration: ImporterConfiguration,
@@ -569,12 +578,15 @@ pub struct DatabaseImporter {
     error_state: ErrorState,
 
     schema_imported: bool,
-    phase: Option<DatabaseImporterPhase>,
+    phase: Option<DatabaseImporterPhase<Source>>,
+    labels: LabelCache,
+    bulk_loading_configured: bool,
+    bulk_load_compaction: Option<CompactionHandle>,
     activity: Arc<Mutex<ImportActivity>>,
     _progress_logger: IntervalRunner,
 }
 
-impl Debug for DatabaseImporter {
+impl<Source> Debug for DatabaseImporter<Source> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DatabaseImporter").field("database_name", &self.database_name).finish_non_exhaustive()
     }
@@ -673,9 +685,24 @@ impl ImporterConfiguration {
     fn skip_predecessor_phase_existence_checks(&self) -> bool {
         matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
     }
+
+    fn commit_retries(&self, phase: ImportPhase) -> usize {
+        match (self.item_order, phase) {
+            (ItemOrder::AttributesEntitiesRelations, ImportPhase::Entities | ImportPhase::Relations) => 0,
+            _ => 3,
+        }
+    }
+
+    fn use_bulk_load(&self, phase: ImportPhase) -> bool {
+        matches!(self.item_order, ItemOrder::AttributesEntitiesRelations)
+            && matches!(
+                phase,
+                ImportPhase::Attributes | ImportPhase::Entities | ImportPhase::Relations | ImportPhase::Deferred
+            )
+    }
 }
 
-impl DatabaseImporter {
+impl<Source: Send + 'static> DatabaseImporter<Source> {
     const DRAIN_CHUNK_SIZE: usize = 10_000;
     const PROGRESS_LOG_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
@@ -683,7 +710,7 @@ impl DatabaseImporter {
         importing_database: Arc<dyn ImportingDatabaseHandle>,
         importer_configuration: ImporterConfiguration,
         task_spawner: &TokioTaskSpawner,
-    ) -> DatabaseImporterHandle {
+    ) -> DatabaseImporterHandle<Source> {
         let (sender, receiver) = mpsc::channel(importer_configuration.buffer_size);
         let error_state = ErrorState::default();
         let database_name = importing_database.database_name().to_owned();
@@ -699,6 +726,9 @@ impl DatabaseImporter {
             error_state: error_state.clone(),
             schema_imported: false,
             phase: None,
+            labels: LabelCache::default(),
+            bulk_loading_configured: false,
+            bulk_load_compaction: None,
             activity,
             _progress_logger: progress_logger,
         };
@@ -706,7 +736,7 @@ impl DatabaseImporter {
         DatabaseImporterHandle { message_sender: Some(sender), error_state, join_handle: Some(join_handle) }
     }
 
-    fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage>) -> ImportResult {
+    fn listen(mut self, mut receiver: mpsc::Receiver<ImportMessage<Source>>) -> ImportResult {
         loop {
             self.check_stopped()?;
             match receiver.blocking_recv() {
@@ -724,7 +754,7 @@ impl DatabaseImporter {
                 Some(ImportMessage::Items(items)) => {
                     for item in items {
                         self.check_stopped()?;
-                        self.apply(item.map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?)?;
+                        self.route(item)?;
                     }
                 }
                 Some(ImportMessage::Finalize) => {
@@ -740,6 +770,19 @@ impl DatabaseImporter {
         match self.error_state.error() {
             Some(error) => Err(error),
             None => Ok(()),
+        }
+    }
+
+    fn route(&mut self, item: DecodableItem<Source>) -> Result<(), DatabaseImportError> {
+        match item.kind().thing_kind() {
+            None => {
+                let decoded = item
+                    .decode(&mut self.labels)
+                    .map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?;
+                self.apply(decoded)
+            }
+            Some(_) if self.data_info.has_expected_checksums() => Err(DatabaseImportError::ItemAfterChecksums {}),
+            Some(thing_kind) => self.import_concept(PhaseItem::Received(thing_kind, item)),
         }
     }
 
@@ -761,14 +804,18 @@ impl DatabaseImporter {
                 );
                 Ok(())
             }
-            MigrationItem::Entity(entity) => self.import_concept(ImportConcept::Entity(entity)),
-            MigrationItem::Relation(relation) => self.import_concept(ImportConcept::Relation(relation)),
-            MigrationItem::Attribute(attribute) => self.import_concept(ImportConcept::Attribute(attribute)),
+            MigrationItem::Entity(entity) => self.import_concept(PhaseItem::Concept(ImportConcept::Entity(entity))),
+            MigrationItem::Relation(relation) => {
+                self.import_concept(PhaseItem::Concept(ImportConcept::Relation(relation)))
+            }
+            MigrationItem::Attribute(attribute) => {
+                self.import_concept(PhaseItem::Concept(ImportConcept::Attribute(attribute)))
+            }
         }
     }
 
-    fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        let phase = concept.phase(self.configuration.item_order);
+    fn import_concept(&mut self, item: PhaseItem<Source>) -> Result<(), DatabaseImportError> {
+        let phase = item.phase(self.configuration.item_order);
         match self.phase.as_ref().map(|current| current.phase) {
             None => {
                 self.run_stage("relaxing the schema for the import", Self::relax_schema)?;
@@ -781,10 +828,13 @@ impl DatabaseImporter {
             }
             Some(_) => (),
         }
-        self.phase.as_mut().expect("a phase runs while importing").import_concept(concept)
+        self.phase.as_mut().expect("a phase runs while importing").import_item(item)
     }
 
     fn start_phase(&mut self, phase: ImportPhase) -> Result<(), DatabaseImportError> {
+        if self.configuration.use_bulk_load(phase) && !self.bulk_loading_configured {
+            self.run_stage("configuring the storage to load data in bulk", Self::enable_bulk_loading)?;
+        }
         event!(
             Level::INFO,
             "Import to '{}': starting the {phase} phase after {} items.",
@@ -871,9 +921,35 @@ impl DatabaseImporter {
     fn finalize(&mut self) -> Result<(), DatabaseImportError> {
         self.run_stage("importing deferred ownerships", Self::import_deferred_ownerships)?;
         self.run_stage("importing deferred links", Self::import_deferred_links)?;
+        if self.bulk_loading_configured {
+            self.run_stage("starting the background compaction of the bulk loaded data", Self::finish_bulk_loading)?;
+        }
         self.run_stage("verifying checksums", |importer| importer.validate_imported_data())?;
         self.run_stage("restoring the schema and validating the data against it", Self::restore_relaxed_schema)?;
+        if let Some(compaction) = self.bulk_load_compaction.take() {
+            self.run_stage("waiting for the background compaction", |_| {
+                compaction.wait();
+                Ok(())
+            })?;
+        }
         self.run_stage("finalising the database", Self::finalise_importing_database)
+    }
+
+    fn enable_bulk_loading(&mut self) -> Result<(), DatabaseImportError> {
+        self.importing_database()?
+            .enable_bulk_loading()
+            .map_err(|typedb_source| DatabaseImportError::BulkLoadFailed { typedb_source })?;
+        self.bulk_loading_configured = true;
+        Ok(())
+    }
+
+    fn finish_bulk_loading(&mut self) -> Result<(), DatabaseImportError> {
+        let compaction = self
+            .importing_database()?
+            .finish_bulk_loading()
+            .map_err(|typedb_source| DatabaseImportError::BulkLoadFailed { typedb_source })?;
+        self.bulk_load_compaction = Some(compaction);
+        Ok(())
     }
 
     fn finalise_importing_database(&mut self) -> Result<(), DatabaseImportError> {
@@ -921,7 +997,7 @@ impl DatabaseImporter {
         for chunk in records.into_chunks(Self::DRAIN_CHUNK_SIZE) {
             self.check_stopped()?;
             for (_key, deferred) in chunk.map_err(|source| DatabaseImportError::CacheError { source })? {
-                self.import_concept(to_import_concept(deferred))?;
+                self.import_concept(PhaseItem::Concept(to_import_concept(deferred)))?;
                 written += 1;
             }
         }
@@ -1052,7 +1128,7 @@ impl DatabaseImporter {
             // AER order: we only need to make relations that have any relation players independent
             let mut relation_types = Vec::new();
             for relation_type in all_relation_types {
-                if Self::relation_has_relation_players(relation_type, snapshot, type_manager)? {
+                if Self::relation_has_relation_players(snapshot, type_manager, relation_type)? {
                     relation_types.push(relation_type);
                 }
             }
@@ -1073,9 +1149,9 @@ impl DatabaseImporter {
     }
 
     fn relation_has_relation_players(
-        relation_type: RelationType,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
+        relation_type: RelationType,
     ) -> Result<bool, DatabaseImportError> {
         let all_relates = relation_type
             .get_relates(snapshot, type_manager)
@@ -1219,8 +1295,6 @@ impl DatabaseImporter {
                 continue;
             }
 
-            // the maximum is also relaxed, since validating it on commit counts the links of players committed
-            // earlier, and it is validated once on restore instead
             let original_cardinality = plays
                 .get_cardinality(snapshot, type_manager)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
@@ -1569,11 +1643,11 @@ impl Display for ImportActivity {
     }
 }
 
-struct DatabaseImporterPhase {
+struct DatabaseImporterPhase<Source: 'static> {
     phase: ImportPhase,
     started: Instant,
-    sender: Option<SyncSender<Vec<ImportConcept>>>,
-    batch_builder: Vec<ImportConcept>,
+    sender: Option<SyncSender<Vec<PhaseItem<Source>>>>,
+    batch_builder: Vec<PhaseItem<Source>>,
     batch_write_bytes: usize,
     workers: Vec<thread::JoinHandle<()>>,
     error_state: ErrorState,
@@ -1598,12 +1672,15 @@ impl ErrorState {
     }
 }
 
-impl DatabaseImporterPhase {
+impl<Source> DatabaseImporterPhase<Source> {
     const QUEUE_SIZE_MULTIPLIER: usize = 4;
     const BATCH_SIZE: usize = 1_000;
     const MAX_BATCH_WRITE_BYTES: usize = ImporterConfiguration::MAX_WRITE_BYTES_PER_COMMIT;
 
-    fn start(importer: &DatabaseImporter, import_phase: ImportPhase) -> Result<Self, DatabaseImportError> {
+    fn start(importer: &DatabaseImporter<Source>, import_phase: ImportPhase) -> Result<Self, DatabaseImportError>
+    where
+        Source: Send,
+    {
         let (sender, receiver) = sync_channel(importer.configuration.worker_count() * Self::QUEUE_SIZE_MULTIPLIER);
         let receiver = Arc::new(Mutex::new(receiver));
         let mut phase = Self {
@@ -1624,9 +1701,9 @@ impl DatabaseImporterPhase {
         Ok(phase)
     }
 
-    fn import_concept(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
-        self.batch_write_bytes += concept.estimated_write_bytes();
-        self.batch_builder.push(concept);
+    fn import_item(&mut self, item: PhaseItem<Source>) -> Result<(), DatabaseImportError> {
+        self.batch_write_bytes += item.estimated_write_bytes();
+        self.batch_builder.push(item);
         if self.batch_builder.len() >= Self::BATCH_SIZE || self.batch_write_bytes >= Self::MAX_BATCH_WRITE_BYTES {
             self.send_batch()?;
         }
@@ -1675,7 +1752,7 @@ impl DatabaseImporterPhase {
     }
 }
 
-impl Drop for DatabaseImporterPhase {
+impl<Source> Drop for DatabaseImporterPhase<Source> {
     fn drop(&mut self) {
         if !self.workers.is_empty() {
             self.interrupt();
@@ -1693,15 +1770,14 @@ struct ImportWorker {
     transaction_items: Vec<ImportConcept>,
     transaction_write_bytes: usize,
     transaction_data_info: TransactionDataInfo,
+    labels: LabelCache,
 }
 
 impl ImportWorker {
-    const MAX_COMMIT_ISOLATION_FAILURE_RETRIES: usize = 3;
-
-    fn start(
-        importer: &DatabaseImporter,
+    fn start<Source: Send + 'static>(
+        importer: &DatabaseImporter<Source>,
         phase: ImportPhase,
-        receiver: Arc<Mutex<Receiver<Vec<ImportConcept>>>>,
+        receiver: Arc<Mutex<Receiver<Vec<PhaseItem<Source>>>>>,
         error_state: ErrorState,
         name: String,
     ) -> Result<thread::JoinHandle<()>, DatabaseImportError> {
@@ -1717,6 +1793,7 @@ impl ImportWorker {
             transaction_items: Vec::new(),
             transaction_write_bytes: 0,
             transaction_data_info: TransactionDataInfo::default(),
+            labels: LabelCache::default(),
         };
 
         let spawned = thread::Builder::new().name(name).spawn(move || worker.run(receiver, error_state));
@@ -1730,24 +1807,25 @@ impl ImportWorker {
         }
     }
 
-    fn run(mut self, receiver: Arc<Mutex<Receiver<Vec<ImportConcept>>>>, error_state: ErrorState) {
+    fn run<Source>(mut self, receiver: Arc<Mutex<Receiver<Vec<PhaseItem<Source>>>>>, error_state: ErrorState) {
         if let Err(error) = self.import_batches(&receiver, &error_state) {
             error_state.stop_with_error(error);
         }
     }
 
-    fn import_batches(
+    fn import_batches<Source>(
         &mut self,
-        receiver: &Mutex<Receiver<Vec<ImportConcept>>>,
+        receiver: &Mutex<Receiver<Vec<PhaseItem<Source>>>>,
         error_state: &ErrorState,
     ) -> Result<(), DatabaseImportError> {
         loop {
             let received = receiver.lock().unwrap().recv();
             let Ok(batch) = received else { break };
-            for concept in batch {
+            for item in batch {
                 if error_state.is_errored() {
                     return Ok(());
                 }
+                let concept = self.decode(item)?;
                 self.write_and_may_commit(concept)?;
             }
         }
@@ -1757,9 +1835,27 @@ impl ImportWorker {
         self.commit_with_retry()
     }
 
+    fn decode<Source>(&mut self, item: PhaseItem<Source>) -> Result<ImportConcept, DatabaseImportError> {
+        let decoded = match item {
+            PhaseItem::Received(_, item) => item
+                .decode(&mut self.labels)
+                .map_err(|typedb_source| DatabaseImportError::ItemDecode { typedb_source })?,
+            PhaseItem::Concept(concept) => return Ok(concept),
+        };
+        match decoded {
+            MigrationItem::Entity(entity) => Ok(ImportConcept::Entity(entity)),
+            MigrationItem::Relation(relation) => Ok(ImportConcept::Relation(relation)),
+            MigrationItem::Attribute(attribute) => Ok(ImportConcept::Attribute(attribute)),
+            MigrationItem::Header { .. } | MigrationItem::Checksums(_) => Err(DatabaseImportError::ItemKindMismatch {}),
+        }
+    }
+
     fn write_and_may_commit(&mut self, concept: ImportConcept) -> Result<(), DatabaseImportError> {
         self.transaction_write_bytes += concept.estimated_write_bytes();
-        self.transaction_items.push(concept.clone());
+        // the items are only kept to reapply them when a commit is retried
+        if self.configuration.commit_retries(self.phase) > 0 {
+            self.transaction_items.push(concept.clone());
+        }
         self.write_item(concept)?;
         if self.reached_commit_limit() { self.commit_with_retry() } else { Ok(()) }
     }
@@ -1784,14 +1880,14 @@ impl ImportWorker {
     fn import_attribute(
         &mut self,
         globally_unique_id: String,
-        label: Label,
+        label: Arc<Label>,
         value: Value<'static>,
     ) -> Result<(), DatabaseImportError> {
         for_item_in_write_transaction!(self, |snapshot, type_manager, thing_manager| {
             let attribute_type = type_manager
                 .get_attribute_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label })?;
+                .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label: (*label).clone() })?;
 
             debug_assert!(attribute_type.is_independent(&snapshot, &type_manager).unwrap());
             let attribute = thing_manager
@@ -1812,7 +1908,7 @@ impl ImportWorker {
     fn import_entity(
         &mut self,
         globally_unique_id: String,
-        label: Label,
+        label: Arc<Label>,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
     ) -> Result<(), DatabaseImportError> {
@@ -1820,7 +1916,7 @@ impl ImportWorker {
             let entity_type = type_manager
                 .get_entity_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownEntityType { label })?;
+                .ok_or_else(|| DatabaseImportError::UnknownEntityType { label: (*label).clone() })?;
 
             let entity = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id
@@ -1845,7 +1941,7 @@ impl ImportWorker {
     fn import_relation(
         &mut self,
         globally_unique_id: String,
-        label: Label,
+        label: Arc<Label>,
         label_scoped_id: Option<u64>,
         owned_attributes: Vec<OwnedAttribute>,
         roles: Vec<Role>,
@@ -1857,7 +1953,7 @@ impl ImportWorker {
             let relation_type = type_manager
                 .get_relation_type(&snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownRelationType { label })?;
+                .ok_or_else(|| DatabaseImportError::UnknownRelationType { label: (*label).clone() })?;
 
             let relation = if self.configuration.use_external_label_scoped_ids() {
                 let scoped_id = label_scoped_id
@@ -1896,16 +1992,16 @@ impl ImportWorker {
                         .type_manager()
                         .get_attribute_type(snapshot, &label)
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                        .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label: label.clone() })?;
+                        .ok_or_else(|| DatabaseImportError::UnknownAttributeType { label: (*label).clone() })?;
 
                     let expected_value_type = attribute_type
                         .get_value_type_without_source(snapshot, thing_manager.type_manager())
                         .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                        .ok_or_else(|| DatabaseImportError::MissingValueType { label: label.clone() })?;
+                        .ok_or_else(|| DatabaseImportError::MissingValueType { label: (*label).clone() })?;
                     let value_value_type = value.value_type();
                     if value_value_type != expected_value_type {
                         return Err(DatabaseImportError::ValueTypeMismatch {
-                            label,
+                            label: (*label).clone(),
                             expected_value_type,
                             actual_value: value.into_owned(),
                             actual_value_type: value_value_type,
@@ -1979,7 +2075,7 @@ impl ImportWorker {
             let role_type = type_manager
                 .get_role_type(snapshot, &label)
                 .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: label.clone() })?;
+                .ok_or_else(|| DatabaseImportError::UnknownRoleType { label: (*label).clone() })?;
             for player in players {
                 let resolved = if self.configuration.use_external_label_scoped_ids() {
                     Self::resolve_player_by_label_scoped_id(snapshot, type_manager, player)?
@@ -2042,7 +2138,7 @@ impl ImportWorker {
         let player_type = type_manager
             .get_object_type(snapshot, &label)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-            .ok_or_else(|| DatabaseImportError::UnknownPlayerType { label })?;
+            .ok_or_else(|| DatabaseImportError::UnknownPlayerType { label: (*label).clone() })?;
         let object_id = ObjectID::new(label_scoped_id);
         let object = match player_type {
             ObjectType::Entity(entity_type) => {
@@ -2128,16 +2224,14 @@ impl ImportWorker {
 
     fn commit_with_retry(&mut self) -> Result<(), DatabaseImportError> {
         let Some(mut transaction) = self.data_transaction.take() else { return Ok(()) };
+        let retries = self.configuration.commit_retries(self.phase);
         for attempt in 1.. {
             match self.commit_write_transaction(transaction) {
                 Ok(()) => return self.merge_transaction_data_info(),
-                Err(error)
-                    if attempt <= Self::MAX_COMMIT_ISOLATION_FAILURE_RETRIES && is_isolation_conflict(&error) =>
-                {
+                Err(error) if attempt <= retries && is_isolation_conflict(&error) => {
                     event!(
                         Level::DEBUG,
-                        "Import commit was rejected by an isolation conflict, retrying ({attempt}/{}).",
-                        Self::MAX_COMMIT_ISOLATION_FAILURE_RETRIES
+                        "Import commit was rejected by an isolation conflict, retrying ({attempt}/{retries})."
                     );
                     transaction = self.reapply_transaction()?;
                 }
@@ -2236,6 +2330,10 @@ impl ConceptPersistenceGuarantees for AttributesEntitiesRelationsConceptPersiste
             ImportPhase::AllUnordered => true,
         }
     }
+
+    fn concurrent_deletes_may_occur(&self) -> bool {
+        false
+    }
 }
 
 typedb_error! {
@@ -2282,5 +2380,7 @@ typedb_error! {
         ValueTypeMismatch(43, "Type {label} requires a value type of {expected_value_type} but got value {actual_value} of value type {actual_value_type}.", label: Label, expected_value_type: ValueType, actual_value: Value<'static>, actual_value_type: ValueType),
         HeaderAfterItems(44, "A header was received after instance items. It is a sign of a corrupted file or a client bug."),
         UnknownOwnedAttribute(45, "Cannot process an ownership of unknown attribute '{id}': the import guarantees that attributes precede their owners and that inline attributes are referenced by value. It is a sign of a corrupted file or a client bug.", id: String),
+        BulkLoadFailed(46, "Configuring the storage of the imported database to load data in bulk failed.", typedb_source: MigrationOperationError),
+        ItemKindMismatch(47, "A received item decoded to a different kind of item than it was routed as. It is a sign of a bug."),
     }
 }

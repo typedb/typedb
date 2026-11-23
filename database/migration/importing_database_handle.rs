@@ -9,7 +9,7 @@ use std::{sync::Arc, time::Duration};
 use concept::thing::thing_manager::ConceptPersistenceGuarantees;
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_DAY;
-use storage::durability_client::WALClient;
+use storage::{durability_client::WALClient, keyspace::CompactionHandle};
 
 use crate::{
     Database,
@@ -30,6 +30,10 @@ pub trait ImportingDatabaseHandle: Send + Sync {
     fn commit_schema(&self, intent: SchemaCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
 
     fn commit_data(&self, intent: DataCommitIntent<WALClient>) -> Result<(), MigrationOperationError>;
+
+    fn enable_bulk_loading(&self) -> Result<(), MigrationOperationError>;
+
+    fn finish_bulk_loading(&self) -> Result<CompactionHandle, MigrationOperationError>;
 
     /// Unwraps the handle if this is its only reference, and gives it back otherwise - the Arc::try_unwrap of a trait object
     fn try_unwrap(self: Arc<Self>) -> Result<Box<dyn ImportingDatabaseHandle>, Arc<dyn ImportingDatabaseHandle>>;

@@ -6,7 +6,7 @@
 
 use std::{
     any::type_name,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, btree_map},
     error::Error,
     fmt,
     iter::empty,
@@ -121,6 +121,8 @@ pub trait ReadableSnapshot {
     // --- we are slightly breaking the abstraction and Rust model by mimicking polymorphism for the following methods ---
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write>;
 
+    fn contains_delete(&self) -> bool;
+
     fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this;
 
     fn iterate_writes_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator;
@@ -170,6 +172,16 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn operations_mut(&mut self) -> &mut OperationsBuffer;
 
     fn read_snapshot_before_writes(&self) -> impl ReadableSnapshot;
+
+    // the buffered writes in the range in key order, borrowed from the buffer
+    fn buffered_writes_in_range<const PS: usize>(
+        &self,
+        range: &KeyRange<StorageKey<'_, PS>>,
+    ) -> btree_map::Range<'_, ByteArray<BUFFER_KEY_INLINE>, Write> {
+        self.operations()
+            .writes_in(range.start().get_value().keyspace_id())
+            .writes_in_range(range.map(|key| key.as_bytes(), |fixed_width| fixed_width))
+    }
 
     /// Insert a key with a new version
     fn insert(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
@@ -407,6 +419,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         None
     }
 
+    fn contains_delete(&self) -> bool {
+        false
+    }
+
     fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
         empty()
     }
@@ -563,6 +579,10 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
         self.operations().writes_in(key.keyspace_id()).writes_get(key.bytes())
+    }
+
+    fn contains_delete(&self) -> bool {
+        self.operations().contains_delete()
     }
 
     fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
@@ -774,6 +794,10 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         self.operations().writes_in(key.keyspace_id()).writes_get(key.bytes())
     }
 
+    fn contains_delete(&self) -> bool {
+        self.operations().contains_delete()
+    }
+
     fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
         self.operations().iterate_writes()
     }
@@ -978,6 +1002,10 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
 
     fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {
         None
+    }
+
+    fn contains_delete(&self) -> bool {
+        false
     }
 
     fn iterate_writes<'this>(&'this self) -> impl Iterator<Item = (StorageKeyReference<'this>, &'this Write)> + 'this {
