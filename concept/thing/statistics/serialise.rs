@@ -435,16 +435,16 @@ impl<'de> Deserialize<'de> for Statistics {
                 let statistics_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 match statistics_version {
                     StatisticsEncodingVersion::V0 => v0::visit_seq(&self, seq),
-                    StatisticsEncodingVersion::V1 => todo!(),
+                    StatisticsEncodingVersion::V1 => v1::visit_seq(&self, seq),
                 }
             }
-            //
-            // fn visit_map<V>(self, map: V) -> Result<Statistics, V::Error>
-            // where
-            //     V: MapAccess<'de>,
-            // {
-            //     v0::visit_map(map)
-            // }
+
+            fn visit_map<V>(self, map: V) -> Result<Statistics, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                todo!()
+            }
         }
 
         deserializer.deserialize_struct("Statistics", &Field::NAMES, StatisticsVisitor)
@@ -801,6 +801,384 @@ mod v0 {
                             .map(|(type_1, map)| {
                                 (type_1.into_object_type(), into_object_map_mapped(map, Counts::from_visible))
                             })
+                            .collect(),
+                    );
+                }
+            }
+        }
+
+        Ok(Statistics {
+            encoding_version: statistics_version
+                .ok_or_else(|| de::Error::missing_field(Field::StatisticsVersion.name()))?,
+            sequence_number: open_sequence_number
+                .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
+            last_durable_write_total_count: last_durable_write_total_count
+                .ok_or_else(|| de::Error::missing_field(Field::LastDurableWriteTotalCount.name()))?,
+            last_durable_write_sequence_number: open_sequence_number
+                .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
+            total_count: total_count.ok_or_else(|| de::Error::missing_field(Field::TotalCount.name()))?,
+            total_thing_count: total_thing_count
+                .ok_or_else(|| de::Error::missing_field(Field::TotalThingCount.name()))?,
+            total_entity_count: total_entity_count
+                .ok_or_else(|| de::Error::missing_field(Field::TotalEntityCount.name()))?,
+            total_relation_count: total_relation_count
+                .ok_or_else(|| de::Error::missing_field(Field::TotalRelationCount.name()))?,
+            total_attribute_count: total_attribute_count
+                .ok_or_else(|| de::Error::missing_field(Field::TotalAttributeCount.name()))?,
+            total_role_count: total_role_count.ok_or_else(|| de::Error::missing_field(Field::TotalRoleCount.name()))?,
+            total_has_count: total_has_count.ok_or_else(|| de::Error::missing_field(Field::TotalHasCount.name()))?,
+            entity_counts: entity_counts.ok_or_else(|| de::Error::missing_field(Field::EntityCounts.name()))?,
+            relation_counts: relation_counts.ok_or_else(|| de::Error::missing_field(Field::RelationCounts.name()))?,
+            attribute_counts: attribute_counts
+                .ok_or_else(|| de::Error::missing_field(Field::AttributeCounts.name()))?,
+            role_counts: role_counts.ok_or_else(|| de::Error::missing_field(Field::RoleCounts.name()))?,
+            has_attribute_counts: has_attribute_counts
+                .ok_or_else(|| de::Error::missing_field(Field::HasAttributeCounts.name()))?,
+            attribute_owner_counts: attribute_owner_counts
+                .ok_or_else(|| de::Error::missing_field(Field::AttributeOwnerCounts.name()))?,
+            role_player_counts: role_player_counts
+                .ok_or_else(|| de::Error::missing_field(Field::RolePlayerCounts.name()))?,
+            relation_role_counts: relation_role_counts
+                .ok_or_else(|| de::Error::missing_field(Field::RelationRoleCounts.name()))?,
+            relation_role_player_counts: relation_role_player_counts
+                .ok_or_else(|| de::Error::missing_field(Field::RelationRolePlayerCounts.name()))?,
+            player_role_relation_counts: player_role_relation_counts
+                .ok_or_else(|| de::Error::missing_field(Field::PlayerRoleRelationCounts.name()))?,
+            links_index_counts: links_indexs_counts
+                .ok_or_else(|| de::Error::missing_field(Field::LinksIndexCounts.name()))?,
+        })
+    }
+}
+
+mod v1 {
+    use std::collections::HashMap;
+
+    use serde::de::{self, MapAccess, SeqAccess, Visitor};
+
+    use crate::thing::statistics::{
+        Counts, Statistics, StatisticsEncodingVersion,
+        serialise::{
+            Field, SerialisableType, into_attribute_map, into_entity_map, into_object_map, into_relation_map,
+            into_role_map,
+        },
+    };
+
+    pub(crate) fn visit_seq<'a, V>(visitor: &impl Visitor<'a>, mut seq: V) -> Result<Statistics, V::Error>
+    where
+        V: SeqAccess<'a>,
+    {
+        let sequence_number = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, visitor))?;
+        let last_durable_write_total_count =
+            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, visitor))?;
+        let total_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, visitor))?;
+        let total_thing_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, visitor))?;
+        let total_entity_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, visitor))?;
+        let total_relation_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, visitor))?;
+        let total_attribute_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, visitor))?;
+        let total_role_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, visitor))?;
+        let total_has_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, visitor))?;
+        let encoded_entity_counts = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(10, visitor))?;
+        let entity_counts = into_entity_map(encoded_entity_counts);
+        let encoded_relation_counts = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(11, visitor))?;
+        let relation_counts = into_relation_map(encoded_relation_counts);
+        let encoded_attribute_counts = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(12, visitor))?;
+        let attribute_counts = into_attribute_map(encoded_attribute_counts);
+        let encoded_role_counts = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(13, visitor))?;
+        let role_counts = into_role_map(encoded_role_counts);
+        let encoded_has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> =
+            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(14, visitor))?;
+        let has_attribute_counts = encoded_has_attribute_counts
+            .into_iter()
+            .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
+            .collect();
+        let encoded_attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> =
+            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(15, visitor))?;
+        let attribute_owner_counts = encoded_attribute_owner_counts
+            .into_iter()
+            .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
+            .collect();
+        let encoded_role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> =
+            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(16, visitor))?;
+        let role_player_counts = encoded_role_player_counts
+            .into_iter()
+            .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
+            .collect();
+        let encoded_relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> =
+            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(17, visitor))?;
+        let relation_role_counts = encoded_relation_role_counts
+            .into_iter()
+            .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
+            .collect();
+        let encoded_relation_role_player_counts: HashMap<
+            SerialisableType,
+            HashMap<SerialisableType, HashMap<SerialisableType, Counts>>,
+        > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(18, visitor))?;
+        let relation_role_player_counts = encoded_relation_role_player_counts
+            .into_iter()
+            .map(|(type_1, map)| {
+                (
+                    type_1.into_relation_type(),
+                    map.into_iter().map(|(type_1, map)| (type_1.into_role_type(), into_object_map(map))).collect(),
+                )
+            })
+            .collect();
+        let encoded_player_role_relation_counts: HashMap<
+            SerialisableType,
+            HashMap<SerialisableType, HashMap<SerialisableType, Counts>>,
+        > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(19, visitor))?;
+        let player_role_relation_counts = encoded_player_role_relation_counts
+            .into_iter()
+            .map(|(type_1, map)| {
+                (
+                    type_1.into_object_type(),
+                    map.into_iter().map(|(type_1, map)| (type_1.into_role_type(), into_relation_map(map))).collect(),
+                )
+            })
+            .collect();
+        let encoded_links_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> =
+            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(20, visitor))?;
+        let links_index_counts = encoded_links_index_counts
+            .into_iter()
+            .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
+            .collect();
+        Ok(Statistics {
+            encoding_version: StatisticsEncodingVersion::V0,
+            sequence_number,
+            last_durable_write_sequence_number: sequence_number,
+            last_durable_write_total_count,
+            total_count,
+            total_thing_count,
+            total_entity_count,
+            total_relation_count,
+            total_attribute_count,
+            total_role_count,
+            total_has_count,
+            entity_counts,
+            relation_counts,
+            attribute_counts,
+            role_counts,
+            has_attribute_counts,
+            attribute_owner_counts,
+            role_player_counts,
+            relation_role_counts,
+            relation_role_player_counts,
+            player_role_relation_counts,
+            links_index_counts,
+        })
+    }
+
+    pub(super) fn visit_map<'de, V>(mut map: V) -> Result<Statistics, V::Error>
+    where
+        V: MapAccess<'de>,
+    {
+        let mut statistics_version = None;
+        let mut open_sequence_number = None;
+        let mut last_durable_write_total_count = None;
+        let mut total_count = None;
+        let mut total_thing_count = None;
+        let mut total_entity_count = None;
+        let mut total_relation_count = None;
+        let mut total_attribute_count = None;
+        let mut total_role_count = None;
+        let mut total_has_count = None;
+        let mut entity_counts = None;
+        let mut relation_counts = None;
+        let mut attribute_counts = None;
+        let mut role_counts = None;
+        let mut has_attribute_counts = None;
+        let mut attribute_owner_counts = None;
+        let mut role_player_counts = None;
+        let mut relation_role_counts = None;
+        let mut relation_role_player_counts = None;
+        let mut player_role_relation_counts = None;
+        let mut links_indexs_counts = None;
+        while let Some(key) = map.next_key()? {
+            match key {
+                Field::StatisticsVersion => {
+                    if statistics_version.is_some() {
+                        return Err(de::Error::duplicate_field(Field::StatisticsVersion.name()));
+                    }
+                    statistics_version = Some(map.next_value()?);
+                }
+                Field::OpenSequenceNumber => {
+                    if open_sequence_number.is_some() {
+                        return Err(de::Error::duplicate_field(Field::OpenSequenceNumber.name()));
+                    }
+                    open_sequence_number = Some(map.next_value()?);
+                }
+                Field::LastDurableWriteTotalCount => {
+                    if total_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::LastDurableWriteTotalCount.name()));
+                    }
+                    last_durable_write_total_count = Some(map.next_value()?);
+                }
+                Field::TotalCount => {
+                    if total_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalCount.name()));
+                    }
+                    total_count = Some(map.next_value()?);
+                }
+                Field::TotalThingCount => {
+                    if total_thing_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalThingCount.name()));
+                    }
+                    total_thing_count = Some(map.next_value()?);
+                }
+                Field::TotalEntityCount => {
+                    if total_entity_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalEntityCount.name()));
+                    }
+                    total_entity_count = Some(map.next_value()?);
+                }
+                Field::TotalRelationCount => {
+                    if total_relation_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalRelationCount.name()));
+                    }
+                    total_relation_count = Some(map.next_value()?);
+                }
+                Field::TotalAttributeCount => {
+                    if total_attribute_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalAttributeCount.name()));
+                    }
+                    total_attribute_count = Some(map.next_value()?);
+                }
+                Field::TotalRoleCount => {
+                    if total_role_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalRoleCount.name()));
+                    }
+                    total_role_count = Some(map.next_value()?);
+                }
+                Field::TotalHasCount => {
+                    if total_has_count.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalRoleCount.name()));
+                    }
+                    total_has_count = Some(map.next_value()?);
+                }
+                Field::EntityCounts => {
+                    if entity_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::TotalRoleCount.name()));
+                    }
+                    entity_counts = Some(into_entity_map(map.next_value()?));
+                }
+                Field::RelationCounts => {
+                    if relation_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::RelationCounts.name()));
+                    }
+                    relation_counts = Some(into_relation_map(map.next_value()?));
+                }
+                Field::AttributeCounts => {
+                    if attribute_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::AttributeCounts.name()));
+                    }
+                    attribute_counts = Some(into_attribute_map(map.next_value()?));
+                }
+                Field::RoleCounts => {
+                    if role_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::RoleCounts.name()));
+                    }
+                    role_counts = Some(into_role_map(map.next_value()?));
+                }
+                Field::HasAttributeCounts => {
+                    if has_attribute_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::HasAttributeCounts.name()));
+                    }
+                    let encoded: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> = map.next_value()?;
+                    has_attribute_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
+                            .collect(),
+                    );
+                }
+                Field::AttributeOwnerCounts => {
+                    if attribute_owner_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::AttributeOwnerCounts.name()));
+                    }
+                    let encoded: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> = map.next_value()?;
+                    attribute_owner_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
+                            .collect(),
+                    );
+                }
+                Field::RolePlayerCounts => {
+                    if role_player_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::RolePlayerCounts.name()));
+                    }
+                    let encoded: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> = map.next_value()?;
+                    role_player_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
+                            .collect(),
+                    );
+                }
+                Field::RelationRoleCounts => {
+                    if relation_role_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::RelationRoleCounts.name()));
+                    }
+                    let encoded: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> = map.next_value()?;
+                    relation_role_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
+                            .collect(),
+                    );
+                }
+                Field::RelationRolePlayerCounts => {
+                    if relation_role_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::RelationRolePlayerCounts.name()));
+                    }
+                    let encoded: HashMap<
+                        SerialisableType,
+                        HashMap<SerialisableType, HashMap<SerialisableType, Counts>>,
+                    > = map.next_value()?;
+                    relation_role_player_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| {
+                                (
+                                    type_1.into_relation_type(),
+                                    map.into_iter()
+                                        .map(|(type_1, map)| (type_1.into_role_type(), into_object_map(map)))
+                                        .collect(),
+                                )
+                            })
+                            .collect(),
+                    );
+                }
+                Field::PlayerRoleRelationCounts => {
+                    if relation_role_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::PlayerRoleRelationCounts.name()));
+                    }
+                    let encoded: HashMap<
+                        SerialisableType,
+                        HashMap<SerialisableType, HashMap<SerialisableType, Counts>>,
+                    > = map.next_value()?;
+                    player_role_relation_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| {
+                                (
+                                    type_1.into_object_type(),
+                                    map.into_iter()
+                                        .map(|(type_1, map)| (type_1.into_role_type(), into_relation_map(map)))
+                                        .collect(),
+                                )
+                            })
+                            .collect(),
+                    );
+                }
+                Field::LinksIndexCounts => {
+                    if links_indexs_counts.is_some() {
+                        return Err(de::Error::duplicate_field(Field::LinksIndexCounts.name()));
+                    }
+                    let encoded: HashMap<SerialisableType, HashMap<SerialisableType, Counts>> = map.next_value()?;
+                    links_indexs_counts = Some(
+                        encoded
+                            .into_iter()
+                            .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
                             .collect(),
                     );
                 }
