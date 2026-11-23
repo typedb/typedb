@@ -8,19 +8,24 @@ use std::{collections::HashMap, iter, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::value::value::Value;
+use concept::{
+    thing::{statistics::Statistics, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
+};
+use encoding::{graph::thing::vertex_generator::ThingVertexGenerator, value::value::Value};
 use executor::{
     ExecutionInterrupt,
     pipeline::{PipelineExecutionError, stage::ExecutionContext},
     row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
-use itertools::Either;
+use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
-use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+use storage::{
+    MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
+};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -109,6 +114,14 @@ fn setup_common(schema: &str) -> Context {
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+}
+
+fn reload_statistics(context: &mut Context) {
+    let mut statistics = Statistics::new(SequenceNumber::MIN);
+    statistics.may_synchronise_from_wal(context.storage.as_ref()).unwrap();
+    let vertex_generator = Arc::new(ThingVertexGenerator::load(context.storage.clone()).unwrap());
+    context.thing_manager =
+        Arc::new(ThingManager::new(vertex_generator, context.type_manager.clone(), Arc::new(statistics)));
 }
 
 fn run_read_query(
@@ -781,4 +794,87 @@ limit 20;
 
     let (rows, _positions) = run_read_query(&context, query).unwrap();
     assert_eq!(rows.len(), 20);
+}
+
+#[test]
+fn negation_stops_within_cartesian_product() {
+    // Regression against #8061 and #8063
+    // The negation stops at its first answer, part-way through a cartesian product, and runs again for the next row
+    let custom_schema = r#"define
+        attribute name value string;
+        entity technique, owns name, plays coverage:technique;
+        entity source, plays coverage:source, plays emission:source;
+        entity asset, plays emission:emitter;
+        relation coverage, relates technique, relates source;
+        relation emission, relates emitter, relates source;
+    "#;
+    let mut context = setup_common(custom_schema);
+    let emissions = (0..100).map(|i| format!("$e{i} isa asset; emission (emitter: $e{i}, source: $s1);")).join("\n");
+    let data = format!(
+        r#"insert
+        $t1 isa technique, has name "t1";
+        $t2 isa technique, has name "t2";
+        $s1 isa source; coverage (technique: $t1, source: $s1);
+        $s2 isa source; coverage (technique: $t2, source: $s2);
+        {emissions}"#
+    );
+    run_write_query(&context, &data).unwrap();
+    // The cartesian product is only planned once the statistics include the data
+    reload_statistics(&mut context);
+
+    let query = r#"
+        match
+            coverage (technique: $t);
+            not { coverage (technique: $t, source: $s); emission (source: $s); };
+    "#;
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn distinct_after_disjunction() {
+    // Regression against #8062
+    let context = setup_common(COMMON_SCHEMA);
+    run_write_query(&context, r#"insert $p isa person, has name "Alice", has age 1;"#).unwrap();
+
+    let query = r#"
+        match
+            $p isa person;
+            { $p has name $x; } or { $p has age $x; };
+        select $p;
+    "#;
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 2);
+
+    let query = format!("{query} distinct;");
+    let (rows, _positions) = run_read_query(&context, &query).unwrap();
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn disjunction_branch_with_duplicate_answers() {
+    // Regression against #8065
+    let custom_schema = r#"define
+        attribute name value string;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+        relation edge, relates start, relates end_;
+    "#;
+    let context = setup_common(custom_schema);
+    let data = r#"insert
+        $x isa node, has name "x";
+        $s1 isa node; $s2 isa node; $t1 isa node; $t2 isa node;
+        edge (start: $x, end_: $s1); edge (start: $x, end_: $s2);
+        edge (start: $s1, end_: $t1); edge (start: $s2, end_: $t1); edge (start: $s2, end_: $t2);
+    "#;
+    run_write_query(&context, data).unwrap();
+
+    // The second branch finds t1 through both s1 and s2, before it finds t2
+    let query = r#"
+        match
+            $x isa node, has name "x";
+            { edge (start: $x, end_: $t); } or { edge (start: $x, end_: $s); edge (start: $s, end_: $t); };
+        limit 4;
+    "#;
+    let (rows, _positions) = run_read_query(&context, query).unwrap();
+    assert_eq!(rows.len(), 4);
 }
