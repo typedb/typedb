@@ -1007,18 +1007,7 @@ fn test_mismatched_input_types() {
     }
 }
 
-// https://github.com/typedb/typedb/issues/7725: attribute self-comparisons crashed the server.
-// A value equals itself: ==, <=, >= keep every row; !=, <, > keep none.
-// Released versions as measured; Fixed is the row count asserted below.
-//
-// | Shape                       | 3.12.3  | 3.13.6  | 3.14.0  | Fixed |
-// | --------------------------- | ------- | ------- | ------- | ----- |
-// | Independent string $n == $n | Crashes | Crashes | Crashes | 2     |
-// | Independent string $n != $n | Crashes | Crashes | Crashes | 0     |
-// | Independent string $n < $n  | Crashes | Crashes | Crashes | 0     |
-// | Independent string $n <= $n | Crashes | Crashes | Crashes | 2     |
-// | Independent string $n > $n  | Crashes | Crashes | Crashes | 0     |
-// | Independent string $n >= $n | Crashes | Crashes | Crashes | 2     |
+// https://github.com/typedb/typedb/issues/7725
 #[test]
 fn test_independent_attribute_self_comparison() {
     let (_tmp_dir, mut storage) = create_core_storage();
@@ -1039,26 +1028,13 @@ fn test_independent_attribute_self_comparison() {
     ];
     for (query, expected) in cases {
         assert_eq!(
-            count_query_rows(&storage, &type_manager, thing_manager.clone(), &statistics, query),
+            execute_query(&storage, &type_manager, thing_manager.clone(), &statistics, query).len(),
             expected,
             "{query}"
         );
     }
 }
 
-// Released versions as measured; Fixed is the row count asserted below.
-//
-// | Shape                             | 3.12.3  | 3.13.6  | 3.14.0  | Fixed |
-// | --------------------------------- | ------- | ------- | ------- | ----- |
-// | Decimal attribute $x == $x        | Crashes | Crashes | Crashes | 1     |
-// | Decimal attribute $x != $x        | Crashes | Crashes | Crashes | 0     |
-// | Decimal attribute $x < $x         | Crashes | Crashes | Crashes | 0     |
-// | Decimal attribute $x <= $x        | Crashes | Crashes | Crashes | 1     |
-// | Decimal attribute $x > $x         | Crashes | Crashes | Crashes | 0     |
-// | Decimal attribute $x >= $x        | Crashes | Crashes | Crashes | 1     |
-// | Double attribute $x == $x         | Crashes | Crashes | Crashes | 1     |
-// | Same query without comparison     | Passes  | Passes  | Passes  | 1     |
-// | Two attribute witnesses, $a == $b | Passes  | Passes  | Passes  | 1     |
 #[test]
 fn test_owned_attribute_self_comparison() {
     let (_tmp_dir, mut storage) = create_core_storage();
@@ -1086,20 +1062,20 @@ fn test_owned_attribute_self_comparison() {
     ];
     for (query, expected) in cases {
         assert_eq!(
-            count_query_rows(&storage, &type_manager, thing_manager.clone(), &statistics, query),
+            execute_query(&storage, &type_manager, thing_manager.clone(), &statistics, query).len(),
             expected,
             "{query}"
         );
     }
 }
 
-fn count_query_rows(
+fn execute_query(
     storage: &Arc<MVCCStorage<WALClient>>,
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
     statistics: &Statistics,
     query: &str,
-) -> usize {
+) -> Vec<MaybeOwnedRow<'static>> {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executable = compile_query(&*snapshot, type_manager, thing_manager.clone(), statistics, query);
     let executor = MatchExecutor::new(
@@ -1118,7 +1094,6 @@ fn count_query_rows(
         .into_iter()
         .try_collect::<_, Vec<_>, _>()
         .unwrap()
-        .len()
 }
 
 fn compile_query(
