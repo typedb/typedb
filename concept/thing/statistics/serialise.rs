@@ -943,7 +943,7 @@ mod v1 {
             .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
             .collect();
         Ok(Statistics {
-            encoding_version: StatisticsEncodingVersion::V0,
+            encoding_version: StatisticsEncodingVersion::V1,
             sequence_number,
             last_durable_write_sequence_number: sequence_number,
             last_durable_write_total_count,
