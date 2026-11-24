@@ -27,7 +27,7 @@ use tonic_types::StatusExt;
 use uuid::Uuid;
 
 use crate::{
-    audit::{AuditAdmission, AuditEndpoint, AuditError, AuditEvent, AuditOutcome, AuditReason, AuditStage},
+    audit::{AuditAdmission, AuditEndpoint, AuditEvent, AuditFailure, AuditOutcome, AuditStage, ForcedAuditReason},
     authentication::Accessor,
     service::{QueryType, http::error::HttpServiceError},
     state::ServerState,
@@ -141,7 +141,7 @@ struct ActionDetails {
     database_name: Option<Arc<str>>,
     transaction_id: Option<Uuid>,
     query: Option<Arc<str>>,
-    forced_by: Option<AuditReason>,
+    forced_by: Option<ForcedAuditReason>,
     start: Arc<OnceLock<ActionStartState>>,
 }
 
@@ -162,7 +162,7 @@ impl ActionDetails {
             }
             ActionStartState::Started { query_type }
         });
-        admission.await;
+        admission.wait().await;
         matches!(state, ActionStartState::Started { .. })
     }
 
@@ -218,7 +218,7 @@ impl Action {
         self
     }
 
-    pub(crate) fn forced_by(mut self, reason: AuditReason) -> Self {
+    pub(crate) fn forced_by(mut self, reason: ForcedAuditReason) -> Self {
         self.details.forced_by = Some(reason);
         self
     }
@@ -320,7 +320,7 @@ impl Action {
             ActionOutcome::Success => AuditOutcome::Success,
             ActionOutcome::Failure(error) => {
                 (code, message) = (error.code(), error.message());
-                AuditOutcome::Failure(AuditError { code: code.as_deref(), message: &message })
+                AuditOutcome::Failure(AuditFailure { code: code.as_deref(), message: &message })
             }
             ActionOutcome::Abandoned => AuditOutcome::Abandoned,
         };

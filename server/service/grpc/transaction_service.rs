@@ -69,7 +69,7 @@ use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
-    audit::AuditReason,
+    audit::ForcedAuditReason,
     service::{
         QueryType, TransactionType,
         action::{Action, ActionOrigin},
@@ -211,7 +211,7 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
-                        self.do_close(AuditReason::Shutdown).await;
+                        self.force_close(ForcedAuditReason::Shutdown).await;
                         self.drain_request_stream().await;
                         return;
                     }
@@ -220,12 +220,12 @@ impl TransactionService {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
-                        self.do_close(AuditReason::ServerStateChange).await;
+                        self.force_close(ForcedAuditReason::ServerStateChange).await;
                         return;
                     }
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
-                        self.do_close(AuditReason::Timeout).await;
+                        self.force_close(ForcedAuditReason::Timeout).await;
                         self.drain_request_stream().await;
                         return;
                     }
@@ -250,7 +250,7 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
-                        self.do_close(AuditReason::Shutdown).await;
+                        self.force_close(ForcedAuditReason::Shutdown).await;
                         self.drain_request_stream().await;
                         return;
                     }
@@ -259,12 +259,12 @@ impl TransactionService {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
-                        self.do_close(AuditReason::ServerStateChange).await;
+                        self.force_close(ForcedAuditReason::ServerStateChange).await;
                         return;
                     }
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
-                        self.do_close(AuditReason::Timeout).await;
+                        self.force_close(ForcedAuditReason::Timeout).await;
                         self.drain_request_stream().await;
                         return;
                     }
@@ -278,7 +278,7 @@ impl TransactionService {
                 Ok(Continue(())) => (),
                 Ok(Break(())) => {
                     event!(Level::TRACE, "Stream ended, closing transaction service.");
-                    self.do_close(AuditReason::ConnectionEnd).await;
+                    self.force_close(ForcedAuditReason::ConnectionEnd).await;
                     self.drain_request_stream().await;
                     return;
                 }
@@ -288,7 +288,7 @@ impl TransactionService {
                     if let Err(send_error) = result {
                         event!(Level::DEBUG, ?send_error, "Failed to send error to client");
                     }
-                    self.do_close(AuditReason::RequestFailure).await;
+                    self.force_close(ForcedAuditReason::RequestFailure).await;
                     self.drain_request_stream().await;
                     return;
                 }
@@ -356,8 +356,10 @@ impl TransactionService {
                     })
                     .await
             }
-            (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
-                Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
+            (true, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
+                let status = ProtocolError::TransactionAlreadyOpen {}.into_status();
+                self.new_action(ActionKind::TransactionOpen).with_database(open_req.database.as_str()).fail(&status);
+                Err(status)
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
                 let action = self.new_action(ActionKind::TransactionQuery).with_query(&query_req.query);
@@ -397,7 +399,28 @@ impl TransactionService {
                     })
                     .await
             }
-            (false, _) => Err(ProtocolError::TransactionClosed {}.into_status()),
+            (false, req) => {
+                let status = ProtocolError::TransactionClosed {}.into_status();
+                if let Some(action) = self.new_action_without_transaction(&req) {
+                    action.fail(&status);
+                }
+                Err(status)
+            }
+        }
+    }
+
+    fn new_action_without_transaction(&self, req: &typedb_protocol::transaction::req::Req) -> Option<Action> {
+        use typedb_protocol::transaction::req::Req;
+        match req {
+            Req::QueryReq(query_req) => {
+                Some(self.new_action(ActionKind::TransactionQuery).with_query(&query_req.query))
+            }
+            Req::AnalyzeReq(analyze_req) => {
+                Some(self.new_action(ActionKind::TransactionAnalyse).with_query(&analyze_req.query))
+            }
+            Req::CommitReq(_) => Some(self.new_action(ActionKind::TransactionCommit)),
+            Req::RollbackReq(_) => Some(self.new_action(ActionKind::TransactionRollback)),
+            Req::OpenReq(_) | Req::StreamReq(_) | Req::CloseReq(_) => None,
         }
     }
 
@@ -639,7 +662,7 @@ impl TransactionService {
         self.close_transaction().await;
     }
 
-    async fn do_close(&mut self, reason: AuditReason) {
+    async fn force_close(&mut self, reason: ForcedAuditReason) {
         if !self.is_open {
             return;
         }
@@ -910,7 +933,7 @@ impl TransactionService {
             });
             // queued queries are not handled yet so there will be no query response yet
             Ok(Continue(()))
-        } else if query_type == QueryType::Write {
+        } else if is_write_pipeline(&pipeline) {
             self.run_write_query(req_id, query_options, pipeline, given_rows, query, action).await;
             Ok(Continue(()))
         } else {

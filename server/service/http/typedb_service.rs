@@ -107,46 +107,34 @@ impl HTTPTypeDBService {
         uuid: Uuid,
         request: TransactionRequest,
     ) -> Result<TransactionServiceResponse, HttpServiceError> {
-        action.set_transaction_id(uuid);
         let result = async {
-            let transaction = self.get_transaction(&uuid).await.ok_or_else(HttpServiceError::no_open_transaction)?;
-            action.set_database(transaction.database_name.clone());
-            if accessor != transaction.owner {
-                return Err(HttpServiceError::operation_not_permitted());
-            }
-            let request = Self::report_request_start(request, &action).await;
-            Self::transaction_request(&transaction, request, true).await
+            let transaction = self.get_owned_transaction(&mut action, &accessor, uuid).await?;
+            action.report_start().await;
+            Self::try_get_response(Self::transaction_request(&transaction, request, true).await?)
         }
         .await;
-        match result {
-            Ok(TransactionServiceResponse::Err(typedb_source)) => {
-                let is_write_done =
-                    matches!(typedb_source, TransactionServiceError::WriteQueryAnswersInterrupted { .. });
-                let error = HttpServiceError::Transaction { typedb_source };
-                if is_write_done {
-                    action.succeed();
-                } else {
-                    action.fail(&error);
-                }
-                Err(error)
-            }
-            Ok(
-                response @ (TransactionServiceResponse::Ok
-                | TransactionServiceResponse::Query(_)
-                | TransactionServiceResponse::QueryAnalyse(_)),
-            ) => {
-                action.succeed();
-                Ok(response)
-            }
-            Err(error) => {
-                action.fail(&error);
-                Err(error)
-            }
+        action.finish(&result);
+        result
+    }
+
+    async fn get_owned_transaction(
+        &self,
+        action: &mut Action,
+        accessor: &str,
+        uuid: Uuid,
+    ) -> Result<TransactionInfo, HttpServiceError> {
+        action.set_transaction_id(uuid);
+        let transaction = self.get_transaction(&uuid).await.ok_or_else(HttpServiceError::no_open_transaction)?;
+        action.set_database(transaction.database_name.clone());
+        if accessor != transaction.owner {
+            return Err(HttpServiceError::operation_not_permitted());
         }
+        Ok(transaction)
     }
 
     async fn get_transaction(&self, uuid: &Uuid) -> Option<TransactionInfo> {
-        self.transaction_services.read().await.get(uuid).cloned()
+        let transactions = self.transaction_services.read().await;
+        transactions.get(uuid).filter(|transaction| !transaction.request_sender.is_closed()).cloned()
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
@@ -212,18 +200,15 @@ impl HTTPTypeDBService {
         TransactionRequest::Query(query_options, given_rows, query, start)
     }
 
-    async fn report_request_start(request: TransactionRequest, action: &Action) -> TransactionRequest {
-        match request {
-            TransactionRequest::Query(options, given_rows, query, _) => {
-                TransactionRequest::Query(options, given_rows, query, action.hand_over_start())
-            }
-            TransactionRequest::AnalyseQuery(_)
-            | TransactionRequest::Commit
-            | TransactionRequest::Rollback
-            | TransactionRequest::Close => {
-                action.report_start().await;
-                request
-            }
+    fn try_get_response(
+        transaction_response: TransactionServiceResponse,
+    ) -> Result<TransactionServiceResponse, HttpServiceError> {
+        match transaction_response {
+            TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
+            TransactionServiceResponse::Ok
+            | TransactionServiceResponse::Query(_)
+            | TransactionServiceResponse::QueryAnalyse(_)
+            | TransactionServiceResponse::WriteQueryAnswersInterrupted(_) => Ok(transaction_response),
         }
     }
 
@@ -233,6 +218,9 @@ impl HTTPTypeDBService {
         match transaction_response {
             TransactionServiceResponse::Query(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
+            TransactionServiceResponse::WriteQueryAnswersInterrupted(interrupt) => Err(HttpServiceError::Transaction {
+                typedb_source: TransactionServiceError::WriteQueryAnswersInterrupted { interrupt },
+            }),
             TransactionServiceResponse::QueryAnalyse(_) | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
@@ -245,7 +233,9 @@ impl HTTPTypeDBService {
         match transaction_response {
             TransactionServiceResponse::QueryAnalyse(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
-            TransactionServiceResponse::Query(_) | TransactionServiceResponse::Ok => {
+            TransactionServiceResponse::Query(_)
+            | TransactionServiceResponse::WriteQueryAnswersInterrupted(_)
+            | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
         }
@@ -513,6 +503,7 @@ impl HTTPTypeDBService {
     ) -> impl IntoResponse {
         service
             .new_action(ActionKind::UsersGet, origin)
+            .with_target_username(user_path.username.as_str())
             .run(|| async {
                 service
                     .server_state
@@ -688,10 +679,20 @@ impl HTTPTypeDBService {
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionQueryPayload>,
     ) -> impl IntoResponse {
-        let action = service.new_action(ActionKind::TransactionQuery, origin).with_query(&payload.query);
-        let request =
-            Self::build_query_request(payload.query_options, payload.given_rows.map(Into::into), payload.query, None);
-        service.run_transaction_action(action, accessor, path.transaction_id, request).await
+        let mut action = service.new_action(ActionKind::TransactionQuery, origin).with_query(&payload.query);
+        let result = async {
+            let transaction = service.get_owned_transaction(&mut action, &accessor, path.transaction_id).await?;
+            let request = Self::build_query_request(
+                payload.query_options,
+                payload.given_rows.map(Into::into),
+                payload.query,
+                action.hand_over_start(),
+            );
+            Self::try_get_response(Self::transaction_request(&transaction, request, true).await?)
+        }
+        .await;
+        action.finish(&result);
+        result
     }
 
     async fn query(

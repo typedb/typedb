@@ -4,14 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::Debug,
-    future::Future,
-    net::SocketAddr,
-    pin::Pin,
-    task::{Context, Poll},
-    time::Duration,
-};
+use std::{fmt::Debug, future::Future, net::SocketAddr, pin::Pin, time::Duration};
 
 use diagnostics::metrics::ActionKind;
 use uuid::Uuid;
@@ -34,15 +27,10 @@ impl AuditAdmission {
     pub fn after(wait: impl Future<Output = ()> + Send + 'static) -> Self {
         Self(Some(Box::pin(wait)))
     }
-}
 
-impl Future for AuditAdmission {
-    type Output = ();
-
-    fn poll(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<()> {
-        match &mut self.0 {
-            Some(wait) => wait.as_mut().poll(context),
-            None => Poll::Ready(()),
+    pub async fn wait(self) {
+        if let Some(wait) = self.0 {
+            wait.await;
         }
     }
 }
@@ -65,12 +53,12 @@ pub struct AuditEvent<'a> {
     pub transaction_id: Option<Uuid>,
     pub operation_id: Uuid,
     pub query_type: Option<QueryType>,
-    pub forced_by: Option<AuditReason>,
+    pub forced_by: Option<ForcedAuditReason>,
     pub stage: AuditStage<'a>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AuditReason {
+pub enum ForcedAuditReason {
     ConnectionEnd,
     RequestFailure,
     Timeout,
@@ -87,12 +75,12 @@ pub enum AuditStage<'a> {
 #[derive(Debug, Clone, Copy)]
 pub enum AuditOutcome<'a> {
     Success,
-    Failure(AuditError<'a>),
+    Failure(AuditFailure<'a>),
     Abandoned,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct AuditError<'a> {
+pub struct AuditFailure<'a> {
     pub code: Option<&'a str>,
     pub message: &'a str,
 }

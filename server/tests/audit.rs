@@ -14,7 +14,7 @@ use std::{
 use diagnostics::metrics::ActionKind;
 use resource::constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD};
 use server::{
-    audit::{AuditAdmission, AuditEndpoint, AuditEvent, AuditOutcome, AuditReason, AuditStage, Auditor},
+    audit::{AuditAdmission, AuditEndpoint, AuditEvent, AuditOutcome, AuditStage, Auditor, ForcedAuditReason},
     service::QueryType,
 };
 use test_utils_server::TestServer;
@@ -38,7 +38,7 @@ use uuid::Uuid;
 const WRONG_PASSWORD: &str = "not-the-password";
 const EVENT_TIMEOUT: Duration = Duration::from_secs(30);
 const HELD_CHECK: Duration = Duration::from_millis(100);
-const QUEUEING_TIME: Duration = Duration::from_secs(1);
+const QUEUEING_TIME: Duration = Duration::from_millis(100);
 const PIPELINED_QUERY_COUNT: usize = 8;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,7 +52,7 @@ struct RecordedEvent {
     transaction_id: Option<Uuid>,
     operation_id: Uuid,
     query_type: Option<QueryType>,
-    forced_by: Option<AuditReason>,
+    forced_by: Option<ForcedAuditReason>,
     query: Option<String>,
     has_started: bool,
     error_code: Option<String>,
@@ -410,15 +410,13 @@ struct GrpcTransaction {
 
 impl GrpcTransaction {
     async fn open(client: &mut TypeDbClient<Channel>, token: &str, database: &str, type_: i32) -> Self {
+        Self::start(client, token, Self::open_req(database, type_)).await
+    }
+
+    async fn start(client: &mut TypeDbClient<Channel>, token: &str, first_req: TransactionReqKind) -> Self {
         let (request_sender, request_receiver) = mpsc::channel(16);
         let this = Self { request_sender };
-        this.send(vec![TransactionReqKind::OpenReq(typedb_protocol::transaction::open::Req {
-            database: database.to_owned(),
-            r#type: type_,
-            options: None,
-            network_latency_millis: 0,
-        })])
-        .await;
+        this.send(vec![first_req]).await;
         let mut responses = client
             .transaction(authenticated(ReceiverStream::new(request_receiver), token))
             .await
@@ -438,6 +436,15 @@ impl GrpcTransaction {
             })
             .collect();
         self.request_sender.send(TransactionClient { reqs }).await.expect("Transaction stream is closed");
+    }
+
+    fn open_req(database: &str, type_: i32) -> TransactionReqKind {
+        TransactionReqKind::OpenReq(typedb_protocol::transaction::open::Req {
+            database: database.to_owned(),
+            r#type: type_,
+            options: None,
+            network_latency_millis: 0,
+        })
     }
 
     fn query_req(query: &str) -> TransactionReqKind {
@@ -614,7 +621,27 @@ async fn http_actions_are_audited() {
     let closed = auditor.await_close(opened.transaction_id).await;
     assert!(closed.is_success);
     assert!(closed.has_started);
-    assert_eq!(closed.forced_by, Some(AuditReason::RequestFailure));
+    assert_eq!(closed.forced_by, Some(ForcedAuditReason::RequestFailure));
+
+    let short_lived = serde_json::json!({
+        "databaseName": database,
+        "transactionType": "read",
+        "transactionOptions": { "transactionTimeoutMillis": 100 },
+    });
+    let timed_out_id =
+        server.http("POST", "/v1/transactions/open", token, Some(short_lived)).await.field("transactionId");
+    let opened = auditor.await_last(ActionKind::TransactionOpen, 4).await;
+    let closed = auditor.await_close(opened.transaction_id).await;
+    assert_eq!(closed.forced_by, Some(ForcedAuditReason::Timeout));
+    let response = server.http("POST", &format!("/v1/transactions/{timed_out_id}/close"), token, None).await;
+    assert_eq!(response.status, 200);
+    assert_eq!(auditor.closes(opened.transaction_id).len(), 1);
+    let response = server.http("POST", &format!("/v1/transactions/{timed_out_id}/commit"), token, None).await;
+    assert_ne!(response.status, 200);
+    let late_commit = auditor.await_last(ActionKind::TransactionCommit, 4).await;
+    assert!(!late_commit.is_success);
+    assert_eq!(late_commit.transaction_id, opened.transaction_id);
+    assert_eq!(late_commit.database_name, None);
 
     let unknown_id = Uuid::new_v4();
     let response = server.http("POST", &format!("/v1/transactions/{unknown_id}/rollback"), token, None).await;
@@ -624,7 +651,7 @@ async fn http_actions_are_audited() {
     assert!(!failed_rollback.has_started);
     assert_eq!(failed_rollback.transaction_id, Some(unknown_id));
 
-    assert_eq!(auditor.events(ActionKind::TransactionClose).len(), 2);
+    assert_eq!(auditor.events(ActionKind::TransactionClose).len(), 3);
     assert!(auditor.events(ActionKind::Authenticate).iter().skip(1).all(|event| event.is_success));
     auditor.assert_consistent();
     server.stop().await;
@@ -750,7 +777,7 @@ async fn grpc_actions_are_audited() {
     assert_eq!(closed.transaction_id, opened.transaction_id);
     assert_eq!(closed.accessor, admin);
     assert_eq!(closed.database_name.as_deref(), Some(database));
-    assert_eq!(closed.forced_by, Some(AuditReason::ConnectionEnd));
+    assert_eq!(closed.forced_by, Some(ForcedAuditReason::ConnectionEnd));
 
     let transaction = GrpcTransaction::open(&mut client, token, database, write).await;
     let pipelined = auditor.await_last(ActionKind::TransactionOpen, 3).await;
@@ -795,7 +822,7 @@ async fn grpc_actions_are_audited() {
     assert_eq!(queued[1].query.as_deref(), Some(invalid_insert));
     assert!(queued[1..].iter().all(|query| !query.is_success && !query.is_abandoned), "{queued:#?}");
     let closed = auditor.await_close(failed_commit.transaction_id).await;
-    assert_eq!(closed.forced_by, Some(AuditReason::RequestFailure));
+    assert_eq!(closed.forced_by, Some(ForcedAuditReason::RequestFailure));
     drop(transaction);
 
     let read = typedb_protocol::transaction::Type::Read as i32;
@@ -818,11 +845,47 @@ async fn grpc_actions_are_audited() {
     server.stop().await;
     let closed = auditor.await_close(left_open.transaction_id).await;
     assert!(closed.is_success);
-    assert_eq!(closed.forced_by, Some(AuditReason::Shutdown));
+    assert_eq!(closed.forced_by, Some(ForcedAuditReason::Shutdown));
     assert!(auditor.closes(pipelined.transaction_id).is_empty());
     auditor.assert_consistent();
     auditor.assert_all_ended();
     drop(transaction);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn grpc_requests_refused_by_a_transaction_stream_are_audited() {
+    let server = AuditedServer::start().await;
+    let auditor = server.auditor.clone();
+    let database = "audit_refused";
+    let token = server.sign_in().await;
+    server.create_database_of_people(Some(token.as_str()), database).await;
+    let mut client = server.grpc_client().await;
+    let token = token.as_str();
+    let write = typedb_protocol::transaction::Type::Write as i32;
+
+    let select = "match $p isa person;";
+    let unopened = GrpcTransaction::start(&mut client, token, GrpcTransaction::query_req(select)).await;
+    let refused_query = auditor.await_last(ActionKind::TransactionQuery, 1).await;
+    assert!(!refused_query.is_success);
+    assert!(!refused_query.has_started);
+    assert_eq!(refused_query.query.as_deref(), Some(select));
+    assert_eq!(refused_query.database_name, None);
+    drop(unopened);
+
+    let transaction = GrpcTransaction::open(&mut client, token, database, write).await;
+    let opened = auditor.await_last(ActionKind::TransactionOpen, 1).await;
+    transaction.send(vec![GrpcTransaction::open_req("another-database", write)]).await;
+    let refused_open = auditor.await_last(ActionKind::TransactionOpen, 2).await;
+    assert!(!refused_open.is_success);
+    assert!(!refused_open.has_started);
+    assert_eq!(refused_open.database_name.as_deref(), Some("another-database"));
+    let closed = auditor.await_close(opened.transaction_id).await;
+    assert_eq!(closed.forced_by, Some(ForcedAuditReason::RequestFailure));
+
+    assert_eq!(auditor.events(ActionKind::TransactionClose).len(), 1);
+    auditor.assert_consistent();
+    server.stop().await;
+    auditor.assert_all_ended();
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -871,7 +934,9 @@ async fn queries_of_requests_that_have_ended_do_not_run() {
     let mut held_start = auditor.hold_start_of(held);
     let running_held = server.send_http("POST", &query_path, token, Some(serde_json::json!({ "query": held }))).await;
     held_start.reached().await;
+    let authenticated_count = auditor.events(ActionKind::Authenticate).len();
     let request = server.send_http("POST", &query_path, token, Some(serde_json::json!({ "query": abandoned }))).await;
+    auditor.await_events(ActionKind::Authenticate, authenticated_count + 1).await;
     tokio::time::sleep(QUEUEING_TIME).await;
     drop(request);
     let abandoned_query = auditor.await_query(abandoned).await;

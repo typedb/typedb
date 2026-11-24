@@ -18,6 +18,7 @@ use crate::service::{
     http::{
         error::HttpServiceError, message::from_request_parts_impl, transaction_service::TransactionServiceResponse,
     },
+    transaction_service::TransactionServiceError,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -78,6 +79,10 @@ impl IntoResponse for TransactionServiceResponse {
             TransactionServiceResponse::Ok => StatusCode::OK.into_response(),
             TransactionServiceResponse::Query(query) => query.into_response(),
             TransactionServiceResponse::QueryAnalyse(query) => query.into_response(),
+            TransactionServiceResponse::WriteQueryAnswersInterrupted(interrupt) => HttpServiceError::Transaction {
+                typedb_source: TransactionServiceError::WriteQueryAnswersInterrupted { interrupt },
+            }
+            .into_response(),
             TransactionServiceResponse::Err(typedb_source) => {
                 HttpServiceError::Transaction { typedb_source }.into_response()
             }

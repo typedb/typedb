@@ -222,6 +222,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
         let origin = ActionOrigin::grpc(request.extensions());
         self.new_action(ActionKind::UsersGet, origin)
+            .with_target_username(request.get_ref().name.as_str())
             .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
@@ -263,6 +264,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
         let origin = ActionOrigin::grpc(request.extensions());
         self.new_action(ActionKind::UsersContains, origin)
+            .with_target_username(request.get_ref().name.as_str())
             .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()

@@ -52,7 +52,7 @@ use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
-    audit::AuditReason,
+    audit::ForcedAuditReason,
     service::{
         QueryType, TransactionType,
         action::{Action, ActionOrigin, ActionStart},
@@ -89,12 +89,21 @@ macro_rules! respond_else_return_break {
 }
 
 macro_rules! check_interrupt_else_respond_error_and_return_break {
-    ($interrupt:ident, $responder:ident) => {
-        check_interrupt_else_respond_error_and_return_break!($interrupt, $responder, QueryInterrupted)
-    };
-    ($interrupt:ident, $responder:ident, $error_variant:ident) => {{
+    ($interrupt:ident, $responder:ident) => {{
         if let Some(interrupt) = $interrupt.check() {
-            respond_error_and_return_break!($responder, TransactionServiceError::$error_variant { interrupt });
+            respond_error_and_return_break!($responder, TransactionServiceError::QueryInterrupted { interrupt });
+        }
+    }};
+}
+
+macro_rules! check_interrupt_else_respond_write_answers_interrupted_and_return_break {
+    ($interrupt:ident, $responder:ident) => {{
+        if let Some(interrupt) = $interrupt.check() {
+            let _ = respond_transaction_response(
+                $responder,
+                TransactionServiceResponse::WriteQueryAnswersInterrupted(interrupt),
+            );
+            return Break(());
         }
     }};
 }
@@ -188,6 +197,7 @@ pub(crate) enum TransactionServiceResponse {
     Ok,
     Query(QueryAnswer),
     QueryAnalyse(AnalysedQueryResponse),
+    WriteQueryAnswersInterrupted(InterruptType),
     Err(TransactionServiceError),
 }
 
@@ -325,7 +335,7 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
-                        self.do_close(AuditReason::Shutdown).await;
+                        self.force_close(ForcedAuditReason::Shutdown).await;
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
@@ -333,12 +343,12 @@ impl TransactionService {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
-                        self.do_close(AuditReason::ServerStateChange).await;
+                        self.force_close(ForcedAuditReason::ServerStateChange).await;
                         return;
                     }
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
-                        self.do_close(AuditReason::Timeout).await;
+                        self.force_close(ForcedAuditReason::Timeout).await;
                         return;
                     }
                     write_query_result = write_query_worker => {
@@ -359,7 +369,7 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
-                        self.do_close(AuditReason::Shutdown).await;
+                        self.force_close(ForcedAuditReason::Shutdown).await;
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
@@ -367,12 +377,12 @@ impl TransactionService {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
-                        self.do_close(AuditReason::ServerStateChange).await;
+                        self.force_close(ForcedAuditReason::ServerStateChange).await;
                         return;
                     }
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
-                        self.do_close(AuditReason::Timeout).await;
+                        self.force_close(ForcedAuditReason::Timeout).await;
                         return;
                     }
                     Some(read_query_result) = self.running_read_queries.join_next(), if !self.running_read_queries.is_empty() => {
@@ -388,7 +398,11 @@ impl TransactionService {
                 Continue(()) => (),
                 Break(()) => {
                     event!(Level::TRACE, "Stream ended, closing transaction service.");
-                    self.do_close(AuditReason::RequestFailure).await;
+                    let reason = match Instant::now() >= self.timeout_at {
+                        true => ForcedAuditReason::Timeout,
+                        false => ForcedAuditReason::RequestFailure,
+                    };
+                    self.force_close(reason).await;
                     return;
                 }
             }
@@ -428,9 +442,7 @@ impl TransactionService {
         if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionCommitted).await {
             return Break(());
         }
-        if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
-            respond_error_and_return_break!(responder, TransactionServiceError::QueueCleanupFailed {});
-        }
+        self.cancel_queued_read_queries(InterruptType::TransactionCommitted);
 
         // finish executing any remaining writes so they make it into the commit
         if let Break(()) = self.finish_queued_write_queries(InterruptType::TransactionCommitted).await {
@@ -486,12 +498,8 @@ impl TransactionService {
         if let Break(()) = self.interrupt_running_queries(InterruptType::TransactionRolledback).await {
             return Break(());
         }
-        if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
-            return Break(());
-        }
-        if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
-            return Break(());
-        }
+        self.cancel_queued_read_queries(InterruptType::TransactionRolledback);
+        self.cancel_queued_write_queries(InterruptType::TransactionRolledback);
 
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
@@ -525,21 +533,20 @@ impl TransactionService {
         Break(())
     }
 
-    async fn do_close(&mut self, reason: AuditReason) {
+    async fn force_close(&mut self, reason: ForcedAuditReason) {
         if !self.is_open {
             return;
         }
-        let action = self.new_close_action(reason);
-        if let Some(action) = &action {
-            action.report_start().await;
-        }
+        let Some(action) = self.new_close_action(reason) else {
+            self.close_transaction().await;
+            return;
+        };
+        action.report_start().await;
         self.close_transaction().await;
-        if let Some(action) = action {
-            action.succeed();
-        }
+        action.succeed();
     }
 
-    fn new_close_action(&self, reason: AuditReason) -> Option<Action> {
+    fn new_close_action(&self, reason: ForcedAuditReason) -> Option<Action> {
         let (origin, transaction_id) = self.close_reported_as.clone()?;
         let action = Action::new(self.server_state.clone(), ActionKind::TransactionClose, origin)
             .with_transaction_id(transaction_id)
@@ -552,8 +559,8 @@ impl TransactionService {
 
     async fn close_transaction(&mut self) {
         let _ = self.interrupt_running_queries(InterruptType::TransactionClosed).await;
-        let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
-        let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
+        self.cancel_queued_read_queries(InterruptType::TransactionClosed);
+        self.cancel_queued_write_queries(InterruptType::TransactionClosed);
 
         match self.transaction.take() {
             None => (),
@@ -586,22 +593,20 @@ impl TransactionService {
         self.query_interrupt_sender.send(interrupt).expect("Expected query interrupt to be sent");
     }
 
-    async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
+    fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) {
         let mut write_queries = VecDeque::with_capacity(self.query_queue.len());
         for query in self.query_queue.drain(0..self.query_queue.len()) {
             if query.is_write() {
                 write_queries.push_back(query);
             } else {
-                let responder = query.responder;
-                respond_else_return_break!(
-                    responder,
-                    TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
+                let _ = respond_transaction_response(
+                    query.responder,
+                    TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt }),
                 );
             }
         }
 
         self.query_queue = write_queries;
-        Continue(())
     }
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
@@ -617,7 +622,7 @@ impl TransactionService {
             // transmission of interrupt signal is ok if it fails
             let _ = respond_transaction_response(
                 responder,
-                TransactionServiceResponse::Err(TransactionServiceError::WriteQueryAnswersInterrupted { interrupt }),
+                TransactionServiceResponse::WriteQueryAnswersInterrupted(interrupt),
             );
         }
         Continue(())
@@ -636,21 +641,19 @@ impl TransactionService {
         }
     }
 
-    async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
+    fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
         for query in self.query_queue.drain(0..self.query_queue.len()) {
             if query.is_write() {
-                let responder = query.responder;
-                respond_else_return_break!(
-                    responder,
-                    TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
+                let _ = respond_transaction_response(
+                    query.responder,
+                    TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt }),
                 );
             } else {
                 read_queries.push_back(query);
             }
         }
         self.query_queue = read_queries;
-        Continue(())
     }
 
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
@@ -810,9 +813,7 @@ impl TransactionService {
         if let Break(()) = self.interrupt_running_queries(InterruptType::SchemaQueryExecution).await {
             return Err(TransactionServiceError::QueueCleanupFailed {});
         }
-        if let Break(()) = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await {
-            return Err(TransactionServiceError::QueueCleanupFailed {});
-        }
+        self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution);
         if let Break(()) = self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await {
             return Err(TransactionServiceError::QueueCleanupFailed {});
         }
@@ -994,7 +995,7 @@ impl TransactionService {
 
         while let Some(row) = batch_iterator.next() {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
-            check_interrupt_else_respond_error_and_return_break!(interrupt, responder, WriteQueryAnswersInterrupted);
+            check_interrupt_else_respond_write_answers_interrupted_and_return_break!(interrupt, responder);
             // TODO: Consider multiplicity?
             if let Some(limit) = query_options.answer_count_limit {
                 if result.len() >= limit {
@@ -1050,7 +1051,7 @@ impl TransactionService {
         let mut warning = None;
         for document in documents {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
-            check_interrupt_else_respond_error_and_return_break!(interrupt, responder, WriteQueryAnswersInterrupted);
+            check_interrupt_else_respond_write_answers_interrupted_and_return_break!(interrupt, responder);
             // TODO: Consider multiplicity?
             if let Some(limit) = query_options.answer_count_limit {
                 if result.len() >= limit {
