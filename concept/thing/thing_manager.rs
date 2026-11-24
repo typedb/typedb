@@ -197,22 +197,6 @@ impl ThingManager {
         InstanceIterator::new(snapshot_iterator)
     }
 
-    fn read_instances_raw<T: ThingAPI>(
-        &self,
-        keyspace: EncodingKeyspace,
-        snapshot: &impl ReadableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<T> {
-        let (prefix_start, prefix_end_exclusive) = T::PREFIX_RANGE_INCLUSIVE;
-        let key_start = T::Vertex::build_prefix_prefix(prefix_start, keyspace);
-        let key_end = T::Vertex::build_prefix_prefix(prefix_end_exclusive, keyspace);
-        let snapshot_iterator = snapshot.iterate_range(
-            &KeyRange::new_variable_width(RangeStart::Inclusive(key_start), RangeEnd::EndPrefixInclusive(key_end)),
-            storage_counters,
-        );
-        InstanceIterator::new(snapshot_iterator)
-    }
-
     fn get_instances<T: ThingAPI>(
         &self,
         keyspace: EncodingKeyspace,
@@ -303,14 +287,6 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<Option<Object>, Box<ConceptReadError>> {
         self.get_instance::<Object>(snapshot, iid, storage_counters)
-    }
-
-    pub fn read_entities_raw(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.read_instances_raw::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
     }
 
     pub fn get_entities(
