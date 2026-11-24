@@ -11,6 +11,7 @@ use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::{
     MVCCStorage,
+    iterator::{MVCCKeyValue, MVCCReadError},
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::IteratorPool,
@@ -63,10 +64,8 @@ impl ReadableSnapshot for MockSnapshot {
     fn iterate_raw(
         &self,
         _storage_counters: StorageCounters,
-    ) -> impl for<'a> LendingIterator<Item<'a> = <storage::iterator::MVCCRangeRawIterator as LendingIterator>::Item<'a>>
-    {
-        let _s: Arc<MVCCStorage<()>> = todo!();
-        _s.iterate_raw(self.open_sequence_number(), _storage_counters)
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MVCCKeyValue<'a>, MVCCReadError>> {
+        lending_iterator::empty::<Result<MVCCKeyValue<'static>, MVCCReadError>>()
     }
 
     fn iterate_range<const PS: usize>(

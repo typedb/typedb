@@ -26,7 +26,7 @@ use crate::{
     CommitData, MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
     isolation_manager::{ReadSnapshotDropGuard, WriteSnapshotDropGuard},
-    iterator::{MVCCRangeRawIterator, MVCCReadError},
+    iterator::{MVCCKeyValue, MVCCRangeRawIterator, MVCCReadError},
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceId},
@@ -956,9 +956,8 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
     fn iterate_raw(
         &self,
         _storage_counters: StorageCounters,
-    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>> {
-        let _s: Arc<MVCCStorage<()>> = todo!();
-        _s.iterate_raw(self.open_sequence_number, _storage_counters)
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MVCCKeyValue<'a>, MVCCReadError>> {
+        lending_iterator::empty::<Result<MVCCKeyValue<'static>, MVCCReadError>>()
     }
 
     fn iterate_range<const PS: usize>(

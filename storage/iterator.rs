@@ -7,7 +7,11 @@
 use std::{borrow::Borrow, cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use lending_iterator::{LendingIterator, Peekable, Seekable, adaptors::Filter, higher_order::FnHktHelper};
+use lending_iterator::{
+    LendingIterator, Peekable, Seekable,
+    adaptors::Filter,
+    higher_order::{FnHktHelper, Hkt},
+};
 use resource::profile::StorageCounters;
 
 use crate::{
@@ -64,6 +68,10 @@ pub struct MVCCKeyValue<'a> {
     key: StorageKeyReference<'a>,
     value: &'a [u8],
     visibility: Visibility,
+}
+
+impl Hkt for MVCCKeyValue<'static> {
+    type HktSelf<'a> = MVCCKeyValue<'a>;
 }
 
 impl<'a> MVCCKeyValue<'a> {
