@@ -19,7 +19,7 @@ use lending_iterator::{LendingIterator, Seekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
-    iterator::{MVCCRangeIterator, MVCCReadError},
+    iterator::{MVCCReadError, MVCCVisibleRangeIterator},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{buffer::BufferRangeIterator, write::Write},
 };
@@ -32,10 +32,10 @@ pub struct SnapshotRangeIterator {
 /// never needs to restart once either side is exhausted: it continues with the other side alone.
 enum Sources {
     Empty,
-    Storage(MVCCRangeIterator),
+    Storage(MVCCVisibleRangeIterator),
     Buffered(BufferRangeIterator),
     Merged {
-        storage: MVCCRangeIterator,
+        storage: MVCCVisibleRangeIterator,
         buffered: BufferRangeIterator,
         // which side holds the next item, once resolved by `resolve_merge`
         ready_item_source: Option<ReadyItemSource>,
@@ -77,7 +77,7 @@ impl Sources {
 }
 
 impl SnapshotRangeIterator {
-    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
+    pub(crate) fn new(mvcc_iterator: MVCCVisibleRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
         let sources = match buffered_iterator {
             Some(buffered) if !buffered.is_empty() => {
                 Sources::Merged { storage: mvcc_iterator, buffered, ready_item_source: None }
@@ -218,7 +218,7 @@ impl SnapshotRangeIterator {
 
 #[must_use]
 fn storage_next(
-    storage: &mut MVCCRangeIterator,
+    storage: &mut MVCCVisibleRangeIterator,
 ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>> {
     match storage.next()? {
         Ok((key, value)) => Some(Ok((StorageKey::Reference(key), Bytes::Reference(value)))),
@@ -227,7 +227,7 @@ fn storage_next(
 }
 
 fn storage_peek(
-    storage: &mut MVCCRangeIterator,
+    storage: &mut MVCCVisibleRangeIterator,
 ) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
     match storage.peek()? {
         Ok(ok) => Some(Ok(ok)),

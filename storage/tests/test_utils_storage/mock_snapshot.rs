@@ -11,7 +11,7 @@ use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::{
     MVCCStorage,
-    iterator::{MVCCKeyValue, MVCCReadError},
+    iterator::{MVCCReadError, MVCCResolvedKeyValue},
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::IteratorPool,
@@ -61,11 +61,11 @@ impl ReadableSnapshot for MockSnapshot {
         Err(SnapshotGetError::MockError {})
     }
 
-    fn iterate_raw(
+    fn iterate_storage(
         &self,
         _storage_counters: StorageCounters,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MVCCKeyValue<'a>, MVCCReadError>> {
-        lending_iterator::empty::<Result<MVCCKeyValue<'static>, MVCCReadError>>()
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MVCCResolvedKeyValue<'a>, MVCCReadError>> {
+        lending_iterator::empty::<Result<MVCCResolvedKeyValue<'static>, MVCCReadError>>()
     }
 
     fn iterate_range<const PS: usize>(

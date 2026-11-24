@@ -49,7 +49,7 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationManager, ValidatedCommit},
-    iterator::{MVCCRangeIterator, MVCCRangeRawIterator},
+    iterator::{MVCCResolvedRangeIterator, MVCCVisibleRangeIterator},
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{
@@ -511,7 +511,7 @@ impl<Durability> MVCCStorage<Durability> {
         Mapper: Fn(&[u8]) -> V,
     {
         let key = key.into();
-        let mut iterator = self.iterate_range(
+        let mut iterator = self.iterate_range_visible(
             iterator_pool,
             &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
@@ -526,7 +526,7 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    pub fn iterate_raw(
+    pub fn iterate_all(
         self: Arc<Self>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
@@ -534,14 +534,14 @@ impl<Durability> MVCCStorage<Durability> {
         StorageIterator::new(self, open_sequence_number, storage_counters)
     }
 
-    pub(crate) fn iterate_range<'this, const PS: usize>(
+    pub(crate) fn iterate_range_visible<'this, const PS: usize>(
         &'this self,
         iterpool: &IteratorPool,
         range: &KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
-    ) -> MVCCRangeIterator {
-        MVCCRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
+    ) -> MVCCVisibleRangeIterator {
+        MVCCVisibleRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
     }
 
     fn highest_committed_snapshot(&self) -> SequenceNumber {
@@ -710,7 +710,7 @@ impl<Durability> MVCCStorage<Durability> {
 }
 
 pub struct StorageIterator {
-    iterators: Vec<Peekable<MVCCRangeRawIterator>>,
+    iterators: Vec<Peekable<MVCCResolvedRangeIterator>>,
     current_keyspace: usize,
 }
 
@@ -724,7 +724,7 @@ impl StorageIterator {
             .keyspaces
             .iter()
             .map(|ks| {
-                Peekable::new(MVCCRangeRawIterator::new(
+                Peekable::new(MVCCResolvedRangeIterator::new(
                     &storage,
                     &IteratorPool::new(),
                     &KeyRange::new_within(
@@ -741,7 +741,7 @@ impl StorageIterator {
 }
 
 impl LendingIterator for StorageIterator {
-    type Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>;
+    type Item<'a> = <MVCCResolvedRangeIterator as LendingIterator>::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while self.iterators.get_mut(self.current_keyspace)?.peek().is_none() {

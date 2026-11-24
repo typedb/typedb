@@ -274,7 +274,7 @@ impl Statistics {
         let mut player_role_relation_counts = TripleHashMap::<_, _, _, Counts>::new();
         let mut links_index_counts = DoubleHashMap::<_, _, Counts>::new();
 
-        let mut storage_iterator = snapshot.iterate_raw(storage_counters);
+        let mut storage_iterator = snapshot.iterate_storage(storage_counters);
         while let Some(item) = storage_iterator.next() {
             let mvcc_key_value = item?;
             let update: fn(&mut Counts, &str) = match mvcc_key_value.visibility() {

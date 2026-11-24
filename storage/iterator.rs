@@ -22,7 +22,8 @@ use crate::{
     sequence_number::SequenceNumber,
 };
 
-pub struct MVCCRangeRawIterator {
+/// Iterator over the MVCC-resolved keys in a given range.
+pub struct MVCCResolvedRangeIterator {
     storage_name: Arc<str>,
     keyspace_id: KeyspaceId,
     iterator: KeyspaceRangeIterator,
@@ -34,7 +35,7 @@ pub struct MVCCRangeRawIterator {
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
 }
 
-impl MVCCRangeRawIterator {
+impl MVCCResolvedRangeIterator {
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
         iterpool: &IteratorPool,
@@ -56,6 +57,7 @@ impl MVCCRangeRawIterator {
     }
 }
 
+/// Resolved visibility of the MVCC key-value pair with explanation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Visibility {
     Future,
@@ -64,17 +66,18 @@ pub enum Visibility {
     Deleted,
 }
 
-pub struct MVCCKeyValue<'a> {
+/// MVCC-resolved key and value for the opening sequence number of the producing iterator.
+pub struct MVCCResolvedKeyValue<'a> {
     key: StorageKeyReference<'a>,
     value: &'a [u8],
     visibility: Visibility,
 }
 
-impl Hkt for MVCCKeyValue<'static> {
-    type HktSelf<'a> = MVCCKeyValue<'a>;
+impl Hkt for MVCCResolvedKeyValue<'static> {
+    type HktSelf<'a> = MVCCResolvedKeyValue<'a>;
 }
 
-impl<'a> MVCCKeyValue<'a> {
+impl<'a> MVCCResolvedKeyValue<'a> {
     fn future(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
         Self { key, value, visibility: Visibility::Future }
     }
@@ -108,8 +111,8 @@ impl<'a> MVCCKeyValue<'a> {
     }
 }
 
-impl LendingIterator for MVCCRangeRawIterator {
-    type Item<'a> = Result<MVCCKeyValue<'a>, MVCCReadError>;
+impl LendingIterator for MVCCResolvedRangeIterator {
+    type Item<'a> = Result<MVCCResolvedKeyValue<'a>, MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.iterator.next()? {
@@ -118,10 +121,10 @@ impl LendingIterator for MVCCRangeRawIterator {
                 let storage_key = StorageKeyReference::new_raw(self.keyspace_id, key);
                 if sequence_number > self.open_sequence_number {
                     self.storage_counters.increment_advance_mvcc_invisible();
-                    Some(Ok(MVCCKeyValue::future(storage_key, value)))
+                    Some(Ok(MVCCResolvedKeyValue::future(storage_key, value)))
                 } else if self.last_visible_key.as_deref() == Some(key) {
                     self.storage_counters.increment_advance_mvcc_invisible();
-                    Some(Ok(MVCCKeyValue::shadowed(storage_key, value)))
+                    Some(Ok(MVCCResolvedKeyValue::shadowed(storage_key, value)))
                 } else {
                     match &mut self.last_visible_key {
                         Some(last_visible_key) => last_visible_key.set(key),
@@ -130,11 +133,11 @@ impl LendingIterator for MVCCRangeRawIterator {
                     match operation {
                         StorageOperation::Insert => {
                             self.storage_counters.increment_advance_mvcc_visible();
-                            Some(Ok(MVCCKeyValue::visible(storage_key, value)))
+                            Some(Ok(MVCCResolvedKeyValue::visible(storage_key, value)))
                         }
                         StorageOperation::Delete => {
                             self.storage_counters.increment_advance_mvcc_deleted();
-                            Some(Ok(MVCCKeyValue::deleted(storage_key, value)))
+                            Some(Ok(MVCCResolvedKeyValue::deleted(storage_key, value)))
                         }
                     }
                 }
@@ -147,7 +150,7 @@ impl LendingIterator for MVCCRangeRawIterator {
     }
 }
 
-impl Seekable<[u8]> for MVCCRangeRawIterator {
+impl Seekable<[u8]> for MVCCResolvedRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         self.iterator.seek(key);
     }
@@ -157,21 +160,22 @@ impl Seekable<[u8]> for MVCCRangeRawIterator {
     }
 }
 
-struct FilterPred(for<'a, 'b> fn(&'a Result<MVCCKeyValue<'b>, MVCCReadError>) -> bool);
+struct FilterPred(for<'a, 'b> fn(&'a Result<MVCCResolvedKeyValue<'b>, MVCCReadError>) -> bool);
 
-impl Borrow<dyn for<'a, 'b> FnHktHelper<&'a Result<MVCCKeyValue<'b>, MVCCReadError>, bool>> for FilterPred {
-    fn borrow(&self) -> &dyn for<'a, 'b> FnHktHelper<&'a Result<MVCCKeyValue<'b>, MVCCReadError>, bool> {
+impl Borrow<dyn for<'a, 'b> FnHktHelper<&'a Result<MVCCResolvedKeyValue<'b>, MVCCReadError>, bool>> for FilterPred {
+    fn borrow(&self) -> &dyn for<'a, 'b> FnHktHelper<&'a Result<MVCCResolvedKeyValue<'b>, MVCCReadError>, bool> {
         &self.0
     }
 }
 
 type Filtered<I> = Filter<I, FilterPred>;
 
-pub(crate) struct MVCCRangeIterator {
-    iterator: Peekable<Filtered<MVCCRangeRawIterator>>,
+/// Iterator over the MVCC-visible keys in a given range.
+pub(crate) struct MVCCVisibleRangeIterator {
+    iterator: Peekable<Filtered<MVCCResolvedRangeIterator>>,
 }
 
-impl MVCCRangeIterator {
+impl MVCCVisibleRangeIterator {
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
     pub(crate) fn new<D, const PS: usize>(
@@ -181,16 +185,16 @@ impl MVCCRangeIterator {
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Self {
-        fn pred(item: &Result<MVCCKeyValue<'_>, MVCCReadError>) -> bool {
+        fn pred(item: &Result<MVCCResolvedKeyValue<'_>, MVCCReadError>) -> bool {
             match item {
                 Ok(item) => item.is_visible(),
                 Err(_) => true,
             }
         }
-        MVCCRangeIterator {
+        MVCCVisibleRangeIterator {
             iterator: Peekable::new(
-                MVCCRangeRawIterator::new(storage, iterpool, range, open_sequence_number, storage_counters)
-                    .filter::<FilterPred, dyn for<'a, 'b> FnHktHelper<&'a Result<MVCCKeyValue<'b>, MVCCReadError>, bool>>(FilterPred(pred)),
+                MVCCResolvedRangeIterator::new(storage, iterpool, range, open_sequence_number, storage_counters)
+                    .filter::<FilterPred, dyn for<'a, 'b> FnHktHelper<&'a Result<MVCCResolvedKeyValue<'b>, MVCCReadError>, bool>>(FilterPred(pred)),
             ),
         }
     }
@@ -198,7 +202,7 @@ impl MVCCRangeIterator {
     pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
         self.find_next_state();
         match self.iterator.get_peeked().as_ref()? {
-            &Ok(item @ MVCCKeyValue { key, value, .. }) => {
+            &Ok(item @ MVCCResolvedKeyValue { key, value, .. }) => {
                 debug_assert!(item.is_visible());
                 Some(Ok((key.as_ref(), value)))
             }
@@ -221,13 +225,13 @@ impl MVCCRangeIterator {
     }
 }
 
-impl LendingIterator for MVCCRangeIterator {
+impl LendingIterator for MVCCVisibleRangeIterator {
     type Item<'a> = Result<(StorageKeyReference<'a>, &'a [u8]), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.find_next_state();
         match self.iterator.next()? {
-            Ok(item @ MVCCKeyValue { key, value, .. }) => {
+            Ok(item @ MVCCResolvedKeyValue { key, value, .. }) => {
                 debug_assert!(item.is_visible());
                 Some(Ok((key, value)))
             }
@@ -236,10 +240,10 @@ impl LendingIterator for MVCCRangeIterator {
     }
 }
 
-impl Seekable<[u8]> for MVCCRangeIterator {
+impl Seekable<[u8]> for MVCCVisibleRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         self.find_next_state();
-        if let Some(&Ok(MVCCKeyValue { key: next_key, .. })) = self.iterator.get_peeked() {
+        if let Some(&Ok(MVCCResolvedKeyValue { key: next_key, .. })) = self.iterator.get_peeked() {
             if next_key.bytes() < key {
                 self.iterator.next();
                 self.iterator.seek(key);
