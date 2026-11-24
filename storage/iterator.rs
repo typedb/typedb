@@ -7,15 +7,11 @@
 use std::{borrow::Borrow, cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use lending_iterator::{
-    LendingIterator, Peekable, Seekable,
-    adaptors::Filter,
-    higher_order::{FnHktHelper, Hkt},
-};
+use lending_iterator::{LendingIterator, Peekable, Seekable, adaptors::Filter, higher_order::FnHktHelper};
 use resource::profile::StorageCounters;
 
 use crate::{
-    MVCC_KEY_INLINE_SIZE, MVCCKey, MVCCStorage, StorageOperation,
+    MVCC_KEY_INLINE_SIZE, MVCCKey, MVCCResolvedKeyValue, MVCCStorage, StorageOperation,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceError, KeyspaceId, iterator::KeyspaceRangeIterator},
@@ -54,60 +50,6 @@ impl MVCCResolvedRangeIterator {
             storage_counters,
             last_visible_key: None,
         }
-    }
-}
-
-/// Resolved visibility of the MVCC key-value pair with explanation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Visibility {
-    Future,
-    Shadowed,
-    Visible,
-    Deleted,
-}
-
-/// MVCC-resolved key and value for the opening sequence number of the producing iterator.
-pub struct MVCCResolvedKeyValue<'a> {
-    key: StorageKeyReference<'a>,
-    value: &'a [u8],
-    visibility: Visibility,
-}
-
-impl Hkt for MVCCResolvedKeyValue<'static> {
-    type HktSelf<'a> = MVCCResolvedKeyValue<'a>;
-}
-
-impl<'a> MVCCResolvedKeyValue<'a> {
-    fn future(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
-        Self { key, value, visibility: Visibility::Future }
-    }
-
-    fn shadowed(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
-        Self { key, value, visibility: Visibility::Shadowed }
-    }
-
-    fn visible(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
-        Self { key, value, visibility: Visibility::Visible }
-    }
-
-    fn deleted(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
-        Self { key, value, visibility: Visibility::Deleted }
-    }
-
-    fn is_visible(&self) -> bool {
-        self.visibility == Visibility::Visible
-    }
-
-    pub fn key(&self) -> StorageKeyReference<'a> {
-        self.key
-    }
-
-    pub fn value(&self) -> &'a [u8] {
-        self.value
-    }
-
-    pub fn visibility(&self) -> Visibility {
-        self.visibility
     }
 }
 

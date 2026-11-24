@@ -33,7 +33,7 @@ use fail_point::{
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
-use lending_iterator::{LendingIterator, Peekable};
+use lending_iterator::{LendingIterator, Peekable, higher_order::Hkt};
 use logger::{error, result::ResultExt};
 use resource::{
     constants::{
@@ -919,6 +919,60 @@ impl StorageOperation {
     #[must_use]
     fn is_delete(&self) -> bool {
         matches!(self, Self::Delete)
+    }
+}
+
+/// Resolved visibility of the MVCC key-value pair with explanation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MVCCVisibility {
+    Future,
+    Shadowed,
+    Visible,
+    Deleted,
+}
+
+/// MVCC-resolved key and value for the opening sequence number of the producing iterator.
+pub struct MVCCResolvedKeyValue<'a> {
+    key: StorageKeyReference<'a>,
+    value: &'a [u8],
+    visibility: MVCCVisibility,
+}
+
+impl Hkt for MVCCResolvedKeyValue<'static> {
+    type HktSelf<'a> = MVCCResolvedKeyValue<'a>;
+}
+
+impl<'a> MVCCResolvedKeyValue<'a> {
+    fn future(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Future }
+    }
+
+    fn shadowed(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Shadowed }
+    }
+
+    fn visible(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Visible }
+    }
+
+    fn deleted(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Deleted }
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visibility == MVCCVisibility::Visible
+    }
+
+    pub fn key(&self) -> StorageKeyReference<'a> {
+        self.key
+    }
+
+    pub fn value(&self) -> &'a [u8] {
+        self.value
+    }
+
+    pub fn visibility(&self) -> MVCCVisibility {
+        self.visibility
     }
 }
 

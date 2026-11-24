@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{iter::empty, sync::Arc};
+use std::iter::empty;
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::{
-    MVCCStorage,
-    iterator::{MVCCReadError, MVCCResolvedKeyValue},
+    MVCCResolvedKeyValue,
+    iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::IteratorPool,

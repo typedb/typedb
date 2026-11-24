@@ -24,9 +24,9 @@ use resource::{
     profile::StorageCounters,
 };
 use storage::{
-    MVCCStorage,
+    MVCCStorage, MVCCVisibility,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
-    iterator::{MVCCReadError, Visibility},
+    iterator::MVCCReadError,
     key_value::StorageKeyReference,
     keyspace::IteratorPool,
     record::CommitType,
@@ -278,11 +278,11 @@ impl Statistics {
         while let Some(item) = storage_iterator.next() {
             let mvcc_key_value = item?;
             let update: fn(&mut Counts, &str) = match mvcc_key_value.visibility() {
-                Visibility::Future => continue, // ignore keys written by concurrent transactions while this update was running
-                Visibility::Shadowed | Visibility::Deleted => {
+                MVCCVisibility::Future => continue, // ignore keys written by concurrent transactions while this update was running
+                MVCCVisibility::Shadowed | MVCCVisibility::Deleted => {
                     |counts, label| counts.saturating_add_assign_invisible(1, label)
                 }
-                Visibility::Visible => |counts, label| counts.saturating_add_assign_visible(1, label),
+                MVCCVisibility::Visible => |counts, label| counts.saturating_add_assign_visible(1, label),
             };
             match DecodableKey::try_decode(mvcc_key_value.key().bytes()) {
                 Some(DecodableKey::EntityVertex(entity_vertex)) => {

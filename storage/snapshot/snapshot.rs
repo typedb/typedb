@@ -23,10 +23,10 @@ use resource::{
 };
 
 use crate::{
-    CommitData, MVCCStorage, StorageCommitError,
+    CommitData, MVCCResolvedKeyValue, MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
     isolation_manager::{ReadSnapshotDropGuard, WriteSnapshotDropGuard},
-    iterator::{MVCCReadError, MVCCResolvedKeyValue, MVCCResolvedRangeIterator},
+    iterator::{MVCCReadError, MVCCResolvedRangeIterator},
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceId},
