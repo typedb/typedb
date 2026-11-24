@@ -38,6 +38,7 @@ use tokio::sync::watch::{Receiver, Sender, channel};
 use tracing::info;
 
 use crate::{
+    audit::Auditor,
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, StorageConfig},
     service::{
@@ -340,7 +341,7 @@ impl Server {
             .status()
             .await
             .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?;
-        Self::print_serving_information(&server_status, &config.server.encryption);
+        Self::print_serving_information(&server_status, &config.server.encryption, server_state.auditor());
         if distribution_info.is_default_distribution() {
             Self::log_ready();
         }
@@ -454,7 +455,11 @@ impl Server {
         }
     }
 
-    pub fn print_serving_information(server_status: &BoxServerStatus, encryption_config: &EncryptionConfig) {
+    pub fn print_serving_information(
+        server_status: &BoxServerStatus,
+        encryption_config: &EncryptionConfig,
+        auditor: &dyn Auditor,
+    ) {
         let info = ServingInfo {
             grpc: EndpointInfo {
                 listen: server_status.grpc_listen_address().map(str::to_string),
@@ -476,6 +481,9 @@ impl Server {
             safe_println!("TLS: disabled");
             safe_println!("  WARNING: TLS NOT ENABLED. Credentials are transmitted unencrypted in plaintext.");
             safe_println!("  Drivers must be configured to connect *without TLS*.");
+        }
+        if let Some(audit_description) = auditor.description() {
+            safe_println!("Audit logging: {audit_description}");
         }
 
         let grpc_connect_address =

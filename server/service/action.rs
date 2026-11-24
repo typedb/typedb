@@ -19,6 +19,7 @@ use diagnostics::{
 use error::TypeDBError;
 use http::Extensions;
 use query::error::QueryError;
+use system::repositories::user_repository::MAX_USERNAME_LENGTH;
 use tonic::{
     Status,
     transport::server::{TcpConnectInfo, TlsConnectInfo},
@@ -203,8 +204,8 @@ impl Action {
         Self { server_state, details, started_at: Instant::now(), is_finished: false }
     }
 
-    pub(crate) fn with_target_username(mut self, username: impl Into<String>) -> Self {
-        self.details.target_username = Some(username.into());
+    pub(crate) fn with_target_username(mut self, username: &str) -> Self {
+        self.details.target_username = (username.len() <= MAX_USERNAME_LENGTH).then(|| username.to_owned());
         self
     }
 

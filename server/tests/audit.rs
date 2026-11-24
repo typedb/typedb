@@ -165,6 +165,10 @@ impl Auditor for RecordingAuditor {
         true
     }
 
+    fn description(&self) -> Option<String> {
+        None
+    }
+
     fn record(&self, event: AuditEvent<'_>) -> AuditAdmission {
         self.recording.lock().unwrap().keep(&event);
         let AuditStage::Started { query: Some(query) } = event.stage else {

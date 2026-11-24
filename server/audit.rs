@@ -15,6 +15,8 @@ use crate::service::QueryType;
 pub trait Auditor: Debug + Send + Sync {
     fn is_enabled(&self) -> bool;
 
+    fn description(&self) -> Option<String>;
+
     fn record(&self, event: AuditEvent<'_>) -> AuditAdmission;
 }
 
@@ -94,6 +96,10 @@ pub struct NoopAuditor;
 impl Auditor for NoopAuditor {
     fn is_enabled(&self) -> bool {
         false
+    }
+
+    fn description(&self) -> Option<String> {
+        None
     }
 
     fn record(&self, _event: AuditEvent<'_>) -> AuditAdmission {

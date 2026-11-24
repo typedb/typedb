@@ -171,6 +171,7 @@ impl HTTPTypeDBService {
         request: TransactionRequest,
         error_if_closed: bool,
     ) -> Result<TransactionServiceResponse, HttpServiceError> {
+        let is_commit = matches!(request, TransactionRequest::Commit);
         let (result_sender, result_receiver) = oneshot::channel();
         if let Err(_) = transaction.request_sender.send((request, TransactionResponder(result_sender))).await {
             return match error_if_closed {
@@ -179,13 +180,18 @@ impl HTTPTypeDBService {
             };
         }
 
-        match timeout(Duration::from_millis(transaction.transaction_timeout_millis), result_receiver).await {
-            Ok(Ok(response)) => Ok(response),
-            Ok(Err(_)) => match error_if_closed {
+        let response = match is_commit {
+            true => result_receiver.await,
+            false => timeout(Duration::from_millis(transaction.transaction_timeout_millis), result_receiver)
+                .await
+                .map_err(|_| HttpServiceError::transaction_timeout())?,
+        };
+        match response {
+            Ok(response) => Ok(response),
+            Err(_) => match error_if_closed {
                 false => Ok(TransactionServiceResponse::Ok),
                 true => Err(HttpServiceError::no_open_transaction()),
             },
-            Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
     }
 
