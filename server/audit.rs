@@ -7,6 +7,7 @@
 use std::{fmt::Debug, future::Future, net::SocketAddr, pin::Pin, time::Duration};
 
 use diagnostics::metrics::ActionKind;
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::service::QueryType;
@@ -35,7 +36,8 @@ impl AuditAdmission {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum AuditEndpoint {
     Grpc,
     Http,
@@ -57,7 +59,8 @@ pub struct AuditEvent<'a> {
     pub stage: AuditStage<'a>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ForcedAuditReason {
     ConnectionEnd,
     RequestFailure,
