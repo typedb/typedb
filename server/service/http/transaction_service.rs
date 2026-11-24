@@ -659,22 +659,21 @@ impl TransactionService {
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         self.finish_running_write_query_no_transmit(interrupt).await?;
         self.drop_queries_of_ended_requests();
-        let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
-        for QueuedQuery { responder, options, pipeline, given_rows, source_query } in requests.into_iter() {
-            match (options, is_write_pipeline(&pipeline)) {
-                (QueueOptions::Query(query_options), true) => {
-                    if let Break(()) =
-                        self.run_write_query(responder, query_options, pipeline, given_rows, source_query).await
-                    {
-                        return Break(());
-                    }
-                    if let Break(()) = self.finish_running_write_query_no_transmit(interrupt).await {
-                        return Break(());
-                    }
+        for _ in 0..self.query_queue.len() {
+            let query = self.query_queue.pop_front().expect("Expected a queued query");
+            match query.options {
+                QueueOptions::Query(query_options) if is_write_pipeline(&query.pipeline) => {
+                    self.run_write_query(
+                        query.responder,
+                        query_options,
+                        query.pipeline,
+                        query.given_rows,
+                        query.source_query,
+                    )
+                    .await?;
+                    self.finish_running_write_query_no_transmit(interrupt).await?;
                 }
-                (options, _) => {
-                    self.query_queue.push_back(QueuedQuery { responder, options, pipeline, given_rows, source_query });
-                }
+                _ => self.query_queue.push_back(query),
             }
         }
         Continue(())

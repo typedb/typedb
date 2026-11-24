@@ -776,28 +776,22 @@ impl TransactionService {
 
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         self.finish_running_write_query_no_transmit(interrupt).await?;
-        let mut queries: VecDeque<_> = self.query_queue.drain(..).collect();
-        while let Some(QueuedQuery { req_id, options, pipeline, given_rows, source_query, action }) =
-            queries.pop_front()
-        {
-            match (options, is_write_pipeline(&pipeline)) {
-                (QueueOptions::Query(query_options), true) => {
-                    self.run_write_query(req_id, query_options, pipeline, given_rows, source_query, action).await;
-                    if let Err(status) = self.finish_running_write_query_no_transmit(interrupt).await {
-                        self.query_queue.extend(queries);
-                        return Err(status);
-                    }
+        for _ in 0..self.query_queue.len() {
+            let query = self.query_queue.pop_front().expect("Expected a queued query");
+            match query.options {
+                QueueOptions::Query(query_options) if is_write_pipeline(&query.pipeline) => {
+                    self.run_write_query(
+                        query.req_id,
+                        query_options,
+                        query.pipeline,
+                        query.given_rows,
+                        query.source_query,
+                        query.action,
+                    )
+                    .await;
+                    self.finish_running_write_query_no_transmit(interrupt).await?;
                 }
-                (options, _) => {
-                    self.query_queue.push_back(QueuedQuery {
-                        req_id,
-                        options,
-                        pipeline,
-                        given_rows,
-                        source_query,
-                        action,
-                    });
-                }
+                _ => self.query_queue.push_back(query),
             }
         }
         Ok(())
