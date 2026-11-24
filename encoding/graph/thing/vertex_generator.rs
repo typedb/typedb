@@ -74,11 +74,11 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load<D: 'static>(storage: Arc<MVCCStorage<D>>) -> Result<Self, EncodingError> {
+    pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Result<Self, EncodingError> {
         Self::load_with_hasher(storage, seahash::hash)
     }
 
-    pub fn load_with_hasher<D: 'static>(
+    pub fn load_with_hasher<D>(
         storage: Arc<MVCCStorage<D>>,
         large_value_hasher: fn(&[u8]) -> u64,
     ) -> Result<Self, EncodingError> {
@@ -91,7 +91,7 @@ impl ThingVertexGenerator {
         Ok(generator)
     }
 
-    pub fn sync_from_storage<D: 'static>(&self, storage: Arc<MVCCStorage<D>>) -> Result<(), EncodingError> {
+    pub fn sync_from_storage<D>(&self, storage: Arc<MVCCStorage<D>>) -> Result<(), EncodingError> {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot
             .iterate_range(

@@ -62,7 +62,7 @@ pub enum SnapshotLookupMode {
     StorageOnly,
 }
 
-pub trait ReadableSnapshot: 'static {
+pub trait ReadableSnapshot {
     const IMMUTABLE_SCHEMA: bool;
 
     fn open_sequence_number(&self) -> SequenceNumber;
@@ -286,7 +286,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     }
 }
 
-pub trait CommittableSnapshot<D: 'static>: WritableSnapshot
+pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
@@ -330,7 +330,7 @@ impl<D> ReadSnapshot<D> {
     }
 }
 
-impl<D: 'static> ReadableSnapshot for ReadSnapshot<D> {
+impl<D> ReadableSnapshot for ReadSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -371,10 +371,7 @@ impl<D: 'static> ReadableSnapshot for ReadSnapshot<D> {
     fn iterate_raw(
         &self,
         storage_counters: StorageCounters,
-    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>>
-    where
-        D: 'static,
-    {
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>> {
         self.storage.clone().iterate_raw(self.open_sequence_number, storage_counters)
     }
 
@@ -493,7 +490,7 @@ impl<D> WriteSnapshot<D> {
     }
 }
 
-impl<D: 'static> ReadableSnapshot for WriteSnapshot<D> {
+impl<D> ReadableSnapshot for WriteSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -619,7 +616,7 @@ impl<D: 'static> ReadableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D: 'static> WritableSnapshot for WriteSnapshot<D> {
+impl<D> WritableSnapshot for WriteSnapshot<D> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -633,7 +630,7 @@ impl<D: 'static> WritableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D: DurabilityClient + 'static> CommittableSnapshot<D> for WriteSnapshot<D> {
+impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     fn commit(
         self,
         commit_profile: &mut CommitProfile,
@@ -709,7 +706,7 @@ impl<D> SchemaSnapshot<D> {
     }
 }
 
-impl<D: 'static> ReadableSnapshot for SchemaSnapshot<D> {
+impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -835,7 +832,7 @@ impl<D: 'static> ReadableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D: 'static> WritableSnapshot for SchemaSnapshot<D> {
+impl<D> WritableSnapshot for SchemaSnapshot<D> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -849,7 +846,7 @@ impl<D: 'static> WritableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D: DurabilityClient + 'static> CommittableSnapshot<D> for SchemaSnapshot<D> {
+impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     fn commit(
         self,
         commit_profile: &mut CommitProfile,

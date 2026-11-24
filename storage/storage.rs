@@ -338,7 +338,7 @@ impl<Durability> MVCCStorage<Durability> {
         commit_profile: &mut CommitProfile,
     ) -> Result<DurablyPersistedCommit, StorageCommitError>
     where
-        Durability: DurabilityClient + 'static,
+        Durability: DurabilityClient,
     {
         use StorageCommitError::{Durability, MVCCRead};
 
@@ -365,7 +365,7 @@ impl<Durability> MVCCStorage<Durability> {
         storage_counters: StorageCounters,
     ) -> Result<(), MVCCReadError>
     where
-        Durability: DurabilityClient + 'static,
+        Durability: DurabilityClient,
     {
         for buffer in snapshot.operations() {
             let writes = buffer.writes();
@@ -530,7 +530,7 @@ impl<Durability> MVCCStorage<Durability> {
         self: Arc<Self>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
-    ) -> StorageIterator<Durability> {
+    ) -> StorageIterator {
         StorageIterator::new(self, open_sequence_number, storage_counters)
     }
 
@@ -709,45 +709,45 @@ impl<Durability> MVCCStorage<Durability> {
     }
 }
 
-pub struct StorageIterator<D> {
-    open_sequence_number: SequenceNumber,
-    iterator: Option<Peekable<MVCCRangeRawIterator>>,
-    storage: Arc<MVCCStorage<D>>, // must be dropped after `iterator`
-
-    next_keyspace: usize,
-    storage_counters: StorageCounters,
+pub struct StorageIterator {
+    iterators: Vec<Peekable<MVCCRangeRawIterator>>,
+    current_keyspace: usize,
 }
 
-impl<D> StorageIterator<D> {
-    pub fn new(
+impl StorageIterator {
+    pub fn new<D>(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Self {
-        Self { storage, open_sequence_number, iterator: None, next_keyspace: 0, storage_counters }
+        let iterators = storage
+            .keyspaces
+            .iter()
+            .map(|ks| {
+                Peekable::new(MVCCRangeRawIterator::new(
+                    &storage,
+                    &IteratorPool::new(),
+                    &KeyRange::new_within(
+                        StorageKey::Array(StorageKeyArray::new_raw(ks.id(), ByteArray::<0>::zeros(0))),
+                        false,
+                    ),
+                    open_sequence_number,
+                    storage_counters.clone(),
+                ))
+            })
+            .collect();
+        Self { iterators, current_keyspace: 0 }
     }
 }
 
-impl<D: 'static> LendingIterator for StorageIterator<D> {
+impl LendingIterator for StorageIterator {
     type Item<'a> = <MVCCRangeRawIterator as LendingIterator>::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        while self.iterator.as_mut().is_none_or(|iter| iter.peek().is_none()) {
-            self.iterator = None;
-            let keyspace_id = self.storage.keyspaces.iter().nth(self.next_keyspace)?.id();
-            self.iterator = Some(Peekable::new(MVCCRangeRawIterator::new(
-                &self.storage,
-                &IteratorPool::new(),
-                &KeyRange::new_within(
-                    StorageKey::Array(StorageKeyArray::new_raw(keyspace_id, ByteArray::<0>::zeros(0))),
-                    false,
-                ),
-                self.open_sequence_number,
-                self.storage_counters.clone(),
-            )));
-            self.next_keyspace += 1;
+        while self.iterators.get_mut(self.current_keyspace)?.peek().is_none() {
+            self.current_keyspace += 1;
         }
-        self.iterator.as_mut()?.next()
+        self.iterators.get_mut(self.current_keyspace)?.next()
     }
 }
 
