@@ -48,7 +48,8 @@ use crate::{
                 version::{PROTOCOL_VERSION_LATEST, ProtocolVersion, encode_server_version},
             },
             transaction_service::{
-                QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
+                QueryAnswer, TransactionOpener, TransactionRequest, TransactionResponder, TransactionService,
+                TransactionServiceResponse,
             },
         },
         transaction_service::{TRANSACTION_REQUEST_BUFFER_SIZE, TransactionServiceError},
@@ -146,14 +147,13 @@ impl HTTPTypeDBService {
         service: &HTTPTypeDBService,
         owner: String,
         payload: TransactionOpenPayload,
-        close_reported_as: Option<(ActionOrigin, Uuid)>,
+        opener: Option<TransactionOpener>,
     ) -> Result<(TransactionInfo, u64), HttpServiceError> {
         let (request_sender, request_stream) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
         let options =
             payload.transaction_options.map(|options| options.into()).unwrap_or_else(|| TransactionOptions::default());
         let transaction_timeout_millis = options.transaction_timeout_millis;
-        let mut transaction_service =
-            TransactionService::new(service.server_state.clone(), request_stream, close_reported_as);
+        let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream, opener);
 
         let database_name = Arc::<str>::from(payload.database_name);
 
@@ -609,8 +609,13 @@ impl HTTPTypeDBService {
             .with_database(payload.database_name.as_str())
             .with_transaction_id(uuid)
             .run(|| async {
-                let (transaction_info, _processing_time) =
-                    Self::transaction_new(&service, accessor, payload, Some((origin, uuid))).await?;
+                let (transaction_info, _processing_time) = Self::transaction_new(
+                    &service,
+                    accessor,
+                    payload,
+                    Some(TransactionOpener { origin, transaction_id: uuid }),
+                )
+                .await?;
                 service.transaction_services.write().await.insert(uuid, transaction_info);
                 Ok::<_, HttpServiceError>(JsonBody(encode_transaction(uuid)))
             })

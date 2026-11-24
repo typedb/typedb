@@ -166,10 +166,16 @@ fn respond_transaction_response(
     }
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct TransactionOpener {
+    pub(crate) origin: ActionOrigin,
+    pub(crate) transaction_id: Uuid,
+}
+
 #[derive(Debug)]
 pub(crate) struct TransactionService {
     server_state: Arc<ServerState>,
-    close_reported_as: Option<(ActionOrigin, Uuid)>,
+    opener: Option<TransactionOpener>,
     database_name: Option<Arc<str>>,
 
     request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
@@ -265,13 +271,13 @@ impl TransactionService {
     pub(crate) fn new(
         server_state: Arc<ServerState>,
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
-        close_reported_as: Option<(ActionOrigin, Uuid)>,
+        opener: Option<TransactionOpener>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
         let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
         Self {
             server_state,
-            close_reported_as,
+            opener,
             database_name: None,
 
             request_stream,
@@ -547,9 +553,9 @@ impl TransactionService {
     }
 
     fn new_close_action(&self, reason: ForcedAuditReason) -> Option<Action> {
-        let (origin, transaction_id) = self.close_reported_as.clone()?;
-        let action = Action::new(self.server_state.clone(), ActionKind::TransactionClose, origin)
-            .with_transaction_id(transaction_id)
+        let opener = self.opener.clone()?;
+        let action = Action::new(self.server_state.clone(), ActionKind::TransactionClose, opener.origin)
+            .with_transaction_id(opener.transaction_id)
             .forced_by(reason);
         Some(match &self.database_name {
             Some(database_name) => action.with_database(database_name.clone()),
