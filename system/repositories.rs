@@ -28,6 +28,8 @@ pub mod user_repository {
         },
     };
 
+    pub const MAX_USERNAME_LENGTH: usize = 255;
+
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
         let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
         let query_str = "match (user: $u, credentials: $c) isa user-credentials; $u has name $n;";
@@ -39,7 +41,7 @@ pub mod user_repository {
     }
 
     pub fn get(tx: TransactionRead<WALClient>, username: &str) -> Result<Option<(User, Credential)>, SystemDBError> {
-        if !is_valid_typeql_value(username) {
+        if !is_valid_username(username) {
             return Err(SystemDBError::IllegalQueryInput {});
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to retrieve a user";
@@ -78,7 +80,7 @@ pub mod user_repository {
         user_uuid: Uuid,
         credential_uuid: Uuid,
     ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
-        if !is_valid_typeql_value(&user.name) {
+        if !is_valid_username(&user.name) {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
@@ -151,7 +153,7 @@ pub mod user_repository {
         query_manager: &QueryManager,
         username: &str,
     ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
-        if !is_valid_typeql_value(username) {
+        if !is_valid_username(username) {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
@@ -174,8 +176,8 @@ pub mod user_repository {
         (Ok(()), snapshot)
     }
 
-    pub fn is_valid_typeql_value(value: &str) -> bool {
-        is_valid_label(value)
+    pub fn is_valid_username(username: &str) -> bool {
+        username.len() <= MAX_USERNAME_LENGTH && is_valid_label(username)
     }
 
     typedb_error! {

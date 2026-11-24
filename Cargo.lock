@@ -5088,6 +5088,7 @@ dependencies = [
  "storage",
  "system",
  "test_utils",
+ "test_utils_server",
  "tokio",
  "tokio-rustls 0.26.6",
  "tokio-stream",
@@ -5665,6 +5666,18 @@ dependencies = [
  "test_utils",
  "test_utils_storage",
  "tracing",
+]
+
+[[package]]
+name = "test_utils_server"
+version = "0.0.0"
+dependencies = [
+ "concurrency",
+ "database",
+ "resource",
+ "server",
+ "test_utils",
+ "tokio",
 ]
 
 [[package]]

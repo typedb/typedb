@@ -10,6 +10,7 @@ pub use grpc::{IntoGrpcStatus, IntoProtocolErrorMessage, migration::import_servi
 use options::QueryOptions;
 use serde::{Deserialize, Serialize};
 
+pub(crate) mod action;
 pub mod admin;
 pub mod export_service;
 pub(crate) mod grpc;

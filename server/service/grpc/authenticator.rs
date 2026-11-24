@@ -14,7 +14,10 @@ use tower::{Layer, Service};
 use crate::{
     authentication::authenticate,
     error::LocalServerStateError,
-    service::grpc::{diagnostics::run_with_diagnostics_async, error::IntoGrpcStatus},
+    service::{
+        action::{Action, ActionOrigin},
+        grpc::error::IntoGrpcStatus,
+    },
     state::ServerState,
 };
 
@@ -31,17 +34,14 @@ impl Authenticator {
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::Authenticate,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        Action::new(self.server_state.clone(), ActionKind::Authenticate, origin)
+            .run(|| async {
                 authenticate(self.server_state.clone(), request)
                     .await
                     .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 }
 

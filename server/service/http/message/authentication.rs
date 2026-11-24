@@ -3,11 +3,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::convert::Infallible;
+
 use axum::{async_trait, extract::FromRequestParts};
 use http::request::Parts;
 use serde::{Deserialize, Serialize};
 
-use crate::{authentication::Accessor, service::http::error::HttpServiceError};
+use crate::{
+    authentication::Accessor,
+    service::{action::ActionOrigin, http::error::HttpServiceError},
+};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -26,6 +31,18 @@ where
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         Accessor::from_extensions(&parts.extensions)
             .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for ActionOrigin
+where
+    S: Send + Sync,
+{
+    type Rejection = Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        Ok(ActionOrigin::http(&parts.extensions))
     }
 }
 

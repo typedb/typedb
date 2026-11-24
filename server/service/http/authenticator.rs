@@ -13,7 +13,10 @@ use tower::{Layer, Service};
 
 use crate::{
     authentication::authenticate,
-    service::http::{diagnostics::run_with_diagnostics_async, error::HttpServiceError},
+    service::{
+        action::{Action, ActionOrigin},
+        http::error::HttpServiceError,
+    },
     state::ServerState,
 };
 
@@ -30,17 +33,14 @@ impl Authenticator {
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<Body>) -> Result<Request<Body>, impl IntoResponse> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::Authenticate,
-            || async {
+        let origin = ActionOrigin::http(request.extensions());
+        Action::new(self.server_state.clone(), ActionKind::Authenticate, origin)
+            .run(|| async {
                 authenticate(self.server_state.clone(), request)
                     .await
                     .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 }
 

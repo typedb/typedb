@@ -3,20 +3,54 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
-rust_test(
-    name = "test_encryption",
-    srcs = ["encryption.rs"],
+rust_library(
+    name = "test_utils_server",
+    srcs = ["test_utils_server.rs"],
     data = ["//server:config.yml"],
     deps = [
+        "//common/concurrency",
+        "//database",
         "//resource",
         "//server",
         "//util/test:test_utils",
 
         "@crates//:tokio",
+    ]
+)
+
+rust_test(
+    name = "test_encryption",
+    srcs = ["encryption.rs"],
+    deps = [
+        "//server",
+
+        ":test_utils_server",
+
+        "@crates//:tokio",
         "@crates//:tokio-rustls",
+    ]
+)
+
+rust_test(
+    name = "test_audit",
+    srcs = ["audit.rs"],
+    deps = [
+        "//diagnostics",
+        "//resource",
+        "//server",
+
+        ":test_utils_server",
+
+        "@typedb_protocol//grpc/rust:typedb_protocol",
+
+        "@crates//:serde_json",
+        "@crates//:tokio",
+        "@crates//:tokio-stream",
+        "@crates//:tonic",
+        "@crates//:uuid",
     ]
 )
 
@@ -44,6 +78,8 @@ rust_test(
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
+        ":test_utils_server",
+        ":test_audit",
         ":test_encryption",
         ":test_migration",
     ],
@@ -53,6 +89,9 @@ rustfmt_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    exclude = glob(["fixtures/*"]),
+    exclude = glob([
+        "fixtures/*",
+        "Cargo.*"
+    ]),
     license_type = "mpl-header",
 )

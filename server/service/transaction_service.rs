@@ -20,10 +20,15 @@ use uuid::Uuid;
 pub(crate) use crate::transaction::{Transaction, with_readable_transaction};
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
+    service::QueryType,
     state::ServerState,
 };
 
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
+
+pub(crate) fn pipeline_query_type(pipeline: &typeql::query::Pipeline) -> QueryType {
+    if is_write_pipeline(pipeline) { QueryType::Write } else { QueryType::Read }
+}
 
 pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {

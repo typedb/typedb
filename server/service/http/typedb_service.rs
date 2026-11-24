@@ -33,8 +33,8 @@ use crate::{
     authentication::Accessor,
     service::{
         QueryType,
+        action::{Action, ActionOrigin, ActionStart},
         http::{
-            diagnostics::run_with_diagnostics_async,
             error::HttpServiceError,
             message::{
                 analyze::{AnalysedQueryResponse, TransactionAnalyzePayload},
@@ -48,10 +48,11 @@ use crate::{
                 version::{PROTOCOL_VERSION_LATEST, ProtocolVersion, encode_server_version},
             },
             transaction_service::{
-                QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
+                QueryAnswer, TransactionOpener, TransactionRequest, TransactionResponder, TransactionService,
+                TransactionServiceResponse,
             },
         },
-        transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
+        transaction_service::{TRANSACTION_REQUEST_BUFFER_SIZE, TransactionServiceError},
     },
     state::ServerState,
 };
@@ -96,8 +97,45 @@ impl HTTPTypeDBService {
         Self { server_state, transaction_services }
     }
 
+    fn new_action(&self, kind: ActionKind, origin: ActionOrigin) -> Action {
+        Action::new(self.server_state.clone(), kind, origin)
+    }
+
+    async fn run_transaction_action(
+        &self,
+        mut action: Action,
+        accessor: String,
+        uuid: Uuid,
+        request: TransactionRequest,
+    ) -> Result<TransactionServiceResponse, HttpServiceError> {
+        let result = async {
+            let transaction = self.get_owned_transaction(&mut action, &accessor, uuid).await?;
+            action.report_start().await;
+            Self::try_get_response(Self::transaction_request(&transaction, request, true).await?)
+        }
+        .await;
+        action.finish(&result);
+        result
+    }
+
+    async fn get_owned_transaction(
+        &self,
+        action: &mut Action,
+        accessor: &str,
+        uuid: Uuid,
+    ) -> Result<TransactionInfo, HttpServiceError> {
+        action.set_transaction_id(uuid);
+        let transaction = self.get_transaction(&uuid).await.ok_or_else(HttpServiceError::no_open_transaction)?;
+        action.set_database(transaction.database_name.clone());
+        if accessor != transaction.owner {
+            return Err(HttpServiceError::operation_not_permitted());
+        }
+        Ok(transaction)
+    }
+
     async fn get_transaction(&self, uuid: &Uuid) -> Option<TransactionInfo> {
-        self.transaction_services.read().await.get(uuid).cloned()
+        let transactions = self.transaction_services.read().await;
+        transactions.get(uuid).filter(|transaction| !transaction.request_sender.is_closed()).cloned()
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
@@ -109,12 +147,13 @@ impl HTTPTypeDBService {
         service: &HTTPTypeDBService,
         owner: String,
         payload: TransactionOpenPayload,
+        opener: Option<TransactionOpener>,
     ) -> Result<(TransactionInfo, u64), HttpServiceError> {
         let (request_sender, request_stream) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
         let options =
             payload.transaction_options.map(|options| options.into()).unwrap_or_else(|| TransactionOptions::default());
         let transaction_timeout_millis = options.transaction_timeout_millis;
-        let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream);
+        let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream, opener);
 
         let database_name = Arc::<str>::from(payload.database_name);
 
@@ -132,6 +171,7 @@ impl HTTPTypeDBService {
         request: TransactionRequest,
         error_if_closed: bool,
     ) -> Result<TransactionServiceResponse, HttpServiceError> {
+        let is_commit = matches!(request, TransactionRequest::Commit);
         let (result_sender, result_receiver) = oneshot::channel();
         if let Err(_) = transaction.request_sender.send((request, TransactionResponder(result_sender))).await {
             return match error_if_closed {
@@ -140,13 +180,18 @@ impl HTTPTypeDBService {
             };
         }
 
-        match timeout(Duration::from_millis(transaction.transaction_timeout_millis), result_receiver).await {
-            Ok(Ok(response)) => Ok(response),
-            Ok(Err(_)) => match error_if_closed {
+        let response = match is_commit {
+            true => result_receiver.await,
+            false => timeout(Duration::from_millis(transaction.transaction_timeout_millis), result_receiver)
+                .await
+                .map_err(|_| HttpServiceError::transaction_timeout())?,
+        };
+        match response {
+            Ok(response) => Ok(response),
+            Err(_) => match error_if_closed {
                 false => Ok(TransactionServiceResponse::Ok),
                 true => Err(HttpServiceError::no_open_transaction()),
             },
-            Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
     }
 
@@ -154,10 +199,23 @@ impl HTTPTypeDBService {
         query_options_payload: Option<QueryOptionsPayload>,
         given_rows: Option<GivenRowsHttp>,
         query: String,
+        start: Option<ActionStart>,
     ) -> TransactionRequest {
         let query_options =
             query_options_payload.map(|options| options.into()).unwrap_or_else(|| QueryOptions::default_http());
-        TransactionRequest::Query(query_options, given_rows, query)
+        TransactionRequest::Query(query_options, given_rows, query, start)
+    }
+
+    fn try_get_response(
+        transaction_response: TransactionServiceResponse,
+    ) -> Result<TransactionServiceResponse, HttpServiceError> {
+        match transaction_response {
+            TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
+            TransactionServiceResponse::Ok
+            | TransactionServiceResponse::Query(_)
+            | TransactionServiceResponse::QueryAnalyse(_)
+            | TransactionServiceResponse::WriteQueryAnswersInterrupted(_) => Ok(transaction_response),
+        }
     }
 
     fn try_get_query_response(
@@ -166,6 +224,9 @@ impl HTTPTypeDBService {
         match transaction_response {
             TransactionServiceResponse::Query(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
+            TransactionServiceResponse::WriteQueryAnswersInterrupted(interrupt) => Err(HttpServiceError::Transaction {
+                typedb_source: TransactionServiceError::WriteQueryAnswersInterrupted { interrupt },
+            }),
             TransactionServiceResponse::QueryAnalyse(_) | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
@@ -178,7 +239,9 @@ impl HTTPTypeDBService {
         match transaction_response {
             TransactionServiceResponse::QueryAnalyse(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
-            TransactionServiceResponse::Query(_) | TransactionServiceResponse::Ok => {
+            TransactionServiceResponse::Query(_)
+            | TransactionServiceResponse::WriteQueryAnswersInterrupted(_)
+            | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
         }
@@ -227,20 +290,21 @@ impl HTTPTypeDBService {
         StatusCode::NO_CONTENT
     }
 
-    async fn version(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServerVersion,
-            || async {
+    async fn version(
+        _version: ProtocolVersion,
+        State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
+    ) -> impl IntoResponse {
+        service
+            .new_action(ActionKind::ServerVersion, origin)
+            .run(|| async {
                 let info = service.server_state.distribution_info();
                 Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
                     info.distribution.to_string(),
                     info.version.to_string(),
                 )))
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn redirect_to_version(version: ProtocolVersion) -> impl IntoResponse {
@@ -254,13 +318,13 @@ impl HTTPTypeDBService {
     async fn signin(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         JsonBody(payload): JsonBody<SigninPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::SignIn,
-            || async {
+        service
+            .new_action(ActionKind::SignIn, origin)
+            .with_target_username(payload.username.as_str())
+            .run(|| async {
                 service
                     .server_state
                     .users()
@@ -268,17 +332,18 @@ impl HTTPTypeDBService {
                     .await
                     .map(|token| JsonBody(encode_token(token)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
-    async fn servers(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServersAll,
-            || async {
+    async fn servers(
+        _version: ProtocolVersion,
+        State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
+    ) -> impl IntoResponse {
+        service
+            .new_action(ActionKind::ServersAll, origin)
+            .run(|| async {
                 service
                     .server_state
                     .servers()
@@ -286,17 +351,18 @@ impl HTTPTypeDBService {
                     .await
                     .map(|servers| JsonBody(encode_servers(servers)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
-    async fn databases(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::DatabasesAll,
-            || async {
+    async fn databases(
+        _version: ProtocolVersion,
+        State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
+    ) -> impl IntoResponse {
+        service
+            .new_action(ActionKind::DatabasesAll, origin)
+            .run(|| async {
                 service
                     .server_state
                     .databases()
@@ -304,21 +370,20 @@ impl HTTPTypeDBService {
                     .await
                     .map(|dbs| JsonBody(encode_databases(dbs)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_get(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&database_path.database_name),
-            ActionKind::DatabasesGet,
-            || async {
+        service
+            .new_action(ActionKind::DatabasesGet, origin)
+            .with_database(database_path.database_name.as_str())
+            .run(|| async {
                 let database_name = service
                     .server_state
                     .databases()
@@ -328,64 +393,61 @@ impl HTTPTypeDBService {
                     .ok_or(HttpServiceError::NotFound {})?
                     .name()
                     .to_string();
-                Ok(JsonBody(encode_database(database_name)))
-            },
-        )
-        .await
+                Ok::<_, HttpServiceError>(JsonBody(encode_database(database_name)))
+            })
+            .await
     }
 
     async fn databases_create(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&database_path.database_name),
-            ActionKind::DatabasesCreate,
-            || async {
+        service
+            .new_action(ActionKind::DatabasesCreate, origin)
+            .with_database(database_path.database_name.as_str())
+            .run(|| async {
                 service
                     .server_state
                     .databases()
                     .create(&database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_delete(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&database_path.database_name),
-            ActionKind::DatabaseDelete,
-            || async {
+        service
+            .new_action(ActionKind::DatabaseDelete, origin)
+            .with_database(database_path.database_name.as_str())
+            .run(|| async {
                 service
                     .server_state
                     .databases()
                     .delete(&database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_schema(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&database_path.database_name),
-            ActionKind::DatabaseSchema,
-            || async {
+        service
+            .new_action(ActionKind::DatabaseSchema, origin)
+            .with_database(database_path.database_name.as_str())
+            .run(|| async {
                 service
                     .server_state
                     .databases()
@@ -393,21 +455,20 @@ impl HTTPTypeDBService {
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_type_schema(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&database_path.database_name),
-            ActionKind::DatabaseTypeSchema,
-            || async {
+        service
+            .new_action(ActionKind::DatabaseTypeSchema, origin)
+            .with_database(database_path.database_name.as_str())
+            .run(|| async {
                 service
                     .server_state
                     .databases()
@@ -415,21 +476,19 @@ impl HTTPTypeDBService {
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         accessor: Accessor,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersAll,
-            || async {
+        service
+            .new_action(ActionKind::UsersAll, origin)
+            .run(|| async {
                 service
                     .server_state
                     .users()
@@ -437,22 +496,21 @@ impl HTTPTypeDBService {
                     .await
                     .map(|users| JsonBody(encode_users(users)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_get(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersGet,
-            || async {
+        service
+            .new_action(ActionKind::UsersGet, origin)
+            .with_target_username(user_path.username.as_str())
+            .run(|| async {
                 service
                     .server_state
                     .users()
@@ -460,23 +518,22 @@ impl HTTPTypeDBService {
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
                     .map(|user| JsonBody(encode_user(&user)))
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_create(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         accessor: Accessor,
         user_path: UserPath,
         JsonBody(payload): JsonBody<CreateUserPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersCreate,
-            || async {
+        service
+            .new_action(ActionKind::UsersCreate, origin)
+            .with_target_username(user_path.username.as_str())
+            .run(|| async {
                 let user = User { name: user_path.username };
                 let credential = Credential::new_password(payload.password.as_str());
 
@@ -486,23 +543,22 @@ impl HTTPTypeDBService {
                     .create(accessor, user, credential, None, None)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_update(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         accessor: Accessor,
         user_path: UserPath,
         JsonBody(payload): JsonBody<UpdateUserPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersUpdate,
-            || async {
+        service
+            .new_action(ActionKind::UsersUpdate, origin)
+            .with_target_username(user_path.username.as_str())
+            .run(|| async {
                 let user_update = None; // updating username is not supported now
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
@@ -513,22 +569,21 @@ impl HTTPTypeDBService {
                     .update(accessor, username, user_update, credential_update)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_delete(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersDelete,
-            || async {
+        service
+            .new_action(ActionKind::UsersDelete, origin)
+            .with_target_username(user_path.username.as_str())
+            .run(|| async {
                 let username = user_path.username.as_str();
 
                 service
@@ -537,57 +592,51 @@ impl HTTPTypeDBService {
                     .delete(accessor, username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn transaction_open(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         JsonBody(payload): JsonBody<TransactionOpenPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(payload.database_name.clone()),
-            ActionKind::TransactionOpen,
-            || async {
-                let (transaction_info, _processing_time) = Self::transaction_new(&service, accessor, payload).await?;
-                let uuid = Uuid::new_v4();
+        let uuid = Uuid::new_v4();
+        service
+            .new_action(ActionKind::TransactionOpen, origin.clone())
+            .with_database(payload.database_name.as_str())
+            .with_transaction_id(uuid)
+            .run(|| async {
+                let (transaction_info, _processing_time) = Self::transaction_new(
+                    &service,
+                    accessor,
+                    payload,
+                    Some(TransactionOpener { origin, transaction_id: uuid }),
+                )
+                .await?;
                 service.transaction_services.write().await.insert(uuid, transaction_info);
-                Ok(JsonBody(encode_transaction(uuid)))
-            },
-        )
-        .await
+                Ok::<_, HttpServiceError>(JsonBody(encode_transaction(uuid)))
+            })
+            .await
     }
 
     async fn transactions_commit(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
-        let uuid = path.transaction_id;
-        let transaction = service.get_transaction(&uuid).await.ok_or(HttpServiceError::no_open_transaction())?;
-
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&transaction.database_name),
-            ActionKind::TransactionCommit,
-            || async {
-                if accessor != transaction.owner {
-                    return Err(HttpServiceError::operation_not_permitted());
-                }
-                Self::transaction_request(&transaction, TransactionRequest::Commit, true).await
-            },
-        )
-        .await
+        let action = service.new_action(ActionKind::TransactionCommit, origin);
+        service.run_transaction_action(action, accessor, path.transaction_id, TransactionRequest::Commit).await
     }
 
     async fn transactions_close(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
@@ -596,140 +645,117 @@ impl HTTPTypeDBService {
             return Ok(TransactionServiceResponse::Ok);
         };
 
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&transaction.database_name),
-            ActionKind::TransactionClose,
-            || async {
+        service
+            .new_action(ActionKind::TransactionClose, origin)
+            .with_database(transaction.database_name.clone())
+            .with_transaction_id(uuid)
+            .run(|| async {
                 if accessor != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(&transaction, TransactionRequest::Close, false).await
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn transactions_rollback(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
-        let uuid = path.transaction_id;
-        let transaction = service.get_transaction(&uuid).await.ok_or(HttpServiceError::no_open_transaction())?;
-
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&transaction.database_name),
-            ActionKind::TransactionRollback,
-            || async {
-                if accessor != transaction.owner {
-                    return Err(HttpServiceError::operation_not_permitted());
-                }
-                Self::transaction_request(&transaction, TransactionRequest::Rollback, true).await
-            },
-        )
-        .await
+        let action = service.new_action(ActionKind::TransactionRollback, origin);
+        service.run_transaction_action(action, accessor, path.transaction_id, TransactionRequest::Rollback).await
     }
 
     async fn transactions_analyse(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionAnalyzePayload>,
     ) -> impl IntoResponse {
-        let uuid = path.transaction_id;
-        let transaction = service.get_transaction(&uuid).await.ok_or(HttpServiceError::no_open_transaction())?;
-
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&transaction.database_name),
-            ActionKind::TransactionAnalyse,
-            || async {
-                if accessor != transaction.owner {
-                    return Err(HttpServiceError::operation_not_permitted());
-                }
-                Self::transaction_request(&transaction, TransactionRequest::AnalyseQuery(payload.query), true).await
-            },
-        )
-        .await
+        let action = service.new_action(ActionKind::TransactionAnalyse, origin).with_query(&payload.query);
+        let request = TransactionRequest::AnalyseQuery(payload.query);
+        service.run_transaction_action(action, accessor, path.transaction_id, request).await
     }
 
     async fn transactions_query(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionQueryPayload>,
     ) -> impl IntoResponse {
-        let uuid = path.transaction_id;
-        let transaction = service.get_transaction(&uuid).await.ok_or(HttpServiceError::no_open_transaction())?;
-
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(&transaction.database_name),
-            ActionKind::TransactionQuery,
-            || async {
-                if accessor != transaction.owner {
-                    return Err(HttpServiceError::operation_not_permitted());
-                }
-                Self::transaction_request(
-                    &transaction,
-                    Self::build_query_request(payload.query_options, payload.given_rows.map(Into::into), payload.query),
-                    true,
-                )
-                .await
-            },
-        )
-        .await
+        let mut action = service.new_action(ActionKind::TransactionQuery, origin).with_query(&payload.query);
+        let result = async {
+            let transaction = service.get_owned_transaction(&mut action, &accessor, path.transaction_id).await?;
+            let request = Self::build_query_request(
+                payload.query_options,
+                payload.given_rows.map(Into::into),
+                payload.query,
+                action.hand_over_start(),
+            );
+            Self::try_get_response(Self::transaction_request(&transaction, request, true).await?)
+        }
+        .await;
+        action.finish(&result);
+        result
     }
 
     async fn query(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        origin: ActionOrigin,
         Accessor(accessor): Accessor,
         JsonBody(payload): JsonBody<QueryPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
-            Some(payload.transaction_open_payload.database_name.clone()),
-            ActionKind::OneshotQuery,
-            || async {
-                let (transaction_info, _processing_time) =
-                    Self::transaction_new(&service, accessor, payload.transaction_open_payload).await?;
+        let action = service
+            .new_action(ActionKind::OneshotQuery, origin)
+            .with_database(payload.transaction_open_payload.database_name.as_str())
+            .with_query(&payload.query);
+        let result = Self::run_oneshot_query(&service, accessor, payload, action.hand_over_start()).await;
+        action.finish(&result);
+        result.map(TransactionServiceResponse::Query)
+    }
 
-                let transaction_response = Self::transaction_request(
-                    &transaction_info,
-                    Self::build_query_request(payload.query_options, payload.given_rows.map(Into::into), payload.query),
-                    true,
-                )
-                .await?;
-                let query_response = Self::try_get_query_response(transaction_response)?;
+    async fn run_oneshot_query(
+        service: &HTTPTypeDBService,
+        accessor: String,
+        payload: QueryPayload,
+        start: Option<ActionStart>,
+    ) -> Result<QueryAnswer, HttpServiceError> {
+        let (transaction_info, _processing_time) =
+            Self::transaction_new(service, accessor, payload.transaction_open_payload, None).await?;
 
-                let commit = match query_response.query_type() {
-                    QueryType::Read => false,
-                    QueryType::Write | QueryType::Schema => {
-                        payload.commit.unwrap_or(Self::QUERY_ENDPOINT_COMMIT_DEFAULT)
-                    }
-                };
-
-                let close_response = match commit {
-                    true => Self::transaction_request(&transaction_info, TransactionRequest::Commit, true),
-                    false => Self::transaction_request(&transaction_info, TransactionRequest::Close, true),
-                }
-                .await?;
-                if let TransactionServiceResponse::Err(typedb_source) = close_response {
-                    return match commit {
-                        true => Err(HttpServiceError::QueryCommit { typedb_source }),
-                        false => Err(HttpServiceError::QueryClose { typedb_source }),
-                    };
-                }
-
-                Ok(TransactionServiceResponse::Query(query_response))
-            },
+        let transaction_response = Self::transaction_request(
+            &transaction_info,
+            Self::build_query_request(payload.query_options, payload.given_rows.map(Into::into), payload.query, start),
+            true,
         )
-        .await
+        .await?;
+        let query_response = Self::try_get_query_response(transaction_response)?;
+
+        let commit = match query_response.query_type() {
+            QueryType::Read => false,
+            QueryType::Write | QueryType::Schema => payload.commit.unwrap_or(Self::QUERY_ENDPOINT_COMMIT_DEFAULT),
+        };
+
+        let close_response = match commit {
+            true => Self::transaction_request(&transaction_info, TransactionRequest::Commit, true),
+            false => Self::transaction_request(&transaction_info, TransactionRequest::Close, true),
+        }
+        .await?;
+        if let TransactionServiceResponse::Err(typedb_source) = close_response {
+            return match commit {
+                true => Err(HttpServiceError::QueryCommit { typedb_source }),
+                false => Err(HttpServiceError::QueryClose { typedb_source }),
+            };
+        }
+
+        Ok(query_response)
     }
 }

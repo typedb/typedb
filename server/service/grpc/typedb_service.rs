@@ -23,9 +23,9 @@ use crate::{
     authentication::{Accessor, AuthenticationError},
     error::LocalServerStateError,
     service::{
+        action::{Action, ActionOrigin},
         grpc::{
             ConnectionID, GrpcProtocolVersion,
-            diagnostics::run_with_diagnostics_async,
             error::{GrpcServiceError, IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
             migration::{
                 export_service::{DATABASE_EXPORT_REQUEST_BUFFER_SIZE, DatabaseExportService},
@@ -61,6 +61,25 @@ impl GRPCTypeDBService {
         Self { server_state }
     }
 
+    fn new_action(&self, kind: ActionKind, origin: ActionOrigin) -> Action {
+        Action::new(self.server_state.clone(), kind, origin)
+    }
+
+    fn new_sign_in_action(
+        &self,
+        kind: ActionKind,
+        origin: ActionOrigin,
+        credentials: Option<&typedb_protocol::authentication::token::create::req::Credentials>,
+    ) -> Action {
+        let action = self.new_action(kind, origin);
+        match credentials {
+            Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password)) => {
+                action.with_target_username(password.username.as_str())
+            }
+            None => action,
+        }
+    }
+
     async fn servers_statuses(&self) -> Result<Vec<typedb_protocol::Server>, Status> {
         let statuses = self.server_state.servers().statuses().await.map_err(|err| err.into_status())?;
         Ok(statuses.into_iter().map(|status| status.to_proto()).collect())
@@ -74,11 +93,10 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ConnectionOpen,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        let credentials = request.get_ref().authentication.as_ref().and_then(|req| req.credentials.as_ref());
+        self.new_sign_in_action(ActionKind::ConnectionOpen, origin, credentials)
+            .run(|| async {
                 let receive_time = Instant::now();
                 let message = request.into_inner();
                 let versions_compatible = message.version == typedb_protocol::Version::Version as i32
@@ -132,9 +150,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     servers_all_res(self.servers_statuses().await?),
                     token_create_res(token),
                 )))
-            },
-        )
-        .await
+            })
+            .await
     }
 
     // Update AUTHENTICATION_FREE_METHODS if this method is renamed
@@ -142,11 +159,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
     ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::SignIn,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_sign_in_action(ActionKind::SignIn, origin, request.get_ref().credentials.as_ref())
+            .run(|| async {
                 let request = request.into_inner();
                 let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(
                     password_credentials,
@@ -164,62 +179,51 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|result| Response::new(token_create_res(result)))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn servers_all(
         &self,
-        _request: Request<typedb_protocol::server_manager::all::Req>,
+        request: Request<typedb_protocol::server_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::server_manager::all::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServersAll,
-            || async { Ok(Response::new(servers_all_res(self.servers_statuses().await?))) },
-        )
-        .await
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::ServersAll, origin)
+            .run(|| async { Ok(Response::new(servers_all_res(self.servers_statuses().await?))) })
+            .await
     }
 
     async fn servers_get(
         &self,
-        _request: Request<typedb_protocol::server_manager::get::Req>,
+        request: Request<typedb_protocol::server_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::server_manager::get::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServersGet,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::ServersGet, origin)
+            .run(|| async {
                 let status = self.server_state.servers().status().await.map_err(|err| err.into_status())?;
                 Ok(Response::new(servers_get_res(status.to_proto())))
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn server_version(
         &self,
-        _request: Request<typedb_protocol::server::version::Req>,
+        request: Request<typedb_protocol::server::version::Req>,
     ) -> Result<Response<typedb_protocol::server::version::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServerVersion,
-            || async { Ok(Response::new(server_version_res(self.server_state.distribution_info()))) },
-        )
-        .await
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::ServerVersion, origin)
+            .run(|| async { Ok(Response::new(server_version_res(self.server_state.distribution_info()))) })
+            .await
     }
 
     async fn users_get(
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersGet,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::UsersGet, origin)
+            .with_target_username(request.get_ref().name.as_str())
+            .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
                 })?;
@@ -230,20 +234,17 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|user| Ok(Response::new(users_get_res(user))))
                     .map_err(|err| err.into_status())?
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_all(
         &self,
         request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersAll,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::UsersAll, origin)
+            .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
                 })?;
@@ -253,20 +254,18 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|users| Ok(Response::new(users_all_res(users))))
                     .map_err(|err| err.into_status())?
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_contains(
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersContains,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::UsersContains, origin)
+            .with_target_username(request.get_ref().name.as_str())
+            .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
                 })?;
@@ -277,20 +276,21 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|contains| Response::new(users_contains_res(contains)))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_create(
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersCreate,
-            || async {
+        let action = self.new_action(ActionKind::UsersCreate, ActionOrigin::grpc(request.extensions()));
+        let action = match &request.get_ref().user {
+            Some(user) => action.with_target_username(user.name.as_str()),
+            None => action,
+        };
+        action
+            .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
                 })?;
@@ -304,20 +304,18 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|_| Response::new(user_create_res()))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_update(
         &self,
         request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersUpdate,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::UsersUpdate, origin)
+            .with_target_username(request.get_ref().name.as_str())
+            .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
                 })?;
@@ -332,20 +330,18 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|_| Response::new(user_update_res()))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn users_delete(
         &self,
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::UsersDelete,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::UsersDelete, origin)
+            .with_target_username(request.get_ref().name.as_str())
+            .run(|| async {
                 let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
                     LocalServerStateError::AuthenticationError { typedb_source }.into_status()
                 })?;
@@ -357,87 +353,77 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|_| Response::new(users_delete_res()))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_get(
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(name.clone()),
-            ActionKind::DatabasesGet,
-            || async {
+        self.new_action(ActionKind::DatabasesGet, origin)
+            .with_database(name.clone())
+            .run(|| async {
                 match self.server_state.databases().get(&name).await {
                     Ok(Some(db)) => Ok(Response::new(database_get_res(db.name().to_string()))),
                     Ok(None) => Err(LocalServerStateError::DatabaseNotFound { name }.into_status()),
                     Err(err) => Err(err.into_status()),
                 }
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_all(
         &self,
-        _request: Request<typedb_protocol::database_manager::all::Req>,
+        request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::DatabasesAll,
-            || async {
+        let origin = ActionOrigin::grpc(request.extensions());
+        self.new_action(ActionKind::DatabasesAll, origin)
+            .run(|| async {
                 self.server_state
                     .databases()
                     .all()
                     .await
                     .map(|dbs| Response::new(database_all_res(dbs)))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_contains(
         &self,
         request: Request<typedb_protocol::database_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(name.clone()),
-            ActionKind::DatabasesContains,
-            || async {
+        self.new_action(ActionKind::DatabasesContains, origin)
+            .with_database(name.clone())
+            .run(|| async {
                 let contains = self.server_state.databases().contains(&name).await.map_err(|err| err.into_status())?;
                 Ok(Response::new(database_contains_res(contains)))
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn databases_create(
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(name.clone()),
-            ActionKind::DatabasesCreate,
-            || async {
+        self.new_action(ActionKind::DatabasesCreate, origin)
+            .with_database(name.clone())
+            .run(|| async {
                 self.server_state
                     .databases()
                     .create(&name)
                     .await
                     .map(|_| Response::new(database_create_res(name)))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     type databases_importStream = Pin<Box<ReceiverStream<Result<DatabasesImportServerProto, Status>>>>;
@@ -446,17 +432,22 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
     ) -> Result<Response<Self::databases_importStream>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
         let service = DatabaseImportService::new(
             self.server_state.clone(),
-            self.server_state.diagnostics_manager(),
+            origin.clone(),
             request_stream,
             response_sender,
             self.server_state.shutdown_receiver(),
         );
 
-        self.server_state.databases().spawn_import_service(service).await.map_err(|err| err.into_status())?;
+        if let Err(err) = self.server_state.databases().spawn_import_service(service).await {
+            let status = err.into_status();
+            self.new_action(ActionKind::DatabasesImport, origin).fail(&status);
+            return Err(status);
+        }
 
         let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))
@@ -466,59 +457,53 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::schema::Req>,
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(name.clone()),
-            ActionKind::DatabaseSchema,
-            || async {
+        self.new_action(ActionKind::DatabaseSchema, origin)
+            .with_database(name.clone())
+            .run(|| async {
                 match self.server_state.databases().schema(&name).await {
                     Ok(schema) => Ok(Response::new(database_schema_res(schema))),
                     Err(err) => Err(err.into_status()),
                 }
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn database_type_schema(
         &self,
         request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(name.clone()),
-            ActionKind::DatabaseTypeSchema,
-            || async {
+        self.new_action(ActionKind::DatabaseTypeSchema, origin)
+            .with_database(name.clone())
+            .run(|| async {
                 match self.server_state.databases().type_schema(&name).await {
                     Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
                     Err(err) => Err(err.into_status()),
                 }
-            },
-        )
-        .await
+            })
+            .await
     }
 
     async fn database_delete(
         &self,
         request: Request<typedb_protocol::database::delete::Req>,
     ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(name.clone()),
-            ActionKind::DatabaseDelete,
-            || async {
+        self.new_action(ActionKind::DatabaseDelete, origin)
+            .with_database(name.clone())
+            .run(|| async {
                 self.server_state
                     .databases()
                     .delete(&name)
                     .await
                     .map(|_| Response::new(database_delete_res()))
                     .map_err(|err| err.into_status())
-            },
-        )
-        .await
+            })
+            .await
     }
 
     type database_exportStream = Pin<Box<ReceiverStream<Result<DatabaseExportServerProto, Status>>>>;
@@ -527,6 +512,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::export::Req>,
     ) -> Result<Response<Self::database_exportStream>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let Accessor(accessor) = Accessor::from_extensions(&request.extensions())
             .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let database_name = request
@@ -538,27 +524,19 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .into_status()
             })?
             .name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            Some(database_name.clone()),
-            ActionKind::DatabaseExport,
-            || async {
-                let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
-                let service = DatabaseExportService::new(
-                    self.server_state.distribution_info(),
-                    self.server_state.clone(),
-                    database_name,
-                    accessor,
-                    response_sender,
-                    self.server_state.shutdown_receiver(),
-                );
-                tokio::spawn(async move { service.export().await });
-                let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
-                    ReceiverStream::new(response_receiver);
-                Ok(Response::new(Box::pin(stream)))
-            },
-        )
-        .await
+        let action = self.new_action(ActionKind::DatabaseExport, origin).with_database(database_name.as_str());
+        let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
+        let service = DatabaseExportService::new(
+            self.server_state.distribution_info(),
+            self.server_state.clone(),
+            database_name,
+            accessor,
+            response_sender,
+            self.server_state.shutdown_receiver(),
+        );
+        tokio::spawn(async move { service.export(action).await });
+        let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> = ReceiverStream::new(response_receiver);
+        Ok(Response::new(Box::pin(stream)))
     }
 
     type transactionStream = Pin<Box<ReceiverStream<Result<TransactionServerProto, Status>>>>;
@@ -567,11 +545,13 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<TransactionClientProto>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
+        let origin = ActionOrigin::grpc(request.extensions());
         let Accessor(accessor) = Accessor::from_extensions(&request.extensions())
             .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
-        let mut service = TransactionService::new(self.server_state.clone(), accessor, request_stream, response_sender);
+        let mut service =
+            TransactionService::new(self.server_state.clone(), accessor, origin, request_stream, response_sender);
         tokio::spawn(async move { service.listen().await });
         let stream: ReceiverStream<Result<TransactionServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))

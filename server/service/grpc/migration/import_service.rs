@@ -13,7 +13,7 @@ use std::{
 };
 
 use database::migration::database_importer::{DatabaseImportError, DatabaseImporterHandle};
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
+use diagnostics::metrics::ActionKind;
 use error::TypeDBError;
 use tokio::sync::{
     mpsc::{Receiver, Sender},
@@ -30,8 +30,8 @@ use typedb_protocol::{
 use crate::{
     error::LocalServerStateError,
     service::{
+        action::{Action, ActionOrigin},
         grpc::{
-            diagnostics::submit_result_metrics,
             error::{IntoGrpcStatus, ProtocolError},
             response_builders::database_manager::database_import_res_done,
         },
@@ -95,20 +95,20 @@ impl StopSignals {
 #[derive(Debug)]
 pub struct DatabaseImportService {
     server_state: Arc<ServerState>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    origin: ActionOrigin,
     request_stream: Streaming<ProtocolClient>,
     response_sender: ResponseSender,
     stop_signals: StopSignals,
 
     active_import: Option<ActiveImport>,
-    database_name: Option<String>,
+    action: Option<Action>,
     close_sender: Sender<()>,
 }
 
 impl DatabaseImportService {
     pub(crate) fn new(
         server_state: Arc<ServerState>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        origin: ActionOrigin,
         request_stream: Streaming<ProtocolClient>,
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
@@ -117,20 +117,20 @@ impl DatabaseImportService {
         let stop_signals = StopSignals { shutdown_receiver, close_receiver, response_sender: response_sender.clone() };
         Self {
             server_state,
-            diagnostics_manager,
+            origin,
             request_stream,
             response_sender,
             stop_signals,
             active_import: None,
-            database_name: None,
+            action: None,
             close_sender,
         }
     }
 
     pub(crate) async fn listen(mut self) {
         let result = self.listen_loop().await;
-        if let Some(database_name) = &self.database_name {
-            submit_result_metrics(&self.diagnostics_manager, Some(database_name), ActionKind::DatabasesImport, &result);
+        if let Some(action) = self.action.take() {
+            action.finish(&result);
         }
     }
 
@@ -245,7 +245,10 @@ impl DatabaseImportService {
         if let Some(active) = self.active_import.as_ref() {
             return Err(DatabaseImportServiceError::DuplicateImport { name, old_name: active.name.clone() });
         }
-        self.database_name = Some(name.clone());
+        let action = Action::new(self.server_state.clone(), ActionKind::DatabasesImport, self.origin.clone())
+            .with_database(name.as_str());
+        action.report_start().await;
+        self.action = Some(action);
 
         let importer = self
             .server_state

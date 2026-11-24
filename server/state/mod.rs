@@ -25,6 +25,7 @@ pub use self::{
     user_operator::{LocalUserOperator, UserOperator},
 };
 use crate::{
+    audit::{Auditor, NoopAuditor},
     authentication::token_manager::TokenManager,
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
@@ -48,6 +49,7 @@ pub struct ServerState {
     http_listen_address: Option<SocketAddr>,
     admin_endpoint: Option<AdminPath>,
     diagnostics_manager: Arc<DiagnosticsManager>,
+    auditor: Arc<dyn Auditor>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
@@ -123,6 +125,7 @@ impl ServerState {
             database_operator_override: None,
             transaction_operator_override: None,
             user_operator_override: None,
+            auditor_override: None,
         })
     }
 
@@ -160,6 +163,10 @@ impl ServerState {
 
     pub fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
         self.diagnostics_manager.clone()
+    }
+
+    pub fn auditor(&self) -> &dyn Auditor {
+        &*self.auditor
     }
 
     pub fn shutdown_receiver(&self) -> Receiver<()> {
@@ -299,6 +306,7 @@ pub struct ServerStateBuilder {
     database_operator_override: Option<Arc<dyn DatabaseOperator>>,
     transaction_operator_override: Option<Arc<dyn TransactionOperator>>,
     user_operator_override: Option<Arc<dyn UserOperator>>,
+    auditor_override: Option<Arc<dyn Auditor>>,
 }
 
 impl ServerStateBuilder {
@@ -338,6 +346,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn auditor(mut self, auditor: Arc<dyn Auditor>) -> Self {
+        self.auditor_override = Some(auditor);
+        self
+    }
+
     pub fn build(self) -> ServerState {
         let server_operator =
             self.server_operator_override.unwrap_or_else(|| Arc::new(LocalServerOperator::new(self.server_status)));
@@ -364,6 +377,7 @@ impl ServerStateBuilder {
             http_listen_address: self.http_listen_address,
             admin_endpoint: self.admin_endpoint,
             diagnostics_manager: self.diagnostics_manager,
+            auditor: self.auditor_override.unwrap_or_else(|| Arc::new(NoopAuditor)),
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,
             _database_diagnostics_updater: self.database_diagnostics_updater,

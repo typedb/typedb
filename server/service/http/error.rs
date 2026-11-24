@@ -31,10 +31,6 @@ typedb_error!(
 );
 
 impl HttpServiceError {
-    pub(crate) fn source(&self) -> &(dyn TypeDBError + Sync + '_) {
-        self.source_typedb_error().unwrap_or(self)
-    }
-
     pub(crate) fn format_source_trace(&self) -> String {
         self.stack_trace().join("\n").to_string()
     }
