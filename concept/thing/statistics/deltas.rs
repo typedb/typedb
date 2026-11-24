@@ -80,10 +80,12 @@ impl Delta {
 
 impl AddAssign for Delta {
     fn add_assign(&mut self, rhs: Self) {
-        // TODO checked math
-        self.inserts += rhs.inserts;
-        self.overwrites += rhs.overwrites;
-        self.deletes += rhs.deletes;
+        self.inserts = u64::checked_add(self.inserts, rhs.inserts)
+            .unwrap_or_else(|| panic!("{} + {} inserts overflows u64!", self.inserts, rhs.inserts));
+        self.overwrites = u64::checked_add(self.overwrites, rhs.overwrites)
+            .unwrap_or_else(|| panic!("{} + {} overwrites overflows u64!", self.overwrites, rhs.overwrites));
+        self.deletes = u64::checked_add(self.deletes, rhs.deletes)
+            .unwrap_or_else(|| panic!("{} + {} deletes overflows u64!", self.deletes, rhs.deletes));
     }
 }
 
