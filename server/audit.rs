@@ -17,6 +17,7 @@ pub trait Auditor: Debug + Send + Sync {
 
     fn description(&self) -> Option<String>;
 
+    /// The admission is awaited only for `AuditStage::Started`: the end of an operation is never held back.
     fn record(&self, event: AuditEvent<'_>) -> AuditAdmission;
 }
 
