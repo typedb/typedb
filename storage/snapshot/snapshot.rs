@@ -483,7 +483,7 @@ impl<D> WriteSnapshot<D> {
             storage,
             operations,
             open_sequence_number,
-            id: id.unwrap_or_else(|| SnapshotId::new()),
+            id: id.unwrap_or_else(SnapshotId::new),
             iterator_pool: IteratorPool::new(),
             reader_guard,
         }
@@ -699,7 +699,7 @@ impl<D> SchemaSnapshot<D> {
             storage,
             operations,
             open_sequence_number,
-            id: id.unwrap_or_else(|| SnapshotId::new()),
+            id: id.unwrap_or_else(SnapshotId::new),
             iterator_pool: IteratorPool::new(),
             reader_guard,
         }
@@ -941,7 +941,7 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         _storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let Some(map) = self.keyspace_map(key.keyspace_id()) else { return Ok(None) };
-        Ok(map.get(key.bytes()).map(|v| ByteArray::copy(&**v)))
+        Ok(map.get(key.bytes()).map(|v| ByteArray::copy(v)))
     }
 
     fn get_in_lookup_mode<const INLINE_BYTES: usize>(
