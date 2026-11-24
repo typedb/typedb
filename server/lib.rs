@@ -483,7 +483,7 @@ impl Server {
             safe_println!("  Drivers must be configured to connect *without TLS*.");
         }
         if let Some(audit_description) = auditor.description() {
-            safe_println!("Audit logging: {audit_description}");
+            safe_println!("\nAudit logging: {audit_description}");
         }
 
         let grpc_connect_address =
