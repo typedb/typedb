@@ -443,7 +443,7 @@ impl<'de> Deserialize<'de> for Statistics {
             where
                 V: MapAccess<'de>,
             {
-                todo!()
+                v1::visit_map(map)
             }
         }
 
@@ -576,6 +576,7 @@ mod v0 {
         })
     }
 
+    #[expect(unused, reason = "saved from V0 deser, though visit_map appears to be unused")]
     pub(super) fn visit_map<'de, V>(mut map: V) -> Result<Statistics, V::Error>
     where
         V: MapAccess<'de>,
