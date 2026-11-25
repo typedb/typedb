@@ -54,10 +54,10 @@ impl TypePopulations {
     fn update(&mut self, types: &BTreeSet<Type>, statistics: &Statistics) {
         for &ty in types {
             self.counts.entry(ty).or_insert_with(|| match ty {
-                Type::Entity(ty) => statistics.entity_counts.get(&ty).copied().unwrap_or_default(),
-                Type::Relation(ty) => statistics.relation_counts.get(&ty).copied().unwrap_or_default(),
-                Type::Attribute(ty) => statistics.attribute_counts.get(&ty).copied().unwrap_or_default(),
-                Type::RoleType(ty) => statistics.role_counts.get(&ty).copied().unwrap_or_default(),
+                Type::Entity(ty) => statistics.entity_counts.get(&ty).copied().unwrap_or_default().visible,
+                Type::Relation(ty) => statistics.relation_counts.get(&ty).copied().unwrap_or_default().visible,
+                Type::Attribute(ty) => statistics.attribute_counts.get(&ty).copied().unwrap_or_default().visible,
+                Type::RoleType(ty) => statistics.role_counts.get(&ty).copied().unwrap_or_default().visible,
             });
         }
     }

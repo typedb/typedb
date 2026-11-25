@@ -521,6 +521,7 @@ impl<'a> HasPlanner<'a> {
             .filter_map(|(owner, attribute)| {
                 statistics.has_attribute_counts.get(&owner.as_object_type())?.get(&attribute.as_attribute_type())
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         //  We should compute that we are doing multiple seeks() and merge-sorting.
@@ -529,6 +530,7 @@ impl<'a> HasPlanner<'a> {
             .iter()
             .filter_map(|owner| statistics.has_attribute_counts.get(&owner.as_object_type()))
             .flat_map(|counts| counts.values())
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let owner_size = owner_types
@@ -538,12 +540,14 @@ impl<'a> HasPlanner<'a> {
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
                 _ => None,
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let unbound_typed_expected_size_reverse = attribute_types
             .iter()
             .filter_map(|attribute| statistics.attribute_owner_counts.get(&attribute.as_attribute_type()))
             .flat_map(|counts| counts.values())
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let attribute_size = attribute_types
@@ -552,6 +556,7 @@ impl<'a> HasPlanner<'a> {
                 answer::Type::Attribute(type_) => statistics.attribute_counts.get(type_),
                 _ => None,
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         Self {
@@ -746,6 +751,7 @@ impl<'a> LinksPlanner<'a> {
                         .get(&player.as_object_type())
                 })
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let unbound_typed_expected_size_canonical = relation_types
@@ -758,6 +764,7 @@ impl<'a> LinksPlanner<'a> {
                 ))
             })
             .flatten()
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let relation_size = relation_types
@@ -767,6 +774,7 @@ impl<'a> LinksPlanner<'a> {
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
                 _ => None,
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let unbound_typed_expected_size_reverse = player_types
@@ -779,6 +787,7 @@ impl<'a> LinksPlanner<'a> {
                 ))
             })
             .flatten()
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let player_size = player_types
@@ -788,6 +797,7 @@ impl<'a> LinksPlanner<'a> {
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
                 _ => None,
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let relation = relation.as_variable().unwrap();
@@ -987,6 +997,7 @@ impl<'a> IndexedRelationPlanner<'a> {
             .filter_map(|(p1_type, p2_type)| {
                 statistics.links_index_counts.get(&p1_type.as_object_type())?.get(&p2_type.as_object_type())
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let player_1_size = player_1_types
@@ -996,6 +1007,7 @@ impl<'a> IndexedRelationPlanner<'a> {
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
                 _ => None,
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let player_2_size = player_2_types
@@ -1005,6 +1017,7 @@ impl<'a> IndexedRelationPlanner<'a> {
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
                 _ => None,
             })
+            .map(|counts| counts.visible)
             .sum::<u64>() as f64;
 
         let player_1 = player_1.as_variable().unwrap();

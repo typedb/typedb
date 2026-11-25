@@ -208,6 +208,22 @@ where
     }
 }
 
+pub fn empty<T>() -> Empty<T> {
+    Empty { _pd: PhantomData }
+}
+
+pub struct Empty<Item> {
+    _pd: PhantomData<Item>,
+}
+
+impl<Item: Hkt> LendingIterator for Empty<Item> {
+    type Item<'a> = Item::HktSelf<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        None
+    }
+}
+
 pub trait Seekable<K: ?Sized>: LendingIterator {
     fn seek(&mut self, key: &K);
     fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering;
@@ -261,8 +277,7 @@ where
     LI: Seekable<K>,
 {
     fn seek(&mut self, key: &K) {
-        if self.item.is_some() {
-            let item = self.item.as_ref().unwrap();
+        if let Some(item) = &self.item {
             match self.compare_key(item, key) {
                 Ordering::Less => (), // fallthrough
                 Ordering::Equal => return,

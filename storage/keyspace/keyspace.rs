@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::Bytes;
+use bytes::{Bytes, byte_array::ByteArray};
 use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
 use resource::profile::StorageCounters;
@@ -19,7 +19,11 @@ use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, 
 use serde::{Deserialize, Serialize};
 
 use super::{IteratorPool, constants, iterator};
-use crate::{key_range::KeyRange, keyspace::rocks_resources::RocksResources, write_batches::WriteBatches};
+use crate::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    keyspace::rocks_resources::RocksResources,
+    write_batches::WriteBatches,
+};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct KeyspaceId(pub u8);

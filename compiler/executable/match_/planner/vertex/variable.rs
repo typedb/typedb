@@ -7,7 +7,7 @@
 use std::{collections::HashSet, fmt};
 
 use answer::variable::Variable;
-use concept::thing::statistics::Statistics;
+use concept::thing::statistics::{Counts, Statistics};
 use ir::pattern::Vertex;
 
 use crate::{
@@ -243,17 +243,17 @@ impl ThingPlanner {
         {
             match type_ {
                 answer::Type::Entity(type_) => {
-                    if let Some(count) = statistics.entity_counts.get(type_) {
+                    if let Some(Counts { visible: count, invisible: _ }) = statistics.entity_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
                     }
                 }
                 answer::Type::Relation(type_) => {
-                    if let Some(count) = statistics.relation_counts.get(type_) {
+                    if let Some(Counts { visible: count, invisible: _ }) = statistics.relation_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
                     }
                 }
                 answer::Type::Attribute(type_) => {
-                    if let Some(count) = statistics.attribute_counts.get(type_) {
+                    if let Some(Counts { visible: count, invisible: _ }) = statistics.attribute_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
                         unrestricted_expected_attribute_types += 1;
                     }

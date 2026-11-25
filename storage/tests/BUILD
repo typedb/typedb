@@ -11,6 +11,7 @@ rust_library(
     srcs = glob(["test_utils_storage/*.rs"]),
     crate_root = "test_utils_storage/lib.rs",
     deps = [
+        "//common/lending_iterator",
         "//common/logger",
         "//common/bytes",
         "//common/options",

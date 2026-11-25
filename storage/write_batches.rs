@@ -12,8 +12,8 @@ use std::{
 
 use rocksdb::WriteBatch;
 
-use super::{MVCCKey, StorageOperation};
 use crate::{
+    MVCCKeyArray, StorageOperation,
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     sequence_number::SequenceNumber,
     snapshot::{
@@ -37,16 +37,16 @@ impl WriteBatches {
                 for (key, write) in writes {
                     match write {
                         Write::Insert { value } => {
-                            write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
+                            write_batch.put(MVCCKeyArray::build(key, seq, StorageOperation::Insert).bytes(), value)
                         }
                         Write::Put { value, action, .. } => {
                             if action.load(Ordering::SeqCst) != PutAction::Nop {
-                                write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
+                                write_batch.put(MVCCKeyArray::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }
                         Write::Delete { action } => {
                             if action.load(Ordering::SeqCst) != DeleteAction::Nop {
-                                write_batch.put(MVCCKey::build(key, seq, StorageOperation::Delete).bytes(), [])
+                                write_batch.put(MVCCKeyArray::build(key, seq, StorageOperation::Delete).bytes(), [])
                             }
                         }
                     }

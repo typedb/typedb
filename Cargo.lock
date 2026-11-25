@@ -5674,6 +5674,7 @@ dependencies = [
  "bytes 0.0.0",
  "diagnostics",
  "durability",
+ "lending_iterator",
  "logger",
  "options",
  "resource",

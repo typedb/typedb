@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::{Type, variable::Variable};
-use concept::thing::statistics::Statistics;
+use concept::thing::statistics::{Counts, Statistics};
 use ir::pattern::{
     Vertex,
     constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
@@ -707,9 +707,9 @@ impl Costed for DisjunctionVertex<'_> {
 
 pub(super) fn instance_count(type_: &Type, statistics: &Statistics) -> u64 {
     match type_ {
-        Type::Entity(entity) => *statistics.entity_counts.get(entity).unwrap_or(&0),
-        Type::Relation(relation) => *statistics.relation_counts.get(relation).unwrap_or(&0),
-        Type::Attribute(attribute) => *statistics.attribute_counts.get(attribute).unwrap_or(&0),
+        Type::Entity(entity) => statistics.entity_counts.get(entity).unwrap_or(&Counts::new()).visible,
+        Type::Relation(relation) => statistics.relation_counts.get(relation).unwrap_or(&Counts::new()).visible,
+        Type::Attribute(attribute) => statistics.attribute_counts.get(attribute).unwrap_or(&Counts::new()).visible,
         Type::RoleType(_) => unreachable!("Cannot count role instances"),
     }
 }

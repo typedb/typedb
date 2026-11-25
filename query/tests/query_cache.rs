@@ -7,7 +7,10 @@
 use std::sync::Arc;
 
 use concept::{
-    thing::{statistics::Statistics, thing_manager::ThingManager},
+    thing::{
+        statistics::{Counts, Statistics},
+        thing_manager::ThingManager,
+    },
     type_::type_manager::TypeManager,
 };
 use encoding::{graph::definition::definition_key_generator::DefinitionKeyGenerator, value::label::Label};
@@ -172,7 +175,7 @@ fn plan_outdated_by_statistics_is_not_reused() {
     let snapshot = context.storage.clone().open_snapshot_read();
     let person = context.type_manager.get_entity_type(&snapshot, &Label::new_static("person")).unwrap().unwrap();
     let mut statistics = Statistics::new(SequenceNumber::MIN);
-    statistics.entity_counts.insert(person, 1_000_000);
+    statistics.entity_counts.insert(person, Counts::from_visible(1_000_000));
     context.cache.set_statistics(Arc::new(statistics));
     assert!(!is_executable_reusable(&context), "a plan outdated by the latest statistics should not be reused");
 

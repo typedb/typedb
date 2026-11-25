@@ -7,6 +7,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt,
+    ops::AddAssign,
 };
 
 use encoding::{DecodableKey, graph::type_::vertex::PrefixedTypeVertexEncoding};
@@ -40,13 +41,51 @@ pub struct Delta {
 }
 
 impl Delta {
+    pub const fn new_nop() -> Self {
+        Self { inserts: 0, overwrites: 0, deletes: 0 }
+    }
+
+    pub const fn new_insert() -> Self {
+        Self { inserts: 1, overwrites: 0, deletes: 0 }
+    }
+
+    pub const fn new_overwrite() -> Self {
+        Self { inserts: 0, overwrites: 1, deletes: 0 }
+    }
+
+    pub const fn new_delete() -> Self {
+        Self { inserts: 0, overwrites: 0, deletes: 1 }
+    }
+
     pub fn net_change(self) -> i64 {
         let inserts = self.inserts;
         let deletes = self.deletes;
-        // overwrites shadow an existing key without affecting overall count
-        inserts
-            .checked_signed_diff(deletes)
+
+        u64::checked_signed_diff(inserts, deletes)
             .unwrap_or_else(|| panic!("{inserts} inserts - {deletes} deletes overflows i64!"))
+    }
+
+    pub fn invisible_keys_created(self) -> u64 {
+        let deletes = self.deletes;
+        let overwrites = self.overwrites;
+
+        let tombstones = deletes;
+        let hidden = u64::checked_add(overwrites, deletes)
+            .unwrap_or_else(|| panic!("{overwrites} overwritten + {deletes} deleted keys overflows u64!"));
+
+        u64::checked_add(tombstones, hidden)
+            .unwrap_or_else(|| panic!("{tombstones} tombstones + {hidden} hidden keys overflows u64!"))
+    }
+}
+
+impl AddAssign for Delta {
+    fn add_assign(&mut self, rhs: Self) {
+        self.inserts = u64::checked_add(self.inserts, rhs.inserts)
+            .unwrap_or_else(|| panic!("{} + {} inserts overflows u64!", self.inserts, rhs.inserts));
+        self.overwrites = u64::checked_add(self.overwrites, rhs.overwrites)
+            .unwrap_or_else(|| panic!("{} + {} overwrites overflows u64!", self.overwrites, rhs.overwrites));
+        self.deletes = u64::checked_add(self.deletes, rhs.deletes)
+            .unwrap_or_else(|| panic!("{} + {} deletes overflows u64!", self.deletes, rhs.deletes));
     }
 }
 

@@ -33,7 +33,7 @@ use fail_point::{
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
-use lending_iterator::LendingIterator;
+use lending_iterator::{LendingIterator, Peekable, higher_order::Hkt};
 use logger::{error, result::ResultExt};
 use resource::{
     constants::{
@@ -49,9 +49,9 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationManager, ValidatedCommit},
-    iterator::MVCCRangeIterator,
+    iterator::{MVCCResolvedRangeIterator, MVCCVisibleRangeIterator},
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator, rocks_resources::RocksResources,
@@ -511,7 +511,7 @@ impl<Durability> MVCCStorage<Durability> {
         Mapper: Fn(&[u8]) -> V,
     {
         let key = key.into();
-        let mut iterator = self.iterate_range(
+        let mut iterator = self.iterate_range_visible(
             iterator_pool,
             &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
@@ -526,14 +526,22 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    pub(crate) fn iterate_range<'this, const PS: usize>(
+    pub fn iterate_all(
+        self: Arc<Self>,
+        open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
+    ) -> StorageIterator {
+        StorageIterator::new(self, open_sequence_number, storage_counters)
+    }
+
+    pub(crate) fn iterate_range_visible<'this, const PS: usize>(
         &'this self,
         iterpool: &IteratorPool,
         range: &KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
-    ) -> MVCCRangeIterator {
-        MVCCRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
+    ) -> MVCCVisibleRangeIterator {
+        MVCCVisibleRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
     }
 
     fn highest_committed_snapshot(&self) -> SequenceNumber {
@@ -701,6 +709,48 @@ impl<Durability> MVCCStorage<Durability> {
     }
 }
 
+pub struct StorageIterator {
+    iterators: Vec<Peekable<MVCCResolvedRangeIterator>>,
+    current_keyspace: usize,
+}
+
+impl StorageIterator {
+    pub fn new<D>(
+        storage: Arc<MVCCStorage<D>>,
+        open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
+    ) -> Self {
+        let iterators = storage
+            .keyspaces
+            .iter()
+            .map(|ks| {
+                Peekable::new(MVCCResolvedRangeIterator::new(
+                    &storage,
+                    &IteratorPool::new(),
+                    &KeyRange::new_within(
+                        StorageKey::Array(StorageKeyArray::new_raw(ks.id(), ByteArray::<0>::zeros(0))),
+                        false,
+                    ),
+                    open_sequence_number,
+                    storage_counters.clone(),
+                ))
+            })
+            .collect();
+        Self { iterators, current_keyspace: 0 }
+    }
+}
+
+impl LendingIterator for StorageIterator {
+    type Item<'a> = <MVCCResolvedRangeIterator as LendingIterator>::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        while self.iterators.get_mut(self.current_keyspace)?.peek().is_none() {
+            self.current_keyspace += 1;
+        }
+        self.iterators.get_mut(self.current_keyspace)?.next()
+    }
+}
+
 typedb_error! {
     pub StorageOpenError(component = "Storage open", prefix = "STO") {
         StorageDirectoryExists(1, "Failed to open database '{name}' in directory '{path:?}'", name: String, path: PathBuf),
@@ -768,19 +818,14 @@ typedb_error! {
     }
 }
 
-/// MVCC keys are made of three parts: the [KEY][SEQ][OP]
-pub struct MVCCKey<'bytes> {
-    bytes: Bytes<'bytes, MVCC_KEY_INLINE_SIZE>,
-}
-
 // byte array inline size can be adjusted to avoid allocation since these key are often short-lived
 const MVCC_KEY_INLINE_SIZE: usize = 128;
 
-impl<'bytes> MVCCKey<'bytes> {
-    const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
-    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize =
-        Self::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
+pub struct MVCCKeyArray {
+    bytes: ByteArray<MVCC_KEY_INLINE_SIZE>,
+}
 
+impl MVCCKeyArray {
     fn build(key: &[u8], sequence_number: SequenceNumber, storage_operation: StorageOperation) -> Self {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
         let mut byte_array = ByteArray::zeros(length);
@@ -794,12 +839,28 @@ impl<'bytes> MVCCKey<'bytes> {
         sequence_number.invert().serialise_be_into(&mut bytes[key_end..sequence_number_end]);
         bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
 
-        Self { bytes: Bytes::Array(byte_array) }
+        Self { bytes: byte_array }
     }
+
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+/// MVCC keys are made of three parts: the [KEY][SEQ][OP]
+#[derive(Clone, Copy)]
+pub struct MVCCKey<'bytes> {
+    bytes: &'bytes [u8],
+}
+
+impl<'bytes> MVCCKey<'bytes> {
+    const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
+    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize =
+        Self::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
 
     /// Splits raw MVCC key bytes into their [KEY], [SEQ], and [OP] parts, borrowing the key from the bytes.
     #[inline]
-    fn split(&self) -> (&[u8], SequenceNumber, StorageOperation) {
+    fn split(self) -> (&'bytes [u8], SequenceNumber, StorageOperation) {
         let (key, suffix) = self.bytes.split_at(self.bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET);
         let (inverse_sequence_number_bytes, operation_bytes) = suffix.split_at(SequenceNumber::serialised_len());
         let sequence_number = SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert();
@@ -807,30 +868,21 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn wrap_slice(bytes: &'bytes [u8]) -> Self {
-        Self { bytes: Bytes::reference(bytes) }
-    }
-
-    fn bytes(&self) -> &[u8] {
-        &self.bytes
+        Self { bytes }
     }
 
     // TODO: the only reason this is `pub` is the leak in ThingVertexGenerator::sync_from_storage.
     // It seems to be the only reason MVCCKey is `pub` at all.
-    pub fn key(&self) -> &[u8] {
+    pub fn key(self) -> &'bytes [u8] {
         self.split().0
     }
 
-    fn sequence_number(&self) -> SequenceNumber {
+    fn sequence_number(self) -> SequenceNumber {
         self.split().1
     }
 
-    fn operation(&self) -> StorageOperation {
+    fn operation(self) -> StorageOperation {
         self.split().2
-    }
-
-    fn extract_key(bytes: &'bytes [u8]) -> &'bytes [u8] {
-        let length = bytes.len() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        &bytes[..length]
     }
 }
 
@@ -861,20 +913,66 @@ impl StorageOperation {
         Self::BYTES
     }
 
-    /// Returns `true` if the storage operation is [`Insert`].
-    ///
-    /// [`Insert`]: StorageOperation::Insert
-    #[must_use]
-    fn is_insert(&self) -> bool {
-        matches!(self, Self::Insert)
-    }
-
     /// Returns `true` if the storage operation is [`Delete`].
     ///
     /// [`Delete`]: StorageOperation::Delete
     #[must_use]
     fn is_delete(&self) -> bool {
         matches!(self, Self::Delete)
+    }
+}
+
+/// Resolved visibility of the MVCC key-value pair with explanation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MVCCVisibility {
+    Future,
+    Shadowed,
+    Visible,
+    Deleted,
+}
+
+/// MVCC-resolved key and value for the opening sequence number of the producing iterator.
+pub struct MVCCResolvedKeyValue<'a> {
+    key: StorageKeyReference<'a>,
+    value: &'a [u8],
+    visibility: MVCCVisibility,
+}
+
+impl Hkt for MVCCResolvedKeyValue<'static> {
+    type HktSelf<'a> = MVCCResolvedKeyValue<'a>;
+}
+
+impl<'a> MVCCResolvedKeyValue<'a> {
+    fn future(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Future }
+    }
+
+    fn shadowed(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Shadowed }
+    }
+
+    fn visible(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Visible }
+    }
+
+    fn deleted(key: StorageKeyReference<'a>, value: &'a [u8]) -> Self {
+        Self { key, value, visibility: MVCCVisibility::Deleted }
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visibility == MVCCVisibility::Visible
+    }
+
+    pub fn key(&self) -> StorageKeyReference<'a> {
+        self.key
+    }
+
+    pub fn value(&self) -> &'a [u8] {
+        self.value
+    }
+
+    pub fn visibility(&self) -> MVCCVisibility {
+        self.visibility
     }
 }
 

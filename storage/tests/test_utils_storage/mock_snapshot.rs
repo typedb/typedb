@@ -7,8 +7,11 @@
 use std::iter::empty;
 
 use bytes::byte_array::ByteArray;
+use lending_iterator::LendingIterator;
 use resource::profile::StorageCounters;
 use storage::{
+    MVCCResolvedKeyValue,
+    iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::IteratorPool,
@@ -56,6 +59,13 @@ impl ReadableSnapshot for MockSnapshot {
         _: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         Err(SnapshotGetError::MockError {})
+    }
+
+    fn iterate_storage(
+        &self,
+        _storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MVCCResolvedKeyValue<'a>, MVCCReadError>> {
+        lending_iterator::empty::<Result<MVCCResolvedKeyValue<'static>, MVCCReadError>>()
     }
 
     fn iterate_range<const PS: usize>(

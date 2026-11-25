@@ -23,10 +23,10 @@ use resource::{
 };
 
 use crate::{
-    CommitData, MVCCStorage, StorageCommitError,
+    CommitData, MVCCResolvedKeyValue, MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
     isolation_manager::{ReadSnapshotDropGuard, WriteSnapshotDropGuard},
-    iterator::MVCCReadError,
+    iterator::{MVCCReadError, MVCCResolvedRangeIterator},
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceId},
@@ -102,6 +102,11 @@ pub trait ReadableSnapshot {
     ) -> Result<bool, SnapshotGetError> {
         Ok(self.get_mapped(key, |_| (), storage_counters)?.is_some())
     }
+
+    fn iterate_storage(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCResolvedRangeIterator as LendingIterator>::Item<'a>>;
 
     fn iterate_range<const PS: usize>(
         &self,
@@ -363,6 +368,13 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         }
     }
 
+    fn iterate_storage(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCResolvedRangeIterator as LendingIterator>::Item<'a>> {
+        self.storage.clone().iterate_all(self.open_sequence_number, storage_counters)
+    }
+
     fn iterate_range<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -383,7 +395,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
                 SnapshotRangeIterator::new_empty()
             }
             SnapshotLookupMode::BufferAndStorage | SnapshotLookupMode::StorageOnly => {
-                let mvcc_iterator = self.storage.iterate_range(
+                let mvcc_iterator = self.storage.iterate_range_visible(
                     self.iterator_pool(),
                     range,
                     self.open_sequence_number,
@@ -398,7 +410,12 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         !buffered_only
             && self
                 .storage
-                .iterate_range(self.iterator_pool(), range, self.open_sequence_number, StorageCounters::DISABLED)
+                .iterate_range_visible(
+                    self.iterator_pool(),
+                    range,
+                    self.open_sequence_number,
+                    StorageCounters::DISABLED,
+                )
                 .next()
                 .is_some()
     }
@@ -471,7 +488,7 @@ impl<D> WriteSnapshot<D> {
             storage,
             operations,
             open_sequence_number,
-            id: id.unwrap_or_else(|| SnapshotId::new()),
+            id: id.unwrap_or_else(SnapshotId::new),
             iterator_pool: IteratorPool::new(),
             reader_guard,
         }
@@ -523,6 +540,13 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         }
     }
 
+    fn iterate_storage(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCResolvedRangeIterator as LendingIterator>::Item<'a>> {
+        self.storage.clone().iterate_all(self.open_sequence_number, storage_counters)
+    }
+
     fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -534,8 +558,9 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
                 .writes_in(range.start().get_value().keyspace_id())
                 .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed))
         };
-        let storage_iterator =
-            || self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+        let storage_iterator = || {
+            self.storage.iterate_range_visible(self.iterator_pool(), range, self.open_sequence_number, storage_counters)
+        };
         match lookup_mode {
             SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator()),
             SnapshotLookupMode::BufferAndStorage => {
@@ -680,7 +705,7 @@ impl<D> SchemaSnapshot<D> {
             storage,
             operations,
             open_sequence_number,
-            id: id.unwrap_or_else(|| SnapshotId::new()),
+            id: id.unwrap_or_else(SnapshotId::new),
             iterator_pool: IteratorPool::new(),
             reader_guard,
         }
@@ -732,6 +757,13 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         }
     }
 
+    fn iterate_storage(
+        &self,
+        storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = <MVCCResolvedRangeIterator as LendingIterator>::Item<'a>> {
+        self.storage.clone().iterate_all(self.open_sequence_number, storage_counters)
+    }
+
     fn iterate_range_in_lookup_mode<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -743,8 +775,9 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
                 .writes_in(range.start().get_value().keyspace_id())
                 .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed))
         };
-        let storage_iterator =
-            || self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+        let storage_iterator = || {
+            self.storage.iterate_range_visible(self.iterator_pool(), range, self.open_sequence_number, storage_counters)
+        };
         match lookup_mode {
             SnapshotLookupMode::BufferOnly => SnapshotRangeIterator::new_buffered_only(buffered_iterator()),
             SnapshotLookupMode::BufferAndStorage => {
@@ -915,7 +948,7 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         _storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let Some(map) = self.keyspace_map(key.keyspace_id()) else { return Ok(None) };
-        Ok(map.get(key.bytes()).map(|v| ByteArray::copy(&**v)))
+        Ok(map.get(key.bytes()).map(|v| ByteArray::copy(v)))
     }
 
     fn get_in_lookup_mode<const INLINE_BYTES: usize>(
@@ -925,6 +958,13 @@ impl ReadableSnapshot for PreloadedRangesSnapshot {
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         self.get(key, storage_counters)
+    }
+
+    fn iterate_storage(
+        &self,
+        _storage_counters: StorageCounters,
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MVCCResolvedKeyValue<'a>, MVCCReadError>> {
+        lending_iterator::empty::<Result<MVCCResolvedKeyValue<'static>, MVCCReadError>>()
     }
 
     fn iterate_range<const PS: usize>(

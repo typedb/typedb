@@ -86,7 +86,7 @@ impl QueryCache {
         let read_lock = self.validity_requirements.read().unwrap();
         let may_insert = read_lock
             .latest_schema_commit
-            .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
+            .is_none_or(|latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number);
         if may_insert {
             self.translation_cache.insert(source_query.to_owned(), translated);
         }
@@ -133,10 +133,8 @@ impl QueryCache {
         let read_lock = self.validity_requirements.read().unwrap();
         let ValidityRequirements { latest_schema_commit, latest_statistics } = &*read_lock;
         let may_insert = latest_schema_commit
-            .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number)
-            && latest_statistics
-                .as_ref()
-                .map_or(true, |stats| !is_pipeline_type_populations_outdated(&stats, &pipeline));
+            .is_none_or(|latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number)
+            && latest_statistics.as_ref().is_none_or(|stats| !is_pipeline_type_populations_outdated(stats, &pipeline));
         if may_insert {
             self.executable_cache.insert(key, (pipeline, query_weight(source_query)));
         }
@@ -149,7 +147,7 @@ impl QueryCache {
 
     pub fn force_reset(&self, statistics: &Statistics) {
         let mut write_lock = self.validity_requirements.write().unwrap();
-        (*write_lock).latest_schema_commit = Some(statistics.sequence_number);
+        write_lock.latest_schema_commit = Some(statistics.sequence_number);
         drop(write_lock);
         self.translation_cache.invalidate_all();
         self.executable_cache.invalidate_all();
@@ -173,8 +171,8 @@ fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &Exe
             Type::Attribute(ty) => statistics.attribute_counts.get(&ty).copied().unwrap_or_default(),
             Type::RoleType(ty) => statistics.role_counts.get(&ty).copied().unwrap_or_default(),
         };
-        let smoothing = smoothstep(type_count, 1, QUERY_PLAN_CACHE_FLUSH_STATIC_SMOOTH_THRESHOLD);
-        match u64::max(type_count, 1) as f64 / u64::max(pop, 1) as f64 {
+        let smoothing = smoothstep(type_count.total(), 1, QUERY_PLAN_CACHE_FLUSH_STATIC_SMOOTH_THRESHOLD);
+        match u64::max(type_count.total(), 1) as f64 / u64::max(pop, 1) as f64 {
             increase @ 1.0.. => total_increase *= increase.powf(smoothing),
             decrease @ ..1.0 => total_decrease /= decrease.powf(smoothing),
             _ => panic!("NaN?!"),
@@ -213,7 +211,7 @@ impl IRQuery {
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
     ) -> Self {
-        Self { preamble: preamble, given, stages, fetch }
+        Self { preamble, given, stages, fetch }
     }
 }
 

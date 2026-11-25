@@ -5,6 +5,7 @@
  */
 
 #![allow(clippy::collapsible_if, reason = "nested ifs are often clearer than a single conjunction")]
+#![allow(clippy::collapsible_else_if, reason = "nested ifs are often clearer than a single conjunction")]
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
