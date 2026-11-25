@@ -470,14 +470,21 @@ mod v0 {
     {
         let sequence_number = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, visitor))?;
         let last_durable_write_total_count =
-            seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, visitor))?;
-        let total_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, visitor))?;
-        let total_thing_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, visitor))?;
-        let total_entity_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, visitor))?;
-        let total_relation_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, visitor))?;
-        let total_attribute_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, visitor))?;
-        let total_role_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, visitor))?;
-        let total_has_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, visitor))?;
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, visitor))?);
+        let total_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, visitor))?);
+        let total_thing_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, visitor))?);
+        let total_entity_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, visitor))?);
+        let total_relation_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, visitor))?);
+        let total_attribute_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, visitor))?);
+        let total_role_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, visitor))?);
+        let total_has_count =
+            Counts::from_visible(seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, visitor))?);
         let encoded_entity_counts = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(10, visitor))?;
         let entity_counts = into_entity_map(encoded_entity_counts);
         let encoded_relation_counts = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(11, visitor))?;
@@ -551,7 +558,7 @@ mod v0 {
             .map(|(type_1, map)| (type_1.into_object_type(), into_object_map_mapped(map, Counts::from_visible)))
             .collect();
         Ok(Statistics {
-            encoding_version: StatisticsEncodingVersion::V0,
+            encoding_version: StatisticsEncodingVersion::V1,
             sequence_number,
             last_durable_write_sequence_number: sequence_number,
             last_durable_write_total_count,
@@ -608,7 +615,12 @@ mod v0 {
                     if statistics_version.is_some() {
                         return Err(de::Error::duplicate_field(Field::StatisticsVersion.name()));
                     }
-                    statistics_version = Some(map.next_value()?);
+                    match map.next_value()? {
+                        StatisticsEncodingVersion::V0 => statistics_version = Some(StatisticsEncodingVersion::V1), // we're decoding a V0 into a V1
+                        StatisticsEncodingVersion::V1 => {
+                            return Err(de::Error::invalid_value(de::Unexpected::Other("V1"), &"V0"));
+                        }
+                    }
                 }
                 Field::OpenSequenceNumber => {
                     if open_sequence_number.is_some() {
@@ -620,49 +632,49 @@ mod v0 {
                     if total_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::LastDurableWriteTotalCount.name()));
                     }
-                    last_durable_write_total_count = Some(map.next_value()?);
+                    last_durable_write_total_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalCount => {
                     if total_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalCount.name()));
                     }
-                    total_count = Some(map.next_value()?);
+                    total_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalThingCount => {
                     if total_thing_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalThingCount.name()));
                     }
-                    total_thing_count = Some(map.next_value()?);
+                    total_thing_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalEntityCount => {
                     if total_entity_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalEntityCount.name()));
                     }
-                    total_entity_count = Some(map.next_value()?);
+                    total_entity_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalRelationCount => {
                     if total_relation_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalRelationCount.name()));
                     }
-                    total_relation_count = Some(map.next_value()?);
+                    total_relation_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalAttributeCount => {
                     if total_attribute_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalAttributeCount.name()));
                     }
-                    total_attribute_count = Some(map.next_value()?);
+                    total_attribute_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalRoleCount => {
                     if total_role_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalRoleCount.name()));
                     }
-                    total_role_count = Some(map.next_value()?);
+                    total_role_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::TotalHasCount => {
                     if total_has_count.is_some() {
                         return Err(de::Error::duplicate_field(Field::TotalRoleCount.name()));
                     }
-                    total_has_count = Some(map.next_value()?);
+                    total_has_count = Some(Counts::from_visible(map.next_value()?));
                 }
                 Field::EntityCounts => {
                     if entity_counts.is_some() {
@@ -999,7 +1011,12 @@ mod v1 {
                     if statistics_version.is_some() {
                         return Err(de::Error::duplicate_field(Field::StatisticsVersion.name()));
                     }
-                    statistics_version = Some(map.next_value()?);
+                    match map.next_value()? {
+                        StatisticsEncodingVersion::V0 => {
+                            return Err(de::Error::invalid_value(de::Unexpected::Other("V0"), &"V1"));
+                        }
+                        StatisticsEncodingVersion::V1 => statistics_version = Some(StatisticsEncodingVersion::V1),
+                    }
                 }
                 Field::OpenSequenceNumber => {
                     if open_sequence_number.is_some() {
