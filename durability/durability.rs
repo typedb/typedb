@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::wal::WALError;
 
+pub mod properties;
 pub mod wal;
 
 /// Durably record a directory-shape change (creation, deletion, rename of entries) by fsyncing

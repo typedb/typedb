@@ -16,6 +16,7 @@ rust_library(
         "//common/error",
         "//common/fail_point",
         "//common/logger",
+        "//common/versioning",
         "//diagnostics",
         "//resource",
 

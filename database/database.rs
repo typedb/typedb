@@ -59,6 +59,7 @@ use storage::{
     snapshot::snapshot_id::SnapshotId,
 };
 use tracing::{Level, debug, error, event, info, trace};
+use versioning::ExtendableVersion;
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
@@ -67,6 +68,7 @@ use crate::{
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
     database_manager::DatabaseManager,
+    properties::DatabaseProperties,
     transaction::TransactionError,
 };
 
@@ -160,6 +162,8 @@ impl SchemaWriteTransactionState {
 pub struct Database<D> {
     name: Arc<str>,
     pub(super) path: PathBuf,
+    pub(super) properties: DatabaseProperties,
+
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
@@ -340,6 +344,10 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
+        let properties = DatabaseProperties::create_for_new_database();
+        debug_assert!(DatabaseProperties::validate_compatibility(&properties).is_ok());
+        properties.write(path, name)?;
+
         let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
@@ -393,6 +401,7 @@ impl Database<WALClient> {
         Ok(Database::<WALClient> {
             name: Arc::<str>::from(name),
             path: path.to_owned(),
+            properties,
             storage,
             definition_key_generator,
             type_vertex_generator,
@@ -430,6 +439,28 @@ impl Database<WALClient> {
             std::path::absolute(path)
         );
 
+        if !WAL::wal_directory_exists_in(path) {
+            return Err(Box::new(NotADatabase { name: name.to_owned() }));
+        }
+
+        event!(Level::TRACE, "Reading database '{}' properties.", &name);
+        let properties = match DatabaseProperties::try_read(path, name)? {
+            None => {
+                let properties = DatabaseProperties::values_for_pre_properties_database();
+                DatabaseProperties::validate_compatibility(&properties)?;
+                event!(
+                    Level::INFO,
+                    "Reading database '{}': Properties did not exist. Writing pre_properties defaults.",
+                    &name
+                );
+                properties.write(path, name)?;
+                properties
+            }
+            Some(properties) => {
+                DatabaseProperties::validate_compatibility(&properties)?;
+                properties
+            }
+        };
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
         let wal = match WAL::load(path, wal_metrics) {
             Ok(wal) => wal,
@@ -536,6 +567,7 @@ impl Database<WALClient> {
         let database = Database::<WALClient> {
             name: Arc::<str>::from(name),
             path: path.to_owned(),
+            properties,
             storage,
             definition_key_generator,
             type_vertex_generator,
@@ -847,6 +879,22 @@ typedb_error! {
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
         NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
         PrepareForWrites(17, "Failed to prepare database '{name}' for writes. In-memory allocators may collide with storage on the next allocation.", name: String, source: EncodingError),
+        PropertiesRead(18, "Error while reading properties file for '{name}'.", name: String, source: Arc<io::Error>),
+        PropertiesParse(19, "Error while parsing properties for '{name}'.", name: String, source: Arc<serde::de::value::Error>),
+        PropertiesWrite(20, "Error while writing properties for '{name}'.", name: String, source: Arc<io::Error>),
+        PropertiesSerialize(21, "Error while serializing properties for '{name}'.", name: String, source: Arc<serde_yaml2::ser::Errors>),
+        PropertiesFileTooOldForServer(
+            22,
+            "The database uses an older properties file version ({file_version}) than the server supports ({server_version}).",
+            server_version: ExtendableVersion,
+            file_version: ExtendableVersion
+        ),
+        PropertiesFileTooNewForServer(
+            23,
+            "The database uses a new properties file version ({file_version}) than the server supports ({server_version}).",
+            server_version: ExtendableVersion,
+            file_version: ExtendableVersion
+        ),
     }
 }
 
