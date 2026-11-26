@@ -134,6 +134,9 @@ make_prefix_enum! {
     VertexRelation => 31 = 0x1F, Width::Fixed, Domain::Data;
     VertexAttribute => 32 = 0x20, Width::Variable, Domain::Data;
 
+    RBACRole => 80 = 0x50, Width::Fixed, Domain::Schema;
+    RBACAccess => 81 = 0x51, Width::Fixed, Domain::Schema;
+
     EdgeSub => 100 = 0x64, Width::Fixed, Domain::Schema;
     EdgeSubReverse => 101 = 0x65, Width::Fixed, Domain::Schema;
     EdgeOwns => 102 = 0x66, Width::Fixed, Domain::Schema;
@@ -153,10 +156,12 @@ make_prefix_enum! {
     PropertyTypeEdge => 162 = 0xA2, Width::Fixed, Domain::Schema;
     PropertyObjectVertex => 163 = 0xA3, Width::Fixed, Domain::Data;
     PropertyFunction => 164 = 0xA4, Width::Fixed, Domain::Schema;
+    PropertyRBACRole => 165 = 0xA5, Width::Fixed, Domain::Schema;
 
     IndexLabelToType => 182 = 0xB6, Width::Variable, Domain::Schema;
     IndexNameToDefinitionStruct => 183 = 0xB7, Width::Variable, Domain::Schema;
     IndexNameToDefinitionFunction => 184 = 0xB8, Width::Variable, Domain::Schema;
+    IndexNameToRBACRole => 185 = 0xB9, Width::Variable, Domain::Schema;
 
     IndexValueToStruct => 190 = 0xBE, Width::Variable, Domain::Data;
     // Reserved: 200-255 = 0xC8-0xFF

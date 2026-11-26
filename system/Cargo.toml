@@ -24,6 +24,9 @@
 	[dependencies.database]
 		workspace = true
 
+	[dependencies.encoding]
+		workspace = true
+
 	[dependencies.error]
 		workspace = true
 
@@ -45,10 +48,16 @@
 	[dependencies.query]
 		workspace = true
 
+	[dependencies.rbac]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
 	[dependencies.storage]
+		workspace = true
+
+	[dependencies.tracing]
 		workspace = true
 
 	[dependencies.typeql]

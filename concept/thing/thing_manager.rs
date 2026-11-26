@@ -3766,10 +3766,14 @@ fn register_delete_in_cleanup_intervals(
         | Some(DecodableKey::PropertyTypeEdge(_))
         | Some(DecodableKey::PropertyObjectVertex(_))
         | Some(DecodableKey::PropertyFunction(_))
+        | Some(DecodableKey::PropertyRBACRole(_))
         | Some(DecodableKey::IndexLabelToType(_))
         | Some(DecodableKey::IndexNameToDefinitionStruct(_))
         | Some(DecodableKey::IndexNameToDefinitionFunction(_))
-        | Some(DecodableKey::IndexValueToStruct(_)) => {
+        | Some(DecodableKey::IndexNameToRBACRole(_))
+        | Some(DecodableKey::IndexValueToStruct(_))
+        | Some(DecodableKey::RBACRole(_))
+        | Some(DecodableKey::RBACAccess(_)) => {
             trace!("Unhandled delete when constructing compaction record!")
         }
     }

@@ -8,7 +8,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 rust_test(
     name = "test_query",
     crate_root = "main.rs",
-    srcs = glob(["main.rs", "language/*.rs", "functions/*.rs", "analyze/*.rs"]),
+    srcs = glob(["main.rs", "language/*.rs", "functions/*.rs", "analyze/*.rs", "rbac/*.rs"]),
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
@@ -46,6 +46,8 @@ rust_test(
 
         "@typedb_behaviour//query/analyze:structure.feature",
         "@typedb_behaviour//query/analyze:annotations.feature",
+
+        "@typedb_behaviour//query/rbac:definition.feature",
 
         "//server:config.yml",
     ],

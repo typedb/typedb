@@ -78,6 +78,9 @@
 	[dependencies.query]
 		workspace = true
 
+	[dependencies.rbac]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
@@ -90,6 +93,9 @@
 	[dependencies.storage]
 		workspace = true
 
+	[dependencies.system]
+		workspace = true
+
 	[dependencies.test_utils]
 		workspace = true
 
@@ -97,4 +103,7 @@
 		workspace = true
 
 	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.user]
 		workspace = true

@@ -10,7 +10,10 @@ use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
-use encoding::{graph::definition::definition_key_generator::DefinitionKeyGenerator, value::label::Label};
+use encoding::{
+    graph::{definition::definition_key_generator::DefinitionKeyGenerator, rbac::RBACVertexGenerator},
+    value::label::Label,
+};
 use function::function_manager::FunctionManager;
 use ir::translation::pipeline::TranslatedPipeline;
 use query::{
@@ -18,6 +21,7 @@ use query::{
     query_cache::{ParsedQuery, QueryCache},
     query_manager::QueryManager,
 };
+use rbac::rbac_manager::RBACManager;
 use resource::profile::CommitProfile;
 use storage::{
     MVCCStorage, durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot,
@@ -47,11 +51,20 @@ fn setup() -> Context {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
-
+    let rbac_manager = RBACManager::new(Arc::new(RBACVertexGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(SCHEMA).unwrap().into_structure().into_schema();
     QueryManager::new(None)
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, SCHEMA, None)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            &rbac_manager,
+            &define,
+            SCHEMA,
+            None,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 

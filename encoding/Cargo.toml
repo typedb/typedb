@@ -42,6 +42,9 @@
 	[dependencies.primitive]
 		workspace = true
 
+	[dependencies.rand]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
@@ -72,9 +75,6 @@
 		workspace = true
 
 	[dev-dependencies.diagnostics]
-		workspace = true
-
-	[dev-dependencies.rand]
 		workspace = true
 
 	[dev-dependencies.test_utils]

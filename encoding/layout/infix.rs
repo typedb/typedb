@@ -46,6 +46,12 @@ pub enum Infix {
     // Data properties
     PropertyHasOrder,
     PropertyLinksOrder,
+
+    // RBAC infixes
+    RBACReadObjectVertex,
+    RBACWriteObjectVertex,
+    RBACReadAttributeVertex,
+    RBACWriteAttributeVertex,
 }
 
 macro_rules! infix_functions {
@@ -99,6 +105,11 @@ impl Infix {
         _PropertyAnnotationLast => [99];
 
         PropertyHasOrder => [100];
-        PropertyLinksOrder => [101]
+        PropertyLinksOrder => [101];
+
+        RBACReadObjectVertex => [200];
+        RBACWriteObjectVertex => [201];
+        RBACReadAttributeVertex => [202];
+        RBACWriteAttributeVertex => [203]
     );
 }

@@ -20,6 +20,7 @@ rust_library(
         "//common/lending_iterator",
         "//common/error",
         "//function",
+        "//rbac",
         "//encoding",
         "//executor",
         "//ir",

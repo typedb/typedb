@@ -210,9 +210,11 @@ impl CommitDeltas {
                 | Some(DecodableKey::PropertyTypeEdge(_))
                 | Some(DecodableKey::PropertyObjectVertex(_))
                 | Some(DecodableKey::PropertyFunction(_))
+                | Some(DecodableKey::PropertyRBACRole(_))
                 | Some(DecodableKey::IndexLabelToType(_))
                 | Some(DecodableKey::IndexNameToDefinitionStruct(_))
                 | Some(DecodableKey::IndexNameToDefinitionFunction(_))
+                | Some(DecodableKey::IndexNameToRBACRole(_))
                 | Some(DecodableKey::IndexValueToStruct(_))
                 | Some(DecodableKey::DefinitionStruct(_))
                 | Some(DecodableKey::DefinitionFunction(_))
@@ -224,6 +226,8 @@ impl CommitDeltas {
                 | Some(DecodableKey::TypeEdgePlaysReverse(_))
                 | Some(DecodableKey::TypeEdgeRelates(_))
                 | Some(DecodableKey::TypeEdgeRelatesReverse(_))
+                | Some(DecodableKey::RBACRole(_))
+                | Some(DecodableKey::RBACAccess(_))
                 | None => (),
             }
         }

@@ -21,6 +21,7 @@ use storage::{
 use crate::{
     graph::{
         definition::{definition_key::DefinitionKey, function::FunctionDefinition, r#struct::StructDefinition},
+        rbac::{RBACRoleProperty, RBACRoleTypeAccess, RBACRoleVertex},
         thing::{
             ThingVertex,
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeIndexedRelation, ThingEdgeLinks},
@@ -224,11 +225,17 @@ pub enum DecodableKey {
     PropertyTypeEdge(TypeEdgeProperty),
     PropertyObjectVertex(ObjectVertexProperty),
     PropertyFunction(FunctionProperty),
+    PropertyRBACRole(RBACRoleProperty),
 
     IndexLabelToType(Label),
     IndexNameToDefinitionStruct(String),
     IndexNameToDefinitionFunction(String),
+    IndexNameToRBACRole(String),
+
     IndexValueToStruct(StructIndexEntryKey),
+
+    RBACRole(RBACRoleVertex),
+    RBACAccess(RBACRoleTypeAccess),
 }
 
 impl DecodableKey {
@@ -267,6 +274,7 @@ impl DecodableKey {
             Prefix::PropertyTypeEdge => Some(Self::PropertyTypeEdge(TypeEdgeProperty::try_decode(bytes)?)),
             Prefix::PropertyObjectVertex => Some(Self::PropertyObjectVertex(ObjectVertexProperty::try_decode(bytes)?)),
             Prefix::PropertyFunction => Some(Self::PropertyFunction(FunctionProperty::try_decode(bytes)?)),
+            Prefix::PropertyRBACRole => Some(Self::PropertyRBACRole(RBACRoleProperty::try_decode(bytes)?)),
 
             Prefix::IndexLabelToType => Some(Self::IndexLabelToType(Label::parse_from_bytes(
                 IdentifierIndex::<TypeVertex>::new(Bytes::reference(bytes)).identifier(),
@@ -277,7 +285,13 @@ impl DecodableKey {
             Prefix::IndexNameToDefinitionFunction => Some(Self::IndexNameToDefinitionFunction(
                 IdentifierIndex::<FunctionDefinition>::new(Bytes::reference(bytes)).identifier().as_str().to_owned(),
             )),
+            Prefix::IndexNameToRBACRole => Some(Self::IndexNameToRBACRole(
+                IdentifierIndex::<RBACRoleVertex>::new(Bytes::reference(bytes)).identifier().as_str().to_owned(),
+            )),
             Prefix::IndexValueToStruct => Some(Self::IndexValueToStruct(StructIndexEntryKey::new(Bytes::copy(bytes)))),
+
+            Prefix::RBACRole => Some(Self::RBACRole(RBACRoleVertex::try_decode(bytes)?)),
+            Prefix::RBACAccess => Some(Self::RBACAccess(RBACRoleTypeAccess::try_decode(bytes)?)),
         }
     }
 }

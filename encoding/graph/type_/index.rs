@@ -13,6 +13,7 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         definition::{function::FunctionDefinition, r#struct::StructDefinition},
+        rbac::RBACRoleVertex,
         type_::vertex::TypeVertex,
     },
     layout::prefix::{Prefix, PrefixID},
@@ -120,6 +121,16 @@ impl Indexable for FunctionDefinition {
     type KeyType = str;
 
     const INDEX_PREFIX: Prefix = Prefix::IndexNameToDefinitionFunction;
+
+    fn key_type_to_identifier(key: &Self::KeyType) -> StringBytes<BUFFER_KEY_INLINE> {
+        StringBytes::build_owned(key)
+    }
+}
+
+pub type NameToRBACRoleVertexIndex = IdentifierIndex<RBACRoleVertex>;
+impl Indexable for RBACRoleVertex {
+    type KeyType = str;
+    const INDEX_PREFIX: Prefix = Prefix::IndexNameToRBACRole;
 
     fn key_type_to_identifier(key: &Self::KeyType) -> StringBytes<BUFFER_KEY_INLINE> {
         StringBytes::build_owned(key)

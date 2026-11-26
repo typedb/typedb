@@ -611,10 +611,14 @@ impl Statistics {
                 | Some(DecodableKey::PropertyTypeEdge(_))
                 | Some(DecodableKey::PropertyObjectVertex(_))
                 | Some(DecodableKey::PropertyFunction(_))
+                | Some(DecodableKey::PropertyRBACRole(_))
                 | Some(DecodableKey::IndexLabelToType(_))
                 | Some(DecodableKey::IndexNameToDefinitionStruct(_))
                 | Some(DecodableKey::IndexNameToDefinitionFunction(_))
-                | Some(DecodableKey::IndexValueToStruct(_)) => (),
+                | Some(DecodableKey::IndexNameToRBACRole(_))
+                | Some(DecodableKey::IndexValueToStruct(_))
+                | Some(DecodableKey::RBACRole(_))
+                | Some(DecodableKey::RBACAccess(_)) => (),
             }
         }
 

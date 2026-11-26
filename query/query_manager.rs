@@ -46,6 +46,7 @@ use ir::{
         pipeline::{TranslatedGiven, TranslatedPipeline, TranslatedStage},
     },
 };
+use rbac::rbac_manager::RBACManager;
 use resource::{
     constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{
@@ -125,6 +126,7 @@ impl QueryManager {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
+        rbac_manager: &RBACManager,
         query: &SchemaQuery,
         source_query: &str,
         enable_profiling: Option<bool>,
@@ -141,6 +143,7 @@ impl QueryManager {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    rbac_manager,
                     define,
                     step_profile.storage_counters(),
                 )
@@ -165,9 +168,10 @@ impl QueryManager {
                 })
             }
             SchemaQuery::Undefine(undefine) => {
-                undefine::execute(snapshot, type_manager, thing_manager, function_manager, undefine).map_err(|err| {
-                    Box::new(QueryError::Undefine { source_query: source_query.to_string(), typedb_source: err })
-                })
+                undefine::execute(snapshot, type_manager, thing_manager, function_manager, rbac_manager, undefine)
+                    .map_err(|err| {
+                        Box::new(QueryError::Undefine { source_query: source_query.to_string(), typedb_source: err })
+                    })
             }
         };
 

@@ -7,3 +7,4 @@
 mod analyze;
 mod functions;
 mod language;
+mod rbac;

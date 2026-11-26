@@ -95,6 +95,9 @@
 	[dev-dependencies.query]
 		workspace = true
 
+	[dev-dependencies.rbac]
+		workspace = true
+
 	[dev-dependencies.test_utils]
 		workspace = true
 

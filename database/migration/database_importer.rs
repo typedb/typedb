@@ -128,7 +128,7 @@ macro_rules! for_item_in_write_transaction {
         let (transaction, result) = with_transaction_parts!(
             TransactionWrite,
             transaction,
-            |$inner_snapshot, $type_manager, $thing_manager, _fm, _qm| { $expr }
+            |$inner_snapshot, $type_manager, $thing_manager, _fm, _rm, _qm| { $expr }
         );
 
         $self.data_transaction = Some(transaction);
@@ -967,7 +967,7 @@ impl DatabaseImporter {
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
-            |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
+            |inner_snapshot, type_manager, thing_manager, _fm, _rm, _qm| {
                 self.make_attribute_types_independent(&mut inner_snapshot, &type_manager, &thing_manager)?;
                 self.check_stopped()?;
                 self.make_relation_types_independent(&mut inner_snapshot, &type_manager)?;
@@ -987,7 +987,7 @@ impl DatabaseImporter {
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
-            |inner_snapshot, type_manager, thing_manager, _fm, _qm| {
+            |inner_snapshot, type_manager, thing_manager, _fm, _rm, _qm| {
                 self.restore_independent_attribute_types(&mut inner_snapshot, &type_manager, &thing_manager)?;
                 self.check_stopped()?;
                 self.restore_independent_relation_types(&mut inner_snapshot, &type_manager)?;

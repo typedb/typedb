@@ -18,6 +18,7 @@ pub mod transaction_util {
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;
+    use rbac::rbac_manager::RBACManager;
     use resource::profile::TransactionProfile;
     use storage::{
         durability_client::WALClient,
@@ -36,13 +37,21 @@ pub mod transaction_util {
 
         pub fn schema_transaction<T>(
             &self,
-            fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
+            fn_: impl Fn(
+                &mut SchemaSnapshot<WALClient>,
+                &TypeManager,
+                &ThingManager,
+                &FunctionManager,
+                &RBACManager,
+                &QueryManager,
+            ) -> T,
         ) -> (TransactionProfile, Result<SchemaCommitIntent<WALClient>, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,
                 type_manager,
                 thing_manager,
                 function_manager,
+                rbac_manager,
                 query_manager,
                 database,
                 transaction_options,
@@ -50,12 +59,14 @@ pub mod transaction_util {
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let mut snapshot: SchemaSnapshot<WALClient> =
                 Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
-            let _result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
+            let _result =
+                fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &rbac_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
                 Arc::new(snapshot),
                 type_manager,
                 thing_manager,
                 function_manager,
+                rbac_manager,
                 query_manager,
                 database,
                 transaction_options,
@@ -88,6 +99,7 @@ pub mod transaction_util {
                 type_manager,
                 thing_manager,
                 function_manager,
+                rbac_manager,
                 query_manager,
                 database,
                 transaction_options,
@@ -107,6 +119,7 @@ pub mod transaction_util {
                 type_manager,
                 thing_manager,
                 function_manager,
+                rbac_manager,
                 query_manager,
                 database,
                 TransactionOptions::default(),

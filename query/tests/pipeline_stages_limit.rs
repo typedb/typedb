@@ -6,13 +6,14 @@
 
 use std::sync::Arc;
 
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
+use encoding::graph::{definition::definition_key_generator::DefinitionKeyGenerator, rbac::RBACVertexGenerator};
 use function::function_manager::FunctionManager;
 use query::{
     error::QueryError,
     given_rows::GivenRowsSimple,
     query_manager::{QueryManager, translate_pipeline},
 };
+use rbac::rbac_manager::RBACManager;
 use resource::{constants::query::MAX_PIPELINE_STAGES, profile::CommitProfile};
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -38,13 +39,23 @@ fn setup() -> (
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
+    let rbac_manager = RBACManager::new(Arc::new(RBACVertexGenerator::new()), None);
     let query_manager = QueryManager::new(None);
 
     let schema = "define entity person;";
     let mut snapshot = storage.clone().open_snapshot_schema();
     let schema_query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, schema, None)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            &rbac_manager,
+            &schema_query,
+            schema,
+            None,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 

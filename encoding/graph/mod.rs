@@ -10,6 +10,7 @@ use crate::{Prefixed, graph::type_::vertex::TypeID};
 
 pub(crate) mod common;
 pub mod definition;
+pub mod rbac;
 pub mod thing;
 pub mod type_;
 
