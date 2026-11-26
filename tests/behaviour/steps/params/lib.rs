@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{convert::Infallible, fmt, str::FromStr, sync::Arc};
+use std::{collections::HashSet, convert::Infallible, fmt, hash::Hash, str::FromStr, sync::Arc};
 
 use concept::{
     error::ConceptWriteError,
@@ -328,6 +328,45 @@ impl FromStr for ContainsOrDoesnt {
         Ok(match s {
             "contain" | "contains" => Self::Contains,
             "do not contain" | "does not contain" => Self::DoesNotContain,
+            invalid => return Err(format!("Invalid `ContainsOrDoesnt`: {invalid}")),
+        })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "has_or_doesnt", regex = "(has|have|does not have|do not have)")]
+pub enum HasOrDoesnt {
+    Has,
+    DoesNotHave,
+}
+
+impl HasOrDoesnt {
+    pub fn check_contains<T: PartialEq + Eq + Hash + fmt::Debug>(&self, haystack: &HashSet<T>, needle: &T) {
+        let expected_has = self.expected_has();
+        assert_eq!(
+            expected_has,
+            haystack.contains(needle),
+            "{:?} {} {:?} ",
+            haystack,
+            if expected_has { "should have contained" } else { "should not have contained" },
+            needle
+        );
+    }
+
+    pub fn expected_has(&self) -> bool {
+        match self {
+            HasOrDoesnt::Has => true,
+            HasOrDoesnt::DoesNotHave => false,
+        }
+    }
+}
+
+impl FromStr for HasOrDoesnt {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "has" | "have" => Self::Has,
+            "does not have" | "do not have" => Self::DoesNotHave,
             invalid => return Err(format!("Invalid `ContainsOrDoesnt`: {invalid}")),
         })
     }
@@ -901,5 +940,22 @@ impl FromStr for WithGiven {
             "" => Self::False,
             invalid => return Err(format!("Invalid `WithGiven`: {invalid}")),
         })
+    }
+}
+
+/// Parses `mydb:my-role`.
+#[derive(Debug, Parameter)]
+#[param(name = "schema_defined_role", regex = r"[a-z0-9_-]+:[a-z0-9_-]+")]
+pub struct SchemaDefinedRoleParam {
+    pub database: String,
+    pub role: String,
+}
+
+impl FromStr for SchemaDefinedRoleParam {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (database, role) =
+            s.split_once(':').ok_or_else(|| format!("Invalid `SchemaDefinedRoleParam` (expected 'db:role'): {s}"))?;
+        Ok(Self { database: database.to_owned(), role: role.to_owned() })
     }
 }

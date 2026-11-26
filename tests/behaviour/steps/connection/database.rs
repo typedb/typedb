@@ -8,22 +8,32 @@ use cucumber::gherkin::Step;
 use futures::future::join_all;
 use macro_rules_attribute::apply;
 use params;
-use server::state::ServerState;
+use server::{authentication::Accessor, state::ServerState};
 
-use crate::{Context, generic_step, util};
+use crate::{Context, connection::admin_accessor, generic_step, util};
 
-async fn server_create_database(state: &'_ ServerState, name: String, may_error: params::MayError) {
-    may_error.check(state.databases().create(&name).await);
+async fn server_create_database(
+    state: &'_ ServerState,
+    accessor: &Accessor,
+    name: String,
+    may_error: params::MayError,
+) {
+    may_error.check(state.databases().create(accessor, &name).await);
 }
 
-async fn server_delete_database(state: &'_ ServerState, name: String, may_error: params::MayError) {
-    may_error.check(state.databases().delete(&name).await);
+async fn server_delete_database(
+    state: &'_ ServerState,
+    accessor: &Accessor,
+    name: String,
+    may_error: params::MayError,
+) {
+    may_error.check(state.databases().delete(accessor.clone(), &name).await);
 }
 
 #[apply(generic_step)]
 #[step(expr = "connection create database: {word}{may_error}")]
 pub async fn connection_create_database(context: &mut Context, name: String, may_error: params::MayError) {
-    server_create_database(&context.server_state(), name, may_error).await;
+    server_create_database(&context.server_state(), context.active_connection().unwrap(), name, may_error).await;
 }
 
 #[apply(generic_step)]
@@ -37,7 +47,8 @@ pub async fn connection_create_database_with_an_empty_name(context: &mut Context
 pub async fn connection_create_databases(context: &mut Context, step: &Step) {
     let state = context.server_state();
     for name in util::iter_table(step) {
-        server_create_database(&state, name.into(), params::MayError::False).await;
+        server_create_database(&state, context.active_connection().unwrap(), name.into(), params::MayError::False)
+            .await;
     }
 }
 
@@ -45,8 +56,10 @@ pub async fn connection_create_databases(context: &mut Context, step: &Step) {
 #[step(regex = "connection create database(s) in parallel:")]
 pub async fn connection_create_databases_in_parallel(context: &mut Context, step: &Step) {
     let state = context.server_state();
-    join_all(util::iter_table(step).map(|name| server_create_database(&state, name.into(), params::MayError::False)))
-        .await;
+    join_all(util::iter_table(step).map(|name| {
+        server_create_database(&state, context.active_connection().unwrap(), name.into(), params::MayError::False)
+    }))
+    .await;
 }
 
 #[cucumber::given(expr = "connection reset database: {word}")]
@@ -55,31 +68,37 @@ pub async fn connection_reset_database(context: &mut Context, name: String) {
         context.close_active_transaction();
     }
     let state = context.server_state();
+    let accessor = context.active_connection().unwrap();
     if state.databases().contains(&name).await.unwrap() {
-        state.databases().delete(&name).await.unwrap();
+        state.databases().delete(accessor.clone(), &name).await.unwrap();
     }
-    state.databases().create(&name).await.unwrap();
+    state.databases().create(accessor, &name).await.unwrap();
 }
 
 #[cucumber::when(expr = "connection delete database: {word}{may_error}")]
 #[cucumber::then(expr = "connection delete database: {word}{may_error}")]
 pub async fn connection_delete_database(context: &mut Context, name: String, may_error: params::MayError) {
-    server_delete_database(&context.server_state(), name, may_error).await;
+    server_delete_database(&context.server_state(), context.active_connection().unwrap(), name, may_error).await;
 }
 
 #[cucumber::when(regex = "connection delete database(s):")]
 async fn connection_delete_databases(context: &mut Context, step: &Step) {
     let state = context.server_state();
+    let accessor = context.active_connection().unwrap();
     for name in util::iter_table(step) {
-        server_delete_database(&state, name.into(), params::MayError::False).await;
+        server_delete_database(&state, accessor, name.into(), params::MayError::False).await;
     }
 }
 
 #[cucumber::when(regex = "connection delete database(s) in parallel:")]
 async fn connection_delete_databases_in_parallel(context: &mut Context, step: &Step) {
     let state = context.server_state();
-    join_all(util::iter_table(step).map(|name| server_delete_database(&state, name.into(), params::MayError::False)))
-        .await;
+    let accessor = context.active_connection().unwrap();
+    join_all(
+        util::iter_table(step)
+            .map(|name| server_delete_database(&state, accessor, name.into(), params::MayError::False)),
+    )
+    .await;
 }
 
 #[cucumber::given(expr = "connection has database: {word}")]

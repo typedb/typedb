@@ -27,6 +27,7 @@ use itertools::Itertools;
 use resource::distribution_info::DistributionInfo;
 use server::{
     Server, ServerBuilder,
+    authentication::Accessor,
     parameters::config::{ConfigBuilder, DiagnosticsConfig},
     service::http::message::analyze::AnalysedQueryResponse,
     state::ServerState,
@@ -151,6 +152,8 @@ pub struct Context {
     server_instance: Option<Arc<Mutex<Server>>>, // Instantiation of server which may not be "started"
 
     server: Option<Arc<Mutex<Server>>>, // Some if server is started
+    active_connection: Option<Accessor>,
+
     active_transaction: Option<ActiveTransaction>,
     active_concurrent_transactions: Vec<ActiveTransaction>,
 
@@ -179,6 +182,7 @@ impl Context {
             .repeat_failed()
             .fail_on_skipped()
             .with_default_cli()
+            .max_concurrent_scenarios(Some(1))
             .before(move |_, _, _, context| {
                 context.server_instance = Some(server_instance.server.clone());
                 // cucumber removes the default hook before each scenario and restores it after!
@@ -213,11 +217,15 @@ impl Context {
         if clean_databases {
             let state = self.server_state();
             for database_name in state.databases().all().await.unwrap() {
-                state.databases().delete(&database_name).await.unwrap();
+                state.databases().delete(connection::admin_accessor(), &database_name).await.unwrap();
             }
         }
 
         Ok(())
+    }
+
+    pub fn active_connection(&self) -> Option<&Accessor> {
+        self.active_connection.as_ref()
     }
 
     pub fn close_active_transaction(&mut self) {

@@ -362,6 +362,41 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         .await
     }
 
+    async fn grant(
+        &self,
+        request: Request<typedb_protocol::permissions::grant_permission::Req>,
+    ) -> Result<Response<typedb_protocol::permissions::grant_permission::Res>, Status> {
+        error::todo_must_implement!("todo")
+    }
+
+    async fn list_permissions(
+        &self,
+        request: Request<typedb_protocol::permissions::list_permissions::Req>,
+    ) -> Result<Response<typedb_protocol::permissions::list_permissions::Res>, Status> {
+        error::todo_must_implement!("todo")
+    }
+
+    async fn list_user_groups(
+        &self,
+        request: Request<typedb_protocol::permissions::list_user_groups::Req>,
+    ) -> Result<Response<typedb_protocol::permissions::list_user_groups::Res>, Status> {
+        error::todo_must_implement!("todo")
+    }
+
+    async fn list_user_group_membership(
+        &self,
+        request: Request<typedb_protocol::permissions::list_user_group_membership::Req>,
+    ) -> Result<Response<typedb_protocol::permissions::list_user_group_membership::Res>, Status> {
+        error::todo_must_implement!("todo")
+    }
+
+    async fn list_user_group_members(
+        &self,
+        request: Request<typedb_protocol::permissions::list_user_group_members::Req>,
+    ) -> Result<Response<typedb_protocol::permissions::list_user_group_members::Res>, Status> {
+        error::todo_must_implement!("todo")
+    }
+
     async fn databases_get(
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
@@ -423,6 +458,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
+        let accessor = Accessor::default_to_do();
         let name = request.into_inner().name;
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager(),
@@ -431,7 +467,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 self.server_state
                     .databases()
-                    .create(&name)
+                    .create(&accessor, &name)
                     .await
                     .map(|_| Response::new(database_create_res(name)))
                     .map_err(|err| err.into_status())
@@ -504,6 +540,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::delete::Req>,
     ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
+        let accessor = Accessor::from_extensions(&request.extensions())
+            .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let name = request.into_inner().name;
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager(),
@@ -512,7 +550,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 self.server_state
                     .databases()
-                    .delete(&name)
+                    .delete(accessor, &name)
                     .await
                     .map(|_| Response::new(database_delete_res()))
                     .map_err(|err| err.into_status())
@@ -527,7 +565,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::export::Req>,
     ) -> Result<Response<Self::database_exportStream>, Status> {
-        let Accessor(accessor) = Accessor::from_extensions(&request.extensions())
+        let accessor = Accessor::from_extensions(&request.extensions())
             .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let database_name = request
             .into_inner()
@@ -567,7 +605,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<TransactionClientProto>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
-        let Accessor(accessor) = Accessor::from_extensions(&request.extensions())
+        let accessor = Accessor::from_extensions(&request.extensions())
             .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);

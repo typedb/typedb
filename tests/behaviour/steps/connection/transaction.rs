@@ -9,39 +9,52 @@ use cucumber::gherkin::Step;
 use database::{
     Database,
     transaction::{
-        CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite,
+        CommitIntent, DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema,
     },
 };
 use error::TypeDBError;
-use futures::future::join_all;
+use futures::{FutureExt, future::join_all};
 use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
-use params::{self, check_boolean};
-use server::state::ServerState;
+use params::{self, MayError, check_boolean};
+use server::{
+    authentication::Accessor, error::ArcServerStateError, service::TransactionType, state::ServerState,
+    transaction::Transaction,
+};
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
+use tokio::sync::mpsc::{Sender, channel};
 
-use crate::{ActiveTransaction, Context, connection::BehaviourConnectionTestExecutionError, generic_step, util};
+use crate::{
+    ActiveTransaction, Context,
+    connection::{BehaviourConnectionTestExecutionError, admin_accessor},
+    generic_step, util,
+};
 
 async fn server_open_transaction_for_database(
     state: &'_ ServerState,
+    accessor: &Accessor,
     tx_name: String,
     database_name: &'_ str,
-) -> ActiveTransaction {
-    let database = state.databases().get(database_name).await.unwrap().expect("Expected database");
-    match tx_name.as_str() {
-        "read" => ActiveTransaction::Read(
-            TransactionRead::open(database, TransactionOptions::default()).expect("Read transaction"),
-        ),
-        "write" => ActiveTransaction::Write(
-            TransactionWrite::open(database, TransactionOptions::default()).expect("Write transaction"),
-        ),
-        "schema" => ActiveTransaction::Schema(
-            TransactionSchema::open(database, TransactionOptions::default()).expect("Schema transaction"),
-        ),
+) -> Result<ActiveTransaction, ArcServerStateError> {
+    let (close_sender, _close_receiver) = channel(1);
+    let tx_type = match tx_name.as_str() {
+        "read" => TransactionType::Read,
+        "write" => TransactionType::Write,
+        "schema" => TransactionType::Schema,
         _ => unreachable!("Unrecognised transaction type"),
-    }
+    };
+
+    let tx = state
+        .transactions()
+        .open(accessor, database_name, tx_type, TransactionOptions::default(), close_sender)
+        .await?;
+    Ok(match tx {
+        Transaction::Read(tx) => ActiveTransaction::Read(tx),
+        Transaction::Write(tx) => ActiveTransaction::Write(tx),
+        Transaction::Schema(tx) => ActiveTransaction::Schema(tx),
+    })
 }
 
 fn assert_transaction_type_matches(tx: &ActiveTransaction, tx_type: &str) {
@@ -54,19 +67,31 @@ fn assert_transaction_type_matches(tx: &ActiveTransaction, tx_type: &str) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection open {word} transaction for database: {word}")]
-pub async fn connection_open_transaction(context: &mut Context, tx_type: String, database_name: String) {
+#[step(expr = "connection open {word} transaction for database: {word}{may_error}")]
+pub async fn connection_open_transaction(
+    context: &mut Context,
+    tx_type: String,
+    database_name: String,
+    may_error: MayError,
+) {
     assert!(context.transaction().is_none(), "Existing transaction must be closed first");
-    let tx = server_open_transaction_for_database(&context.server_state(), tx_type, &database_name).await;
-    context.set_transaction(tx);
+    let accessor = context.active_connection().unwrap();
+    let tx_result =
+        server_open_transaction_for_database(&context.server_state(), accessor, tx_type, &database_name).await;
+    if let Either::Left(tx) = may_error.check(tx_result) {
+        context.set_transaction(tx);
+    }
 }
 
 #[cucumber::when(expr = "connection open transaction(s) for database: {word}, of type:")]
 pub async fn connection_open_transactions(context: &mut Context, database_name: String, step: &Step) {
     let state = context.server_state();
+    let accessor = context.active_connection().unwrap();
     let mut transactions = vec![];
     for tx_type in util::iter_table(step) {
-        transactions.push(server_open_transaction_for_database(&state, tx_type.into(), &database_name).await);
+        transactions.push(
+            server_open_transaction_for_database(&state, accessor, tx_type.into(), &database_name).await.unwrap(),
+        );
     }
     context.set_concurrent_transactions(transactions);
 }
@@ -74,10 +99,11 @@ pub async fn connection_open_transactions(context: &mut Context, database_name: 
 #[cucumber::when(expr = "connection open transaction(s) in parallel for database: {word}, of type:")]
 pub async fn connection_open_transactions_in_parallel(context: &mut Context, database_name: String, step: &Step) {
     let state = context.server_state();
-    let transactions: Vec<ActiveTransaction> = join_all(
-        util::iter_table(step)
-            .map(|tx_type| server_open_transaction_for_database(&state, tx_type.into(), &database_name)),
-    )
+    let accessor = context.active_connection().unwrap();
+    let transactions: Vec<_> = join_all(util::iter_table(step).map(|tx_type| {
+        server_open_transaction_for_database(&state, accessor, tx_type.into(), &database_name)
+            .map(|result| result.unwrap())
+    }))
     .await;
     context.set_concurrent_transactions(transactions);
 }
@@ -171,18 +197,18 @@ async fn test_schema_export(context: &mut Context, types_syntax: &str) {
     let state = context.server_state();
     if !types_syntax.trim().is_empty() {
         const REIMPORT_DB: &str = "schema_reimport_from_test_tmp";
-        state.databases().create(REIMPORT_DB).await.unwrap();
+        state.databases().create(context.active_connection().unwrap(), REIMPORT_DB).await.unwrap();
         let reimport = state.databases().get(REIMPORT_DB).await.unwrap().unwrap();
         match execute_schema_transaction(reimport.clone(), types_syntax) {
             Ok(_) => {
                 let re_exported_syntax = get_types_syntax(reimport.clone());
                 assert_eq!(re_exported_syntax, types_syntax);
                 drop(reimport);
-                state.databases().delete(REIMPORT_DB).await.unwrap();
+                state.databases().delete(admin_accessor(), REIMPORT_DB).await.unwrap();
             }
             Err(err) => {
                 drop(reimport);
-                state.databases().delete(REIMPORT_DB).await.unwrap();
+                state.databases().delete(admin_accessor(), REIMPORT_DB).await.unwrap();
                 panic!("Failed to execute schema re-import: {}", err);
             }
         }

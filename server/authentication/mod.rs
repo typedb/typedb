@@ -12,7 +12,9 @@ use axum_extra::{
 };
 use error::typedb_error;
 use http::Extensions;
+use resource::constants::server::DEFAULT_USER_NAME;
 use tonic::metadata::MetadataMap;
+use user::permission_manager::UserSession;
 
 use crate::state::ServerState;
 
@@ -55,29 +57,38 @@ pub(crate) async fn authenticate<T>(
 
     match extract_parts_authorization_token(parts.clone()).await {
         Some(token) => {
-            let accessor =
-                server_state.users().token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
-            parts.extensions.insert(Accessor(accessor));
+            let session =
+                server_state.users().token_get_session(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
+            parts.extensions.insert(Accessor::Session(session));
             Ok(http::Request::from_parts(parts, body))
         }
         None => Err(AuthenticationError::MissingToken {}),
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct Accessor(pub String);
+#[derive(Debug, Clone)]
+pub enum Accessor {
+    Default,
+    Session(Arc<UserSession>),
+}
+
+impl Accessor {
+    // TODO: must remove and replace calls with the actual accessor.
+    pub(crate) fn default_to_do() -> Self {
+        Self::Default
+    }
+}
 
 impl Accessor {
     pub fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
         extensions.get::<Self>().cloned().ok_or_else(|| AuthenticationError::CorruptedAccessor {})
     }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    pub fn into_string(self) -> String {
-        self.0
+    pub fn username(&self) -> &str {
+        match self {
+            Accessor::Default => DEFAULT_USER_NAME,
+            Accessor::Session(session) => session.username(),
+        }
     }
 }
 

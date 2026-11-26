@@ -20,10 +20,13 @@ use error::{TypeDBError, typedb_error};
 use function::FunctionError;
 use ir::pipeline::FunctionReadError;
 use storage::{StorageCommitError, snapshot::SnapshotError};
+use system::concepts::{DatabasePermission, Grantee, SystemPermission};
 use tokio_rustls::rustls::{
     pki_types::pem::Error as RustlsCertError, server::VerifierBuilderError as RustlsVerifierError,
 };
-use user::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
+use user::errors::{
+    PermissionCheckError, PermissionManagementError, UserCreateError, UserDeleteError, UserGetError, UserUpdateError,
+};
 
 use crate::{
     authentication::{AuthenticationError, token_manager::TokenManagerError},
@@ -141,6 +144,20 @@ typedb_error! {
         DatabaseImportFinaliseFailed(24, "Unable to finalise database import.", typedb_source: DatabaseCreateError),
         DatabaseImportDiscardFailed(25, "Unable to discard database import.", typedb_source: DatabaseDeleteError),
         ConcurrentImportLimitReached(27, "Too many concurrent imports (limit {limit}). Retry later.", limit: usize),
+
+        SystemPermissionsCannotBeListed(28, "Unable to list system permissions of '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee),
+        SystemPermissionCannotBeGranted(29, "Unable to grant the system permission '{permission}' to '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee, permission: SystemPermission),
+        SystemPermissionCannotBeRevoked(30, "Unable to revoke system permission '{permission}' from '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee, permission: SystemPermission),
+        DatabasePermissionsCannotBeListed(31, "Unable to list database permissions of '{grantee}' on database '{database}'.", typedb_source: PermissionManagementError, grantee: Grantee, database: String),
+        DatabasePermissionCannotBeGranted(32, "Unable to grant database permission '{permission}' on database '{database}' to '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee, database: String, permission: DatabasePermission),
+        DatabasePermissionCannotBeRevoked(33, "Unable to revoke database permission '{permission}' on database '{database}' from '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee, database: String, permission: DatabasePermission),
+        RolesCannotBeListed(34, "Unable to list roles of '{grantee}' on database '{database}'.", typedb_source: PermissionManagementError, grantee: Grantee, database: String),
+        RoleCannotBeGranted(35, "Unable to grant role '{role}' on database '{database}' to '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee, database: String, role: String),
+        RoleCannotBeRevoked(36, "Unable to revoke role '{role}' on database '{database}' from '{grantee}'.", typedb_source: PermissionManagementError, grantee: Grantee, database: String, role: String),
+
+        PermissionCheckError(37, "An error occured while checking permissions.", typedb_source: PermissionCheckError),
+
+        PermissionDeniedGeneric(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 
@@ -156,8 +173,9 @@ impl ServerStateError for LocalServerStateError {
                 AuthenticationError::CorruptedAccessor { .. } => Internal,
                 _ => Unauthenticated,
             },
+            Self::PermissionCheckError { .. } => Internal,
 
-            Self::OperationNotPermitted { .. } => Forbidden,
+            Self::OperationNotPermitted { .. } | Self::PermissionDeniedGeneric { .. } => Forbidden,
 
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
 
@@ -181,7 +199,16 @@ impl ServerStateError for LocalServerStateError {
             | Self::DatabaseImport { .. }
             | Self::DatabaseImportPrepareFailed { .. }
             | Self::DatabaseImportFinaliseFailed { .. }
-            | Self::DatabaseImportDiscardFailed { .. } => InvalidRequest,
+            | Self::DatabaseImportDiscardFailed { .. }
+            | Self::SystemPermissionCannotBeGranted { .. }
+            | Self::SystemPermissionsCannotBeListed { .. }
+            | Self::SystemPermissionCannotBeRevoked { .. }
+            | Self::DatabasePermissionCannotBeGranted { .. }
+            | Self::DatabasePermissionsCannotBeListed { .. }
+            | Self::DatabasePermissionCannotBeRevoked { .. }
+            | Self::RoleCannotBeGranted { .. }
+            | Self::RolesCannotBeListed { .. }
+            | Self::RoleCannotBeRevoked { .. } => InvalidRequest,
             Self::NotInitialised { .. } | Self::ConcurrentImportLimitReached { .. } => Unavailable,
         }
     }
@@ -195,6 +222,7 @@ impl ServerStateError for LocalServerStateError {
             Self::Unimplemented { .. }
             | Self::NotSupportedByDistribution { .. }
             | Self::OperationNotPermitted { .. }
+            | Self::PermissionDeniedGeneric { .. }
             | Self::DatabaseNotFound { .. }
             | Self::UserNotFound { .. } => Request,
             Self::AuthenticationError { typedb_source } => match typedb_source {
@@ -203,11 +231,13 @@ impl ServerStateError for LocalServerStateError {
                 | AuthenticationError::InvalidToken { .. } => Request,
                 AuthenticationError::CorruptedAccessor { .. } => Internal,
             },
+            Self::PermissionCheckError { .. } => Internal,
             Self::UserCannotBeRetrieved { typedb_source } => user_get_origin(typedb_source),
             Self::UserCannotBeCreated { typedb_source } => match typedb_source {
                 UserCreateError::IllegalUsername { .. }
                 | UserCreateError::UserAlreadyExist { .. }
-                | UserCreateError::IncompleteUserDetail { .. } => Request,
+                | UserCreateError::IncompleteUserDetail { .. }
+                | UserCreateError::PermissionDenied { .. } => Request,
                 UserCreateError::GetFailed { typedb_source } => user_get_origin(typedb_source),
                 UserCreateError::Unexpected { .. } => Internal,
             },
@@ -221,7 +251,8 @@ impl ServerStateError for LocalServerStateError {
             Self::UserCannotBeDeleted { typedb_source } => match typedb_source {
                 UserDeleteError::DefaultUserCannotBeDeleted { .. }
                 | UserDeleteError::IllegalUsername { .. }
-                | UserDeleteError::UserNotFound { .. } => Request,
+                | UserDeleteError::UserNotFound { .. }
+                | UserDeleteError::PermissionDenied { .. } => Request,
                 UserDeleteError::GetFailed { typedb_source } => user_get_origin(typedb_source),
                 UserDeleteError::Unexpected { .. } => Internal,
             },
@@ -280,6 +311,15 @@ impl ServerStateError for LocalServerStateError {
                 DatabaseExportError::ShutdownInterrupt { .. }
                 | DatabaseExportError::TransactionCloseInterrupt { .. } => System,
             },
+            Self::SystemPermissionCannotBeGranted { typedb_source, .. }
+            | Self::SystemPermissionsCannotBeListed { typedb_source, .. }
+            | Self::SystemPermissionCannotBeRevoked { typedb_source, .. }
+            | Self::DatabasePermissionCannotBeGranted { typedb_source, .. }
+            | Self::DatabasePermissionsCannotBeListed { typedb_source, .. }
+            | Self::DatabasePermissionCannotBeRevoked { typedb_source, .. }
+            | Self::RoleCannotBeGranted { typedb_source, .. }
+            | Self::RolesCannotBeListed { typedb_source, .. }
+            | Self::RoleCannotBeRevoked { typedb_source, .. } => permission_management_origin(typedb_source),
             Self::NotInitialised { .. }
             | Self::FailedToOpenPrerequisiteTransaction { .. }
             | Self::TransactionOpenFailed { .. }
@@ -301,7 +341,8 @@ fn database_create_origin(error: &DatabaseCreateError) -> ErrorOrigin {
         DatabaseCreateError::InvalidName { .. }
         | DatabaseCreateError::InternalDatabaseCreationProhibited { .. }
         | DatabaseCreateError::AlreadyExists { .. }
-        | DatabaseCreateError::IsBeingImported { .. } => ErrorOrigin::Request,
+        | DatabaseCreateError::IsBeingImported { .. }
+        | DatabaseCreateError::PermissionDenied { .. } => ErrorOrigin::Request,
 
         DatabaseCreateError::DatabaseOpen { .. }
         | DatabaseCreateError::WriteAccessDenied { .. }
@@ -321,7 +362,8 @@ fn database_delete_origin(error: &DatabaseDeleteError) -> ErrorOrigin {
     match error {
         DatabaseDeleteError::DoesNotExist { .. }
         | DatabaseDeleteError::InternalDatabaseDeletionProhibited { .. }
-        | DatabaseDeleteError::DatabaseIsNotBeingImported { .. } => ErrorOrigin::Request,
+        | DatabaseDeleteError::DatabaseIsNotBeingImported { .. }
+        | DatabaseDeleteError::PermissionDenied { .. } => ErrorOrigin::Request,
 
         DatabaseDeleteError::InUse { .. }
         | DatabaseDeleteError::StorageDelete { .. }
@@ -426,6 +468,20 @@ fn function_read_origin(error: &FunctionReadError) -> ErrorOrigin {
     match error {
         FunctionReadError::FunctionRetrieval { .. } | FunctionReadError::FunctionsScan { .. } => ErrorOrigin::System,
         FunctionReadError::FunctionIDNotFound { .. } | FunctionReadError::FormatError { .. } => ErrorOrigin::Internal,
+    }
+}
+
+fn permission_management_origin(error: &PermissionManagementError) -> ErrorOrigin {
+    match error {
+        PermissionManagementError::DatabaseSchemaBusy { .. }
+        | PermissionManagementError::UnexpectedSystemDB { .. }
+        | PermissionManagementError::UnexpectedDataCommit { .. } => ErrorOrigin::System,
+        PermissionManagementError::DatabaseNotFound { .. }
+        | PermissionManagementError::RoleNotFound { .. }
+        | PermissionManagementError::GranteeDidNotHaveRevokedSystemPermission { .. }
+        | PermissionManagementError::GranteeDidNotHaveRevokedDatabasePermission { .. }
+        | PermissionManagementError::GranteeDidNotHaveRevokedRole { .. }
+        | PermissionManagementError::PermissionDenied { .. } => ErrorOrigin::Request,
     }
 }
 

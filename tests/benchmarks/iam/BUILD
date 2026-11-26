@@ -16,6 +16,7 @@ rust_test(
         "//diagnostics",
         "//executor",
         "//function",
+        "//rbac",
         "//query",
         "//storage",
 

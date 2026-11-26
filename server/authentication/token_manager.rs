@@ -16,10 +16,11 @@ use rand::{self, Rng};
 use resource::constants::server::{MAX_AUTHENTICATION_TOKEN_EXPIRATION, MIN_AUTHENTICATION_TOKEN_EXPIRATION};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
+use user::permission_manager::UserSession;
 
 #[derive(Clone, Debug)]
 pub struct TokenManager {
-    token_owners: Arc<RwLock<HashMap<String, String>>>,
+    token_sessions: Arc<RwLock<HashMap<String, Arc<UserSession>>>>,
     tokens_expiration_time: Duration,
     secret_key: String,
 }
@@ -33,8 +34,8 @@ impl TokenManager {
     ) -> Result<Self, TokenManagerError> {
         Self::validate_tokens_expiration_time(tokens_expiration_time)?;
 
-        let token_owners = Arc::new(RwLock::new(HashMap::new()));
-        let token_owners_clone = token_owners.clone();
+        let token_sessions = Arc::new(RwLock::new(HashMap::new()));
+        let token_sessions_clone = token_sessions.clone();
 
         // We do not specifically aim to use JWT, as we perform additional manual validation
         // and use local caches (meaning that every server restart invalidates previously generated tokens).
@@ -46,50 +47,50 @@ impl TokenManager {
         let tokens_cleanup_interval = tokens_expiration_time * Self::TOKENS_CLEANUP_INTERVAL_MULTIPLIER;
         background_tasks.spawn_interval(
             move || {
-                let token_owners = token_owners_clone.clone();
+                let token_sessions = token_sessions_clone.clone();
                 let secret_key = secret_key_clone.clone();
                 async move {
-                    Self::cleanup_expired_tokens(secret_key.as_ref(), token_owners).await;
+                    Self::cleanup_expired_tokens(secret_key.as_ref(), token_sessions).await;
                 }
             },
             IntervalTaskParameters::new_no_delay(tokens_cleanup_interval, false),
         );
-        Ok(Self { token_owners, tokens_expiration_time, secret_key })
+        Ok(Self { token_sessions, tokens_expiration_time, secret_key })
     }
 
-    pub async fn new_token(&self, username: String) -> String {
+    pub async fn new_token(&self, session: Arc<UserSession>) -> String {
         // Lock earlier to make sure that `issued_at` and the token are unique
-        let mut write_guard = self.token_owners.write().await;
+        let mut write_guard = self.token_sessions.write().await;
 
         let issued_at = SystemTime::now();
         let expires_at = issued_at + self.tokens_expiration_time;
         let claims = Claims {
-            sub: username.clone(),
+            sub: session.username().to_owned(),
             exp: Self::system_time_to_seconds(expires_at),
             iat: Self::system_time_to_seconds(issued_at),
         };
 
         let token = Self::encode_token(self.secret_key.as_ref(), claims);
-        write_guard.insert(token.clone(), username);
+        write_guard.insert(token.clone(), session);
         token
     }
 
-    pub async fn get_valid_token_owner(&self, token: &str) -> Option<String> {
+    pub async fn get_valid_token_session(&self, token: &str) -> Option<Arc<UserSession>> {
         if let Some(claims) = Self::decode_token(self.secret_key.as_ref(), token) {
             if !Self::is_expired(claims.exp) {
-                return self.token_owners.read().await.get(token).cloned();
+                return self.token_sessions.read().await.get(token).cloned();
             }
         }
         None
     }
 
     pub async fn invalidate_user(&self, username: &str) {
-        let mut write_guard = self.token_owners.write().await;
-        write_guard.retain(|_, token_username| token_username != username);
+        let mut write_guard = self.token_sessions.write().await;
+        write_guard.retain(|_, session| session.username() != username);
     }
 
-    async fn cleanup_expired_tokens(secret_key: &[u8], token_owners: Arc<RwLock<HashMap<String, String>>>) {
-        let mut write_guard = token_owners.write().await;
+    async fn cleanup_expired_tokens(secret_key: &[u8], token_sessions: Arc<RwLock<HashMap<String, Arc<UserSession>>>>) {
+        let mut write_guard = token_sessions.write().await;
         write_guard.retain(|token, _| {
             let Some(claims) = Self::decode_token(secret_key, token) else { return false };
             !Self::is_expired(claims.exp)

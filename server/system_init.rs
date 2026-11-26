@@ -20,6 +20,7 @@ use system::{
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
+use user::permission_manager::UserSession;
 
 use crate::{
     authentication::Accessor,
@@ -54,7 +55,7 @@ pub async fn initialise_system_database_schema(server_state: &ServerState) -> Re
 }
 
 pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), ArcServerStateError> {
-    let accessor = Accessor(DEFAULT_USER_NAME.to_string());
+    let accessor = Accessor::Default;
     let exists = server_state.users().contains(accessor.clone(), DEFAULT_USER_NAME).await?;
     if !exists {
         server_state

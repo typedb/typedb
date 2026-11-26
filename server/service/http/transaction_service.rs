@@ -51,6 +51,7 @@ use tracing::{Level, event};
 use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
 
 use crate::{
+    authentication::Accessor,
     service::{
         QueryType, TransactionType,
         http::message::{
@@ -272,7 +273,7 @@ impl TransactionService {
     pub(crate) async fn open(
         &mut self,
         type_: TransactionType,
-        owner: String,
+        accessor: &Accessor,
         database_name: Arc<str>,
         options: TransactionOptions,
     ) -> Result<u64, TransactionServiceError> {
@@ -282,7 +283,7 @@ impl TransactionService {
         let transaction = self
             .server_state
             .transactions()
-            .open(&database_name, owner, type_, options, self.close_sender.clone())
+            .open(accessor, &database_name, type_, options, self.close_sender.clone())
             .await
             .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 

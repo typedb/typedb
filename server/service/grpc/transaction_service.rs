@@ -69,6 +69,7 @@ use typeql::query::{Pipeline as TypeQLPipeline, SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
+    authentication::Accessor,
     service::{
         TransactionType,
         grpc::{
@@ -135,7 +136,7 @@ macro_rules! send_ok_message_else_return_break {
 #[derive(Debug)]
 pub(crate) struct TransactionService {
     server_state: Arc<ServerState>,
-    owner: String,
+    accessor: Accessor,
 
     request_stream: Streaming<typedb_protocol::transaction::Client>,
     response_sender: Sender<Result<ProtocolServer, Status>>,
@@ -162,7 +163,7 @@ pub(crate) struct TransactionService {
 impl TransactionService {
     pub(crate) fn new(
         server_state: Arc<ServerState>,
-        owner: String,
+        accessor: Accessor,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
         response_sender: Sender<Result<ProtocolServer, Status>>,
     ) -> Self {
@@ -171,7 +172,7 @@ impl TransactionService {
 
         Self {
             server_state,
-            owner,
+            accessor,
 
             request_stream,
             response_sender,
@@ -474,7 +475,7 @@ impl TransactionService {
         let transaction = self
             .server_state
             .transactions()
-            .open(&database_name, self.owner.clone(), transaction_type, transaction_options, self.close_sender.clone())
+            .open(&self.accessor, &database_name, transaction_type, transaction_options, self.close_sender.clone())
             .await
             .map_err(|err| err.into_status())?;
 

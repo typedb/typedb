@@ -151,7 +151,6 @@ fn execute_write_query(
                                            type_manager,
                                            thing_manager,
                                            function_manager,
-                                           _rbac_manager,
                                            query_manager,
                                            _db,
                                            _opts| {

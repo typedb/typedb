@@ -71,7 +71,7 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         }
 
         let credential = Credential::new_password(&password);
-        let accessor = Accessor(DEFAULT_USER_NAME.to_string());
+        let accessor = Accessor::Default;
         self.server_state
             .users()
             .update(accessor, &username, None, Some(credential))

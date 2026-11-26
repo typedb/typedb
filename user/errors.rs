@@ -3,8 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use database::transaction::DataCommitError;
 use error::typedb_error;
+use system::{
+    concepts::{DatabasePermission, Grantee, SchemaDefinedRole, SystemPermission},
+    repositories::SystemDBError,
+};
 
 typedb_error! {
     pub UserGetError(component = "User get", prefix = "USG") {
@@ -20,6 +24,7 @@ typedb_error! {
         IncompleteUserDetail(3, "Incomplete user detail."),
         Unexpected(4, "An unexpected error has occurred in the process of creating a new user."),
         GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
+        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 
@@ -40,6 +45,28 @@ typedb_error! {
         UserNotFound(3, "User not found."),
         Unexpected(4, "An unexpected error has occurred in the process of deleting a user."),
         GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
+        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
+    }
+}
+
+typedb_error! {
+    pub PermissionCheckError(component = "Permission check", prefix = "UPC") {
+        PermissionManagement(1, "An unexpected error occurred during permission check.", typedb_source: PermissionManagementError),
+    }
+}
+
+typedb_error! {
+    pub PermissionManagementError(component = "Permission management", prefix = "UPM") {
+        UnexpectedSystemDB(1, "An unexpected error occurred during permission management.", typedb_source: SystemDBError),
+        UnexpectedDataCommit(2, "An unexpected error occurred during permission management.", typedb_source: DataCommitError),
+        DatabaseNotFound(3, "The referenced database '{database}' was not found.", database: String),
+        DatabaseSchemaBusy(4, "Permissions of the database '{database}' cannot be managed while its schema is busy.", database: String),
+        RoleNotFound(5, "The referenced role '{role}' was not found in the database '{database}'.", database: String, role: String),
+
+        GranteeDidNotHaveRevokedSystemPermission(6, "Grantee did not have the revoked system permission.", grantee: Grantee, permission: SystemPermission),
+        GranteeDidNotHaveRevokedDatabasePermission(7, "Grantee did not have the revoked database permission.", grantee: Grantee, permission: DatabasePermission),
+        GranteeDidNotHaveRevokedRole(8, "Grantee did not have the revoked role.", grantee: Grantee, role: SchemaDefinedRole),
+        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 

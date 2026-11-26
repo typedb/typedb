@@ -898,6 +898,7 @@ typedb_error! {
         DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
         ImportedDatabaseInUse(12, "Imported database '{name}' is still in use.", name: String),
         ImportCleanupFailed(13, "Cannot prepare database '{name}' for import: removing the leftover of a previous import failed.", name: String, typedb_source: DatabaseDeleteError),
+        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 
@@ -917,6 +918,7 @@ typedb_error! {
         InternalDatabaseDeletionProhibited(5, "Deleting an internal database is prohibited"),
         WriteAccessDenied(6, "Cannot access databases for writing."),
         DatabaseIsNotBeingImported(7, "Internal error: database '{name}' is not being imported.", name: String),
+        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 
