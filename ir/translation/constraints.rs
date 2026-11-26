@@ -27,7 +27,7 @@ use crate::{
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         variable_category::VariableOptionality,
     },
-    pipeline::function_signature::{FunctionSignature, FunctionSignatureIndex},
+    pipeline::function_signature::FunctionSignatureIndex,
     translation::{
         expression::{
             add_function_call, add_inline_typeql_expression, build_expression, function_argument_optionality,

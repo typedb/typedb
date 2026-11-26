@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use clap::Parser;
 use lib_benchmark::{
-    runner::{BenchmarkRunner, BenchmarkRunnerGroup, SimpleRunner},
+    runner::{BenchmarkRunner, SimpleRunner},
     typedb_workload::{
         RunDescriptor,
         benchmark::DbgAssertFn,

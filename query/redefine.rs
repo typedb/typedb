@@ -724,7 +724,7 @@ fn redefine_relates_specialise(
                     });
                 }
             },
-            TypeRefAny::List(list) => {
+            TypeRefAny::List(_) => {
                 unimplemented_feature!(Lists)
             }
         };

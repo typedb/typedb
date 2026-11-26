@@ -67,7 +67,7 @@ impl Conjunction {
         let binding_modes = self.pattern_variables.clone();
         let mut swapped_conjunction = Self {
             scope_id,
-            constraints: Constraints::new(scope_id),
+            constraints: Constraints::new(),
             nested_patterns: Vec::new(),
             pattern_variables: binding_modes,
         };
@@ -190,7 +190,7 @@ pub struct ConjunctionBuilder {
 
 impl ConjunctionBuilder {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() }
+        Self { constraints: Constraints::new(), scope_id, nested_patterns: Vec::new() }
     }
 
     pub(crate) fn finish(self, parent_modes: &PatternVariableModes) -> Conjunction {

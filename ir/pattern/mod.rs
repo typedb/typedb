@@ -139,13 +139,10 @@ macro_rules! impl_pattern_from_pattern_variables {
 }
 pub(self) use impl_pattern_from_pattern_variables;
 
-use crate::{
-    pattern::{
-        conjunction::{ConjunctionBuilder, NestedPatternBuilder},
-        constraint::Constraint,
-        disjunction::DisjunctionBuilder,
-    },
-    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignatureIndex},
+use crate::pattern::{
+    conjunction::{ConjunctionBuilder, NestedPatternBuilder},
+    constraint::Constraint,
+    disjunction::DisjunctionBuilder,
 };
 
 // TODO: rename to 'Identifier' in lieu of a better name

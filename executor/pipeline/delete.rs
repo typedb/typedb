@@ -127,7 +127,7 @@ fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions:
         .collect()
 }
 
-pub fn may_execute_delete_connections_recursive(
+fn may_execute_delete_connections_recursive(
     delete: &ConditionalDelete,
     profile: &RecursiveProfile,
     snapshot: &mut impl WritableSnapshot,
@@ -160,7 +160,7 @@ pub fn may_execute_delete_connections_recursive(
     Ok(())
 }
 
-pub fn may_execute_delete_concepts_recursive(
+fn may_execute_delete_concepts_recursive(
     delete: &ConditionalDelete,
     profile: &RecursiveProfile,
     snapshot: &mut impl WritableSnapshot,

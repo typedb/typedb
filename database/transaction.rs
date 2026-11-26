@@ -6,7 +6,6 @@
 
 use std::{
     fmt::Formatter,
-    mem,
     ops::Deref,
     sync::{Arc, mpsc::RecvTimeoutError},
     time::Duration,

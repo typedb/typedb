@@ -354,7 +354,7 @@ impl IsaObjectIterator {
                 Ordering::Equal | Ordering::Greater => return Ok(()),
             }
         } else {
-            return unreachable!("Post-seek comparison must be Equal or Greater, found Less.");
+            unreachable!("Post-seek comparison must be Equal or Greater, found Less.");
         }
     }
 }
@@ -438,7 +438,7 @@ impl IsaAttributeIterator {
                 Ordering::Greater => return Ok(Some(Ordering::Greater)),
             }
         } else {
-            return unreachable!("Post-seek comparison must be Equal or Greater, found Less.");
+            unreachable!("Post-seek comparison must be Equal or Greater, found Less.");
         }
     }
 }

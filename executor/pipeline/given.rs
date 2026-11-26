@@ -7,7 +7,6 @@ use std::{marker::PhantomData, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{annotation::function::FunctionParameterAnnotation, executable::pipeline::GivenExecutable};
-use concept::thing::ThingAPI;
 use encoding::value::ValueEncodable;
 use error::needs_update_when_feature_is_implemented;
 use ir::pattern::variable_category::VariableOptionality;
@@ -47,7 +46,7 @@ where
         self,
         input_iterator: Self::InputIterator,
         context: ExecutionContext<Snapshot>,
-        interrupt: ExecutionInterrupt,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),

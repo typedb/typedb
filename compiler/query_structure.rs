@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, HashMap},
     fmt::Formatter,
     marker::PhantomData,
     str::FromStr,
@@ -21,7 +21,6 @@ use ir::{
     },
     pipeline::{
         ParameterRegistry, VariableRegistry,
-        block::Block,
         modifier::SortVariable,
         reduce::{AssignedReduction, Reducer},
     },

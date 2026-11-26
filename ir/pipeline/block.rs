@@ -18,8 +18,7 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        AssignmentStatus, BindingMode, BindingOptionality, BranchID, Pattern, PatternVariableModes,
-        ReferenceOptionality, ScopeId,
+        AssignmentStatus, BindingMode, BranchID, Pattern, PatternVariableModes, ReferenceOptionality, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::{Constraint, IsSet},
         expression::{Expression, ExpressionTree, ExpressionTreeNodeId},
@@ -74,7 +73,7 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: ConjunctionBuilder::new(ScopeId::ROOT), context }
     }
 
-    pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
+    pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
         let block_binding_modes = self.variable_binding_modes();
         validate_no_optionals_in_negations(&self.conjunction, false)?;
         validate_optional_returns(&self.context, &self.conjunction)?;
@@ -584,7 +583,7 @@ impl<'a> BlockBuilderContext<'a> {
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
         debug_assert!(available_input_names.values().all(|v| variable_optionalities.contains_key(v)));
-        let mut block_context = BlockContext::new(variable_optionalities.clone());
+        let block_context = BlockContext::new(variable_optionalities.clone());
         error::needs_update_when_feature_is_implemented!(
             // the transition__is_write_stage has to go.
             error::UnimplementedFeature::ErrorsOnImplicitUnwrap

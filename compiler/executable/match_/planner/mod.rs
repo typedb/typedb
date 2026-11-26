@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{BranchID, Vertex, constraint::ExpressionBinding},
+    pattern::{BranchID, Vertex},
     pipeline::{VariableRegistry, block::Block, function_signature::FunctionID},
 };
 use itertools::Itertools;
@@ -325,7 +325,7 @@ impl ConjunctionExecutableBuilder {
         planner_statistics: PlannerStatistics,
     ) -> Self {
         let mut index = assigned_positions.clone();
-        index.retain(|variable, position| !matches!(position, ExecutorVariable::Internal(_)));
+        index.retain(|_variable, position| !matches!(position, ExecutorVariable::Internal(_)));
         let produced_so_far = HashSet::from_iter(input_variables.iter().copied());
         let current_outputs = produced_so_far.clone();
         let reverse_index = index.iter().map(|(&var, &pos)| (pos, var)).collect();

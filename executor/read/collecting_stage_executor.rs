@@ -283,7 +283,6 @@ impl CollectorTrait for SortCollector {
         storage_counters: StorageCounters,
     ) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
-        let row_count = collector.len() as u64;
         let sorted_indices = collector.indices_sorted_by(context, &sort_on, storage_counters).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted: collector, sorted_indices })
     }

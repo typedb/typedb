@@ -198,7 +198,7 @@ impl AnswerTable {
         row_data_only.hash(&mut hasher);
         let hash = hasher.finish();
 
-        let mut bucket = self.answers_lookup.entry(hash).or_default();
+        let bucket = self.answers_lookup.entry(hash).or_default();
         if !bucket.iter().any(|index| self.answers[*index] == row_data_only) {
             let index = self.answers.len();
             self.answers.push(row_data_only.clone().into_owned());

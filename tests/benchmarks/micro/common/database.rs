@@ -18,8 +18,6 @@ use options::{MvccCleanupStrategy, TransactionOptions, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
 
-use crate::transaction::UnifiedTransactionView;
-
 #[derive(Debug)]
 pub struct Config {
     pub rocksdb_cache_size: ByteSize,

@@ -85,7 +85,7 @@ impl From<ValueVertexTypes> for VertexTypeAnnotations {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub(super) struct ConceptVertexTypes(BTreeSet<answer::Type>);
+pub(crate) struct ConceptVertexTypes(BTreeSet<answer::Type>);
 
 impl ConceptVertexTypes {
     fn new() -> Self {
@@ -128,7 +128,7 @@ impl<'a> IntoIterator for &'a ConceptVertexTypes {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub(super) struct ValueVertexTypes(BTreeSet<ValueType>);
+pub(crate) struct ValueVertexTypes(BTreeSet<ValueType>);
 
 impl Deref for ValueVertexTypes {
     type Target = BTreeSet<ValueType>;

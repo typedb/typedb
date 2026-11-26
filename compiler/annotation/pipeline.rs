@@ -5,7 +5,6 @@
  */
 
 use std::{
-    borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
@@ -156,7 +155,7 @@ fn annotate_given_stage(
     let optionality = variables
         .iter()
         .zip(labels.iter())
-        .map(|(&variable, label)| {
+        .map(|(&_, label)| {
             if matches!(label, NamedTypeAny::Optional(_)) {
                 VariableOptionality::Optional
             } else {
