@@ -32,7 +32,7 @@ impl DatabaseUid {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct DatabaseProperties {
-    properties_file_version: ExtendableVersion,
+    version: ExtendableVersion,
     database_id: DatabaseUid,
     wal: WALProperties,
     storage: StorageProperties,
@@ -48,7 +48,7 @@ impl DatabaseProperties {
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
         let wal = WALProperties::values_for_pre_properties_database();
         let storage = StorageProperties::values_for_pre_properties_database();
-        Self { database_id, properties_file_version, wal, storage }
+        Self { database_id, version: properties_file_version, wal, storage }
     }
 
     pub(crate) fn create_for_new_database() -> Self {
@@ -56,19 +56,19 @@ impl DatabaseProperties {
         let properties_file_version = Self::SERVER_PROPERTIES_FILE_VERSION.0.clone();
         let wal = WALProperties::create_for_new_database();
         let storage = StorageProperties::create_for_new_database();
-        Self { database_id, properties_file_version, wal, storage }
+        Self { database_id, version: properties_file_version, wal, storage }
     }
 
     pub(crate) fn validate_compatibility(properties: &Self) -> Result<(), DatabaseOpenError> {
-        Self::SERVER_PROPERTIES_FILE_VERSION.check_compatible(&properties.properties_file_version).map_err(
+        Self::SERVER_PROPERTIES_FILE_VERSION.check_compatible(&properties.version).map_err(
             |mismatch| match mismatch {
                 IncompatibleVersion::ResourceIsOlderThanServer => DatabaseOpenError::PropertiesFileTooOldForServer {
                     server_version: Self::SERVER_PROPERTIES_FILE_VERSION.0.clone(),
-                    file_version: properties.properties_file_version.clone(),
+                    file_version: properties.version.clone(),
                 },
                 IncompatibleVersion::ResourceIsNewerThanServer => DatabaseOpenError::PropertiesFileTooNewForServer {
                     server_version: Self::SERVER_PROPERTIES_FILE_VERSION.0.clone(),
-                    file_version: properties.properties_file_version.clone(),
+                    file_version: properties.version.clone(),
                 },
             },
         )?;
