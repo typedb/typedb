@@ -26,6 +26,7 @@ use crate::{
 };
 
 pub mod diagnostics_manager;
+pub mod error_reporting;
 pub mod metrics;
 mod monitoring_server;
 mod reporter;
@@ -38,7 +39,7 @@ pub use reports::MonitoringSection;
 macro_rules! error_with_report {
     ($($arg:tt)+) => {{
         tracing::error!($($arg)+);
-        sentry::capture_message(&format!($($arg)+), sentry::Level::Error);
+        $crate::error_reporting::report_message(&format!($($arg)+), $crate::error_reporting::Level::Error);
     }};
 }
 

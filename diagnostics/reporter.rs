@@ -35,7 +35,7 @@ use resource::constants::{
     },
 };
 
-use crate::{Diagnostics, hash_string_consistently};
+use crate::{Diagnostics, error_reporting, error_reporting::Level, hash_string_consistently};
 
 #[derive(Debug)]
 pub struct Reporter {
@@ -253,11 +253,11 @@ impl Reporter {
     }
 
     fn report_inner_error_message_critical(message: &str) {
-        sentry::capture_message(message, sentry::Level::Error);
+        error_reporting::report_message(message, Level::Error);
     }
 
     fn report_inner_error_message_warning(message: &str) {
-        sentry::capture_message(message, sentry::Level::Warning);
+        error_reporting::report_message(message, Level::Warning);
     }
 }
 

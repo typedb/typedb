@@ -10,7 +10,7 @@ use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
-    Diagnostics, MonitoringSection,
+    Diagnostics, MonitoringSection, error_reporting,
     metrics::{ActionKind, ClientEndpoint, DatabaseMetricsSnapshot, LoadKind, QueryType, TransactionOutcome},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
@@ -44,6 +44,7 @@ impl DiagnosticsManager {
         background_tasks: TokioTaskSpawner,
     ) -> Self {
         let deployment_id = diagnostics.core_metrics().server_properties.deployment_id().to_owned();
+        error_reporting::set_install_id(&deployment_id);
         let data_directory = diagnostics.core_metrics().server_metrics.data_directory().clone();
         let is_reporting_enabled = diagnostics.core_metrics().server_properties.is_reporting_enabled();
         let diagnostics = Arc::new(diagnostics);
