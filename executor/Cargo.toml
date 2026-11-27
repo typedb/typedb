@@ -63,6 +63,9 @@
 	[dependencies.resource]
 		workspace = true
 
+	[dependencies.simsimd]
+		workspace = true
+
 	[dependencies.smallvec]
 		workspace = true
 

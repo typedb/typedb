@@ -588,7 +588,10 @@ fn resolve_reduce_instruction_by_value_type(
             _ => err(),
         },
 
-        ValueTypeCategory::Boolean | ValueTypeCategory::Duration | ValueTypeCategory::Struct => err(),
+        ValueTypeCategory::Boolean
+        | ValueTypeCategory::Duration
+        | ValueTypeCategory::Struct
+        | ValueTypeCategory::Vector => err(),
     }
 }
 

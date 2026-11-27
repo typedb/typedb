@@ -76,6 +76,60 @@ rust_test(
 )
 
 rust_test(
+    name = "test_vector_durability",
+    srcs = glob([
+        "vector_durability.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//concept",
+        "//database",
+        "//diagnostics",
+        "//encoding",
+        "//executor",
+        "//query",
+        "//resource",
+        "//storage",
+        "//storage/tests:test_utils_storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
+[
+    rust_test(
+        name = "test_vector_isolation_" + family,
+        crate_root = "vector_isolation/" + family + ".rs",
+        srcs = [
+            "vector_isolation/common.rs",
+            "vector_isolation/" + family + ".rs",
+        ],
+        deps = [
+            "//common/options",
+            "//concept",
+            "//database",
+            "//encoding",
+            "//executor",
+            "//function",
+            "//query",
+            "//resource",
+            "//storage",
+
+            ":test_utils_database",
+            "//util/test:test_utils",
+
+            "@typeql//rust:typeql",
+        ]
+    )
+    for family in [
+        "one_writer_multiple_readers",
+        "two_writers",
+        "parallel",
+    ]
+]
+
+rust_test(
     name = "test_transaction",
     srcs = glob([
         "transaction.rs",
@@ -198,6 +252,10 @@ rustfmt_test(
         ":test_database",
         ":test_import",
         ":test_migration",
+        ":test_vector_durability",
+        ":test_vector_isolation_one_writer_multiple_readers",
+        ":test_vector_isolation_two_writers",
+        ":test_vector_isolation_parallel",
         ":test_transaction",
         ":test_statistics_synchronization",
         ":test_transaction_isolation",

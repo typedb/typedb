@@ -14,6 +14,8 @@ use encoding::value::{
     duration_value::{DAYS_PER_WEEK, Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
+    value_type::VectorTypeParameters,
+    vector_value::VectorValue,
 };
 use typeql::{
     annotation::Regex,
@@ -25,7 +27,7 @@ use typeql::{
     },
 };
 
-use crate::LiteralParseError;
+use crate::{LiteralParseError, translation::tokens::translate_vector_precision};
 
 pub fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
     Value::from_typeql_literal(&literal.inner, literal.span())
@@ -71,6 +73,21 @@ impl FromTypeQLLiteral for Value<'static> {
             }
             ValueLiteral::Struct(_) => {
                 Err(LiteralParseError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Structs })
+            }
+            ValueLiteral::Vector(vector) => {
+                let elements = vector
+                    .elements
+                    .iter()
+                    .map(|element| Ok(f64::from_typeql_literal(element, source_span)? as f32))
+                    .collect::<Result<Vec<f32>, LiteralParseError>>()?;
+                let length = elements.len();
+                VectorValue::new(Cow::Owned(elements), translate_vector_precision(vector.precision))
+                    .map(Value::Vector)
+                    .ok_or(LiteralParseError::VectorTooLong {
+                        length,
+                        max: VectorTypeParameters::MAX_LENGTH,
+                        source_span,
+                    })
             }
         }
     }

@@ -78,6 +78,9 @@
 	[dependencies.typeql]
 		workspace = true
 
+	[dependencies.usearch]
+		workspace = true
+
 [dev-dependencies]
 
 	[dev-dependencies.criterion]

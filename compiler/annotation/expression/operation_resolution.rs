@@ -39,7 +39,22 @@ pub(crate) fn resolve_op(
         ValueTypeCategory::Duration => compile_op_duration(builder, operator, right_category, source_span),
         ValueTypeCategory::String => compile_op_string(builder, operator, right_category, source_span),
         ValueTypeCategory::Struct => compile_op_struct(builder, operator, right_category, source_span),
+        ValueTypeCategory::Vector => compile_op_vector(builder, operator, right_category, source_span),
     }
+}
+
+fn compile_op_vector(
+    _builder: &mut ExpressionCompilationContext<'_>,
+    op: Operator,
+    right_category: ValueTypeCategory,
+    source_span: Option<Span>,
+) -> Result<(), Box<ExpressionCompileError>> {
+    Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+        op,
+        left_category: ValueTypeCategory::Vector,
+        right_category,
+        source_span,
+    }))
 }
 
 fn compile_op_boolean(

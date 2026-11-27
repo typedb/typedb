@@ -24,10 +24,21 @@ use crate::{
         thing::vertex_attribute::InlineEncodableAttributeID,
     },
     value::{
-        ValueEncodable, boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
-        date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
-        value_struct::StructValue, value_type::ValueTypeCategory,
+        ValueEncodable,
+        boolean_bytes::BooleanBytes,
+        date_bytes::DateBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        integer_bytes::IntegerBytes,
+        string_bytes::StringBytes,
+        value::Value,
+        value_struct::StructValue,
+        value_type::{ValueTypeCategory, VectorPrecision},
+        vector_bytes::VectorBytes,
+        vector_value::VectorValue,
     },
 };
 
@@ -100,6 +111,12 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes())
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
+            Value::Vector(value) => {
+                let parameters = value.parameters();
+                buf.extend_from_slice(&parameters.length.to_be_bytes());
+                buf.push(parameters.precision.to_byte());
+                buf.extend_from_slice(VectorBytes::<0>::build(value.elements()).bytes())
+            }
             Value::Boolean(_)
             | Value::Integer(_)
             | Value::Double(_)
@@ -178,6 +195,18 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                 ))
             }
             ValueTypeCategory::Struct => Value::Struct(Cow::Owned(decode_struct_increment_offset(offset, buf)?)),
+            ValueTypeCategory::Vector => {
+                let length = u16::from_be_bytes(read_bytes_increment_offset::<2>(offset, buf)?) as usize;
+                let [precision] = read_bytes_increment_offset::<1>(offset, buf)?;
+                let n_bytes = length * VectorBytes::<0>::ELEMENT_LENGTH;
+                let elements =
+                    VectorBytes::new(Bytes::<0>::reference(read_slice_increment_offset(offset, n_bytes, buf)?))
+                        .as_vector();
+                Value::Vector(
+                    VectorValue::new(Cow::Owned(elements), VectorPrecision::from_byte(precision))
+                        .expect("Stored vector exceeds the maximum length"),
+                )
+            }
         };
         fields.insert(field_idx, value);
     }
@@ -237,6 +266,8 @@ pub mod test {
             struct_bytes::{StructBytes, append_length_as_vle, read_vle_increment_offset},
             value::Value,
             value_struct::StructValue,
+            value_type::VectorPrecision,
+            vector_value::VectorValue,
         },
     };
 
@@ -285,7 +316,14 @@ pub mod test {
         ];
         for (string_value, integer_value) in test_values {
             let nested_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));
-            let nested_fields = HashMap::from([(0, string_value), (1, integer_value)]);
+            let vector_value = Value::Vector(
+                VectorValue::new(
+                    Cow::Owned(vec![1.0f32, -0.0, 0.5, f32::MIN_POSITIVE, 384.25]),
+                    VectorPrecision::Float32,
+                )
+                .unwrap(),
+            );
+            let nested_fields = HashMap::from([(0, string_value), (1, integer_value), (2, vector_value)]);
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
             let struct_key = DefinitionKey::new(StructDefinition::PREFIX, DefinitionID::new(0));

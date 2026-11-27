@@ -72,5 +72,11 @@ typedb_error! {
             source_span: Option<Span>,
         ),
         Representation(20, "Error building expression representation.", typedb_source: Box<RepresentationError>),
+        UnsupportedConstantValueType(
+            21,
+            "Constants of type '{category}' cannot be used in expressions.",
+            category: ValueTypeCategory,
+            source_span: Option<Span>,
+        ),
     }
 }

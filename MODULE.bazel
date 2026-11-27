@@ -120,28 +120,28 @@ bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "5655182f0d6ac9e7b1a6e767df7f48c511692ce2",
+    commit = "7498660c17ea28562ca39b925c98779e6a848e7a",  # TODO(vector-search): mainline typedb_dependencies pin
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "4c37fe7d62a59e54623e5b554f0e11f9d45aa610",
+    tag = "3.16.0-rc0",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "dd606e1063d7c83781b5e04c1d348b824d3a7428",
+    tag = "3.16.0-rc0",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "8a8da0393c5e434d98b07659520daf34865db00d",
+    commit = "9bbfe3e6ac70e8cd84c5e9e1c94953eb336ff0fd",  # TODO(vector-search): mainline typedb_behaviour pin
 )
 
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
@@ -157,7 +157,7 @@ native_artifact_files.artifact(
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
     archive_strip_prefix = "typedb-console-{platform}-{version}",
-    tag = "3.15.0",
+    tag = "3.16.0-rc0",
 )
 native_artifact_files.artifact(
     name = "typedb_loader_artifact",
@@ -165,8 +165,19 @@ native_artifact_files.artifact(
     artifact_name = "typedb-loader-{platform}-{version}.{ext}",
     tag = "3.15.0",
 )
+native_artifact_files.artifact(
+    name = "typedb_previous_artifact",
+    group_name = "typedb-all-{platform}",
+    artifact_name = "typedb-all-{platform}-{version}.{ext}",
+    tag = "3.14.2",
+)
 use_repo(
     native_artifact_files,
+    "typedb_previous_artifact_linux-x86_64",
+    "typedb_previous_artifact_linux-arm64",
+    "typedb_previous_artifact_mac-x86_64",
+    "typedb_previous_artifact_mac-arm64",
+    "typedb_previous_artifact_windows-x86_64",
     "typedb_console_artifact_linux-x86_64",
     "typedb_console_artifact_linux-arm64",
     "typedb_console_artifact_mac-x86_64",

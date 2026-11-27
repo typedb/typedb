@@ -32,6 +32,8 @@ use crate::value::{
     timezone::TimeZone,
     value_struct::StructValue,
     value_type::{ValueType, ValueTypeCategory},
+    vector_bytes::VectorBytes,
+    vector_value::VectorValue,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,6 +48,7 @@ pub enum Value<'a> {
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
+    Vector(VectorValue<'a>),
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
@@ -119,6 +122,11 @@ impl Hash for Value<'_> {
             Value::Duration(value) => Hash::hash(value, state),
             Value::String(value) => Hash::hash(value, state),
             Value::Struct(value) => Hash::hash(value, state),
+            Value::Vector(value) => {
+                for element in value.elements() {
+                    Hash::hash(&element.to_bits(), state);
+                }
+            }
         }
     }
 }
@@ -136,6 +144,7 @@ impl<'a> Value<'a> {
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
+            Value::Vector(ref vector) => Value::Vector(vector.as_reference()),
         }
     }
 
@@ -221,6 +230,7 @@ impl<'a> Value<'a> {
             | Self::Duration(_) => size_of::<Self>(),
             Self::String(string) => string.len(),
             Self::Struct(struct_) => struct_.fields().values().map(Value::estimated_write_bytes).sum(),
+            Self::Vector(vector) => size_of_val(vector.elements()),
         }
     }
 
@@ -228,6 +238,13 @@ impl<'a> Value<'a> {
         match self {
             Self::String(string) => string.as_ref(),
             _ => panic!("Cannot unwrap String if not a string value."),
+        }
+    }
+
+    pub fn unwrap_vector(self) -> VectorValue<'a> {
+        match self {
+            Self::Vector(vector) => vector,
+            _ => panic!("Cannot unwrap Vector if not a vector value."),
         }
     }
 
@@ -243,6 +260,7 @@ impl<'a> Value<'a> {
             Self::Duration(duration) => Value::Duration(duration),
             Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
             Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
+            Self::Vector(vector) => Value::Vector(vector.into_owned()),
         }
     }
 
@@ -387,6 +405,7 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
+            Value::Vector(vector) => ValueType::Vector(vector.parameters()),
         }
     }
 
@@ -460,6 +479,13 @@ impl ValueEncodable for Value<'_> {
         }
     }
 
+    fn encode_vector<const INLINE_LENGTH: usize>(&self) -> VectorBytes<'_, INLINE_LENGTH> {
+        match self {
+            Value::Vector(vector) => VectorBytes::build(vector.elements()),
+            _ => panic!("Cannot encode non-Vector as VectorBytes"),
+        }
+    }
+
     fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH> {
         match self {
             Value::Boolean(_) => ByteArray::copy(&self.encode_boolean().bytes()),
@@ -472,6 +498,7 @@ impl ValueEncodable for Value<'_> {
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
             Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes()),
             Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes()),
+            Value::Vector(_) => ByteArray::copy(self.encode_vector::<INLINE_LENGTH>().bytes()),
         }
     }
 }
@@ -502,6 +529,16 @@ impl fmt::Display for Value<'_> {
             }
             // TODO: this string will not have field names, only field IDs!
             Value::Struct(struct_) => write!(f, "{struct_}"),
+            Value::Vector(vector) => {
+                write!(f, "vector([")?;
+                for (i, element) in vector.elements().iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{element}")?;
+                }
+                write!(f, "], \"{}\")", vector.parameters().precision)
+            }
         }
     }
 }

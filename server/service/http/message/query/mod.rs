@@ -15,7 +15,12 @@ use bytes::util::HexBytesFormatter;
 use compiler::annotation::function::FunctionParameterAnnotation;
 use encoding::{
     graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
-    value::{ValueEncodable, value::Value, value_type::ValueType},
+    value::{
+        ValueEncodable,
+        value::Value,
+        value_type::{ValueType, ValueTypeCategory, VectorPrecision},
+        vector_value::VectorValue,
+    },
 };
 use ir::translation::{literal::FromTypeQLLiteral, parse_iid};
 use options::QueryOptions;
@@ -372,6 +377,11 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
             GivenRowDecodeError::TranslatingValueFailedForGivenEntry { value: to_parse.to_owned(), typedb_source }
         })
     }
+    const DECIMAL: &str = typeql::token::ValueType::Decimal.as_str();
+    const DATE: &str = typeql::token::ValueType::Date.as_str();
+    const DATETIME: &str = typeql::token::ValueType::DateTime.as_str();
+    const DATETIME_TZ: &str = typeql::token::ValueType::DateTimeTZ.as_str();
+    const DURATION: &str = typeql::token::ValueType::Duration.as_str();
     let as_str = value.value.to_string();
     match value.value_type.as_str() {
         "decimal" => {
@@ -379,6 +389,13 @@ pub fn decode_value(value: ValueResponse) -> Result<Value<'static>, GivenRowDeco
             decode(&if literal.ends_with("dec") { literal.to_owned() } else { format!("{literal}dec") })
         }
         "date" | "datetime" | "datetime-tz" | "duration" => decode(&as_str[1..as_str.len() - 1]),
+        vector_type if vector_type.starts_with(ValueTypeCategory::Vector.name()) => {
+            serde_json::from_value::<Vec<f32>>(value.value)
+                .ok()
+                .and_then(|elements| VectorValue::new(std::borrow::Cow::Owned(elements), VectorPrecision::Float32))
+                .map(Value::Vector)
+                .ok_or(GivenRowDecodeError::InvalidVectorForGivenEntry { value: as_str })
+        }
         _ => decode(&as_str),
     }
 }

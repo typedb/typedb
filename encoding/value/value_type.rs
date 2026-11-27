@@ -36,6 +36,60 @@ pub enum ValueType {
     String,
 
     Struct(DefinitionKey),
+
+    Vector(VectorTypeParameters),
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct VectorTypeParameters {
+    pub length: u16,
+    pub precision: VectorPrecision,
+}
+
+impl VectorTypeParameters {
+    pub const MAX_LENGTH: u16 = u16::MAX;
+
+    pub const fn new(length: u16, precision: VectorPrecision) -> Self {
+        Self { length, precision }
+    }
+}
+
+impl fmt::Display for VectorTypeParameters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "vector({}, \"{}\")", self.length, self.precision.name())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub enum VectorPrecision {
+    Float32,
+}
+
+impl VectorPrecision {
+    pub const fn to_byte(&self) -> u8 {
+        match self {
+            VectorPrecision::Float32 => 0,
+        }
+    }
+
+    pub fn from_byte(byte: u8) -> Self {
+        match byte {
+            0 => VectorPrecision::Float32,
+            _ => panic!("Unrecognised vector precision byte: {byte}"),
+        }
+    }
+
+    pub const fn name(&self) -> &'static str {
+        match self {
+            VectorPrecision::Float32 => "float32",
+        }
+    }
+}
+
+impl fmt::Display for VectorPrecision {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl ValueType {
@@ -51,6 +105,7 @@ impl ValueType {
             ValueType::Duration => ValueTypeCategory::Duration,
             ValueType::String => ValueTypeCategory::String,
             ValueType::Struct(_) => ValueTypeCategory::Struct,
+            ValueType::Vector(_) => ValueTypeCategory::Vector,
         }
     }
 
@@ -65,7 +120,7 @@ impl ValueType {
             | ValueType::Duration
             | ValueType::String => true,
 
-            ValueType::Double | ValueType::Struct(_) => false,
+            ValueType::Double | ValueType::Struct(_) | ValueType::Vector(_) => false,
         }
     }
 
@@ -84,7 +139,20 @@ impl ValueType {
                 let definition_key = DefinitionKey::decode(Bytes::Array(ByteArray::copy(&tail)));
                 Self::Struct(definition_key)
             }
+            ValueTypeCategory::Vector => {
+                let length = u16::from_be_bytes([tail[0], tail[1]]);
+                let precision = VectorPrecision::from_byte(tail[2]);
+                Self::Vector(VectorTypeParameters::new(length, precision))
+            }
         }
+    }
+
+    pub fn is_trivially_castable_to(&self, other: ValueTypeCategory) -> bool {
+        self.category().is_trivially_castable_to(other)
+    }
+
+    pub fn is_approximately_castable_to(&self, other: ValueTypeCategory) -> bool {
+        self.category().is_approximately_castable_to(other)
     }
 }
 
@@ -93,6 +161,9 @@ impl StructuralEquality for ValueType {
         mem::discriminant(self).hash()
             & match self {
                 ValueType::Struct(key) => (key.definition_id().as_uint() as usize).hash(),
+                ValueType::Vector(params) => {
+                    ((params.length as usize) ^ ((params.precision.to_byte() as usize) << 16)).hash()
+                }
                 _ => 0,
             }
     }
@@ -111,6 +182,7 @@ impl StructuralEquality for ValueType {
             (Self::Struct(key), Self::Struct(other_key)) => {
                 (key.definition_id().as_uint() as usize).equals(&(other_key.definition_id().as_uint() as usize))
             }
+            (Self::Vector(params), Self::Vector(other_params)) => params == other_params,
             // note: this style forces updating the match when the variants change
             (Self::Boolean { .. }, _)
             | (Self::Integer { .. }, _)
@@ -121,7 +193,8 @@ impl StructuralEquality for ValueType {
             | (Self::DateTimeTZ { .. }, _)
             | (Self::Duration { .. }, _)
             | (Self::String { .. }, _)
-            | (Self::Struct { .. }, _) => false,
+            | (Self::Struct { .. }, _)
+            | (Self::Vector { .. }, _) => false,
         }
     }
 }
@@ -135,7 +208,10 @@ impl fmt::Debug for ValueType {
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: Don't we want to display structs differently?
-        write!(f, "{}", self.category().name())
+        match self {
+            ValueType::Vector(params) => write!(f, "{params}"),
+            _ => write!(f, "{}", self.category().name()),
+        }
     }
 }
 
@@ -151,6 +227,7 @@ pub enum ValueTypeCategory {
     Duration,
     String,
     Struct,
+    Vector,
 }
 
 impl ValueTypeCategory {
@@ -194,6 +271,7 @@ impl ValueTypeCategory {
             Self::Duration => [7],
             Self::String => [8],
             Self::Struct => [40],
+            Self::Vector => [41],
         }
     }
 
@@ -209,6 +287,7 @@ impl ValueTypeCategory {
             [7] => ValueTypeCategory::Duration,
             [8] => ValueTypeCategory::String,
             [40] => ValueTypeCategory::Struct,
+            [41] => ValueTypeCategory::Vector,
             _ => panic!("Unrecognised value type category byte: {:?}", bytes),
         };
         debug_assert_eq!(bytes, category.to_bytes());
@@ -233,13 +312,13 @@ impl ValueTypeCategory {
             ValueTypeCategory::String => &[ValueTypeCategory::String],
             ValueTypeCategory::Struct => &[ValueTypeCategory::Struct],
             ValueTypeCategory::Date => &[ValueTypeCategory::Date],
+            ValueTypeCategory::Vector => &[ValueTypeCategory::Vector],
         }
     }
 
     pub fn order_comparable_categories(&self) -> &'static [ValueTypeCategory] {
         match self {
-            // Durations and structs have no ordering
-            ValueTypeCategory::Duration | ValueTypeCategory::Struct => &[],
+            ValueTypeCategory::Duration | ValueTypeCategory::Struct | ValueTypeCategory::Vector => &[],
             _ => self.equality_comparable_categories(),
         }
     }
@@ -260,6 +339,7 @@ impl ValueTypeCategory {
             ValueTypeCategory::Duration => Some(ValueType::Duration),
             ValueTypeCategory::String => Some(ValueType::String),
             ValueTypeCategory::Struct => None,
+            ValueTypeCategory::Vector => None,
         }
     }
 
@@ -275,6 +355,7 @@ impl ValueTypeCategory {
             ValueTypeCategory::Duration => "duration",
             ValueTypeCategory::String => "string",
             ValueTypeCategory::Struct => "struct",
+            ValueTypeCategory::Vector => "vector",
         }
     }
 }
@@ -304,8 +385,15 @@ impl ValueTypeBytes {
     pub fn build(value_type: &ValueType) -> Self {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
-        if let ValueType::Struct(definition_key) = value_type {
-            array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
+        match value_type {
+            ValueType::Struct(definition_key) => {
+                array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
+            }
+            ValueType::Vector(params) => {
+                array[Self::RANGE_TAIL][0..2].copy_from_slice(&params.length.to_be_bytes());
+                array[Self::RANGE_TAIL][2] = params.precision.to_byte();
+            }
+            _ => {}
         }
         Self { bytes: array }
     }
@@ -372,5 +460,19 @@ impl<'de> Deserialize<'de> for ValueType {
             }
         }
         deserializer.deserialize_bytes(ValueTypeVisitor)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{ValueType, ValueTypeBytes, VectorPrecision, VectorTypeParameters};
+
+    #[test]
+    fn vector_parameters_round_trip_through_tail() {
+        for length in [1, 3, 256, VectorTypeParameters::MAX_LENGTH] {
+            let value_type = ValueType::Vector(VectorTypeParameters::new(length, VectorPrecision::Float32));
+            let bytes = ValueTypeBytes::build(&value_type).into_bytes();
+            assert_eq!(ValueTypeBytes::new(bytes).to_value_type(), value_type);
+        }
     }
 }

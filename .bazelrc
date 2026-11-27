@@ -29,6 +29,8 @@ common --@rules_rust//:rustfmt.toml=//:rustfmt_config --noincompatible_disallow_
 build --legacy_external_runfiles
 
 build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.bazel_disk_cache --experimental_disk_cache_gc_max_size=40G --experimental_disk_cache_gc_max_age=60d --java_runtime_version=remotejdk_21
+
+build --force_pic
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 

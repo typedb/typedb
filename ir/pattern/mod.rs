@@ -734,6 +734,10 @@ impl AssignmentStatus {
                     *assignment_statuses.entry(id).or_default() &=
                         AssignmentStatus::AtMostOncePerBranch(constraint.source_span());
                 }),
+                Constraint::VectorSearch(search) => {
+                    *assignment_statuses.entry(search.similarity()).or_default() &=
+                        AssignmentStatus::AtMostOncePerBranch(constraint.source_span());
+                }
                 _ => return,
             };
         });

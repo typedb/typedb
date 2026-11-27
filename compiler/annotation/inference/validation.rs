@@ -87,6 +87,7 @@ fn check_non_type_constraints_satisfiable(
         | Constraint::Links(_)
         | Constraint::IndexedRelation(_)
         | Constraint::Has(_)
+        | Constraint::VectorSearch(_)
         | Constraint::ExpressionBinding(_)
         | Constraint::FunctionCallBinding(_)
         | Constraint::LinksDeduplication(_)

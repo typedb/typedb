@@ -10,7 +10,7 @@ use self::{
     boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
     date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
     duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-    value_type::ValueType,
+    value_type::ValueType, vector_bytes::VectorBytes,
 };
 
 pub mod boolean_bytes;
@@ -31,6 +31,8 @@ pub mod timezone;
 pub mod value;
 pub mod value_struct;
 pub mod value_type;
+pub mod vector_bytes;
+pub mod vector_value;
 
 #[inline]
 pub fn decode_value_u64(bytes: &[u8]) -> u64 {
@@ -59,6 +61,8 @@ pub trait ValueEncodable: Clone {
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>;
 
     fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'_, INLINE_LENGTH>;
+
+    fn encode_vector<const INLINE_LENGTH: usize>(&self) -> VectorBytes<'_, INLINE_LENGTH>;
 
     fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH>;
 }

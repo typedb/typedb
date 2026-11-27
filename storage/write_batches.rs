@@ -14,6 +14,7 @@ use rocksdb::WriteBatch;
 
 use super::{MVCCKey, StorageOperation};
 use crate::{
+    SecondaryStore,
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     sequence_number::SequenceNumber,
     snapshot::{
@@ -27,20 +28,29 @@ pub(crate) struct WriteBatches {
 }
 
 impl WriteBatches {
-    pub(crate) fn from_operations(seq: SequenceNumber, operations: &OperationsBuffer) -> Self {
+    pub(crate) fn from_operations(
+        seq: SequenceNumber,
+        operations: &OperationsBuffer,
+        secondary_store: Option<&dyn SecondaryStore>,
+    ) -> Self {
         let mut write_batches = Self::default();
 
         for (index, buffer) in operations.write_buffers().enumerate() {
             let writes = buffer.writes();
             if !writes.is_empty() {
+                let keyspace_id = buffer.keyspace_id;
                 let write_batch = write_batches[index].insert(WriteBatch::default());
                 for (key, write) in writes {
+                    let value_owned_externally =
+                        secondary_store.is_some_and(|store| store.stores_value(keyspace_id, key));
                     match write {
                         Write::Insert { value } => {
+                            let value: &[u8] = if value_owned_externally { &[] } else { value };
                             write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                         }
                         Write::Put { value, action, .. } => {
                             if action.load(Ordering::SeqCst) != PutAction::Nop {
+                                let value: &[u8] = if value_owned_externally { &[] } else { value };
                                 write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }

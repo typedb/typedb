@@ -1,0 +1,286 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use std::sync::Arc;
+
+use concept::thing::ThingAPI;
+use database::{
+    Database,
+    query::{execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
+};
+use diagnostics::diagnostics_manager::DiagnosticsManager;
+use encoding::{
+    graph::{
+        Typed,
+        type_::vertex::{TypeID, TypeVertexEncoding},
+    },
+    value::label::Label,
+};
+use executor::ExecutionInterrupt;
+use options::{MvccCleanupStrategy, QueryOptions, TransactionOptions};
+use query::given_rows::GivenRowsSimple;
+use resource::profile::CommitProfile;
+use storage::durability_client::WALClient;
+use test_utils::create_tmp_storage_dir;
+use test_utils_storage::create_rocks_resources;
+
+fn open_db(path: &std::path::Path) -> Arc<Database<WALClient>> {
+    let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
+    let resources = create_rocks_resources();
+    Arc::new(
+        Database::<WALClient>::open(path, &diagnostics_manager, &resources, MvccCleanupStrategy::Disabled)
+            .expect("database open"),
+    )
+}
+
+fn define_schema(db: Arc<Database<WALClient>>) {
+    run_schema_query(
+        db,
+        r#"define
+            attribute embedding, value vector(3, "float32") @index(hnsw:cosine);
+            entity item owns embedding @card(0..);
+        "#,
+    );
+}
+
+fn run_schema_query(db: Arc<Database<WALClient>>, schema: &str) {
+    let tx = TransactionSchema::open(db, TransactionOptions::default()).expect("schema txn");
+    let query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+    let (tx, result) = execute_schema_query(tx, query, schema.to_string());
+    result.expect("schema query");
+    let (_profile, intent) = tx.finalise();
+    intent.expect("schema commit intent").commit(&mut CommitProfile::disabled()).expect("schema commit");
+}
+
+fn insert_vectors(db: Arc<Database<WALClient>>, query: &str) {
+    let tx = TransactionWrite::open(db, TransactionOptions::default()).expect("write txn");
+    let pipeline = std::sync::Arc::new(typeql::parse_query(query).unwrap().into_structure().into_pipeline());
+    let (tx, result) = execute_write_query_in_write(
+        tx,
+        QueryOptions::default_grpc(),
+        pipeline,
+        None::<GivenRowsSimple>,
+        query.to_string(),
+        ExecutionInterrupt::new_uninterruptible(),
+    );
+    result.expect("insert query");
+    let (_profile, intent) = tx.finalise();
+    intent.expect("commit intent").commit(&mut CommitProfile::disabled()).expect("data commit");
+}
+
+fn lookup_embedding_type_id(db: &Arc<Database<WALClient>>) -> TypeID {
+    lookup_attribute_type_id(db, "embedding")
+}
+
+fn lookup_attribute_type_id(db: &Arc<Database<WALClient>>, label: &str) -> TypeID {
+    let tx = TransactionRead::open(db.clone(), TransactionOptions::default()).expect("read txn");
+    let attribute_type = tx
+        .type_manager
+        .get_attribute_type(tx.snapshot.as_ref(), &Label::build(label, None))
+        .unwrap()
+        .expect("attribute type");
+    let type_id = attribute_type.vertex().type_id_();
+    tx.close();
+    type_id
+}
+
+#[test]
+fn vectors_survive_restart_via_wal_replay_and_checkpoint() {
+    let tmp = create_tmp_storage_dir();
+    let db_path = tmp.join("vector-durability");
+
+    let type_id;
+    {
+        let db = open_db(&db_path);
+        define_schema(db.clone());
+        insert_vectors(
+            db.clone(),
+            r#"insert
+                $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");
+                $b isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
+                $c isa item, has embedding vector([0.0, 0.0, 1.0], "float32");
+            "#,
+        );
+        type_id = lookup_embedding_type_id(&db);
+        assert_eq!(db.vector_index().latest_version().get_count_for_type(type_id), 3);
+        drop(db);
+    }
+
+    {
+        let db = open_db(&db_path);
+        assert_eq!(
+            db.vector_index().latest_version().get_count_for_type(type_id),
+            3,
+            "vectors must be rebuilt from the WAL tail on restart"
+        );
+        drop(db);
+    }
+
+    {
+        let db = open_db(&db_path);
+        let store = db.vector_index().latest_version();
+        assert_eq!(store.get_count_for_type(type_id), 3, "vectors must be restored from the checkpoint extension");
+
+        let results = store.search_attributes_by_approximate_nearest_neighbour(type_id, &[1.0, 0.0, 0.0], 3);
+        let mut found: Vec<Vec<f32>> =
+            results.iter().filter_map(|(attribute, _)| store.get_value_by_attr_vertex(attribute.vertex())).collect();
+        found.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert_eq!(found, vec![vec![0.0, 0.0, 1.0], vec![0.0, 1.0, 0.0], vec![1.0, 0.0, 0.0]]);
+    }
+}
+
+#[test]
+fn undefining_a_vector_type_drops_its_index_so_the_type_id_is_reusable() {
+    let tmp = create_tmp_storage_dir();
+    let db = open_db(&tmp.join("vector-undefine"));
+    define_schema(db.clone());
+    insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
+    let old_type_id = lookup_embedding_type_id(&db);
+    assert_eq!(db.vector_index().latest_version().get_count_for_type(old_type_id), 1);
+
+    insert_vectors(db.clone(), "match $x isa item; delete $x;");
+    insert_vectors(db.clone(), "match $e isa embedding; delete $e;");
+    run_schema_query(db.clone(), "undefine embedding;");
+
+    assert_eq!(db.vector_index().latest_version().get_count_for_type(old_type_id), 0);
+
+    run_schema_query(
+        db.clone(),
+        r#"define attribute embedding2, value vector(4, "float32") @index(hnsw:cosine); entity item owns embedding2 @card(0..);"#,
+    );
+    insert_vectors(db.clone(), r#"insert $a isa item, has embedding2 vector([0.0, 1.0, 0.0, 0.0], "float32");"#);
+    assert_eq!(db.vector_index().latest_version().get_count_for_type(lookup_attribute_type_id(&db, "embedding2")), 1);
+}
+
+#[test]
+fn database_reopens_after_vector_type_is_redefined_within_the_checkpoint_interval() {
+    let tmp = create_tmp_storage_dir();
+    let db_path = tmp.join("vector-redefine-restart");
+    {
+        let db = open_db(&db_path);
+        define_schema(db.clone());
+        insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
+        insert_vectors(db.clone(), "match $x isa item; delete $x;");
+        insert_vectors(db.clone(), "match $e isa embedding; delete $e;");
+        run_schema_query(db.clone(), "undefine embedding;");
+        run_schema_query(
+            db.clone(),
+            r#"define attribute embedding2, value vector(4, "float32") @index(hnsw:cosine); entity item owns embedding2 @card(0..);"#,
+        );
+        insert_vectors(db.clone(), r#"insert $a isa item, has embedding2 vector([0.0, 1.0, 0.0, 0.0], "float32");"#);
+        drop(db);
+    }
+    {
+        let db = open_db(&db_path);
+        let type_id = lookup_attribute_type_id(&db, "embedding2");
+        assert_eq!(db.vector_index().latest_version().get_count_for_type(type_id), 1);
+        assert_eq!(
+            db.vector_index()
+                .latest_version()
+                .search_attributes_by_approximate_nearest_neighbour(type_id, &[0.0, 1.0, 0.0, 0.0], 1)
+                .len(),
+            1,
+            "the redefined type must be searchable after the restart"
+        );
+        insert_vectors(db.clone(), r#"insert $a isa item, has embedding2 vector([1.0, 0.0, 0.0, 0.0], "float32");"#);
+        assert_eq!(db.vector_index().latest_version().get_count_for_type(type_id), 2);
+    }
+}
+
+#[test]
+fn database_reopens_after_vector_type_is_redefined_in_one_transaction() {
+    let tmp = create_tmp_storage_dir();
+    let db_path = tmp.join("vector-redefine-one-transaction");
+    {
+        let db = open_db(&db_path);
+        define_schema(db.clone());
+        insert_vectors(db.clone(), r#"insert $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");"#);
+
+        let define = |tx, schema: &str| {
+            let query = typeql::parse_query(schema).unwrap().into_structure().into_schema();
+            let (tx, result) = execute_schema_query(tx, query, schema.to_string());
+            result.expect("schema query");
+            tx
+        };
+        let write = |tx, query: &str| {
+            let pipeline = Arc::new(typeql::parse_query(query).unwrap().into_structure().into_pipeline());
+            let (tx, result) = execute_write_query_in_schema(
+                tx,
+                QueryOptions::default_grpc(),
+                pipeline,
+                None::<GivenRowsSimple>,
+                query.to_string(),
+                ExecutionInterrupt::new_uninterruptible(),
+            );
+            result.expect("write query");
+            tx
+        };
+        let mut tx = TransactionSchema::open(db.clone(), TransactionOptions::default()).expect("schema txn");
+        tx = write(tx, "match $e isa embedding; delete $e;");
+        tx = define(tx, "undefine embedding;");
+        tx = define(
+            tx,
+            r#"define attribute embedding, value vector(4, "float32") @index(hnsw:cosine); entity item owns embedding @card(0..);"#,
+        );
+        tx = write(tx, r#"insert $a isa item, has embedding vector([0.0, 1.0, 0.0, 0.0], "float32");"#);
+        let (_profile, intent) = tx.finalise();
+        intent.expect("schema commit intent").commit(&mut CommitProfile::disabled()).expect("schema commit");
+        drop(db);
+    }
+    {
+        let db = open_db(&db_path);
+        let type_id = lookup_embedding_type_id(&db);
+        let version = db.vector_index().latest_version();
+        assert_eq!(version.get_count_for_type(type_id), 1);
+        assert_eq!(
+            version.search_attributes_by_approximate_nearest_neighbour(type_id, &[0.0, 1.0, 0.0, 0.0], 1).len(),
+            1,
+            "the redefined type must be searchable after the restart"
+        );
+    }
+}
+
+#[test]
+fn deleted_vectors_leave_the_index_and_stay_gone_across_restart() {
+    let tmp = create_tmp_storage_dir();
+    let db_path = tmp.join("vector-delete-replay");
+    let type_id;
+    {
+        let db = open_db(&db_path);
+        define_schema(db.clone());
+        insert_vectors(
+            db.clone(),
+            r#"insert
+                $a isa item, has embedding vector([1.0, 0.0, 0.0], "float32");
+                $b isa item, has embedding vector([0.0, 1.0, 0.0], "float32");
+                $c isa item, has embedding vector([0.0, 0.0, 1.0], "float32");
+            "#,
+        );
+        type_id = lookup_embedding_type_id(&db);
+        insert_vectors(db.clone(), r#"match $e isa embedding; $e == vector([1.0, 0.0, 0.0], "float32"); delete $e;"#);
+        assert_eq!(
+            db.vector_index().latest_version().get_count_for_type(type_id),
+            2,
+            "a deleted vector must leave the index"
+        );
+        let results = db.vector_index().latest_version().search_attributes_by_approximate_nearest_neighbour(
+            type_id,
+            &[1.0, 0.0, 0.0],
+            3,
+        );
+        assert_eq!(results.len(), 2);
+        drop(db);
+    }
+    {
+        let db = open_db(&db_path);
+        assert_eq!(
+            db.vector_index().latest_version().get_count_for_type(type_id),
+            2,
+            "delete must replay from the WAL tail"
+        );
+    }
+}

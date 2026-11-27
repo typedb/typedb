@@ -124,6 +124,7 @@ mod typedb_database {
                 &path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )?);
             Ok(Self { path, storage })
         }
