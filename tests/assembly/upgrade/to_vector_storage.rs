@@ -16,7 +16,6 @@ use std::{
 
 const DATABASE: &str = "upgrade";
 const HTTP_PORT: u16 = 8000;
-const VECTOR_SEARCH: &str = "--experimental-vector-search-enabled=true";
 const SERVER_LOG: &str = "server.log";
 const SERVER_MAX_START_TIME: Duration = Duration::from_secs(60);
 const SERVER_MAX_STOP_TIME: Duration = Duration::from_secs(60);
@@ -50,13 +49,12 @@ fn server_log() -> String {
     fs::read_to_string(SERVER_LOG).unwrap_or_default()
 }
 
-fn start_server(distribution: &Path, data: &Path, extra_args: &[&str]) -> Child {
+fn start_server(distribution: &Path, data: &Path) -> Child {
     let log = fs::OpenOptions::new().create(true).append(true).open(SERVER_LOG).unwrap();
     let mut server = Command::new(distribution.join("typedb"))
         .arg("server")
         .arg("--development-mode.enabled=true")
         .arg(format!("--storage.data-directory={}", data.display()))
-        .args(extra_args)
         .stdout(log.try_clone().unwrap())
         .stderr(log)
         .spawn()
@@ -164,7 +162,7 @@ fn database_from_previous_version_is_upgraded() {
     let previous = extract(&std::env::var("TYPEDB_PREVIOUS_ARCHIVE").unwrap(), "previous");
     let data = std::env::current_dir().unwrap().join("upgrade-data");
 
-    let server = start_server(&previous, &data, &[]);
+    let server = start_server(&previous, &data);
     let token = sign_in();
     http(Some(&token), "POST", &format!("databases/{DATABASE}"), "");
     query(&token, "schema", "define entity person, owns name; attribute name, value string;");
@@ -173,7 +171,7 @@ fn database_from_previous_version_is_upgraded() {
     stop_server(server);
     assert!(!previous_checkpoint.join("VECTOR_INDEX").exists(), "the previous version must not write a vector index");
 
-    let server = start_server(&current, &data, &[VECTOR_SEARCH]);
+    let server = start_server(&current, &data);
     let token = sign_in();
     let answer = query(&token, "read", "match $p isa person, has name $n;");
     assert!(answer.contains("Alice") && answer.contains("Bob"), "data from the previous version is missing: {answer}");
@@ -192,7 +190,7 @@ fn database_from_previous_version_is_upgraded() {
     stop_server(server);
     assert!(current_checkpoint.join("VECTOR_INDEX").exists(), "the checkpoint was not upgraded");
 
-    let server = start_server(&current, &data, &[VECTOR_SEARCH]);
+    let server = start_server(&current, &data);
     let answer = query(
         &sign_in(),
         "read",

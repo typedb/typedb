@@ -133,7 +133,6 @@ impl ServerInstance {
             .admin_enabled(false)
             .data_directory(server_dir.as_ref())
             .development_mode(true)
-            .experimental_vector_search(true)
             .diagnostics(DiagnosticsConfig::disabled())
             .build()
             .unwrap();
