@@ -25,8 +25,12 @@ pub struct RBACRoleId(u64);
 impl RBACRoleId {
     const LENGTH: usize = std::mem::size_of::<u64>();
 
-    pub(crate) fn new(id: u64) -> Self {
+    pub fn new(id: u64) -> Self {
         Self(id)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0
     }
 }
 

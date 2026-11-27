@@ -518,7 +518,7 @@ pub mod rbac_repository {
     ) -> Result<String, SystemDBError> {
         let grantee_type = check_valid_value(grantee.type_to_typeql_value_string())?;
         let grantee_name = check_valid_value(grantee.name_to_typeql_value_string())?;
-        let database_id_value = database.0;
+        let database_id_value = database.as_u64();
         let query_string = format!(
             r#"
             match
@@ -571,7 +571,7 @@ pub mod rbac_repository {
         let permission_type = granted_permission.type_to_typeql_string();
         let grantee_type = check_valid_value(grantee.type_to_typeql_value_string())?;
         let grantee_name = check_valid_value(grantee.name_to_typeql_value_string())?;
-        let database_id_value = database.0;
+        let database_id_value = database.as_u64();
         Ok(format!(
             r#"
             match
@@ -591,7 +591,7 @@ pub mod rbac_repository {
     fn build_list_roles_query(grantee: &Grantee, database: &DatabaseUid) -> Result<String, SystemDBError> {
         let grantee_type = check_valid_value(grantee.type_to_typeql_value_string())?;
         let grantee_name = check_valid_value(grantee.name_to_typeql_value_string())?;
-        let database_id_value = database.0;
+        let database_id_value = database.as_u64();
         let query_string = format!(
             r#"
             match
@@ -615,8 +615,8 @@ pub mod rbac_repository {
     fn build_grant_role_query(grantee: &Grantee, granted_role: &SchemaDefinedRole) -> Result<String, SystemDBError> {
         let grantee_type = check_valid_value(grantee.type_to_typeql_value_string())?;
         let grantee_name = check_valid_value(grantee.name_to_typeql_value_string())?;
-        let database_id = &granted_role.database.0;
-        let role_id = &granted_role.role_id.to_system_db_id();
+        let database_id = &granted_role.database.as_u64();
+        let role_id = &granted_role.role_id.as_u64();
         let query_string = format!(
             r#"
             match
@@ -666,7 +666,7 @@ pub mod rbac_repository {
         let permission_type = permission.type_to_typeql_string();
         let grantee_type = check_valid_value(grantee.type_to_typeql_value_string())?;
         let grantee_name = check_valid_value(grantee.name_to_typeql_value_string())?;
-        let database_id_value = database.0;
+        let database_id_value = database.as_u64();
         Ok(format!(
             r#"
             match
@@ -687,8 +687,8 @@ pub mod rbac_repository {
     fn build_revoke_role_query(grantee: &Grantee, role: &SchemaDefinedRole) -> Result<String, SystemDBError> {
         let grantee_type = check_valid_value(grantee.type_to_typeql_value_string())?;
         let grantee_name = check_valid_value(grantee.name_to_typeql_value_string())?;
-        let database_id = &role.database.0;
-        let role_id = &role.role_id.to_system_db_id();
+        let database_id = &role.database.as_u64();
+        let role_id = &role.role_id.as_u64();
         let query_string = format!(
             r#"
             match
@@ -718,11 +718,11 @@ pub mod rbac_repository {
     }
 
     fn extract_database_value(database_id_value: &VariableValue<'_>) -> DatabaseUid {
-        DatabaseUid(database_id_value.as_value().to_owned().unwrap_integer() as u64)
+        DatabaseUid::new(database_id_value.as_value().to_owned().unwrap_integer() as u64)
     }
 
     fn extract_role_value(role_id_value: &VariableValue<'_>) -> RBACRoleId {
-        RBACRoleId::from_system_db_id(role_id_value.as_value().to_owned().unwrap_integer())
+        RBACRoleId::new(role_id_value.as_value().to_owned().unwrap_integer() as u64)
     }
 
     fn try_valid_granted_role_from_row(row: HashMap<String, VariableValue>) -> Option<SchemaDefinedRole> {
