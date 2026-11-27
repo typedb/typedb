@@ -24,7 +24,6 @@ typedb_error! {
         IncompleteUserDetail(3, "Incomplete user detail."),
         Unexpected(4, "An unexpected error has occurred in the process of creating a new user."),
         GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
-        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 
@@ -45,7 +44,6 @@ typedb_error! {
         UserNotFound(3, "User not found."),
         Unexpected(4, "An unexpected error has occurred in the process of deleting a user."),
         GetFailed(5, "Failed to check user existence.", typedb_source: UserGetError),
-        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 
@@ -66,7 +64,6 @@ typedb_error! {
         GranteeDidNotHaveRevokedSystemPermission(6, "Grantee did not have the revoked system permission.", grantee: Grantee, permission: SystemPermission),
         GranteeDidNotHaveRevokedDatabasePermission(7, "Grantee did not have the revoked database permission.", grantee: Grantee, permission: DatabasePermission),
         GranteeDidNotHaveRevokedRole(8, "Grantee did not have the revoked role.", grantee: Grantee, role: SchemaDefinedRole),
-        PermissionDenied(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
     }
 }
 

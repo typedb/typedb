@@ -15,57 +15,62 @@ use database::{
     database_manager::DatabaseManager,
 };
 use system::concepts::{DatabasePermission, Grantee, SchemaDefinedRole, SystemPermission};
-use user::{
-    errors::PermissionManagementError,
-    permission_manager::{PermissionManager, UserSession},
-};
+use user::{errors::PermissionManagementError, permission_manager::PermissionManager};
 
 use crate::{
     authentication::Accessor,
-    error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
+    error::{ArcServerStateError, LocalServerStateError, PermissionRequirement, arc_server_state_err},
     system_init::SYSTEM_DB,
 };
 
 #[async_trait]
 pub trait PermissionOperator: Debug + Send + Sync {
     #[must_use]
-    async fn has_system_permission(
+    async fn validate_self_or_has(
+        &self,
+        accessor: &Accessor,
+        target: &str,
+        permission: &SystemPermission,
+    ) -> Result<(), ArcServerStateError>;
+
+    #[must_use]
+    async fn validate_system_permission(
         &self,
         accessor: &Accessor,
         permission: &SystemPermission,
-    ) -> Result<bool, ArcServerStateError>;
+    ) -> Result<(), ArcServerStateError>;
 
     #[must_use]
-    async fn has_database_permission(
+    async fn validate_database_permission(
         &self,
         accessor: &Accessor,
         database: &DatabaseUid,
         permission: &DatabasePermission,
-    ) -> Result<bool, ArcServerStateError>;
+    ) -> Result<(), ArcServerStateError>;
 
     async fn grant_system_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         permission: SystemPermission,
     ) -> Result<(), ArcServerStateError>;
 
     async fn list_system_permissions(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
     ) -> Result<HashSet<SystemPermission>, ArcServerStateError>;
 
     async fn revoke_system_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         permission: SystemPermission,
     ) -> Result<(), ArcServerStateError>;
 
     async fn grant_database_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         permission: DatabasePermission,
@@ -73,14 +78,14 @@ pub trait PermissionOperator: Debug + Send + Sync {
 
     async fn list_database_permissions(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
     ) -> Result<HashSet<DatabasePermission>, ArcServerStateError>;
 
     async fn revoke_database_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         permission: DatabasePermission,
@@ -88,7 +93,7 @@ pub trait PermissionOperator: Debug + Send + Sync {
 
     async fn grant_role(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         role: &str,
@@ -96,14 +101,14 @@ pub trait PermissionOperator: Debug + Send + Sync {
 
     async fn list_database_roles(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
     ) -> Result<HashSet<SchemaDefinedRole>, ArcServerStateError>;
 
     async fn revoke_role(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         role: &str,
@@ -162,50 +167,74 @@ impl LocalPermissionOperator {
 
 #[async_trait]
 impl PermissionOperator for LocalPermissionOperator {
-    async fn has_system_permission(
+    async fn validate_self_or_has(
+        &self,
+        accessor: &Accessor,
+        target: &str,
+        permission: &SystemPermission,
+    ) -> Result<(), ArcServerStateError> {
+        match accessor {
+            Accessor::Session(session) if session.username() == target => Ok(()),
+            _ => self.validate_system_permission(accessor, permission).await,
+        }
+    }
+
+    async fn validate_system_permission(
         &self,
         accessor: &Accessor,
         permission: &SystemPermission,
-    ) -> Result<bool, ArcServerStateError> {
+    ) -> Result<(), ArcServerStateError> {
         let session = match accessor {
-            Accessor::Default => return Ok(true),
+            Accessor::Default => return Ok(()),
             Accessor::Session(session) => session,
         };
         let permission_manager = self.get_permission_manager().map_err(arc_server_state_err)?;
-        permission_manager.has_system_permission(session, permission).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::PermissionCheckError { typedb_source })
-        })
+        let has_permission =
+            permission_manager.has_system_permission(session, permission).map_err(|typedb_source| {
+                arc_server_state_err(LocalServerStateError::PermissionCheckError { typedb_source })
+            })?;
+        if has_permission {
+            Ok(())
+        } else {
+            Err(arc_server_state_err(LocalServerStateError::PermissionDeniedGeneric {
+                accessor: accessor.username().to_owned(),
+                permission: PermissionRequirement::System(permission.clone()),
+            }))
+        }
     }
 
-    async fn has_database_permission(
+    async fn validate_database_permission(
         &self,
         accessor: &Accessor,
         database: &DatabaseUid,
         permission: &DatabasePermission,
-    ) -> Result<bool, ArcServerStateError> {
+    ) -> Result<(), ArcServerStateError> {
         let session = match accessor {
-            Accessor::Default => return Ok(true),
+            Accessor::Default => return Ok(()),
             Accessor::Session(session) => session,
         };
         let permission_manager = self.get_permission_manager().map_err(arc_server_state_err)?;
-        permission_manager.has_database_permission(session, database, permission).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::PermissionCheckError { typedb_source })
-        })
+        let has_permission =
+            permission_manager.has_database_permission(session, database, permission).map_err(|typedb_source| {
+                arc_server_state_err(LocalServerStateError::PermissionCheckError { typedb_source })
+            })?;
+        if has_permission {
+            Ok(())
+        } else {
+            Err(arc_server_state_err(LocalServerStateError::PermissionDeniedGeneric {
+                accessor: accessor.username().to_owned(),
+                permission: PermissionRequirement::Database(permission.clone()),
+            }))
+        }
     }
 
     async fn grant_system_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         permission: SystemPermission,
     ) -> Result<(), ArcServerStateError> {
-        if !self.has_system_permission(&accessor, &SystemPermission::GrantPermissions).await? {
-            return Err(arc_server_state_err(LocalServerStateError::SystemPermissionCannotBeGranted {
-                typedb_source: PermissionManagementError::PermissionDenied { accessor: accessor.username().to_owned() },
-                grantee,
-                permission,
-            }));
-        }
+        self.validate_system_permission(&accessor, &SystemPermission::GrantPermissions).await?;
         let permission_manager = self.get_permission_manager().map_err(arc_server_state_err)?;
         permission_manager.grant_system_permission(&grantee, &permission).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::SystemPermissionCannotBeGranted {
@@ -218,11 +247,16 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn list_system_permissions(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
     ) -> Result<HashSet<SystemPermission>, ArcServerStateError> {
-        if !PermissionManager::exec_list_permissions_permitted(accessor.username()) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        match &grantee {
+            Grantee::UserGroup(_) => {
+                self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?
+            },
+            Grantee::User(user) => {
+                self.validate_self_or_has(accessor,user.name.as_str(), &SystemPermission::GrantPermissions).await?
+            },
         }
         let permission_manager = self.get_permission_manager().map_err(arc_server_state_err)?;
         permission_manager
@@ -235,17 +269,11 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn revoke_system_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         permission: SystemPermission,
     ) -> Result<(), ArcServerStateError> {
-        if !self.has_system_permission(&accessor, &SystemPermission::GrantPermissions).await? {
-            return Err(arc_server_state_err(LocalServerStateError::SystemPermissionCannotBeRevoked {
-                typedb_source: PermissionManagementError::PermissionDenied { accessor: accessor.username().to_owned() },
-                grantee,
-                permission,
-            }));
-        }
+        self.validate_system_permission(&accessor, &SystemPermission::GrantPermissions).await?;
         let permission_manager = self.get_permission_manager().map_err(arc_server_state_err)?;
         permission_manager.revoke_system_permission(&grantee, &permission).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::SystemPermissionCannotBeRevoked {
@@ -258,19 +286,12 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn grant_database_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         permission: DatabasePermission,
     ) -> Result<(), ArcServerStateError> {
-        if !self.has_system_permission(&accessor, &SystemPermission::GrantPermissions).await? {
-            return Err(arc_server_state_err(LocalServerStateError::DatabasePermissionCannotBeGranted {
-                typedb_source: PermissionManagementError::PermissionDenied { accessor: accessor.username().to_owned() },
-                grantee,
-                database: database.to_owned(),
-                permission,
-            }));
-        }
+        self.validate_system_permission(&accessor, &SystemPermission::GrantPermissions).await?;
         let database_id = self.resolve_database_for_permissions(database).map_err(|typedb_source| {
             LocalServerStateError::DatabasePermissionCannotBeGranted {
                 typedb_source,
@@ -292,12 +313,17 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn list_database_permissions(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
     ) -> Result<HashSet<DatabasePermission>, ArcServerStateError> {
-        if !PermissionManager::exec_list_permissions_permitted(accessor.username()) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        match &grantee {
+            Grantee::UserGroup(_) => self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?,
+            Grantee::User(user) => self.validate_self_or_has(
+                accessor,
+                user.name.as_str(),
+                &SystemPermission::GrantPermissions
+            ).await?
         }
         let database_id = self.resolve_database_for_permissions(database).map_err(|typedb_source| {
             LocalServerStateError::DatabasePermissionsCannotBeListed {
@@ -321,19 +347,12 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn revoke_database_permission(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         permission: DatabasePermission,
     ) -> Result<(), ArcServerStateError> {
-        if !self.has_system_permission(&accessor, &SystemPermission::GrantPermissions).await? {
-            return Err(arc_server_state_err(LocalServerStateError::DatabasePermissionCannotBeRevoked {
-                typedb_source: PermissionManagementError::PermissionDenied { accessor: accessor.username().to_owned() },
-                grantee,
-                database: database.to_owned(),
-                permission,
-            }));
-        }
+        self.validate_system_permission(&accessor, &SystemPermission::GrantPermissions).await?;
         let database_id = self.resolve_database_for_permissions(database).map_err(|typedb_source| {
             LocalServerStateError::DatabasePermissionCannotBeRevoked {
                 typedb_source,
@@ -355,20 +374,13 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn grant_role(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         role: &str,
     ) -> Result<(), ArcServerStateError> {
         // TODO: must introduce per-database grant-role permission
-        if !self.has_system_permission(&accessor, &SystemPermission::GrantPermissions).await? {
-            return Err(arc_server_state_err(LocalServerStateError::RoleCannotBeGranted {
-                typedb_source: PermissionManagementError::PermissionDenied { accessor: accessor.username().to_owned() },
-                grantee,
-                database: database.to_owned(),
-                role: role.to_owned(),
-            }));
-        }
+        self.validate_system_permission(&accessor, &SystemPermission::GrantPermissions).await?;
         let map_err = |typedb_source| {
             arc_server_state_err(LocalServerStateError::RoleCannotBeGranted {
                 typedb_source,
@@ -385,20 +397,13 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn revoke_role(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
         role: &str,
     ) -> Result<(), ArcServerStateError> {
         // TODO: must introduce per-database grant-role permission
-        if !self.has_system_permission(&accessor, &SystemPermission::GrantPermissions).await? {
-            return Err(arc_server_state_err(LocalServerStateError::RoleCannotBeRevoked {
-                typedb_source: PermissionManagementError::PermissionDenied { accessor: accessor.username().to_owned() },
-                grantee,
-                database: database.to_owned(),
-                role: role.to_owned(),
-            }));
-        }
+        self.validate_system_permission(&accessor, &SystemPermission::GrantPermissions).await?;
         let map_err = |typedb_source| {
             arc_server_state_err(LocalServerStateError::RoleCannotBeRevoked {
                 typedb_source,
@@ -415,12 +420,17 @@ impl PermissionOperator for LocalPermissionOperator {
 
     async fn list_database_roles(
         &self,
-        accessor: Accessor,
+        accessor: &Accessor,
         grantee: Grantee,
         database: &str,
     ) -> Result<HashSet<SchemaDefinedRole>, ArcServerStateError> {
-        if !PermissionManager::exec_list_roles_permitted(accessor.username()) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        match &grantee {
+            Grantee::UserGroup(_) => self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?,
+            Grantee::User(user) => self.validate_self_or_has(
+                accessor,
+                user.name.as_str(),
+                &SystemPermission::GrantPermissions
+            ).await?
         }
         let database_id = self.resolve_database_for_permissions(database).map_err(|typedb_source| {
             LocalServerStateError::RolesCannotBeListed {

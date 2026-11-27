@@ -9,7 +9,7 @@ use cucumber::gherkin::Step;
 use database::{
     Database,
     transaction::{
-        CommitIntent, DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema,
+        CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema,
     },
 };
 use error::TypeDBError;
@@ -24,7 +24,7 @@ use server::{
 };
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
-use tokio::sync::mpsc::{Sender, channel};
+use tokio::sync::mpsc::channel;
 
 use crate::{
     ActiveTransaction, Context,

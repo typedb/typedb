@@ -9,7 +9,6 @@ use std::{
 };
 
 use database::{Database, database::DatabaseUid};
-use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{DatabasePermission, Grantee, SchemaDefinedRole, SystemPermission, User},
@@ -369,51 +368,5 @@ impl PermissionManager {
             Ok(Err(typedb_source)) => Err(PermissionManagementError::UnexpectedSystemDB { typedb_source }),
             Err(typedb_source) => Err(PermissionManagementError::UnexpectedDataCommit { typedb_source }),
         }
-    }
-}
-
-impl PermissionManager {
-    pub fn exec_user_get_permitted(accessor: &str, subject: &str) -> bool {
-        accessor == DEFAULT_USER_NAME || accessor == subject
-    }
-
-    pub fn exec_user_all_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_user_create_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_user_update_permitted(accessor: &str, subject: &str) -> bool {
-        accessor == DEFAULT_USER_NAME || accessor == subject
-    }
-
-    pub fn exec_user_delete_allowed(accessor: &str, subject: &str) -> bool {
-        accessor == DEFAULT_USER_NAME || accessor == subject
-    }
-
-    pub fn exec_grant_permission_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_list_permissions_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_grant_role_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_list_roles_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_revoke_permission_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
-    }
-
-    pub fn exec_revoke_role_permitted(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
     }
 }

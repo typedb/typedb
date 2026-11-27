@@ -10,7 +10,7 @@ use macro_rules_attribute::apply;
 use params;
 use server::{authentication::Accessor, state::ServerState};
 
-use crate::{Context, connection::admin_accessor, generic_step, util};
+use crate::{Context, generic_step, util};
 
 async fn server_create_database(
     state: &'_ ServerState,

@@ -384,6 +384,7 @@ impl HTTPTypeDBService {
         State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
+        let accessor = Accessor::default_to_do();
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
@@ -392,7 +393,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .schema(&database_path.database_name)
+                    .schema(&accessor, &database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -406,6 +407,7 @@ impl HTTPTypeDBService {
         State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
+        let accessor = Accessor::default_to_do();
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
@@ -414,7 +416,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .type_schema(&database_path.database_name)
+                    .type_schema(&accessor, &database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })

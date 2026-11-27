@@ -208,10 +208,10 @@ async fn grant_user_permission(context: &mut Context, username: String, permissi
     let grantee = Grantee::User(User::new(username));
     let result = match parse_permission(&permission) {
         BDDPermission::System(perm) => {
-            context.server_state().permissions().grant_system_permission(accessor, grantee, perm).await
+            context.server_state().permissions().grant_system_permission(&accessor, grantee, perm).await
         }
         BDDPermission::Database { database, permission: perm } => {
-            context.server_state().permissions().grant_database_permission(accessor, grantee, &database, perm).await
+            context.server_state().permissions().grant_database_permission(&accessor, grantee, &database, perm).await
         }
     };
     may_error.check(result);
@@ -226,7 +226,7 @@ async fn user_has_permission(context: &mut Context, username: String, has_or_doe
             let permissions = context
                 .server_state()
                 .permissions()
-                .list_system_permissions(admin_accessor(), grantee)
+                .list_system_permissions(&admin_accessor(), grantee)
                 .await
                 .expect("Failed to list system permissions");
             has_or_doesnt.check_contains(&permissions, &expected);
@@ -235,7 +235,7 @@ async fn user_has_permission(context: &mut Context, username: String, has_or_doe
             let permissions = context
                 .server_state()
                 .permissions()
-                .list_database_permissions(admin_accessor(), grantee, &database)
+                .list_database_permissions(&admin_accessor(), grantee, &database)
                 .await
                 .expect("Failed to list database permissions");
             has_or_doesnt.check_contains(&permissions, &expected);
@@ -255,7 +255,7 @@ async fn grant_user_database_role(
     let result = context
         .server_state()
         .permissions()
-        .grant_role(admin_accessor(), grantee, &role.database, &role.role)
+        .grant_role(&admin_accessor(), grantee, &role.database, &role.role)
         .await
         .map_err(|e| format!("{e:?}"));
     may_error.check(result);
@@ -274,7 +274,7 @@ async fn user_has_database_role(
     let roles = context
         .server_state()
         .permissions()
-        .list_database_roles(admin_accessor(), grantee, &role.database)
+        .list_database_roles(&admin_accessor(), grantee, &role.database)
         .await
         .expect("Failed to list roles");
     has_or_doesnt.check_contains(&roles, &expected);
@@ -299,10 +299,10 @@ async fn ungrant_user_permission(context: &mut Context, username: String, permis
     let grantee = Grantee::User(User::new(username));
     let result = match parse_permission(&permission) {
         BDDPermission::System(perm) => {
-            context.server_state().permissions().revoke_system_permission(accessor, grantee, perm).await
+            context.server_state().permissions().revoke_system_permission(&accessor, grantee, perm).await
         }
         BDDPermission::Database { database, permission: perm } => {
-            context.server_state().permissions().revoke_database_permission(accessor, grantee, &database, perm).await
+            context.server_state().permissions().revoke_database_permission(&accessor, grantee, &database, perm).await
         }
     };
     may_error.check(result);
@@ -320,7 +320,7 @@ async fn ungrant_user_database_role(
     let result = context
         .server_state()
         .permissions()
-        .revoke_role(admin_accessor(), grantee, &role.database, &role.role)
+        .revoke_role(&admin_accessor(), grantee, &role.database, &role.role)
         .await
         .map_err(|e| format!("{e:?}"));
     may_error.check(result);

@@ -20,7 +20,6 @@ use system::{
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
-use user::permission_manager::UserSession;
 
 use crate::{
     authentication::Accessor,

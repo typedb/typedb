@@ -502,13 +502,15 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::schema::Req>,
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
+        let accessor = Accessor::from_extensions(&request.extensions())
+            .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let name = request.into_inner().name;
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager(),
             Some(name.clone()),
             ActionKind::DatabaseSchema,
             || async {
-                match self.server_state.databases().schema(&name).await {
+                match self.server_state.databases().schema(&accessor, &name).await {
                     Ok(schema) => Ok(Response::new(database_schema_res(schema))),
                     Err(err) => Err(err.into_status()),
                 }
@@ -521,13 +523,15 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
+        let accessor = Accessor::from_extensions(&request.extensions())
+            .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let name = request.into_inner().name;
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager(),
             Some(name.clone()),
             ActionKind::DatabaseTypeSchema,
             || async {
-                match self.server_state.databases().type_schema(&name).await {
+                match self.server_state.databases().type_schema(&accessor, &name).await {
                     Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
                     Err(err) => Err(err.into_status()),
                 }

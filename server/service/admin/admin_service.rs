@@ -6,7 +6,6 @@
 
 use std::sync::Arc;
 
-use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::Credential;
 use tonic::{Request, Response, Status};
 

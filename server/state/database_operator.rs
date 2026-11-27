@@ -32,7 +32,7 @@ use storage::{
     durability_client::{DurabilityClient, WALClient},
     snapshot::snapshot_id::SnapshotId,
 };
-use system::concepts::SystemPermission;
+use system::concepts::{DatabasePermission, SystemPermission};
 use tokio::{
     sync::{RwLock, Semaphore, mpsc::Sender},
     task::JoinHandle,
@@ -72,9 +72,9 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn schema(&self, name: &str) -> Result<String, ArcServerStateError>;
+    async fn schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError>;
 
-    async fn type_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
+    async fn type_schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError>;
 
     async fn schema_commit(
         &self,
@@ -285,11 +285,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
     }
 
     async fn create(&self, accessor: &Accessor, name: &str) -> Result<(), ArcServerStateError> {
-        if !self.permission_operator.has_system_permission(accessor, &SystemPermission::ManageDatabases).await? {
-            return Err(arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated {
-                typedb_source: DatabaseCreateError::PermissionDenied { accessor: accessor.username().to_owned() },
-            }));
-        }
+        self.permission_operator.validate_system_permission(accessor, &SystemPermission::ManageDatabases).await?;
         self.database_manager
             .put_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: *err }))
@@ -337,22 +333,28 @@ impl DatabaseOperator for LocalDatabaseOperator {
         }
     }
 
-    async fn schema(&self, name: &str) -> Result<String, ArcServerStateError> {
-        match self.database_manager.database(name) {
-            Some(db) => get_database_schema(db).map_err(|boxed| *boxed),
-            None => Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() }),
+    async fn schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError> {
+        if let Some(database) = self.database_manager.database(name) {
+            self.permission_operator
+                .validate_database_permission(&accessor, &database.database_id(), &DatabasePermission::SchemaTypes)
+                .await?;
+            get_database_schema(database).map_err(|boxed| *boxed)
+        } else {
+            Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() })
         }
         .map_err(arc_server_state_err)
     }
 
-    async fn type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
-        match self.database_manager.database(name) {
-            None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() })),
-            Some(database) => match get_database_type_schema(database) {
-                Ok(type_schema) => Ok(type_schema),
-                Err(err) => Err(Arc::new(*err)),
-            },
+    async fn type_schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError> {
+        if let Some(database) = self.database_manager.database(name) {
+            self.permission_operator
+                .validate_database_permission(&accessor, &database.database_id(), &DatabasePermission::SchemaTypes)
+                .await?;
+            get_database_type_schema(database).map_err(|boxed| *boxed)
+        } else {
+            Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() })
         }
+        .map_err(arc_server_state_err)
     }
 
     async fn schema_commit(
@@ -402,11 +404,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
     }
 
     async fn delete(&self, accessor: Accessor, name: &str) -> Result<(), ArcServerStateError> {
-        if !self.permission_operator.has_system_permission(&accessor, &SystemPermission::ManageDatabases).await? {
-            return Err(arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted {
-                typedb_source: DatabaseDeleteError::PermissionDenied { accessor: accessor.username().to_owned() },
-            }));
-        }
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageDatabases).await?;
         self.database_manager
             .delete_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))

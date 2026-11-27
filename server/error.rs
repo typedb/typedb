@@ -4,7 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::Debug, io, net::SocketAddr, sync::Arc};
+use std::{
+    fmt,
+    fmt::{Debug, Formatter},
+    io,
+    net::SocketAddr,
+    sync::Arc,
+};
 
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
@@ -157,7 +163,7 @@ typedb_error! {
 
         PermissionCheckError(37, "An error occured while checking permissions.", typedb_source: PermissionCheckError),
 
-        PermissionDeniedGeneric(100, "The user '{accessor}' is not permitted to perform this operation", accessor: String),
+        PermissionDeniedGeneric(100, "The user '{accessor}' not permitted to perform this operation", accessor: String, permission: PermissionRequirement),
     }
 }
 
@@ -236,8 +242,7 @@ impl ServerStateError for LocalServerStateError {
             Self::UserCannotBeCreated { typedb_source } => match typedb_source {
                 UserCreateError::IllegalUsername { .. }
                 | UserCreateError::UserAlreadyExist { .. }
-                | UserCreateError::IncompleteUserDetail { .. }
-                | UserCreateError::PermissionDenied { .. } => Request,
+                | UserCreateError::IncompleteUserDetail { .. } => Request,
                 UserCreateError::GetFailed { typedb_source } => user_get_origin(typedb_source),
                 UserCreateError::Unexpected { .. } => Internal,
             },
@@ -251,8 +256,7 @@ impl ServerStateError for LocalServerStateError {
             Self::UserCannotBeDeleted { typedb_source } => match typedb_source {
                 UserDeleteError::DefaultUserCannotBeDeleted { .. }
                 | UserDeleteError::IllegalUsername { .. }
-                | UserDeleteError::UserNotFound { .. }
-                | UserDeleteError::PermissionDenied { .. } => Request,
+                | UserDeleteError::UserNotFound { .. } => Request,
                 UserDeleteError::GetFailed { typedb_source } => user_get_origin(typedb_source),
                 UserDeleteError::Unexpected { .. } => Internal,
             },
@@ -341,8 +345,7 @@ fn database_create_origin(error: &DatabaseCreateError) -> ErrorOrigin {
         DatabaseCreateError::InvalidName { .. }
         | DatabaseCreateError::InternalDatabaseCreationProhibited { .. }
         | DatabaseCreateError::AlreadyExists { .. }
-        | DatabaseCreateError::IsBeingImported { .. }
-        | DatabaseCreateError::PermissionDenied { .. } => ErrorOrigin::Request,
+        | DatabaseCreateError::IsBeingImported { .. } => ErrorOrigin::Request,
 
         DatabaseCreateError::DatabaseOpen { .. }
         | DatabaseCreateError::WriteAccessDenied { .. }
@@ -362,8 +365,7 @@ fn database_delete_origin(error: &DatabaseDeleteError) -> ErrorOrigin {
     match error {
         DatabaseDeleteError::DoesNotExist { .. }
         | DatabaseDeleteError::InternalDatabaseDeletionProhibited { .. }
-        | DatabaseDeleteError::DatabaseIsNotBeingImported { .. }
-        | DatabaseDeleteError::PermissionDenied { .. } => ErrorOrigin::Request,
+        | DatabaseDeleteError::DatabaseIsNotBeingImported { .. } => ErrorOrigin::Request,
 
         DatabaseDeleteError::InUse { .. }
         | DatabaseDeleteError::StorageDelete { .. }
@@ -480,8 +482,7 @@ fn permission_management_origin(error: &PermissionManagementError) -> ErrorOrigi
         | PermissionManagementError::RoleNotFound { .. }
         | PermissionManagementError::GranteeDidNotHaveRevokedSystemPermission { .. }
         | PermissionManagementError::GranteeDidNotHaveRevokedDatabasePermission { .. }
-        | PermissionManagementError::GranteeDidNotHaveRevokedRole { .. }
-        | PermissionManagementError::PermissionDenied { .. } => ErrorOrigin::Request,
+        | PermissionManagementError::GranteeDidNotHaveRevokedRole { .. } => ErrorOrigin::Request,
     }
 }
 
@@ -507,4 +508,19 @@ impl From<LocalServerStateError> for ArcServerStateError {
 #[inline]
 pub fn arc_server_state_err<E: ServerStateError + Send + Sync + 'static>(e: E) -> ArcServerStateError {
     Arc::new(e)
+}
+
+#[derive(Debug, Clone)]
+pub enum PermissionRequirement {
+    System(SystemPermission),
+    Database(DatabasePermission),
+}
+
+impl fmt::Display for PermissionRequirement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            PermissionRequirement::System(inner) => fmt::Display::fmt(inner, f),
+            PermissionRequirement::Database(inner) => fmt::Display::fmt(inner, f),
+        }
+    }
 }

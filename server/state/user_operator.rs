@@ -14,8 +14,7 @@ use database::database_manager::DatabaseManager;
 use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, SystemPermission, User, UserGroup};
 use user::{
-    errors::{UserCreateError, UserDeleteError},
-    permission_manager::{PermissionManager, UserSession},
+    permission_manager::UserSession,
     user_manager::UserManager,
 };
 use uuid::Uuid;
@@ -138,9 +137,7 @@ impl LocalUserOperator {
 #[async_trait]
 impl UserOperator for LocalUserOperator {
     async fn all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
-        if !PermissionManager::exec_user_all_permitted(accessor.username()) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageUsers).await?;
 
         match self.get_user_manager() {
             Ok(user_manager) => Ok(user_manager.all()),
@@ -149,9 +146,7 @@ impl UserOperator for LocalUserOperator {
     }
 
     async fn contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError> {
-        if !PermissionManager::exec_user_get_permitted(accessor.username(), name) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageUsers).await?;
 
         match self.get_user_manager() {
             Ok(user_manager) => match user_manager.contains(name) {
@@ -163,9 +158,7 @@ impl UserOperator for LocalUserOperator {
     }
 
     async fn get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError> {
-        if !PermissionManager::exec_user_get_permitted(accessor.username(), name) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageUsers).await?;
 
         match self.get_user_manager() {
             Ok(user_manager) => match user_manager.get(name) {
@@ -187,11 +180,7 @@ impl UserOperator for LocalUserOperator {
         user_uuid: Option<Uuid>,
         credential_uuid: Option<Uuid>,
     ) -> Result<(), ArcServerStateError> {
-        if !self.permission_operator.has_system_permission(&accessor, &SystemPermission::ManageUsers).await? {
-            return Err(arc_server_state_err(LocalServerStateError::UserCannotBeCreated {
-                typedb_source: UserCreateError::PermissionDenied { accessor: accessor.username().to_owned() },
-            }));
-        }
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageUsers).await?;
 
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         let user_uuid = user_uuid.unwrap_or_else(Uuid::new_v4);
@@ -208,9 +197,7 @@ impl UserOperator for LocalUserOperator {
         user_update: Option<User>,
         credential_update: Option<Credential>,
     ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_update_permitted(accessor.username(), username) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
+        self.permission_operator.validate_self_or_has(&accessor, username, &SystemPermission::ManageUsers).await?;
 
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         user_manager.update(username, &user_update, &credential_update).map_err(|typedb_source| {
@@ -223,11 +210,7 @@ impl UserOperator for LocalUserOperator {
     }
 
     async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError> {
-        if !self.permission_operator.has_system_permission(&accessor, &SystemPermission::ManageUsers).await? {
-            return Err(arc_server_state_err(LocalServerStateError::UserCannotBeDeleted {
-                typedb_source: UserDeleteError::PermissionDenied { accessor: accessor.username().to_owned() },
-            }));
-        }
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageUsers).await?;
 
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         user_manager.delete(username).map_err(|typedb_source| {

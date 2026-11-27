@@ -128,15 +128,9 @@ impl TransactionOperator for LocalTransactionOperator {
             TransactionType::Write => DatabasePermission::TransactionWrite,
             TransactionType::Schema => DatabasePermission::SchemaTypes,
         };
-        if !self
-            .permission_operator
-            .has_database_permission(accessor, &database.database_id(), &required_permission)
-            .await?
-        {
-            return Err(arc_server_state_err(LocalServerStateError::PermissionDeniedGeneric {
-                accessor: accessor.username().to_owned(),
-            }));
-        }
+        self.permission_operator
+            .validate_database_permission(accessor, &database.database_id(), &required_permission)
+            .await?;
         let transaction =
             open_transaction_blocking(database, transaction_type, options).await.map_err(|typedb_source| {
                 arc_server_state_err(LocalServerStateError::TransactionOpenFailed { typedb_source })
