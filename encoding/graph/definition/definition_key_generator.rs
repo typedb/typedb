@@ -32,6 +32,11 @@ impl DefinitionKeyGenerator {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.next_struct.reset();
+        self.next_function.reset();
+    }
+
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
@@ -39,10 +44,6 @@ impl DefinitionKeyGenerator {
         let definition_key = self.next_struct.allocate(snapshot)?;
         snapshot.put(definition_key.clone().into_storage_key().into_owned_array());
         Ok(definition_key)
-    }
-
-    pub fn reset(&mut self) {
-        self.next_struct.reset()
     }
 
     pub fn create_function<Snapshot: WritableSnapshot>(

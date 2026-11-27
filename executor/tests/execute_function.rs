@@ -9,7 +9,7 @@ use std::{collections::HashMap, iter, sync::Arc};
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::value::value::Value;
+use encoding::{graph::rbac::RBACVertexGenerator, value::value::Value};
 use executor::{
     ExecutionInterrupt,
     pipeline::{PipelineExecutionError, stage::ExecutionContext},
@@ -19,6 +19,7 @@ use function::function_manager::FunctionManager;
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use rbac::rbac_manager::RBACManager;
 use resource::profile::CommitProfile;
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::TempDir;
@@ -96,12 +97,22 @@ fn setup_common(schema: &str) -> Context {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = Arc::new(FunctionManager::default());
+    let rbac_manager = RBACManager::new(Arc::new(RBACVertexGenerator::new()), None);
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &define, schema, None)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            &rbac_manager,
+            &define,
+            schema,
+            None,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 

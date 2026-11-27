@@ -34,6 +34,7 @@ rust_test(
     deps = deps + [
         "//function:function",
         "//query:query",
+        "//rbac",
     ],
 )
 
@@ -97,6 +98,7 @@ rust_test(
     deps = deps + [
         "//function",
         "//query:query",
+        "//rbac",
     ],
 )
 
@@ -108,6 +110,7 @@ rust_test(
     deps = deps + [
         "//function",
         "//query:query",
+        "//rbac",
     ],
 )
 

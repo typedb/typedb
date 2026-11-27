@@ -35,6 +35,7 @@ rust_library(
         "//encoding",
         "//executor",
         "//function",
+        "//rbac",
         "//ir",
         "//query",
         "//resource",

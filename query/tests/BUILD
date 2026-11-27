@@ -19,6 +19,7 @@ deps = [
     "//function",
     "//ir",
     "//query:query",
+    "//rbac",
     "//resource",
     "//storage",
     "@typeql//rust:typeql",

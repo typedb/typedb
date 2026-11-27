@@ -1309,6 +1309,7 @@ dependencies = [
  "logger",
  "options",
  "query",
+ "rbac",
  "resource",
  "rocksdb",
  "serde",
@@ -1662,6 +1663,7 @@ dependencies = [
  "pprof",
  "primitive",
  "query",
+ "rbac",
  "regex",
  "resource",
  "smallvec",
@@ -2927,6 +2929,7 @@ dependencies = [
  "pprof",
  "query",
  "rand 0.8.8",
+ "rbac",
  "resource",
  "serde",
  "storage",
@@ -4113,6 +4116,7 @@ dependencies = [
  "paste",
  "pprof",
  "rand 0.8.8",
+ "rbac",
  "resource",
  "serde",
  "storage",
@@ -4323,6 +4327,21 @@ checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "rbac"
+version = "0.0.0"
+dependencies = [
+ "bytes 0.0.0",
+ "concept",
+ "encoding",
+ "error",
+ "primitive",
+ "resource",
+ "storage",
+ "tracing",
+ "typeql",
 ]
 
 [[package]]
@@ -5334,13 +5353,16 @@ dependencies = [
  "params",
  "primitive",
  "query",
+ "rbac",
  "resource",
  "serde_json",
  "server",
  "storage",
+ "system",
  "test_utils",
  "tokio",
  "typeql",
+ "user",
 ]
 
 [[package]]
@@ -5549,6 +5571,7 @@ dependencies = [
  "compiler",
  "concept",
  "database",
+ "encoding",
  "error",
  "executor",
  "function",
@@ -5556,8 +5579,10 @@ dependencies = [
  "options",
  "pwhash",
  "query",
+ "rbac",
  "resource",
  "storage",
+ "tracing",
  "typeql",
  "uuid",
 ]
@@ -6221,7 +6246,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=4c37fe7d62a59e54623e5b554f0e11f9d45aa610#4c37fe7d62a59e54623e5b554f0e11f9d45aa610"
+source = "git+https://github.com/krishnangovindraj/typeql?rev=ff576afe9a55b05ff05f92f44fd792087fafc6c4#ff576afe9a55b05ff05f92f44fd792087fafc6c4"
 dependencies = [
  "chrono",
  "itertools 0.14.0",

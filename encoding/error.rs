@@ -6,7 +6,7 @@
 
 use std::{error::Error, fmt, str::Utf8Error};
 
-use storage::snapshot::iterator::SnapshotIteratorError;
+use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
 
 use crate::{layout::prefix::Prefix, value::value_type::ValueType};
 
@@ -29,6 +29,7 @@ pub enum EncodingError {
     UnexpectedEndOfEncodedStruct,
     StructAlreadyHasMaximumNumberOfFields { struct_name: String },
     ObjectIDExhausted { id: u64 },
+    RBACRoleIDAllocate { source: std::sync::Arc<SnapshotGetError> },
 }
 
 impl fmt::Display for EncodingError {
@@ -43,6 +44,7 @@ impl Error for EncodingError {
             Self::UFT8Decode { source, .. } => Some(source),
             Self::SchemaIDAllocate { source, .. } => Some(source),
             Self::ExistingTypesRead { source, .. } => Some(source),
+            Self::RBACRoleIDAllocate { source, .. } => Some(source),
             Self::TypeIDsExhausted { .. } => None,
             Self::DefinitionIDsExhausted { .. } => None,
             Self::UnexpectedPrefix { .. } => None,

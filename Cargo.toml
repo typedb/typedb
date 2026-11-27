@@ -83,7 +83,7 @@
 		workspace = true
 
 [workspace]
-	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro/common", "tests/benchmarks/micro/reads", "tests/benchmarks/micro/sample", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
+	members = ["admin", "admin/client", "answer", "common/bytes", "common/cache", "common/concurrency", "common/error", "common/fail_point", "common/iterator", "common/lending_iterator", "common/logger", "common/options", "common/primitive", "common/structural_equality", "compiler", "concept", "concept/tests", "database", "database/tests", "database/tools", "diagnostics", "durability", "durability/tests/common", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "encoding", "encoding/tests", "executor", "function", "ir", "query", "rbac", "resource", "server", "server/service/admin/proto", "storage", "storage/tests", "system", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/benchmarks/micro/common", "tests/benchmarks/micro/reads", "tests/benchmarks/micro/sample", "tests/benchmarks/micro/writes", "user", "util/project", "util/test"]
 	resolver = "2"
 
 	[workspace.dependencies]
@@ -368,6 +368,11 @@
 			features = ["default", "std"]
 			version = "0.3.2"
 
+		[workspace.dependencies.rbac]
+			default-features = false
+			features = []
+			path = "rbac"
+
 		[workspace.dependencies.regex]
 			default-features = false
 			features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
@@ -587,8 +592,8 @@
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
-			git = "https://github.com/typedb/typeql"
-			rev = "4c37fe7d62a59e54623e5b554f0e11f9d45aa610"
+			git = "https://github.com/krishnangovindraj/typeql"
+			rev = "ff576afe9a55b05ff05f92f44fd792087fafc6c4"
 
 		[workspace.dependencies.unicase]
 			default-features = false

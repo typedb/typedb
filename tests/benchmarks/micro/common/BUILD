@@ -25,6 +25,7 @@ rust_library(
         "//encoding",
         "//executor",
         "//query",
+        "//rbac",
         "//resource",
         "//storage",
         "//util/test:test_utils",

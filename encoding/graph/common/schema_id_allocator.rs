@@ -11,6 +11,7 @@ use std::{
 
 use bytes::Bytes;
 use lending_iterator::LendingIterator;
+use rand::RngCore;
 use resource::{
     constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE},
     profile::StorageCounters,
@@ -27,6 +28,7 @@ use crate::{
     graph::{
         Typed,
         definition::definition_key::{DefinitionID, DefinitionKey},
+        rbac::{RBACRoleId, RBACRoleVertex},
         type_::{
             Kind,
             vertex::{TypeID, TypeIDUInt, TypeVertex},
@@ -37,6 +39,9 @@ use crate::{
 
 pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex>;
 pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey>;
+
+#[derive(Debug)]
+pub struct RBACVertexAllocator;
 
 pub trait SchemaID: Sized {
     const MIN_ID: u64;
@@ -149,5 +154,31 @@ impl SchemaID for DefinitionKey {
 
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError {
         EncodingError::DefinitionIDsExhausted { prefix }
+    }
+}
+
+impl RBACVertexAllocator {
+    // Doesn't implement SchemaID because we want random ids which won't get reused.
+    pub fn new() -> RBACVertexAllocator {
+        Self
+    }
+
+    pub fn find_unallocated_id(&self, snapshot: &mut impl WritableSnapshot) -> Result<RBACRoleVertex, EncodingError> {
+        loop {
+            let role_id = RBACRoleId::new(rand::thread_rng().next_u64());
+            let storage_key = RBACRoleVertex::new(role_id).into_storage_key();
+            let found = snapshot
+                .get::<BUFFER_KEY_INLINE>(storage_key.as_reference(), StorageCounters::DISABLED)
+                .map_err(|source| EncodingError::RBACRoleIDAllocate { source: std::sync::Arc::new(source) })?;
+            if found.is_none() {
+                return Ok(RBACRoleVertex::new(role_id));
+            }
+        }
+    }
+
+    pub fn allocate(&self, snapshot: &mut impl WritableSnapshot) -> Result<RBACRoleVertex, EncodingError> {
+        let vertex = self.find_unallocated_id(snapshot)?;
+        snapshot.put(vertex.into_storage_key().into_owned_array());
+        Ok(vertex)
     }
 }

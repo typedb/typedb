@@ -6,9 +6,10 @@
 
 use std::sync::Arc;
 
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
+use encoding::graph::{definition::definition_key_generator::DefinitionKeyGenerator, rbac::RBACVertexGenerator};
 use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
+use rbac::rbac_manager::RBACManager;
 use resource::profile::CommitProfile;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -22,6 +23,7 @@ fn basic() {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let rbac_manager = RBACManager::new(Arc::new(RBACVertexGenerator::new()), None);
 
     let query_str = r#"
     define
@@ -30,7 +32,16 @@ fn basic() {
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, &schema_query, query_str, None)
+        .execute_schema(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            &rbac_manager,
+            &schema_query,
+            query_str,
+            None,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }

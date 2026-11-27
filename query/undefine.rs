@@ -25,20 +25,26 @@ use encoding::{
 use error::typedb_error;
 use function::{FunctionError, function_manager::FunctionManager};
 use ir::{LiteralParseError, translation::tokens::translate_annotation_category};
+use rbac::{RBACError, rbac_manager::RBACManager};
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     common::{Span, Spanned, error::TypeQLError, token::Keyword},
     query::schema::Undefine,
     schema::{
-        definable::type_::{
-            CapabilityBase,
-            capability::{
-                Alias as TypeQLAlias, Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates,
-                Sub as TypeQLSub, ValueType as TypeQLValueType,
+        definable::{
+            rbac::RBACTypeAccess,
+            type_::{
+                CapabilityBase,
+                capability::{
+                    Alias as TypeQLAlias, Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates,
+                    Sub as TypeQLSub, ValueType as TypeQLValueType,
+                },
             },
         },
         undefinable::{
-            AnnotationCapability, AnnotationType, CapabilityType, Function, Specialise, Struct, Undefinable,
+            AnnotationCapability, AnnotationType, CapabilityType, Function, RBACAccessFrom, Specialise, Struct,
+            Undefinable,
         },
     },
     type_::Label as TypeQLLabel,
@@ -46,10 +52,10 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        SymbolResolutionError, filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared,
-        resolve_plays_declared, resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
-        resolve_struct_definition_key, resolve_type, resolve_typeql_type, resolve_value_type,
-        type_ref_to_label_and_ordering, type_to_object_type,
+        RBACAccessRW, SymbolResolutionError, filter_variants, resolve_attribute_type, resolve_object_type,
+        resolve_owns_declared, resolve_plays_declared, resolve_rbac_type_access, resolve_relates,
+        resolve_relates_declared, resolve_relation_type, resolve_role_type, resolve_struct_definition_key,
+        resolve_type, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering, type_to_object_type,
     },
     definable_status::{
         DefinableStatus, DefinableStatusMode, get_capability_annotation_category_status, get_owns_status,
@@ -70,6 +76,7 @@ pub(crate) fn execute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     function_manager: &FunctionManager,
+    rbac_manager: &RBACManager,
     undefine: &Undefine,
 ) -> Result<(), UndefineError> {
     process_function_undefinitions(snapshot, function_manager, &undefine.undefinables)?;
@@ -79,6 +86,7 @@ pub(crate) fn execute(
     process_type_annotation_undefinitions(snapshot, type_manager, &undefine.undefinables)?;
     process_type_undefinitions(snapshot, type_manager, thing_manager, &undefine.undefinables)?;
     process_struct_undefinitions(snapshot, type_manager, thing_manager, &undefine.undefinables)?;
+    process_role_undefinitions(snapshot, type_manager, rbac_manager, &undefine.undefinables)?;
     Ok(())
 }
 
@@ -920,6 +928,71 @@ fn undefine_struct(
     })
 }
 
+fn process_role_undefinitions(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    rbac_manager: &RBACManager,
+    undefinables: &[Undefinable],
+) -> Result<(), UndefineError> {
+    // Process removed accesses before processsing deleted role vertices
+    filter_variants!(Undefinable::RBACAccess : undefinables)
+        .try_for_each(|rbac_access| undefine_rbac_access(snapshot, type_manager, rbac_manager, rbac_access))?;
+    filter_variants!(Undefinable::RBACRole : undefinables)
+        .try_for_each(|label| undefine_rbac_role(snapshot, rbac_manager, label))?;
+    Ok(())
+}
+
+fn undefine_rbac_role(
+    snapshot: &mut impl WritableSnapshot,
+    rbac_manager: &RBACManager,
+    label: &TypeQLLabel,
+) -> Result<(), UndefineError> {
+    let role_name = checked_identifier(&label.ident)?;
+    let resolved_role = rbac_manager
+        .get_rbac_role(snapshot, &role_name, StorageCounters::DISABLED)
+        .map_err(|typedb_source| UndefineError::UnexpectedRBACManagementError { typedb_source })?
+        .ok_or_else(|| UndefineError::DefinitionResolution {
+            typedb_source: Box::new(SymbolResolutionError::RBACRoleNotFound {
+                name: role_name.to_owned(),
+                source_span: label.span(),
+            }),
+        })?;
+    rbac_manager.delete_rbac_role(snapshot, resolved_role, StorageCounters::DISABLED).map_err(|typedb_source| {
+        UndefineError::RBACRoleDeleteError { name: role_name.to_owned(), typedb_source, source_span: label.span() }
+    })?;
+    Ok(())
+}
+
+fn undefine_rbac_access(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    rbac_manager: &RBACManager,
+    rbac_access: &RBACAccessFrom,
+) -> Result<(), UndefineError> {
+    let role_name = checked_identifier(&rbac_access.from.ident)?;
+    let resolved_role = rbac_manager
+        .get_rbac_role(snapshot, &role_name, StorageCounters::DISABLED)
+        .map_err(|typedb_source| UndefineError::UnexpectedRBACManagementError { typedb_source })?
+        .ok_or_else(|| UndefineError::DefinitionResolution {
+            typedb_source: Box::new(SymbolResolutionError::RBACRoleNotFound {
+                name: role_name.to_owned(),
+                source_span: rbac_access.from.span(),
+            }),
+        })?;
+    let (access_kind, types) = match &rbac_access.access {
+        RBACTypeAccess::ReadTypes(types) => (RBACAccessRW::Read, types),
+        RBACTypeAccess::WriteTypes(types) => (RBACAccessRW::Write, types),
+    };
+    types.iter().try_for_each(|typeql_label| {
+        let type_label = Label::parse_from(checked_identifier(&typeql_label.ident)?, typeql_label.span());
+        let access = resolve_rbac_type_access(snapshot, type_manager, access_kind, &type_label, typeql_label.span())
+            .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
+        rbac_manager.unset_rbac_access(snapshot, &resolved_role, access, StorageCounters::DISABLED).map_err(
+            |typedb_source| UndefineError::RBACAccessRemoveError { source_span: rbac_access.span(), typedb_source },
+        )
+    })
+}
+
 fn check_can_and_need_undefine_sub<T: TypeAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -1268,5 +1341,19 @@ typedb_error! {
             identifier: typeql::Identifier,
             source_span: Option<Span>,
         ),
+        RBACRoleDeleteError(
+            38,
+            "Error deleting the RBAC role '{name}'.",
+            name: String,
+            source_span: Option<Span>,
+            typedb_source: Box<RBACError>
+        ),
+        RBACAccessRemoveError(
+            39,
+            "Error removing RBAC access.",
+            source_span: Option<Span>,
+            typedb_source: Box<RBACError>
+        ),
+        UnexpectedRBACManagementError(40, "RBAC management error. ", typedb_source: Box<RBACError>),
     }
 }

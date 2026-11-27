@@ -56,12 +56,13 @@ pub fn execute_schema_query(
     with_transaction_parts!(
         TransactionSchema,
         transaction,
-        |inner_snapshot, type_manager, thing_manager, function_manager, query_manager| {
+        |inner_snapshot, type_manager, thing_manager, function_manager, rbac_manager, query_manager| {
             query_manager.execute_schema(
                 &mut inner_snapshot,
                 &type_manager,
                 &thing_manager,
                 &function_manager,
+                &rbac_manager,
                 &query,
                 &source_query,
                 None,
@@ -83,6 +84,7 @@ pub fn execute_write_query_in_schema(
         type_manager,
         thing_manager,
         function_manager,
+        rbac_manager,
         query_manager,
         database,
         transaction_options,
@@ -107,6 +109,7 @@ pub fn execute_write_query_in_schema(
         type_manager,
         thing_manager,
         function_manager,
+        rbac_manager,
         query_manager,
         database,
         transaction_options,
@@ -129,6 +132,7 @@ pub fn execute_write_query_in_write(
         type_manager,
         thing_manager,
         function_manager,
+        rbac_manager,
         query_manager,
         database,
         transaction_options,
@@ -153,6 +157,7 @@ pub fn execute_write_query_in_write(
         type_manager,
         thing_manager,
         function_manager,
+        rbac_manager,
         query_manager,
         database,
         transaction_options,

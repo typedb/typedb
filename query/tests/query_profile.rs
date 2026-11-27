@@ -7,12 +7,13 @@
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
+use encoding::graph::{definition::definition_key_generator::DefinitionKeyGenerator, rbac::RBACVertexGenerator};
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::{given_rows::GivenRowsSimple, query_cache::QueryCache, query_manager::QueryManager};
+use rbac::rbac_manager::RBACManager;
 use resource::profile::{CommitProfile, PatternProfile, QueryProfile, StageProfile, SubstepProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -27,6 +28,7 @@ fn define_schema(
 ) {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let query_manager = QueryManager::new(None);
+    let rbac_manager = RBACManager::new(Arc::new(RBACVertexGenerator::new()), None);
 
     let query_str = r#"
     define
@@ -41,7 +43,16 @@ fn define_schema(
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
-        .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, &schema_query, query_str, None)
+        .execute_schema(
+            &mut snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            &rbac_manager,
+            &schema_query,
+            query_str,
+            None,
+        )
         .unwrap();
     snapshot.commit(&mut CommitProfile::disabled()).unwrap();
 }
