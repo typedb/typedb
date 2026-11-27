@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     AsBytes, Keyable,
     graph::{
-        rbac::{RBACAccessKind, RBACRoleProperty, RBACRoleTypeAccess, RBACRoleVertex, RBACVertexGenerator},
+        rbac::{RBACAccessKind, RBACRoleProperty, RBACRoleVertex, RBACTypeAccessEdge, RBACVertexGenerator},
         type_::{index::NameToRBACRoleVertexIndex, vertex::TypeVertexEncoding},
     },
     value::{label::Label, string_bytes::StringBytes},
@@ -176,13 +176,13 @@ impl RBACReader {
         snapshot
             .iterate_range(
                 &KeyRange::new_within(
-                    RBACRoleTypeAccess::build_prefix_role(role.vertex()),
-                    RBACRoleTypeAccess::FIXED_WIDTH_ENCODING,
+                    RBACTypeAccessEdge::build_prefix_role(role.vertex()),
+                    RBACTypeAccessEdge::FIXED_WIDTH_ENCODING,
                 ),
                 StorageCounters::DISABLED,
             )
             .collect_cloned_hashset(|key, _| {
-                let access = RBACRoleTypeAccess::decode(Bytes::Reference(key.bytes()).into_owned());
+                let access = RBACTypeAccessEdge::decode(Bytes::Reference(key.bytes()).into_owned());
                 RBACAccess::new_type_access(access.access_kind(), access.type_())
             })
             .map_err(|error| Box::new(RBACError::SnapshotIterate { source: error }))

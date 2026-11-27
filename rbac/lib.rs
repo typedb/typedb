@@ -10,7 +10,7 @@ use concept::type_::{TypeAPI, attribute_type::AttributeType, object_type::Object
 use encoding::{
     error::EncodingError,
     graph::{
-        rbac::{RBACAccessKind, RBACRoleTypeAccess, RBACRoleVertex},
+        rbac::{RBACAccessKind, RBACRoleVertex, RBACTypeAccessEdge},
         type_::vertex::{TypeVertex, TypeVertexEncoding},
     },
 };
@@ -49,19 +49,19 @@ impl RBACAccess {
         }
     }
 
-    pub fn to_type_access_for_role(&self, role: &RBACRole) -> RBACRoleTypeAccess {
+    pub fn to_type_access_for_role(&self, role: &RBACRole) -> RBACTypeAccessEdge {
         match self {
             RBACAccess::ReadObject(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadObjectVertex, type_.vertex())
+                RBACTypeAccessEdge::new(role.vertex(), RBACAccessKind::ReadObjectVertex, type_.vertex())
             }
             RBACAccess::WriteObject(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteObjectVertex, type_.vertex())
+                RBACTypeAccessEdge::new(role.vertex(), RBACAccessKind::WriteObjectVertex, type_.vertex())
             }
             RBACAccess::ReadAttribute(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadAttributeVertex, type_.vertex())
+                RBACTypeAccessEdge::new(role.vertex(), RBACAccessKind::ReadAttributeVertex, type_.vertex())
             }
             RBACAccess::WriteAttribute(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteAttributeVertex, type_.vertex())
+                RBACTypeAccessEdge::new(role.vertex(), RBACAccessKind::WriteAttributeVertex, type_.vertex())
             }
         }
     }

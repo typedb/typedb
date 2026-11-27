@@ -28,14 +28,6 @@ impl RBACRoleId {
     pub(crate) fn new(id: u64) -> Self {
         Self(id)
     }
-
-    pub fn from_system_db_id(id: i64) -> Self {
-        Self(id.cast_unsigned())
-    }
-
-    pub fn to_system_db_id(&self) -> i64 {
-        self.0.cast_signed()
-    }
 }
 
 impl fmt::Debug for RBACRoleId {
@@ -300,13 +292,13 @@ impl RBACAccessKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
-pub struct RBACRoleTypeAccess {
+pub struct RBACTypeAccessEdge {
     role: RBACRoleVertex,
     access_kind: RBACAccessKind,
     type_: TypeVertex,
 }
 
-impl RBACRoleTypeAccess {
+impl RBACTypeAccessEdge {
     // Note: Using u64 for RBAC roles means the length is > 11. We still use this prefix as:
     // * Not having the TypeVertex within the prefix is not a big deal.
     // * All schema goes in here anyway.
@@ -318,8 +310,8 @@ impl RBACRoleTypeAccess {
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_ROLE: usize = PrefixID::LENGTH + RBACRoleVertex::LENGTH;
 
-    pub fn new(role: RBACRoleVertex, access_type: RBACAccessKind, type_: TypeVertex) -> Self {
-        Self { role, access_kind: access_type, type_ }
+    pub fn new(role: RBACRoleVertex, access_kind: RBACAccessKind, type_: TypeVertex) -> Self {
+        Self { role, access_kind, type_ }
     }
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
@@ -327,9 +319,9 @@ impl RBACRoleTypeAccess {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
 
         let role = RBACRoleVertex::decode(bytes.clone().into_range(Self::range_rbac_role()));
-        let access_type = RBACAccessKind::decode((&bytes[Self::range_access_type()]).try_into().unwrap());
+        let access_kind = RBACAccessKind::decode((&bytes[Self::range_access_kind()]).try_into().unwrap());
         let type_ = TypeVertex::decode(bytes.clone().into_range(Self::range_type()));
-        Self { role, access_kind: access_type, type_ }
+        Self { role, access_kind: access_kind, type_ }
     }
 
     pub fn try_decode(bytes: &[u8]) -> Option<Self> {
@@ -341,15 +333,15 @@ impl RBACRoleTypeAccess {
         }
 
         let role = RBACRoleVertex::try_decode(bytes.get(Self::range_rbac_role())?)?;
-        let access_type = RBACAccessKind::try_decode((bytes.get(Self::range_access_type())?).try_into().ok()?)?;
+        let access_kind = RBACAccessKind::try_decode((bytes.get(Self::range_access_kind())?).try_into().ok()?)?;
         let type_ = TypeVertex::try_decode(bytes.get(Self::range_type())?)?;
-        Some(Self { role, access_kind: access_type, type_ })
+        Some(Self { role, access_kind: access_kind, type_ })
     }
 
-    pub fn build_prefix() -> StorageKey<'static, { RBACRoleTypeAccess::LENGTH_PREFIX }> {
+    pub fn build_prefix() -> StorageKey<'static, { RBACTypeAccessEdge::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = RBACRoleTypeAccess::PREFIX.prefix_id().to_bytes();
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = RBACTypeAccessEdge::PREFIX.prefix_id().to_bytes();
         StorageKey::new_ref(Self::KEYSPACE, &PREFIX_BYTES)
     }
 
@@ -376,33 +368,33 @@ impl RBACRoleTypeAccess {
         Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + RBACRoleVertex::LENGTH
     }
 
-    const fn range_access_type() -> Range<usize> {
+    const fn range_access_kind() -> Range<usize> {
         Self::range_rbac_role().end..Self::range_rbac_role().end + InfixID::LENGTH
     }
 
     fn range_type() -> Range<usize> {
-        Self::range_access_type().end..Self::range_access_type().end + TypeVertex::LENGTH
+        Self::range_access_kind().end..Self::range_access_kind().end + TypeVertex::LENGTH
     }
 }
 
-impl AsBytes<BUFFER_KEY_INLINE> for RBACRoleTypeAccess {
+impl AsBytes<BUFFER_KEY_INLINE> for RBACTypeAccessEdge {
     fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         array[Self::range_rbac_role()].copy_from_slice(&self.role.to_bytes());
-        array[Self::range_access_type()].copy_from_slice(&self.access_kind.infix().infix_id().bytes());
+        array[Self::range_access_kind()].copy_from_slice(&self.access_kind.infix().infix_id().bytes());
         array[Self::range_type()].copy_from_slice(&self.type_.to_bytes());
         Bytes::Array(array)
     }
 }
 
-impl Keyable<BUFFER_KEY_INLINE> for RBACRoleTypeAccess {
+impl Keyable<BUFFER_KEY_INLINE> for RBACTypeAccessEdge {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for RBACRoleTypeAccess {
+impl Prefixed<BUFFER_KEY_INLINE> for RBACTypeAccessEdge {
     fn prefix(&self) -> Prefix {
         Self::PREFIX
     }
