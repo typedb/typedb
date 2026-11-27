@@ -253,10 +253,10 @@ impl PermissionOperator for LocalPermissionOperator {
         match &grantee {
             Grantee::UserGroup(_) => {
                 self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?
-            },
+            }
             Grantee::User(user) => {
-                self.validate_self_or_has(accessor,user.name.as_str(), &SystemPermission::GrantPermissions).await?
-            },
+                self.validate_self_or_has(accessor, user.name.as_str(), &SystemPermission::GrantPermissions).await?
+            }
         }
         let permission_manager = self.get_permission_manager().map_err(arc_server_state_err)?;
         permission_manager
@@ -318,12 +318,12 @@ impl PermissionOperator for LocalPermissionOperator {
         database: &str,
     ) -> Result<HashSet<DatabasePermission>, ArcServerStateError> {
         match &grantee {
-            Grantee::UserGroup(_) => self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?,
-            Grantee::User(user) => self.validate_self_or_has(
-                accessor,
-                user.name.as_str(),
-                &SystemPermission::GrantPermissions
-            ).await?
+            Grantee::UserGroup(_) => {
+                self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?
+            }
+            Grantee::User(user) => {
+                self.validate_self_or_has(accessor, user.name.as_str(), &SystemPermission::GrantPermissions).await?
+            }
         }
         let database_id = self.resolve_database_for_permissions(database).map_err(|typedb_source| {
             LocalServerStateError::DatabasePermissionsCannotBeListed {
@@ -425,12 +425,12 @@ impl PermissionOperator for LocalPermissionOperator {
         database: &str,
     ) -> Result<HashSet<SchemaDefinedRole>, ArcServerStateError> {
         match &grantee {
-            Grantee::UserGroup(_) => self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?,
-            Grantee::User(user) => self.validate_self_or_has(
-                accessor,
-                user.name.as_str(),
-                &SystemPermission::GrantPermissions
-            ).await?
+            Grantee::UserGroup(_) => {
+                self.validate_system_permission(accessor, &SystemPermission::GrantPermissions).await?
+            }
+            Grantee::User(user) => {
+                self.validate_self_or_has(accessor, user.name.as_str(), &SystemPermission::GrantPermissions).await?
+            }
         }
         let database_id = self.resolve_database_for_permissions(database).map_err(|typedb_source| {
             LocalServerStateError::RolesCannotBeListed {

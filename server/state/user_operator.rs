@@ -13,10 +13,7 @@ use async_trait::async_trait;
 use database::database_manager::DatabaseManager;
 use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, SystemPermission, User, UserGroup};
-use user::{
-    permission_manager::UserSession,
-    user_manager::UserManager,
-};
+use user::{permission_manager::UserSession, user_manager::UserManager};
 use uuid::Uuid;
 
 use super::TransactionOperator;

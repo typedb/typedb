@@ -8,9 +8,7 @@ use std::sync::Arc;
 use cucumber::gherkin::Step;
 use database::{
     Database,
-    transaction::{
-        CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema,
-    },
+    transaction::{CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema},
 };
 use error::TypeDBError;
 use futures::{FutureExt, future::join_all};
