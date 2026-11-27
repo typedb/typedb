@@ -67,6 +67,9 @@
 	[dev-dependencies.rand_core]
 		workspace = true
 
+	[dev-dependencies.rbac]
+		workspace = true
+
 	[dev-dependencies.steps]
 		workspace = true
 
@@ -586,8 +589,8 @@
 		[workspace.dependencies.typedb-protocol]
 			default-features = false
 			features = []
-			git = "https://github.com/typedb/typedb-protocol"
-			rev = "dd606e1063d7c83781b5e04c1d348b824d3a7428"
+			git = "https://github.com/krishnangovindraj/typedb-protocol"
+			rev = "14300f02e395ed8022142b977c7ed0ed36a30299"
 
 		[workspace.dependencies.typeql]
 			default-features = false

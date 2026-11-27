@@ -15,11 +15,14 @@ use concurrency::TokioTaskSpawner;
 use database::{database_manager::DatabaseManager, transaction::TransactionId};
 use futures::future::join_all;
 use options::TransactionOptions;
+use system::concepts::DatabasePermission;
 use tokio::sync::{RwLock, mpsc::Sender};
 
 use crate::{
+    authentication::Accessor,
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
     service::TransactionType,
+    state::permission_operator::PermissionOperator,
     transaction::{Transaction, open_transaction_blocking},
 };
 
@@ -35,8 +38,8 @@ pub(crate) struct TransactionInfo {
 pub trait TransactionOperator: Debug + Send + Sync {
     async fn open(
         &self,
+        accessor: &Accessor,
         database_name: &str,
-        owner: String,
         transaction_type: TransactionType,
         options: TransactionOptions,
         close_sender: Sender<()>,
@@ -56,11 +59,21 @@ pub struct LocalTransactionOperator {
     database_manager: Arc<DatabaseManager>,
     transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
     background_task_spawner: TokioTaskSpawner,
+    permission_operator: Arc<dyn PermissionOperator>,
 }
 
 impl LocalTransactionOperator {
-    pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
-        Self { database_manager, transactions: Arc::new(RwLock::new(HashMap::new())), background_task_spawner }
+    pub fn new(
+        database_manager: Arc<DatabaseManager>,
+        background_task_spawner: TokioTaskSpawner,
+        permission_operator: Arc<dyn PermissionOperator>,
+    ) -> Self {
+        Self {
+            database_manager,
+            transactions: Arc::new(RwLock::new(HashMap::new())),
+            background_task_spawner,
+            permission_operator,
+        }
     }
 
     pub async fn record(
@@ -101,8 +114,8 @@ impl LocalTransactionOperator {
 impl TransactionOperator for LocalTransactionOperator {
     async fn open(
         &self,
+        accessor: &Accessor,
         database_name: &str,
-        owner: String,
         transaction_type: TransactionType,
         options: TransactionOptions,
         close_sender: Sender<()>,
@@ -110,11 +123,26 @@ impl TransactionOperator for LocalTransactionOperator {
         let database = self.database_manager.database(database_name).ok_or_else(|| {
             arc_server_state_err(LocalServerStateError::DatabaseNotFound { name: database_name.to_string() })
         })?;
+        let required_permission = match transaction_type {
+            TransactionType::Read => DatabasePermission::TransactionRead,
+            TransactionType::Write => DatabasePermission::TransactionWrite,
+            TransactionType::Schema => DatabasePermission::SchemaTypes,
+        };
+        self.permission_operator
+            .validate_database_permission(accessor, &database.database_id(), &required_permission)
+            .await?;
         let transaction =
             open_transaction_blocking(database, transaction_type, options).await.map_err(|typedb_source| {
                 arc_server_state_err(LocalServerStateError::TransactionOpenFailed { typedb_source })
             })?;
-        self.record(transaction.id(), database_name.to_owned(), owner, transaction_type, close_sender).await;
+        self.record(
+            transaction.id(),
+            database_name.to_owned(),
+            accessor.username().to_owned(),
+            transaction_type,
+            close_sender,
+        )
+        .await;
         Ok(transaction)
     }
 

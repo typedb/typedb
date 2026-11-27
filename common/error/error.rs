@@ -400,6 +400,8 @@ pub enum UnimplementedFeature {
     IsaInIfStatements,
 
     ErrorsOnImplicitUnwrap,
+
+    UserGroups,
 }
 
 impl std::fmt::Display for UnimplementedFeature {

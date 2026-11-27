@@ -84,7 +84,17 @@ pub(super) struct Schema {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct DatabaseUid(pub u64);
+pub struct DatabaseUid(u64);
+
+impl DatabaseUid {
+    pub fn new(id: u64) -> DatabaseUid {
+        Self(id)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+}
 
 type ReservationRequestId = u64;
 

@@ -32,14 +32,17 @@ use storage::{
     durability_client::{DurabilityClient, WALClient},
     snapshot::snapshot_id::SnapshotId,
 };
+use system::concepts::{DatabasePermission, SystemPermission};
 use tokio::{
     sync::{RwLock, Semaphore, mpsc::Sender},
     task::JoinHandle,
 };
 
 use crate::{
+    authentication::Accessor,
     error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
     service::grpc::migration::import_service::DatabaseImportService,
+    state::permission_operator::PermissionOperator,
 };
 
 const IMPORT_MESSAGE_BUFFER_SIZE: usize = 16;
@@ -54,7 +57,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn create(&self, name: &str) -> Result<(), ArcServerStateError>;
+    async fn create(&self, accessor: &Accessor, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -69,9 +72,9 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn import_discard(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn schema(&self, name: &str) -> Result<String, ArcServerStateError>;
+    async fn schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError>;
 
-    async fn type_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
+    async fn type_schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError>;
 
     async fn schema_commit(
         &self,
@@ -92,7 +95,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
         snapshot_id: SnapshotId,
     ) -> Result<bool, ArcServerStateError>;
 
-    async fn delete(&self, name: &str) -> Result<(), ArcServerStateError>;
+    async fn delete(&self, accessor: Accessor, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn prepare_for_writes(&self) -> Result<(), Box<DatabaseOpenError>>;
 }
@@ -160,15 +163,21 @@ pub struct LocalDatabaseOperator {
     background_task_spawner: TokioTaskSpawner,
     import_permits: Arc<Semaphore>,
     active_imports: Arc<RwLock<HashMap<String, ImportInfo>>>,
+    permission_operator: Arc<dyn PermissionOperator>,
 }
 
 impl LocalDatabaseOperator {
-    pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
+    pub fn new(
+        database_manager: Arc<DatabaseManager>,
+        background_task_spawner: TokioTaskSpawner,
+        permission_operator: Arc<dyn PermissionOperator>,
+    ) -> Self {
         Self {
             database_manager,
             background_task_spawner,
             import_permits: Arc::new(Semaphore::new(MAX_CONCURRENT_IMPORTS)),
             active_imports: Arc::new(RwLock::new(HashMap::new())),
+            permission_operator,
         }
     }
 
@@ -275,7 +284,8 @@ impl DatabaseOperator for LocalDatabaseOperator {
         Ok(self.database_manager.database_unrestricted(name))
     }
 
-    async fn create(&self, name: &str) -> Result<(), ArcServerStateError> {
+    async fn create(&self, accessor: &Accessor, name: &str) -> Result<(), ArcServerStateError> {
+        self.permission_operator.validate_system_permission(accessor, &SystemPermission::ManageDatabases).await?;
         self.database_manager
             .put_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: *err }))
@@ -323,22 +333,28 @@ impl DatabaseOperator for LocalDatabaseOperator {
         }
     }
 
-    async fn schema(&self, name: &str) -> Result<String, ArcServerStateError> {
-        match self.database_manager.database(name) {
-            Some(db) => get_database_schema(db).map_err(|boxed| *boxed),
-            None => Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() }),
+    async fn schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError> {
+        if let Some(database) = self.database_manager.database(name) {
+            self.permission_operator
+                .validate_database_permission(&accessor, &database.database_id(), &DatabasePermission::SchemaTypes)
+                .await?;
+            get_database_schema(database).map_err(|boxed| *boxed)
+        } else {
+            Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() })
         }
         .map_err(arc_server_state_err)
     }
 
-    async fn type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
-        match self.database_manager.database(name) {
-            None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() })),
-            Some(database) => match get_database_type_schema(database) {
-                Ok(type_schema) => Ok(type_schema),
-                Err(err) => Err(Arc::new(*err)),
-            },
+    async fn type_schema(&self, accessor: &Accessor, name: &str) -> Result<String, ArcServerStateError> {
+        if let Some(database) = self.database_manager.database(name) {
+            self.permission_operator
+                .validate_database_permission(&accessor, &database.database_id(), &DatabasePermission::SchemaTypes)
+                .await?;
+            get_database_type_schema(database).map_err(|boxed| *boxed)
+        } else {
+            Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() })
         }
+        .map_err(arc_server_state_err)
     }
 
     async fn schema_commit(
@@ -387,7 +403,8 @@ impl DatabaseOperator for LocalDatabaseOperator {
         })
     }
 
-    async fn delete(&self, name: &str) -> Result<(), ArcServerStateError> {
+    async fn delete(&self, accessor: Accessor, name: &str) -> Result<(), ArcServerStateError> {
+        self.permission_operator.validate_system_permission(&accessor, &SystemPermission::ManageDatabases).await?;
         self.database_manager
             .delete_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))

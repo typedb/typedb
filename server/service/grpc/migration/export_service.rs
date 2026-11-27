@@ -25,6 +25,7 @@ use typedb_protocol::{
 };
 
 use crate::{
+    authentication::Accessor,
     error::LocalServerStateError,
     service::{
         TransactionType,
@@ -63,7 +64,7 @@ pub(crate) struct DatabaseExportService {
     distribution_info: DistributionInfo,
     server_state: Arc<ServerState>,
     database_name: String,
-    owner: String,
+    accessor: Accessor,
     response_sender: ResponseSender,
     shutdown_receiver: watch::Receiver<()>,
     close_receiver: Receiver<()>,
@@ -83,7 +84,7 @@ impl DatabaseExportService {
         distribution_info: DistributionInfo,
         server_state: Arc<ServerState>,
         database_name: String,
-        owner: String,
+        accessor: Accessor,
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
@@ -92,7 +93,7 @@ impl DatabaseExportService {
             distribution_info,
             server_state,
             database_name,
-            owner,
+            accessor,
             response_sender,
             shutdown_receiver,
             close_receiver,
@@ -212,8 +213,8 @@ impl DatabaseExportService {
             .server_state
             .transactions()
             .open(
+                &self.accessor,
                 &self.database_name,
-                self.owner.clone(),
                 TransactionType::Read,
                 Self::transaction_options(),
                 self.close_sender.clone(),

@@ -107,7 +107,7 @@ impl HTTPTypeDBService {
 
     async fn transaction_new(
         service: &HTTPTypeDBService,
-        owner: String,
+        accessor: &Accessor,
         payload: TransactionOpenPayload,
     ) -> Result<(TransactionInfo, u64), HttpServiceError> {
         let (request_sender, request_stream) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
@@ -117,9 +117,10 @@ impl HTTPTypeDBService {
         let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream);
 
         let database_name = Arc::<str>::from(payload.database_name);
+        let owner = accessor.username().to_owned();
 
         let processing_time = transaction_service
-            .open(payload.transaction_type, owner.clone(), Arc::clone(&database_name), options)
+            .open(payload.transaction_type, accessor, Arc::clone(&database_name), options)
             .await
             .map_err(|typedb_source| HttpServiceError::Transaction { typedb_source })?;
 
@@ -337,6 +338,7 @@ impl HTTPTypeDBService {
     async fn databases_create(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -347,7 +349,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .create(&database_path.database_name)
+                    .create(&accessor, &database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -358,6 +360,7 @@ impl HTTPTypeDBService {
     async fn databases_delete(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -368,7 +371,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .delete(&database_path.database_name)
+                    .delete(accessor, &database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -379,6 +382,7 @@ impl HTTPTypeDBService {
     async fn databases_schema(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -389,7 +393,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .schema(&database_path.database_name)
+                    .schema(&accessor, &database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -401,6 +405,7 @@ impl HTTPTypeDBService {
     async fn databases_type_schema(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -411,7 +416,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .type_schema(&database_path.database_name)
+                    .type_schema(&accessor, &database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -545,7 +550,7 @@ impl HTTPTypeDBService {
     async fn transaction_open(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         JsonBody(payload): JsonBody<TransactionOpenPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -553,7 +558,7 @@ impl HTTPTypeDBService {
             Some(payload.database_name.clone()),
             ActionKind::TransactionOpen,
             || async {
-                let (transaction_info, _processing_time) = Self::transaction_new(&service, accessor, payload).await?;
+                let (transaction_info, _processing_time) = Self::transaction_new(&service, &accessor, payload).await?;
                 let uuid = Uuid::new_v4();
                 service.transaction_services.write().await.insert(uuid, transaction_info);
                 Ok(JsonBody(encode_transaction(uuid)))
@@ -565,7 +570,7 @@ impl HTTPTypeDBService {
     async fn transactions_commit(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
@@ -576,7 +581,7 @@ impl HTTPTypeDBService {
             Some(&transaction.database_name),
             ActionKind::TransactionCommit,
             || async {
-                if accessor != transaction.owner {
+                if accessor.username() != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(&transaction, TransactionRequest::Commit, true).await
@@ -588,7 +593,7 @@ impl HTTPTypeDBService {
     async fn transactions_close(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
@@ -601,7 +606,7 @@ impl HTTPTypeDBService {
             Some(&transaction.database_name),
             ActionKind::TransactionClose,
             || async {
-                if accessor != transaction.owner {
+                if accessor.username() != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(&transaction, TransactionRequest::Close, false).await
@@ -613,7 +618,7 @@ impl HTTPTypeDBService {
     async fn transactions_rollback(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
@@ -624,7 +629,7 @@ impl HTTPTypeDBService {
             Some(&transaction.database_name),
             ActionKind::TransactionRollback,
             || async {
-                if accessor != transaction.owner {
+                if accessor.username() != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(&transaction, TransactionRequest::Rollback, true).await
@@ -636,7 +641,7 @@ impl HTTPTypeDBService {
     async fn transactions_analyse(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionAnalyzePayload>,
     ) -> impl IntoResponse {
@@ -648,7 +653,7 @@ impl HTTPTypeDBService {
             Some(&transaction.database_name),
             ActionKind::TransactionAnalyse,
             || async {
-                if accessor != transaction.owner {
+                if accessor.username() != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(&transaction, TransactionRequest::AnalyseQuery(payload.query), true).await
@@ -660,7 +665,7 @@ impl HTTPTypeDBService {
     async fn transactions_query(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionQueryPayload>,
     ) -> impl IntoResponse {
@@ -672,7 +677,7 @@ impl HTTPTypeDBService {
             Some(&transaction.database_name),
             ActionKind::TransactionQuery,
             || async {
-                if accessor != transaction.owner {
+                if accessor.username() != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(
@@ -689,7 +694,7 @@ impl HTTPTypeDBService {
     async fn query(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         JsonBody(payload): JsonBody<QueryPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -698,7 +703,7 @@ impl HTTPTypeDBService {
             ActionKind::OneshotQuery,
             || async {
                 let (transaction_info, _processing_time) =
-                    Self::transaction_new(&service, accessor, payload.transaction_open_payload).await?;
+                    Self::transaction_new(&service, &accessor, payload.transaction_open_payload).await?;
 
                 let transaction_response = Self::transaction_request(
                     &transaction_info,

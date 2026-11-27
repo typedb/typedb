@@ -5,6 +5,7 @@
  */
 
 pub mod database_operator;
+pub mod permission_operator;
 pub mod server_operator;
 pub mod transaction_operator;
 pub mod user_operator;
@@ -29,6 +30,7 @@ use crate::{
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
     service::admin::transport::AdminPath,
+    state::permission_operator::{LocalPermissionOperator, PermissionOperator},
     status::{LocalServerStatus, PrivateEndpointAddress, PublicEndpointAddress, ServerStatus},
 };
 
@@ -56,6 +58,7 @@ pub struct ServerState {
     database_operator: Arc<dyn DatabaseOperator>,
     transaction_operator: Arc<dyn TransactionOperator>,
     user_operator: Arc<dyn UserOperator>,
+    permission_operator: Arc<dyn PermissionOperator>,
 }
 
 impl ServerState {
@@ -123,6 +126,7 @@ impl ServerState {
             database_operator_override: None,
             transaction_operator_override: None,
             user_operator_override: None,
+            permission_operator_override: None,
         })
     }
 
@@ -148,6 +152,10 @@ impl ServerState {
 
     pub fn databases(&self) -> &dyn DatabaseOperator {
         &*self.database_operator
+    }
+
+    pub fn permissions(&self) -> &dyn PermissionOperator {
+        &*self.permission_operator
     }
 
     pub fn transactions(&self) -> &dyn TransactionOperator {
@@ -299,6 +307,7 @@ pub struct ServerStateBuilder {
     database_operator_override: Option<Arc<dyn DatabaseOperator>>,
     transaction_operator_override: Option<Arc<dyn TransactionOperator>>,
     user_operator_override: Option<Arc<dyn UserOperator>>,
+    permission_operator_override: Option<Arc<dyn PermissionOperator>>,
 }
 
 impl ServerStateBuilder {
@@ -338,22 +347,39 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn permission_operator(mut self, operator: Arc<dyn PermissionOperator>) -> Self {
+        self.permission_operator_override = Some(operator);
+        self
+    }
+
     pub fn build(self) -> ServerState {
+        let permission_operator = self
+            .permission_operator_override
+            .unwrap_or_else(|| Arc::new(LocalPermissionOperator::new(self.database_manager.clone())));
         let server_operator =
             self.server_operator_override.unwrap_or_else(|| Arc::new(LocalServerOperator::new(self.server_status)));
 
         let database_operator = self.database_operator_override.unwrap_or_else(|| {
-            Arc::new(LocalDatabaseOperator::new(self.database_manager.clone(), self.background_task_spawner.clone()))
+            Arc::new(LocalDatabaseOperator::new(
+                self.database_manager.clone(),
+                self.background_task_spawner.clone(),
+                permission_operator.clone(),
+            ))
         });
 
         let transaction_operator = self.transaction_operator_override.unwrap_or_else(|| {
-            Arc::new(LocalTransactionOperator::new(self.database_manager.clone(), self.background_task_spawner.clone()))
+            Arc::new(LocalTransactionOperator::new(
+                self.database_manager.clone(),
+                self.background_task_spawner.clone(),
+                permission_operator.clone(),
+            ))
         });
 
         let user_operator = self.user_operator_override.unwrap_or_else(|| {
             Arc::new(LocalUserOperator::new(
                 self.database_manager.clone(),
                 self.token_manager.clone(),
+                permission_operator.clone(),
                 transaction_operator.clone(),
             ))
         });
@@ -371,6 +397,7 @@ impl ServerStateBuilder {
             database_operator,
             transaction_operator,
             user_operator,
+            permission_operator,
         }
     }
 }

@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 define
+    # users
     attribute name value string;
     attribute uuid value string;
     attribute hash value string;
@@ -22,3 +23,51 @@ define
     relation user-credentials,
         relates user @card(1),
         relates credentials @card(1..);
+
+    # databases
+    attribute database-id, value integer;
+
+    # user-groups
+    relation group-membership,
+        relates user,
+        relates group;
+
+    entity user-group,
+        owns name @unique @card(1);
+
+    user plays group-membership:user;
+    user-group plays group-membership:group;
+
+    # permissions
+    relation abstract-permission @abstract,
+        relates grantee @card(1);
+
+    user plays abstract-permission:grantee;
+    user-group plays abstract-permission:grantee;
+
+    ## system permissions
+    relation system-permission sub abstract-permission;
+
+    relation manage-databases sub system-permission;
+    relation manage-users sub system-permission;
+    relation grant-permissions sub system-permission;
+
+    ## database permissions
+    relation database-permission @abstract,
+        sub abstract-permission,
+        owns database-id @card(1);
+
+    relation transaction-read sub database-permission;
+    relation transaction-write sub database-permission;
+    relation schema-types sub database-permission;
+    relation schema-roles sub database-permission;
+
+    ## role assignment
+    attribute role-id, value integer;
+    relation role-assignment,
+        relates grantee @card(1),
+        owns database-id @card(1),
+        owns role-id @card(1);
+
+    user plays role-assignment:grantee;
+    user-group plays role-assignment:grantee;

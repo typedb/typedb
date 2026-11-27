@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 use std::sync::Arc;
 
 use database::Database;
@@ -11,7 +10,7 @@ use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, User},
-    repositories::{user_repository, user_repository::SystemDBError},
+    repositories::{SystemDBError, user_repository},
     util::transaction_util::TransactionUtil,
 };
 use uuid::Uuid;
@@ -36,7 +35,9 @@ impl UserManager {
         self.transaction_util.read_transaction(|tx| {
             user_repository::get(tx, username).map_err(|query_error| match query_error {
                 SystemDBError::IllegalQueryInput { .. } => UserGetError::IllegalUsername {},
-                SystemDBError::EmptyUpdate { .. } | SystemDBError::QueryFailed { .. } => UserGetError::Unexpected {},
+                SystemDBError::EmptyUpdate { .. }
+                | SystemDBError::QueryFailed { .. }
+                | SystemDBError::UnexpectedParseFailed { .. } => UserGetError::Unexpected {},
             })
         })
     }

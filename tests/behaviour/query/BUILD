@@ -48,6 +48,7 @@ rust_test(
         "@typedb_behaviour//query/analyze:annotations.feature",
 
         "@typedb_behaviour//query/rbac:definition.feature",
+        "@typedb_behaviour//query/rbac:grant.feature",
 
         "//server:config.yml",
     ],
