@@ -42,11 +42,11 @@ rust_binary(
         "//common/fail_point",
         "//common/logger",
         "//database",
+        "//diagnostics",
         "//resource",
         "//server",
 
         "@crates//:clap",
-        "@crates//:sentry",
         "@crates//:tokio",
         "@crates//:tracing",
     ],

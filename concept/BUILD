@@ -34,7 +34,6 @@ rust_library(
         "@crates//:itertools",
         "@crates//:macro_rules_attribute",
         "@crates//:regex",
-        "@crates//:sentry",
         "@crates//:serde",
         "@crates//:tracing",
     ],

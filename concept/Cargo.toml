@@ -63,9 +63,6 @@
 	[dependencies.resource]
 		workspace = true
 
-	[dependencies.sentry]
-		workspace = true
-
 	[dependencies.serde]
 		workspace = true
 
