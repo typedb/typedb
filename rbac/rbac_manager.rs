@@ -173,18 +173,17 @@ impl RBACReader {
         snapshot: &impl ReadableSnapshot,
         role: &RBACRole,
     ) -> Result<HashSet<RBACAccess>, Box<RBACError>> {
-        use encoding::graph::type_::edge::TypeEdge;
         snapshot
             .iterate_range(
                 &KeyRange::new_within(
                     RBACRoleTypeAccess::build_prefix_role(role.vertex()),
-                    TypeEdge::FIXED_WIDTH_ENCODING,
+                    RBACRoleTypeAccess::FIXED_WIDTH_ENCODING,
                 ),
                 StorageCounters::DISABLED,
             )
             .collect_cloned_hashset(|key, _| {
                 let access = RBACRoleTypeAccess::decode(Bytes::Reference(key.bytes()).into_owned());
-                RBACAccess::new_type_access(access.access_type(), access.type_())
+                RBACAccess::new_type_access(access.access_kind(), access.type_())
             })
             .map_err(|error| Box::new(RBACError::SnapshotIterate { source: error }))
     }
@@ -210,20 +209,7 @@ impl RBACWriter {
         role: RBACRole,
         access: RBACAccess,
     ) {
-        let to_write = match access {
-            RBACAccess::ReadObject(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadObjectVertex, type_.vertex())
-            }
-            RBACAccess::WriteObject(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteObjectVertex, type_.vertex())
-            }
-            RBACAccess::ReadAttribute(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadAttributeVertex, type_.vertex())
-            }
-            RBACAccess::WriteAttribute(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteAttributeVertex, type_.vertex())
-            }
-        };
+        let to_write = access.to_type_access_for_role(&role);
         snapshot.put(to_write.into_storage_key().into_owned_array())
     }
 
@@ -249,20 +235,7 @@ impl RBACWriter {
         role: &RBACRole,
         access: RBACAccess,
     ) {
-        let to_write = match access {
-            RBACAccess::ReadObject(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadObjectVertex, type_.vertex())
-            }
-            RBACAccess::WriteObject(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteObjectVertex, type_.vertex())
-            }
-            RBACAccess::ReadAttribute(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadAttributeVertex, type_.vertex())
-            }
-            RBACAccess::WriteAttribute(type_) => {
-                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteAttributeVertex, type_.vertex())
-            }
-        };
+        let to_write = access.to_type_access_for_role(role);
         snapshot.delete(to_write.into_storage_key().into_owned_array())
     }
 }

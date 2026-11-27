@@ -10,8 +10,8 @@ use concept::type_::{TypeAPI, attribute_type::AttributeType, object_type::Object
 use encoding::{
     error::EncodingError,
     graph::{
-        rbac::{RBACAccessKind, RBACRoleVertex},
-        type_::vertex::TypeVertex,
+        rbac::{RBACAccessKind, RBACRoleTypeAccess, RBACRoleVertex},
+        type_::vertex::{TypeVertex, TypeVertexEncoding},
     },
 };
 use error::typedb_error;
@@ -46,6 +46,23 @@ impl RBACAccess {
             RBACAccessKind::WriteObjectVertex => Self::WriteObject(ObjectType::new(type_)),
             RBACAccessKind::ReadAttributeVertex => Self::ReadAttribute(AttributeType::new(type_)),
             RBACAccessKind::WriteAttributeVertex => Self::WriteAttribute(AttributeType::new(type_)),
+        }
+    }
+
+    pub fn to_type_access_for_role(&self, role: &RBACRole) -> RBACRoleTypeAccess {
+        match self {
+            RBACAccess::ReadObject(type_) => {
+                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadObjectVertex, type_.vertex())
+            }
+            RBACAccess::WriteObject(type_) => {
+                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteObjectVertex, type_.vertex())
+            }
+            RBACAccess::ReadAttribute(type_) => {
+                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::ReadAttributeVertex, type_.vertex())
+            }
+            RBACAccess::WriteAttribute(type_) => {
+                RBACRoleTypeAccess::new(role.vertex(), RBACAccessKind::WriteAttributeVertex, type_.vertex())
+            }
         }
     }
 }

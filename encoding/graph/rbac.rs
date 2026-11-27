@@ -302,7 +302,7 @@ impl RBACAccessKind {
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct RBACRoleTypeAccess {
     role: RBACRoleVertex,
-    access_type: RBACAccessKind,
+    access_kind: RBACAccessKind,
     type_: TypeVertex,
 }
 
@@ -319,7 +319,7 @@ impl RBACRoleTypeAccess {
     const LENGTH_PREFIX_ROLE: usize = PrefixID::LENGTH + RBACRoleVertex::LENGTH;
 
     pub fn new(role: RBACRoleVertex, access_type: RBACAccessKind, type_: TypeVertex) -> Self {
-        Self { role, access_type, type_ }
+        Self { role, access_kind: access_type, type_ }
     }
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
@@ -329,7 +329,7 @@ impl RBACRoleTypeAccess {
         let role = RBACRoleVertex::decode(bytes.clone().into_range(Self::range_rbac_role()));
         let access_type = RBACAccessKind::decode((&bytes[Self::range_access_type()]).try_into().unwrap());
         let type_ = TypeVertex::decode(bytes.clone().into_range(Self::range_type()));
-        Self { role, access_type, type_ }
+        Self { role, access_kind: access_type, type_ }
     }
 
     pub fn try_decode(bytes: &[u8]) -> Option<Self> {
@@ -343,7 +343,7 @@ impl RBACRoleTypeAccess {
         let role = RBACRoleVertex::try_decode(bytes.get(Self::range_rbac_role())?)?;
         let access_type = RBACAccessKind::try_decode((bytes.get(Self::range_access_type())?).try_into().ok()?)?;
         let type_ = TypeVertex::try_decode(bytes.get(Self::range_type())?)?;
-        Some(Self { role, access_type, type_ })
+        Some(Self { role, access_kind: access_type, type_ })
     }
 
     pub fn build_prefix() -> StorageKey<'static, { RBACRoleTypeAccess::LENGTH_PREFIX }> {
@@ -364,8 +364,8 @@ impl RBACRoleTypeAccess {
         self.role
     }
 
-    pub fn access_type(&self) -> RBACAccessKind {
-        self.access_type
+    pub fn access_kind(&self) -> RBACAccessKind {
+        self.access_kind
     }
 
     pub fn type_(&self) -> TypeVertex {
@@ -390,7 +390,7 @@ impl AsBytes<BUFFER_KEY_INLINE> for RBACRoleTypeAccess {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         array[Self::range_rbac_role()].copy_from_slice(&self.role.to_bytes());
-        array[Self::range_access_type()].copy_from_slice(&self.access_type.infix().infix_id().bytes());
+        array[Self::range_access_type()].copy_from_slice(&self.access_kind.infix().infix_id().bytes());
         array[Self::range_type()].copy_from_slice(&self.type_.to_bytes());
         Bytes::Array(array)
     }

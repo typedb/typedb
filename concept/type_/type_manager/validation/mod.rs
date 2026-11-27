@@ -124,7 +124,5 @@ typedb_error!(
         ),
         CannotUnsetAbstractnessOfRelationTypeWithoutRoleTypes(60, "Cannot unset abstractness of relation type '{relation}' because it does not have any role types related.", relation: Label),
         CannotUnsetRelationSupertypeBecauseAllRoleTypesAreLost(61, "Cannot unset supertype of relation type '{relation}' because the relation type will not have any role types related.", relation: Label),
-
-        RBACRoleNameShouldBeUnique(62, "The RBAC role name '{name}' must be a unique, unused name.", name: String),
     }
 );

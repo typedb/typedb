@@ -985,7 +985,7 @@ fn undefine_rbac_access(
     };
     types.iter().try_for_each(|typeql_label| {
         let type_label = Label::parse_from(checked_identifier(&typeql_label.ident)?, typeql_label.span());
-        let access = resolve_rbac_type_access(snapshot, type_manager, access_kind, &type_label)
+        let access = resolve_rbac_type_access(snapshot, type_manager, access_kind, &type_label, typeql_label.span())
             .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
         rbac_manager.unset_rbac_access(snapshot, &resolved_role, access, StorageCounters::DISABLED).map_err(
             |typedb_source| UndefineError::RBACAccessRemoveError { source_span: rbac_access.span(), typedb_source },

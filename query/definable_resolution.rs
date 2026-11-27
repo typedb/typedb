@@ -550,6 +550,7 @@ pub(crate) fn resolve_rbac_type_access(
     type_manager: &TypeManager,
     access_kind: RBACAccessRW,
     type_label: &Label,
+    source_span: Option<Span>,
 ) -> Result<RBACAccess, Box<SymbolResolutionError>> {
     use RBACAccessRW as Access;
     let resolved_type = resolve_typeql_type(snapshot, type_manager, &type_label)?;
@@ -567,6 +568,7 @@ pub(crate) fn resolve_rbac_type_access(
             return Err(Box::new(SymbolResolutionError::UnsupportedKindForContext {
                 label: type_label.clone(),
                 kind: Kind::Role,
+                source_span,
             }));
         }
     };
@@ -598,6 +600,6 @@ typedb_error! {
         IllegalKeywordAsIdentifier(16, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier, source_span: Option<Span>),
         SubNotFound(17, "The type '{subtype_label}' does not subtype '{supertype_label}'.", subtype_label: Label, supertype_label: Label, source_span: Option<Span>),
         RBACRoleNotFound(18, "The RBAC role '{name}' was not found.", name: String, source_span: Option<Span>),
-        UnsupportedKindForContext(19, "the type '{label}' was found, but was was of kind '{kind}' which is not valid in the context.", label: Label, kind: Kind, ),
+        UnsupportedKindForContext(19, "the type '{label}' was found, but was of kind '{kind}' which is not valid in the context.", label: Label, kind: Kind, source_span: Option<Span>),
     }
 }

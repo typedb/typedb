@@ -158,12 +158,9 @@ impl SchemaID for DefinitionKey {
 }
 
 impl RBACVertexAllocator {
+    // Doesn't implement SchemaID because we want random ids which won't get reused.
     pub fn new() -> RBACVertexAllocator {
         Self
-    }
-
-    pub fn reset(&mut self) {
-        // Nothing. We're stateless
     }
 
     pub fn find_unallocated_id(&self, snapshot: &mut impl WritableSnapshot) -> Result<RBACRoleVertex, EncodingError> {

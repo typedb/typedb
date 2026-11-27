@@ -189,8 +189,9 @@ fn process_role_definitions(
             };
             types.iter().try_for_each(|typeql_label| {
                 let type_label = Label::parse_from(checked_identifier(&typeql_label.ident)?, typeql_label.span());
-                let access = resolve_rbac_type_access(snapshot, type_manager, access_kind, &type_label)
-                    .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
+                let access =
+                    resolve_rbac_type_access(snapshot, type_manager, access_kind, &type_label, typeql_label.span())
+                        .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
                 rbac_manager.set_rbac_access(snapshot, resolved_role, access, storage_counters.clone()).map_err(
                     |typedb_source| DefineError::CreateRBACAccess {
                         role_name: role_name.to_owned(),
@@ -1476,14 +1477,14 @@ typedb_error! {
         IllegalKeywordAsIdentifier(31, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
         CreateRBACRole(
             32,
-            "An error occured when creating the RBAC role: '{role_name}'",
+            "An error occurred when creating the RBAC role: '{role_name}'",
             role_name: String,
             source_span: Option<Span>,
             typedb_source: Box<RBACError>
         ),
         CreateRBACAccess(
             33,
-            "An error occured when granting the RBAC role: '{role_name}' access to the type: '{type_label}'",
+            "An error occurred when granting the RBAC role: '{role_name}' access to the type: '{type_label}'",
             role_name: String,
             type_label: Label,
             source_span: Option<Span>,
