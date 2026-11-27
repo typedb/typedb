@@ -223,9 +223,9 @@ impl PerTypeVectorIndex {
         index
             .save(staging.to_str().unwrap())
             .map_err(|err| io::Error::other(format!("failed to save vector index {target:?}: {err}")))?;
-        File::open(&staging)?.sync_all()?;
+        File::options().write(true).open(&staging)?.sync_all()?;
         fs::rename(&staging, target)?;
-        File::open(target.parent().unwrap())?.sync_all()?;
+        durability::sync_directory(target.parent().unwrap())?;
         Ok(())
     }
 }

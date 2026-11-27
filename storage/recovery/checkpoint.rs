@@ -346,7 +346,7 @@ impl CheckpointWriter {
         let staging_path = path.with_extension(TEMP_FILE_EXTENSION);
         data.save_to_path(&staging_path).map_err(io_err)?;
         fs::rename(&staging_path, &path).map_err(io_err)?;
-        File::open(&self.temporary_directory).and_then(|dir| dir.sync_all()).map_err(io_err)?;
+        durability::sync_directory(&self.temporary_directory).map_err(io_err)?;
         Ok(())
     }
 

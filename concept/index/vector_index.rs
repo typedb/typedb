@@ -415,7 +415,7 @@ fn write_format_version(dir: &Path) -> io::Result<()> {
     let mut file = File::create(dir.join(FORMAT_VERSION_FILE_NAME))?;
     file.write_all(format!("{FORMAT_VERSION}\n").as_bytes())?;
     file.sync_all()?;
-    File::open(dir)?.sync_all()
+    durability::sync_directory(dir)
 }
 
 fn check_format_version(dir: &Path) -> io::Result<()> {
