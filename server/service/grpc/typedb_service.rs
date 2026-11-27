@@ -458,7 +458,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
-        let accessor = Accessor::default_to_do();
+        let accessor = Accessor::from_extensions(&request.extensions())
+            .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let name = request.into_inner().name;
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager(),

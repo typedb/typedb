@@ -338,9 +338,9 @@ impl HTTPTypeDBService {
     async fn databases_create(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        let accessor = Accessor::default_to_do();
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
@@ -382,9 +382,9 @@ impl HTTPTypeDBService {
     async fn databases_schema(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        let accessor = Accessor::default_to_do();
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
@@ -405,9 +405,9 @@ impl HTTPTypeDBService {
     async fn databases_type_schema(
         _version: ProtocolVersion,
         State(service): State<Arc<HTTPTypeDBService>>,
+        accessor: Accessor,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
-        let accessor = Accessor::default_to_do();
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),

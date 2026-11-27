@@ -73,13 +73,6 @@ pub enum Accessor {
 }
 
 impl Accessor {
-    // TODO: must remove and replace calls with the actual accessor.
-    pub(crate) fn default_to_do() -> Self {
-        Self::Default
-    }
-}
-
-impl Accessor {
     pub fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
         extensions.get::<Self>().cloned().ok_or_else(|| AuthenticationError::CorruptedAccessor {})
     }
