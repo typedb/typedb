@@ -279,6 +279,13 @@ typedb_error!(
             "Type-inference was unable to resolve types for the following assigned variables: [{assigned_variables}]",
             assigned_variables: String,
         ),
+        VectorLengthInvalid(
+            16,
+            "The vector length '{length}' is invalid: it must be a positive integer no greater than {max}.",
+            length: String,
+            max: u16,
+            source_span: Option<Span>,
+        ),
         InternalVertexTypesMismatch(
             254,
             "BUG! Expected vertex to have annotations of kind '{expected}' but it wasn't.",
@@ -437,6 +444,7 @@ pub mod tests {
                 &storage_path,
                 WALClient::new(wal),
                 &resources,
+                None,
             )
             .unwrap(),
         );
@@ -453,6 +461,7 @@ pub mod tests {
             thing_vertex_generator.clone(),
             type_manager.clone(),
             Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+            Arc::default(),
         );
 
         (type_manager, thing_manager)

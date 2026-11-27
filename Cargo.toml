@@ -443,6 +443,11 @@
 			features = []
 			path = "server/service/admin/proto"
 
+		[workspace.dependencies.simsimd]
+			default-features = false
+			features = ["default"]
+			version = "6.5.16"
+
 		[workspace.dependencies.smallvec]
 			default-features = false
 			features = ["const_generics", "const_new"]
@@ -582,13 +587,13 @@
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			rev = "dd606e1063d7c83781b5e04c1d348b824d3a7428"
+			rev = "df8475883a2e40e1648ec464963435ca818ba9f1"
 
 		[workspace.dependencies.typeql]
 			default-features = false
 			features = []
 			git = "https://github.com/typedb/typeql"
-			rev = "4c37fe7d62a59e54623e5b554f0e11f9d45aa610"
+			rev = "2306d3f7d0f11fcca2a68c28033cb9313f69bd2a"
 
 		[workspace.dependencies.unicase]
 			default-features = false
@@ -599,6 +604,11 @@
 			default-features = false
 			features = ["default", "serde", "std"]
 			version = "2.5.8"
+
+		[workspace.dependencies.usearch]
+			default-features = false
+			features = []
+			version = "2.26.2"
 
 		[workspace.dependencies.user]
 			default-features = false
@@ -636,6 +646,10 @@
 [[test]]
 	name = "bench_iam"
 	path = "tests/benchmarks/iam/bench_iam.rs"
+
+[[test]]
+	name = "bench_vector"
+	path = "tests/benchmarks/vector_ops/bench_vector.rs"
 
 [[test]]
 	name = "test_assembly"
@@ -696,3 +710,7 @@
 [[test]]
 	name = "test_query"
 	path = "tests/behaviour/query/main.rs"
+
+[[test]]
+	name = "to_vector_storage"
+	path = "tests/assembly/upgrade/to_vector_storage.rs"

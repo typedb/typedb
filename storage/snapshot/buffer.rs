@@ -240,7 +240,7 @@ impl WriteBuffer {
         self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
     }
 
-    pub(crate) fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
+    pub fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
         &self.writes
     }
 

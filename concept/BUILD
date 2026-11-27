@@ -10,6 +10,7 @@ rust_library(
     name = "concept",
     srcs = glob([
         "*.rs",
+        "index/**/*.rs",
         "type_/**/*.rs",
         "thing/**/*.rs",
     ]),
@@ -37,6 +38,7 @@ rust_library(
         "@crates//:sentry",
         "@crates//:serde",
         "@crates//:tracing",
+        "@crates//:usearch",
     ],
     proc_macro_deps = [
         "@crates//:paste",
@@ -62,6 +64,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
+        "index/*",
         "thing/*",
         "thing/statistics/**/*",
         "thing/thing_manager/**/*",

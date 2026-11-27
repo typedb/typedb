@@ -803,6 +803,21 @@ fn parse_query_given_row_entry(entry: &String) -> GivenRowEntry {
         "value" => {
             let value_type_str = parts.next().expect("value:<value-type>:<value>");
             let value_str = parts.collect::<Vec<&str>>().join(":");
+            if value_type_str.starts_with("vector") {
+                let elements = value_str
+                    .trim_start_matches('[')
+                    .trim_end_matches(']')
+                    .split(',')
+                    .map(|element| element.trim().parse::<f32>().expect("Bad vector element"))
+                    .collect::<Vec<f32>>();
+                return GivenRowEntry::Value(encoding::value::value::Value::Vector(
+                    encoding::value::vector_value::VectorValue::new(
+                        std::borrow::Cow::Owned(elements),
+                        encoding::value::value_type::VectorPrecision::Float32,
+                    )
+                    .expect("Bad vector length"),
+                ));
+            }
             let expected_value_type = parse_value_type(value_type_str);
             let value = params::Value::from_str(&value_str).unwrap().into_typedb(expected_value_type);
             GivenRowEntry::Value(value)

@@ -52,7 +52,9 @@ use encoding::{
         struct_bytes::StructBytes,
         value::{Value, ValueRestriction},
         value_struct::{StructIndexEntry, StructValue},
-        value_type::{ValueType, ValueTypeCategory},
+        value_type::{ValueType, ValueTypeCategory, VectorPrecision},
+        vector_bytes::VectorBytes,
+        vector_value::VectorValue,
     },
 };
 use itertools::Itertools;
@@ -78,6 +80,7 @@ use tracing::{trace, warn};
 use crate::{
     ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
+    index::vector_index::VectorIndexView,
     iterator::{InstanceEdgeWalk, InstanceIterator},
     thing::{
         ThingAPI,
@@ -137,6 +140,7 @@ pub struct ThingManager {
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
     concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
+    vector_index: Arc<VectorIndexView>,
 }
 
 pub trait ConceptPersistenceGuarantees: fmt::Debug + Send + Sync {
@@ -154,17 +158,19 @@ impl ThingManager {
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
+        vector_index: Arc<VectorIndexView>,
     ) -> Self {
-        Self::new_with_concept_persistence_guarantees(vertex_generator, type_manager, statistics, None)
+        Self::new_with_concept_persistence_guarantees(vertex_generator, type_manager, statistics, vector_index, None)
     }
 
     pub fn new_with_concept_persistence_guarantees(
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
+        vector_index: Arc<VectorIndexView>,
         concept_persistence_guarantees: Option<Box<dyn ConceptPersistenceGuarantees>>,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics, concept_persistence_guarantees }
+        ThingManager { vertex_generator, type_manager, statistics, concept_persistence_guarantees, vector_index }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -173,6 +179,29 @@ impl ThingManager {
 
     pub fn type_manager(&self) -> &TypeManager {
         &self.type_manager
+    }
+
+    pub fn vector_index(&self) -> &Arc<VectorIndexView> {
+        &self.vector_index
+    }
+
+    pub fn committed_vector_index(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<&VectorIndexView>, Box<ConceptReadError>> {
+        let type_key = attribute_type.vertex().into_storage_key();
+        let created_in_this_transaction = snapshot
+            .get_mapped_in_lookup_mode(
+                type_key.as_reference(),
+                SnapshotLookupMode::BufferOnly,
+                |_| (),
+                storage_counters,
+            )
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+            .is_some();
+        Ok((!created_in_this_transaction).then_some(&*self.vector_index))
     }
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
@@ -468,6 +497,28 @@ impl ThingManager {
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
+            AttributeID::Vector(_id) => {
+                let vertex = attribute.vertex();
+                let buffered = snapshot
+                    .get_mapped_in_lookup_mode(
+                        vertex.into_storage_key().as_reference(),
+                        SnapshotLookupMode::BufferOnly,
+                        |bytes| VectorBytes::new(Bytes::<1>::Reference(bytes)).as_vector(),
+                        storage_counters,
+                    )
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?;
+                let vector = match buffered {
+                    Some(vector) => vector,
+                    None => self
+                        .vector_index
+                        .get_value_by_attr_vertex(vertex)
+                        .ok_or(ConceptReadError::InternalMissingAttributeValue {})?,
+                };
+                Ok(Value::Vector(
+                    VectorValue::new(Cow::Owned(vector), VectorPrecision::Float32)
+                        .expect("Stored vector exceeds the maximum length"),
+                ))
+            }
         }
     }
 
@@ -529,6 +580,22 @@ impl ThingManager {
                     Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
                         AttributeID::Struct(id),
+                    )),
+                    Ok(None) => return Ok(None),
+                    Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
+                }
+            }
+            ValueType::Vector(_) => {
+                let type_id = attribute_type.vertex().type_id_();
+                match self.vertex_generator.find_attribute_id_vector(
+                    type_id,
+                    value.encode_vector::<256>(),
+                    snapshot,
+                    &|key| self.vector_index.get_value_by_key(type_id, key),
+                ) {
+                    Ok(Some(id)) => Attribute::new(AttributeVertex::new(
+                        attribute_type.vertex().type_id_(),
+                        AttributeID::Vector(id),
                     )),
                     Ok(None) => return Ok(None),
                     Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
@@ -3034,6 +3101,15 @@ impl ThingManager {
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
                 self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
                 struct_attribute
+            }
+            Value::Vector(ref vector) => {
+                let encoded_vector: VectorBytes<'static, BUFFER_KEY_INLINE> = VectorBytes::build(vector.elements());
+                let type_id = attribute_type.vertex().type_id_();
+                self.vertex_generator
+                    .create_attribute_vector(type_id, encoded_vector, snapshot, &|key| {
+                        self.vector_index.get_value_by_key(type_id, key)
+                    })
+                    .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
             }
         };
         Ok(Attribute::new(vertex))

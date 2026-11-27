@@ -84,7 +84,11 @@ impl GivenRowEntry {
             move |value: String| GivenRowDecodeError::ValueTypeMismatch { expected_type, actual_type, value }
         };
 
-        if value.value_type().category().is_trivially_castable_to(expected_type.category()) {
+        let castable = match expected_type {
+            ValueType::Vector(_) => &value.value_type() == expected_type,
+            _ => value.value_type().category().is_trivially_castable_to(expected_type.category()),
+        };
+        if castable {
             let cast_result = value.cast(expected_type.category());
             debug_assert!(cast_result.is_some());
             let cast_value = cast_result.ok_or_else(|| make_err("<unreachable>".to_owned()))?;
@@ -104,6 +108,7 @@ typedb_error! {
         GivenRowsVariableWasNotDeclared(5, "The variable '{variable}' was not declared in the query.", variable: String),
         ExpectedInstanceReceivedValue(6, "A value was provided where a concept instance was expected."),
         ValueTypeMismatch(7, "The provided value '{value}' has type '{actual_type}' and could not be decoded as the value type '{expected_type}'.", expected_type: ValueType, actual_type: String, value: String),
+        InvalidVectorForGivenEntry(8, "The provided value '{value}' could not be decoded as a vector: expected an array of numbers.", value: String),
     }
 }
 

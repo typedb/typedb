@@ -24,7 +24,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links,
-            Owns, Plays, Relates, RoleName, Sub, SubKind, Value,
+            Owns, Plays, Relates, RoleName, Sub, SubKind, Value, VectorSearch,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -144,6 +144,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
             some_concept_vertex_was_directly_annotated = self.annotate_some_unannotated_concept_vertex(graph)?;
         }
+        self.annotate_vector_search_query_vertices(graph)?;
 
         // Prune abstract types from type annotations of thing variables
         if self.prune_abstract() {
@@ -201,6 +202,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
                 Constraint::Value(c) => c.apply(self, vertices)?,
+                Constraint::VectorSearch(c) => {
+                    vertices.add_or_intersect::<ValueVertexTypes>(
+                        &Vertex::Variable(c.similarity()),
+                        Cow::Owned(ValueVertexTypes(BTreeSet::from([ValueType::Double]))),
+                    );
+                }
                 | Constraint::Iid(_)
                 | Constraint::IsSet(_)
                 | Constraint::Is(_)
@@ -267,6 +274,37 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
             self.annotate_all_unannotated_value_vertices(nested_graph)?;
+        }
+        Ok(())
+    }
+
+    fn annotate_vector_search_query_vertices(
+        &self,
+        graph: &mut TypeInferenceGraph<'_>,
+    ) -> Result<(), TypeInferenceError> {
+        for constraint in graph.conjunction.constraints() {
+            let Constraint::VectorSearch(search) = constraint else { continue };
+            if !search.query().is_variable() {
+                continue;
+            }
+            let mut value_types = BTreeSet::new();
+            if let Some(VertexTypeAnnotations::Concept(types)) = graph.vertices.get(search.attribute_type()) {
+                for type_ in types.iter() {
+                    if let answer::Type::Attribute(attribute_type) = type_ {
+                        if let Some(value_type) =
+                            attribute_type.get_value_type_without_source(self.snapshot, self.type_manager)?
+                        {
+                            value_types.insert(value_type);
+                        }
+                    }
+                }
+            }
+            graph
+                .vertices
+                .add_or_intersect::<ValueVertexTypes>(search.query(), Cow::Owned(ValueVertexTypes(value_types)));
+        }
+        for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
+            self.annotate_vector_search_query_vertices(nested_graph)?;
         }
         Ok(())
     }
@@ -414,6 +452,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<bool, Box<ConceptReadError>> {
         let any_modified = match constraint {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
+            Constraint::VectorSearch(search) => self.try_propagating_vertex_annotation_impl(search, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
             Constraint::Links(links) => {
                 let relation_role = RelationRoleEdge { links };
@@ -525,6 +564,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
+                Constraint::VectorSearch(search) => edges.push(self.seed_edge(constraint, search, vertices)?),
                 Constraint::Sub(sub) => edges.push(self.seed_edge(constraint, sub, vertices)?),
                 Constraint::Links(links) => {
                     let relation_role = RelationRoleEdge { links };
@@ -1033,6 +1073,50 @@ impl BinaryConstraint for Owns<Variable> {
             return Ok(());
         };
         collector.extend_into_ref(attribute.get_owner_types(context.snapshot, context.type_manager)?.keys());
+        Ok(())
+    }
+}
+
+impl BinaryConstraint for VectorSearch<Variable> {
+    fn left(&self) -> &Vertex<Variable> {
+        self.attribute_vertex()
+    }
+
+    fn right(&self) -> &Vertex<Variable> {
+        self.attribute_type()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut ConceptVertexTypes,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if let TypeAnnotation::Attribute(attribute) = left_type {
+            attribute.get_supertypes_transitive(context.snapshot, context.type_manager)?.iter().for_each(|supertype| {
+                collector.insert(TypeAnnotation::Attribute(*supertype));
+            });
+        }
+        collector.insert(*left_type);
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut ConceptVertexTypes,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if let TypeAnnotation::Attribute(attribute) = right_type {
+            for subtype in std::iter::once(attribute)
+                .chain(attribute.get_subtypes_transitive(context.snapshot, context.type_manager)?.iter())
+            {
+                let value_type = subtype.get_value_type_without_source(context.snapshot, context.type_manager)?;
+                if matches!(value_type, Some(ValueType::Vector(_))) {
+                    collector.insert(TypeAnnotation::Attribute(*subtype));
+                }
+            }
+        }
         Ok(())
     }
 }

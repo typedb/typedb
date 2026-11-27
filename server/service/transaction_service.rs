@@ -25,6 +25,44 @@ use crate::{
 
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
 
+pub(crate) fn check_vector_definitions_enabled(
+    schema_query: &typeql::query::SchemaQuery,
+    is_vector_search_enabled: bool,
+) -> Result<(), TransactionServiceError> {
+    use typeql::{
+        query::SchemaQuery,
+        schema::definable::Definable,
+        type_::{NamedType, NamedTypeAny, NamedTypeList, NamedTypeOptional},
+    };
+    if is_vector_search_enabled {
+        return Ok(());
+    }
+    let definables = match schema_query {
+        SchemaQuery::Define(define) => &define.definables,
+        SchemaQuery::Redefine(redefine) => &redefine.definables,
+        SchemaQuery::Undefine(_) => return Ok(()),
+    };
+    fn is_vector(named: &NamedTypeAny) -> bool {
+        let (NamedTypeAny::Simple(inner)
+        | NamedTypeAny::List(NamedTypeList { inner, .. })
+        | NamedTypeAny::Optional(NamedTypeOptional { inner, .. })) = named;
+        matches!(inner, NamedType::Vector(_))
+    }
+    let defines_vector = definables.iter().any(|definable| match definable {
+        Definable::TypeDeclaration(declaration) => declaration.capabilities.iter().any(|capability| {
+            matches!(
+                &capability.base,
+                typeql::schema::definable::type_::CapabilityBase::ValueType(value_type)
+                    if matches!(&value_type.value_type, NamedType::Vector(_))
+            )
+        }),
+        Definable::Struct(struct_) => struct_.fields.iter().any(|field| is_vector(&field.type_)),
+        Definable::Function(_) => false,
+        Definable::TypeRename(_) | Definable::RoleTypeRename(_) => false,
+    });
+    if defines_vector { Err(TransactionServiceError::VectorSearchNotEnabled {}) } else { Ok(()) }
+}
+
 pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {
         match stage {
@@ -129,6 +167,7 @@ typedb_error! {
             "Answer stream interrupted by a concurrent {interrupt}. The write was still applied; only its answers were dropped.",
             interrupt: InterruptType
         ),
+        VectorSearchNotEnabled(24, "Vector search is not enabled. Start the server with '--experimental-vector-search-enabled=true' to enable this experimental functionality."),
     }
 }
 
@@ -154,11 +193,44 @@ impl TransactionServiceError {
             | TransactionServiceError::InvalidPrefetchSize { .. }
             | TransactionServiceError::AnalyseQueryExpectsPipeline { .. }
             | TransactionServiceError::AnalyseQueryFailed { .. }
-            | TransactionServiceError::DecodingGivenRowsFailed { .. } => None,
+            | TransactionServiceError::DecodingGivenRowsFailed { .. }
+            | TransactionServiceError::VectorSearchNotEnabled { .. } => None,
 
             TransactionServiceError::DataCommitFailed { typedb_source }
             | TransactionServiceError::SchemaCommitFailed { typedb_source }
             | TransactionServiceError::CannotOpen { typedb_source } => Some(typedb_source),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::check_vector_definitions_enabled;
+
+    fn schema_query(query: &str) -> typeql::query::SchemaQuery {
+        let typeql::query::QueryStructure::Schema(schema_query) = typeql::parse_query(query).unwrap().into_structure()
+        else {
+            panic!("expected schema query")
+        };
+        schema_query
+    }
+
+    #[test]
+    fn vector_definitions_are_rejected_only_when_disabled() {
+        let vector_define = schema_query(r#"define attribute embedding, value vector(3, "float32");"#);
+        let vector_struct_define =
+            schema_query(r#"define struct doc: content value string, vec value vector(3, "float32");"#);
+        let vector_redefine = schema_query(r#"redefine attribute embedding value vector(4, "float32");"#);
+        let plain_define = schema_query("define attribute name, value string; entity person owns name;");
+        let undefine = schema_query("undefine embedding;");
+
+        assert!(check_vector_definitions_enabled(&vector_define, false).is_err());
+        assert!(check_vector_definitions_enabled(&vector_struct_define, false).is_err());
+        assert!(check_vector_definitions_enabled(&vector_redefine, false).is_err());
+        assert!(check_vector_definitions_enabled(&plain_define, false).is_ok());
+        assert!(check_vector_definitions_enabled(&undefine, false).is_ok());
+
+        assert!(check_vector_definitions_enabled(&vector_define, true).is_ok());
+        assert!(check_vector_definitions_enabled(&vector_redefine, true).is_ok());
     }
 }

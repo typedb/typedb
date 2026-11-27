@@ -14,7 +14,12 @@ use database::migration::{
         OwnedAttribute, Player, RelationItem, Role,
     },
 };
-use encoding::value::{label::Label, value::Value};
+use encoding::value::{
+    label::Label,
+    value::Value,
+    value_type::{VectorPrecision, VectorTypeParameters},
+    vector_value::VectorValue,
+};
 use error::{typedb_error, unimplemented_feature};
 use typedb_protocol::{
     migration,
@@ -275,6 +280,9 @@ fn encode_migration_value(value: Value<'static>) -> MigrationValue {
         Value::Duration(duration) => ValueProto::Duration(encode_duration(duration)),
         Value::String(string) => ValueProto::String(string.to_string()),
         Value::Struct(_struct) => unimplemented_feature!(Structs),
+        Value::Vector(vector) => {
+            ValueProto::Vector(typedb_protocol::value::Vector { values: vector.into_elements().into_owned() })
+        }
     };
     MigrationValue { value: Some(value_message) }
 }
@@ -294,6 +302,12 @@ fn decode_migration_value(value_proto: MigrationValue) -> Result<Value<'static>,
         ValueProto::Duration(duration) => Value::Duration(decode_duration(duration)?),
         ValueProto::String(string) => Value::String(Cow::Owned(string)),
         ValueProto::Struct(_struct) => unimplemented_feature!(Structs),
+        ValueProto::Vector(vector) => {
+            let length = vector.values.len();
+            Value::Vector(VectorValue::new(Cow::Owned(vector.values), VectorPrecision::Float32).ok_or_else(|| {
+                Box::new(ConceptDecodeError::VectorTooLong { length, max: VectorTypeParameters::MAX_LENGTH })
+            })?)
+        }
     };
     Ok(value)
 }

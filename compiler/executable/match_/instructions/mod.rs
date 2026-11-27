@@ -180,6 +180,8 @@ pub enum ConstraintInstruction<ID> {
     // type -> thing
     IsaReverse(thing::IsaReverseInstruction<ID>),
 
+    VectorSearch(thing::VectorSearchInstruction<ID>),
+
     // owner -> attribute
     Has(thing::HasInstruction<ID>),
     // attribute -> owner
@@ -231,6 +233,9 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.ids_foreach(apply),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(apply),
+            Self::VectorSearch(thing::VectorSearchInstruction { vector_search, .. }) => {
+                vector_search.ids_foreach(apply)
+            }
             Self::Has(thing::HasInstruction { has, .. })
             | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(apply),
             Self::Links(thing::LinksInstruction { links, .. })
@@ -267,6 +272,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::PlaysReverse(type_::PlaysReverseInstruction { inputs, .. })
             | Self::Isa(thing::IsaInstruction { inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { inputs, .. })
+            | Self::VectorSearch(thing::VectorSearchInstruction { inputs, .. })
             | Self::Has(thing::HasInstruction { inputs, .. })
             | Self::HasReverse(thing::HasReverseInstruction { inputs, .. })
             | Self::Links(thing::LinksInstruction { inputs, .. })
@@ -320,6 +326,12 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     apply(var)
                 }
             }),
+            Self::VectorSearch(thing::VectorSearchInstruction { vector_search, inputs, .. }) => vector_search
+                .ids_foreach(|var| {
+                    if !inputs.contains(var) {
+                        apply(var)
+                    }
+                }),
             Self::Has(thing::HasInstruction { has, inputs, .. })
             | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var| {
                 if !inputs.contains(var) {
@@ -375,6 +387,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::PlaysReverse(inner) => inner.add_check(check),
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
+            Self::VectorSearch(inner) => inner.add_check(check),
             Self::Has(inner) => inner.add_check(check),
             Self::HasReverse(inner) => inner.add_check(check),
             Self::Links(inner) => inner.add_check(check),
@@ -398,6 +411,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::PlaysReverse(inner) => ConstraintInstruction::PlaysReverse(inner.map(mapping)),
             Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
             Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
+            Self::VectorSearch(inner) => ConstraintInstruction::VectorSearch(inner.map(mapping)),
             Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
             Self::HasReverse(inner) => ConstraintInstruction::HasReverse(inner.map(mapping)),
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
@@ -423,6 +437,7 @@ impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
             ConstraintInstruction::PlaysReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Isa(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::IsaReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::VectorSearch(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Has(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::HasReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),

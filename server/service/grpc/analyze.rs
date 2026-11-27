@@ -511,6 +511,19 @@ fn query_structure_constraint(
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Optimisations don't represent the structure
+        Constraint::VectorSearch(search) => constraints.push(conjunction_proto::Constraint {
+            span,
+            constraint: Some(structure_constraint::Constraint::VectorSearch(structure_constraint::VectorSearch {
+                attribute: Some(encode_structure_vertex_variable(search.attribute_vertex())?),
+                attribute_type: Some(encode_structure_vertex_label_or_variable(context, search.attribute_type())?),
+                query: Some(encode_structure_vertex_value_or_variable(context, search.query())?),
+                threshold: Some(encode_structure_vertex_value_or_variable(
+                    context,
+                    &Vertex::Parameter(search.threshold()),
+                )?),
+                similarity: Some(encode_structure_vertex_variable(search.similarity_vertex())?),
+            })),
+        }),
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
     Ok(())

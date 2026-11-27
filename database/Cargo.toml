@@ -133,3 +133,19 @@
 [[test]]
 	name = "test_transaction_isolation"
 	path = "tests/test_transaction_isolation.rs"
+
+[[test]]
+	name = "test_vector_durability"
+	path = "tests/vector_durability.rs"
+
+[[test]]
+	name = "test_vector_isolation_one_writer_multiple_readers"
+	path = "tests/vector_isolation/one_writer_multiple_readers.rs"
+
+[[test]]
+	name = "test_vector_isolation_parallel"
+	path = "tests/vector_isolation/parallel.rs"
+
+[[test]]
+	name = "test_vector_isolation_two_writers"
+	path = "tests/vector_isolation/two_writers.rs"

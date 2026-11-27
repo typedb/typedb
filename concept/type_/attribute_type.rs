@@ -38,8 +38,8 @@ use crate::{
         Capability, KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
-            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation, HasAnnotationCategory,
-            HasAnnotationCategoryDerive,
+            AnnotationIndex, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation,
+            HasAnnotationCategory, HasAnnotationCategoryDerive,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -449,6 +449,7 @@ impl AttributeType {
             AttributeTypeAnnotation::Meta(meta) => {
                 type_manager.set_attribute_type_annotation_meta(snapshot, *self, meta)?
             }
+            AttributeTypeAnnotation::Index(index) => type_manager.set_annotation_index(snapshot, *self, index)?,
         };
         Ok(())
     }
@@ -477,6 +478,7 @@ impl AttributeType {
             AttributeTypeAnnotationCategory::Meta(meta) => {
                 type_manager.unset_attribute_type_annotation_meta(snapshot, *self, meta)?
             }
+            AttributeTypeAnnotationCategory::Index => type_manager.unset_annotation_index(snapshot, *self)?,
         }
         Ok(())
     }
@@ -532,6 +534,7 @@ pub enum AttributeTypeAnnotation {
     Values(AnnotationValues),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
+    Index(AnnotationIndex),
 }
 
 impl AttributeTypeAnnotation {
@@ -544,7 +547,10 @@ impl AttributeTypeAnnotation {
 
     pub fn is_value_type_annotation_category(annotation_category: &AnnotationCategory) -> bool {
         match annotation_category {
-            AnnotationCategory::Regex | AnnotationCategory::Range | AnnotationCategory::Values => true,
+            | AnnotationCategory::Regex
+            | AnnotationCategory::Range
+            | AnnotationCategory::Values
+            | AnnotationCategory::Index => true,
 
             AnnotationCategory::Abstract
             | AnnotationCategory::Distinct

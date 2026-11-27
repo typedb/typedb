@@ -126,6 +126,12 @@ impl Attribute {
         }
     }
 
+    /// Like [`Self::has_owners`], but skips the existence lookup and returns false for an attribute
+    /// absent from the snapshot: an owner edge can only exist alongside its attribute.
+    pub fn has_owner_edges(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
+        thing_manager.has_owners(snapshot, self, false)
+    }
+
     pub fn get_owners<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,

@@ -451,6 +451,13 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    fn value_matches_attribute_value_type(value_type: &ValueType, type_value_type: &ValueType) -> bool {
+        match type_value_type {
+            ValueType::Vector(_) => value_type == type_value_type,
+            _ => value_type.category().is_trivially_castable_to(type_value_type.category()),
+        }
+    }
+
     pub(crate) fn validate_value_type_matches_attribute_type_for_write<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -458,32 +465,51 @@ impl OperationTimeValidation {
         value_type_category: ValueTypeCategory,
         get_value: impl Fn() -> Result<Value<'a>, Box<ConceptReadError>>,
     ) -> Result<(), Box<ConceptWriteError>> {
+        let load_value =
+            || get_value().map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }));
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
+        let matches = match &type_value_type {
+            Some(type_value_type)
+                if value_type_category == ValueTypeCategory::Vector
+                    || type_value_type.category() == ValueTypeCategory::Vector =>
+            {
+                let value = load_value()?;
+                if let Value::Vector(vector) = &value {
+                    if vector.elements().iter().any(|element| !element.is_finite()) {
+                        return Err(Box::new(ConceptWriteError::DataValidation {
+                            typedb_source: Box::new(DataValidationError::VectorValueMustBeFinite {
+                                attribute_type: attribute_type
+                                    .get_label(snapshot, thing_manager.type_manager())?
+                                    .clone(),
+                            }),
+                        }));
+                    }
+                }
+                Self::value_matches_attribute_value_type(&value.value_type(), type_value_type)
+            }
+            Some(type_value_type) => value_type_category.is_trivially_castable_to(type_value_type.category()),
+            None => false,
+        };
+        if matches {
+            return Ok(());
+        }
+        let value = load_value()?.into_owned();
         match type_value_type {
-            Some(type_value_type) if value_type_category.is_trivially_castable_to(type_value_type.category()) => Ok(()),
-            Some(type_value_type) => {
-                let value =
-                    get_value().map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?.into_owned();
-                Err(Box::new(ConceptWriteError::DataValidation {
-                    typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
-                        attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
-                        expected_value_type: type_value_type,
-                        provided_value_type: value.value_type(),
-                        provided_value: value,
-                    }),
-                }))
-            }
-            None => {
-                let value =
-                    get_value().map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?.into_owned();
-                Err(Box::new(ConceptWriteError::DataValidation {
-                    typedb_source: Box::new(DataValidationError::AttributeTypeHasNoValueType {
-                        attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
-                        provided_value_type: value.value_type(),
-                        provided_value: value,
-                    }),
-                }))
-            }
+            Some(type_value_type) => Err(Box::new(ConceptWriteError::DataValidation {
+                typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
+                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
+                    expected_value_type: type_value_type,
+                    provided_value_type: value.value_type(),
+                    provided_value: value,
+                }),
+            })),
+            None => Err(Box::new(ConceptWriteError::DataValidation {
+                typedb_source: Box::new(DataValidationError::AttributeTypeHasNoValueType {
+                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
+                    provided_value_type: value.value_type(),
+                    provided_value: value,
+                }),
+            })),
         }
     }
 
@@ -495,9 +521,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<ConceptReadError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.category().is_trivially_castable_to(type_value_type.category()) => {
-                Ok(())
-            }
+            Some(type_value_type) if Self::value_matches_attribute_value_type(&value_type, &type_value_type) => Ok(()),
             _ => Err(Box::new(ConceptReadError::ValueTypeMismatchWithAttributeType {
                 attribute_type,
                 expected: type_value_type,
